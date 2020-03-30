@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.11)
 
 # Disable in source builds
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Initialize output directory locations
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tar)
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tar)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
@@ -26,11 +26,7 @@ endif()
 
 find_package(Git REQUIRED)
 
-if(${CMAKE_VERSION} VERSION_LESS 3.11)
-    include(FetchContentLocal)
-else()
-    include(FetchContent)
-endif()
+include(FetchContent)
 
 ##########################
 # GET GEOMETRY CENTRAL
@@ -47,9 +43,20 @@ if(NOT geometrycentrallib_POPULATED)
   add_subdirectory(${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR})
 endif()
 
+# Required to tell MSVC to export symbols
+if(MSVC)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
+
+add_library(ddg_solver SHARED ${CMAKE_CURRENT_SOURCE_DIR}/src/ddg_solver.cpp)
+target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 add_executable(ddg src/helloworld.cpp)
 target_include_directories(ddg PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         )
+
+target_link_libraries(ddg PRIVATE ddg_solver)
 target_link_libraries(ddg PRIVATE geometry-central)
