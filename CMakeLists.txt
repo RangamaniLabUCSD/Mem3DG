@@ -37,7 +37,7 @@ endif()
 ##########################
 FetchContent_Declare(
     geometrycentrallib
-    GIT_REPOSITORY  https://github.com/nmwsharp/geometry-central.git
+    GIT_REPOSITORY  https://github.com/ctlee/geometry-central.git
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometry-build"
 )
@@ -47,18 +47,9 @@ if(NOT geometrycentrallib_POPULATED)
   add_subdirectory(${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR})
 endif()
 
-add_library(ddg_solver SHARED src/ddg_solver.cpp)
-target_include_directories(ddg_solver PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-        )
-
-
 add_executable(ddg src/helloworld.cpp)
 target_include_directories(ddg PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         )
-target_link_libraries(ddg ddg_solver)
-
-# target_link_libraries(ddg PRIVATE geometry-central)
+target_link_libraries(ddg PRIVATE geometry-central)
