@@ -17,6 +17,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
+# Required to tell MSVC to export symbols
+if(MSVC)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 # Check if casc is being used directly or via add_subdirectory
 set(DDG_MASTER_PROJECT OFF)
@@ -42,12 +46,6 @@ if(NOT geometrycentrallib_POPULATED)
   FetchContent_Populate(geometrycentrallib)
   add_subdirectory(${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR})
 endif()
-
-# Required to tell MSVC to export symbols
-if(MSVC)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
-
 
 add_library(ddg_solver SHARED ${CMAKE_CURRENT_SOURCE_DIR}/src/ddg_solver.cpp)
 target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
