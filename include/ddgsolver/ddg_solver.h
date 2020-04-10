@@ -1,4 +1,6 @@
 
+#pragma once
+
 class ddg_solver
 {
 public:
