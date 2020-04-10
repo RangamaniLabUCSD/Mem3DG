@@ -9,6 +9,10 @@
 #include <iostream>
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
+#include "icosphere.cpp"
+#include "ddgsolver/ddg_solver.h"
+#include "ddgsolver/icosphere.h"
+
 
 using HalfedgeMesh = geometrycentral::surface::HalfedgeMesh;
 using PolygonSoupMesh = geometrycentral::PolygonSoupMesh;
@@ -28,6 +32,13 @@ std::ostream& operator<< (std::ostream& output, const std::vector<T>& v) {
 
 }
 
+/*
+Eigen::Matrix<double, Eigen::Dynamic, 1> Bending_force(Eigen::SparseMatrix<double> L, Eigen::SparseMatrix<double> M_inv){
+
+}
+*/
+
+
 int main() {
 	
 //initialization of the geometry and mesh 
@@ -36,61 +47,40 @@ int main() {
 	std::vector<Vector3> coords;
 	std::vector<std::vector<std::size_t>> polygons; 
 
-	// initialize the vertex coordinate
-	coords.push_back(Vector3{ 0.0f, 0.0f, 2.0f });
-	coords.push_back(Vector3{ 1.788854f, 0.000000f, 0.894427f });
-	coords.push_back(Vector3{ 0.552786f, 1.701302f, 0.894427f });
-	coords.push_back(Vector3{ -1.447214f, 1.051462f, 0.894427f });
-	coords.push_back(Vector3{ -1.447214f, -1.051462f, 0.894427f });
-	coords.push_back(Vector3{ 0.552786f, - 1.701302f, 0.894427f });
-	coords.push_back(Vector3{ 1.447214f, 1.051462f, - 0.894427f});
-	coords.push_back(Vector3{ -0.552786f, 1.701302f, - 0.894427f });
-	coords.push_back(Vector3{ -1.788854f, 0.000000f, - 0.894427f });
-	coords.push_back(Vector3{ -0.552786f, - 1.701302f, - 0.894427f });
-	coords.push_back(Vector3{ 1.447214f, -1.051462f, - 0.894427f });
-	coords.push_back(Vector3{ 0.0f , 0.0f,  - 2.0f });
-	for (Vector3 v : coords) {
-		std::cout << v << std::endl;
-	}
-
-	// initialize the face
-	polygons.push_back(std::vector<std::size_t>{2, 0, 1});
-	polygons.push_back(std::vector<std::size_t>{3, 0, 2	});
-	polygons.push_back(std::vector<std::size_t>{4, 0, 3});
-	polygons.push_back(std::vector<std::size_t>{5, 0, 4	});
-
-	polygons.push_back(std::vector<std::size_t>{1, 0, 5});
-	polygons.push_back(std::vector<std::size_t>{2, 1, 6	});
-	polygons.push_back(std::vector<std::size_t>{7, 2, 6});
-	polygons.push_back(std::vector<std::size_t>{3, 2, 7	});
-		
-	polygons.push_back(std::vector<std::size_t>{8, 3, 7});
-	polygons.push_back(std::vector<std::size_t>{4, 3, 8	});
-	polygons.push_back(std::vector<std::size_t>{9, 4, 8});
-	polygons.push_back(std::vector<std::size_t>{5, 4, 9	});
-
-	polygons.push_back(std::vector<std::size_t>{10, 5, 9});
-	polygons.push_back(std::vector<std::size_t>{6, 1, 10	});
-	polygons.push_back(std::vector<std::size_t>{1, 5, 10});
-	polygons.push_back(std::vector<std::size_t>{6, 11, 7	});
-
-	polygons.push_back(std::vector<std::size_t>{7, 11, 8});
-	polygons.push_back(std::vector<std::size_t>{8, 11, 9	});
-	polygons.push_back(std::vector<std::size_t>{9, 11, 10});
-	polygons.push_back(std::vector<std::size_t>{10, 11, 6	});
-	for (std::vector<std::size_t> f: polygons) {
-		std::cout << f << std::endl;
-	}
+	icosphere(coords, polygons);
 	
 	PolygonSoupMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
+	
 	std::unique_ptr<HalfedgeMesh> mesh;
 	std::unique_ptr<geometrycentral::surface::VertexPositionGeometry> vpg;
 	std::tie(mesh, vpg) = geometrycentral::surface::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
 
-
 	namespace geosurf = geometrycentral::surface;
+
 	geosurf::IntrinsicGeometryInterface& geometry = *vpg;
+
+	// try out some functionality of eigen
+	std::cout << "Eigen version:" << EIGEN_MAJOR_VERSION << "." << std::endl;
+	using namespace Eigen;
+	Matrix3f A;
+	Matrix3d B;
+	
+	Matrix<double, 10, 10> M1;
+	A << 1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f;
+	
+	//std::cout << A << std::endl;
+	std::cout << "B's size " << B.size() << std::endl;
+	std::cout << "B's shape " << B.cols() << "x" << B.rows() << std::endl;
+	
+	for (int j = 0; j < B.rows(); ++j) {
+		for (int i = 0; i < B.cols(); ++i) {
+			B(i, j) = 0.0;
+		}
+	}
+	std::cout << B << std::endl;
 
 	// populate the quantity
 	geometry.requireFaceAreas();
@@ -98,12 +88,15 @@ int main() {
 	geometry.requireVertexGalerkinMassMatrix();
 	geometry.requireVertexGaussianCurvatures();
 
+	// weak(conformal) laplacian operator
 	Eigen::SparseMatrix<double> L = geometry.cotanLaplacian;
 	std::cout << Eigen::MatrixXd(L) << std::endl;
 
-	L = geometry.vertexGalerkinMassMatrix;
+	// Mass matrix (Galerkin approximation)
+	Eigen::SparseMatrix<double> M = geometry.vertexGalerkinMassMatrix;
 	std::cout << Eigen::MatrixXd(L) << std::endl;
 
+	// Gaussian curvature 
 	geosurf::VertexData<double> KG = geometry.vertexGaussianCurvatures;
 	Eigen::Matrix<double, Eigen::Dynamic, 1> v = KG.toVector();
 	std::cout << "Gaussian" << v << std::endl; 
@@ -122,7 +115,6 @@ int main() {
 	}
 
 	// Compute vertex area
-	
 	geosurf::VertexData<double> vertArea(*mesh, 0.);
 	for (geosurf::Vertex v : mesh->vertices()) {
 		for (geosurf::Face f : v.adjacentFaces()) {
@@ -133,12 +125,14 @@ int main() {
 	}
 
 
+	// print properties of mesh
 	size_t a;
 	a = (mesh->nEdges());
 	std::cout << a << std::endl;
 	a = (mesh->nHalfedges());
 	std::cout << a << std::endl;
 
+	// visualization 
 	/*polyscope::init();
 	polyscope::registerSurfaceMesh("myMesh", vpg->inputVertexPositions,mesh->getFaceVertexList());
 	polyscope::show();*/
