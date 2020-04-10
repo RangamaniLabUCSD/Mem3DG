@@ -47,6 +47,22 @@ if(NOT geometrycentrallib_POPULATED)
   add_subdirectory(${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR})
 endif()
 
+##########################
+# GET polyscope
+##########################
+FetchContent_Declare(
+    polyscopelib
+    GIT_REPOSITORY  https://github.com/nmwsharp/polyscope.git
+    SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/polyscope-src"
+    BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/polyscope-build"
+)
+FetchContent_GetProperties(polyscopelib)
+if(NOT polyscopelib_POPULATED)
+  FetchContent_Populate(polyscopelib)
+  add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
+endif()
+
+
 add_library(ddg_solver SHARED ${CMAKE_CURRENT_SOURCE_DIR}/src/ddg_solver.cpp)
 target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -58,3 +74,4 @@ target_include_directories(ddg PUBLIC
 
 target_link_libraries(ddg PRIVATE ddg_solver)
 target_link_libraries(ddg PRIVATE geometry-central)
+target_link_libraries(ddg PRIVATE polyscope)
