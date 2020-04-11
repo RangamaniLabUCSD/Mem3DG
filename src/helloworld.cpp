@@ -9,7 +9,6 @@
 #include <iostream>
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
-#include "icosphere.cpp"
 #include "ddgsolver/ddg_solver.h"
 #include "ddgsolver/icosphere.h"
 
