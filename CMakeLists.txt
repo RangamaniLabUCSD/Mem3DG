@@ -37,7 +37,7 @@ include(FetchContent)
 ##########################
 FetchContent_Declare(
     geometrycentrallib
-    GIT_REPOSITORY  https://github.com/ctlee/geometry-central.git
+    GIT_REPOSITORY  https://github.com/nmwsharp/geometry-central.git
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometry-build"
 )
@@ -71,6 +71,7 @@ set(DDG_SOURCES
 
 add_library(ddg_solver SHARED ${DDG_SOURCES})
 target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(ddg_solver PRIVATE geometry-central)
 
 add_executable(ddg src/helloworld.cpp)
 target_include_directories(ddg PUBLIC
