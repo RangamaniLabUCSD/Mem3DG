@@ -62,6 +62,8 @@ if(NOT polyscopelib_POPULATED)
   add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
 endif()
 
+
+
 set(DDG_SOURCES 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ddg_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/icosphere.cpp
@@ -74,7 +76,7 @@ add_executable(ddg src/helloworld.cpp)
 target_include_directories(ddg PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-        )
+)
 
 target_link_libraries(ddg PRIVATE ddg_solver) # ddg_solver carries it's includes with itself'
 target_link_libraries(ddg PRIVATE geometry-central)
