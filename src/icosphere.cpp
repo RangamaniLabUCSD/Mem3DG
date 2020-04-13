@@ -1,28 +1,49 @@
 #include <iostream>
 #include "ddgsolver/icosphere.h"
 #include "geometrycentral/utilities/vector3.h"
+#include <math.h>
 
 using Vector3 = geometrycentral::Vector3;
 
+size_t getMidPoint(size_t t1, size_t t2, std::vector<Vector3>& coords) {
+	Vector3 p1 = coords[t1];
+	Vector3 p2 = coords[t2];
+	Vector3 pm = (p1 + p2) / 2;
+	pm = pm.normalize();
+	size_t i = coords.size();
+	coords.push_back(pm);
+	return i;
+}
 
-void icosphere(std::vector<Vector3>& coords, std::vector<std::vector<std::size_t>>& polygons) {
+void icosphere(std::vector<Vector3>& coords, std::vector<std::vector<std::size_t>>& polygons, int n) {
 	// initialize the vertex coordinate
-	coords.push_back(Vector3{ 0.0f, 0.0f, 2.0f });
-	coords.push_back(Vector3{ 1.788854f, 0.000000f, 0.894427f });
-	coords.push_back(Vector3{ 0.552786f, 1.701302f, 0.894427f });
-	coords.push_back(Vector3{ -1.447214f, 1.051462f, 0.894427f });
-	coords.push_back(Vector3{ -1.447214f, -1.051462f, 0.894427f });
-	coords.push_back(Vector3{ 0.552786f, -1.701302f, 0.894427f });
-	coords.push_back(Vector3{ 1.447214f, 1.051462f, -0.894427f });
-	coords.push_back(Vector3{ -0.552786f, 1.701302f, -0.894427f });
-	coords.push_back(Vector3{ -1.788854f, 0.000000f, -0.894427f });
-	coords.push_back(Vector3{ -0.552786f, -1.701302f, -0.894427f });
-	coords.push_back(Vector3{ 1.447214f, -1.051462f, -0.894427f });
-	coords.push_back(Vector3{ 0.0f , 0.0f,  -2.0f });
+	double t = (1 + sqrt(5)) / 2;
+
+	coords.push_back(Vector3{ -1, t, 0 });
+	coords.push_back(Vector3{ 1, t, 0 });
+	coords.push_back(Vector3{ -1, -t, 0 });
+	coords.push_back(Vector3{ 1, -t, 0 });
+	coords.push_back(Vector3{ 0, -1, t });
+	coords.push_back(Vector3{ 0, 1, t });
+	coords.push_back(Vector3{ 0, -1, -t });
+	coords.push_back(Vector3{ 0, 1, -t });
+	coords.push_back(Vector3{ t, 0, -1 });
+	coords.push_back(Vector3{ t, 0, 1 });
+	coords.push_back(Vector3{ -t, 0, -1 });
+	coords.push_back(Vector3{ -t, 0, 1 });
+	
+	
+	for (int i = 0; i < coords.size(); ++i) {
+		coords[i] = coords[i].normalize();
+		//std::cout << "normalized" <<  coords[i] << std::endl;
+	}
+	/*
 	for (Vector3 v : coords) {
 		std::cout << v << std::endl;
-		//std::cout << "radius squared" << v[0] * v[0] + v[1] * v[1] + v[2] * v[2] << std::endl;
+		std::cout << "radius squared" << v[0] * v[0] + v[1] * v[1] + v[2] * v[2] << std::endl;
 	}
+	*/
+	
 	/*
 	std::cout << "coords 2 1 is : " << coords[2][1] << std::endl;
 	// if 2,4 it actually goes to 3,1
@@ -30,29 +51,56 @@ void icosphere(std::vector<Vector3>& coords, std::vector<std::vector<std::size_t
 	*/
 
 	// initialize the face
-	polygons.push_back(std::vector<std::size_t>{2, 0, 1});
-	polygons.push_back(std::vector<std::size_t>{3, 0, 2	});
-	polygons.push_back(std::vector<std::size_t>{4, 0, 3});
-	polygons.push_back(std::vector<std::size_t>{5, 0, 4	});
+	polygons.push_back(std::vector<std::size_t>{-1+1,  -1+12, -1 + 6		});
+	polygons.push_back(std::vector<std::size_t>{-1 + 1, -1 + 6, -1 + 2				});
+	polygons.push_back(std::vector<std::size_t>{-1 + 1, -1 + 2, -1 + 8			});
+	polygons.push_back(std::vector<std::size_t>{-1 + 1, -1 + 8, -1 + 11			});
+	polygons.push_back(std::vector<std::size_t>{-1 + 1, -1 + 11, -1 + 12		});
+	polygons.push_back(std::vector<std::size_t>{-1 + 2, -1 + 6, -1 + 10			});
+	polygons.push_back(std::vector<std::size_t>{-1 + 6, -1 + 12, -1 + 5		});
+	polygons.push_back(std::vector<std::size_t>{-1 + 12, -1 + 11, -1 + 3			});
+	polygons.push_back(std::vector<std::size_t>{-1 + 11, -1 + 8, -1 + 7		});
+	polygons.push_back(std::vector<std::size_t>{-1 + 8, -1 + 2, -1 + 9				});
+	polygons.push_back(std::vector<std::size_t>{-1 + 4, -1 + 10, -1 + 5		});
+	polygons.push_back(std::vector<std::size_t>{-1 + 4, -1 + 5, -1 + 3				});
+	polygons.push_back(std::vector<std::size_t>{-1 + 4, -1 + 3, -1 + 7				});
+	polygons.push_back(std::vector<std::size_t>{-1 + 4, -1 + 7, -1 + 9					});
+	polygons.push_back(std::vector<std::size_t>{-1 + 4, -1 + 9, -1 + 10			});
+	polygons.push_back(std::vector<std::size_t>{-1 + 5, -1 + 10, -1 + 6				});
+	polygons.push_back(std::vector<std::size_t>{-1 + 3, -1 + 5, -1 + 12			});
+	polygons.push_back(std::vector<std::size_t>{-1 + 7, -1 + 3, -1 + 11				});
+	polygons.push_back(std::vector<std::size_t>{-1 + 9, -1 + 7, -1 + 8				});
+	polygons.push_back(std::vector<std::size_t>{-1 + 10, -1 + 9, -1 + 2				});
+	
 
-	polygons.push_back(std::vector<std::size_t>{1, 0, 5});
-	polygons.push_back(std::vector<std::size_t>{2, 1, 6	});
-	polygons.push_back(std::vector<std::size_t>{7, 2, 6});
-	polygons.push_back(std::vector<std::size_t>{3, 2, 7	});
 
-	polygons.push_back(std::vector<std::size_t>{8, 3, 7});
-	polygons.push_back(std::vector<std::size_t>{4, 3, 8	});
-	polygons.push_back(std::vector<std::size_t>{9, 4, 8});
-	polygons.push_back(std::vector<std::size_t>{5, 4, 9	});
+	for (size_t iter = 0; iter < n; ++iter) {
+		std::vector<std::vector<std::size_t>> polygons_new;
+		for (size_t f = 0; f < polygons.size(); ++f) {
+			auto triangle = polygons[f];
+			size_t a = getMidPoint(triangle[0], triangle[1], coords);
+			size_t b = getMidPoint(triangle[1], triangle[2], coords);
+			size_t c = getMidPoint(triangle[2], triangle[0], coords);
 
-	polygons.push_back(std::vector<std::size_t>{10, 5, 9});
-	polygons.push_back(std::vector<std::size_t>{6, 1, 10	});
-	polygons.push_back(std::vector<std::size_t>{1, 5, 10});
-	polygons.push_back(std::vector<std::size_t>{6, 11, 7	});
+			std::vector<std::vector<std::size_t>> new_face =
+			{
+				{triangle[0],a,c},
+				{triangle[1],b,a},
+				{triangle[2],c,b},
+				{a,b,c}
+			};
+			
 
-	polygons.push_back(std::vector<std::size_t>{7, 11, 8});
-	polygons.push_back(std::vector<std::size_t>{8, 11, 9	});
-	polygons.push_back(std::vector<std::size_t>{9, 11, 10});
-	polygons.push_back(std::vector<std::size_t>{10, 11, 6	});
+			for (size_t i = 4 * f; i < 4 * f + 4; ++i) {
+				polygons_new.push_back(new_face[i - (4*f)]);
+			}
+			
+		}
+		polygons = polygons_new;
+	}
+
+	
+
 
 }
+
