@@ -11,6 +11,7 @@
 #include "polyscope/surface_mesh.h"
 #include "ddgsolver/ddg_solver.h"
 #include "ddgsolver/icosphere.h"
+#include "ddgsolver/force.h"
 
 
 using HalfedgeMesh = geometrycentral::surface::HalfedgeMesh;
@@ -31,11 +32,6 @@ std::ostream& operator<< (std::ostream& output, const std::vector<T>& v) {
 
 }
 
-/*
-Eigen::Matrix<double, Eigen::Dynamic, 1> Bending_force(Eigen::SparseMatrix<double> L, Eigen::SparseMatrix<double> M_inv){
-
-}
-*/
 
 
 int main() {
@@ -46,7 +42,7 @@ int main() {
 	std::vector<Vector3> coords;
 	std::vector<std::vector<std::size_t>> polygons; 
 
-	icosphere(coords, polygons);
+	icosphere(coords, polygons,2);
 	
 	PolygonSoupMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
@@ -55,6 +51,8 @@ int main() {
 	std::unique_ptr<geometrycentral::surface::VertexPositionGeometry> vpg;
 	std::tie(mesh, vpg) = geometrycentral::surface::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
 
+	Eigen::Matrix<double, Eigen::Dynamic, 3> hello = bending_force(mesh,vpg,1.0,0);
+	std::cout << "bending force" << std::endl << hello << std::endl;
 	namespace geosurf = geometrycentral::surface;
 
 	geosurf::IntrinsicGeometryInterface& geometry = *vpg;
@@ -79,7 +77,7 @@ int main() {
 			B(i, j) = 0.0;
 		}
 	}
-	std::cout << B << std::endl;
+	//std::cout << B << std::endl;
 
 	// populate the quantity
 	geometry.requireFaceAreas();
@@ -89,16 +87,16 @@ int main() {
 
 	// weak(conformal) laplacian operator
 	Eigen::SparseMatrix<double> L = geometry.cotanLaplacian;
-	std::cout << Eigen::MatrixXd(L) << std::endl;
+	//std::cout << Eigen::MatrixXd(L) << std::endl;
 
 	// Mass matrix (Galerkin approximation)
 	Eigen::SparseMatrix<double> M = geometry.vertexGalerkinMassMatrix;
-	std::cout << Eigen::MatrixXd(L) << std::endl;
+	//std::cout << Eigen::MatrixXd(L) << std::endl;
 
 	// Gaussian curvature 
 	geosurf::VertexData<double> KG = geometry.vertexGaussianCurvatures;
 	Eigen::Matrix<double, Eigen::Dynamic, 1> v = KG.toVector();
-	std::cout << "Gaussian" << v << std::endl; 
+	//std::cout << "Gaussian" << v << std::endl; 
 
 
 	for (geosurf::Face f : mesh->faces()) {
@@ -120,22 +118,23 @@ int main() {
 			vertArea[v] += geometry.faceAreas[f] / f.degree();
 		}
 		//std::cout << "degree =" << f.degree() << std::endl;
-		std::cout << vertArea[v] << std::endl;
+		//std::cout << vertArea[v] << std::endl;
 	}
 
-
+	/*
 	// print properties of mesh
 	size_t a;
 	a = (mesh->nEdges());
 	std::cout << a << std::endl;
 	a = (mesh->nHalfedges());
 	std::cout << a << std::endl;
-
+	*/
 	// visualization 
-	/*polyscope::init();
+	/*
+	polyscope::init();
 	polyscope::registerSurfaceMesh("myMesh", vpg->inputVertexPositions,mesh->getFaceVertexList());
-	polyscope::show();*/
-	
+	polyscope::show();
+	*/
 
 	return 0;
 
