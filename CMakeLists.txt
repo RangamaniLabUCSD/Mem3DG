@@ -64,7 +64,7 @@ endif()
 
 
 
-set(DDG_SOURCES 
+set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ddg_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/icosphere.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/force.cpp
@@ -74,7 +74,7 @@ add_library(ddg_solver SHARED ${DDG_SOURCES})
 target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ddg_solver PRIVATE geometry-central)
 
-add_executable(ddg src/helloworld.cpp)
+add_executable(ddg src/main.cpp)
 target_include_directories(ddg PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
