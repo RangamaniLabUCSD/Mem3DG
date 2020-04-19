@@ -30,10 +30,10 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> bending_force(std::unique_ptr<HalfedgeM
 	Eigen::SparseMatrix<double> M = geometry.vertexGalerkinMassMatrix;
 	//std::cout << "mass" << Eigen::MatrixXd(M).inverse() << std::endl;
 
-	// Gaussian curvature 
+	// Gaussian curvature
 	geosurf::VertexData<double> gaussian = geometry.vertexGaussianCurvatures;
 	Eigen::Matrix<double, Eigen::Dynamic, 1> KG = gaussian.toVector();
-	//std::cout << "Gaussian" << KG << std::endl; 
+	//std::cout << "Gaussian" << KG << std::endl;
 
     //std::cout << "force cpp, KG size:  " << KG.size() << std::endl;
     std::vector<std::vector<std::size_t>> face_list = mesh->getFaceVertexList();
@@ -53,7 +53,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> bending_force(std::unique_ptr<HalfedgeM
     }
     //std::cout << MatrixXd(M).inverse() << std::endl;
     Matrix<double, 162, 3> Hn = MatrixXd(M).inverse() * MatrixXd(L) * vl/2;
-    Matrix<double, 162, 1> H; 
+    Matrix<double, 162, 1> H;
     for (int row = 0; row < n_vertices; ++row) {
         H(row) = Hn.row(row).norm();
     }
@@ -61,17 +61,17 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> bending_force(std::unique_ptr<HalfedgeM
     for (size_t row = 0; row < n_vertices; ++row) {
         n.row(row) = Hn.row(row) / H(row);
     }
-    
+
     //std::cout << n << std::endl;
-    
+
     Matrix<double, 162, 1> lap_H = MatrixXd(M).inverse() * MatrixXd(L) * H;
     //std::cout << (H - MatrixXd::Constant(162, 1, H0)).array() * square(H.array()) << std::endl;
     Matrix<double, 162, 1> f_mag = M * (-2 * Kb * (2 * ((H - MatrixXd::Constant(162,1,H0)).array() * square(H.array())).matrix() + H0 * H - KG) + lap_H);
-    Matrix<double, 162, 3> f; 
+    Matrix<double, 162, 3> f;
     for (size_t row = 0; row < n_vertices; ++row) {
         f.row(row) = f_mag(row) * n.row(row);
     }
-    
+
     return f;
 
 }
