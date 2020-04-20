@@ -48,8 +48,8 @@ int main() {
 	std::unique_ptr<gcs::VertexPositionGeometry> vpg;
 	std::tie(mesh, vpg) = gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
 
-	Eigen::Matrix<double, Eigen::Dynamic, 3> hello = bending_force(mesh,vpg,1.0,0);
-	std::cout << "bending force" << std::endl << hello << std::endl;
+	/*Eigen::Matrix<double, Eigen::Dynamic, 3>& bf = bending_force(mesh,vpg,1.0,0);
+	std::cout << "bending force" << std::endl << bf << std::endl;*/
 
 	gcs::IntrinsicGeometryInterface& geometry = *vpg;
 
@@ -82,6 +82,7 @@ int main() {
 	geometry.requireVertexGaussianCurvatures();
 
 	// weak(conformal) laplacian operator
+	// pass by reference to avoid copying 
 	Eigen::SparseMatrix<double>& L = geometry.cotanLaplacian;
 	//std::cout << Eigen::MatrixXd(L) << std::endl;
 
@@ -144,45 +145,50 @@ int main() {
 
 
 	/// CAN WE AVOID THE COPY?
+	// .rawdata() is the function that we added to access the protected member "data" 
+	// vector of vector3 
 	std::vector<gc::Vector3, Eigen::aligned_allocator<gc::Vector3>>& foo = vpg->inputVertexPositions.rawdata();
+	for (int i = 0; i < foo.size(); ++i) {
+		std::cout << "Foooo[" << i << "]: " << foo[i] << std::endl;
 
+	}
+	
 	// [x,y,z;x,y,z;x,y,z;]
 
-
-
+	// .data() returns a pointer to the first element in the array used internally by the vector.
 	gc::Vector3* d = vpg->inputVertexPositions.rawdata().data();
 
 	Eigen::Map<Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1>> evec3(d, foo.size());
+	
 
-	Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> evecdouble(reinterpret_cast<double*>(d), foo.size()*3);
-
-
+	Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1 >> evecdouble(reinterpret_cast<double*>(d), foo.size()*3);
+	
 	for (int i = 0; i < foo.size(); ++i){
 		std::cout << "Foo[" << i << "]: " << foo[i] << std::endl;
 
 
 		std::cout << "evecdouble: " << evecdouble(3*i) << ", " << evecdouble(3*i+1) << ", " << evecdouble(3*i+2) << std::endl;
 	}
-	// std::cout << evec3 << std::endl;
-	// std::cout << evecdouble << std::endl;
+	 //std::cout << evec3 << std::endl;
+	 //std::cout << evecdouble << std::endl;
 
-	// int i = 0;
-	// for(auto& v : foo){
-	// 	// std::cout << v << std::endl;
-	// 	v[0] *= 5;
-	// 	v[1] *= 1;
-	// 	v[2] *= 1;
+	 int i = 0;
+	 for(auto& v : foo){
+	 	 std::cout << v << std::endl;
+	 	v[0] *= 5;
+	 	v[1] *= 1;
+	 	v[2] *= 1;
 
-	// 	std::cout << "bfr: " << v << std::endl;
-	// 	std::cout << "cmp: " << vpg->inputVertexPositions[i] << std::endl;
-	// 	++i;
-	// }
+	 	std::cout << "bfr: " << v << std::endl;
+	 	std::cout << "cmp: " << vpg->inputVertexPositions[i] << std::endl;
+	 	++i;
+	 }
 
-	// polyscope::init();
-	// polyscope::registerSurfaceMesh("myMesh",
-	// 							   vpg->inputVertexPositions,
-	// 							   mesh->getFaceVertexList());
-	// polyscope::show();
+	 /*polyscope::init();
+	 polyscope::registerSurfaceMesh("myMesh",
+	 							   vpg->inputVertexPositions,
+	 							   mesh->getFaceVertexList());
+	 polyscope::show();*/
 
 	return 0;
 }
