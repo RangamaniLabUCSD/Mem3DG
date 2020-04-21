@@ -39,7 +39,7 @@ int main() {
 	std::vector<gc::Vector3> coords;
 	std::vector<std::vector<std::size_t>> polygons;
 
-	icosphere(coords, polygons, 3);
+	icosphere(coords, polygons, 1);
 
 	gc::PolygonSoupMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
@@ -55,6 +55,7 @@ int main() {
 	//std::unique_ptr<force> ptrf(ptrmesh, ptrvpg);
 	Eigen::Matrix<double, Eigen::Dynamic, 3> bf = f.bending_force(1.0, 0);
 	std::cout << "bending force" << std::endl << bf << std::endl;
+	std::cout << "no of vertices" << bf.rows() << std::endl;
 	for (std::size_t i = 0; i < bf.rows(); ++i) {
 		std::cout << "force mag" <<  bf.row(i).norm() << std::endl;
 	}
