@@ -32,8 +32,6 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> force::bending_force(double Kb, double 
     // Gaussian curvature
     gcs::VertexData<double>& gaussian = vpg.vertexGaussianCurvatures;
     Eigen::Matrix<double, Eigen::Dynamic, 1> KG = gaussian.toVector();
-    //std::cout << "Gaussian" << KG << std::endl;
-
     ////std::cout << "force cpp, KG size:  " << KG.size() << std::endl;
     //std::vector<std::vector<std::size_t>>& face_list = mesh->getFaceVertexList();
     //gcs::VertexData<Vector3> vertex_list = vpg->inputVertexPositions;
@@ -65,13 +63,12 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> force::bending_force(double Kb, double 
 
     for (int row = 0; row < n_vertices; ++row) {
         H(row) = Hn.row(row).norm();
-        std::cout << "curvature" << H(row) << std::endl;
         n.row(row) = Hn.row(row) / H(row);
     }
 
     Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * H;
-    //std::cout << (H - MatrixXd::Constant(n_vertices, 1, H0)).array() * square(H.array()) << std::endl;
-    auto f_mag = M * (-2 * Kb * (2 * ((H - Eigen::MatrixXd::Constant(n_vertices, 1, H0)).array() * square(H.array())).matrix() + H0 * H - KG) + lap_H);
+    auto f_mag = M * (-2 * Kb * (2 * (H.array() - Eigen::ArrayXd::Constant(n_vertices, 1, H0))
+        * (square(H.array()) + H0 * H.array() - (M_inv * KG).array()) + lap_H.array()).matrix());
     Eigen::Matrix<double, Eigen::Dynamic, 3> f;
     f.resize(n_vertices, 3);
 
