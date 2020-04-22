@@ -21,6 +21,7 @@ public:
     Eigen::SparseMatrix<double> L;
 
     gcs::FaceData<double> face_area_init;
+    double total_face_area_init = 0.0;
 
     Force(gcs::HalfedgeMesh& mesh_, gcs::VertexPositionGeometry& vpg_): mesh(mesh_), vpg(vpg_) {
         // find the mass matrix 
@@ -38,7 +39,11 @@ public:
         L = vpg.cotanLaplacian;
         // find the initial faceArea 
         vpg.requireFaceAreas();
-        gcs::FaceData<double> face_area_init = vpg.faceAreas;
+        face_area_init = vpg.faceAreas;
+        for (gcs::Face f : mesh.faces()) {
+            total_face_area_init += face_area_init[f];
+        }
+
     }
 
     ~Force(){vpg.unrequireVertexGalerkinMassMatrix();}

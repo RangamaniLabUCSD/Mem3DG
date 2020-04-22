@@ -43,7 +43,7 @@ int main() {
 	std::vector<gc::Vector3> coords;
 	std::vector<std::vector<std::size_t>> polygons;
 
-	icosphere(coords, polygons, 3);
+	icosphere(coords, polygons, 1);
 
 	gc::PolygonSoupMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
@@ -58,7 +58,7 @@ int main() {
     auto pos = mapVecToEigen<double, 3>(vpg.inputVertexPositions.rawdata());
 
 	// initiate force object f
-	force f(*ptrmesh, *ptrvpg);
+	Force f(*ptrmesh, *ptrvpg);
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
 	// calculate the bending force 
@@ -67,6 +67,7 @@ int main() {
 
 	// calculate the stretching force
 	Eigen::Matrix<double, Eigen::Dynamic, 3> sf = f.stretching_force(1.0, 1.0);
+	std::cout << "stretchihng force" << sf << std::endl;
 
     std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
 
