@@ -29,7 +29,7 @@ gc::Vector3 vec_from_halfedge(gcs::Halfedge& he, gcs::VertexPositionGeometry& vp
 	return vec;
 }
 
-Eigen::Matrix<double, Eigen::Dynamic, 3> force::stretching_force(double Ksl, double Ksg) {
+Eigen::Matrix<double, Eigen::Dynamic, 3> Force::stretching_force(double Ksl, double Ksg) {
 	vpg.requireFaceNormals();
 	gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
 	log(face_n, mesh,"face normal");
@@ -42,7 +42,19 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> force::stretching_force(double Ksl, dou
 	gcs::VertexData<size_t>& v_ind = vpg.vertexIndices;
 
 	Eigen::Matrix<double, Eigen::Dynamic, 3> force;
-	force.resize(mesh.nVertices(),3);
+	force.setZero(mesh.nVertices(),3);
+
+	Eigen::Matrix<double, Eigen::Dynamic, 3> local_force;
+	local_force.setZero(mesh.nVertices(), 3);
+
+	Eigen::Matrix<double, Eigen::Dynamic, 3> global_force;
+	global_force.setZero(mesh.nVertices(), 3);
+
+	double total_area = 0.0;
+
+	for (gcs::Face f : mesh.faces()) {
+		total_area += face_a[f];
+	}
 
 	for (gcs::Vertex v : mesh.vertices()) {
 		
@@ -55,12 +67,18 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> force::stretching_force(double Ksl, dou
 			std::cout << "gradient" << gradient << std::endl;
 			//auto force_v = force.row(v_ind[v]);
 			//Eigen::Map<Eigen::Matrix<double, 1, 3>> force_v (&gradient.x, 3);
-			force.row(v_ind[v]) << gradient.x, gradient.y, gradient.z;
+			for (size_t i = 0; i < 3; i++) {
+				local_force(v_ind[v], i) += gradient[i] * (2 * (face_a[base_he.face()] - face_area_init[base_he.face()]) / face_area_init[base_he.face()]);
+			}	
+			for (size_t i = 0; i < 3; i++) {
+				global_force(v_ind[v], i) += gradient[i];
+			}
+			//force.row(v_ind[v]) << gradient.x, gradient.y, gradient.z;
 		}
 	}
-
-	std::cout << "force" << force << std::endl;
-
-
+	local_force *= Ksl;
+	global_force *= -2 * Ksg * (total_area - total_face_area_init) / total_area;
+	force = local_force + global_force;
+	//std::cout << "force" << force << std::endl;
 	return force;
 }

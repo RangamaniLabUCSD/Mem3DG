@@ -50,7 +50,6 @@ endif()
 
 set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/icosphere.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stretching_force.cpp
 )
