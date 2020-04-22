@@ -10,7 +10,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 
-class force{
+class Force{
 public:
     gcs::HalfedgeMesh& mesh;
     gcs::VertexPositionGeometry& vpg;
@@ -18,7 +18,7 @@ public:
     Eigen::SparseMatrix<double> M;
     Eigen::SparseMatrix<double> M_inv;
 
-    force(gcs::HalfedgeMesh& mesh_, gcs::VertexPositionGeometry& vpg_): mesh(mesh_), vpg(vpg_) {
+    Force(gcs::HalfedgeMesh& mesh_, gcs::VertexPositionGeometry& vpg_): mesh(mesh_), vpg(vpg_) {
         vpg.requireVertexGalerkinMassMatrix();
         M = vpg.vertexGalerkinMassMatrix;
 
@@ -29,6 +29,8 @@ public:
         I.setIdentity();
         M_inv = solver.solve(I);
     }
+
+    ~Force(){vpg.unrequireVertexGalerkinMassMatrix();}
 
     Eigen::Matrix<double, Eigen::Dynamic, 3> bending_force(double Kb, double H0);
 

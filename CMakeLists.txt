@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.11)
 
 # Disable in source builds
+# Note that this is an undocumented option which may not do anything
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+
 # Add path to custom modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
@@ -13,7 +15,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Initialize output directory locations
-# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tar)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
@@ -22,14 +23,13 @@ if(MSVC)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-# Check if casc is being used directly or via add_subdirectory
+# Check if DDG is being used directly or via add_subdirectory
 set(DDG_MASTER_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(DDG_MASTER_PROJECT ON)
 endif()
 
-find_package(Git REQUIRED)
-
+# find_package(Git REQUIRED)
 include(FetchContent)
 
 ##########################
@@ -37,7 +37,8 @@ include(FetchContent)
 ##########################
 FetchContent_Declare(
     geometrycentrallib
-    GIT_REPOSITORY  https://github.com/nmwsharp/geometry-central.git
+    GIT_REPOSITORY  https://github.com/ctlee/geometry-central.git
+    GIT_TAG         origin/data_access
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometry-build"
 )
@@ -46,6 +47,26 @@ if(NOT geometrycentrallib_POPULATED)
   FetchContent_Populate(geometrycentrallib)
   add_subdirectory(${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR})
 endif()
+
+set(DDG_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/icosphere.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/force.cpp
+)
+
+add_library(ddg_solver SHARED ${DDG_SOURCES})
+target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(ddg_solver PUBLIC geometry-central)
+
+##########################
+# Main DDG target
+##########################
+add_executable(ddg tests/main.cpp)
+target_include_directories(ddg PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+target_link_libraries(ddg PRIVATE ddg_solver) # ddg_solver carries it's includes with itself'
 
 ##########################
 # GET polyscope
@@ -62,24 +83,7 @@ if(NOT polyscopelib_POPULATED)
   add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
 endif()
 
-
-
-set(DDG_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ddg_solver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/icosphere.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/force.cpp
-)
-
-add_library(ddg_solver SHARED ${DDG_SOURCES})
-target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(ddg_solver PRIVATE geometry-central)
-
-add_executable(ddg src/main.cpp)
-target_include_directories(ddg PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-
-target_link_libraries(ddg PRIVATE ddg_solver) # ddg_solver carries it's includes with itself'
-target_link_libraries(ddg PRIVATE geometry-central)
 target_link_libraries(ddg PRIVATE polyscope)
+
+enable_testing()
+add_subdirectory(tests)
