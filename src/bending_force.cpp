@@ -17,12 +17,12 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> force::bending_force(double Kb, double 
 
     //gcs::IntrinsicGeometryInterface& geometry = vpg;
 
-    vpg.requireCotanLaplacian();
+    //vpg.requireCotanLaplacian();
     //vpg.requireVertexGalerkinMassMatrix();
     vpg.requireVertexGaussianCurvatures();
 
     // weak(conformal) laplacian operator
-    Eigen::SparseMatrix<double>& L = vpg.cotanLaplacian;
+    //Eigen::SparseMatrix<double>& L = vpg.cotanLaplacian;
     //std::cout << Eigen::MatrixXd(L) << std::endl;
 
     // Mass matrix (Galerkin approximation)
@@ -32,22 +32,6 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> force::bending_force(double Kb, double 
     // Gaussian curvature
     gcs::VertexData<double>& gaussian = vpg.vertexGaussianCurvatures;
     Eigen::Matrix<double, Eigen::Dynamic, 1> KG = gaussian.toVector();
-    ////std::cout << "force cpp, KG size:  " << KG.size() << std::endl;
-    //std::vector<std::vector<std::size_t>>& face_list = mesh->getFaceVertexList();
-    //gcs::VertexData<Vector3> vertex_list = vpg->inputVertexPositions;
-    //size_t n_vertices = (mesh->nVertices());
-    ////std::cout << "no vertices" << std::endl;
-
-    //Eigen::Matrix<double, Eigen::Dynamic, 3> vl;
-    //vl.resize(n_vertices,3)
-    ////std::cout << "1,2,: "<< vertex_list[5][2] << std::endl;
-
-    //for (int col = 0; col < 3; ++col) {
-    //    for (int row = 0; row < vertex_list.size(); ++row) {
-    //        //std::cout << "1,2,: " << vertex_list[5][2] << std::endl;
-    //        vl(row,col) = vertex_list[row][col];
-    //    }
-    //}
 
     size_t n_vertices = (mesh.nVertices());
     gc::Vector3* d = vpg.inputVertexPositions.rawdata().data();
@@ -69,6 +53,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> force::bending_force(double Kb, double 
     Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * H;
     auto f_mag = M * (-2 * Kb * (2 * (H.array() - Eigen::ArrayXd::Constant(n_vertices, 1, H0))
         * (square(H.array()) + H0 * H.array() - (M_inv * KG).array()) + lap_H.array()).matrix());
+    //std::cout << "force Magnitude" << f_mag << std::endl;
     Eigen::Matrix<double, Eigen::Dynamic, 3> f;
     f.resize(n_vertices, 3);
 
