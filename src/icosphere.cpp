@@ -6,8 +6,8 @@
 using Vector3 = geometrycentral::Vector3;
 
 size_t getMidPoint(size_t t1, size_t t2, std::vector<Vector3>& coords) {
-	Vector3 p1 = coords[t1];
-	Vector3 p2 = coords[t2];
+	Vector3& p1 = coords[t1];
+	Vector3& p2 = coords[t2];
 	Vector3 pm = (p1 + p2) / 2;
 	pm = pm.normalize();
 	size_t i = coords.size();
