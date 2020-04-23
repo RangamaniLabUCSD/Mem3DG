@@ -32,11 +32,11 @@ gc::Vector3 vec_from_halfedge(gcs::Halfedge& he, gcs::VertexPositionGeometry& vp
 Eigen::Matrix<double, Eigen::Dynamic, 3> Force::stretching_force(double Ksl, double Ksg) {
 	vpg.requireFaceNormals();
 	gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
-	log(face_n, mesh,"face normal");
+	//log(face_n, mesh,"face normal");
 
 	vpg.requireFaceAreas();
 	gcs::FaceData<double>& face_a = vpg.faceAreas;
-	log(face_a, mesh, "faceArea");
+	//log(face_a, mesh, "faceArea");
 
 	vpg.requireVertexIndices();
 	gcs::VertexData<size_t>& v_ind = vpg.vertexIndices;
@@ -64,7 +64,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> Force::stretching_force(double Ksl, dou
 			//std::cout << "base vector" << base_vec << std::endl;
 			gc::Vector3 gradient = gc::cross(base_vec, face_n[he.face()]);
 			assert((gc::dot(gradient, vec_from_halfedge(he, vpg))) < 0);
-			std::cout << "gradient" << gradient << std::endl;
+			//std::cout << "gradient" << gradient << std::endl;
 			//auto force_v = force.row(v_ind[v]);
 			//Eigen::Map<Eigen::Matrix<double, 1, 3>> force_v (&gradient.x, 3);
 			for (size_t i = 0; i < 3; i++) {
