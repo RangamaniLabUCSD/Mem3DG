@@ -67,7 +67,11 @@ int main() {
 
 	// calculate the stretching force
 	Eigen::Matrix<double, Eigen::Dynamic, 3> sf = f.stretching_force(1.0, 1.0);
-	std::cout << "stretchihng force" << sf << std::endl;
+	//std::cout << "stretchihng force" << sf << std::endl;
+
+	// calculate the stretching force
+	Eigen::Matrix<double, Eigen::Dynamic, 3> pf = f.pressure_force(1.0,0.7);
+	//std::cout << "pressure force" << pf << std::endl;
 
     std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
 
