@@ -62,16 +62,17 @@ int main() {
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
 	// calculate the bending force 
-	Eigen::Matrix<double, Eigen::Dynamic, 3> bf = f.bending_force(1.0, 0);
+	f.bending_force(1.0, 0);
+	std::cout << "bending force" << f.bf << std::endl;
 	//gcs::IntrinsicGeometryInterface& geometry = *ptrvpg;
 
 	// calculate the stretching force
-	Eigen::Matrix<double, Eigen::Dynamic, 3> sf = f.stretching_force(1.0, 1.0);
-	//std::cout << "stretchihng force" << sf << std::endl;
+	f.stretching_force(1.0, 1.0);
+	std::cout << "stretchihng force" << f.sf << std::endl;
 
 	// calculate the stretching force
-	Eigen::Matrix<double, Eigen::Dynamic, 3> pf = f.pressure_force(1.0,0.7);
-	//std::cout << "pressure force" << pf << std::endl;
+	f.pressure_force(1.0,0.7);
+	std::cout << "pressure force" << f.pf << std::endl;
 
     std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
 

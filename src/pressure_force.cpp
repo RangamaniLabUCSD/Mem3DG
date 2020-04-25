@@ -33,7 +33,7 @@ double Force::signed_volume_from_face(gcs::Face& f, gcs::VertexPositionGeometry&
 }
 
 
-Eigen::Matrix<double, Eigen::Dynamic, 3> Force::pressure_force(double Kv, double Vt) {
+void Force::pressure_force(double Kv, double Vt) {
 	//gc::Vector3 origin { 0.0,0.0,0.0 };
 	
 	vpg.requireVertexIndices();
@@ -52,8 +52,6 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> Force::pressure_force(double Kv, double
 		}
 	}
 	//std::cout << "total volume" << total_volume << std::endl;
-	Eigen::Matrix<double, Eigen::Dynamic, 3> force;
-	force.setZero(mesh.nVertices(), 3);
 
 	for (gcs::Vertex v : mesh.vertices()) {
 		for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -65,13 +63,12 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> Force::pressure_force(double Kv, double
 			//std::cout << "i am here" << (gc::dot(dVdx, vpg.inputVertexPositions[v] - p1) < 0) <<  std::endl;
 			dVdx *= sign_of_volume[he.face()];
 			for (size_t i = 0; i < 3; i++) {
-				force(v_ind[v], i) += dVdx[i];
+				pf(v_ind[v], i) += dVdx[i];
 			}
 			//force.row(v_ind[v]) << dVdx.x, dVdx.y, dVdx.z;
 		}
 	}
 	
-	force *= -0.5 * Kv * (total_volume - volume_init * Vt) / (volume_init * Vt);
+	pf *= -0.5 * Kv * (total_volume - volume_init * Vt) / (volume_init * Vt);
 
-	return force;
 }
