@@ -29,7 +29,7 @@ gc::Vector3 vec_from_halfedge(gcs::Halfedge& he, gcs::VertexPositionGeometry& vp
 	return vec;
 }
 
-Eigen::Matrix<double, Eigen::Dynamic, 3> Force::stretching_force(double Ksl, double Ksg) {
+void Force::stretching_force(double Ksl, double Ksg) {
 	vpg.requireFaceNormals();
 	gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
 	//log(face_n, mesh,"face normal");
@@ -40,10 +40,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> Force::stretching_force(double Ksl, dou
 
 	vpg.requireVertexIndices();
 	gcs::VertexData<size_t>& v_ind = vpg.vertexIndices;
-
-	Eigen::Matrix<double, Eigen::Dynamic, 3> force;
-	force.setZero(mesh.nVertices(),3);
-
+	
 	Eigen::Matrix<double, Eigen::Dynamic, 3> local_force;
 	local_force.setZero(mesh.nVertices(), 3);
 
@@ -78,7 +75,6 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> Force::stretching_force(double Ksl, dou
 	}
 	local_force *= Ksl;
 	global_force *= -2 * Ksg * (total_area - total_face_area_init) / total_area;
-	force = local_force + global_force;
+	sf = local_force + global_force;
 	//std::cout << "force" << force << std::endl;
-	return force;
 }

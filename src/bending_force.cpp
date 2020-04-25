@@ -2,23 +2,20 @@
 
 #include <iostream>
 #include <math.h>
-
 #include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include "geometrycentral/numerical/linear_solvers.h"
-
 #include <Eigen/Core>
-
 #include "ddgsolver/force.h"
 
 
 namespace gc  = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-Eigen::Matrix<double, Eigen::Dynamic, 3> Force::bending_force(double Kb, double H0) {
+void Force::bending_force(double Kb, double H0) {
 
     //vpg.requireCotanLaplacian();
     //vpg.requireVertexGalerkinMassMatrix();
@@ -57,14 +54,11 @@ Eigen::Matrix<double, Eigen::Dynamic, 3> Force::bending_force(double Kb, double 
     auto f_mag = M * (-2 * Kb * (2 * (H.array() - Eigen::ArrayXd::Constant(n_vertices, 1, H0))
         * (square(H.array()) + H0 * H.array() - (M_inv * KG).array()) + lap_H.array()).matrix());
     //std::cout << "force Magnitude" << f_mag << std::endl;
-    Eigen::Matrix<double, Eigen::Dynamic, 3> f;
-    f.resize(n_vertices, 3);
 
     for (size_t row = 0; row < mesh.nVertices(); ++row) {
-        f.row(row) = f_mag(row) * n.row(row);
+        bf.row(row) = f_mag(row) * n.row(row);
     }
 
     vpg.unrequireCotanLaplacian();
     vpg.unrequireVertexGaussianCurvatures();
-    return f;
 }

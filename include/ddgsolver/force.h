@@ -15,6 +15,12 @@ public:
     gcs::HalfedgeMesh& mesh;
     gcs::VertexPositionGeometry& vpg;
 
+    Eigen::Matrix<double, Eigen::Dynamic, 3> bf;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> sf;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> pf;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> df;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> xf;
+
     Eigen::SparseMatrix<double> M;
     Eigen::SparseMatrix<double> M_inv;
 
@@ -26,6 +32,13 @@ public:
     double volume_init;
 
     Force(gcs::HalfedgeMesh& mesh_, gcs::VertexPositionGeometry& vpg_): mesh(mesh_), vpg(vpg_) {
+        //initialize force matrix
+        bf.setZero(mesh.nVertices(), 3);
+        sf.setZero(mesh.nVertices(), 3);
+        pf.setZero(mesh.nVertices(), 3);
+        df.setZero(mesh.nVertices(), 3);
+        sf.setZero(mesh.nVertices(), 3);
+
         // find the mass matrix 
         vpg.requireVertexGalerkinMassMatrix();
         M = vpg.vertexGalerkinMassMatrix;
@@ -62,13 +75,10 @@ public:
         vpg.unrequireCotanLaplacian();
     }
     
-    Eigen::Matrix<double, Eigen::Dynamic, 3> bending_force(double Kb, double H0);
-
-    Eigen::Matrix<double, Eigen::Dynamic, 3> bending_force(double Kb, Eigen::Matrix<double, Eigen::Dynamic, 1> H0);
-
-    Eigen::Matrix<double, Eigen::Dynamic, 3> stretching_force(double Ksl, double Ksg);
-
-    Eigen::Matrix<double, Eigen::Dynamic, 3> pressure_force(double Kv, double Vt);
+    void bending_force(double Kb, double H0);
+    void bending_force(double Kb, Eigen::Matrix<double, Eigen::Dynamic, 1> H0);
+    void stretching_force(double Ksl, double Ksg);
+    void pressure_force(double Kv, double Vt);
 
     double signed_volume_from_face(gcs::Face& f, gcs::VertexPositionGeometry& vpg);
 };
