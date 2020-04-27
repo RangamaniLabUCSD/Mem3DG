@@ -22,7 +22,7 @@ void log(gcs::FaceData<T> face_a, gcs::HalfedgeMesh& mesh, std::string name) {
 	}
 }
 
-gc::Vector3 vec_from_halfedge(gcs::Halfedge& he, gcs::VertexPositionGeometry& vpg) {
+gc::Vector3 Force::vec_from_halfedge(gcs::Halfedge& he, gcs::VertexPositionGeometry& vpg) {
 	gcs::Halfedge he_next = he.next();
 	gc::Vector3 vec = vpg.inputVertexPositions[he_next.vertex()]
 		- vpg.inputVertexPositions[he.vertex()];
@@ -30,15 +30,12 @@ gc::Vector3 vec_from_halfedge(gcs::Halfedge& he, gcs::VertexPositionGeometry& vp
 }
 
 void Force::stretching_force(double Ksl, double Ksg) {
-	vpg.requireFaceNormals();
-	gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
+    const gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
 	//log(face_n, mesh,"face normal");
 
-	vpg.requireFaceAreas();
-	gcs::FaceData<double>& face_a = vpg.faceAreas;
+	const gcs::FaceData<double>& face_a = vpg.faceAreas;
 	//log(face_a, mesh, "faceArea");
 
-	vpg.requireVertexIndices();
 	gcs::VertexData<size_t>& v_ind = vpg.vertexIndices;
 	
 	Eigen::Matrix<double, Eigen::Dynamic, 3> local_force;
@@ -65,6 +62,8 @@ void Force::stretching_force(double Ksl, double Ksg) {
 			//auto force_v = force.row(v_ind[v]);
 			//Eigen::Map<Eigen::Matrix<double, 1, 3>> force_v (&gradient.x, 3);
 			for (size_t i = 0; i < 3; i++) {
+				//std::cout << face_a[base_he.face()] << " " << face_area_init[base_he.face()] << std::endl;
+
 				local_force(v_ind[v], i) += gradient[i] * (2 * (face_a[base_he.face()] - face_area_init[base_he.face()]) / face_area_init[base_he.face()]);
 			}	
 			for (size_t i = 0; i < 3; i++) {

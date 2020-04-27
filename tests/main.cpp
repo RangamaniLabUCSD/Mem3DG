@@ -57,8 +57,9 @@ int main() {
 
     auto pos = mapVecToEigen<double, 3>(vpg.inputVertexPositions.rawdata());
 
+	double h = 0.01;
 	// initiate force object f
-	Force f(*ptrmesh, *ptrvpg);
+	Force f(*ptrmesh, *ptrvpg,h);
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
 	// calculate the bending force 
@@ -73,6 +74,12 @@ int main() {
 	// calculate the stretching force
 	f.pressure_force(1.0,0.7);
 	std::cout << "pressure force" << f.pf << std::endl;
+
+	f.damping_force(1.0);
+	std::cout << "damping force" << f.df << std::endl;
+
+	f.stochastic_force(1.0);
+	std::cout << "stochastic force" << f.xf << std::endl;
 
     std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
 

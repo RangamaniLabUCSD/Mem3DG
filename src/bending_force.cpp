@@ -19,7 +19,7 @@ void Force::bending_force(double Kb, double H0) {
 
     //vpg.requireCotanLaplacian();
     //vpg.requireVertexGalerkinMassMatrix();
-    vpg.requireVertexGaussianCurvatures();
+    //vpg.requireVertexGaussianCurvatures();
 
     // weak(conformal) laplacian operator
     //Eigen::SparseMatrix<double>& L = vpg.cotanLaplacian;
@@ -59,6 +59,6 @@ void Force::bending_force(double Kb, double H0) {
         bf.row(row) = f_mag(row) * n.row(row);
     }
 
-    vpg.unrequireCotanLaplacian();
-    vpg.unrequireVertexGaussianCurvatures();
+    //vpg.unrequireCotanLaplacian();
+    //vpg.unrequireVertexGaussianCurvatures();
 }
