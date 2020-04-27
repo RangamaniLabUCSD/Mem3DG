@@ -53,11 +53,16 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stretching_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pressure_force.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/damping_force.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/stochastic_force.cpp
+
+
 )
 
 add_library(ddg_solver SHARED ${DDG_SOURCES})
 target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ddg_solver PUBLIC geometry-central)
+
 
 ##########################
 # Main DDG target
@@ -65,6 +70,7 @@ target_link_libraries(ddg_solver PUBLIC geometry-central)
 add_executable(ddg tests/main.cpp)
 target_include_directories(ddg PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            ${CMAKE_CURRENT_SOURCE_DIR}/library/pcg
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 

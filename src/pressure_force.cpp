@@ -35,8 +35,7 @@ double Force::signed_volume_from_face(gcs::Face& f, gcs::VertexPositionGeometry&
 
 void Force::pressure_force(double Kv, double Vt) {
 	//gc::Vector3 origin { 0.0,0.0,0.0 };
-	
-	vpg.requireVertexIndices();
+
 	gcs::VertexData<size_t>& v_ind = vpg.vertexIndices;
 	double total_volume = 0;
 	double face_volume;
@@ -70,5 +69,4 @@ void Force::pressure_force(double Kv, double Vt) {
 	}
 	
 	pf *= -0.5 * Kv * (total_volume - volume_init * Vt) / (volume_init * Vt);
-
 }
