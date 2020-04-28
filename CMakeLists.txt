@@ -48,6 +48,16 @@ if(NOT geometrycentrallib_POPULATED)
   add_subdirectory(${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR})
 endif()
 
+##########################
+# BUNDLED LIBRARIES
+##########################
+add_subdirectory(libraries)
+
+##########################
+# DDG SOLVER LIBRARY
+##########################
+# add_subdirectory(include) # Get file sources
+
 set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/icosphere.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_force.cpp
@@ -55,13 +65,11 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pressure_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/damping_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stochastic_force.cpp
-
-
 )
 
-add_library(ddg_solver SHARED ${DDG_SOURCES})
+add_library(ddg_solver SHARED ${DDG_SOURCES} ${DDG_HEADERS})
 target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(ddg_solver PUBLIC geometry-central)
+target_link_libraries(ddg_solver PUBLIC geometry-central pcg::pcg)
 
 
 ##########################

@@ -62,11 +62,11 @@ void Force::pressure_force(double Kv, double Vt) {
 			//std::cout << "i am here" << (gc::dot(dVdx, vpg.inputVertexPositions[v] - p1) < 0) <<  std::endl;
 			dVdx *= sign_of_volume[he.face()];
 			for (size_t i = 0; i < 3; i++) {
-				pf(v_ind[v], i) += dVdx[i];
+				pressureForces(v_ind[v], i) += dVdx[i];
 			}
 			//force.row(v_ind[v]) << dVdx.x, dVdx.y, dVdx.z;
 		}
 	}
 	
-	pf *= -0.5 * Kv * (total_volume - volume_init * Vt) / (volume_init * Vt);
+	pressureForces *= -0.5 * Kv * (total_volume - targetVolume * Vt) / (targetVolume * Vt);
 }

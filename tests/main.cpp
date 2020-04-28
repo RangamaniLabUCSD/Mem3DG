@@ -63,23 +63,23 @@ int main() {
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
 	// calculate the bending force 
-	f.bending_force(1.0, 0);
-	std::cout << "bending force" << f.bf << std::endl;
+	f.bendingForces(1.0, 0);
+	std::cout << "bending force" << f.bendingForces << std::endl;
 	//gcs::IntrinsicGeometryInterface& geometry = *ptrvpg;
 
 	// calculate the stretching force
-	f.stretching_force(1.0, 1.0);
-	std::cout << "stretchihng force" << f.sf << std::endl;
+	f.stretchingForces(1.0, 1.0);
+	std::cout << "stretching force" << f.stretchingForces << std::endl;
 
 	// calculate the stretching force
-	f.pressure_force(1.0,0.7);
-	std::cout << "pressure force" << f.pf << std::endl;
+	f.pressure_force(1.0, 0.7);
+	std::cout << "pressure force" << f.pressureForces << std::endl;
 
 	f.damping_force(1.0);
-	std::cout << "damping force" << f.df << std::endl;
+	std::cout << "damping force" << f.dampingForces << std::endl;
 
 	f.stochastic_force(1.0);
-	std::cout << "stochastic force" << f.xf << std::endl;
+	std::cout << "stochastic force" << f.stochasticForces << std::endl;
 
     std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
 
