@@ -12,6 +12,7 @@
 #include <Eigen/SparseLU>
 
 #include <pcg_random.hpp>
+#include <random>
 
 #include "util.h"
 
@@ -53,6 +54,7 @@ public:
 
   /// Random numer engine
   pcg32 rng;
+  std::normal_distribution<double> normal_dist;
 
   // DEMO VertexData which is not from a mesh dependent quantity.
   gcs::VertexData<gc::Vector3> values;
@@ -196,4 +198,6 @@ public:
    *
    */
   void update_Vertex_positions() { vpg.refreshQuantities(); }
+
+  void pcg_test();
 };
