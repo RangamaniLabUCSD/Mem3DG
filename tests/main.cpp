@@ -1,6 +1,6 @@
 
 #include <iostream>
-
+#include <math.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/polygon_soup_mesh.h>
 #include <geometrycentral/utilities/vector3.h>
@@ -8,10 +8,8 @@
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
-
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
-
 #include "ddgsolver/icosphere.h"
 #include "ddgsolver/force.h"
 #include "ddgsolver/typetraits.h"
@@ -54,99 +52,89 @@ int main() {
 
 	auto& mesh = *ptrmesh;
 	auto& vpg  = *ptrvpg;
-
-    auto pos = mapVecToEigen<double, 3>(vpg.inputVertexPositions.rawdata());
+	
+	//auto pos = mapVecToEigen<double, 3>(vpg.inputVertexPositions.rawdata());
+	//std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
+	/*for (std::size_t i = 0; i < mesh.nVertices(); ++i) {
+		std::cout << vpg.inputVertexPositions[i] << std::endl;
+		std::cout << "<" << pos(3 * i) << ", " << pos(3 * i + 1) << ", " << pos(3 * i + 2) << ">" << std::endl;
+		assert(vpg.inputVertexPositions[i][0] == pos(3 * i));
+		assert(vpg.inputVertexPositions[i][1] == pos(3 * i + 1));
+		assert(vpg.inputVertexPositions[i][2] == pos(3 * i + 2));
+	}*/
+	
+	double Kb = 0.01;
+	double H0 = 0;
+	double Ksl = 3;
+	double Ksg = 6;
+	double Kv = 1;
+	double gamma = 1;
+	double Vt = 0.7;
+	double kt = 0.0001;
 
 	double h = 0.01;
+	double T = 1;
+
+	double sigma = sqrt(2 * gamma * kt / h);
 	// initiate force object f
 	Force f(*ptrmesh, *ptrvpg,h);
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
-	f.getBendingForces(1.0, 0);
-	f.getStretchingForces(1.0, 1.0);
-	f.getPressureForces(1.0, 0.7);
-	f.getDampingForces(1.0);
-	f.getStochasticForces(1.0);
+	polyscope::init();
+	for (size_t i = 0; i < T / h; i++) {
+		polyscope::registerSurfaceMesh("myMesh",
+			ptrvpg->inputVertexPositions,
+			ptrmesh->getFaceVertexList());
+		//polyscope::show();
+		f.getBendingForces(Kb, H0);
+		f.getStretchingForces(Ksl, Ksg);
+		f.getPressureForces(Kv, Vt);
+		f.getDampingForces(gamma);
+		f.getStochasticForces(sigma);
 
-	for (gcs::Vertex v : mesh.vertices()) {
-		std::cout << "bending force" << f.bendingForces[v] << std::endl;
-		std::cout << "stretching force" << f.stretchingForces[v] << std::endl;
-		std::cout << "pressure force" << f.pressureForces[v] << std::endl;
-		std::cout << "damping force" << f.dampingForces[v] << std::endl;
-		std::cout << "stochastic force" << f.stochasticForces[v] << std::endl;
+		if (i == 33) { polyscope::show(); }
+		for (gcs::Vertex v : mesh.vertices()) {
+			std::cout << "i: " << i << std::endl;
+			std::cout << "v: " << v << std::endl;
+			/*std::cout << "bending force" << i << f.bendingForces[v] << std::endl;
+			std::cout << "stretching force" << f.stretchingForces[v] << std::endl;
+			std::cout << "damping force" << f.dampingForces[v] << std::endl;
+			std::cout << "pressure force" << f.pressureForces[v] << std::endl;
+			std::cout << "stochastic force" << f.stochasticForces[v] << std::endl;*/
+		}
+			
+
+		gcs::VertexData<Vector3> temp = vpg.inputVertexPositions;
+		for (gcs::Vertex v : mesh.vertices()) {
+			vpg.inputVertexPositions[v] *= 2;
+			vpg.inputVertexPositions[v] += (f.bendingForces[v]
+				+ f.stretchingForces[v]
+				+ f.pressureForces[v]
+				+ f.dampingForces[v]
+				+ f.stochasticForces[v]) * h * h - f.pastPositions[v];
+		}
+		f.pastPositions = temp;
 	}
 
-    std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
 
-    for (std::size_t i = 0; i < mesh.nVertices(); ++i){
-    	std::cout << vpg.inputVertexPositions[i] << std::endl;
-    	std::cout << "<" << pos(3*i) << ", " << pos(3*i + 1) << ", " << pos(3*i + 2) << ">" << std::endl;
+	//f.getBendingForces(Kb, H0);
+	//f.getStretchingForces(Ksl, Ksg);
+	//f.getPressureForces(Kv, Vt);
+	//f.getDampingForces(gamma);
+	//f.getStochasticForces(sigma);
+	//for (gcs::Vertex v : mesh.vertices()) {
+	//	//std::cout << "bending force" << f.bendingForces[v] << std::endl;
+	//	std::cout << "stretching force" << f.stretchingForces[v] << std::endl;
+	//	//std::cout << "pressure force" << f.pressureForces[v] << std::endl;
+	//	//std::cout << "damping force" << f.dampingForces[v] << std::endl;
+	//	//std::cout << "stochastic force" << f.stochasticForces[v] << std::endl;
+	//}
 
-    	assert(vpg.inputVertexPositions[i][0] == pos(3*i));
-    	assert(vpg.inputVertexPositions[i][1] == pos(3*i+1));
-    	assert(vpg.inputVertexPositions[i][2] == pos(3*i+2));
-    }
-
-    // Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> positions(reinterpret_cast<double*>(d), 3, n_vertices);
-
-	// Force f(*ptrmesh, *ptrvpg);
 
 	// std::cout << "Sizeof Force: " << sizeof(Force) << std::endl;
 
-	// //std::unique_ptr<force> ptrf(ptrmesh, ptrvpg);
-	// Eigen::Matrix<double, Eigen::Dynamic, 3> bf = f.bending_force(1.0, 0);
-	// std::cout << "bending force" << std::endl << bf << std::endl;
-	// for (std::size_t i = 0; i < bf.rows(); ++i) {
-	// 	std::cout << "force mag" <<  bf.row(i).norm() << std::endl;
-	// }
-
-	// gcs::IntrinsicGeometryInterface& geometry = *ptrvpg;
-
-	// for (gcs::Face f : ptrmesh->faces()) {
-
-	// 	// Managed array holding quantity
-	// 	double area = geometry.faceAreas[f];
-
-	// 	// Immediate computation, computes directly from
-	// 	// input data without touching caches.
-	// 	// Generally discouraged but occasionally useful.
-	// 	area = ptrvpg->faceArea(f);
-	// 	//std::cout << area << std::endl;
-	// }
-
-	// // Compute vertex area
-	// gcs::VertexData<double> vertArea(*ptrmesh, 0.);
-	// for (gcs::Vertex v : ptrmesh->vertices()) {
-	// 	for (gcs::Face f : v.adjacentFaces()) {
-	// 		vertArea[v] += geometry.faceAreas[f] / f.degree();
-	// 	}
-	// 	//std::cout << "degree =" << f.degree() << std::endl;
-	// 	//std::cout << vertArea[v] << std::endl;
-	// }
 
 
-	// polyscope::init();
-	// polyscope::registerSurfaceMesh("myMesh",
-	// 							   ptrvpg->inputVertexPositions,
-	//  							   ptrmesh->getFaceVertexList());
-	// polyscope::show();
-
-	Eigen::Matrix<double, 3, 3> foo;
-	foo << 1, 2, 3,
-  		   4, 5, 6,
-           7, 8, 9;
-
-    std::cout << foo << std::endl;
-
-    foo.row(1) << 11, 12, 13;
-
-    std::cout << foo << std::endl;
-
-    auto tmp = foo.row(1);
-    std::cout << "decltype(tmp) is " << type_name<decltype(tmp)>() << '\n';
-
-    tmp << 14, 15, 16;
-    std::cout << foo << std::endl;
 
 	return 0;
 }
