@@ -40,12 +40,10 @@ int main() {
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
 
-  icosphere(coords, polygons, 5);
+  icosphere(coords, polygons, 2);
 
   gc::PolygonSoupMesh soup(polygons, coords);
   soup.mergeIdenticalVertices();
-
-  // std::cout << soup.polygons << std::endl;
 
   std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
@@ -55,31 +53,22 @@ int main() {
   auto &mesh = *ptrmesh;
   auto &vpg = *ptrvpg;
   double h = 0.01;
+  // initiate force object f
+  Force f(mesh, vpg, h);
 
-  // // initiate force object f
-  // Force f(mesh, vpg, h);
+  f.getBendingForces(1.0, 0);
+  f.getStretchingForces(1.0, 1.0);
+  f.getPressureForces(1.0, 0.7);
+  f.getDampingForces(1.0);
+  f.getStochasticForces(1.0);
 
-  // // f.pcg_test();
-
-  // std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
-
-  // // calculate the bending force
-  // f.bendingForces(1.0, 0);
-  // std::cout << "bending force" << f.bendingForces << std::endl;
-
-  // // calculate the stretching force
-  // f.stretchingForces(1.0, 1.0);
-  // std::cout << "stretching force" << f.stretchingForces << std::endl;
-
-  // // calculate the stretching force
-  // f.pressure_force(1.0, 0.7);
-  // std::cout << "pressure force" << f.pressureForces << std::endl;
-
-  // f.damping_force(1.0);
-  // std::cout << "damping force" << f.dampingForces << std::endl;
-
-  // f.stochastic_force(1.0);
-  // std::cout << "stochastic force" << f.stochasticForces << std::endl;
+  for (gcs::Vertex v : mesh.vertices()) {
+    std::cout << "bending force" << f.bendingForces[v] << std::endl;
+    std::cout << "stretching force" << f.stretchingForces[v] << std::endl;
+    std::cout << "pressure force" << f.pressureForces[v] << std::endl;
+    std::cout << "damping force" << f.dampingForces[v] << std::endl;
+    std::cout << "stochastic force" << f.stochasticForces[v] << std::endl;
+  }
 
   polyscope::init();
   polyscope::registerSurfaceMesh("myMesh", ptrvpg->inputVertexPositions,
