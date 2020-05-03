@@ -11,10 +11,8 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::damping_force(double gamma)
+void Force::getDampingForces(double gamma)
 {
-  gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;
-
   // Compute approximate vertex positions
   // TODO: this can be computed on vertex position update and cached to prevent
   // the sequential loop.
@@ -33,11 +31,7 @@ void Force::damping_force(double gamma)
       gc::Vector3 posi_diff_unit =
           (vpg.inputVertexPositions[v] - vpg.inputVertexPositions[v_adj])
               .normalize();
-      for (size_t i = 0; i < 3; i++)
-      {
-        dampingForces(v_ind[v], i) +=
-            (gc::dot(velo_diff, posi_diff_unit) * posi_diff_unit)[i];
-      }
+      dampingForces[v] += (gc::dot(velo_diff, posi_diff_unit) * posi_diff_unit);
     }
   }
 }
