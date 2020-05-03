@@ -33,7 +33,7 @@ void Force::getBendingForces(double Kb, double H0) {
   d = bendingForces.rawdata().data();
   Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>>
   bendingForces_e_temp(reinterpret_cast<double*>(d), 3, n_vertices);
-  auto bendingForces_e = bendingForces_e_temp.transpose();
+  auto& bendingForces_e = bendingForces_e_temp.transpose();
 
   // std::cout << "evecdouble" << evecdouble.cols() << std::endl;
   Eigen::Matrix<double, Eigen::Dynamic, 3> Hn = M_inv * L * positions.transpose() / 2;
@@ -60,4 +60,5 @@ void Force::getBendingForces(double Kb, double H0) {
   for (size_t row = 0; row < mesh.nVertices(); ++row) {
     bendingForces_e.row(row) = f_mag(row) * n.row(row);
   }
+  //std::cout << "bending here" << bendingForces_e << std::endl;
 }

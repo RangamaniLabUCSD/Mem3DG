@@ -51,12 +51,12 @@ void Force::getStretchingForces(double Ksl, double Ksg) {
 
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
       gcs::Halfedge base_he = he.next();
-      gc::Vector3 base_vec = -vecFromHalfedge(base_he, vpg);
+      gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
       // std::cout << "base vector" << base_vec << std::endl;
-      gc::Vector3 gradient = gc::cross(base_vec, face_n[he.face()]);
+      gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
       assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
       // std::cout << "gradient" << gradient << std::endl;
-      // auto force_v = force.row(v_ind[v]);
+      // auto force_v = force.row(v_ind[v]);xxx
       // Eigen::Map<Eigen::Matrix<double, 1, 3>> force_v (&gradient.x, 3);
       localForce += -2 * Ksl * gradient
             * (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) 
@@ -67,6 +67,5 @@ void Force::getStretchingForces(double Ksl, double Ksg) {
       // force.row(v_ind[v]) << gradient.x, gradient.y, gradient.z;
     }
   }
-  
-  // std::cout << "force" << force << std::endl;
+
 }
