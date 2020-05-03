@@ -14,7 +14,7 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-double Force::signed_volume_from_face(gcs::Face& f, gcs::VertexPositionGeometry& vpg) {
+double Force::signedVolumeFromFace(gcs::Face& f, gcs::VertexPositionGeometry& vpg) {
 	
 	gc::Vector3 p[3];
 	size_t i = 0;
@@ -33,15 +33,13 @@ double Force::signed_volume_from_face(gcs::Face& f, gcs::VertexPositionGeometry&
 }
 
 
-void Force::pressure_force(double Kv, double Vt) {
+void Force::getPressureForces(double Kv, double Vt) {
 	//gc::Vector3 origin { 0.0,0.0,0.0 };
-
-	gcs::VertexData<size_t>& v_ind = vpg.vertexIndices;
 	double total_volume = 0;
 	double face_volume;
 	gcs::FaceData<int> sign_of_volume(mesh);
 	for (gcs::Face f : mesh.faces()) {
-		face_volume = signed_volume_from_face(f, vpg);
+		face_volume = signedVolumeFromFace(f, vpg);
 		total_volume += face_volume;
 		if (face_volume < 0) {
 			sign_of_volume[f] = -1;
@@ -61,12 +59,11 @@ void Force::pressure_force(double Kv, double Vt) {
 			assert(gc::dot(dVdx, vpg.inputVertexPositions[v] - p1) > 0);
 			//std::cout << "i am here" << (gc::dot(dVdx, vpg.inputVertexPositions[v] - p1) < 0) <<  std::endl;
 			dVdx *= sign_of_volume[he.face()];
-			for (size_t i = 0; i < 3; i++) {
-				pressureForces(v_ind[v], i) += dVdx[i];
-			}
+			pressureForces[v] = -0.5 *Kv * (total_volume - targetVolume * Vt) / (targetVolume * Vt) * dVdx;
+			//for (size_t i = 0; i < 3; i++) {
+			//	pressureForces(v_ind[v], i) += dVdx[i];
+			//}
 			//force.row(v_ind[v]) << dVdx.x, dVdx.y, dVdx.z;
 		}
 	}
-	
-	pressureForces *= -0.5 * Kv * (total_volume - targetVolume * Vt) / (targetVolume * Vt);
 }

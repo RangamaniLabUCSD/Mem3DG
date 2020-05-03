@@ -18,9 +18,7 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::stochastic_force(double sigma) {
-  gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;
-
+void Force::getStochasticForces(double sigma) {
   gcs::EdgeData<double> random_var(mesh);
   std::default_random_engine random_generator;
   std::normal_distribution<double> normal_dist(0, sigma);
@@ -30,11 +28,8 @@ void Force::stochastic_force(double sigma) {
   }
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      gc::Vector3 posi_diff_unit = vec_from_halfedge(he, vpg).normalize();
-      for (size_t i = 0; i < 3; i++) {
-        stochasticForces(v_ind[v], i) +=
-            (random_var[he.edge()] * posi_diff_unit)[i];
-      }
+      gc::Vector3 posi_diff_unit = vecFromHalfedge(he, vpg).normalize();
+      stochasticForces[v] = random_var[he.edge()] * posi_diff_unit;
     }
   }
 }
