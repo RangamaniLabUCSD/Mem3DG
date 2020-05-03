@@ -12,6 +12,7 @@
 #include <Eigen/SparseLU>
 
 #include <pcg_random.hpp>
+#include <random>
 
 #include "util.h"
 
@@ -59,6 +60,7 @@ public:
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Random numer engine
   pcg32 rng;
+  std::normal_distribution<double> normal_dist;
 
 
 
@@ -202,4 +204,6 @@ public:
    *
    */
   void update_Vertex_positions() { vpg.refreshQuantities(); }
+
+  void pcg_test();
 };

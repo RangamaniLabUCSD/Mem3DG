@@ -1,37 +1,36 @@
 
 #include <iostream>
-#include <math.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/polygon_soup_mesh.h>
-#include <geometrycentral/utilities/vector3.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
+
 #include <geometrycentral/surface/halfedge_factories.h>
-#include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
+#include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/polygon_soup_mesh.h>
+#include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/utilities/vector3.h>
+
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
-#include "ddgsolver/icosphere.h"
+
 #include "ddgsolver/force.h"
+#include "ddgsolver/icosphere.h"
 #include "ddgsolver/typetraits.h"
 #include "ddgsolver/util.h"
 
-
-namespace gc  = ::geometrycentral;
+namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 // overload << to print vector;
-template<typename T>
-std::ostream& operator<< (std::ostream& output, const std::vector<T>& v) {
-	output << "[";
-	for (size_t i = 0; i != v.size() - 1; ++i) {
-		output << v[i] << ",";
-	}
-	output << v[v.size()-1];
-	output  << "]";
-	return output;
-
+template <typename T>
+std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
+  output << "[";
+  for (size_t i = 0; i != v.size() - 1; ++i) {
+    output << v[i] << ",";
+  }
+  output << v[v.size() - 1];
+  output << "]";
+  return output;
 }
-
 
 int main() {
 
@@ -48,7 +47,8 @@ int main() {
 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
 	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
-	std::tie(ptrmesh, ptrvpg) = gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
+	std::tie(ptrmesh, ptrvpg) = 
+		gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
 
 	auto& mesh = *ptrmesh;
 	auto& vpg  = *ptrvpg;
@@ -77,7 +77,7 @@ int main() {
 
 	double sigma = sqrt(2 * gamma * kt / h);
 	// initiate force object f
-	Force f(*ptrmesh, *ptrvpg,h);
+	Force f(mesh,vpg,h);
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
 	polyscope::init();
@@ -138,5 +138,3 @@ int main() {
 
 	return 0;
 }
-
-
