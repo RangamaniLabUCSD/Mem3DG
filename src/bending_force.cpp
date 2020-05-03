@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 #include <geometrycentral/numerical/linear_solvers.h>
 #include <geometrycentral/surface/halfedge_mesh.h>

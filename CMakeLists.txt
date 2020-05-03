@@ -39,6 +39,7 @@ FetchContent_Declare(
     geometrycentrallib
     GIT_REPOSITORY  https://github.com/ctlee/geometry-central.git
     GIT_TAG         origin/data_access
+    GIT_SHALLOW     TRUE
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometry-build"
 )
@@ -90,6 +91,7 @@ target_link_libraries(ddg PRIVATE ddg_solver) # ddg_solver carries it's includes
 FetchContent_Declare(
     polyscopelib
     GIT_REPOSITORY  https://github.com/nmwsharp/polyscope.git
+    GIT_SHALLOW     TRUE
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/polyscope-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/polyscope-build"
 )
