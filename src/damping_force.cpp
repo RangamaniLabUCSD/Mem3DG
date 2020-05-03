@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
@@ -17,16 +17,13 @@ void Force::getDampingForces(double gamma)
   // TODO: this can be computed on vertex position update and cached to prevent
   // the sequential loop.
   gcs::VertexData<gc::Vector3> velocity(mesh);
-  for (gcs::Vertex v : mesh.vertices())
-  {
+  for (gcs::Vertex v : mesh.vertices()) {
     velocity[v] = (vpg.inputVertexPositions[v] - pastPositions[v]) / timestep;
     // std::cout << "I am here" << pastPositions[v] << std::endl;
   }
 
-  for (gcs::Vertex v : mesh.vertices())
-  {
-    for (gcs::Vertex v_adj : v.adjacentVertices())
-    {
+  for (gcs::Vertex v : mesh.vertices()) {
+    for (gcs::Vertex v_adj : v.adjacentVertices()) {
       gc::Vector3 velo_diff = velocity[v] - velocity[v_adj];
       gc::Vector3 posi_diff_unit =
           (vpg.inputVertexPositions[v] - vpg.inputVertexPositions[v_adj])

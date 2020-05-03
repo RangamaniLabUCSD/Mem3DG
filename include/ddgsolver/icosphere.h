@@ -4,6 +4,8 @@
 
 #include "geometrycentral/utilities/vector3.h"
 
-using Vector3 = geometrycentral::Vector3;
+namespace gc = ::geometrycentral;
+// namespace gcs = ::geometrycentral::surface;
 
-void icosphere(std::vector<Vector3> &coords, std::vector<std::vector<std::size_t>> &polygons, int n);
+void icosphere(std::vector<gc::Vector3> &coords,
+               std::vector<std::vector<std::size_t>> &polygons, int n);
