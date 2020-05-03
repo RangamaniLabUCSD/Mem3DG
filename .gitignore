@@ -142,3 +142,4 @@ dmypy.json
 
 CMakeSettings.json
 docs/html/
+.polyscope.ini

@@ -27,7 +27,7 @@ public:
   gcs::VertexPositionGeometry &vpg;
   /// Numerical timestep
   double timestep;
-  /// Cached bending forces
+ /* /// Cached bending forces
   Eigen::Matrix<double, Eigen::Dynamic, 3> bendingForces;
   /// Cached stretching forces
   Eigen::Matrix<double, Eigen::Dynamic, 3> stretchingForces;
@@ -36,7 +36,14 @@ public:
   /// Cached damping forces
   Eigen::Matrix<double, Eigen::Dynamic, 3> dampingForces;
   /// Cached stochastic forces
-  Eigen::Matrix<double, Eigen::Dynamic, 3> stochasticForces;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> stochasticForces;*/
+  // DEMO VertexData which is not from a mesh dependent quantity.
+  gcs::VertexData<gc::Vector3> bendingForces;
+  gcs::VertexData<gc::Vector3> stretchingForces;
+  gcs::VertexData<gc::Vector3> pressureForces;
+  gcs::VertexData<gc::Vector3> dampingForces;
+  gcs::VertexData<gc::Vector3> stochasticForces;
+
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
   /// Inverted galerkin mass matrix
@@ -51,13 +58,11 @@ public:
   double targetVolume;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
-
   /// Random numer engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
 
-  // DEMO VertexData which is not from a mesh dependent quantity.
-  gcs::VertexData<gc::Vector3> values;
+
 
   /**
    * @brief Construct a new Force object
@@ -69,11 +74,12 @@ public:
   Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         double time_step_)
       : mesh(mesh_), vpg(vpg_), timestep(time_step_),
-        bendingForces(mesh_.nVertices(), 3),
-        stretchingForces(mesh_.nVertices(), 3),
-        pressureForces(mesh_.nVertices(), 3),
-        dampingForces(mesh_.nVertices(), 3),
-        stochasticForces(mesh_.nVertices(), 3), values(mesh_, {1, 2, 3}) {
+        bendingForces(mesh_, { 0, 0, 0 }),
+        stretchingForces(mesh_, { 0, 0, 0 }),
+        dampingForces(mesh_, { 0, 0, 0 }),
+        pressureForces(mesh_, { 0, 0, 0 }),
+        stochasticForces(mesh_, { 0, 0, 0 }) {
+     
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
     rng = pcg32(seed_source);
@@ -83,7 +89,7 @@ public:
     vpg.requireVertexGalerkinMassMatrix();
     vpg.requireCotanLaplacian();
     vpg.requireFaceAreas();
-    vpg.requireVertexIndices();
+    //vpg.requireVertexIndices();
     vpg.requireVertexGaussianCurvatures();
 
     // Initialize the mass matrix
@@ -107,7 +113,7 @@ public:
 
     // Initialize initial volume
     for (gcs::Face f : mesh.faces()) {
-      targetVolume += signed_volume_from_face(f, vpg);
+      targetVolume += signedVolumeFromFace(f, vpg);
     }
 
     // Initialize the vertex position of the last iteration
@@ -136,7 +142,7 @@ public:
    * @param Kb
    * @param H0
    */
-  void bending_force(double Kb, double H0);
+  void getBendingForces(double Kb, double H0);
   // void bending_force(double Kb, Eigen::Matrix<double, Eigen::Dynamic, 1>
   // H0);
 
@@ -146,7 +152,7 @@ public:
    * @param Ksl
    * @param Ksg
    */
-  void stretching_force(double Ksl, double Ksg);
+  void getStretchingForces(double Ksl, double Ksg);
 
   /**
    * @brief Compute forces from pressure
@@ -154,21 +160,21 @@ public:
    * @param Kv
    * @param Vt
    */
-  void pressure_force(double Kv, double Vt);
+  void getPressureForces(double Kv, double Vt);
 
   /**
    * @brief Compute forces from damping
    *
    * @param gamma
    */
-  void damping_force(double gamma);
+  void getDampingForces(double gamma);
 
   /**
    * @brief Compute forces from random noise
    *
    * @param sigma
    */
-  void stochastic_force(double sigma);
+  void getStochasticForces(double sigma);
 
   /**
    * @brief Get volume from a face
@@ -177,7 +183,7 @@ public:
    * @param vpg
    * @return double
    */
-  double signed_volume_from_face(gcs::Face &f,
+  double signedVolumeFromFace(gcs::Face &f,
                                  gcs::VertexPositionGeometry &vpg);
 
   /**
@@ -187,7 +193,7 @@ public:
    * @param vpg
    * @return gc::Vector3
    */
-  inline gc::Vector3 vec_from_halfedge(gcs::Halfedge &he,
+  inline gc::Vector3 vecFromHalfedge(gcs::Halfedge &he,
                                        gcs::VertexPositionGeometry &vpg) {
     return vpg.inputVertexPositions[he.next().vertex()] -
            vpg.inputVertexPositions[he.vertex()];
