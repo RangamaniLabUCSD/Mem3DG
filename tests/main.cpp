@@ -40,7 +40,7 @@ int main() {
 	std::vector<gc::Vector3> coords;
 	std::vector<std::vector<std::size_t>> polygons;
 
-	icosphere(coords, polygons, 1);
+	ddgsolver::icosphere(coords, polygons, 1);
 
 	gc::PolygonSoupMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
@@ -77,7 +77,7 @@ int main() {
 
 	double sigma = sqrt(2 * gamma * kt / h);
 	// initiate force object f
-	Force f(mesh,vpg,h);
+	ddgsolver::Force f(mesh,vpg,h);
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
 	polyscope::init();

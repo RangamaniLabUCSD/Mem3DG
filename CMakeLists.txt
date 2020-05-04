@@ -41,7 +41,7 @@ FetchContent_Declare(
     GIT_TAG         origin/data_access
     GIT_SHALLOW     TRUE
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
-    BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometry-build"
+    BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-build"
 )
 FetchContent_GetProperties(geometrycentrallib)
 if(NOT geometrycentrallib_POPULATED)
@@ -57,7 +57,7 @@ add_subdirectory(libraries)
 ##########################
 # DDG SOLVER LIBRARY
 ##########################
-# add_subdirectory(include) # Get file sources
+add_subdirectory(include) # Get file sources
 
 set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/icosphere.cpp
@@ -77,13 +77,7 @@ target_link_libraries(ddg_solver PUBLIC geometry-central pcg::pcg)
 # Main DDG target
 ##########################
 add_executable(ddg tests/main.cpp)
-target_include_directories(ddg PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            ${CMAKE_CURRENT_SOURCE_DIR}/library/pcg
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-
-target_link_libraries(ddg PRIVATE ddg_solver) # ddg_solver carries it's includes with itself'
+target_link_libraries(ddg PRIVATE ddg_solver)
 
 ##########################
 # GET polyscope
