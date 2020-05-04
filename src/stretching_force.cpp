@@ -25,7 +25,8 @@ void log(gcs::FaceData<T> face_a, gcs::HalfedgeMesh &mesh, std::string name) {
   }
 }
 
-void Force::getStretchingForces(double Ksl, double Ksg) {
+void Force::getStretchingForces(double &Ksl, double &Ksg) {
+  stretchingForces.fill({ 0.0,0.0,0.0 });
   const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
   // log(face_n, mesh,"face normal");
 
@@ -64,9 +65,10 @@ void Force::getStretchingForces(double Ksl, double Ksg) {
                     targetFaceAreas[base_he.face()];
       globalForce +=
           -2 * Ksg * gradient * (total_area - targetSurfaceArea) / total_area;
-      stretchingForces[v] = localForce + globalForce;
+      
       // force.row(v_ind[v]) << gradient.x, gradient.y, gradient.z;
     }
+    stretchingForces[v] = localForce + globalForce;
   }
 
   // std::cout << "force" << force << std::endl;

@@ -18,7 +18,8 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getBendingForces(double Kb, double H0) {
+void Force::getBendingForces(double &Kb, double &H0) {
+  bendingForces.fill({ 0,0,0 });
   // Gaussian curvature
   auto KG = vpg.vertexGaussianCurvatures.toMappedVector();
   // std::cout << "Gaussian" << KG << std::endl;
