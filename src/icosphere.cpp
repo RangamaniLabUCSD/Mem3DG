@@ -1,7 +1,13 @@
-#include "ddgsolver/icosphere.h"
-#include "geometrycentral/utilities/vector3.h"
+
+#include <cassert>
 #include <cmath>
 #include <iostream>
+
+#include <geometrycentral/utilities/vector3.h>
+
+#include "ddgsolver/icosphere.h"
+
+namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 
@@ -60,11 +66,11 @@ void icosphere(std::vector<gc::Vector3> &coords,
   };
 
   // Preallocate space
-  std::size_t finalsize = polygons.size()* std::pow(4, n);
+  std::size_t finalsize = polygons.size() * std::pow(4, n);
   std::vector<std::vector<std::size_t>> polygons_new;
   polygons_new.reserve(finalsize);
   polygons.reserve(finalsize);
-  
+
   // Subdivide n times by quadrisection
   for (std::size_t iter = 0; iter < n; ++iter) {
     std::size_t sz = polygons.size();
@@ -82,3 +88,4 @@ void icosphere(std::vector<gc::Vector3> &coords,
     std::swap(polygons, polygons_new);
   }
 }
+} // end namespace ddgsolver
