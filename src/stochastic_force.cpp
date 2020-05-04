@@ -22,7 +22,8 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getStochasticForces(double sigma) {
+void Force::getStochasticForces(double &sigma) {
+  stochasticForces.fill({ 0,0,0 });
   gcs::EdgeData<double> random_var(mesh);
   std::default_random_engine random_generator;
   std::normal_distribution<double> normal_dist(0, sigma);
@@ -33,7 +34,7 @@ void Force::getStochasticForces(double sigma) {
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
       gc::Vector3 posi_diff_unit = vecFromHalfedge(he, vpg).normalize();
-      stochasticForces[v] = random_var[he.edge()] * posi_diff_unit;
+      stochasticForces[v] += random_var[he.edge()] * posi_diff_unit;
     }
   }
 }

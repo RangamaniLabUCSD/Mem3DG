@@ -14,10 +14,11 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getDampingForces(double gamma) {
+void Force::getDampingForces(double &gamma) {
   // Compute approximate vertex positions
   // TODO: this can be computed on vertex position update and cached to prevent
   // the sequential loop.
+  dampingForces.fill({ 0.0,0.0,0.0 });
   gcs::VertexData<gc::Vector3> velocity(mesh);
   for (gcs::Vertex v : mesh.vertices()) {
     velocity[v] = (vpg.inputVertexPositions[v] - pastPositions[v]) / timestep;
@@ -30,7 +31,7 @@ void Force::getDampingForces(double gamma) {
       gc::Vector3 posi_diff_unit =
           (vpg.inputVertexPositions[v] - vpg.inputVertexPositions[v_adj])
               .normalize();
-      dampingForces[v] += (gc::dot(velo_diff, posi_diff_unit) * posi_diff_unit);
+      dampingForces[v] += -gamma * (gc::dot(velo_diff, posi_diff_unit) * posi_diff_unit);
     }
   }
 }

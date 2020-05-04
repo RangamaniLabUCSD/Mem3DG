@@ -131,7 +131,7 @@ public:
    * @param Kb
    * @param H0
    */
-  void getBendingForces(double Kb, double H0);
+  void getBendingForces(double &Kb, double &H0);
   // void bending_force(double Kb, Eigen::Matrix<double, Eigen::Dynamic, 1>
   // H0);
 
@@ -141,7 +141,7 @@ public:
    * @param Ksl
    * @param Ksg
    */
-  void getStretchingForces(double Ksl, double Ksg);
+  void getStretchingForces(double &Ksl, double &Ksg);
 
   /**
    * @brief Compute forces from pressure
@@ -149,21 +149,21 @@ public:
    * @param Kv
    * @param Vt
    */
-  void getPressureForces(double Kv, double Vt);
+  void getPressureForces(double &Kv, double &Vt);
 
   /**
    * @brief Compute forces from damping
    *
    * @param gamma
    */
-  void getDampingForces(double gamma);
+  void getDampingForces(double &gamma);
 
   /**
    * @brief Compute forces from random noise
    *
    * @param sigma
    */
-  void getStochasticForces(double sigma);
+  void getStochasticForces(double &sigma);
 
   /**
    * @brief Get volume from a face

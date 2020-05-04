@@ -40,7 +40,7 @@ int main() {
 	std::vector<gc::Vector3> coords;
 	std::vector<std::vector<std::size_t>> polygons;
 
-	ddgsolver::icosphere(coords, polygons, 1);
+	ddgsolver::icosphere(coords, polygons, 2);
 
 	gc::PolygonSoupMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
@@ -63,28 +63,28 @@ int main() {
 		assert(vpg.inputVertexPositions[i][2] == pos(3 * i + 2));
 	}*/
 	
-	double Kb = 0.01;
+	double Kb = 0.03;
 	double H0 = 0;
-	double Ksl = 3;
+	double Ksl = 4;
 	double Ksg = 6;
 	double Kv = 1;
 	double gamma = 1;
-	double Vt = 0.7;
+	double Vt = 0.6;
 	double kt = 0.0001;
 
 	double h = 0.01;
-	double T = 1;
+	double T = 50;
 
 	double sigma = sqrt(2 * gamma * kt / h);
 	// initiate force object f
 	ddgsolver::Force f(mesh,vpg,h);
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
-	polyscope::init();
+	
 	for (size_t i = 0; i < T / h; i++) {
-		polyscope::registerSurfaceMesh("myMesh",
+		/*polyscope::registerSurfaceMesh("myMesh",
 			ptrvpg->inputVertexPositions,
-			ptrmesh->getFaceVertexList());
+			ptrmesh->getFaceVertexList());*/
 		//polyscope::show();
 		f.getBendingForces(Kb, H0);
 		f.getStretchingForces(Ksl, Ksg);
@@ -92,19 +92,19 @@ int main() {
 		f.getDampingForces(gamma);
 		f.getStochasticForces(sigma);
 
-		if (i == 33) { polyscope::show(); }
-		for (gcs::Vertex v : mesh.vertices()) {
-			std::cout << "i: " << i << std::endl;
-			std::cout << "v: " << v << std::endl;
-			/*std::cout << "bending force" << i << f.bendingForces[v] << std::endl;
-			std::cout << "stretching force" << f.stretchingForces[v] << std::endl;
-			std::cout << "damping force" << f.dampingForces[v] << std::endl;
-			std::cout << "pressure force" << f.pressureForces[v] << std::endl;
-			std::cout << "stochastic force" << f.stochasticForces[v] << std::endl;*/
-		}
-			
+		//if (i == 18) { polyscope::show(); }
+		//for (gcs::Vertex v : mesh.vertices()) {
+		//	std::cout << "i: " << i << std::endl;
+		//	std::cout << "v: " << v << std::endl;
+		//	/*std::cout << "bending force" << i << f.bendingForces[v] << std::endl;
+		//	std::cout << "stretching force" << f.stretchingForces[v] << std::endl;
+		//	std::cout << "damping force" << f.dampingForces[v] << std::endl;
+		//	std::cout << "pressure force" << f.pressureForces[v] << std::endl;
+		//	std::cout << "stochastic force" << f.stochasticForces[v] << std::endl;*/
+		//}
+		//	
 
-		gcs::VertexData<Vector3> temp = vpg.inputVertexPositions;
+		gcs::VertexData<gc::Vector3> temp = vpg.inputVertexPositions;
 		for (gcs::Vertex v : mesh.vertices()) {
 			vpg.inputVertexPositions[v] *= 2;
 			vpg.inputVertexPositions[v] += (f.bendingForces[v]
@@ -113,8 +113,14 @@ int main() {
 				+ f.dampingForces[v]
 				+ f.stochasticForces[v]) * h * h - f.pastPositions[v];
 		}
+		f.update_Vertex_positions();
 		f.pastPositions = temp;
 	}
+	polyscope::init();
+	polyscope::registerSurfaceMesh("myMesh",
+		ptrvpg->inputVertexPositions,
+		ptrmesh->getFaceVertexList());
+	polyscope::show();
 
 
 	//f.getBendingForces(Kb, H0);
