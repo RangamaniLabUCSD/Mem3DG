@@ -40,7 +40,7 @@ int main() {
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
 
-  icosphere(coords, polygons, 2);
+  ddgsolver::icosphere(coords, polygons, 2);
 
   gc::PolygonSoupMesh soup(polygons, coords);
   soup.mergeIdenticalVertices();
@@ -54,7 +54,7 @@ int main() {
   auto &vpg = *ptrvpg;
   double h = 0.01;
   // initiate force object f
-  Force f(mesh, vpg, h);
+  ddgsolver::Force f(mesh, vpg, h);
 
   f.getBendingForces(1.0, 0);
   f.getStretchingForces(1.0, 1.0);

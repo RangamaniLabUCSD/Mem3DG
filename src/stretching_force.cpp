@@ -1,7 +1,7 @@
 
-#include <assert.h>
-#include <iostream>
+#include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include <geometrycentral/numerical/linear_solvers.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
@@ -12,6 +12,8 @@
 #include <Eigen/IterativeLinearSolvers>
 
 #include "ddgsolver/force.h"
+
+namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -30,11 +32,10 @@ void Force::getStretchingForces(double Ksl, double Ksg) {
   const gcs::FaceData<double> &face_a = vpg.faceAreas;
   // log(face_a, mesh, "faceArea");
 
-  //gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;
+  // gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;
 
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> local_force;
   local_force.setZero(mesh.nVertices(), 3);*/
-
 
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> global_force;
   global_force.setZero(mesh.nVertices(), 3);*/
@@ -46,8 +47,8 @@ void Force::getStretchingForces(double Ksl, double Ksg) {
   }
 
   for (gcs::Vertex v : mesh.vertices()) {
-    gc::Vector3 localForce{ 0.0,0.0,0.0 };
-    gc::Vector3 globalForce{ 0.0,0.0,0.0 };
+    gc::Vector3 localForce{0.0, 0.0, 0.0};
+    gc::Vector3 globalForce{0.0, 0.0, 0.0};
 
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
       gcs::Halfedge base_he = he.next();
@@ -58,15 +59,16 @@ void Force::getStretchingForces(double Ksl, double Ksg) {
       // std::cout << "gradient" << gradient << std::endl;
       // auto force_v = force.row(v_ind[v]);
       // Eigen::Map<Eigen::Matrix<double, 1, 3>> force_v (&gradient.x, 3);
-      localForce += -2 * Ksl * gradient
-            * (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) 
-            / targetFaceAreas[base_he.face()];
-      globalForce += -2 * Ksg * gradient
-            * (total_area - targetSurfaceArea) / total_area;
+      localForce += -2 * Ksl * gradient *
+                    (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
+                    targetFaceAreas[base_he.face()];
+      globalForce +=
+          -2 * Ksg * gradient * (total_area - targetSurfaceArea) / total_area;
       stretchingForces[v] = localForce + globalForce;
       // force.row(v_ind[v]) << gradient.x, gradient.y, gradient.z;
     }
   }
-  
+
   // std::cout << "force" << force << std::endl;
 }
+} // end namespace ddgsolver

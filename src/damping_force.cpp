@@ -1,6 +1,7 @@
 
-#include <iostream>
+#include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
@@ -8,11 +9,12 @@
 
 #include "ddgsolver/force.h"
 
+namespace ddgsolver {
+
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getDampingForces(double gamma)
-{
+void Force::getDampingForces(double gamma) {
   // Compute approximate vertex positions
   // TODO: this can be computed on vertex position update and cached to prevent
   // the sequential loop.
@@ -32,3 +34,4 @@ void Force::getDampingForces(double gamma)
     }
   }
 }
+} // end namespace ddgsolver

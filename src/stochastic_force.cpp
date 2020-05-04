@@ -1,4 +1,5 @@
 
+#include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -15,6 +16,8 @@
 #include <pcg_random.hpp>
 
 #include "ddgsolver/force.h"
+
+namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -56,3 +59,4 @@ void Force::pcg_test() {
   // Produce information about RNG usage
   std::cout << "Required " << (rng - rng_checkpoint) << " random numbers.\n";
 }
+} // end namespace ddgsolver

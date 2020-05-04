@@ -1,4 +1,5 @@
 
+#include <cassert>
 #include <cmath>
 #include <iostream>
 
@@ -11,6 +12,8 @@
 #include <Eigen/Core>
 
 #include "ddgsolver/force.h"
+
+namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -62,3 +65,4 @@ void Force::getBendingForces(double Kb, double H0) {
     bendingForces_e.row(row) = f_mag(row) * n.row(row);
   }
 }
+} // end namespace ddgsolver
