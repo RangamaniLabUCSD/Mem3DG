@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef DNDEBUG
 #include <cassert>
-#endif
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
@@ -16,6 +14,8 @@
 
 #include "util.h"
 
+namespace ddgsolver {
+
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
@@ -27,21 +27,15 @@ public:
   gcs::VertexPositionGeometry &vpg;
   /// Numerical timestep
   double timestep;
- /* /// Cached bending forces
-  Eigen::Matrix<double, Eigen::Dynamic, 3> bendingForces;
-  /// Cached stretching forces
-  Eigen::Matrix<double, Eigen::Dynamic, 3> stretchingForces;
-  /// Cached pressure induced forces
-  Eigen::Matrix<double, Eigen::Dynamic, 3> pressureForces;
-  /// Cached damping forces
-  Eigen::Matrix<double, Eigen::Dynamic, 3> dampingForces;
-  /// Cached stochastic forces
-  Eigen::Matrix<double, Eigen::Dynamic, 3> stochasticForces;*/
-  // DEMO VertexData which is not from a mesh dependent quantity.
+  /// Cached bending forces
   gcs::VertexData<gc::Vector3> bendingForces;
+  /// Cached stretching forces
   gcs::VertexData<gc::Vector3> stretchingForces;
+  /// Cached pressure induced forces
   gcs::VertexData<gc::Vector3> pressureForces;
+  /// Cached damping forces
   gcs::VertexData<gc::Vector3> dampingForces;
+  /// Cached stochastic forces
   gcs::VertexData<gc::Vector3> stochasticForces;
 
   /// Cached galerkin mass matrix
@@ -62,8 +56,6 @@ public:
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
 
-
-
   /**
    * @brief Construct a new Force object
    *
@@ -74,12 +66,10 @@ public:
   Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         double time_step_)
       : mesh(mesh_), vpg(vpg_), timestep(time_step_),
-        bendingForces(mesh_, { 0, 0, 0 }),
-        stretchingForces(mesh_, { 0, 0, 0 }),
-        dampingForces(mesh_, { 0, 0, 0 }),
-        pressureForces(mesh_, { 0, 0, 0 }),
-        stochasticForces(mesh_, { 0, 0, 0 }) {
-     
+        bendingForces(mesh_, {0, 0, 0}), stretchingForces(mesh_, {0, 0, 0}),
+        dampingForces(mesh_, {0, 0, 0}), pressureForces(mesh_, {0, 0, 0}),
+        stochasticForces(mesh_, {0, 0, 0}) {
+
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
     rng = pcg32(seed_source);
@@ -89,7 +79,7 @@ public:
     vpg.requireVertexGalerkinMassMatrix();
     vpg.requireCotanLaplacian();
     vpg.requireFaceAreas();
-    //vpg.requireVertexIndices();
+    vpg.requireVertexIndices();
     vpg.requireVertexGaussianCurvatures();
 
     // Initialize the mass matrix
@@ -107,8 +97,7 @@ public:
 
     // Initialize face areas
     targetFaceAreas = vpg.faceAreas;
-    EigenMapFromAlignedVector_T<double, 1> faceAreas_e =
-        mapVecToEigen(targetFaceAreas);
+    auto faceAreas_e = EigenMap(targetFaceAreas);
     targetSurfaceArea = faceAreas_e.sum();
 
     // Initialize initial volume
@@ -183,8 +172,7 @@ public:
    * @param vpg
    * @return double
    */
-  double signedVolumeFromFace(gcs::Face &f,
-                                 gcs::VertexPositionGeometry &vpg);
+  double signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg);
 
   /**
    * @brief Get the vector from halfedge vertices
@@ -194,7 +182,7 @@ public:
    * @return gc::Vector3
    */
   inline gc::Vector3 vecFromHalfedge(gcs::Halfedge &he,
-                                       gcs::VertexPositionGeometry &vpg) {
+                                     gcs::VertexPositionGeometry &vpg) {
     return vpg.inputVertexPositions[he.next().vertex()] -
            vpg.inputVertexPositions[he.vertex()];
   }
@@ -207,3 +195,4 @@ public:
 
   void pcg_test();
 };
+} // end namespace ddgsolver
