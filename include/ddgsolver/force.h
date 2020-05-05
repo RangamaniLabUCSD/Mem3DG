@@ -22,7 +22,7 @@ namespace gcs = ::geometrycentral::surface;
 class Force {
 public:
   /// Cached mesh of interest
-  gcs::HalfedgeMesh &mesh;
+  gcs::HalfedgeMesh& mesh;
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
   /// Numerical timestep
@@ -49,7 +49,7 @@ public:
   /// Target total face area
   double targetSurfaceArea = 0.0;
   /// Target volume
-  double targetVolume;
+  double targetVolume = 0.0;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Random numer engine
@@ -81,6 +81,7 @@ public:
     vpg.requireFaceAreas();
     vpg.requireVertexIndices();
     vpg.requireVertexGaussianCurvatures();
+    vpg.requireFaceIndices();
 
     // Initialize the mass matrix
     M = vpg.vertexGalerkinMassMatrix;

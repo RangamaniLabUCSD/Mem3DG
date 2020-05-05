@@ -49,7 +49,7 @@ void Force::getPressureForces(double &Kv, double &Vt) {
     }
   }
 
-  std::cout << "total volume" << total_volume/targetVolume/Vt << std::endl;
+  //std::cout << "total volume" << total_volume/targetVolume/Vt << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
