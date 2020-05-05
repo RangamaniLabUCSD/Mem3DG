@@ -16,6 +16,7 @@
 #include "ddgsolver/icosphere.h"
 #include "ddgsolver/typetraits.h"
 #include "ddgsolver/util.h"
+#include "ddgsolver/integrator.h"
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -63,33 +64,40 @@ int main() {
 		assert(vpg.inputVertexPositions[i][2] == pos(3 * i + 2));
 	}*/
 	
-	double Kb = 0.03;
-	double H0 = 0;
-	double Ksl = 4;
-	double Ksg = 6;
-	double Kv = 1;
-	double gamma = 1;
-	double Vt = 0.6;
-	double kt = 0.0001;
+
+	struct parameters {
+		double Kb, H0, Ksl, Ksg, Kv, gamma, Vt, kt;
+	};
+	
+	parameters p{
+							0.03,			//Kb
+							0,				//H0
+							4,				//Ksl
+							6,				//Ksg
+							1,				//Kv
+							1,				//gamma
+							0.6,			//Vt
+							0.0001 };		//Kt     
 
 	double h = 0.01;
-	double T = 50;
+	double T = 40;
 
-	double sigma = sqrt(2 * gamma * kt / h);
+	double sigma = sqrt(2 * p.gamma * p.kt / h);
 	// initiate force object f
 	ddgsolver::Force f(mesh,vpg,h);
 	std::cout << "Sizeof Force: " << sizeof(f) << std::endl;
 
-	
+	gcs::FaceData<size_t> faceInd = vpg.faceIndices;
+	gc::Vector3 totalForce;
 	for (size_t i = 0; i < T / h; i++) {
 		/*polyscope::registerSurfaceMesh("myMesh",
 			ptrvpg->inputVertexPositions,
 			ptrmesh->getFaceVertexList());*/
 		//polyscope::show();
-		f.getBendingForces(Kb, H0);
-		f.getStretchingForces(Ksl, Ksg);
-		f.getPressureForces(Kv, Vt);
-		f.getDampingForces(gamma);
+		f.getBendingForces(p.Kb, p.H0);
+		f.getStretchingForces(p.Ksl, p.Ksg);
+		f.getPressureForces(p.Kv, p.Vt);
+		f.getDampingForces(p.gamma);
 		f.getStochasticForces(sigma);
 
 		//if (i == 18) { polyscope::show(); }
@@ -106,13 +114,23 @@ int main() {
 
 		gcs::VertexData<gc::Vector3> temp = vpg.inputVertexPositions;
 		for (gcs::Vertex v : mesh.vertices()) {
-			vpg.inputVertexPositions[v] *= 2;
-			vpg.inputVertexPositions[v] += (f.bendingForces[v]
-				+ f.stretchingForces[v]
-				+ f.pressureForces[v]
-				+ f.dampingForces[v]
-				+ f.stochasticForces[v]) * h * h - f.pastPositions[v];
+			bool flag = true;
+			for (gcs::Face f : v.adjacentFaces()) {
+				if (faceInd[f] == 0) {
+					flag = false;
+				}
+			}
+			if (flag == true) {
+				vpg.inputVertexPositions[v] *= 2;
+				totalForce = f.bendingForces[v]
+					+ f.stretchingForces[v]
+					+ f.pressureForces[v]
+					+ f.dampingForces[v]
+					+ f.stochasticForces[v];
+				vpg.inputVertexPositions[v] += totalForce * h * h - f.pastPositions[v];
+			}	
 		}
+		std::cout << "totalForce:  " << totalForce.norm() << std::endl;
 		f.update_Vertex_positions();
 		f.pastPositions = temp;
 	}

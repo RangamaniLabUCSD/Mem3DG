@@ -27,21 +27,21 @@ void Force::getBendingForces(double &Kb, double &H0) {
   size_t n_vertices = (mesh.nVertices());
   // will change this when change the mapping in util.h
 
-  /*auto positions = mapVecToEigen<double, 3>(vpg.inputVertexPositions);
-  positions.resize(3, n_vertices);*/
+  auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
+  //positions.resize(3, n_vertices);
 
-  gc::Vector3 *d = vpg.inputVertexPositions.rawdata().data();
+  /*gc::Vector3 *d = vpg.inputVertexPositions.rawdata().data();
   Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> positions(
+      reinterpret_cast<double *>(d), 3, n_vertices);*/
+  auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
+  //gc::Vector3* d = bendingForces.rawdata().data();
+  /*Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> bendingForces_e_temp(
       reinterpret_cast<double *>(d), 3, n_vertices);
-
-  d = bendingForces.rawdata().data();
-  Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> bendingForces_e_temp(
-      reinterpret_cast<double *>(d), 3, n_vertices);
-  auto& bendingForces_e = bendingForces_e_temp.transpose();
+  auto& bendingForces_e = bendingForces_e_temp.transpose();*/
 
   // std::cout << "evecdouble" << evecdouble.cols() << std::endl;
   Eigen::Matrix<double, Eigen::Dynamic, 3> Hn =
-      M_inv * L * positions.transpose() / 2;
+      M_inv * L * positions / 2;
   Eigen::Matrix<double, Eigen::Dynamic, 1> H;
   Eigen::Matrix<double, Eigen::Dynamic, 3> n;
   H.resize(n_vertices, 1);
