@@ -14,20 +14,23 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getDampingForces(double &gamma) {
+void Force::getVelocityFromPastPosition(double& timeStep) {
+  for (gcs::Vertex v : mesh.vertices()) {
+    vertexVelocity[v] = (vpg.inputVertexPositions[v] - pastPositions[v]) / timeStep;
+    //std::cout << vertexVelocity[v] << std::endl;
+    // std::cout << "I am here" << pastPositions[v] << std::endl;
+  }
+}
+
+void Force::getDampingForces(double& gamma) {
   // Compute approximate vertex positions
   // TODO: this can be computed on vertex position update and cached to prevent
   // the sequential loop.
   dampingForces.fill({ 0.0,0.0,0.0 });
-  gcs::VertexData<gc::Vector3> velocity(mesh);
-  for (gcs::Vertex v : mesh.vertices()) {
-    velocity[v] = (vpg.inputVertexPositions[v] - pastPositions[v]) / timestep;
-    // std::cout << "I am here" << pastPositions[v] << std::endl;
-  }
 
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Vertex v_adj : v.adjacentVertices()) {
-      gc::Vector3 velo_diff = velocity[v] - velocity[v_adj];
+      gc::Vector3 velo_diff = vertexVelocity[v] - vertexVelocity[v_adj];
       gc::Vector3 posi_diff_unit =
           (vpg.inputVertexPositions[v] - vpg.inputVertexPositions[v_adj])
               .normalize();

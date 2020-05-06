@@ -11,7 +11,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-	void integrator::stormerVerlet(ddgsolver::Force& f) {
+	void integrator::stormerVerlet() {
 		gcs::FaceData<size_t> faceInd = vpg.faceIndices;
 		gc::Vector3 totalForce;
 		for (size_t i = 0; i < timeSpan / timeStep; i++) {
@@ -19,6 +19,7 @@ namespace gcs = ::geometrycentral::surface;
 				ptrvpg->inputVertexPositions,
 				ptrmesh->getFaceVertexList());*/
 				//polyscope::show();
+			f.getVelocityFromPastPosition(timeStep);
 			f.getBendingForces(p.Kb, p.H0);
 			f.getStretchingForces(p.Ksl, p.Ksg);
 			f.getPressureForces(p.Kv, p.Vt);
@@ -30,7 +31,7 @@ namespace gcs = ::geometrycentral::surface;
 				bool flag = true;
 				for (gcs::Face f : v.adjacentFaces()) {
 					if (faceInd[f] == 0) {
-						flag = true;
+						flag = true; // change it to false to have time integration excluded for a facet of vertices 
 					}
 				}
 				if (flag == true) {
@@ -43,7 +44,7 @@ namespace gcs = ::geometrycentral::surface;
 					vpg.inputVertexPositions[v] += totalForce * timeStep * timeStep - f.pastPositions[v];
 				}
 			}
-			std::cout << "total force:  " << totalForce.norm() << std::endl;
+			//std::cout << "total force:  " << totalForce.norm() << std::endl;
 			f.update_Vertex_positions();
 			f.pastPositions = temp;
 		}

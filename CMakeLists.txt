@@ -67,6 +67,10 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/damping_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stochastic_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stormer_verlet.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/velocity_verlet.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_energy.cpp
+
+
 )
 
 add_library(ddg_solver SHARED ${DDG_SOURCES} ${DDG_HEADERS})
