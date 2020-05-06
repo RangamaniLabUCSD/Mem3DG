@@ -20,12 +20,15 @@ namespace ddgsolver {
 		gcs::HalfedgeMesh& mesh;
 		gcs::VertexPositionGeometry& vpg;
 		parameters p;
+		ddgsolver::Force f;
 
-		integrator(gcs::HalfedgeMesh& mesh_, gcs::VertexPositionGeometry& vpg_,
-			double& h, double& T, parameters& p_) :mesh(mesh_), vpg(vpg_), timeStep(h), timeSpan(T), p(p_) {}
+		integrator(gcs::HalfedgeMesh& mesh_, gcs::VertexPositionGeometry& vpg_, ddgsolver::Force& f_,
+			double& h, double& T, parameters& p_) :mesh(mesh_), vpg(vpg_), f(f_), timeStep(h), timeSpan(T), p(p_) {}
 
-		void stormerVerlet(ddgsolver::Force& f);
-		void velocityVerlet(ddgsolver::Force& f);
+		void stormerVerlet();
+		void velocityVerlet();
+		double getBendingEnergy(double H0);
+		double getBendingEnergy(); // cut the calculation for zero spontaneous curvature case
 
 	};
 }

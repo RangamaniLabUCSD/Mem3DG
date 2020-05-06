@@ -65,7 +65,7 @@ int main() {
 	}*/
 	
 	ddgsolver::parameters p;
-	p.Kb = 0.03;			//Kb
+	p.Kb = 0.02;			//Kb
 	p.H0 = 0;				//H0
 	p.Ksl = 4;				//Ksl
 	p.Ksg = 6;				//Ksg
@@ -75,12 +75,14 @@ int main() {
 	p.kt = 0.0001;		//Kt     
 
 	double h = 0.01;
-	double T = 4;
+	double T = 20;
 
 	p.sigma = sqrt(2 * p.gamma * p.kt / h);
-	ddgsolver::Force f(mesh,vpg,h);
-	ddgsolver::integrator integration(mesh, vpg, h, T, p);
-	integration.stormerVerlet(f);
+	ddgsolver::Force f(mesh,vpg);
+	ddgsolver::integrator integration(mesh, vpg, f, h, T, p);
+	//std::cout << "hello I am here" << std::endl;
+	//integration.stormerVerlet();
+	integration.velocityVerlet();
 
 	polyscope::init();
 	polyscope::registerSurfaceMesh("myMesh",

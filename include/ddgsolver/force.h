@@ -25,8 +25,6 @@ public:
   gcs::HalfedgeMesh& mesh;
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
-  /// Numerical timestep
-  double timestep;
   /// Cached bending forces
   gcs::VertexData<gc::Vector3> bendingForces;
   /// Cached stretching forces
@@ -52,6 +50,8 @@ public:
   double targetVolume = 0.0;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
+  /// Cached vertex velocity by finite differecing past and current position
+  gcs::VertexData<gc::Vector3> vertexVelocity;
   /// Random numer engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -63,12 +63,11 @@ public:
    * @param vpg_          Embedding and goemetry information
    * @param time_step_    Numerical timestep
    */
-  Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-        double time_step_)
-      : mesh(mesh_), vpg(vpg_), timestep(time_step_),
+  Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
+      : mesh(mesh_), vpg(vpg_),
         bendingForces(mesh_, {0, 0, 0}), stretchingForces(mesh_, {0, 0, 0}),
         dampingForces(mesh_, {0, 0, 0}), pressureForces(mesh_, {0, 0, 0}),
-        stochasticForces(mesh_, {0, 0, 0}) {
+    stochasticForces(mesh_, { 0, 0, 0 }), vertexVelocity(mesh_, {0, 0, 0 }) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -159,6 +158,12 @@ public:
    */
   void getDampingForces(double &gamma);
 
+  /**
+  * @brief Get velocity from the position of the last iteration
+  *
+  * @param timeStep
+  */
+  void getVelocityFromPastPosition(double& timeStep);
   /**
    * @brief Compute forces from random noise
    *
