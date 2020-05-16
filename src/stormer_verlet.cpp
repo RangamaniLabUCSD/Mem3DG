@@ -21,7 +21,7 @@ namespace gcs = ::geometrycentral::surface;
 				//polyscope::show();
 			f.getVelocityFromPastPosition(timeStep);
 			f.getBendingForces(p.Kb, p.H0);
-			f.getStretchingForces(p.Ksl, p.Ksg);
+			f.getStretchingForces(p.Ksl, p.Ksg,p.Kse);
 			f.getPressureForces(p.Kv, p.Vt);
 			f.getDampingForces(p.gamma);
 			f.getStochasticForces(p.sigma);
@@ -47,6 +47,10 @@ namespace gcs = ::geometrycentral::surface;
 			//std::cout << "total force:  " << totalForce.norm() << std::endl;
 			f.update_Vertex_positions();
 			f.pastPositions = temp;
+			getBendingEnergy();
+			if (abs(pastBendingEnergy - bendingEnergy) / bendingEnergy < 1e-6) { break; }
+			std::cout << "energy: " << bendingEnergy << std::endl;
+			std::cout << "process: " << int(double(i) / (timeSpan / timeStep) * 100) << "%" << std::endl;
 		}
 	}
 }

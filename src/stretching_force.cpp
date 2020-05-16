@@ -25,7 +25,7 @@ void log(gcs::FaceData<T> face_a, gcs::HalfedgeMesh &mesh, std::string name) {
   }
 }
 
-void Force::getStretchingForces(double &Ksl, double &Ksg) {
+void Force::getStretchingForces(double &Ksl, double &Ksg, double &Kse) {
   stretchingForces.fill({ 0.0,0.0,0.0 });
   const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
   // log(face_n, mesh,"face normal");
@@ -50,27 +50,35 @@ void Force::getStretchingForces(double &Ksl, double &Ksg) {
   for (gcs::Vertex v : mesh.vertices()) {
     gc::Vector3 localForce{0.0, 0.0, 0.0};
     gc::Vector3 globalForce{0.0, 0.0, 0.0};
+    gc::Vector3 edgeForce{ 0.0, 0.0, 0.0 };
 
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
+      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg)/ vecFromHalfedge(he, vpg).norm();
+
       gcs::Halfedge base_he = he.next();
       gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-      // std::cout << "base vector" << base_vec << std::endl;
       gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
       assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
-      // std::cout << "gradient" << gradient << std::endl;
-      // auto force_v = force.row(v_ind[v]);xxx
-      // Eigen::Map<Eigen::Matrix<double, 1, 3>> force_v (&gradient.x, 3);
-      localForce += -2 * Ksl * gradient *
-                    (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
-                    targetFaceAreas[base_he.face()];
-      globalForce +=
-          -2 * Ksg * gradient * (total_area - targetSurfaceArea) / total_area;
       
-      // force.row(v_ind[v]) << gradient.x, gradient.y, gradient.z;
+      if(Ksl != 0){
+        localForce += -2 * Ksl * gradient *
+            (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
+            targetFaceAreas[base_he.face()];
+      }
+      
+      if (Ksg != 0) {
+        globalForce +=
+          -2 * Ksg * gradient * (total_area - targetSurfaceArea) / total_area;
+      }
+      
+      if (Kse != 0) {
+        edgeForce += -Kse * edgeGradient * 
+          (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
+      }
+  
     }
-    stretchingForces[v] = localForce + globalForce;
+    stretchingForces[v] = localForce + globalForce + edgeForce;
   }
 
-  // std::cout << "force" << force << std::endl;
 }
 } // end namespace ddgsolver
