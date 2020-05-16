@@ -46,12 +46,18 @@ public:
   gcs::FaceData<double> targetFaceAreas;
   /// Target total face area
   double targetSurfaceArea = 0.0;
+  /// Target length per edge
+  gcs::EdgeData<double> targetEdgeLength;
   /// Target volume
   double targetVolume = 0.0;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differecing past and current position
   gcs::VertexData<gc::Vector3> vertexVelocity;
+  // Mean curvature of the mesh
+  Eigen::Matrix<double, Eigen::Dynamic, 3 > Hn;
+  // Spontaneous curvature of the mesh
+  Eigen::Matrix<double, Eigen::Dynamic, 3 > H0n;
   /// Random numer engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -81,6 +87,7 @@ public:
     vpg.requireVertexIndices();
     vpg.requireVertexGaussianCurvatures();
     vpg.requireFaceIndices();
+    vpg.requireEdgeLengths();
 
     // Initialize the mass matrix
     M = vpg.vertexGalerkinMassMatrix;
@@ -100,6 +107,9 @@ public:
     auto faceAreas_e = EigenMap(targetFaceAreas);
     targetSurfaceArea = faceAreas_e.sum();
 
+    // Initialize edge length
+    targetEdgeLength = vpg.edgeLengths;
+
     // Initialize initial volume
     for (gcs::Face f : mesh.faces()) {
       targetVolume += signedVolumeFromFace(f, vpg);
@@ -107,6 +117,12 @@ public:
 
     // Initialize the vertex position of the last iteration
     pastPositions = vpg.inputVertexPositions;
+
+    // Initialize mean curvature vector
+    Hn.resize(mesh.nVertices(), 3);
+
+    // Initialize spontaneous curvature vector
+    H0n.resize(mesh.nVertices(), 3);
   }
 
   /**
@@ -117,12 +133,12 @@ public:
    * elsewhere, calculation of dependent quantities should be respected.
    */
   ~Force() {
-    vpg.unrequireFaceAreas();
-    vpg.unrequireVertexGalerkinMassMatrix();
-    vpg.unrequireCotanLaplacian();
-    vpg.unrequireFaceNormals();
-    vpg.unrequireVertexIndices();
-    vpg.unrequireVertexGaussianCurvatures();
+    //vpg.unrequireFaceAreas();
+    //vpg.unrequireVertexGalerkinMassMatrix();
+    //vpg.unrequireCotanLaplacian();
+    //vpg.unrequireFaceNormals();
+    //vpg.unrequireVertexIndices();
+    //vpg.unrequireVertexGaussianCurvatures();
   }
 
   /**
@@ -141,7 +157,7 @@ public:
    * @param Ksl
    * @param Ksg
    */
-  void getStretchingForces(double &Ksl, double &Ksg);
+  void getStretchingForces(double& Ksl, double& Ksg, double& Kse);
 
   /**
    * @brief Compute forces from pressure

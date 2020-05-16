@@ -23,7 +23,7 @@ namespace ddgsolver {
 		for (size_t i = 0; i < timeSpan / timeStep; i++) {
 
 			f.getBendingForces(p.Kb, p.H0);
-			f.getStretchingForces(p.Ksl, p.Ksg);
+			f.getStretchingForces(p.Ksl, p.Ksg,p.Kse);
 			f.getPressureForces(p.Kv, p.Vt);
 			f.getDampingForces(p.gamma);
 			f.getStochasticForces(p.sigma);
@@ -39,12 +39,22 @@ namespace ddgsolver {
 					+ f.dampingForces[v]
 					+ f.stochasticForces[v];
 
+				/*std::cout << "bf: " << f.bendingForces[v].norm()
+					<< "sf: " << f.stretchingForces[v].norm()
+					<< "pf: " << f.pressureForces[v].norm()
+					<< "df: " << f.dampingForces[v].norm()
+					<< "xf: " << f.stochasticForces[v].norm() <<std::endl;*/
+
 				f.vertexVelocity[v] += (totalForce[v] + newTotalForce[v]) * timeStep * 0.5;
 				totalForce[v] = newTotalForce[v];
 			}
 			f.update_Vertex_positions();
-			/*double energy = getBendingEnergy();
-			std::cout << energy << std::endl;*/
+			getBendingEnergy();
+			if (((abs(pastBendingEnergy - bendingEnergy) / bendingEnergy) < tolerance)
+				&& (i>1)) { break; }
+			std::cout << "energy: " << bendingEnergy << std::endl;
+			std::cout << "process: " << int(double(i) / (timeSpan / timeStep) * 100) << "%" << std::endl;
+			
 		}
 	}
 }

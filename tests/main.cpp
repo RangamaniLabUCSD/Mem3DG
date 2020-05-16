@@ -65,22 +65,24 @@ int main() {
 	}*/
 	
 	ddgsolver::parameters p;
-	p.Kb = 0.02;			//Kb
+	p.Kb = 0.01;			//Kb
 	p.H0 = 0;				//H0
-	p.Ksl = 4;				//Ksl
-	p.Ksg = 6;				//Ksg
+	p.Kse = 0;      //Kse
+	p.Ksl = 1 ;				//Ksl
+	p.Ksg = 2 ;				//Ksg
 	p.Kv = 1;			//Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 0.6;			//Vt
-	p.kt = 0.0001;		//Kt     
+	p.Vt = 0.7;			//Vt
+	p.kt = 0.0001;		//Kt 
 
-	double h = 0.01;
-	double T = 20;
+
+	double h = 0.005;
+	double T = 100;
+	double eps = 0;// 1e-9;
 
 	p.sigma = sqrt(2 * p.gamma * p.kt / h);
 	ddgsolver::Force f(mesh,vpg);
-	ddgsolver::integrator integration(mesh, vpg, f, h, T, p);
-	//std::cout << "hello I am here" << std::endl;
+	ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
 	//integration.stormerVerlet();
 	integration.velocityVerlet();
 

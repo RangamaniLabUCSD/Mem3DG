@@ -10,7 +10,10 @@ namespace ddgsolver {
 	namespace gcs = ::geometrycentral::surface;
 
 	struct parameters {
-		double Kb, H0, Ksl, Ksg, Kv, gamma, Vt, kt, sigma;
+
+
+
+   		double Kb, H0, Ksl, Ksg, Kse, Kv, gamma, Vt, kt, sigma;
 	};
 
 	class integrator {
@@ -19,16 +22,22 @@ namespace ddgsolver {
 		double& timeSpan;
 		gcs::HalfedgeMesh& mesh;
 		gcs::VertexPositionGeometry& vpg;
-		parameters p;
-		ddgsolver::Force f;
+		parameters& p;
+		ddgsolver::Force& f;
+		double tolerance;
+		double bendingEnergy;
+		double pastBendingEnergy;
 
 		integrator(gcs::HalfedgeMesh& mesh_, gcs::VertexPositionGeometry& vpg_, ddgsolver::Force& f_,
-			double& h, double& T, parameters& p_) :mesh(mesh_), vpg(vpg_), f(f_), timeStep(h), timeSpan(T), p(p_) {}
+			double& h, double& T, parameters& p_, double eps) :mesh(mesh_), vpg(vpg_), f(f_), timeStep(h), 
+			timeSpan(T), p(p_), tolerance(eps){
+			bendingEnergy = 0;
+			pastBendingEnergy = 0;
+		}
 
 		void stormerVerlet();
 		void velocityVerlet();
-		double getBendingEnergy(double H0);
-		double getBendingEnergy(); // cut the calculation for zero spontaneous curvature case
+		void getBendingEnergy(); 
 
 	};
 }

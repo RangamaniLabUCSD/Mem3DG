@@ -13,18 +13,27 @@
 namespace ddgsolver {
 	namespace gc = ::geometrycentral;
 	namespace gcs = ::geometrycentral::surface;
-	double integrator::getBendingEnergy(double H0) { double Eb = 0; return Eb; }
 
-	double integrator::getBendingEnergy() {
-		double Eb = 0;
-		auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
-		auto A = f.L.transpose() * f.M_inv * f.L; //could further cached since the same for all time pt
-		for (size_t i = 0; i < positions.rows(); i++) {
-			for (size_t j = 0; j < positions.rows(); j++) {
-				Eb += positions.row(i) * A * positions.transpose().col(j);
-			}
+	void integrator::getBendingEnergy() {
+		//auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
+		//auto A = f.L.transpose() * f.M_inv * f.L; //could further cached since the same for all time pt
+		//for (size_t i = 0; i < positions.rows(); i++) {
+		//	for (size_t j = 0; j < positions.rows(); j++) {
+		//		Eb += positions.row(i) * A * positions.transpose().col(j);
+		//	}
+		//}
+		pastBendingEnergy = bendingEnergy;
+
+		Eigen::Matrix<double, Eigen::Dynamic, 1> k_dH_sqrd;
+		k_dH_sqrd.resize(f.Hn.rows(), 1);
+
+		auto difference = f.Hn - f.H0n;
+
+		for (size_t row = 0; row < f.Hn.rows(); row++) {
+			k_dH_sqrd(row) = p.Kb * (difference.row(row).dot(difference.row(row)));
 		}
-		return Eb;
+
+		bendingEnergy = (f.M * k_dH_sqrd).sum();
 	}
 }
 

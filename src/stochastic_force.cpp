@@ -33,7 +33,7 @@ void Force::getStochasticForces(double &sigma) {
   }
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      gc::Vector3 posi_diff_unit = vecFromHalfedge(he, vpg).normalize();
+      gc::Vector3 posi_diff_unit = -vecFromHalfedge(he, vpg).normalize();
       stochasticForces[v] += random_var[he.edge()] * posi_diff_unit;
     }
   }

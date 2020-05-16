@@ -19,52 +19,74 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getBendingForces(double &Kb, double &H0) {
+
+  //// update L and M_inv if necessary 
+  //// Initialize the mass matrix
+  //M = vpg.vertexGalerkinMassMatrix;
+  //// Initialize the inverted Mass matrix
+  //Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+  //solver.compute(M);
+  //Eigen::SparseMatrix<double> I(mesh.nVertices(), mesh.nVertices());
+  //I.setIdentity();
+  //M_inv = solver.solve(I);
+  //// Initialize the conformal Laplacian matrix
+  //L = vpg.cotanLaplacian;
+
   bendingForces.fill({ 0,0,0 });
-  // Gaussian curvature
-  auto KG = vpg.vertexGaussianCurvatures.toMappedVector();
-  // std::cout << "Gaussian" << KG << std::endl;
 
+  // Gaussian curvature per vertex Area
+  Eigen::Matrix<double, Eigen::Dynamic, 1> KG = M_inv * (vpg.vertexGaussianCurvatures.toMappedVector());
+
+  // number of vertices for convenience 
   size_t n_vertices = (mesh.nVertices());
-  // will change this when change the mapping in util.h
 
+  // map ivp to eigen matrix position 
   auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
-  //positions.resize(3, n_vertices);
 
-  /*gc::Vector3 *d = vpg.inputVertexPositions.rawdata().data();
-  Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> positions(
-      reinterpret_cast<double *>(d), 3, n_vertices);*/
+  // centroid of the geometry
+  auto center = positions.colwise().sum();
+
+  // map the VertexData bendingForces to eigen matrix bendingForces_e
   auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
-  //gc::Vector3* d = bendingForces.rawdata().data();
-  /*Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> bendingForces_e_temp(
-      reinterpret_cast<double *>(d), 3, n_vertices);
-  auto& bendingForces_e = bendingForces_e_temp.transpose();*/
 
-  // std::cout << "evecdouble" << evecdouble.cols() << std::endl;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> Hn =
-      M_inv * L * positions / 2;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> H;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> n;
-  H.resize(n_vertices, 1);
-  n.resize(n_vertices, 3);
+  // calcuate mean curvature per vertex area by laplacian matrix
+  Hn = M_inv * L * positions / 2;
 
-  for (int row = 0; row < n_vertices; ++row) {
-    H(row) = Hn.row(row).norm();
-    // std::cout << "curvature" << H(row) << std::endl;
-    n.row(row) = Hn.row(row) / H(row);
+  // initialize the outward normal vector 
+  Eigen::Matrix<double, Eigen::Dynamic, 3> nOutward;
+  nOutward.resize(n_vertices, 3);
+
+  // calculate the outward normal vector (assume mostly convex)
+  for (size_t row = 0; row < n_vertices; ++row) {
+    nOutward.row(row) = Hn.row(row).normalized();
+    nOutward.row(row) *= copysign(1.0, nOutward.row(row).dot(positions.row(row) - center));
   }
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * H;
-  auto f_mag =
-      M * (-2 * Kb *
-           (2 * (H.array() - Eigen::ArrayXd::Constant(n_vertices, 1, H0)) *
-                (square(H.array()) + H0 * H.array() - (M_inv * KG).array()) +
-            lap_H.array())
-               .matrix());
-  // std::cout << "force Magnitude" << f_mag << std::endl;
+  // initialize the spontaneous curvature matrix 
+  H0n = H0 * nOutward;
+
+  // calculate laplacian H 
+  Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
+
+  // initialize and calculate intermediary result productTerms
+  Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
+  productTerms.resize(n_vertices, 3);
 
   for (size_t row = 0; row < mesh.nVertices(); ++row) {
-    bendingForces_e.row(row) = f_mag(row) * n.row(row);
+    if (Hn.row(row).dot(Hn.row(row)) + H0n.row(row).dot(Hn.row(row)) - KG(row) < 0) {
+      Eigen::Matrix<double, 1, 3> zeros;
+      zeros << 0.0, 0.0, 0.0;
+      productTerms.row(row) = zeros;
+      std::cout << "smaller than 0 !!" << std::endl;
+    }
+    else {
+      productTerms.row(row) = 2 * (Hn.row(row) - H0n.row(row))
+        * (Hn.row(row).dot(Hn.row(row)) + H0n.row(row).dot(Hn.row(row)) - KG(row));
+    }
   }
-  //std::cout << "bending here" << bendingForces_e << std::endl;
+
+  // calculate bendingForce 
+  bendingForces_e = M * (-2 * Kb * (productTerms + lap_H));
+
 }
 } // end namespace ddgsolver
