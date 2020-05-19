@@ -21,16 +21,19 @@ namespace gcs = ::geometrycentral::surface;
 void Force::getBendingForces(double &Kb, double &H0) {
 
   //// update L and M_inv if necessary 
+
   //// Initialize the mass matrix
-  //M = vpg.vertexGalerkinMassMatrix;
+  //M = vpg.vertexLumpedMassMatrix;
+
   //// Initialize the inverted Mass matrix
   //Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
   //solver.compute(M);
   //Eigen::SparseMatrix<double> I(mesh.nVertices(), mesh.nVertices());
   //I.setIdentity();
   //M_inv = solver.solve(I);
+
   //// Initialize the conformal Laplacian matrix
-  //L = vpg.cotanLaplacian;
+  // L = vpg.cotanLaplacian;
 
   bendingForces.fill({ 0,0,0 });
 
@@ -43,27 +46,33 @@ void Force::getBendingForces(double &Kb, double &H0) {
   // map ivp to eigen matrix position 
   auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
 
-  // centroid of the geometry
-  auto center = positions.colwise().sum();
-
   // map the VertexData bendingForces to eigen matrix bendingForces_e
   auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
+  
+  // the build-in angle weight vertex normal
+  auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
 
   // calcuate mean curvature per vertex area by laplacian matrix
   Hn = M_inv * L * positions / 2;
 
-  // initialize the outward normal vector 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> nOutward;
-  nOutward.resize(n_vertices, 3);
+  //// project the mean curvature to angle weight vertex normal
+  //for (size_t row = 0; row < mesh.nVertices(); ++row) {
+  //  Hn.row(row) = Hn.row(row).dot(vertexNormal_e.row(row)) * vertexNormal_e.row(row);
+  //}
 
-  // calculate the outward normal vector (assume mostly convex)
+  // initialize area gradient vertex normal 
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexAreaGradientNormal_e;
+  vertexAreaGradientNormal_e.resize(n_vertices, 3);
+
+  // calculate the area gradient vertex normal
   for (size_t row = 0; row < n_vertices; ++row) {
-    nOutward.row(row) = Hn.row(row).normalized();
-    nOutward.row(row) *= copysign(1.0, nOutward.row(row).dot(positions.row(row) - center));
+    vertexAreaGradientNormal_e.row(row) = Hn.row(row).normalized();
+    vertexAreaGradientNormal_e.row(row) *= 
+      copysign(1.0, vertexAreaGradientNormal_e.row(row).dot(vertexAngleNormal_e.row(row)));
   }
 
   // initialize the spontaneous curvature matrix 
-  H0n = H0 * nOutward;
+  H0n = H0 * vertexAreaGradientNormal_e;
 
   // calculate laplacian H 
   Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
@@ -73,11 +82,11 @@ void Force::getBendingForces(double &Kb, double &H0) {
   productTerms.resize(n_vertices, 3);
 
   for (size_t row = 0; row < mesh.nVertices(); ++row) {
-    if (Hn.row(row).dot(Hn.row(row)) + H0n.row(row).dot(Hn.row(row)) - KG(row) < 0) {
+    if (Hn.row(row).dot(Hn.row(row)) + H0n.row(row).dot(Hn.row(row)) - KG(row) == 0) {
       Eigen::Matrix<double, 1, 3> zeros;
       zeros << 0.0, 0.0, 0.0;
       productTerms.row(row) = zeros;
-      std::cout << "smaller than 0 !!" << std::endl;
+      //std::cout << "smaller than 0 !!" << std::endl;
     }
     else {
       productTerms.row(row) = 2 * (Hn.row(row) - H0n.row(row))

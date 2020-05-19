@@ -36,12 +36,12 @@ double Force::signedVolumeFromFace(gcs::Face &f,
 
 void Force::getPressureForces(double &Kv, double &Vt) {
   pressureForces.fill({ 0,0,0 });
-  double total_volume = 0;
+  volume = 0;
   double face_volume;
   gcs::FaceData<int> sign_of_volume(mesh);
   for (gcs::Face f : mesh.faces()) {
     face_volume = signedVolumeFromFace(f, vpg);
-    total_volume += face_volume;
+    volume += face_volume;
     if (face_volume < 0) {
       sign_of_volume[f] = -1;
     } else {
@@ -49,7 +49,7 @@ void Force::getPressureForces(double &Kv, double &Vt) {
     }
   }
 
-  std::cout << "total volume:  " << total_volume/targetVolume/Vt << std::endl;
+  std::cout << "total volume:  " << volume/targetVolume/Vt << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -61,7 +61,7 @@ void Force::getPressureForces(double &Kv, double &Vt) {
       // std::cout << "i am here" << (gc::dot(dVdx, vpg.inputVertexPositions[v]
       // - p1) < 0) <<  std::endl;
       //dVdx *= sign_of_volume[he.face()];
-      pressureForces[v] += -0.5 * Kv * (total_volume - targetVolume * Vt) /
+      pressureForces[v] += -0.5 * Kv * (volume - targetVolume * Vt) /
                           (targetVolume * Vt) * dVdx;
       // for (size_t i = 0; i < 3; i++) {
       //	pressureForces(v_ind[v], i) += dVdx[i];

@@ -42,6 +42,10 @@ int main() {
 	std::vector<std::vector<std::size_t>> polygons;
 
 	ddgsolver::icosphere(coords, polygons, 2);
+	for (size_t i = 0; i < coords.size(); i++) {
+		coords[i].x *= 1;
+		//coords[i].y *= 3;
+	}
 
 	gc::PolygonSoupMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
@@ -66,25 +70,28 @@ int main() {
 	
 	ddgsolver::parameters p;
 	p.Kb = 0.01;			//Kb
-	p.H0 = 0;				//H0
-	p.Kse = 0;      //Kse
-	p.Ksl = 1 ;				//Ksl
-	p.Ksg = 2 ;				//Ksg
-	p.Kv = 1;			//Kv
+	p.H0 = 3;				//H0
+	p.Kse = 0.2;      //Kse
+	p.Ksl = 1;				//Ksl
+	p.Ksg = 2;				//Ksg
+	p.Kv = 10;			//Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 0.7;			//Vt
-	p.kt = 0.0001;		//Kt 
+	p.Vt = 1 * 0.55;			//Vt
+	p.kt = 0.00001;		//Kt 
 
-
-	double h = 0.005;
+	double h = 0.01;
 	double T = 100;
-	double eps = 0;// 1e-9;
+	double eps = 1e-9;// 1e-9;
 
-	p.sigma = sqrt(2 * p.gamma * p.kt / h);
+	
 	ddgsolver::Force f(mesh,vpg);
 	ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
 	//integration.stormerVerlet();
 	integration.velocityVerlet();
+
+	//integration.p.H0 = 2;
+	//integration.p.Vt = 0.8;
+	//integration.velocityVerlet();
 
 	polyscope::init();
 	polyscope::registerSurfaceMesh("myMesh",
