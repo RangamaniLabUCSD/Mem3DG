@@ -46,10 +46,14 @@ public:
   gcs::FaceData<double> targetFaceAreas;
   /// Target total face area
   double targetSurfaceArea = 0.0;
+  /// surface area
+  double surfaceArea = 0.0;
   /// Target length per edge
   gcs::EdgeData<double> targetEdgeLength;
   /// Target volume
   double targetVolume = 0.0;
+  /// Volume
+  double volume = 0.0;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differecing past and current position
@@ -82,12 +86,14 @@ public:
     // GC computed properties
     vpg.requireFaceNormals();
     vpg.requireVertexGalerkinMassMatrix();
+    vpg.requireVertexLumpedMassMatrix();
     vpg.requireCotanLaplacian();
     vpg.requireFaceAreas();
     vpg.requireVertexIndices();
     vpg.requireVertexGaussianCurvatures();
     vpg.requireFaceIndices();
     vpg.requireEdgeLengths();
+    vpg.requireVertexNormals();
 
     // Initialize the mass matrix
     M = vpg.vertexGalerkinMassMatrix;

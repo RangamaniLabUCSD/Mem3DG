@@ -41,11 +41,13 @@ void Force::getStretchingForces(double &Ksl, double &Ksg, double &Kse) {
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> global_force;
   global_force.setZero(mesh.nVertices(), 3);*/
 
-  double total_area = 0.0;
+  surfaceArea = 0;
 
   for (gcs::Face f : mesh.faces()) {
-    total_area += face_a[f];
+    surfaceArea += face_a[f];
   }
+
+  std::cout << "area: " << surfaceArea / targetSurfaceArea << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
     gc::Vector3 localForce{0.0, 0.0, 0.0};
@@ -68,12 +70,18 @@ void Force::getStretchingForces(double &Ksl, double &Ksg, double &Kse) {
       
       if (Ksg != 0) {
         globalForce +=
-          -2 * Ksg * gradient * (total_area - targetSurfaceArea) / total_area;
+          -2 * Ksg * gradient * (surfaceArea - targetSurfaceArea) / surfaceArea;
       }
       
       if (Kse != 0) {
         edgeForce += -Kse * edgeGradient * 
-          (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
+        (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
+
+        /*double averageLength = (vpg.edgeLengths[he.edge()]
+          + vpg.edgeLengths[he.next().edge()]
+          + vpg.edgeLengths[he.next().next().edge()]) / 3;
+        edgeForce += -Kse * edgeGradient *
+          (vpg.edgeLengths[he.edge()] - averageLength) / averageLength;*/
       }
   
     }

@@ -10,9 +10,6 @@ namespace ddgsolver {
 	namespace gcs = ::geometrycentral::surface;
 
 	struct parameters {
-
-
-
    		double Kb, H0, Ksl, Ksg, Kse, Kv, gamma, Vt, kt, sigma;
 	};
 
