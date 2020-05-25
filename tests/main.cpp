@@ -7,6 +7,7 @@
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/polygon_soup_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
 #include <geometrycentral/utilities/vector3.h>
 
 #include "polyscope/polyscope.h"
@@ -34,65 +35,72 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 }
 
 int main() {
-
-	//initialization of the geometry and mesh
-	// Construct an icosahedron
-	// Construct a std::vector of Vector 3
-	std::vector<gc::Vector3> coords;
-	std::vector<std::vector<std::size_t>> polygons;
-
-	ddgsolver::icosphere(coords, polygons, 2);
-	for (size_t i = 0; i < coords.size(); i++) {
-		coords[i].x *= 1;
-		//coords[i].y *= 3;
-	}
-
-	gc::PolygonSoupMesh soup(polygons, coords);
-	soup.mergeIdenticalVertices();
-
-	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
-	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
-	std::tie(ptrmesh, ptrvpg) = 
-		gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
-
-	auto& mesh = *ptrmesh;
-	auto& vpg  = *ptrvpg;
-	
-	//auto pos = mapVecToEigen<double, 3>(vpg.inputVertexPositions.rawdata());
-	//std::cout << "decltype(pos) is " << type_name<decltype(pos)>() << '\n';
-	/*for (std::size_t i = 0; i < mesh.nVertices(); ++i) {
-		std::cout << vpg.inputVertexPositions[i] << std::endl;
-		std::cout << "<" << pos(3 * i) << ", " << pos(3 * i + 1) << ", " << pos(3 * i + 2) << ">" << std::endl;
-		assert(vpg.inputVertexPositions[i][0] == pos(3 * i));
-		assert(vpg.inputVertexPositions[i][1] == pos(3 * i + 1));
-		assert(vpg.inputVertexPositions[i][2] == pos(3 * i + 2));
-	}*/
-	
+	/// physical parameters 
 	ddgsolver::parameters p;
 	p.Kb = 0.01;			//Kb
-	p.H0 = 3;				//H0
-	p.Kse = 0.2;      //Kse
+	p.H0 = 1.5;				//H0
+	p.Kse = 0.1;      //Kse
 	p.Ksl = 1;				//Ksl
 	p.Ksg = 2;				//Ksg
 	p.Kv = 10;			//Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 1 * 0.55;			//Vt
+	p.Vt = 1 * 0.7;			//Vt
 	p.kt = 0.00001;		//Kt 
 
-	double h = 0.01;
-	double T = 100;
-	double eps = 1e-9;// 1e-9;
+	// choose the run
+	std::string run = "visualization"; // 1. "integration 2. "visualization
 
+	/// Choose the starting mesh 
+	std::string option = "output-file/Vt_70_H0_0.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+
+	/// initialize mesh and vpg 
+	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
+	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+
+	if (option == "continue") {
+		char buffer[50];
+		sprintf(buffer, "output-file/Vt_%d_H0_%d.ply", int(p.Vt * 100), int(p.H0 * 100));
+		std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(buffer);
+	}
+	else if (option == "sphere") {
+		/// initialize icosphere 
+		std::vector<gc::Vector3> coords;
+		std::vector<std::vector<std::size_t>> polygons;
+		ddgsolver::icosphere(coords, polygons, 2);
+		gc::PolygonSoupMesh soup(polygons, coords);
+		soup.mergeIdenticalVertices();
+		std::tie(ptrmesh, ptrvpg) =
+		gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
+	}
+	else {
+		std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(option);
+	}
 	
-	ddgsolver::Force f(mesh,vpg);
-	ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
-	//integration.stormerVerlet();
-	integration.velocityVerlet();
+	auto& mesh = *ptrmesh;
+	auto& vpg = *ptrvpg;
 
-	//integration.p.H0 = 2;
-	//integration.p.Vt = 0.8;
-	//integration.velocityVerlet();
+	if (run == "integration") {
+		/// integration parameters
+		double h = 0.005;
+		double T = 300;
+		double eps = 1e-9;// 1e-9;
 
+		/// solve
+		ddgsolver::Force f(mesh, vpg);
+		ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
+		//integration.stormerVerlet();
+		integration.velocityVerlet();
+
+		/// save the .ply file  
+		gcs::PlyHalfedgeMeshData data(mesh);
+		data.addGeometry(vpg);
+		char buffer[50];
+		sprintf(buffer, "output-file/Vt_%d_H0_%d.ply", int(p.Vt * 100), int(p.H0 * 100));
+		data.write(buffer);
+	}
+
+
+	/// visualization 
 	polyscope::init();
 	polyscope::registerSurfaceMesh("myMesh",
 		ptrvpg->inputVertexPositions,

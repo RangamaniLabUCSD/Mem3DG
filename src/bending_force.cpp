@@ -23,7 +23,7 @@ void Force::getBendingForces(double &Kb, double &H0) {
   //// update L and M_inv if necessary 
 
   //// Initialize the mass matrix
-  //M = vpg.vertexLumpedMassMatrix;
+  //M = vpg.vertexGalerkinMassMatrix;
 
   //// Initialize the inverted Mass matrix
   //Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
@@ -82,7 +82,7 @@ void Force::getBendingForces(double &Kb, double &H0) {
   productTerms.resize(n_vertices, 3);
 
   for (size_t row = 0; row < mesh.nVertices(); ++row) {
-    if (Hn.row(row).dot(Hn.row(row)) + H0n.row(row).dot(Hn.row(row)) - KG(row) == 0) {
+    if (Hn.row(row).dot(Hn.row(row)) + H0n.row(row).dot(Hn.row(row)) - KG(row) < 0) {
       Eigen::Matrix<double, 1, 3> zeros;
       zeros << 0.0, 0.0, 0.0;
       productTerms.row(row) = zeros;
