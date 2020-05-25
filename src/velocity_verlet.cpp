@@ -28,7 +28,7 @@ namespace ddgsolver {
 
 		for (size_t i = 0; i < timeSpan / timeStep; i++) {
 
-			double timeStepHere = timeStep * (1 / pow(i, 1 / 2));
+			double timeStepHere = timeStep * (1/pow(i, 1 / 2)); //* (1 / double(i)); //pow(i, 1 / 2));
 			p.sigma = sqrt(2 * p.gamma * p.kt / timeStepHere);
 
 			int prob = 4;
