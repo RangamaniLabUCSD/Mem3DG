@@ -29,25 +29,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(DDG_MASTER_PROJECT ON)
 endif()
 
-# find_package(Git REQUIRED)
-include(FetchContent)
-
-##########################
-# GET GEOMETRY CENTRAL
-##########################
-FetchContent_Declare(
-    geometrycentrallib
-    GIT_REPOSITORY  https://github.com/ctlee/geometry-central.git
-    GIT_TAG         origin/data_access
-    GIT_SHALLOW     TRUE
-    SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
-    BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-build"
-)
-FetchContent_GetProperties(geometrycentrallib)
-if(NOT geometrycentrallib_POPULATED)
-  FetchContent_Populate(geometrycentrallib)
-  add_subdirectory(${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR})
-endif()
+option(BUILD_PYDDG "Build the python extensions?" ON)
 
 ##########################
 # BUNDLED LIBRARIES
@@ -69,8 +51,6 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stormer_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/velocity_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_energy.cpp
-
-
 )
 
 add_library(ddg_solver SHARED ${DDG_SOURCES} ${DDG_HEADERS})
@@ -83,6 +63,10 @@ target_link_libraries(ddg_solver PUBLIC geometry-central pcg::pcg)
 ##########################
 add_executable(ddg tests/main.cpp)
 target_link_libraries(ddg PRIVATE ddg_solver)
+
+if(BUILD_PYDDG)
+    add_subdirectory(pyddg)
+endif()
 
 ##########################
 # GET polyscope
