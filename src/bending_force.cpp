@@ -61,18 +61,17 @@ void Force::getBendingForces(double &Kb, double &H0) {
   //}
 
   // initialize area gradient vertex normal 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexAreaGradientNormal_e;
-  vertexAreaGradientNormal_e.resize(n_vertices, 3);
+  vertexAreaGradientNormal.resize(n_vertices, 3);
 
   // calculate the area gradient vertex normal
   for (size_t row = 0; row < n_vertices; ++row) {
-    vertexAreaGradientNormal_e.row(row) = Hn.row(row).normalized();
-    vertexAreaGradientNormal_e.row(row) *= 
-      copysign(1.0, vertexAreaGradientNormal_e.row(row).dot(vertexAngleNormal_e.row(row)));
+    vertexAreaGradientNormal.row(row) = Hn.row(row).normalized();
+    vertexAreaGradientNormal.row(row) *= 
+      copysign(1.0, vertexAreaGradientNormal.row(row).dot(vertexAngleNormal_e.row(row)));
   }
 
   // initialize the spontaneous curvature matrix 
-  H0n = H0 * vertexAreaGradientNormal_e;
+  H0n = H0 * vertexAreaGradientNormal;
 
   // calculate laplacian H 
   Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
