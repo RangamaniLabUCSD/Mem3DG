@@ -1,5 +1,22 @@
 cmake_minimum_required(VERSION 3.11)
 
+if(MSVC)
+    set(CMAKE_C_FLAGS_DEBUG_INIT "/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1")
+    set(CMAKE_C_FLAGS_MINSIZEREL_INIT     "/MT /O1 /Ob1 /D NDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE_INIT        "/MT /O2 /Ob2 /D NDEBUG")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO_INIT "/MT /Zi /O2 /Ob1 /D NDEBUG")
+else()
+    set(CMAKE_C_FLAGS_RELEASE_INIT        "-O2 -DNDEBUG")
+endif()
+if(MSVC)
+    set(CMAKE_CXX_FLAGS_DEBUG_INIT "/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT     "/MT /O1 /Ob1 /D NDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE_INIT        "/MT /O2 /Ob2 /D NDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "/MT /Zi /O2 /Ob1 /D NDEBUG")
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE_INIT        "-O2 -DNDEBUG")
+endif()
+
 # Disable in source builds
 # Note that this is an undocumented option which may not do anything
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
@@ -29,6 +46,9 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(DDG_MASTER_PROJECT ON)
 endif()
 
+# find_package(Git REQUIRED)
+include(FetchContent)
+
 option(BUILD_PYDDG "Build the python extensions?" ON)
 
 ##########################
@@ -55,7 +75,7 @@ set(DDG_SOURCES
 
 add_library(ddg_solver SHARED ${DDG_SOURCES} ${DDG_HEADERS})
 target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(ddg_solver PUBLIC geometry-central pcg::pcg)
+target_link_libraries(ddg_solver PUBLIC geometry-central pcg::pcg polyscope)
 
 
 ##########################
@@ -65,9 +85,8 @@ add_executable(ddg tests/main.cpp)
 target_link_libraries(ddg PRIVATE ddg_solver)
 
 if(BUILD_PYDDG)
-    add_subdirectory(pyddg)
+    add_subdirectory(pyddglib)
 endif()
-
 ##########################
 # GET polyscope
 ##########################

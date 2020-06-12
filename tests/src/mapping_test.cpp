@@ -132,8 +132,8 @@ TEST_F(MappingUtilityTest, MappingTest) {
 
 TEST_F(MappingUtilityTest, MappingConstCorrectnessTest) {
   const gcs::VertexData<gc::Vector3> data(vpg->inputVertexPositions);
-  auto pos1 = EigenMap<double, 3>(data);
-  auto pos2 = EigenMap<double, 3>(data.rawdata());
+  const auto pos1 = EigenMap<double, 3>(data);
+  const auto pos2 = EigenMap<double, 3>(data.rawdata());
 
   ASSERT_EQ(data.size(), pos1.rows());
   ASSERT_EQ(3, pos1.cols());
@@ -141,16 +141,16 @@ TEST_F(MappingUtilityTest, MappingConstCorrectnessTest) {
   ASSERT_EQ(3, pos2.cols());
 
   // auto pos3 = data.toMappedVector();
-  auto pos3 = EigenMap(data);
-  auto pos4 = EigenMap(data.rawdata());
+  const auto pos3 = EigenMap(data);
+  const auto pos4 = EigenMap(data.rawdata());
 
   ASSERT_EQ(data.size(), pos3.rows());
   ASSERT_EQ(1, pos3.cols());
   ASSERT_EQ(data.size(), pos4.rows());
   ASSERT_EQ(1, pos4.cols());
 
-  auto pos5 = FlattenedEigenMap<double, 3>(data);
-  auto pos6 = FlattenedEigenMap<double, 3>(data.rawdata());
+  const auto pos5 = FlattenedEigenMap<double, 3>(data);
+  const auto pos6 = FlattenedEigenMap<double, 3>(data.rawdata());
 
   ASSERT_EQ(3 * data.size(), pos5.rows());
   ASSERT_EQ(1, pos5.cols());
