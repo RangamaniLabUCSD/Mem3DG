@@ -5,7 +5,7 @@
 
 #include <geometrycentral/utilities/vector3.h>
 
-#include "ddgsolver/icosphere.h"
+#include <ddgsolver/icosphere.h>
 
 namespace ddgsolver {
 

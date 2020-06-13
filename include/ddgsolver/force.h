@@ -59,6 +59,8 @@ public:
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
   gcs::VertexData<gc::Vector3> vertexVelocity;
+  /// outward normal
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexAreaGradientNormal;
   // Mean curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 3> Hn;
   // Spontaneous curvature of the mesh

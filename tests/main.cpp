@@ -10,8 +10,9 @@
 #include <geometrycentral/surface/ply_halfedge_mesh_data.h>
 #include <geometrycentral/utilities/vector3.h>
 
-// #include "polyscope/polyscope.h"
-// #include "polyscope/surface_mesh.h"
+#include "polyscope/polyscope.h"
+#include "polyscope/surface_mesh.h"
+#include "polyscope/curve_network.h"
 
 #include "ddgsolver/force.h"
 #include "ddgsolver/icosphere.h"
@@ -42,7 +43,7 @@ int main() {
 	p.Kse = 0.1;      //Kse
 	p.Ksl = 1;				//Ksl
 	p.Ksg = 2;				//Ksg
-	p.Kv = 10;			//Kv
+	p.Kv = 10;			  //Kv
 	p.gamma = 1;				//gamma
 	p.Vt = 1 * 0.7;			//Vt
 	p.kt = 0.00001;		//Kt 
@@ -51,7 +52,7 @@ int main() {
 	std::string run = "visualization"; // 1. "integration 2. "visualization
 
 	/// Choose the starting mesh 
-	std::string option = "sphere"; //""output-file/Vt_70_H0_0.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+	std::string option = "output-file/Vt_90_H0_150.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
 
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
@@ -97,15 +98,39 @@ int main() {
 		char buffer[50];
 		sprintf(buffer, "output-file/Vt_%d_H0_%d.ply", int(p.Vt * 100), int(p.H0 * 100));
 		data.write(buffer);
+
+		/// visualization 
+		polyscope::init();
+		polyscope::registerCurveNetwork("myNetwork",
+		ptrvpg->inputVertexPositions,
+		ptrmesh->getFaceVertexList());
+		std::vector<double> xC(f.Hn.rows());
+		for (size_t i = 0; i < f.Hn.rows(); i++) {
+			xC[i] = f.Hn.row(i)[0]/f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
+		}
+		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+	}
+	else {
+		polyscope::init();
+		polyscope::registerCurveNetwork("myNetwork",
+		ptrvpg->inputVertexPositions,
+		ptrmesh->getFaceVertexList());
+		ddgsolver::Force f(mesh, vpg);
+		f.getBendingForces(p.Kb, p.H0);
+		std::vector<double> xC(f.Hn.rows());
+		for (size_t i = 0; i < f.Hn.rows(); i++) {
+			xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
+		}
+		std::cout << xC << std::endl;
+		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
 	}
 
-
-	/// visualization 
-	// polyscope::init();
-	// polyscope::registerSurfaceMesh("myMesh",
-	// 	ptrvpg->inputVertexPositions,
-	// 	ptrmesh->getFaceVertexList());
-	// polyscope::show();
+	char buffer[50];
+	sprintf(buffer, "Vt = %.2f, H0 = %.2f", p.Vt, p.H0);
+	polyscope::info(buffer);
+	/*sprintf(buffer, "output-file/Vt_%d_H0_%d.png", int(p.Vt * 100), int(p.H0 * 100));
+	polyscope::screenshot(buffer, true);*/
+	polyscope::show();
 
 	return 0;
 	}
