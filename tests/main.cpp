@@ -10,8 +10,8 @@
 #include <geometrycentral/surface/ply_halfedge_mesh_data.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh.h"
+// #include "polyscope/polyscope.h"
+// #include "polyscope/surface_mesh.h"
 
 #include "ddgsolver/force.h"
 #include "ddgsolver/icosphere.h"
@@ -51,7 +51,7 @@ int main() {
 	std::string run = "visualization"; // 1. "integration 2. "visualization
 
 	/// Choose the starting mesh 
-	std::string option = "output-file/Vt_70_H0_0.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+	std::string option = "sphere"; //""output-file/Vt_70_H0_0.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
 
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
@@ -101,12 +101,11 @@ int main() {
 
 
 	/// visualization 
-	polyscope::init();
-	polyscope::registerSurfaceMesh("myMesh",
-		ptrvpg->inputVertexPositions,
-		ptrmesh->getFaceVertexList());
-	polyscope::show();
+	// polyscope::init();
+	// polyscope::registerSurfaceMesh("myMesh",
+	// 	ptrvpg->inputVertexPositions,
+	// 	ptrmesh->getFaceVertexList());
+	// polyscope::show();
 
 	return 0;
 	}
-

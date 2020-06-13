@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 3.11)
 
-# Disable in source builds
-# Note that this is an undocumented option which may not do anything
-set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+project(
+  DDG
+  VERSION 0.0.1
+  LANGUAGES CXX
+)
 
 # Add path to custom modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-project(DDG VERSION 0.0.1 LANGUAGES CXX)
+include(DefaultBuildType)
 
 # Require c++14 and standard libraries
 set(CMAKE_CXX_STANDARD 14)
@@ -16,29 +18,46 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Initialize output directory locations
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 # Required to tell MSVC to export symbols
 if(MSVC)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 # Check if DDG is being used directly or via add_subdirectory
 set(DDG_MASTER_PROJECT OFF)
-if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(DDG_MASTER_PROJECT ON)
 endif()
 
 option(BUILD_PYDDG "Build the python extensions?" ON)
 
-##########################
+# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
+message(DEBUG "CMAKE_C_FLAGS is: ${CMAKE_C_FLAGS}")
+message(DEBUG "CMAKE_C_FLAGS_DEBUG is: ${CMAKE_C_FLAGS_DEBUG}")
+message(DEBUG "CMAKE_C_FLAGS_RELEASE is: ${CMAKE_C_FLAGS_RELEASE}")
+message(DEBUG "CMAKE_C_FLAGS_RELWITHDEBINFO is: ${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+message(DEBUG "CMAKE_C_FLAGS_MINSIZEREL is: ${CMAKE_C_FLAGS_MINSIZEREL}")
+message(DEBUG "CMAKE_CXX_FLAGS is: ${CMAKE_CXX_FLAGS}")
+message(DEBUG "CMAKE_CXX_FLAGS_DEBUG is: ${CMAKE_CXX_FLAGS_DEBUG}")
+message(DEBUG "CMAKE_CXX_FLAGS_RELEASE is: ${CMAKE_CXX_FLAGS_RELEASE}")
+message(DEBUG "CMAKE_CXX_FLAGS_RELWITHDEBINFO is: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+message(DEBUG "CMAKE_CXX_FLAGS_MINSIZEREL is: ${CMAKE_CXX_FLAGS_MINSIZEREL}")
+message(DEBUG "Build type: ${CMAKE_BUILD_TYPE}")
+message(DEBUG "CMAKE_VERBOSE_MAKEFILE: " ${CMAKE_VERBOSE_MAKEFILE})
+message(DEBUG "BUILD_SHARED_LIBS: " ${BUILD_SHARED_LIBS})
+
+# ##############################################################################
 # BUNDLED LIBRARIES
-##########################
+# ##############################################################################
 add_subdirectory(libraries)
 
-##########################
+# ##############################################################################
 # DDG SOLVER LIBRARY
-##########################
+# ##############################################################################
 add_subdirectory(include) # Get file sources
 
 set(DDG_SOURCES
@@ -53,38 +72,30 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_energy.cpp
 )
 
-add_library(ddg_solver SHARED ${DDG_SOURCES} ${DDG_HEADERS})
-target_include_directories(ddg_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(ddg_solver PUBLIC geometry-central pcg::pcg)
+# ddgsolver object library
+add_library(ddgsolver_objlib OBJECT ${DDG_SOURCES} ${DDG_HEADERS})
+target_include_directories(
+  ddgsolver_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+target_link_libraries(ddgsolver_objlib PUBLIC geometry-central pcg::pcg)
+set_target_properties(ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 
-
-##########################
-# Main DDG target
-##########################
-add_executable(ddg tests/main.cpp)
-target_link_libraries(ddg PRIVATE ddg_solver)
+# ddgsolver library
+add_library(ddgsolver SHARED $<TARGET_OBJECTS:ddgsolver_objlib>)
+target_link_libraries(ddgsolver PUBLIC ddgsolver_objlib)
 
 if(BUILD_PYDDG)
-    add_subdirectory(pyddg)
+  add_subdirectory(pyddg)
 endif()
 
-##########################
-# GET polyscope
-##########################
-FetchContent_Declare(
-    polyscopelib
-    GIT_REPOSITORY  https://github.com/nmwsharp/polyscope.git
-    GIT_SHALLOW     TRUE
-    SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/polyscope-src"
-    BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/polyscope-build"
-)
-FetchContent_GetProperties(polyscopelib)
-if(NOT polyscopelib_POPULATED)
-  FetchContent_Populate(polyscopelib)
-  add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
-endif()
+# ##############################################################################
+# Main DDG target
+# ##############################################################################
+add_executable(ddg tests/main.cpp)
+target_link_libraries(ddg PRIVATE ddgsolver polyscope)
+set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 
-target_link_libraries(ddg PRIVATE polyscope)
 
 enable_testing()
 add_subdirectory(tests)

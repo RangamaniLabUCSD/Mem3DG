@@ -3,11 +3,12 @@
 #pragma once
 
 #include "geometrycentral/utilities/vector3.h"
+#include "macros.h"
 
 namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 
-void icosphere(std::vector<gc::Vector3> &coords,
+DLL_PUBLIC void icosphere(std::vector<gc::Vector3> &coords,
                std::vector<std::vector<std::size_t>> &polygons, int n);
 } // end namespace ddgsolver
