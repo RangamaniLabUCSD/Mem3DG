@@ -13,16 +13,17 @@
 #include <random>
 
 #include "util.h"
+#include "macros.h"
 
 namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-class Force {
+class DLL_PUBLIC Force {
 public:
   /// Cached mesh of interest
-  gcs::HalfedgeMesh& mesh;
+  gcs::HalfedgeMesh &mesh;
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
   /// Cached bending forces
@@ -56,14 +57,14 @@ public:
   double volume = 0.0;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
-  /// Cached vertex velocity by finite differecing past and current position
+  /// Cached vertex velocity by finite differencing past and current position
   gcs::VertexData<gc::Vector3> vertexVelocity;
   /// outward normal
   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexAreaGradientNormal;
   // Mean curvature of the mesh
-  Eigen::Matrix<double, Eigen::Dynamic, 3 > Hn;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> Hn;
   // Spontaneous curvature of the mesh
-  Eigen::Matrix<double, Eigen::Dynamic, 3 > H0n;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> H0n;
   /// Random numer engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -76,10 +77,10 @@ public:
    * @param time_step_    Numerical timestep
    */
   Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
-      : mesh(mesh_), vpg(vpg_),
-        bendingForces(mesh_, {0, 0, 0}), stretchingForces(mesh_, {0, 0, 0}),
-        dampingForces(mesh_, {0, 0, 0}), pressureForces(mesh_, {0, 0, 0}),
-    stochasticForces(mesh_, { 0, 0, 0 }), vertexVelocity(mesh_, {0, 0, 0 }) {
+      : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}),
+        stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
+        pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
+        vertexVelocity(mesh_, {0, 0, 0}) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -141,12 +142,16 @@ public:
    * elsewhere, calculation of dependent quantities should be respected.
    */
   ~Force() {
-    //vpg.unrequireFaceAreas();
-    //vpg.unrequireVertexGalerkinMassMatrix();
-    //vpg.unrequireCotanLaplacian();
-    //vpg.unrequireFaceNormals();
-    //vpg.unrequireVertexIndices();
-    //vpg.unrequireVertexGaussianCurvatures();
+    vpg.unrequireFaceNormals();
+    vpg.unrequireVertexGalerkinMassMatrix();
+    vpg.unrequireVertexLumpedMassMatrix();
+    vpg.unrequireCotanLaplacian();
+    vpg.unrequireFaceAreas();
+    vpg.unrequireVertexIndices();
+    vpg.unrequireVertexGaussianCurvatures();
+    vpg.unrequireFaceIndices();
+    vpg.unrequireEdgeLengths();
+    vpg.unrequireVertexNormals();
   }
 
   /**
@@ -165,7 +170,7 @@ public:
    * @param Ksl
    * @param Ksg
    */
-  void getStretchingForces(double& Ksl, double& Ksg, double& Kse);
+  void getStretchingForces(double &Ksl, double &Ksg, double &Kse);
 
   /**
    * @brief Compute forces from pressure
@@ -183,11 +188,11 @@ public:
   void getDampingForces(double &gamma);
 
   /**
-  * @brief Get velocity from the position of the last iteration
-  *
-  * @param timeStep
-  */
-  void getVelocityFromPastPosition(double& timeStep);
+   * @brief Get velocity from the position of the last iteration
+   *
+   * @param timeStep
+   */
+  void getVelocityFromPastPosition(double &timeStep);
   /**
    * @brief Compute forces from random noise
    *
