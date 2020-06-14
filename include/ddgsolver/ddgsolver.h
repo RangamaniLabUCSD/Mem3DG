@@ -10,9 +10,9 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/curve_network.h"
+// #include "polyscope/polyscope.h"
+// #include "polyscope/surface_mesh.h"
+// #include "polyscope/curve_network.h"
 
 #include "ddgsolver/force.h"
 #include "ddgsolver/icosphere.h"
@@ -89,36 +89,36 @@ double driver(std::string run, std::string option, int nSub, double H0, double V
 		data.write(buffer);
 
 		/// visualization 
-		polyscope::init();
-		polyscope::registerCurveNetwork("myNetwork",
-			ptrvpg->inputVertexPositions,
-			ptrmesh->getFaceVertexList());
-		std::vector<double> xC(f.Hn.rows());
-		for (size_t i = 0; i < f.Hn.rows(); i++) {
-			xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
-		}
-		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
-	}
-	else {
-		polyscope::init();
-		polyscope::registerCurveNetwork("myNetwork",
-			ptrvpg->inputVertexPositions,
-			ptrmesh->getFaceVertexList());
-		ddgsolver::Force f(mesh, vpg);
-		f.getBendingForces(p.Kb, p.H0);
-		std::vector<double> xC(f.Hn.rows());
-		for (size_t i = 0; i < f.Hn.rows(); i++) {
-			xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
-		}
-		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+	// 	polyscope::init();
+	// 	polyscope::registerCurveNetwork("myNetwork",
+	// 		ptrvpg->inputVertexPositions,
+	// 		ptrmesh->getFaceVertexList());
+	// 	std::vector<double> xC(f.Hn.rows());
+	// 	for (size_t i = 0; i < f.Hn.rows(); i++) {
+	// 		xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
+	// 	}
+	// 	polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+	// }
+	// else {
+	// 	polyscope::init();
+	// 	polyscope::registerCurveNetwork("myNetwork",
+	// 		ptrvpg->inputVertexPositions,
+	// 		ptrmesh->getFaceVertexList());
+	// 	ddgsolver::Force f(mesh, vpg);
+	// 	f.getBendingForces(p.Kb, p.H0);
+	// 	std::vector<double> xC(f.Hn.rows());
+	// 	for (size_t i = 0; i < f.Hn.rows(); i++) {
+	// 		xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
+	// 	}
+	// 	polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
 	}
 
 	char buffer[50];
 	sprintf(buffer, "Vt = %.2f, H0 = %.2f", p.Vt, p.H0);
-	polyscope::info(buffer);
+	// polyscope::info(buffer);
 	/*sprintf(buffer, "output-file/Vt_%d_H0_%d.png", int(p.Vt * 100), int(p.H0 * 100));
 	polyscope::screenshot(buffer, true);*/
-	polyscope::show();
+	// polyscope::show();
 
 	return 0;
 }
