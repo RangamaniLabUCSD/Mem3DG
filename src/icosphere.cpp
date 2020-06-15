@@ -32,10 +32,6 @@ void icosphere(std::vector<gc::Vector3> &coords,
   coords.emplace_back(makeNormedVertex(-t, 0, -1));
   coords.emplace_back(makeNormedVertex(-t, 0, 1));
 
-  for (std::size_t i = 0; i < coords.size(); ++i) {
-    coords[i] = coords[i].normalize();
-  }
-
   // Initialize Faces
   polygons.emplace_back(std::vector<std::size_t>{0, 11, 5});
   polygons.emplace_back(std::vector<std::size_t>{0, 5, 1});
@@ -59,9 +55,7 @@ void icosphere(std::vector<gc::Vector3> &coords,
   polygons.emplace_back(std::vector<std::size_t>{9, 8, 1});
 
   auto getMidPoint = [&coords](size_t t1, size_t t2) -> std::size_t {
-    gc::Vector3 &p1 = coords[t1];
-    gc::Vector3 &p2 = coords[t2];
-    coords.emplace_back(((p1 + p2) / 2).normalize());
+    coords.emplace_back(((coords[t1] + coords[t2]) / 2).normalize());
     return coords.size() - 1;
   };
 

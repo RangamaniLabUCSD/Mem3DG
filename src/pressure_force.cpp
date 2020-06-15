@@ -10,32 +10,15 @@
 #include <Eigen/IterativeLinearSolvers>
 
 #include "ddgsolver/force.h"
+#include "ddgsolver/meshops.h"
 
 namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-double Force::signedVolumeFromFace(gcs::Face &f,
-                                   gcs::VertexPositionGeometry &vpg) {
-  gc::Vector3 p[3];
-  size_t i = 0;
-  for (gcs::Vertex v : f.adjacentVertices()) {
-    p[i] = vpg.inputVertexPositions[v];
-    i++;
-  }
-  double v321 = p[2].x * p[1].y * p[0].z;
-  double v231 = p[1].x * p[2].y * p[0].z;
-  double v312 = p[2].x * p[0].y * p[1].z;
-  double v132 = p[0].x * p[2].y * p[1].z;
-  double v213 = p[1].x * p[0].y * p[2].z;
-  double v123 = p[0].x * p[1].y * p[2].z;
-
-  return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123);
-}
-
 void Force::getPressureForces(double &Kv, double &Vt) {
-  pressureForces.fill({0, 0, 0});
+  // pressureForces.fill({0, 0, 0});
   volume = 0;
   double face_volume;
   gcs::FaceData<int> sign_of_volume(mesh);
