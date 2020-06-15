@@ -97,7 +97,7 @@ target_include_directories(
   ddgsolver_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(ddgsolver_objlib PUBLIC geometry-central pcg::pcg polyscope)
+target_link_libraries(ddgsolver_objlib PUBLIC geometry-central pcg::pcg)
 set_target_properties(ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden) # VISIBILITY_INLINES_HIDDEN ON)
 
 # ddgsolver library
