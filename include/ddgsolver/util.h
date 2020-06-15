@@ -309,7 +309,12 @@ ConstAlignedEigenMap_T<T, 1> FlattenedEigenMap(const gcs::MeshData<E, O> &vec) {
                 "O must be a POD type.");
   static_assert(sizeof(O) == k * sizeof(T),
                 "sizeof(O) must be a k multiple of sizeof(T)");
-  return ConstAlignedEigenMap_T<T, 1>(reinterpret_cast<const T *>(getBuffer(vec)),
-                                      k * vec.size());
+  return ConstAlignedEigenMap_T<T, 1>(
+      reinterpret_cast<const T *>(getBuffer(vec)), k * vec.size());
+}
+
+template <typename Derived>
+auto dot(Eigen::DenseBase<Derived> &A, Eigen::DenseBase<Derived> &B) {
+  return A.derived().cwiseProduct(B.derived()).rowwise().sum();
 }
 } // end namespace ddgsolver
