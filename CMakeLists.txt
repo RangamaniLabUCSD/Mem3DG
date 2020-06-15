@@ -98,7 +98,7 @@ target_include_directories(
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(ddgsolver_objlib PUBLIC geometry-central pcg::pcg)
-set_target_properties(ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+set_target_properties(ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden) # VISIBILITY_INLINES_HIDDEN ON)
 
 # ddgsolver library
 add_library(ddgsolver SHARED $<TARGET_OBJECTS:ddgsolver_objlib>)
@@ -113,8 +113,11 @@ endif()
 # ##############################################################################
 add_executable(ddg tests/main.cpp)
 target_link_libraries(ddg PRIVATE ddgsolver polyscope)
-set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
+add_executable(scratch tests/scratch.cpp)
+target_link_libraries(scratch PRIVATE ddgsolver)
+set_target_properties(scratch PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 enable_testing()
 add_subdirectory(tests)

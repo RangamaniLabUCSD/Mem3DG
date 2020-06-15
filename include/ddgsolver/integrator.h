@@ -1,25 +1,26 @@
 #pragma once
 
-#include "force.h"
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+
+#include "force.h"
 
 namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 struct DLL_PUBLIC parameters {
-  double Kb;
-  double H0;
-  double Ksl;
-  double Ksg;
-  double Kse;
-  double Kv;
-  double gamma;
-  double Vt;
-  double kt;
-  double sigma;
+  double Kb;    /// Bending modulus
+  double H0;    /// Spontaneous curvature
+  double Ksl;   /// Local stretching modulus
+  double Ksg;   /// Global stretching modulus
+  double Kse;   /// 
+  double Kv;    /// Volume regularization
+  double gamma; /// Dissipation coefficient
+  double Vt;    /// Reduced volume
+  double kt;    /// Boltzmann constant*Temperature
+  double sigma; /// Noise
 };
 
 class DLL_PUBLIC integrator {

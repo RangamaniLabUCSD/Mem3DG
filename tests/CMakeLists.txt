@@ -41,6 +41,6 @@ set(TEST_SRCS
 
 add_executable(ddgsolver-test "${TEST_SRCS}")
 target_link_libraries(ddgsolver-test ddgsolver gtest_main)
-set_target_properties(ddgsolver-test PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+set_target_properties(ddgsolver-test PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 add_test(NAME ddgtests COMMAND ddgsolver-test)

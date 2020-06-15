@@ -12,8 +12,9 @@
 #include <pcg_random.hpp>
 #include <random>
 
-#include "util.h"
-#include "macros.h"
+#include "ddgsolver/util.h"
+#include "ddgsolver/meshops.h"
+#include "ddgsolver/macros.h"
 
 namespace ddgsolver {
 
@@ -65,7 +66,7 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 3> Hn;
   // Spontaneous curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 3> H0n;
-  /// Random numer engine
+  /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
 
@@ -73,7 +74,7 @@ public:
    * @brief Construct a new Force object
    *
    * @param mesh_         Mesh connectivity
-   * @param vpg_          Embedding and goemetry information
+   * @param vpg_          Embedding and geometry information
    * @param time_step_    Numerical timestep
    */
   Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
@@ -102,7 +103,7 @@ public:
     M = vpg.vertexGalerkinMassMatrix;
     // Initialize the inverted Mass matrix
     Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-    solver.compute(M);
+    solver.compute(vpg.vertexGalerkinMassMatrix);
     std::size_t n = mesh.nVertices();
     Eigen::SparseMatrix<double> I(n, n);
     I.setIdentity();
@@ -129,6 +130,9 @@ public:
 
     // Initialize mean curvature vector
     Hn.resize(mesh.nVertices(), 3);
+
+    // initialize area gradient vertex normal
+    vertexAreaGradientNormal.resize(mesh.nVertices(), 3);
 
     // Initialize spontaneous curvature vector
     H0n.resize(mesh.nVertices(), 3);
@@ -157,26 +161,25 @@ public:
   /**
    * @brief Compute the bending force
    *
-   * @param Kb
-   * @param H0
+   * @param Kb    Bending modulus
+   * @param H0    Spontaneous curvature
    */
   void getBendingForces(double &Kb, double &H0);
-  // void bending_force(double Kb, Eigen::Matrix<double, Eigen::Dynamic, 1>
-  // H0);
 
   /**
    * @brief Compute force from stretching
    *
    * @param Ksl
    * @param Ksg
+   * @param Kse
    */
   void getStretchingForces(double &Ksl, double &Ksg, double &Kse);
 
   /**
    * @brief Compute forces from pressure
    *
-   * @param Kv
-   * @param Vt
+   * @param Kv    Volume regularizer
+   * @param Vt    Reduced volume
    */
   void getPressureForces(double &Kv, double &Vt);
 
@@ -199,28 +202,6 @@ public:
    * @param sigma
    */
   void getStochasticForces(double &sigma);
-
-  /**
-   * @brief Get volume from a face
-   *
-   * @param f
-   * @param vpg
-   * @return double
-   */
-  double signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg);
-
-  /**
-   * @brief Get the vector from halfedge vertices
-   *
-   * @param he
-   * @param vpg
-   * @return gc::Vector3
-   */
-  inline gc::Vector3 vecFromHalfedge(gcs::Halfedge &he,
-                                     gcs::VertexPositionGeometry &vpg) {
-    return vpg.inputVertexPositions[he.next().vertex()] -
-           vpg.inputVertexPositions[he.vertex()];
-  }
 
   /**
    * @brief Update the vertex position and recompute cached values
