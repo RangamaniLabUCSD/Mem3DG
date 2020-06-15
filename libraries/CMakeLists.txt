@@ -21,7 +21,7 @@ if(NOT geometrycentrallib_POPULATED)
   add_subdirectory(
     ${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR}
   )
-  set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+  set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
 endif()
 
 # ##############################################################################

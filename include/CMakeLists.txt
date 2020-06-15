@@ -5,4 +5,6 @@ set(DDG_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/icosphere.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/typetraits.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/util.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/macros.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/meshops.h
     PARENT_SCOPE)
