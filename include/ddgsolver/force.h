@@ -177,8 +177,10 @@ public:
 
   void getPressureForces();
 
-  void getDampingForces();
 
+  void getDPDForces();
+
+  void getDampingForces();
   void getStochasticForces();
 
   /**
@@ -186,7 +188,7 @@ public:
    *
    * @param timeStep
    */
-  void getVelocityFromPastPosition(double &timeStep);
+  void getVelocityFromPastPosition(double dt);
 
   /**
    * @brief Update the vertex position and recompute cached values

@@ -14,49 +14,64 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 
+#include "ddgsolver/force.h"
 #include "ddgsolver/icosphere.h"
+#include "ddgsolver/integrator.h"
 #include "ddgsolver/util.h"
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 int main() {
+  std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
 
-  Eigen::Matrix<double, 10, 3> foo;
+  /// initialize icosphere
+  std::vector<gc::Vector3> coords;
+  std::vector<std::vector<std::size_t>> polygons;
 
-  for(int i = 0; i < 10; ++i){
-    foo(i,0) = 3*i;
-    foo(i,1) = 3*i+1;
-    foo(i,2) = 3*i+2;
-  }
+  ddgsolver::tetrahedron(coords, polygons);
 
-  std::cout << foo << std::endl;
+  // auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
+  //   return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
+  // };
 
-  Eigen::Matrix<double, 1, 3> bar;
-  bar << 0, 3, 6;
+  // coords.emplace_back(makeNormedVertex(1, 0, 0));
+  // coords.emplace_back(makeNormedVertex(-1, 0, 0));
+  // coords.emplace_back(makeNormedVertex(0, 1, 0));
+  
+  // polygons.emplace_back(std::vector<std::size_t>{0,1,2});
 
-  std::cout << bar << std::endl;
+  gc::PolygonSoupMesh soup(polygons, coords);
+  soup.mergeIdenticalVertices();
+  std::tie(ptrmesh, ptrvpg) =
+      gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
 
-  foo = foo.rowwise() - bar;
+  ddgsolver::Parameters p;
+  p.Kb = 0.01;    // Kb
+  p.H0 = 1.5;     // H0
+  p.Kse = 0.1;    // Kse
+  p.Ksl = 1;      // Ksl
+  p.Ksg = 2;      // Ksg
+  p.Kv = 10;      // Kv
+  p.gamma = 1;    // gamma
+  p.Vt = 1 * 0.7; // Vt
+  p.kt = 0.00001; // Kt
 
-  std::cout << foo << std::endl; 
+  auto &mesh = *ptrmesh;
+  auto &vpg = *ptrvpg;
+  ddgsolver::Force f(mesh, vpg, p);
+  velocityVerlet(f, 0.005, 0.01, 1e-9);
 
+  // f.getDampingForces();
+  // f.getStochasticForces();
+  f.getDPDForces();
 
+  std::cout << "Damping Forces: " << std::endl;
+  std::cout << ddgsolver::EigenMap<double, 3>(f.dampingForces) << std::endl;
 
-  // std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
-  // std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
-
-  // /// initialize icosphere
-  // std::vector<gc::Vector3> coords;
-  // std::vector<std::vector<std::size_t>> polygons;
-  // ddgsolver::tetrahedron(coords, polygons);
-  // gc::PolygonSoupMesh soup(polygons, coords);
-  // soup.mergeIdenticalVertices();
-  // std::tie(ptrmesh, ptrvpg) =
-  //     gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
-
-
-
+  std::cout << "Stoch. Forces: " << std::endl;
+  std::cout << ddgsolver::EigenMap<double, 3>(f.stochasticForces) << std::endl;
   // polyscope::init();
   // polyscope::registerSurfaceMesh("mymesh", ptrvpg->inputVertexPositions,
   //                                ptrmesh->getFaceVertexList());

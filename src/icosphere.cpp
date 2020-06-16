@@ -86,7 +86,6 @@ void icosphere(std::vector<gc::Vector3> &coords,
 void tetrahedron(std::vector<gc::Vector3> &coords,
                std::vector<std::vector<std::size_t>> &polygons) {
   // Initialize vertex coordinates
-  static const double t = (1.0 + sqrt(5.0)) / 2.0;
   auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
     return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
   };

@@ -129,6 +129,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
     f.getBendingForces();
     f.getStretchingForces();
     f.getPressureForces();
+    // f.getDPDForces();
     f.getDampingForces();
     f.getStochasticForces();
 
