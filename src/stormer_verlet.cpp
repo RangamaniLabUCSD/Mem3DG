@@ -20,11 +20,11 @@ namespace gcs = ::geometrycentral::surface;
 				ptrmesh->getFaceVertexList());*/
 				//polyscope::show();
 			f.getVelocityFromPastPosition(timeStep);
-			f.getBendingForces(p.Kb, p.H0);
-			f.getStretchingForces(p.Ksl, p.Ksg,p.Kse);
-			f.getPressureForces(p.Kv, p.Vt);
-			f.getDampingForces(p.gamma);
-			f.getStochasticForces(p.sigma);
+			f.getBendingForces();
+			f.getStretchingForces();
+			f.getPressureForces();
+			f.getDampingForces();
+			f.getStochasticForces();
 
 			gcs::VertexData<gc::Vector3> temp = vpg.inputVertexPositions;
 			for (gcs::Vertex v : mesh.vertices()) {

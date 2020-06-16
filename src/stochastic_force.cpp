@@ -22,7 +22,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getStochasticForces(double &sigma) {
+void Force::getStochasticForces() {
   stochasticForces.fill({ 0,0,0 });
   gcs::EdgeData<double> random_var(mesh);
   std::default_random_engine random_generator;

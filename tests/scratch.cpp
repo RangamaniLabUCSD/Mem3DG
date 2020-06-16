@@ -2,35 +2,65 @@
 #include <Eigen/Core>
 #include <iostream>
 
+#include <geometrycentral/surface/halfedge_factories.h>
+#include <geometrycentral/surface/halfedge_mesh.h>
+#include <geometrycentral/surface/intrinsic_geometry_interface.h>
+#include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
+#include <geometrycentral/surface/polygon_soup_mesh.h>
+#include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/utilities/vector3.h>
+
+#include "polyscope/polyscope.h"
+#include "polyscope/surface_mesh.h"
+
+#include "ddgsolver/icosphere.h"
 #include "ddgsolver/util.h"
 
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
+
 int main() {
-  Eigen::Array<double, 4, 3> A, B;
 
-  for(int i = 0; i < 4; ++i){
-    A(i,0) = 3*i;
-    A(i,1) = 3*i+1;
-    A(i,2) = 3*i+2;
+  Eigen::Matrix<double, 10, 3> foo;
+
+  for(int i = 0; i < 10; ++i){
+    foo(i,0) = 3*i;
+    foo(i,1) = 3*i+1;
+    foo(i,2) = 3*i+2;
   }
 
-  for(int i = 0; i < 4; ++i){
-    B(i,0) = 10*i;
-    B(i,1) = 10*i+1;
-    B(i,2) = 10*i+2;
-  }
-  std::cout << "A:" << std::endl << A << std::endl;
-  std::cout << "B:" << std::endl << B << std::endl; 
+  std::cout << foo << std::endl;
 
-  std::cout << "Sizeof(A): " << A.rows() << "x" << A.cols() << std::endl;
-  std::cout << "Sizeof(B): " << B.rows() << "x" << B.cols() << std::endl;
-  std::cout << A + B << std::endl;
+  Eigen::Matrix<double, 1, 3> bar;
+  bar << 0, 3, 6;
 
-  auto res = ddgsolver::dot(A,B);
-  std::cout << "Sizeof(res): " << res.rows() << "x" << res.cols() << std::endl;
-  std::cout << res << std::endl; 
+  std::cout << bar << std::endl;
 
-  auto res2 = (A.cwiseProduct(B).rowwise().sum());
-  std::cout << "Sizeof(res2): " << res2.rows() << "x" << res2.cols() << std::endl;
-  std::cout << res2 << std::endl;
+  foo = foo.rowwise() - bar;
+
+  std::cout << foo << std::endl; 
+
+
+
+  // std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
+  // std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+
+  // /// initialize icosphere
+  // std::vector<gc::Vector3> coords;
+  // std::vector<std::vector<std::size_t>> polygons;
+  // ddgsolver::tetrahedron(coords, polygons);
+  // gc::PolygonSoupMesh soup(polygons, coords);
+  // soup.mergeIdenticalVertices();
+  // std::tie(ptrmesh, ptrvpg) =
+  //     gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
+
+
+
+  // polyscope::init();
+  // polyscope::registerSurfaceMesh("mymesh", ptrvpg->inputVertexPositions,
+  //                                ptrmesh->getFaceVertexList());
+  // polyscope::show();
+
   return 0;
-}
+} // namespace gcs=::geometrycentral::surfaceintmain()

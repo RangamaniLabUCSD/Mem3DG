@@ -25,7 +25,7 @@ void log(gcs::FaceData<T> face_a, gcs::HalfedgeMesh &mesh, std::string name) {
   }
 }
 
-void Force::getStretchingForces(double &Ksl, double &Ksg, double &Kse) {
+void Force::getStretchingForces() {
   stretchingForces.fill({ 0.0,0.0,0.0 });
   const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
   // log(face_n, mesh,"face normal");

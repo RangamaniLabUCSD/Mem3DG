@@ -37,7 +37,7 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 
 int main() {
 	/// physical parameters 
-	ddgsolver::parameters p;
+	ddgsolver::Parameters p;
 	p.Kb = 0.01;			//Kb
 	p.H0 = 1.5;				//H0
 	p.Kse = 0.1;      //Kse
@@ -49,10 +49,10 @@ int main() {
 	p.kt = 0.00001;		//Kt 
 
 	// choose the run
-	std::string run = "visualization"; // 1. "integration 2. "visualization
+	std::string run = "integration"; // 1. "integration 2. "visualization
 
 	/// Choose the starting mesh 
-	std::string option = "output-file/Vt_90_H0_150.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+	std::string option = "sphere"; //"output-file/Vt_90_H0_150.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
 
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
@@ -87,10 +87,11 @@ int main() {
 		double eps = 1e-9;// 1e-9;
 
 		/// solve
-		ddgsolver::Force f(mesh, vpg);
-		ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
+		ddgsolver::Force f(mesh, vpg, p);
+		// ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
 		//integration.stormerVerlet();
-		integration.velocityVerlet();
+		// integration.velocityVerlet();
+		velocityVerlet(f, h, T, eps);
 
 		/// save the .ply file  
 		gcs::PlyHalfedgeMeshData data(mesh);
@@ -115,8 +116,8 @@ int main() {
 		polyscope::registerCurveNetwork("myNetwork",
 		ptrvpg->inputVertexPositions,
 		ptrmesh->getFaceVertexList());
-		ddgsolver::Force f(mesh, vpg);
-		f.getBendingForces(p.Kb, p.H0);
+		ddgsolver::Force f(mesh, vpg, p);
+		f.getBendingForces();
 		std::vector<double> xC(f.Hn.rows());
 		for (size_t i = 0; i < f.Hn.rows(); i++) {
 			xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)

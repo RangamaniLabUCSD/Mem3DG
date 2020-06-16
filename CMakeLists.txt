@@ -116,7 +116,7 @@ target_link_libraries(ddg PRIVATE ddgsolver polyscope)
 set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 add_executable(scratch tests/scratch.cpp)
-target_link_libraries(scratch PRIVATE ddgsolver)
+target_link_libraries(scratch PRIVATE ddgsolver polyscope)
 set_target_properties(scratch PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 enable_testing()
