@@ -22,7 +22,7 @@ void Force::getVelocityFromPastPosition(double& timeStep) {
   }
 }
 
-void Force::getDampingForces(double& gamma) {
+void Force::getDampingForces() {
   // Compute approximate vertex positions
   // TODO: this can be computed on vertex position update and cached to prevent
   // the sequential loop.
