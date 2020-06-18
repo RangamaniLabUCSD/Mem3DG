@@ -37,6 +37,7 @@ set_property(TARGET gtest PROPERTY CXX_STANDARD 11)
 set(TEST_SRCS
   src/main_test.cpp
   src/mapping_test.cpp
+  src/dotproduct_test.cpp
 )
 
 add_executable(ddgsolver-test "${TEST_SRCS}")

@@ -17,5 +17,8 @@ namespace gc = ::geometrycentral;
  * @param n         Iterations of quadrisections to perform 
  */
 DLL_PUBLIC void icosphere(std::vector<gc::Vector3> &coords,
-               std::vector<std::vector<std::size_t>> &polygons, int n, double R = 1.0);
+               std::vector<std::vector<std::size_t>> &polygons, int n);
+
+DLL_PUBLIC void tetrahedron(std::vector<gc::Vector3> &coords,
+               std::vector<std::vector<std::size_t>> &polygons);
 } // end namespace ddgsolver

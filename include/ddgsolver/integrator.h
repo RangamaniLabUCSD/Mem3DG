@@ -10,18 +10,6 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-struct DLL_PUBLIC parameters {
-  double Kb;    /// Bending modulus
-  double H0;    /// Spontaneous curvature
-  double Ksl;   /// Local stretching modulus
-  double Ksg;   /// Global stretching modulus
-  double Kse;   /// 
-  double Kv;    /// Volume regularization
-  double gamma; /// Dissipation coefficient
-  double Vt;    /// Reduced volume
-  double kt;    /// Boltzmann constant*Temperature
-  double sigma; /// Noise
-};
 
 class DLL_PUBLIC integrator {
 public:
@@ -29,14 +17,14 @@ public:
   double &timeSpan;
   gcs::HalfedgeMesh &mesh;
   gcs::VertexPositionGeometry &vpg;
-  parameters &p;
+  Parameters &p;
   ddgsolver::Force &f;
   double tolerance;
   double bendingEnergy;
   double pastBendingEnergy;
 
   integrator(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-             ddgsolver::Force &f_, double &h, double &T, parameters &p_,
+             ddgsolver::Force &f_, double &h, double &T, Parameters &p_,
              double eps)
       : mesh(mesh_), vpg(vpg_), f(f_), timeStep(h), timeSpan(T), p(p_),
         tolerance(eps) {
@@ -48,4 +36,8 @@ public:
   void velocityVerlet();
   void getBendingEnergy();
 };
+
+DLL_PUBLIC void velocityVerlet(Force &f, double dt, double total_time,
+                               double tolerance);
+
 } // namespace ddgsolver

@@ -84,8 +84,7 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stretching_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pressure_force.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/damping_force.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/stochastic_force.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dpd_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stormer_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/velocity_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_energy.cpp
@@ -97,7 +96,7 @@ target_include_directories(
   ddgsolver_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(ddgsolver_objlib PUBLIC geometry-central pcg::pcg polyscope)
+target_link_libraries(ddgsolver_objlib PUBLIC geometry-central pcg::pcg)
 set_target_properties(ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden) # VISIBILITY_INLINES_HIDDEN ON)
 
 # ddgsolver library
@@ -116,7 +115,7 @@ target_link_libraries(ddg PRIVATE ddgsolver polyscope)
 set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 add_executable(scratch tests/scratch.cpp)
-target_link_libraries(scratch PRIVATE ddgsolver)
+target_link_libraries(scratch PRIVATE ddgsolver polyscope)
 set_target_properties(scratch PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 enable_testing()
