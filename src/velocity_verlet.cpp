@@ -28,10 +28,10 @@ namespace ddgsolver {
 
 		for (size_t i = 0; i < timeSpan / timeStep; i++) {
 
-			double timeStepHere = timeStep * (1/pow(i, 1 / 2)); //* (1 / double(i)); //pow(i, 1 / 2));
+			double timeStepHere = timeStep * (1/std::pow(i, 0.5)); //* (1 / double(i)); //pow(i, 1 / 2));
 			p.sigma = sqrt(2 * p.gamma * p.kt / timeStepHere);
 
-			int prob = 4;
+			int prob = 11;
 
 			int flag = uniform_dist(random_generator);
 			if (true){ f.getBendingForces(p.Kb, p.H0); }
@@ -83,8 +83,8 @@ namespace ddgsolver {
 
 			getBendingEnergy();
 			if (((abs(pastBendingEnergy - bendingEnergy) / bendingEnergy) < tolerance)
-				&& (i>1) && (abs(f.volume - f.targetVolume * p.Vt) / (f.targetVolume * p.Vt) < 1e-2)
-				&& (abs(f.surfaceArea - f.targetSurfaceArea) / (f.targetSurfaceArea) < 1e-2)) { break; }
+				&& (i>1) && (abs(f.volume - f.maxVolume * p.Vt) / (f.maxVolume * p.Vt) < 1e-2)
+				&& (abs(f.surfaceArea - f.initialSurfaceArea) / (f.initialSurfaceArea) < 1e-2)) { break; }
 			// std::cout << "energy: " << bendingEnergy << std::endl;
 
 			//std::cout << "process: " << int(double(i) / (timeSpan / timeStep) * 100) << "%" << std::endl;

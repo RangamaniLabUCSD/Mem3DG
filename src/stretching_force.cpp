@@ -46,8 +46,7 @@ void Force::getStretchingForces(double &Ksl, double &Ksg, double &Kse) {
   for (gcs::Face f : mesh.faces()) {
     surfaceArea += face_a[f];
   }
-
-  std::cout << "area: " << surfaceArea / targetSurfaceArea << std::endl;
+  std::cout << "area: " << surfaceArea / initialSurfaceArea << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
     gc::Vector3 localForce{0.0, 0.0, 0.0};
@@ -64,13 +63,13 @@ void Force::getStretchingForces(double &Ksl, double &Ksg, double &Kse) {
       
       if(Ksl != 0){
         localForce += -2 * Ksl * gradient *
-            (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
-            targetFaceAreas[base_he.face()];
+            (face_a[base_he.face()] - initialFaceAreas[base_he.face()]) /
+            initialFaceAreas[base_he.face()];
       }
       
       if (Ksg != 0) {
         globalForce +=
-          -2 * Ksg * gradient * (surfaceArea - targetSurfaceArea) / surfaceArea;
+          -2 * Ksg * gradient * (surfaceArea - initialSurfaceArea) / surfaceArea;
       }
       
       if (Kse != 0) {

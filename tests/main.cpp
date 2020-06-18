@@ -36,6 +36,10 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 }
 
 int main() {
+	/// geometric parameters
+	int nSub = 2;
+	double R = 1.0;
+
 	/// physical parameters 
 	ddgsolver::parameters p;
 	p.Kb = 0.01;			//Kb
@@ -43,16 +47,21 @@ int main() {
 	p.Kse = 0.1;      //Kse
 	p.Ksl = 1;				//Ksl
 	p.Ksg = 2;				//Ksg
-	p.Kv = 10;			  //Kv
+	p.Kv = 1;			  //Kv
 	p.gamma = 1;				//gamma
 	p.Vt = 1 * 0.7;			//Vt
 	p.kt = 0.00001;		//Kt 
 
+	/// integration parameters
+	double h = 0.005;
+	double T = 300;
+	double eps = 1e-9;// 1e-9;
+
 	// choose the run
-	std::string run = "visualization"; // 1. "integration 2. "visualization
+	std::string run = "integration"; // 1. "integration 2. "visualization
 
 	/// Choose the starting mesh 
-	std::string option = "output-file/Vt_90_H0_150.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+	std::string option = "sphere"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
 
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
@@ -67,7 +76,7 @@ int main() {
 		/// initialize icosphere 
 		std::vector<gc::Vector3> coords;
 		std::vector<std::vector<std::size_t>> polygons;
-		ddgsolver::icosphere(coords, polygons, 2);
+		ddgsolver::icosphere(coords, polygons, nSub, R);
 		gc::PolygonSoupMesh soup(polygons, coords);
 		soup.mergeIdenticalVertices();
 		std::tie(ptrmesh, ptrvpg) =
@@ -81,11 +90,6 @@ int main() {
 	auto& vpg = *ptrvpg;
 
 	if (run == "integration") {
-		/// integration parameters
-		double h = 0.005;
-		double T = 300;
-		double eps = 1e-9;// 1e-9;
-
 		/// solve
 		ddgsolver::Force f(mesh, vpg);
 		ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);

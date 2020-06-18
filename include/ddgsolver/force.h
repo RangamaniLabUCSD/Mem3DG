@@ -45,15 +45,15 @@ public:
   /// Cotangent Laplacian
   Eigen::SparseMatrix<double> L;
   /// Target area per face
-  gcs::FaceData<double> targetFaceAreas;
+  gcs::FaceData<double> initialFaceAreas;
   /// Target total face area
-  double targetSurfaceArea = 0.0;
+  double initialSurfaceArea = 0.0;
   /// surface area
   double surfaceArea = 0.0;
   /// Target length per edge
   gcs::EdgeData<double> targetEdgeLength;
-  /// Target volume
-  double targetVolume = 0.0;
+  /// Maximal volume
+  double maxVolume = 0.0;
   /// Volume
   double volume = 0.0;
   /// Cached vertex positions from the previous step
@@ -113,17 +113,19 @@ public:
     L = vpg.cotanLaplacian;
 
     // Initialize face areas
-    targetFaceAreas = vpg.faceAreas;
-    auto faceAreas_e = EigenMap(targetFaceAreas);
-    targetSurfaceArea = faceAreas_e.sum();
+    initialFaceAreas = vpg.faceAreas;
+    auto faceAreas_e = EigenMap(initialFaceAreas);
+    initialSurfaceArea = faceAreas_e.sum();
 
     // Initialize edge length
     targetEdgeLength = vpg.edgeLengths;
 
-    // Initialize initial volume
-    for (gcs::Face f : mesh.faces()) {
-      targetVolume += signedVolumeFromFace(f, vpg);
-    }
+    // Initialize maximal volume
+    double pi = 2 * std::acos(0.0);
+    maxVolume = std::pow(initialSurfaceArea, 1.5) / std::pow(pi, 0.5) / 6;
+    //for (gcs::Face f : mesh.faces()) {
+    //  maxVolume += signedVolumeFromFace(f, vpg);
+    //}
 
     // Initialize the vertex position of the last iteration
     pastPositions = vpg.inputVertexPositions;
