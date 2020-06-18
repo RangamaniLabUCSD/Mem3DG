@@ -82,4 +82,21 @@ void icosphere(std::vector<gc::Vector3> &coords,
     std::swap(polygons, polygons_new);
   }
 }
+
+void tetrahedron(std::vector<gc::Vector3> &coords,
+               std::vector<std::vector<std::size_t>> &polygons) {
+  // Initialize vertex coordinates
+  auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
+    return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
+  };
+
+  coords.emplace_back(makeNormedVertex(0, 0, 2));
+  coords.emplace_back(makeNormedVertex( 1.632993, -0.942809, -0.666667));
+  coords.emplace_back(makeNormedVertex( 0.000000,  1.885618, -0.666667));  coords.emplace_back(makeNormedVertex(-1.632993, -0.942809, -0.666667));
+  // Initialize Faces
+  polygons.emplace_back(std::vector<std::size_t>{1, 0, 3});
+  polygons.emplace_back(std::vector<std::size_t>{2, 0, 1});
+  polygons.emplace_back(std::vector<std::size_t>{3, 0, 2});
+  polygons.emplace_back(std::vector<std::size_t>{3, 2, 1});
+}
 } // end namespace ddgsolver

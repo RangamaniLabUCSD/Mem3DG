@@ -21,7 +21,20 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-class DLL_PUBLIC Force {
+struct DLL_PUBLIC Parameters {
+  double Kb;    /// Bending modulus
+  double H0;    /// Spontaneous curvature
+  double Ksl;   /// Local stretching modulus
+  double Ksg;   /// Global stretching modulus
+  double Kse;   ///
+  double Kv;    /// Volume regularization
+  double gamma; /// Dissipation coefficient
+  double Vt;    /// Reduced volume
+  double kt;    /// Boltzmann constant*Temperature
+  double sigma; /// Noise
+};
+
+class DLL_PUBLIC Force : public Parameters {
 public:
   /// Cached mesh of interest
   gcs::HalfedgeMesh &mesh;
@@ -77,8 +90,8 @@ public:
    * @param vpg_          Embedding and geometry information
    * @param time_step_    Numerical timestep
    */
-  Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
-      : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}),
+  Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_, Parameters &p)
+      : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), Parameters(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
         vertexVelocity(mesh_, {0, 0, 0}) {
@@ -160,50 +173,24 @@ public:
     vpg.unrequireVertexNormals();
   }
 
-  /**
-   * @brief Compute the bending force
-   *
-   * @param Kb    Bending modulus
-   * @param H0    Spontaneous curvature
-   */
-  void getBendingForces(double &Kb, double &H0);
+  void getBendingForces();
 
-  /**
-   * @brief Compute force from stretching
-   *
-   * @param Ksl
-   * @param Ksg
-   * @param Kse
-   */
-  void getStretchingForces(double &Ksl, double &Ksg, double &Kse);
+  void getStretchingForces();
 
-  /**
-   * @brief Compute forces from pressure
-   *
-   * @param Kv    Volume regularizer
-   * @param Vt    Reduced volume
-   */
-  void getPressureForces(double &Kv, double &Vt);
+  void getPressureForces();
 
-  /**
-   * @brief Compute forces from damping
-   *
-   * @param gamma
-   */
-  void getDampingForces(double &gamma);
+
+  void getDPDForces();
+
+  void getDampingForces();
+  void getStochasticForces();
 
   /**
    * @brief Get velocity from the position of the last iteration
    *
    * @param timeStep
    */
-  void getVelocityFromPastPosition(double &timeStep);
-  /**
-   * @brief Compute forces from random noise
-   *
-   * @param sigma
-   */
-  void getStochasticForces(double &sigma);
+  void getVelocityFromPastPosition(double dt);
 
   /**
    * @brief Update the vertex position and recompute cached values

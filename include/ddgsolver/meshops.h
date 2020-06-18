@@ -1,7 +1,6 @@
 
 #pragma once
 
-
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
@@ -25,9 +24,9 @@ namespace gcs = ::geometrycentral::surface;
  * @param vpg
  * @return double
  */
-DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
-                                       gcs::VertexPositionGeometry &vpg) {
-                                           gc::Vector3 p[3];
+DLL_PUBLIC inline double
+signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg) {
+  gc::Vector3 p[3];
   size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
     p[i] = vpg.inputVertexPositions[v];
@@ -40,8 +39,8 @@ DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
   double v213 = p[1].x * p[0].y * p[2].z;
   double v123 = p[0].x * p[1].y * p[2].z;
 
-  return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123);
-                                       }
+  return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+}
 
 /**
  * @brief Get the vector from halfedge vertices
@@ -55,5 +54,4 @@ vecFromHalfedge(gcs::Halfedge &he, gcs::VertexPositionGeometry &vpg) {
   return vpg.inputVertexPositions[he.next().vertex()] -
          vpg.inputVertexPositions[he.vertex()];
 }
-
 } // namespace ddgsolver

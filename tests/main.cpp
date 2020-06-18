@@ -41,7 +41,7 @@ int main() {
 	double R = 1.0;
 
 	/// physical parameters 
-	ddgsolver::parameters p;
+	ddgsolver::Parameters p;
 	p.Kb = 0.01;			//Kb
 	p.H0 = 1.5;				//H0
 	p.Kse = 0.1;      //Kse
@@ -91,10 +91,11 @@ int main() {
 
 	if (run == "integration") {
 		/// solve
-		ddgsolver::Force f(mesh, vpg);
-		ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
+		ddgsolver::Force f(mesh, vpg, p);
+		// ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
 		//integration.stormerVerlet();
-		integration.velocityVerlet();
+		// integration.velocityVerlet();
+		velocityVerlet(f, h, T, eps);
 
 		/// save the .ply file  
 		gcs::PlyHalfedgeMeshData data(mesh);
@@ -119,8 +120,8 @@ int main() {
 		polyscope::registerCurveNetwork("myNetwork",
 		ptrvpg->inputVertexPositions,
 		ptrmesh->getFaceVertexList());
-		ddgsolver::Force f(mesh, vpg);
-		f.getBendingForces(p.Kb, p.H0);
+		ddgsolver::Force f(mesh, vpg, p);
+		f.getBendingForces();
 		std::vector<double> xC(f.Hn.rows());
 		for (size_t i = 0; i < f.Hn.rows(); i++) {
 			xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
