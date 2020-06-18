@@ -12,11 +12,11 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 
 void icosphere(std::vector<gc::Vector3> &coords,
-               std::vector<std::vector<std::size_t>> &polygons, int n) {
+               std::vector<std::vector<std::size_t>> &polygons, int n, double R) {
   // Initialize vertex coordinates
   static const double t = (1.0 + sqrt(5.0)) / 2.0;
-  auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
-    return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
+  auto makeNormedVertex = [&R](double x, double y, double z) -> gc::Vector3 {
+    return R * gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
   };
 
   coords.emplace_back(makeNormedVertex(-1, t, 0));
@@ -54,8 +54,8 @@ void icosphere(std::vector<gc::Vector3> &coords,
   polygons.emplace_back(std::vector<std::size_t>{8, 6, 7});
   polygons.emplace_back(std::vector<std::size_t>{9, 8, 1});
 
-  auto getMidPoint = [&coords](size_t t1, size_t t2) -> std::size_t {
-    coords.emplace_back(((coords[t1] + coords[t2]) / 2).normalize());
+  auto getMidPoint = [&coords,&R](size_t t1, size_t t2) -> std::size_t {
+    coords.emplace_back(R*((coords[t1] + coords[t2]) / 2).normalize());
     return coords.size() - 1;
   };
 

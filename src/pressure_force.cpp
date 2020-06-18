@@ -32,7 +32,7 @@ void Force::getPressureForces(double &Kv, double &Vt) {
     }
   }
 
-  std::cout << "total volume:  " << volume / targetVolume / Vt << std::endl;
+  std::cout << "total volume:  " << volume / maxVolume / Vt << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -47,7 +47,7 @@ void Force::getPressureForces(double &Kv, double &Vt) {
       // - p1) < 0) <<  std::endl;
       // dVdx *= sign_of_volume[he.face()];
       pressureForces[v] +=
-          -0.5 * Kv * (volume - targetVolume * Vt) / (targetVolume * Vt) * dVdx;
+          -0.5 * Kv * (volume - maxVolume * Vt) / (maxVolume * Vt) * dVdx;
       // for (size_t i = 0; i < 3; i++) {
       //	pressureForces(v_ind[v], i) += dVdx[i];
       //}
