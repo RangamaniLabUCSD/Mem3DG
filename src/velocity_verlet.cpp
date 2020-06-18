@@ -16,7 +16,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void integrator::velocityVerlet() {
-  f.vertexVelocity.fill({0, 0, 0});
+  f.vel.fill({0, 0, 0});
   gcs::VertexData<gc::Vector3> totalForce(mesh, {0, 0, 0});
   gcs::VertexData<gc::Vector3> newTotalForce(mesh, {0, 0, 0});
   gc::Vector3 COMVelocity;
@@ -68,11 +68,11 @@ void integrator::velocityVerlet() {
     // f.getStochasticForces(p.sigma);
 
     COMVelocity_e =
-        ddgsolver::EigenMap<double, 3>(f.vertexVelocity).colwise().sum() /
+        ddgsolver::EigenMap<double, 3>(f.vel).colwise().sum() /
         mesh.nVertices();
     for (gcs::Vertex v : mesh.vertices()) {
       vpg.inputVertexPositions[v] +=
-          (f.vertexVelocity[v] - COMVelocity) * timeStepHere +
+          (f.vel[v] - COMVelocity) * timeStepHere +
           totalForce[v] * timeStepHere * timeStepHere * 0.5;
 
       newTotalForce[v] = f.bendingForces[v] + f.stretchingForces[v] +
@@ -85,7 +85,7 @@ void integrator::velocityVerlet() {
               << "df: " << f.dampingForces[v].norm()
               << "xf: " << f.stochasticForces[v].norm() <<std::endl;*/
 
-      f.vertexVelocity[v] +=
+      f.vel[v] +=
           (totalForce[v] + newTotalForce[v]) * timeStepHere * 0.5;
       totalForce[v] = newTotalForce[v];
     }
@@ -117,7 +117,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
   newForce.resize(f.mesh.nVertices(), 3);
   newForce.setZero();
 
-  auto vertexVelocity_e = ddgsolver::EigenMap<double, 3>(f.vertexVelocity);
+  auto vel_e = ddgsolver::EigenMap<double, 3>(f.vel);
   auto pos_e = ddgsolver::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   f.sigma = sqrt(2 * f.gamma * f.kt / dt);
@@ -129,22 +129,22 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
     f.getBendingForces();
     f.getStretchingForces();
     f.getPressureForces();
-    // f.getDPDForces();
-    f.getDampingForces();
-    f.getStochasticForces();
+    f.getDPDForces();
+    // f.getDampingForces();
+    // f.getStochasticForces();
 
-    pos_e += (vertexVelocity_e.rowwise() -
-              (vertexVelocity_e.colwise().sum() / f.mesh.nVertices())) *
+    pos_e += (vel_e.rowwise() -
+              (vel_e.colwise().sum() / f.mesh.nVertices())) *
                  dt +
              force * hdt2;
 
-    newForce = ddgsolver::EigenMap<double, 3>(f.bendingForces) +
-               ddgsolver::EigenMap<double, 3>(f.stretchingForces) +
-               ddgsolver::EigenMap<double, 3>(f.pressureForces) +
-               ddgsolver::EigenMap<double, 3>(f.dampingForces) +
-               ddgsolver::EigenMap<double, 3>(f.stochasticForces);
+    newForce = EigenMap<double, 3>(f.bendingForces) +
+               EigenMap<double, 3>(f.stretchingForces) +
+               EigenMap<double, 3>(f.pressureForces) +
+               EigenMap<double, 3>(f.dampingForces) +
+               EigenMap<double, 3>(f.stochasticForces);
 
-    vertexVelocity_e += (force + newForce) * hdt;
+    vel_e += (force + newForce) * hdt;
     force.swap(newForce);
     f.update_Vertex_positions(); // recompute cached values;
 
@@ -160,6 +160,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
     // }
     // std::cout << "energy: " << bendingEnergy << std::endl;
 
+    std::cout << "BendingForces: " << dot(EigenMap<double, 3>(f.bendingForces), EigenMap<double, 3>(f.bendingForces)).cwiseSqrt().sum() << std::endl;
+    std::cout << "StretchingForces: " << dot(EigenMap<double, 3>(f.stretchingForces), EigenMap<double, 3>(f.stretchingForces)).cwiseSqrt().sum() << std::endl;
+    std::cout << "pressureForces: " << dot(EigenMap<double, 3>(f.pressureForces), EigenMap<double, 3>(f.pressureForces)).cwiseSqrt().sum() << std::endl;
+    std::cout << "KE: " << 0.5*dot(vel_e, vel_e).cwiseSqrt().sum() << std::endl;
     std::cout << "process: " << i << std::endl;
   }
 }

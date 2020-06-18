@@ -72,7 +72,7 @@ public:
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
-  gcs::VertexData<gc::Vector3> vertexVelocity;
+  gcs::VertexData<gc::Vector3> vel;
   /// outward normal
   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexAreaGradientNormal;
   // Mean curvature of the mesh
@@ -94,7 +94,7 @@ public:
       : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), Parameters(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
-        vertexVelocity(mesh_, {0, 0, 0}) {
+        vel(mesh_, {0, 0, 0}) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -182,6 +182,8 @@ public:
 
   void getDampingForces();
   void getStochasticForces();
+
+  void updateForces(); 
 
   /**
    * @brief Get velocity from the position of the last iteration
