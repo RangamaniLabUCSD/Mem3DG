@@ -33,15 +33,18 @@ int visualizePly(std::string fileName) {
   polyscope::registerCurveNetwork("myNetwork",
     ptrvpg->inputVertexPositions,
     ptrmesh->getFaceVertexList());
-  ddgsolver::Force f(mesh, vpg);
-  double Kb = 1.0; //  both of them does not matter
-  double H0 = 0; // for the calculation of curvature.
-  f.getBendingForces(Kb, H0);
-  std::vector<double> xC(f.Hn.rows());
-  for (size_t i = 0; i < f.Hn.rows(); i++) {
-    xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
-  }
-  polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+
+  /// get mean curvature 
+  //ddgsolver::Force f(mesh, vpg);
+  //double Kb = 1.0; //  both of them does not matter
+  //double H0 = 0; // for the calculation of curvature.
+  //f.getBendingForces(Kb, H0);
+  //std::vector<double> xC(f.Hn.rows());
+  //for (size_t i = 0; i < f.Hn.rows(); i++) {
+  //  xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
+  //}
+  //polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+
   polyscope::show();
   return 0;
 }

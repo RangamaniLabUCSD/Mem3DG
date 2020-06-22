@@ -22,7 +22,7 @@ namespace gcs = ::geometrycentral::surface;
 void driver(std::string run, std::string option, int nSub, double H0, double Vt,
 	double h, double T, double eps) {
 	/// physical parameters 
-	ddgsolver::parameters p;
+	ddgsolver::Parameters p;
 	p.Kb = 0.03;			//Kb
 	p.H0 = H0;				//H0
 	p.Kse = 0.1;      //Kse

@@ -26,7 +26,7 @@ struct DLL_PUBLIC Parameters {
   double H0;    /// Spontaneous curvature
   double Ksl;   /// Local stretching modulus
   double Ksg;   /// Global stretching modulus
-  double Kse;   ///
+  double Kse;   /// Edge spring constant
   double Kv;    /// Volume regularization
   double gamma; /// Dissipation coefficient
   double Vt;    /// Reduced volume
@@ -178,7 +178,6 @@ public:
   void getStretchingForces();
 
   void getPressureForces();
-
 
   void getDPDForces();
 

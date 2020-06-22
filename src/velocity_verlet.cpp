@@ -27,32 +27,31 @@ void integrator::velocityVerlet() {
   std::uniform_int_distribution<int> uniform_dist(1, 10);
 
   for (size_t i = 0; i < timeSpan / timeStep; i++) {
+    
+    /// converging time step 
+    double timeStepHere = timeStep * (1 / pow(i+1, 0)); //* (1 / double(i+1)); //pow(i+1, 0.5));
+    
+    /// calculate the noise amplitude
+    // f.sigma = sqrt(2 * p.gamma * p.kt / timeStepHere);
 
-    double timeStepHere = timeStep;
-    // timeStep * (1 / pow(i+1, 0.5)); //* (1 / double(i+1)); //pow(i+1, 0.5));
-    p.sigma = sqrt(2 * p.gamma * p.kt / timeStepHere);
-
+    /// calculate (batch of) forces
     int prob = 11;
-
     int flag = uniform_dist(random_generator);
     if (true) {
       f.getBendingForces();
     }
-
     flag = uniform_dist(random_generator);
     if (flag < prob) {
       f.getStretchingForces();
     } else {
       f.stretchingForces.fill({0.0, 0.0, 0.0});
     }
-
     flag = uniform_dist(random_generator);
     if (flag < prob) {
       f.getPressureForces();
     } else {
       f.pressureForces.fill({0.0, 0.0, 0.0});
     }
-
     flag = uniform_dist(random_generator);
     if (flag < prob) {
       f.getDampingForces();
@@ -61,15 +60,18 @@ void integrator::velocityVerlet() {
       f.dampingForces.fill({0.0, 0.0, 0.0});
       f.stochasticForces.fill({0.0, 0.0, 0.0});
     }
-    // f.getBendingForces(p.Kb, p.H0);
-    // f.getStretchingForces(p.Ksl, p.Ksg,p.Kse);
-    // f.getPressureForces(p.Kv, p.Vt);
-    // f.getDampingForces(p.gamma);
-    // f.getStochasticForces(p.sigma);
+     //f.getBendingForces(p.Kb, p.H0);
+     //f.getStretchingForces(p.Ksl, p.Ksg,p.Kse);
+     //f.getPressureForces(p.Kv, p.Vt);
+     //f.getDampingForces(p.gamma);
+     //f.getStochasticForces(p.sigma);
 
+    /// calculate the COM velocity
     COMVelocity_e =
         ddgsolver::EigenMap<double, 3>(f.vertexVelocity).colwise().sum() /
         mesh.nVertices();
+
+    /// velocity verlet integration
     for (gcs::Vertex v : mesh.vertices()) {
       vpg.inputVertexPositions[v] +=
           (f.vertexVelocity[v] - COMVelocity) * timeStepHere +
@@ -79,30 +81,26 @@ void integrator::velocityVerlet() {
                          f.pressureForces[v] + f.dampingForces[v] +
                          f.stochasticForces[v];
 
-      /*std::cout << "bf: " << f.bendingForces[v].norm()
-              << "sf: " << f.stretchingForces[v].norm()
-              << "pf: " << f.pressureForces[v].norm()
-              << "df: " << f.dampingForces[v].norm()
-              << "xf: " << f.stochasticForces[v].norm() <<std::endl;*/
-
       f.vertexVelocity[v] +=
           (totalForce[v] + newTotalForce[v]) * timeStepHere * 0.5;
       totalForce[v] = newTotalForce[v];
     }
     f.update_Vertex_positions();
 
+    /// determine convergence based on energy and constraints
     getBendingEnergy();
     if (((abs(pastBendingEnergy - bendingEnergy) / bendingEnergy) <
          tolerance) &&
         (i > 1) &&
-        (abs(f.volume - f.targetVolume * p.Vt) / (f.targetVolume * p.Vt) <
+        (abs(f.volume - f.maxVolume * p.Vt) / (f.maxVolume * p.Vt) <
          1e-2) &&
-        (abs(f.surfaceArea - f.targetSurfaceArea) / (f.targetSurfaceArea) <
+        (abs(f.surfaceArea - f.initialSurfaceArea) / (f.initialSurfaceArea) <
          1e-2)) {
       break;
     }
-    // std::cout << "energy: " << bendingEnergy << std::endl;
 
+    /// logging the integration process
+    // std::cout << "energy: " << bendingEnergy << std::endl;
     // std::cout << "process: " << int(double(i) / (timeSpan / timeStep) * 100)
     // << "%" << std::endl;
     std::cout << "process: " << i << std::endl;
@@ -121,6 +119,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
   auto pos_e = ddgsolver::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   f.sigma = sqrt(2 * f.gamma * f.kt / dt);
+  std::cout << "f.sigma" << f.sigma << std::endl;
   const double hdt = 0.5 * dt;
   const double hdt2 = hdt * dt;
 
@@ -145,7 +144,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
                ddgsolver::EigenMap<double, 3>(f.stochasticForces);
 
     vertexVelocity_e += (force + newForce) * hdt;
-    force.swap(newForce);
+    force = newForce;
     f.update_Vertex_positions(); // recompute cached values;
 
     // getBendingEnergy();
