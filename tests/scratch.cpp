@@ -30,7 +30,8 @@ int main() {
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
 
-  ddgsolver::tetrahedron(coords, polygons);
+  ddgsolver::icosphere(coords, polygons, 2);
+  // ddgsolver::tetrahedron(coords, polygons);
 
   // auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
   //   return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
@@ -48,30 +49,27 @@ int main() {
       gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
 
   ddgsolver::Parameters p;
-  p.Kb = 0.01;    // Kb
-  p.H0 = 1.5;     // H0
-  p.Kse = 0.1;    // Kse
-  p.Ksl = 1;      // Ksl
-  p.Ksg = 2;      // Ksg
-  p.Kv = 10;      // Kv
-  p.gamma = 1;    // gamma
-  p.Vt = 1 * 0.7; // Vt
-  p.kt = 0.00001; // Kt
+  p.Kb = 0;    // Kb
+  p.H0 = 0;     // H0
+  p.Kse = 0;    // Kse
+  p.Ksl = 0;      // Ksl
+  p.Ksg = 0;      // Ksg
+  p.Kv = 0;      // Kv
+  p.gamma = 5;    // gamma
+  p.Vt = 1; // Vt
+  p.kt = 0.414;// Kt
 
   auto &mesh = *ptrmesh;
   auto &vpg = *ptrvpg;
   ddgsolver::Force f(mesh, vpg, p);
-  velocityVerlet(f, 0.005, 0.01, 1e-9);
+  velocityVerlet(f, 0.005, 0.4, 1e-9);
 
-  // f.getDampingForces();
-  // f.getStochasticForces();
-  f.getDPDForces();
+  // std::cout << "Damping Forces: " << std::endl;
+  // std::cout << ddgsolver::EigenMap<double, 3>(f.dampingForces) << std::endl;
 
-  std::cout << "Damping Forces: " << std::endl;
-  std::cout << ddgsolver::EigenMap<double, 3>(f.dampingForces) << std::endl;
+  // std::cout << "Stoch. Forces: " << std::endl;
+  // std::cout << ddgsolver::EigenMap<double, 3>(f.stochasticForces) << std::endl;
 
-  std::cout << "Stoch. Forces: " << std::endl;
-  std::cout << ddgsolver::EigenMap<double, 3>(f.stochasticForces) << std::endl;
   // polyscope::init();
   // polyscope::registerSurfaceMesh("mymesh", ptrvpg->inputVertexPositions,
   //                                ptrmesh->getFaceVertexList());
