@@ -14,7 +14,11 @@ namespace ddgsolver {
 	namespace gc = ::geometrycentral;
 	namespace gcs = ::geometrycentral::surface;
 
-	void integrator::getBendingEnergy() {
+	void integrator::getTotalEnergy() {
+		// comment: this may not be useful, the convergence can be be tested by checking its derivative 
+		// which is the forces excluding the DPD forces. The energy trajectory of could actually numerically
+		// integrated by post processing after saving all forces during the iterations. 
+
 		//auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
 		//auto A = f.L.transpose() * f.M_inv * f.L; //could further cached since the same for all time pt
 		//for (size_t i = 0; i < positions.rows(); i++) {
@@ -22,18 +26,19 @@ namespace ddgsolver {
 		//		Eb += positions.row(i) * A * positions.transpose().col(j);
 		//	}
 		//}
-		pastBendingEnergy = bendingEnergy;
 
+		pastTotalEnergy = totalEnergy;
+
+		/// bending energy 
 		Eigen::Matrix<double, Eigen::Dynamic, 1> k_dH_sqrd;
 		k_dH_sqrd.resize(f.Hn.rows(), 1);
-
 		auto difference = f.Hn - f.H0n;
+		k_dH_sqrd = p.Kb * (difference.array() * difference.array()).colwise().sum();
+		double bE = (f.M * k_dH_sqrd).sum();
 
-		for (size_t row = 0; row < f.Hn.rows(); row++) {
-			k_dH_sqrd(row) = p.Kb * (difference.row(row).dot(difference.row(row)));
-		}
-
-		bendingEnergy = (f.M * k_dH_sqrd).sum();
+		totalEnergy = bE;
+		/// stretching energy 
+		//double sE = 
 	}
 }
 

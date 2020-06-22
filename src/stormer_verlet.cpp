@@ -23,8 +23,8 @@ namespace gcs = ::geometrycentral::surface;
 			f.getBendingForces();
 			f.getStretchingForces();
 			f.getPressureForces();
-			f.getDampingForces();
-			f.getStochasticForces();
+			f.getDPDForces();
+			f.getExternalForces();
 
 			gcs::VertexData<gc::Vector3> temp = vpg.inputVertexPositions;
 			for (gcs::Vertex v : mesh.vertices()) {
@@ -40,16 +40,17 @@ namespace gcs = ::geometrycentral::surface;
 						+ f.stretchingForces[v]
 						+ f.pressureForces[v]
 						+ f.dampingForces[v]
-						+ f.stochasticForces[v];
+						+ f.stochasticForces[v]
+						+ f.externalForces[v];
 					vpg.inputVertexPositions[v] += totalForce * timeStep * timeStep - f.pastPositions[v];
 				}
 			}
 			//std::cout << "total force:  " << totalForce.norm() << std::endl;
 			f.update_Vertex_positions();
 			f.pastPositions = temp;
-			getBendingEnergy();
-			if (abs(pastBendingEnergy - bendingEnergy) / bendingEnergy < 1e-6) { break; }
-			std::cout << "energy: " << bendingEnergy << std::endl;
+			getTotalEnergy();
+			if (abs(pastTotalEnergy - totalEnergy) / totalEnergy < 1e-6) { break; }
+			std::cout << "energy: " << totalEnergy << std::endl;
 			std::cout << "process: " << int(double(i) / (timeSpan / timeStep) * 100) << "%" << std::endl;
 		}
 	}

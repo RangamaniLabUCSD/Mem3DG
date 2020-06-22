@@ -66,50 +66,6 @@ void Force::getDPDForces() {
     double noise = normal_dist(rng);
     stochasticForces[v1] += noise * dPos12_n;
     stochasticForces[v2] -= noise * dPos12_n;
-
-    // random_var[e] = normal_dist(rng);
-  }
-
-  // for (gcs::Vertex v : mesh.vertices()) {
-  //   for (gcs::Halfedge he : v.outgoingHalfedges()) {
-  //     auto v_adj = he.next().vertex();
-
-  //     gc::Vector3 dVel = vel[v] - vel[v_adj];
-  //     gc::Vector3 dPos_n = (pos[v] - pos[v_adj]).normalize();
-  //     dampingForces[v] += -gamma * (gc::dot(dVel, dPos_n) * dPos_n);
-  //     stochasticForces[v] += random_var[he.edge()] * dPos_n;
-  //   }
-  // }
-}
-
-void Force::getDampingForces() {
-  dampingForces.fill({0.0, 0.0, 0.0});
-
-  for (gcs::Vertex v : mesh.vertices()) {
-    for (gcs::Vertex v_adj : v.adjacentVertices()) {
-      gc::Vector3 velo_diff = vel[v] - vel[v_adj];
-      gc::Vector3 posi_diff_unit =
-          (vpg.inputVertexPositions[v] - vpg.inputVertexPositions[v_adj])
-              .normalize();
-      dampingForces[v] +=
-          -gamma * (gc::dot(velo_diff, posi_diff_unit) * posi_diff_unit);
-    }
-  }
-}
-
-void Force::getStochasticForces() {
-  stochasticForces.fill({0, 0, 0});
-  gcs::EdgeData<double> random_var(mesh);
-  std::normal_distribution<double> normal_dist(0, sigma);
-
-  for (gcs::Edge e : mesh.edges()) {
-    random_var[e] = normal_dist(rng);
-  }
-  for (gcs::Vertex v : mesh.vertices()) {
-    for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      gc::Vector3 posi_diff_unit = -vecFromHalfedge(he, vpg).normalize();
-      stochasticForces[v] += random_var[he.edge()] * posi_diff_unit;
-    }
   }
 }
 

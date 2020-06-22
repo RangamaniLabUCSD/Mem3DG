@@ -20,21 +20,21 @@ public:
   Parameters &p;
   ddgsolver::Force &f;
   double tolerance;
-  double bendingEnergy;
-  double pastBendingEnergy;
+  double totalEnergy;
+  double pastTotalEnergy;
 
   integrator(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
              ddgsolver::Force &f_, double &h, double &T, Parameters &p_,
              double eps)
       : mesh(mesh_), vpg(vpg_), f(f_), timeStep(h), timeSpan(T), p(p_),
         tolerance(eps) {
-    bendingEnergy = 0;
-    pastBendingEnergy = 0;
+    totalEnergy = 0;
+    pastTotalEnergy = 0;
   }
 
   void stormerVerlet();
   void velocityVerlet();
-  void getBendingEnergy();
+  void getTotalEnergy();
 };
 
 DLL_PUBLIC void velocityVerlet(Force &f, double dt, double total_time,
