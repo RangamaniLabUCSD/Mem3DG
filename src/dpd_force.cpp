@@ -23,38 +23,49 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getVelocityFromPastPosition(double dt) {
-  auto vertexVelocity_e = ddgsolver::EigenMap<double, 3>(vertexVelocity);
-  auto pos_e = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
-  auto pastpos_e = ddgsolver::EigenMap<double, 3>(pastPositions);
-  vertexVelocity_e = (pos_e - pastpos_e) / dt;
+  auto vel_e = EigenMap<double, 3>(vel);
+  auto pos_e = EigenMap<double, 3>(vpg.inputVertexPositions);
+  auto pastpos_e = EigenMap<double, 3>(pastPositions);
+  vel_e = (pos_e - pastpos_e) / dt;
 }
 
 void Force::getDPDForces() {
-  auto dampingForces_e = ddgsolver::EigenMap<double, 3>(dampingForces);
-  auto stochasticForces_e = ddgsolver::EigenMap<double, 3>(stochasticForces);
+  // Reset forces to zero
+  auto dampingForces_e = EigenMap<double, 3>(dampingForces);
+  auto stochasticForces_e = EigenMap<double, 3>(stochasticForces);
   dampingForces_e.setZero();
   stochasticForces_e.setZero();
-
-  // std::default_random_engine random_generator;
-  gcs::EdgeData<double> random_var(mesh);
-  std::normal_distribution<double> normal_dist(0, sigma);
-
-  for (gcs::Edge e : mesh.edges()) {
-    random_var[e] = normal_dist(rng);
-  }
 
   // alias positions
   const auto &pos = vpg.inputVertexPositions;
 
-  for (gcs::Vertex v : mesh.vertices()) {
-    for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      auto v_adj = he.next().vertex();
+  // std::default_random_engine random_generator;
+  // gcs::EdgeData<double> random_var(mesh);
+  std::normal_distribution<double> normal_dist(0, sigma);
 
-      gc::Vector3 dVel = vertexVelocity[v] - vertexVelocity[v_adj];
-      gc::Vector3 dPos_n = (pos[v] - pos[v_adj]).normalize();
-      dampingForces[v] += -gamma * (gc::dot(dVel, dPos_n) * dPos_n);
-      stochasticForces[v] += random_var[he.edge()] * dPos_n;
-    }
+  for (gcs::Edge e : mesh.edges()) {
+    gcs::Halfedge he = e.halfedge();
+    gcs::Vertex v1 = he.vertex();
+    gcs::Vertex v2 = he.next().vertex();
+
+    gc::Vector3 dVel12 = vel[v1] - vel[v2];
+    gc::Vector3 dPos12_n = (pos[v1] - pos[v2]).normalize();
+
+    // gc::Vector3 dVel21 = vel[v2] - vel[v1];
+    // gc::Vector3 dPos21_n = (pos[v2] - pos[v1]).normalize();
+
+    // std::cout << -gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n)
+    //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) * -dPos12_n)
+    //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
+    //           << std::endl;
+    
+    gc::Vector3 df = gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
+    dampingForces[v1] -= df;
+    dampingForces[v2] += df;
+
+    double noise = normal_dist(rng);
+    stochasticForces[v1] += noise * dPos12_n;
+    stochasticForces[v2] -= noise * dPos12_n;
   }
 }
 

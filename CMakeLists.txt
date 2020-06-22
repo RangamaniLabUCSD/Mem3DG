@@ -85,6 +85,7 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stretching_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pressure_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dpd_force.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/total_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/stormer_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/velocity_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_energy.cpp
