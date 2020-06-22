@@ -7,8 +7,6 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include <Eigen/IterativeLinearSolvers>
-
 #include "ddgsolver/force.h"
 #include "ddgsolver/meshops.h"
 
@@ -18,7 +16,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getPressureForces() {
-  // pressureForces.fill({0, 0, 0});
+  pressureForces.fill({0, 0, 0});
   volume = 0;
   double face_volume;
   gcs::FaceData<int> sign_of_volume(mesh);
@@ -32,7 +30,7 @@ void Force::getPressureForces() {
     }
   }
 
-  std::cout << "total volume:  " << volume / targetVolume / Vt << std::endl;
+  std::cout << "total volume:  " << volume / maxVolume / Vt << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -47,7 +45,7 @@ void Force::getPressureForces() {
       // - p1) < 0) <<  std::endl;
       // dVdx *= sign_of_volume[he.face()];
       pressureForces[v] +=
-          -0.5 * Kv * (volume - targetVolume * Vt) / (targetVolume * Vt) * dVdx;
+          -0.5 * Kv * (volume - maxVolume * Vt) / (maxVolume * Vt) * dVdx;
       // for (size_t i = 0; i < 3; i++) {
       //	pressureForces(v_ind[v], i) += dVdx[i];
       //}

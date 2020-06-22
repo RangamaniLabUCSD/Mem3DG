@@ -36,28 +36,42 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 }
 
 int main() {
+	/// geometric parameters
+	int nSub = 3;
+
 	/// physical parameters 
 	ddgsolver::Parameters p;
-	p.Kb = 0.01;			//Kb
-	p.H0 = 1.5;				//H0
-	p.Kse = 0.1;      //Kse
-	p.Ksl = 1;				//Ksl
-	p.Ksg = 2;				//Ksg
-	p.Kv = 10;			  //Kv
+	p.Kb = 0.03;			//Kb
+	p.H0 = 1;				//H0
+	p.Kse = 0;      //Kse
+	p.Ksl = 3;				//Ksl
+	p.Ksg = 0;				//Ksg
+	p.Kv = 5;			  //Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 1 * 0.7;			//Vt
+	p.Vt = 1 * 0.5;			//Vt
 	p.kt = 0.00001;		//Kt 
+	p.ptInd = 1;       
+	p.extF = 2;
+	p.conc = 25;
+
+	/// integration parameters
+	double h = 0.002;
+	double T = 20;
+	double eps = 1e-9;// 1e-9;
+
+	p.sigma = sqrt(2 * p.gamma * p.kt / h);
+
+	/// choose the starting mesh 
+	std::string option = "sphere"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
 
 	// choose the run
 	std::string run = "integration"; // 1. "integration 2. "visualization
-
-	/// Choose the starting mesh 
-	std::string option = "sphere"; //"output-file/Vt_90_H0_150.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
 
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
 	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
 
+	/// construct the starting mesh based on "option"
 	if (option == "continue") {
 		char buffer[50];
 		sprintf(buffer, "output-file/Vt_%d_H0_%d.ply", int(p.Vt * 100), int(p.H0 * 100));
@@ -67,7 +81,7 @@ int main() {
 		/// initialize icosphere 
 		std::vector<gc::Vector3> coords;
 		std::vector<std::vector<std::size_t>> polygons;
-		ddgsolver::icosphere(coords, polygons, 2);
+		ddgsolver::icosphere(coords, polygons, nSub);
 		gc::PolygonSoupMesh soup(polygons, coords);
 		soup.mergeIdenticalVertices();
 		std::tie(ptrmesh, ptrvpg) =
@@ -76,21 +90,12 @@ int main() {
 	else {
 		std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(option);
 	}
-	
 	auto& mesh = *ptrmesh;
 	auto& vpg = *ptrvpg;
 
+	/// run the program based on "run"
 	if (run == "integration") {
-		/// integration parameters
-		double h = 0.005;
-		double T = 300;
-		double eps = 1e-9;// 1e-9;
-
-		/// solve
 		ddgsolver::Force f(mesh, vpg, p);
-		// ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
-		//integration.stormerVerlet();
-		// integration.velocityVerlet();
 		velocityVerlet(f, h, T, eps);
 
 		/// save the .ply file  
@@ -101,17 +106,26 @@ int main() {
 		data.write(buffer);
 
 		/// visualization 
+		// surface mesh
+		//polyscope::init();
+		//polyscope::registerSurfaceMesh("myNetwork",
+		//ptrvpg->inputVertexPositions,
+		//ptrmesh->getFaceVertexList());
+
+		// curved Network
 		polyscope::init();
 		polyscope::registerCurveNetwork("myNetwork",
-		ptrvpg->inputVertexPositions,
-		ptrmesh->getFaceVertexList());
-		std::vector<double> xC(f.Hn.rows());
-		for (size_t i = 0; i < f.Hn.rows(); i++) {
-			xC[i] = f.Hn.row(i)[0]/f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
-		}
-		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+			ptrvpg->inputVertexPositions,
+			ptrmesh->getFaceVertexList());
+		//std::vector<double> xC(f.Hn.rows());
+		//for (size_t i = 0; i < f.Hn.rows(); i++) {
+		//	xC[i] = f.Hn.row(i)[0]/f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
+		//}
+		//polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", f.appliedForceMagnitude);
+
 	}
-	else {
+	else if (run == "visualization"){
 		polyscope::init();
 		polyscope::registerCurveNetwork("myNetwork",
 		ptrvpg->inputVertexPositions,
@@ -122,10 +136,10 @@ int main() {
 		for (size_t i = 0; i < f.Hn.rows(); i++) {
 			xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
 		}
-		std::cout << xC << std::endl;
 		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
 	}
 
+	/// print message on polyscope and (screenshot)
 	char buffer[50];
 	sprintf(buffer, "Vt = %.2f, H0 = %.2f", p.Vt, p.H0);
 	polyscope::info(buffer);
