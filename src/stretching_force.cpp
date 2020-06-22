@@ -75,16 +75,9 @@ void Force::getStretchingForces() {
       if (Kse != 0) {
         edgeForce += -Kse * edgeGradient * 
         (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
-        /*double averageLength = (vpg.edgeLengths[he.edge()]
-          + vpg.edgeLengths[he.next().edge()]
-          + vpg.edgeLengths[he.next().next().edge()]) / 3;
-        edgeForce += -Kse * edgeGradient *
-          (vpg.edgeLengths[he.edge()] - averageLength) / averageLength;*/
-
       }
   
     }
-
     stretchingForces[v] = localForce + globalForce + edgeForce;
 
   }

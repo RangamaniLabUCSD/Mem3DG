@@ -7,8 +7,6 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include <Eigen/IterativeLinearSolvers>
-
 #include "ddgsolver/force.h"
 #include "ddgsolver/meshops.h"
 

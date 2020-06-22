@@ -5,6 +5,7 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/surface/heat_method_distance.h>
 
 #include <Eigen/Core>
 #include <Eigen/SparseLU>
@@ -32,6 +33,9 @@ struct DLL_PUBLIC Parameters {
   double Vt;    /// Reduced volume
   double kt;    /// Boltzmann constant*Temperature
   double sigma; /// Noise
+  int ptInd;     /// index of node with applied external force 
+  double extF;   /// Magnitude of external force 
+  double conc;   /// level of concentration of the external force
 };
 
 class DLL_PUBLIC Force : public Parameters {
@@ -50,6 +54,8 @@ public:
   gcs::VertexData<gc::Vector3> dampingForces;
   /// Cached stochastic forces
   gcs::VertexData<gc::Vector3> stochasticForces;
+  /// Cached external forces
+  gcs::VertexData<gc::Vector3> externalForces;
 
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
@@ -82,6 +88,8 @@ public:
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
+  /// magnitude of externally applied force
+  Eigen::Matrix<double, Eigen::Dynamic, 1> appliedForceMagnitude;
 
   /**
    * @brief Construct a new Force object
@@ -94,7 +102,7 @@ public:
       : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), Parameters(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
-        vertexVelocity(mesh_, {0, 0, 0}) {
+        externalForces(mesh_, {0, 0, 0}), vertexVelocity(mesh_, { 0, 0, 0 }) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -151,6 +159,15 @@ public:
 
     // Initialize spontaneous curvature vector
     H0n.resize(mesh.nVertices(), 3);
+
+    // Initialize the magnitude of externally applied force
+    gcs::VertexData<double> geodesicDistanceFromAppliedForce 
+      = heatMethodDistance(vpg, mesh.vertex(ptInd));
+    auto dist_e = geodesicDistanceFromAppliedForce.toMappedVector();
+    double stdDev = dist_e.maxCoeff()/conc;
+    appliedForceMagnitude = extF / (stdDev * pow(pi * 2, 0.5))
+      * (-dist_e.array() * dist_e.array()
+        / (2 * stdDev * stdDev)).exp();
   }
 
   /**
@@ -181,8 +198,7 @@ public:
 
   void getDPDForces();
 
-  void getDampingForces();
-  void getStochasticForces();
+  void getExternalForces();
 
   /**
    * @brief Get velocity from the position of the last iteration
