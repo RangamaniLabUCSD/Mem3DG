@@ -29,4 +29,4 @@ set_target_properties(ddgsolver_static PROPERTIES POSITION_INDEPENDENT_CODE ON C
 set(PYDDG_SOURCES "src/pyddg.cpp")
 
 pybind11_add_module(pyddg MODULE ${PYDDG_SOURCES})
-target_link_libraries(pyddg PRIVATE ddgsolver_static)
+target_link_libraries(pyddg PRIVATE ddgsolver_static polyscope)
