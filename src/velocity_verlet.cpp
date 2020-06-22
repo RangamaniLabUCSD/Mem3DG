@@ -49,7 +49,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
                         ddgsolver::EigenMap<double, 3>(f.stochasticForces);
     auto newForce = staticForce + dynamicForce;
 
-    vertexVelocity_e += (force + newForce) * hdt;
+    vel_e += (force + newForce) * hdt;
     force = newForce;
     f.update_Vertex_positions(); // recompute cached values;
 
