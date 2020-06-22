@@ -54,7 +54,7 @@ PYBIND11_MODULE(pyddg, pyddg) {
   pyddg.doc() = "Python wrapper around the DDG solver C++ library.";
 
   pyddg.def("driver", &driver, " a driver function",
-            py::arg("run") = "visualization", py::arg("option") = "sphere",
+            py::arg("option") = "sphere",
             py::arg("nSub"), py::arg("H0"), py::arg("Vt"), py::arg("h"),
             py::arg("T"), py::arg("eps"),
             R"delim(

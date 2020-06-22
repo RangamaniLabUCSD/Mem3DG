@@ -37,26 +37,29 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 
 int main() {
 	/// geometric parameters
-	int nSub = 2;
+	int nSub = 3;
 
 	/// physical parameters 
 	ddgsolver::Parameters p;
-	p.Kb = 0.01;			//Kb
-	p.H0 = 0;				//H0
+	p.Kb = 0.03;			//Kb
+	p.H0 = 1;				//H0
 	p.Kse = 0;      //Kse
-	p.Ksl = 1;				//Ksl
-	p.Ksg = 2;				//Ksg
-	p.Kv = 2;			  //Kv
+	p.Ksl = 3;				//Ksl
+	p.Ksg = 0;				//Ksg
+	p.Kv = 5;			  //Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 1 * 0.7;			//Vt
+	p.Vt = 1 * 0.5;			//Vt
 	p.kt = 0.00001;		//Kt 
+	p.ptInd = 1;       
+	p.extF = 2;
+	p.conc = 25;
 
 	/// integration parameters
-	double h = 0.001;
-	double T = 100;
+	double h = 0.002;
+	double T = 20;
 	double eps = 1e-9;// 1e-9;
 
-	//p.sigma = sqrt(2 * p.gamma * p.kt / h);
+	p.sigma = sqrt(2 * p.gamma * p.kt / h);
 
 	/// choose the starting mesh 
 	std::string option = "sphere"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
@@ -93,9 +96,6 @@ int main() {
 	/// run the program based on "run"
 	if (run == "integration") {
 		ddgsolver::Force f(mesh, vpg, p);
-		//ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
-		//integration.stormerVerlet();
-		//integration.velocityVerlet();
 		velocityVerlet(f, h, T, eps);
 
 		/// save the .ply file  
@@ -106,15 +106,24 @@ int main() {
 		data.write(buffer);
 
 		/// visualization 
+		// surface mesh
+		//polyscope::init();
+		//polyscope::registerSurfaceMesh("myNetwork",
+		//ptrvpg->inputVertexPositions,
+		//ptrmesh->getFaceVertexList());
+
+		// curved Network
 		polyscope::init();
 		polyscope::registerCurveNetwork("myNetwork",
-		ptrvpg->inputVertexPositions,
-		ptrmesh->getFaceVertexList());
-		std::vector<double> xC(f.Hn.rows());
-		for (size_t i = 0; i < f.Hn.rows(); i++) {
-			xC[i] = f.Hn.row(i)[0]/f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
-		}
-		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+			ptrvpg->inputVertexPositions,
+			ptrmesh->getFaceVertexList());
+		//std::vector<double> xC(f.Hn.rows());
+		//for (size_t i = 0; i < f.Hn.rows(); i++) {
+		//	xC[i] = f.Hn.row(i)[0]/f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
+		//}
+		//polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
+		polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", f.appliedForceMagnitude);
+
 	}
 	else if (run == "visualization"){
 		polyscope::init();
