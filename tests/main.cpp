@@ -48,7 +48,7 @@ int main() {
 	p.Ksg = 0;				//Ksg
 	p.Kv = 5;			  //Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 1 * 0.5;			//Vt
+	p.Vt = 1 * 0.8;			//Vt
 	p.kt = 0.00001;		//Kt 
 	p.ptInd = 1;       
 	p.extF = 2;
