@@ -46,17 +46,17 @@ int main() {
 	p.Kse = 0;      //Kse
 	p.Ksl = 1;				//Ksl
 	p.Ksg = 2;				//Ksg
-	p.Kv = 1;			  //Kv
+	p.Kv = 2;			  //Kv
 	p.gamma = 1;				//gamma
 	p.Vt = 1 * 0.7;			//Vt
 	p.kt = 0.00001;		//Kt 
 
 	/// integration parameters
-	double h = 0.005;
-	double T = 1;
+	double h = 0.001;
+	double T = 100;
 	double eps = 1e-9;// 1e-9;
 
-	p.sigma = sqrt(2 * p.gamma * p.kt / h);
+	//p.sigma = sqrt(2 * p.gamma * p.kt / h);
 
 	/// choose the starting mesh 
 	std::string option = "sphere"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
@@ -93,10 +93,10 @@ int main() {
 	/// run the program based on "run"
 	if (run == "integration") {
 		ddgsolver::Force f(mesh, vpg, p);
-		ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
+		//ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps);
 		//integration.stormerVerlet();
-		integration.velocityVerlet();
-		//velocityVerlet(f, h, T, eps);
+		//integration.velocityVerlet();
+		velocityVerlet(f, h, T, eps);
 
 		/// save the .ply file  
 		gcs::PlyHalfedgeMeshData data(mesh);
