@@ -18,7 +18,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getPressureForces() {
-  // pressureForces.fill({0, 0, 0});
+  pressureForces.fill({0, 0, 0});
   volume = 0;
   double face_volume;
   gcs::FaceData<int> sign_of_volume(mesh);

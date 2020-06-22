@@ -119,7 +119,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
   auto pos_e = ddgsolver::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   f.sigma = sqrt(2 * f.gamma * f.kt / dt);
-  std::cout << "f.sigma" << f.sigma << std::endl;
   const double hdt = 0.5 * dt;
   const double hdt2 = hdt * dt;
 
