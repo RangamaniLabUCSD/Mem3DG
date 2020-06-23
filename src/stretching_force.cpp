@@ -12,6 +12,7 @@
 #include <Eigen/IterativeLinearSolvers>
 
 #include "ddgsolver/force.h"
+#include "ddgsolver/util.h"
 
 namespace ddgsolver {
 
@@ -41,11 +42,9 @@ void Force::getStretchingForces() {
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> global_force;
   global_force.setZero(mesh.nVertices(), 3);*/
 
-  surfaceArea = 0;
 
-  for (gcs::Face f : mesh.faces()) {
-    surfaceArea += face_a[f];
-  }
+  auto faceArea_e = EigenMap(vpg.faceAreas);
+  surfaceArea = faceArea_e.sum();
   std::cout << "area: " << surfaceArea / initialSurfaceArea << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
@@ -54,7 +53,7 @@ void Force::getStretchingForces() {
     gc::Vector3 edgeForce{ 0.0, 0.0, 0.0 };
 
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg)/ vecFromHalfedge(he, vpg).norm();
+      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
 
       gcs::Halfedge base_he = he.next();
       gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);

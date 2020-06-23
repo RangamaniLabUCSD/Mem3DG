@@ -38,17 +38,14 @@ void Force::getBendingForces() {
 
   // calculate mean curvature per vertex area by Laplacian matrix
   Hn = M_inv * L * positions / 2.0;
+  vertexAreaGradientNormal = Hn.rowwise().normalized();
+  auto projection = (vertexAreaGradientNormal.array()
+                * vertexAngleNormal_e.array()).rowwise().sum();
+  vertexAreaGradientNormal = (vertexAreaGradientNormal.array().colwise()
+              *((projection > 0) - (projection < 0)).cast<double>()).matrix();
 
   // calculate laplacian H
   Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
-
-  // calculate the area gradient vertex normal
-  for (std::size_t row = 0; row < n_vertices; ++row) {
-    vertexAreaGradientNormal.row(row) = Hn.row(row).normalized();
-    vertexAreaGradientNormal.row(row) *= copysign(
-        1.0,
-        vertexAreaGradientNormal.row(row).dot(vertexAngleNormal_e.row(row)));
-  }
 
   // initialize the spontaneous curvature matrix
   H0n = H0 * vertexAreaGradientNormal;
@@ -56,20 +53,10 @@ void Force::getBendingForces() {
   // initialize and calculate intermediary result productTerms
   Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
   productTerms.resize(n_vertices, 3);
-
-  for (size_t row = 0; row < mesh.nVertices(); ++row) {
-    if (Hn.row(row).dot(Hn.row(row)) + H0n.row(row).dot(Hn.row(row)) - KG(row) <
-        0) {
-      Eigen::Matrix<double, 1, 3> zeros;
-      zeros << 0.0, 0.0, 0.0;
-      productTerms.row(row) = zeros;
-      // std::cout << "smaller than 0 !!" << std::endl;
-    } else {
-      productTerms.row(row) = 2 * (Hn.row(row) - H0n.row(row)) *
-                              (Hn.row(row).dot(Hn.row(row)) +
-                               H0n.row(row).dot(Hn.row(row)) - KG(row));
-    }
-  }
+  productTerms = 2 * ((Hn - H0n).array().colwise()
+                * ((Hn.array() * Hn.array()).rowwise().sum()
+                  + (H0n.array() * H0n.array()).rowwise().sum()
+                 - KG.array())).matrix();
 
   // calculate bendingForce
   bendingForces_e = M * (-2.0 * Kb * (productTerms + lap_H));

@@ -196,6 +196,8 @@ public:
 
   void getPressureForces();
 
+  void getConservativeForces();
+
   void getDPDForces();
 
   void getExternalForces();
