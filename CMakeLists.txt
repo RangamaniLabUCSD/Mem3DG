@@ -90,6 +90,8 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/velocity_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_energy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/external_force.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/conservative_force.cpp
+
 )
 
 # ddgsolver object library

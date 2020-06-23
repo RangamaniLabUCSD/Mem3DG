@@ -31,9 +31,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
 
   for (int i = 0; i < total_time / dt; i++) {
     // Update all forces
-    f.getBendingForces();
-    f.getStretchingForces();
-    f.getPressureForces();
+    //f.getBendingForces();
+    //f.getStretchingForces();
+    //f.getPressureForces();
+    f.getConservativeForces();
     f.getDPDForces();
     f.getExternalForces();
 

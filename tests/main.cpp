@@ -37,7 +37,7 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 
 int main() {
 	/// geometric parameters
-	int nSub = 3;
+	int nSub = 4;
 
 	/// physical parameters 
 	ddgsolver::Parameters p;
