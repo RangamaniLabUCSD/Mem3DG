@@ -37,26 +37,26 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 
 int main() {
 	/// geometric parameters
-	int nSub = 4;
+	int nSub = 3;
 
 	/// physical parameters 
 	ddgsolver::Parameters p;
-	p.Kb = 0.03;			//Kb
-	p.H0 = 1;				//H0
+	p.Kb = 0.02;			//Kb
+	p.H0 = 2;				//H0
 	p.Kse = 0;      //Kse
 	p.Ksl = 3;				//Ksl
 	p.Ksg = 0;				//Ksg
-	p.Kv = 5;			  //Kv
+	p.Kv = 1;			  //Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 1 * 0.8;			//Vt
-	p.kt = 0.00001;		//Kt 
+	p.Vt = 1 * 0.73;			//Vt
+	p.kt = 0.0001;		//Kt 
 	p.ptInd = 1;       
-	p.extF = 2;
+	p.extF = 2 * 0;
 	p.conc = 25;
 
 	/// integration parameters
 	double h = 0.002;
-	double T = 20;
+	double T = 200;
 	double eps = 1e-9;// 1e-9;
 
 	p.sigma = sqrt(2 * p.gamma * p.kt / h);
