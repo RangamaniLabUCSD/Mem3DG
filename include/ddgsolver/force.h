@@ -98,6 +98,7 @@ public:
    * @param vpg_          Embedding and geometry information
    * @param time_step_    Numerical timestep
    */
+
   Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_, Parameters &p)
       : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), Parameters(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
@@ -169,6 +170,7 @@ public:
       * (-dist_e.array() * dist_e.array()
         / (2 * stdDev * stdDev)).exp();
   }
+
 
   /**
    * @brief Destroy the Force object
