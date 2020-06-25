@@ -204,7 +204,6 @@ public:
 
   void getExternalForces();
 
-  void updateForces(); 
 
   /**
    * @brief Get velocity from the position of the last iteration
