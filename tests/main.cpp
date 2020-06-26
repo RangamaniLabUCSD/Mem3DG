@@ -41,7 +41,7 @@ int main() {
 
 	/// physical parameters 
 	ddgsolver::Parameters p;
-	p.Kb = 0.02;			//Kb
+	p.Kb = 0.01;			//Kb
 	p.H0 = 0;				//H0
 	p.Kse = 0;      //Kse
 	p.Ksl = 3;				//Ksl
@@ -50,20 +50,21 @@ int main() {
 	p.gamma = 1;				//gamma
 	p.Vt = 0.6;			//Vt
 	p.kt = 0.00001;		//Kt 
-	p.ptInd = 1;       
-	p.extF = 0.04;
+	p.ptInd = 0;       
+	p.extF = 0.1 * 1;
 	p.conc = 25;
 
 	/// integration parameters
-	double h = 0.0005;
-	double T = 4;
+	double h = 0.0001;
+	double T = 2;
 	double eps = 1e-9;// 1e-9;
+	double tSave = 0.05; // save after time tSave
 
 	p.sigma = sqrt(2 * p.gamma * p.kt / h);
 
 	/// choose the starting mesh 
-	std::string option = "continue"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
-																	//  4. "output-file/sphere.ply"
+	std::string option = "input-file/sphere.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+																	//  4. "input-file/sphere.ply"
 
 	// choose the run
 	std::string run =  "integration"; // 1. "integration 2. "visualization
@@ -97,14 +98,16 @@ int main() {
 	/// run the program based on "run"
 	if (run == "integration") {
 		ddgsolver::Force f(mesh, vpg, p);
-		velocityVerlet(f, h, T, eps);
+		ddgsolver::integrator integration(mesh, vpg, f, h, T, p, eps, tSave);
+		integration.velocityVerlet();
+		//velocityVerlet(f, h, T, eps, tSave);
 
 		/// save the .ply file  
-		gcs::PlyHalfedgeMeshData data(mesh);
+		/*gcs::PlyHalfedgeMeshData data(mesh);
 		data.addGeometry(vpg);
 		char buffer[50];
 		sprintf(buffer, "output-file/Vt_%d_H0_%d.ply", int(p.Vt * 100), int(p.H0 * 100));
-		data.write(buffer);
+		data.write(buffer);*/
 
 		/// visualization 
 		// surface mesh
