@@ -29,6 +29,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
   const double hdt = 0.5 * dt;
   const double hdt2 = hdt * dt;
 
+  Eigen::Matrix<double, Eigen::Dynamic, 3> staticForce;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> dynamicForce;
+
+
   for (int i = 0; i < total_time / dt; i++) {
     // Update all forces
     //f.getBendingForces();
@@ -38,29 +42,30 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance) {
     f.getDPDForces();
     f.getExternalForces();
 
-    /*std::cout << "bf: " << ddgsolver::EigenMap<double, 3>(f.bendingForces).norm()
+    std::cout << "bf: " << ddgsolver::EigenMap<double, 3>(f.bendingForces).norm()
           << "sf: " << ddgsolver::EigenMap<double, 3>(f.stretchingForces).norm()
           << "pf: " << ddgsolver::EigenMap<double, 3>(f.pressureForces).norm()
           << "df: " << ddgsolver::EigenMap<double, 3>(f.dampingForces).norm()
-          << "xf: " << ddgsolver::EigenMap<double, 3>(f.stochasticForces).norm() <<std::endl;*/
+          << "xf: " << ddgsolver::EigenMap<double, 3>(f.stochasticForces).norm() <<std::endl;
 
     pos_e +=
         (vel_e.rowwise() - (vel_e.colwise().sum() / f.mesh.nVertices())) * dt +
         force * hdt2;
 
-    auto staticForce = ddgsolver::EigenMap<double, 3>(f.bendingForces) +
+    staticForce = ddgsolver::EigenMap<double, 3>(f.bendingForces) +
                        ddgsolver::EigenMap<double, 3>(f.stretchingForces) +
                        ddgsolver::EigenMap<double, 3>(f.pressureForces) +
                        ddgsolver::EigenMap<double, 3>(f.externalForces);
-    auto dynamicForce = ddgsolver::EigenMap<double, 3>(f.dampingForces) +
+    dynamicForce = ddgsolver::EigenMap<double, 3>(f.dampingForces) +
                         ddgsolver::EigenMap<double, 3>(f.stochasticForces);
-    auto newForce = staticForce + dynamicForce;
+    newForce = staticForce + dynamicForce;
 
     vel_e += (force + newForce) * hdt;
     force = newForce;
     f.update_Vertex_positions(); // recompute cached values;
 
     double staticForce_mag = staticForce.norm();
+    std::cout << "force: " << staticForce_mag << std::endl;
     if (staticForce_mag < tolerance) {
       break;
     }

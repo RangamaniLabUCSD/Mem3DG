@@ -19,7 +19,6 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getBendingForces() {
-
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
       M_inv * (vpg.vertexGaussianCurvatures.toMappedVector());
@@ -32,6 +31,7 @@ void Force::getBendingForces() {
 
   // map the VertexData bendingForces to eigen matrix bendingForces_e
   auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
+  bendingForces_e.setZero();
 
   // the build-in angle weight vertex normal
   auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);

@@ -64,7 +64,7 @@ namespace ddgsolver {
     bendingForces_e = M * (-2.0 * Kb * (productTerms + lap_H));
 
     /// B. PRESSURE FORCES
-    //pressureForces.fill({ 0.0, 0.0, 0.0 });
+    pressureForces.fill({ 0.0, 0.0, 0.0 });
     volume = 0;
     double face_volume;
     gcs::FaceData<int> sign_of_volume(mesh);
