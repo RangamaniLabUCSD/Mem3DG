@@ -14,12 +14,12 @@ namespace gcs = ::geometrycentral::surface;
 	void integrator::stormerVerlet() {
 		gcs::FaceData<size_t> faceInd = vpg.faceIndices;
 		gc::Vector3 totalForce;
-		for (size_t i = 0; i < timeSpan / timeStep; i++) {
+		for (size_t i = 0; i < total_time / dt; i++) {
 			/*polyscope::registerSurfaceMesh("myMesh",
 				ptrvpg->inputVertexPositions,
 				ptrmesh->getFaceVertexList());*/
 				//polyscope::show();
-			f.getVelocityFromPastPosition(timeStep);
+			f.getVelocityFromPastPosition(dt);
 			f.getBendingForces();
 			f.getStretchingForces();
 			f.getPressureForces();
@@ -42,7 +42,7 @@ namespace gcs = ::geometrycentral::surface;
 						+ f.dampingForces[v]
 						+ f.stochasticForces[v]
 						+ f.externalForces[v];
-					vpg.inputVertexPositions[v] += totalForce * timeStep * timeStep - f.pastPositions[v];
+					vpg.inputVertexPositions[v] += totalForce * dt * dt - f.pastPositions[v];
 				}
 			}
 			//std::cout << "total force:  " << totalForce.norm() << std::endl;
@@ -51,7 +51,7 @@ namespace gcs = ::geometrycentral::surface;
 			getTotalEnergy();
 			if (abs(pastTotalEnergy - totalEnergy) / totalEnergy < 1e-6) { break; }
 			std::cout << "energy: " << totalEnergy << std::endl;
-			std::cout << "process: " << int(double(i) / (timeSpan / timeStep) * 100) << "%" << std::endl;
+			std::cout << "process: " << int(double(i) / (total_time / dt) * 100) << "%" << std::endl;
 		}
 	}
 }

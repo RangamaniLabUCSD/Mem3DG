@@ -13,8 +13,8 @@ namespace gcs = ::geometrycentral::surface;
 
 class DLL_PUBLIC integrator {
 public:
-  double &timeStep;
-  double &timeSpan;
+  double &dt;
+  double &total_time;
   gcs::HalfedgeMesh &mesh;
   gcs::VertexPositionGeometry &vpg;
   Parameters &p;
@@ -22,12 +22,13 @@ public:
   double tolerance;
   double totalEnergy;
   double pastTotalEnergy;
+  double tSave;
 
   integrator(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
              ddgsolver::Force &f_, double &h, double &T, Parameters &p_,
-             double eps)
-      : mesh(mesh_), vpg(vpg_), f(f_), timeStep(h), timeSpan(T), p(p_),
-        tolerance(eps) {
+             double eps, double tSave_)
+      : mesh(mesh_), vpg(vpg_), f(f_), dt(h), total_time(T), p(p_),
+        tolerance(eps), tSave(tSave_) {
     totalEnergy = 0;
     pastTotalEnergy = 0;
   }
@@ -35,9 +36,11 @@ public:
   void stormerVerlet();
   void velocityVerlet();
   void getTotalEnergy();
+  void getLogFiles();
+
 };
 
 DLL_PUBLIC void velocityVerlet(Force &f, double dt, double total_time,
-                               double tolerance);
+                               double tolerance, double tSave = 0.2);
 
 } // namespace ddgsolver
