@@ -37,7 +37,7 @@ std::ostream &operator<<(std::ostream &output, const std::vector<T> &v) {
 
 int main() {
 	/// geometric parameters
-	int nSub = 4;
+	int nSub = 3;
 
 	/// physical parameters 
 	ddgsolver::Parameters p;
@@ -46,24 +46,24 @@ int main() {
 	p.Kse = 0;      //Kse
 	p.Ksl = 3;				//Ksl
 	p.Ksg = 0;				//Ksg
-	p.Kv = 0;			  //Kv
+	p.Kv = 3;			  //Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 0.6;			//Vt
+	p.Vt = 0.65;			//Vt
 	p.kt = 0.00001;		//Kt 
 	p.ptInd = 0;       
-	p.extF = 0.1 * 1;
+	p.extF = 0.1 * 0;
 	p.conc = 25;
 
 	/// integration parameters
-	double h = 0.0001;
-	double T = 2;
+	double h = 0.005;
+	double T = 50;
 	double eps = 1e-9;// 1e-9;
-	double tSave = 0.05; // save after time tSave
+	double tSave = 1; // save after time tSave
 
 	p.sigma = sqrt(2 * p.gamma * p.kt / h);
 
 	/// choose the starting mesh 
-	std::string option = "input-file/sphere.ply"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+	std::string option = "sphere"; // 1. "sphere" 2. "continue" 3. "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
 																	//  4. "input-file/sphere.ply"
 
 	// choose the run
