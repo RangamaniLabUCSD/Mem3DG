@@ -45,11 +45,11 @@ void integrator::velocityVerlet() {
     f.getDPDForces();
     f.getExternalForces();
 
-    std::cout << "bf: " << ddgsolver::EigenMap<double, 3>(f.bendingForces).norm()
+    /*std::cout << "bf: " << ddgsolver::EigenMap<double, 3>(f.bendingForces).norm()
       << "sf: " << ddgsolver::EigenMap<double, 3>(f.stretchingForces).norm()
       << "pf: " << ddgsolver::EigenMap<double, 3>(f.pressureForces).norm()
       << "df: " << ddgsolver::EigenMap<double, 3>(f.dampingForces).norm()
-      << "xf: " << ddgsolver::EigenMap<double, 3>(f.stochasticForces).norm() << std::endl;
+      << "xf: " << ddgsolver::EigenMap<double, 3>(f.stochasticForces).norm() << std::endl;*/
 
     pos_e +=
       (vel_e.rowwise() - (vel_e.colwise().sum() / f.mesh.nVertices())) * dt +
