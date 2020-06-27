@@ -1,5 +1,6 @@
 #include "ddgsolver/integrator.h"
 #include "ddgsolver/force.h"
+#include "ddgsolver/util.h"
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
@@ -30,12 +31,13 @@ namespace ddgsolver {
 		pastTotalEnergy = totalEnergy;
 
 		/// bending energy 
-		Eigen::Matrix<double, Eigen::Dynamic, 1> k_dH_sqrd;
-		k_dH_sqrd.resize(f.Hn.rows(), 1);
-		auto difference = f.Hn - f.H0n;
-		k_dH_sqrd = p.Kb * (difference.array() * difference.array()).colwise().sum();
-		double bE = (f.M * k_dH_sqrd).sum();
-
+		auto H_e = EigenMap(f.H);
+		auto H0_e = EigenMap(f.H0);
+		auto A = EigenMap(vpg.vertexDualAreas);
+		Eigen::Matrix<double, Eigen::Dynamic, 1> difference = H_e - H0_e;
+		Eigen::Matrix<double, Eigen::Dynamic, 1> k_dH_sqrd 
+			= p.Kb * (difference.array() * difference.array());
+		double bE = (A * k_dH_sqrd).sum();
 		totalEnergy = bE;
 		/// stretching energy 
 		//double sE = 
