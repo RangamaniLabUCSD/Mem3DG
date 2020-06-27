@@ -42,13 +42,13 @@ int main() {
 	/// physical parameters 
 	ddgsolver::Parameters p;
 	p.Kb = 0.01;			//Kb
-	p.H0 = 0;				//H0
+	p.H0 = 1.5;				//H0
 	p.Kse = 0;      //Kse
 	p.Ksl = 3;				//Ksl
 	p.Ksg = 0;				//Ksg
 	p.Kv = 3;			  //Kv
 	p.gamma = 1;				//gamma
-	p.Vt = 0.65;			//Vt
+	p.Vt = 0.7;			//Vt
 	p.kt = 0.00001;		//Kt 
 	p.ptInd = 0;       
 	p.extF = 0.1 * 0;
@@ -56,9 +56,9 @@ int main() {
 
 	/// integration parameters
 	double h = 0.005;
-	double T = 50;
+	double T = 100;
 	double eps = 1e-9;// 1e-9;
-	double tSave = 1; // save after time tSave
+	double tSave = 0.5; // save after time tSave
 
 	p.sigma = sqrt(2 * p.gamma * p.kt / h);
 
@@ -136,6 +136,11 @@ int main() {
 		polyscope::registerSurfaceMesh("myNetwork",
 		ptrvpg->inputVertexPositions,
 		ptrmesh->getFaceVertexList());
+
+		ddgsolver::Force f(mesh, vpg, p);
+		auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
+		f.getBendingForces();
+		std::cout << "vertex angle normal: " << vertexAngleNormal_e << std::endl;
 
 		//polyscope::init();
 		//polyscope::registerCurveNetwork("myNetwork",

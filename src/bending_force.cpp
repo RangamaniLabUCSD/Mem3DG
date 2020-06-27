@@ -12,11 +12,12 @@
 #include <Eigen/Core>
 
 #include "ddgsolver/force.h"
+#include "ddgsolver/meshops.h"
 
 namespace ddgsolver {
 
-namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
+  namespace gc = ::geometrycentral;
+  namespace gcs = ::geometrycentral::surface;
 
 void Force::getBendingForces() {
   // Gaussian curvature per vertex Area
@@ -33,30 +34,31 @@ void Force::getBendingForces() {
   auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
   bendingForces_e.setZero();
 
-  // the build-in angle weight vertex normal
+  // the build-in angle-weighted vertex normal
   auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
 
-  // calculate mean curvature per vertex area by Laplacian matrix
-  Hn = M_inv * L * positions / 2.0;
-  vertexAreaGradientNormal = Hn.rowwise().normalized();
-  auto projection = (vertexAreaGradientNormal.array()
-                * vertexAngleNormal_e.array()).rowwise().sum();
-  vertexAreaGradientNormal = (vertexAreaGradientNormal.array().colwise()
-              *((projection > 0) - (projection < 0)).cast<double>()).matrix();
-
-  // calculate laplacian H
+  // calculate mean curvature per vertex area and map it to angle-weighted normal
+  Hn = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e, 
+            M_inv * L * positions / 2.0), vertexAngleNormal_e);
+ 
+  // calculate the Laplacian of mean curvature H 
   Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
 
   // initialize the spontaneous curvature matrix
-  H0n = H0 * vertexAreaGradientNormal;
+  H0n = H0 * vertexAngleNormal_e;
+
+  // initialize and calculate intermediary result scalerTerms, set to zero if negative
+  Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
+    rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(H0n, H0n) - KG;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+  zeroMatrix.resize(n_vertices, 1);
+  zeroMatrix.setZero();
+  scalerTerms = scalerTerms.array().max(zeroMatrix.array());
 
   // initialize and calculate intermediary result productTerms
   Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
   productTerms.resize(n_vertices, 3);
-  productTerms = 2 * ((Hn - H0n).array().colwise()
-                * ((Hn.array() * Hn.array()).rowwise().sum()
-                  + (H0n.array() * H0n.array()).rowwise().sum()
-                 - KG.array())).matrix();
+  productTerms = 2 * rowwiseScaling(scalerTerms, Hn - H0n);
 
   // calculate bendingForce
   bendingForces_e = M * (-2.0 * Kb * (productTerms + lap_H));

@@ -15,7 +15,8 @@ namespace ddgsolver {
 			// std::cout << "external force::" << appliedForceMagnitude << std::endl;
 			// externalForce_e = vertexAreaGradientNormal.array().colwise() *
 			//	appliedForceMagnitude.array();
-			externalForces_e = appliedForceMagnitude * vertexAreaGradientNormal.row(ptInd);
+			auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
+			externalForces_e = appliedForceMagnitude * vertexAngleNormal_e.row(ptInd);
 		}
 		else {
 			externalForces_e.setZero();
