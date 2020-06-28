@@ -23,32 +23,19 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 struct DLL_PUBLIC Parameters {
-  /// Bending modulus
-  double Kb;   
-  /// Spontaneous curvature
-  double H0;    
-  /// Local stretching modulus
-  double Ksl;   
-  /// Global stretching modulus
-  double Ksg;   
-  /// Edge spring constant
-  double Kse; 
-  /// Volume regularization
-  double Kv;   
-  /// Dissipation coefficient
-  double gamma; 
-  /// Reduced volume
-  double Vt;    
-  /// Boltzmann constant*Temperature
-  double kt;  
-  /// Noise
-  double sigma; 
-  /// index of node with applied external force 
-  int ptInd;  
-  /// Magnitude of external force 
-  double extF;   
-  /// level of concentration of the external force
-  double conc;   
+  double Kb;    /// Bending modulus
+  double H0;    /// Spontaneous curvature
+  double Ksl;   /// Local stretching modulus
+  double Ksg;   /// Global stretching modulus
+  double Kse;   /// Edge spring constant
+  double Kv;    /// Volume regularization
+  double gamma; /// Dissipation coefficient
+  double Vt;    /// Reduced volume
+  double kt;    /// Boltzmann constant*Temperature
+  double sigma; /// Noise
+  int ptInd;     /// index of node with applied external force 
+  double extF;   /// Magnitude of external force 
+  double conc;   /// level of concentration of the external force
 };
 
 class DLL_PUBLIC Force : public Parameters {
@@ -70,6 +57,12 @@ public:
   /// Cached external forces
   gcs::VertexData<gc::Vector3> externalForces;
 
+  /// Cached galerkin mass matrix
+  Eigen::SparseMatrix<double> M;
+  /// Inverted galerkin mass matrix
+  Eigen::SparseMatrix<double> M_inv;
+  /// Cotangent Laplacian
+  Eigen::SparseMatrix<double> L;
   /// Target area per face
   gcs::FaceData<double> initialFaceAreas;
   /// Target total face area
@@ -87,9 +80,9 @@ public:
   /// Cached vertex velocity by finite differencing past and current position
   gcs::VertexData<gc::Vector3> vel;
   // Mean curvature of the mesh
-  gcs::VertexData<double> H;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> Hn;
   // Spontaneous curvature of the mesh
-  gcs::VertexData<double> H0;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> H0n;
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -116,9 +109,9 @@ public:
 
     // GC computed properties
     vpg.requireFaceNormals();
-    vpg.requireVertexDualAreas();
-    vpg.requireEdgeDihedralAngles();
-    vpg.requireCornerAngles();
+    vpg.requireVertexGalerkinMassMatrix();
+    vpg.requireVertexLumpedMassMatrix();
+    vpg.requireCotanLaplacian();
     vpg.requireFaceAreas();
     vpg.requireVertexIndices();
     vpg.requireVertexGaussianCurvatures();
@@ -126,6 +119,18 @@ public:
     vpg.requireEdgeLengths();
     vpg.requireVertexNormals();
 
+    // Initialize the mass matrix
+    M = vpg.vertexGalerkinMassMatrix;
+    // Initialize the inverted Mass matrix
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    solver.compute(vpg.vertexGalerkinMassMatrix);
+    std::size_t n = mesh.nVertices();
+    Eigen::SparseMatrix<double> I(n, n);
+    I.setIdentity();
+    M_inv = solver.solve(I);
+
+    // Initialize the conformal Laplacian matrix
+    L = vpg.cotanLaplacian;
 
     // Initialize face areas
     initialFaceAreas = vpg.faceAreas;
@@ -145,8 +150,12 @@ public:
     // Initialize the vertex position of the last iteration
     pastPositions = vpg.inputVertexPositions;
 
-    // Initialize mean curvature
-    H.fill(0.0);
+    // Initialize mean curvature vector
+    Hn.resize(mesh.nVertices(), 3);
+
+    // Initialize spontaneous curvature vector
+    H0n.resize(mesh.nVertices(), 3);
+
     // Initialize the magnitude of externally applied force
     gcs::VertexData<double> geodesicDistanceFromAppliedForce 
       = heatMethodDistance(vpg, mesh.vertex(ptInd));
@@ -167,8 +176,9 @@ public:
    */
   ~Force() {
     vpg.unrequireFaceNormals();
-    vpg.unrequireEdgeDihedralAngles();
-    vpg.unrequireVertexDualAreas();
+    vpg.unrequireVertexGalerkinMassMatrix();
+    vpg.unrequireVertexLumpedMassMatrix();
+    vpg.unrequireCotanLaplacian();
     vpg.unrequireFaceAreas();
     vpg.unrequireVertexIndices();
     vpg.unrequireVertexGaussianCurvatures();

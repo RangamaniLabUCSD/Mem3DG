@@ -19,44 +19,55 @@ namespace ddgsolver {
   namespace gc = ::geometrycentral;
   namespace gcs = ::geometrycentral::surface;
 
-  /// helper function for calculating cotangent
-  inline double cotan(double phi) { return (1 / tan(phi)); }
-
-  /// helper function for calculaing d(H at vertex v) / d(x at vertex v)
-  gc::Vector3 getdHdx(gcs::VertexPositionGeometry& vpg, gcs::Vertex v, gcs::VertexData<double>& H) {
-    // setZero and alias geometry quantities for convenience
-    gc::Vector3 dHdx({ 0.0,0.0,0.0 });
-    gc::Vector3 dAvdx({ 0.0,0.0,0.0 });
-    const gcs::CornerData<double>& cornerAngles = vpg.cornerAngles;
-    const gcs::EdgeData<double>& dihedralAngles = vpg.edgeDihedralAngles;
-    const gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
-    const gcs::FaceData<double>& face_a = vpg.faceAreas;
-
-    for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      gcs::Halfedge base_he = he.next();
-      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
-      gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-      gc::Vector3 dAdx = -gc::cross(base_vec, face_n[he.face()]);
-
-      double phi1 = cornerAngles[he.twin().next().next().corner()];
-      double phi2 = cornerAngles[he.next().next().corner()];
-      gc::Vector3 dTdx = (cotan(phi1) * face_n[he.twin().face()]
-        + cotan(phi2) * face_n[he.face()]) / vpg.edgeLengths[he.edge()];
-      double H_component = vpg.edgeLengths[he.edge()] * dihedralAngles[he.edge()] / (4 * vpg.vertexDualAreas[v]);
-      dHdx += (edgeGradient * dihedralAngles[he.edge()] + vpg.edgeLengths[he.edge()] * dTdx)
-        / (4 * vpg.vertexDualAreas[v]) - H_component / vpg.vertexDualAreas[v] * (dAdx / 3);
-      H[v] += H_component;
-      dAvdx += dAdx / 3;
-    }
-    return dHdx;
-  }
-
-  /// helper function for calculaing d(H at the neighbors of vertex v) / d(x at vertex v)
-
-
   void Force::getConservativeForces() {
+    /// A. BENDING FORCE
+    // Gaussian curvature per vertex Area
+    Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
+      M_inv * (vpg.vertexGaussianCurvatures.toMappedVector());
 
-    /// A. PRESSURE FORCES
+    // number of vertices for convenience
+    std::size_t n_vertices = (mesh.nVertices());
+
+    // map ivp to eigen matrix position
+    auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
+
+    // map the VertexData bendingForces to eigen matrix bendingForces_e
+    auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
+    bendingForces_e.setZero();
+
+    // the build-in angle-weighted vertex normal
+    auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
+
+    // calculate mean curvature per vertex area and map it to angle-weighted normal
+    Hn = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e,
+      M_inv * L * positions / 2.0), vertexAngleNormal_e);
+
+    // calculate the Laplacian of mean curvature H 
+    Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e,
+      M_inv * L * Hn), vertexAngleNormal_e);
+    std::cout << "laplace H: " << rowwiseDotProduct(vertexAngleNormal_e,
+      M_inv * L * Hn) << std::endl;
+
+    // initialize the spontaneous curvature matrix
+    H0n = H0 * vertexAngleNormal_e;
+
+    // initialize and calculate intermediary result scalerTerms, set to zero if negative
+    Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
+      rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(H0n, H0n) - KG;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+    zeroMatrix.resize(n_vertices, 1);
+    zeroMatrix.setZero();
+    scalerTerms = scalerTerms.array().max(zeroMatrix.array());
+
+    // initialize and calculate intermediary result productTerms
+    Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
+    productTerms.resize(n_vertices, 3);
+    productTerms = 2 * rowwiseScaling(scalerTerms, Hn - H0n);
+
+    // calculate bendingForce
+    bendingForces_e = M * (-2.0 * Kb * (productTerms + lap_H));
+
+    /// B. PRESSURE FORCES
     pressureForces.fill({ 0.0, 0.0, 0.0 });
     volume = 0;
     double face_volume;
@@ -73,7 +84,7 @@ namespace ddgsolver {
     }
     std::cout << "total volume:  " << volume / maxVolume / Vt << std::endl;
 
-    /// B. STRETCHING FORCES
+    /// C. STRETCHING FORCES
     stretchingForces.fill({ 0.0,0.0,0.0 });
     const gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
     const gcs::FaceData<double>& face_a = vpg.faceAreas;
@@ -81,14 +92,11 @@ namespace ddgsolver {
     surfaceArea = faceArea_e.sum();
     std::cout << "area: " << surfaceArea / initialSurfaceArea << std::endl;
 
-    /// C. BENDING FORCES
-    bendingForces.fill({ 0.0,0.0,0.0 });
-
     /// D. LOOPING VERTICES
     for (gcs::Vertex v : mesh.vertices()) {
-      bendingForces[v] +=
 
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
+
         // Pressure forces
         gcs::Halfedge base_he = he.next();
         gc::Vector3 p1 = vpg.inputVertexPositions[base_he.vertex()];
@@ -103,22 +111,23 @@ namespace ddgsolver {
         // Stretching forces
         gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
         gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-        gc::Vector3 dAdx = -gc::cross(base_vec, face_n[he.face()]);
-        assert((gc::dot(dAdx, vecFromHalfedge(he, vpg))) < 0);
+        gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
+        assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
         if (Ksl != 0) {
-          stretchingForces[v] += -2 * Ksl * dAdx *
+          stretchingForces[v] += -2 * Ksl * gradient *
             (face_a[base_he.face()] - initialFaceAreas[base_he.face()]) /
             initialFaceAreas[base_he.face()];
         }
         if (Ksg != 0) {
           stretchingForces[v] +=
-            -2 * Ksg * dAdx * (surfaceArea - initialSurfaceArea) / initialSurfaceArea;
+            -2 * Ksg * gradient * (surfaceArea - initialSurfaceArea) / initialSurfaceArea;
         }
         if (Kse != 0) {
           stretchingForces[v] += -Kse * edgeGradient *
             (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
         }
-
+      
+      }
     }
 
   }
