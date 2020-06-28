@@ -20,6 +20,12 @@ namespace ddgsolver {
   namespace gcs = ::geometrycentral::surface;
 
 void Force::getBendingForces() {
+  // Initialize the mass matrix
+  M = vpg.vertexLumpedMassMatrix;
+  M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+ // Initialize the conformal Laplacian matrix
+  L = vpg.cotanLaplacian;
+
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
       M_inv * (vpg.vertexGaussianCurvatures.toMappedVector());

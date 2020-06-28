@@ -21,6 +21,12 @@ namespace ddgsolver {
 
   void Force::getConservativeForces() {
     /// A. BENDING FORCE
+    // Initialize the mass matrix
+    M = vpg.vertexLumpedMassMatrix;
+    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+    // Initialize the conformal Laplacian matrix
+    L = vpg.cotanLaplacian;
+
     // Gaussian curvature per vertex Area
     Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
       M_inv * (vpg.vertexGaussianCurvatures.toMappedVector());
@@ -43,10 +49,7 @@ namespace ddgsolver {
       M_inv * L * positions / 2.0), vertexAngleNormal_e);
 
     // calculate the Laplacian of mean curvature H 
-    Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e,
-      M_inv * L * Hn), vertexAngleNormal_e);
-    std::cout << "laplace H: " << rowwiseDotProduct(vertexAngleNormal_e,
-      M_inv * L * Hn) << std::endl;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
 
     // initialize the spontaneous curvature matrix
     H0n = H0 * vertexAngleNormal_e;
@@ -82,7 +85,6 @@ namespace ddgsolver {
         sign_of_volume[f] = 1;
       }
     }
-    std::cout << "total volume:  " << volume / maxVolume / Vt << std::endl;
 
     /// C. STRETCHING FORCES
     stretchingForces.fill({ 0.0,0.0,0.0 });
@@ -90,7 +92,6 @@ namespace ddgsolver {
     const gcs::FaceData<double>& face_a = vpg.faceAreas;
     auto faceArea_e = EigenMap(vpg.faceAreas);
     surfaceArea = faceArea_e.sum();
-    std::cout << "area: " << surfaceArea / initialSurfaceArea << std::endl;
 
     /// D. LOOPING VERTICES
     for (gcs::Vertex v : mesh.vertices()) {

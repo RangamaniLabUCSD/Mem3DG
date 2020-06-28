@@ -119,15 +119,17 @@ public:
     vpg.requireEdgeLengths();
     vpg.requireVertexNormals();
 
-    // Initialize the mass matrix
-    M = vpg.vertexGalerkinMassMatrix;
-    // Initialize the inverted Mass matrix
-    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-    solver.compute(vpg.vertexGalerkinMassMatrix);
-    std::size_t n = mesh.nVertices();
-    Eigen::SparseMatrix<double> I(n, n);
-    I.setIdentity();
-    M_inv = solver.solve(I);
+    /// Initialize the mass matrix
+    M = vpg.vertexLumpedMassMatrix;
+    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+    //M = vpg.vertexGalerkinMassMatrix;
+    //// Initialize the inverted Mass matrix
+    //Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    //solver.compute(vpg.vertexGalerkinMassMatrix);
+    //std::size_t n = mesh.nVertices();
+    //Eigen::SparseMatrix<double> I(n, n);
+    //I.setIdentity();
+    //M_inv = solver.solve(I);
 
     // Initialize the conformal Laplacian matrix
     L = vpg.cotanLaplacian;
