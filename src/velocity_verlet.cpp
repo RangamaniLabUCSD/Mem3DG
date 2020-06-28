@@ -66,22 +66,24 @@ void integrator::velocityVerlet() {
     vel_e += (force + newForce) * hdt;
     force = newForce;
     f.update_Vertex_positions(); // recompute cached values;
-    if (i % nSave == 0) {
-      gcs::PlyHalfedgeMeshData data(f.mesh);
-      data.addGeometry(f.vpg);
-      char buffer[50];
-      std::cout << int(i * dt * 100) << std::endl;
-      sprintf(buffer, "output-file/t=%d.ply", int(i * dt * 100));
-      data.write(buffer);
-    }
-
     double staticForce_mag = staticForce.norm();
-    std::cout << "force: " << staticForce_mag << std::endl;
+
     if (staticForce_mag < tolerance) {
       break;
     }
-    // std::cout << "Force: " << staticForce_mag << std::endl;
-    std::cout << "process: " << i << std::endl;
+
+    if ((i % nSave == 0) || (i == int(total_time / dt))) {
+      gcs::PlyHalfedgeMeshData data(f.mesh);
+      data.addGeometry(f.vpg);
+      char buffer[50];
+      sprintf(buffer, "output-file/t=%d.ply", int(i * dt * 100));
+      data.write(buffer);
+      std::cout << "time: " << i * dt << std::endl;
+      std::cout << "force: " << staticForce_mag << std::endl;
+      std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
+      std::cout << "total volume:  " << f.volume / f.maxVolume / f.Vt << std::endl;
+    }
+
   }
 
 }
@@ -138,21 +140,24 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance, do
     force = newForce;
     f.update_Vertex_positions(); // recompute cached values;
 
+    double staticForce_mag = staticForce.norm();
+
+    if (staticForce_mag < tolerance) {
+      break;
+    }
+
     if ((i % nSave == 0) || (i == int(total_time/dt))) {
       gcs::PlyHalfedgeMeshData data(f.mesh);
       data.addGeometry(f.vpg);
       char buffer[50];
-      sprintf(buffer, "output-file/t = %d.ply", int(i * dt));
+      sprintf(buffer, "output-file/t=%d.ply", int(i * dt * 100));
       data.write(buffer);
+      // std::cout << "Force: " << staticForce_mag << std::endl;
+      std::cout << "time: " << i * dt << std::endl;
+      std::cout << "force: " << staticForce_mag << std::endl;
+      std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
+      std::cout << "total volume:  " << f.volume / f.maxVolume / f.Vt << std::endl;
     }
-
-    double staticForce_mag = staticForce.norm();
-    std::cout << "force: " << staticForce_mag << std::endl;
-    if (staticForce_mag < tolerance) {
-      break;
-    }
-    // std::cout << "Force: " << staticForce_mag << std::endl;
-    std::cout << "process: " << i << std::endl;
   }
 }
 } // namespace ddgsolver
