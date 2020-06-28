@@ -21,15 +21,17 @@ namespace ddgsolver {
 
   void Force::getConservativeForces() {
     /// A. BENDING FORCE
+
     // Initialize the mass matrix
     M = vpg.vertexLumpedMassMatrix;
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+
     // Initialize the conformal Laplacian matrix
     L = vpg.cotanLaplacian;
 
     // Gaussian curvature per vertex Area
     Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
-      M_inv * (vpg.vertexGaussianCurvatures.toMappedVector());
+      (vpg.vertexGaussianCurvatures.toMappedVector());
 
     // number of vertices for convenience
     std::size_t n_vertices = (mesh.nVertices());
@@ -44,19 +46,22 @@ namespace ddgsolver {
     // the build-in angle-weighted vertex normal
     auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
 
-    // calculate mean curvature per vertex area and map it to angle-weighted normal
-    Hn = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e,
-      M_inv * L * positions / 2.0), vertexAngleNormal_e);
+    // calculate mean curvature
+    H = rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
 
     // calculate the Laplacian of mean curvature H 
-    Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * rowwiseScaling(H, vertexAngleNormal_e);
+    //std::cout << "laplacian H: " << "\n" << lap_H << std::endl;
 
     // initialize the spontaneous curvature matrix
-    H0n = H0 * vertexAngleNormal_e;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> H0_e;
+    H0_e.resize(n_vertices, 1);
+    H0_e.setOnes();
+    H0_e *= H0;
 
     // initialize and calculate intermediary result scalerTerms, set to zero if negative
     Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-      rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(H0n, H0n) - KG;
+      M_inv * rowwiseProduct(H, H) + M * rowwiseProduct(H0_e, H0_e) - KG;
     Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
     zeroMatrix.resize(n_vertices, 1);
     zeroMatrix.setZero();
@@ -65,10 +70,11 @@ namespace ddgsolver {
     // initialize and calculate intermediary result productTerms
     Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
     productTerms.resize(n_vertices, 3);
-    productTerms = 2 * rowwiseScaling(scalerTerms, Hn - H0n);
+    productTerms = 2 * rowwiseScaling(rowwiseProduct(scalerTerms, H - H0_e)
+      , vertexAngleNormal_e);
 
     // calculate bendingForce
-    bendingForces_e = M * (-2.0 * Kb * (productTerms + lap_H));
+    bendingForces_e = -2.0 * Kb * (productTerms + lap_H);
 
     /// B. PRESSURE FORCES
     pressureForces.fill({ 0.0, 0.0, 0.0 });

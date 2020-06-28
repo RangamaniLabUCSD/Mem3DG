@@ -23,19 +23,32 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 struct DLL_PUBLIC Parameters {
-  double Kb;    /// Bending modulus
-  double H0;    /// Spontaneous curvature
-  double Ksl;   /// Local stretching modulus
-  double Ksg;   /// Global stretching modulus
-  double Kse;   /// Edge spring constant
-  double Kv;    /// Volume regularization
-  double gamma; /// Dissipation coefficient
-  double Vt;    /// Reduced volume
-  double kt;    /// Boltzmann constant*Temperature
-  double sigma; /// Noise
-  int ptInd;     /// index of node with applied external force 
-  double extF;   /// Magnitude of external force 
-  double conc;   /// level of concentration of the external force
+  /// Bending modulus
+  double Kb;
+  /// Spontaneous curvature
+  double H0;
+  /// Local stretching modulus
+  double Ksl;
+  /// Global stretching modulus
+  double Ksg;
+  /// Edge spring constant
+  double Kse;
+  /// Volume regularization
+  double Kv;
+  /// Dissipation coefficient
+  double gamma;
+  /// Reduced volume
+  double Vt;
+  /// Boltzmann constant*Temperature
+  double kt;
+  /// Noise
+  double sigma;
+  /// index of node with applied external force 
+  int ptInd;
+  /// Magnitude of external force 
+  double extF;
+  /// level of concentration of the external force
+  double conc;
 };
 
 class DLL_PUBLIC Force : public Parameters {
@@ -81,6 +94,8 @@ public:
   gcs::VertexData<gc::Vector3> vel;
   // Mean curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 3> Hn;
+  // Mean curvature of the mesh
+  Eigen::Matrix<double, Eigen::Dynamic, 1> H;
   // Spontaneous curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 3> H0n;
   /// Random number engine
