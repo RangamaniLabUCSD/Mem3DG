@@ -45,7 +45,6 @@ void Force::getStretchingForces() {
 
   auto faceArea_e = EigenMap(vpg.faceAreas);
   surfaceArea = faceArea_e.sum();
-  std::cout << "area: " << surfaceArea / initialSurfaceArea << std::endl;
 
   for (gcs::Vertex v : mesh.vertices()) {
     gc::Vector3 localForce{0.0, 0.0, 0.0};

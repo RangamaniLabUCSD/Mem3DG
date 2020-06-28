@@ -30,8 +30,6 @@ void Force::getPressureForces() {
     }
   }
 
-  std::cout << "total volume:  " << volume / maxVolume / Vt << std::endl;
-
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
       gcs::Halfedge base_he = he.next();
