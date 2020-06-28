@@ -42,23 +42,23 @@ int main() {
 	/// physical parameters 
 	ddgsolver::Parameters p;
 	p.Kb = 0.01;			//Kb
-	p.H0 = 1.5;				//H0
+	p.H0 = 1.4;				//H0
 	p.Kse = 0;      //Kse
 	p.Ksl = 3;				//Ksl
 	p.Ksg = 0;				//Ksg
-	p.Kv = 3;			  //Kv
-	p.gamma = 1;				//gamma
+	p.Kv = 1;			  //Kv
+	p.gamma = 2;				//gamma
 	p.Vt = 0.7;			//Vt
-	p.kt = 0.00001;		//Kt 
+	p.kt = 0.00005;		//Kt 
 	p.ptInd = 0;       
-	p.extF = 0.1 * 0;
+	p.extF = 0;
 	p.conc = 25;
 
 	/// integration parameters
 	double h = 0.005;
-	double T = 100;
+	double T = 400;
 	double eps = 1e-9;// 1e-9;
-	double tSave = 0.5; // save after time tSave
+	double tSave = 10; // save after time tSave
 
 	p.sigma = sqrt(2 * p.gamma * p.kt / h);
 
