@@ -23,6 +23,7 @@ void Force::getBendingForces() {
   // Initialize the mass matrix
   M = vpg.vertexLumpedMassMatrix;
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+
  // Initialize the conformal Laplacian matrix
   L = vpg.cotanLaplacian;
 
@@ -43,7 +44,7 @@ void Force::getBendingForces() {
   // the build-in angle-weighted vertex normal
   auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
 
-  // calculate mean curvature per vertex area and map it to angle-weighted normal
+  // calculate mean curvature and map it to angle-weighted normal
   Hn = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e, 
             M_inv * L * positions / 2.0), vertexAngleNormal_e);
  

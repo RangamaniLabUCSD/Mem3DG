@@ -67,9 +67,19 @@ vecFromHalfedge(gcs::Halfedge &he, gcs::VertexPositionGeometry &vpg) {
  */
 DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1> rowwiseDotProduct
 (Eigen::Matrix<double, Eigen::Dynamic, 3> A, Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
-  Eigen::Matrix<double, Eigen::Dynamic, 1> C =
-    ((A.array() * B.array()).rowwise().sum()).matrix();
-  return C;
+  return ((A.array() * B.array()).rowwise().sum()).matrix();
+}
+
+/**
+ * @brief helper function for taking rowwise product of two vectors
+ *
+ * @param Eigen vector A
+ * @param Eigen vector B
+ * @return Eigen matrix V
+ */
+DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1> rowwiseProduct
+(Eigen::Matrix<double, Eigen::Dynamic, 1> A, Eigen::Matrix<double, Eigen::Dynamic, 1> B) {
+  return (A.array() * B.array()).matrix();
 }
 
 /**
@@ -82,8 +92,6 @@ DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1> rowwiseDotProduct
 /// 
 DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3> rowwiseScaling
 (Eigen::Matrix<double, Eigen::Dynamic, 1> a, Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
-  Eigen::Matrix<double, Eigen::Dynamic, 3> C =
-    (B.array().colwise() * a.array()).matrix();
-  return C;
+  return (B.array().colwise() * a.array()).matrix();
 }
 } // namespace ddgsolver
