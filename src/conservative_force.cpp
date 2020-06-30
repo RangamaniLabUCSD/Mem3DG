@@ -50,7 +50,7 @@ namespace ddgsolver {
     H = rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
 
     // calculate the Laplacian of mean curvature H 
-    Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * rowwiseScaling(H, vertexAngleNormal_e);
+    Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H =  L * M_inv * rowwiseScaling(H, vertexAngleNormal_e);
     //std::cout << "laplacian H: " << "\n" << lap_H << std::endl;
 
     // initialize the spontaneous curvature matrix
@@ -70,7 +70,7 @@ namespace ddgsolver {
     // initialize and calculate intermediary result productTerms
     Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
     productTerms.resize(n_vertices, 3);
-    productTerms = 2 * rowwiseScaling(rowwiseProduct(scalerTerms, H - H0_e)
+    productTerms = 2 * rowwiseScaling(rowwiseProduct(scalerTerms, M_inv * H - H0_e)
       , vertexAngleNormal_e);
 
     // calculate bendingForce

@@ -1,0 +1,66 @@
+#include <iostream>
+
+#include <geometrycentral/surface/halfedge_factories.h>
+#include <geometrycentral/surface/halfedge_mesh.h>
+#include <geometrycentral/surface/intrinsic_geometry_interface.h>
+#include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/polygon_soup_mesh.h>
+#include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
+#include <geometrycentral/utilities/vector3.h>
+
+#include "ddgsolver/force.h"
+#include "ddgsolver/typetraits.h"
+#include "ddgsolver/util.h"
+#include "ddgsolver/integrator.h"
+
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
+
+
+int main() {
+	/// physical parameters 
+	ddgsolver::Parameters p;
+	p.Kb = 0.01;			//Kb
+	p.H0 = 1.4 * 0;				//H0
+	p.Kse = 0;      //Kse
+	p.Ksl = 3;				//Ksl
+	p.Ksg = 0;				//Ksg
+	p.Kv = 1;			  //Kv
+	p.gamma = 1;				//gamma
+	p.Vt = 0.7;			//Vt
+	p.kt = 0.00001;		//Kt 
+	p.ptInd = 0;
+	p.extF = 0.2 * 0;
+	p.conc = 25;
+
+	/// integration parameters
+	double h = 0.0001;
+	double T = 1;
+	double eps = 1e-9;// 1e-9;
+	double tSave = 0.25; // save after time tSave
+
+	p.sigma = sqrt(2 * p.gamma * p.kt / h);
+
+	/// choose the starting mesh 
+	std::string option = "input-file/UVsphere.ply"; // 1. "input-file/UVsphere.ply" 
+																								// 2. "input-file/Vt_%d_H0_%d.ply"
+
+	/// initialize mesh and vpg 
+	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
+	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+	std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(option);
+	auto& mesh = *ptrmesh;
+	auto& vpg = *ptrvpg;
+
+	gcs::PlyHalfedgeMeshData plyData(mesh);
+	plyData.addGeometry(vpg);
+
+	/// run the program based on "run"
+	ddgsolver::Force f(mesh, vpg, p);
+	ddgsolver::integrator integration(mesh, vpg, plyData, f, h, T, p, eps, tSave);
+	integration.velocityVerlet();
+	//velocityVerlet(f, h, T, eps, tSave);
+
+	return 0;
+}

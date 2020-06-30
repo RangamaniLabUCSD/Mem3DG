@@ -114,9 +114,17 @@ endif()
 # ##############################################################################
 # Main DDG target
 # ##############################################################################
-add_executable(ddg tests/main.cpp)
-target_link_libraries(ddg PRIVATE ddgsolver polyscope)
-set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
+add_executable(ddg_vesicle tests/main_vesicle.cpp)
+target_link_libraries(ddg_vesicle PRIVATE ddgsolver)
+set_target_properties(ddg_vesicle PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+add_executable(ddg_tube tests/main_tube.cpp)
+target_link_libraries(ddg_tube PRIVATE ddgsolver)
+set_target_properties(ddg_tube PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+add_executable(plot tests/visualization.cpp)
+target_link_libraries(plot PRIVATE ddgsolver polyscope)
+set_target_properties(plot PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 add_executable(scratch tests/scratch.cpp)
 target_link_libraries(scratch PRIVATE ddgsolver polyscope)
