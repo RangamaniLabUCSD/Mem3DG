@@ -17,6 +17,7 @@ public:
   double &total_time;
   gcs::HalfedgeMesh &mesh;
   gcs::VertexPositionGeometry &vpg;
+  gcs::PlyHalfedgeMeshData &plyData;
   Parameters &p;
   ddgsolver::Force &f;
   double tolerance;
@@ -25,10 +26,10 @@ public:
   double tSave;
 
   integrator(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-             ddgsolver::Force &f_, double &h, double &T, Parameters &p_,
-             double eps, double tSave_)
-      : mesh(mesh_), vpg(vpg_), f(f_), dt(h), total_time(T), p(p_),
-        tolerance(eps), tSave(tSave_) {
+    gcs::PlyHalfedgeMeshData& plyData_, ddgsolver::Force &f_, double &h, 
+    double &T, Parameters &p_, double eps, double tSave_)
+      : mesh(mesh_), vpg(vpg_), plyData(plyData_), f(f_), dt(h), total_time(T),
+    p(p_), tolerance(eps), tSave(tSave_) {
     totalEnergy = 0;
     pastTotalEnergy = 0;
   }

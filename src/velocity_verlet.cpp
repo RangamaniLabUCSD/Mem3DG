@@ -1,5 +1,6 @@
 #include "ddgsolver/force.h"
 #include "ddgsolver/integrator.h"
+#include "ddgsolver/meshops.h"
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
@@ -36,7 +37,7 @@ void integrator::velocityVerlet() {
 
   this -> getLogFiles();
 
-  for (int i = 0; i < total_time / dt; i++) {
+  for (int i = 0; i <= total_time / dt; i++) {
     // Update all forces
     //f.getBendingForces();
     //f.getStretchingForces();
@@ -73,11 +74,32 @@ void integrator::velocityVerlet() {
     }
 
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
-      gcs::PlyHalfedgeMeshData data(f.mesh);
-      data.addGeometry(f.vpg);
+      gcs::PlyHalfedgeMeshData plyData(f.mesh);
+      plyData.addGeometry(f.vpg);
+
+      //gcs::VertexData<double> H(f.mesh);
+      //H.fromVector(f.M_inv * f.H);
+      //plyData.addVertexProperty("mean curvature", H);
+
+      //gcs::VertexData<double> f_ext(f.mesh);
+      //f_ext.fromVector(f.appliedForceMagnitude);
+      //plyData.addVertexProperty("external force", f_ext);
+
+      //gcs::VertexData<double> fn(f.mesh);
+      //fn.fromVector(rowwiseDotProduct(staticForce,
+      //  ddgsolver::EigenMap<double, 3>(f.vpg.vertexNormals)));
+      //plyData.addVertexProperty("normal force", fn);
+
+      //gcs::VertexData<double> ft(f.mesh);
+      //ft.fromVector((staticForce - rowwiseScaling(rowwiseDotProduct(staticForce,
+      //  ddgsolver::EigenMap<double, 3>(f.vpg.vertexNormals)),
+      //  ddgsolver::EigenMap<double, 3>(f.vpg.vertexNormals))).rowwise().norm());
+      //plyData.addVertexProperty("tangential force", ft);
+
       char buffer[50];
       sprintf(buffer, "output-file/t=%d.ply", int(i * dt * 100));
-      data.write(buffer);
+      plyData.write(buffer);
+
       std::cout << "time: " << i * dt << std::endl;
       std::cout << "force: " << staticForce_mag << std::endl;
       std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
@@ -109,7 +131,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance, do
 
   //this -> getLogFiles();
 
-  for (int i = 0; i < total_time / dt; i++) {
+  for (int i = 0; i <= total_time / dt; i++) {
     // Update all forces
     //f.getBendingForces();
     //f.getStretchingForces();
