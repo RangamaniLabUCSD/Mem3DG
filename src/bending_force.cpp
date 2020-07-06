@@ -29,7 +29,7 @@ void Force::getBendingForces() {
 
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
-      M_inv * (EigenMap(vpg.vertexGaussianCurvatures));
+      M_inv * vpg.vertexGaussianCurvatures.raw();
 
   // number of vertices for convenience
   std::size_t n_vertices = (mesh.nVertices());

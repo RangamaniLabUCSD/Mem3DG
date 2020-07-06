@@ -43,7 +43,7 @@ void Force::getStretchingForces() {
   global_force.setZero(mesh.nVertices(), 3);*/
 
 
-  auto faceArea_e = EigenMap(vpg.faceAreas);
+  auto& faceArea_e = vpg.faceAreas.raw();
   surfaceArea = faceArea_e.sum();
 
   for (gcs::Vertex v : mesh.vertices()) {
