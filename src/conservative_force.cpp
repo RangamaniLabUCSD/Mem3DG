@@ -30,21 +30,20 @@ namespace ddgsolver {
     L = vpg.cotanLaplacian;
 
     // Gaussian curvature per vertex Area
-    Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
-      (EigenMap(vpg.vertexGaussianCurvatures));
+    auto& KG = vpg.vertexGaussianCurvatures.raw();
 
     // number of vertices for convenience
     std::size_t n_vertices = (mesh.nVertices());
 
     // map ivp to eigen matrix position
-    auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
+    auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
 
     // map the VertexData bendingForces to eigen matrix bendingForces_e
-    auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
+    auto bendingForces_e = EigenMap<double, 3>(bendingForces);
     bendingForces_e.setZero();
 
     // the build-in angle-weighted vertex normal
-    auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
+    auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
 
     // calculate mean curvature
     H = rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
@@ -96,7 +95,7 @@ namespace ddgsolver {
     stretchingForces.fill({ 0.0,0.0,0.0 });
     const gcs::FaceData<gc::Vector3>& face_n = vpg.faceNormals;
     const gcs::FaceData<double>& face_a = vpg.faceAreas;
-    auto faceArea_e = EigenMap(vpg.faceAreas);
+    auto faceArea_e = vpg.faceAreas.raw();
     surfaceArea = faceArea_e.sum();
 
     /// D. LOOPING VERTICES

@@ -71,6 +71,148 @@ inline const T *getBuffer(const gcs::MeshData<E, T> &data) {
   return data.raw().data();
 }
 
+/**
+ * @brief Generate an Eigen Map to an aligned raw buffer.
+ *
+ * This function will force cast the data from O to type T if O is a POD type.
+ *
+ * @tparam T        Typename of the output data
+ * @tparam k        Number of columns in the output
+ * @tparam E        Typename of the mesh element
+ * @tparam O        Typename of the input data
+ * @tparam Options  Storage order \b Eigen::RowMajor or \b Eigen::ColMajor
+ * @param vec       The data
+ * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
+ */
+template <typename T, std::size_t k, typename E, typename O,
+          int Options = Eigen::RowMajor>
+AlignedEigenMap_T<T, k, Options> EigenMap(gcs::MeshData<E, O> &vec) {
+  static_assert(std::is_standard_layout<T>::value &&
+                    std::is_trivially_copyable<O>::value,
+                "O must be a POD type.");
+  static_assert(sizeof(O) == k * sizeof(T),
+                "sizeof(O) must be a k multiple of sizeof(T)");
+  return AlignedEigenMap_T<T, k, Options>(reinterpret_cast<T *>(getBuffer(vec)),
+                                          vec.size(), k);
+}
+
+/**
+ * @brief Generate an Eigen Map to an aligned raw buffer.
+ *
+ * This function will force cast the data from O to type T if O is a POD type.
+ *
+ * @tparam T        Typename of the output data
+ * @tparam k        Number of columns in the output
+ * @tparam E        Typename of the mesh element
+ * @tparam O        Typename of the input data
+ * @tparam Options  Storage order \b Eigen::RowMajor or \b Eigen::ColMajor
+ * @param vec       The data
+ * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
+ */
+template <typename T, std::size_t k, typename E, typename O,
+          int Options = Eigen::RowMajor>
+ConstAlignedEigenMap_T<T, k, Options> EigenMap(const gcs::MeshData<E, O> &vec) {
+  static_assert(std::is_standard_layout<T>::value &&
+                    std::is_trivially_copyable<O>::value,
+                "O must be a POD type.");
+  static_assert(sizeof(O) == k * sizeof(T),
+                "sizeof(O) must be a k multiple of sizeof(T)");
+  return ConstAlignedEigenMap_T<T, k, Options>(
+      reinterpret_cast<const T *>(getBuffer(vec)), vec.size(), k);
+}
+
+
+/**
+ * @brief Generate an Eigen Map to an aligned raw buffer.
+ *
+ * This function will force cast the data from O to type T if O is a POD type.
+ *
+ * @tparam T    Typename of the output data
+ * @tparam k    Number of columns in the output
+ * @tparam E    Typename of the mesh element
+ * @tparam O    Typename of the input data
+ * @param vec   The data
+ * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
+ */
+template <typename T, std::size_t k, typename E, typename O>
+AlignedEigenMap_T<T, 1> FlattenedEigenMap(gcs::MeshData<E, O> &vec) {
+  // Imperfect check for padding
+  static_assert(std::is_standard_layout<T>::value &&
+                    std::is_trivially_copyable<O>::value,
+                "O must be a POD type.");
+  static_assert(sizeof(O) == k * sizeof(T),
+                "sizeof(O) must be a k multiple of sizeof(T)");
+  return AlignedEigenMap_T<T, 1>(reinterpret_cast<T *>(getBuffer(vec)),
+                                 k * vec.size());
+}
+
+/**
+ * @brief Generate an Eigen Map to an aligned raw buffer.
+ *
+ * This function will force cast the data from O to type T if O is a POD type.
+ *
+ * @tparam T    Typename of the output data
+ * @tparam k    Number of columns in the output
+ * @tparam E    Typename of the mesh element
+ * @tparam O    Typename of the input data
+ * @param vec   The data
+ * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
+ */
+template <typename T, std::size_t k, typename E, typename O>
+ConstAlignedEigenMap_T<T, 1> FlattenedEigenMap(const gcs::MeshData<E, O> &vec) {
+  // Imperfect check for padding
+  static_assert(std::is_standard_layout<T>::value &&
+                    std::is_trivially_copyable<O>::value,
+                "O must be a POD type.");
+  static_assert(sizeof(O) == k * sizeof(T),
+                "sizeof(O) must be a k multiple of sizeof(T)");
+  return ConstAlignedEigenMap_T<T, 1>(
+      reinterpret_cast<const T *>(getBuffer(vec)), k * vec.size());
+}
+
+
+
+/**
+ * @brief Compute the dot product between two Eigen Matrices
+ * 
+ * @tparam Derived  Template type values of the matrices 
+ * @param A         the first matrix
+ * @param B         The other matrix
+ * @return auto     Intermediate return value for Eigen optimization
+ */
+template <typename Derived>
+auto dot(Eigen::DenseBase<Derived> &A, Eigen::DenseBase<Derived> &B) {
+  return A.derived().cwiseProduct(B.derived()).rowwise().sum();
+}
+
+
+
+// Deprecated
+// /**
+//  * @brief Generate an Eigen Map to an aligned raw buffer.
+//  *
+//  * @tparam T    Typename of the stored data
+//  * @param vec   The data
+//  * @return AlignedEigenMap_T<T, 1>    Eigen map object to the buffer
+//  */
+// template <typename E, typename T>
+// AlignedEigenMap_T<T, 1> EigenMap(gcs::MeshData<E, T> &vec) {
+//   return AlignedEigenMap_T<T, 1>(getBuffer(vec), vec.size());
+// }
+
+// /**
+//  * @brief Generate an Eigen Map to an aligned raw buffer.
+//  *
+//  * @tparam T    Typename of the stored data
+//  * @param vec   The data
+//  * @return AlignedEigenMap_T<T, 1>    Eigen map object to the buffer
+//  */
+// template <typename E, typename T>
+// ConstAlignedEigenMap_T<T, 1> EigenMap(const gcs::MeshData<E, T> &vec) {
+//   return ConstAlignedEigenMap_T<T, 1>(getBuffer(vec), vec.size());
+// }
+
+
 
 /**
  * @brief Generate an Eigen Map to an aligned raw buffer.
@@ -125,56 +267,6 @@ ConstAlignedEigenMap_T<T, k, Options> EigenMap(const AlignedVector_T<O> &vec) {
 /**
  * @brief Generate an Eigen Map to an aligned raw buffer.
  *
- * This function will force cast the data from O to type T if O is a POD type.
- *
- * @tparam T        Typename of the output data
- * @tparam k        Number of columns in the output
- * @tparam E        Typename of the mesh element
- * @tparam O        Typename of the input data
- * @tparam Options  Storage order \b Eigen::RowMajor or \b Eigen::ColMajor
- * @param vec       The data
- * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
- */
-template <typename T, std::size_t k, typename E, typename O,
-          int Options = Eigen::RowMajor>
-AlignedEigenMap_T<T, k, Options> EigenMap(gcs::MeshData<E, O> &vec) {
-  static_assert(std::is_standard_layout<T>::value &&
-                    std::is_trivially_copyable<O>::value,
-                "O must be a POD type.");
-  static_assert(sizeof(O) == k * sizeof(T),
-                "sizeof(O) must be a k multiple of sizeof(T)");
-  return AlignedEigenMap_T<T, k, Options>(reinterpret_cast<T *>(getBuffer(vec)),
-                                          vec.size(), k);
-}
-
-/**
- * @brief Generate an Eigen Map to an aligned raw buffer.
- *
- * This function will force cast the data from O to type T if O is a POD type.
- *
- * @tparam T        Typename of the output data
- * @tparam k        Number of columns in the output
- * @tparam E        Typename of the mesh element
- * @tparam O        Typename of the input data
- * @tparam Options  Storage order \b Eigen::RowMajor or \b Eigen::ColMajor
- * @param vec       The data
- * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
- */
-template <typename T, std::size_t k, typename E, typename O,
-          int Options = Eigen::RowMajor>
-ConstAlignedEigenMap_T<T, k, Options> EigenMap(const gcs::MeshData<E, O> &vec) {
-  static_assert(std::is_standard_layout<T>::value &&
-                    std::is_trivially_copyable<O>::value,
-                "O must be a POD type.");
-  static_assert(sizeof(O) == k * sizeof(T),
-                "sizeof(O) must be a k multiple of sizeof(T)");
-  return ConstAlignedEigenMap_T<T, k, Options>(
-      reinterpret_cast<const T *>(getBuffer(vec)), vec.size(), k);
-}
-
-/**
- * @brief Generate an Eigen Map to an aligned raw buffer.
- *
  * @tparam T    Typename of the output data
  * @param vec   The data
  * @return AlignedEigenMap_T<T, 1>    Eigen map object to the buffer
@@ -194,30 +286,6 @@ AlignedEigenMap_T<T, 1> EigenMap(AlignedVector_T<T> &vec) {
 template <typename T>
 ConstAlignedEigenMap_T<T, 1> EigenMap(const AlignedVector_T<T> &vec) {
   return ConstAlignedEigenMap_T<T, 1>(vec.data(), vec.size());
-}
-
-/**
- * @brief Generate an Eigen Map to an aligned raw buffer.
- *
- * @tparam T    Typename of the stored data
- * @param vec   The data
- * @return AlignedEigenMap_T<T, 1>    Eigen map object to the buffer
- */
-template <typename E, typename T>
-AlignedEigenMap_T<T, 1> EigenMap(gcs::MeshData<E, T> &vec) {
-  return AlignedEigenMap_T<T, 1>(getBuffer(vec), vec.size());
-}
-
-/**
- * @brief Generate an Eigen Map to an aligned raw buffer.
- *
- * @tparam T    Typename of the stored data
- * @param vec   The data
- * @return AlignedEigenMap_T<T, 1>    Eigen map object to the buffer
- */
-template <typename E, typename T>
-ConstAlignedEigenMap_T<T, 1> EigenMap(const gcs::MeshData<E, T> &vec) {
-  return ConstAlignedEigenMap_T<T, 1>(getBuffer(vec), vec.size());
 }
 
 /**
@@ -264,58 +332,5 @@ ConstAlignedEigenMap_T<T, 1> FlattenedEigenMap(const AlignedVector_T<O> &vec) {
                 "sizeof(O) must be a k multiple of sizeof(T)");
   return ConstAlignedEigenMap_T<T, 1>(reinterpret_cast<const T *>(vec.data()),
                                       k * vec.size());
-}
-
-/**
- * @brief Generate an Eigen Map to an aligned raw buffer.
- *
- * This function will force cast the data from O to type T if O is a POD type.
- *
- * @tparam T    Typename of the output data
- * @tparam k    Number of columns in the output
- * @tparam E    Typename of the mesh element
- * @tparam O    Typename of the input data
- * @param vec   The data
- * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
- */
-template <typename T, std::size_t k, typename E, typename O>
-AlignedEigenMap_T<T, 1> FlattenedEigenMap(gcs::MeshData<E, O> &vec) {
-  // Imperfect check for padding
-  static_assert(std::is_standard_layout<T>::value &&
-                    std::is_trivially_copyable<O>::value,
-                "O must be a POD type.");
-  static_assert(sizeof(O) == k * sizeof(T),
-                "sizeof(O) must be a k multiple of sizeof(T)");
-  return AlignedEigenMap_T<T, 1>(reinterpret_cast<T *>(getBuffer(vec)),
-                                 k * vec.size());
-}
-
-/**
- * @brief Generate an Eigen Map to an aligned raw buffer.
- *
- * This function will force cast the data from O to type T if O is a POD type.
- *
- * @tparam T    Typename of the output data
- * @tparam k    Number of columns in the output
- * @tparam E    Typename of the mesh element
- * @tparam O    Typename of the input data
- * @param vec   The data
- * @return AlignedEigenMap_T<T, k>    Eigen map object to the buffer
- */
-template <typename T, std::size_t k, typename E, typename O>
-ConstAlignedEigenMap_T<T, 1> FlattenedEigenMap(const gcs::MeshData<E, O> &vec) {
-  // Imperfect check for padding
-  static_assert(std::is_standard_layout<T>::value &&
-                    std::is_trivially_copyable<O>::value,
-                "O must be a POD type.");
-  static_assert(sizeof(O) == k * sizeof(T),
-                "sizeof(O) must be a k multiple of sizeof(T)");
-  return ConstAlignedEigenMap_T<T, 1>(
-      reinterpret_cast<const T *>(getBuffer(vec)), k * vec.size());
-}
-
-template <typename Derived>
-auto dot(Eigen::DenseBase<Derived> &A, Eigen::DenseBase<Derived> &B) {
-  return A.derived().cwiseProduct(B.derived()).rowwise().sum();
 }
 } // end namespace ddgsolver

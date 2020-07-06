@@ -151,7 +151,7 @@ public:
 
     // Initialize face areas
     initialFaceAreas = vpg.faceAreas;
-    auto faceAreas_e = EigenMap(initialFaceAreas);
+    auto& faceAreas_e = initialFaceAreas.raw();
     initialSurfaceArea = faceAreas_e.sum();
 
     // Initialize edge length
@@ -176,7 +176,7 @@ public:
     // Initialize the magnitude of externally applied force
     gcs::VertexData<double> geodesicDistanceFromAppliedForce 
       = heatMethodDistance(vpg, mesh.vertex(ptInd));
-    auto dist_e = EigenMap(geodesicDistanceFromAppliedForce);
+    auto& dist_e = geodesicDistanceFromAppliedForce.raw();
     double stdDev = dist_e.maxCoeff()/conc;
     appliedForceMagnitude = extF / (stdDev * pow(pi * 2, 0.5))
       * (-dist_e.array() * dist_e.array()
