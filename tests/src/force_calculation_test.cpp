@@ -2,14 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/halfedge_factories.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/polygon_soup_mesh.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
-#include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
 
@@ -49,10 +46,10 @@ protected:
 
     icosphere(coords, polygons, 2);
 
-    gc::PolygonSoupMesh soup(polygons, coords);
+    gcs::PolygonSoupMesh soup(polygons, coords);
     soup.mergeIdenticalVertices();
     std::tie(ptrmesh, ptrvpg) = gcs::makeHalfedgeAndGeometry(
-      soup.polygons, soup.vertexCoordinates, true);
+      soup.polygons, soup.vertexCoordinates);
   }
 };
 

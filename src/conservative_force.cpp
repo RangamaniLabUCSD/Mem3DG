@@ -31,7 +31,7 @@ namespace ddgsolver {
 
     // Gaussian curvature per vertex Area
     Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
-      (vpg.vertexGaussianCurvatures.toMappedVector());
+      (EigenMap(vpg.vertexGaussianCurvatures));
 
     // number of vertices for convenience
     std::size_t n_vertices = (mesh.nVertices());

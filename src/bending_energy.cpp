@@ -41,4 +41,3 @@ namespace ddgsolver {
 		//double sE = 
 	}
 }
-

@@ -176,7 +176,7 @@ public:
     // Initialize the magnitude of externally applied force
     gcs::VertexData<double> geodesicDistanceFromAppliedForce 
       = heatMethodDistance(vpg, mesh.vertex(ptInd));
-    auto dist_e = geodesicDistanceFromAppliedForce.toMappedVector();
+    auto dist_e = EigenMap(geodesicDistanceFromAppliedForce);
     double stdDev = dist_e.maxCoeff()/conc;
     appliedForceMagnitude = extF / (stdDev * pow(pi * 2, 0.5))
       * (-dist_e.array() * dist_e.array()

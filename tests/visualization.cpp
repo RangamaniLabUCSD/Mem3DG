@@ -1,13 +1,10 @@
 #include <iostream>
 
+#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/halfedge_factories.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/polygon_soup_mesh.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
-#include <geometrycentral/utilities/vector3.h>
 
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
@@ -58,7 +55,7 @@ int main(int argc, char* argv[]) {
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
 	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
-	std::unique_ptr<gcs::PlyHalfedgeMeshData> ptrPlyData;
+	std::unique_ptr<gcs::RichSurfaceMeshData> ptrPlyData;
 	std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(option);
 	auto& mesh = *ptrmesh;
 	auto& vpg = *ptrvpg;
@@ -68,10 +65,10 @@ int main(int argc, char* argv[]) {
 	gcs::VertexData<double> normalForce = ptrPlyData->getVertexProperty<double>("fn");
 	gcs::VertexData<double> tangentialForce = ptrPlyData->getVertexProperty<double>("ft");
 
-	Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e = meanCurvature.toMappedVector();
-	Eigen::Matrix<double, Eigen::Dynamic, 1> extForce_e = extForce.toMappedVector();
-	Eigen::Matrix<double, Eigen::Dynamic, 1> normalForce_e = normalForce.toMappedVector();
-	Eigen::Matrix<double, Eigen::Dynamic, 1> tangentialForce_e = tangentialForce.toMappedVector();
+	Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e = meanCurvature.raw();
+	Eigen::Matrix<double, Eigen::Dynamic, 1> extForce_e = extForce.raw();
+	Eigen::Matrix<double, Eigen::Dynamic, 1> normalForce_e = normalForce.raw();
+	Eigen::Matrix<double, Eigen::Dynamic, 1> tangentialForce_e = tangentialForce.raw();
 
 	/// initialize force object f
 	ddgsolver::Force f(mesh, vpg, p);

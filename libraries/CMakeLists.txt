@@ -8,7 +8,7 @@ add_subdirectory(pcg)
 FetchContent_Declare(
   geometrycentrallib
   GIT_REPOSITORY https://github.com/ctlee/geometry-central.git
-  GIT_TAG origin/data_access
+  GIT_TAG origin/data-access-new
   GIT_SHALLOW TRUE
   SOURCE_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
