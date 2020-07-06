@@ -16,15 +16,15 @@
 
 namespace ddgsolver {
 
-  namespace gc = ::geometrycentral;
-  namespace gcs = ::geometrycentral::surface;
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
 
 void Force::getBendingForces() {
   // Initialize the mass matrix
   M = vpg.vertexLumpedMassMatrix;
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
- // Initialize the conformal Laplacian matrix
+  // Initialize the conformal Laplacian matrix
   L = vpg.cotanLaplacian;
 
   // Gaussian curvature per vertex Area
@@ -45,18 +45,20 @@ void Force::getBendingForces() {
   auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
 
   // calculate mean curvature and map it to angle-weighted normal
-  Hn = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e, 
-            M_inv * L * positions / 2.0), vertexAngleNormal_e);
- 
-  // calculate the Laplacian of mean curvature H 
+  Hn = rowwiseScaling(
+      rowwiseDotProduct(vertexAngleNormal_e, M_inv * L * positions / 2.0),
+      vertexAngleNormal_e);
+
+  // calculate the Laplacian of mean curvature H
   Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
 
   // initialize the spontaneous curvature matrix
   H0n = H0 * vertexAngleNormal_e;
 
-  // initialize and calculate intermediary result scalerTerms, set to zero if negative
+  // initialize and calculate intermediary result scalerTerms, set to zero if
+  // negative
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-    rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(H0n, H0n) - KG;
+      rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(H0n, H0n) - KG;
   Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
   zeroMatrix.resize(n_vertices, 1);
   zeroMatrix.setZero();
