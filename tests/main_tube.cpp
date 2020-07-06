@@ -1,12 +1,8 @@
 #include <iostream>
 
-#include <geometrycentral/surface/halfedge_factories.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
+#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/meshio.h>
-#include <geometrycentral/surface/polygon_soup_mesh.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
+#include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/utilities/vector3.h>
 
 #include "ddgsolver/force.h"
@@ -53,7 +49,7 @@ int main() {
 	auto& mesh = *ptrmesh;
 	auto& vpg = *ptrvpg;
 
-	gcs::PlyHalfedgeMeshData plyData(mesh);
+	gcs::RichSurfaceMeshData plyData(mesh);
 	plyData.addGeometry(vpg);
 
 	/// run the program based on "run"

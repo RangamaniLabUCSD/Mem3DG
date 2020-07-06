@@ -3,7 +3,7 @@
 
 #include <Eigen/Core>
 
-#include <geometrycentral/surface/halfedge_containers.h>
+#include <geometrycentral/surface/surface_mesh.h>
 
 namespace ddgsolver {
 
@@ -55,7 +55,7 @@ using ConstAlignedEigenMap_T =
  */
 template <typename E, typename T>
 inline T *getBuffer(gcs::MeshData<E, T> &data) {
-  return data.rawdata().data();
+  return data.raw().data();
 }
 
 /**
@@ -68,8 +68,9 @@ inline T *getBuffer(gcs::MeshData<E, T> &data) {
  */
 template <typename E, typename T>
 inline const T *getBuffer(const gcs::MeshData<E, T> &data) {
-  return data.rawdata().data();
+  return data.raw().data();
 }
+
 
 /**
  * @brief Generate an Eigen Map to an aligned raw buffer.

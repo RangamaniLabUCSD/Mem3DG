@@ -1,13 +1,10 @@
 #include <iostream>
 
+#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/halfedge_factories.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/polygon_soup_mesh.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
-#include <geometrycentral/utilities/vector3.h>
 
 #include "ddgsolver/force.h"
 #include "ddgsolver/icosphere.h"
@@ -61,10 +58,10 @@ int main() {
 		std::vector<gc::Vector3> coords;
 		std::vector<std::vector<std::size_t>> polygons;
 		ddgsolver::icosphere(coords, polygons, nSub);
-		gc::PolygonSoupMesh soup(polygons, coords);
+		gcs::PolygonSoupMesh soup(polygons, coords);
 		soup.mergeIdenticalVertices();
 		std::tie(ptrmesh, ptrvpg) =
-		gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates, true);
+		gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
 	}
 	else{
 		std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(option);
@@ -73,7 +70,7 @@ int main() {
 	auto& mesh = *ptrmesh;
 	auto& vpg = *ptrvpg;
 
-	gcs::PlyHalfedgeMeshData plyData(mesh);
+	gcs::RichSurfaceMeshData plyData(mesh);
 	plyData.addGeometry(vpg);
 
 	/// run the program based on "run"

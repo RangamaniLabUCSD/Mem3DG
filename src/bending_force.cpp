@@ -29,20 +29,20 @@ void Force::getBendingForces() {
 
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
-      M_inv * (vpg.vertexGaussianCurvatures.toMappedVector());
+      M_inv * (EigenMap(vpg.vertexGaussianCurvatures));
 
   // number of vertices for convenience
   std::size_t n_vertices = (mesh.nVertices());
 
   // map ivp to eigen matrix position
-  auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
+  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
 
   // map the VertexData bendingForces to eigen matrix bendingForces_e
-  auto bendingForces_e = ddgsolver::EigenMap<double, 3>(bendingForces);
+  auto bendingForces_e = EigenMap<double, 3>(bendingForces);
   bendingForces_e.setZero();
 
   // the build-in angle-weighted vertex normal
-  auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
+  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
 
   // calculate mean curvature and map it to angle-weighted normal
   Hn = rowwiseScaling(rowwiseDotProduct(vertexAngleNormal_e, 

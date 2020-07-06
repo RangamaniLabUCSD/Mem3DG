@@ -1,8 +1,7 @@
 #pragma once
 
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/surface/geometry.h>
+#include <geometrycentral/surface/rich_surface_mesh_data.h>
 
 #include "force.h"
 
@@ -17,7 +16,7 @@ public:
   double &total_time;
   gcs::HalfedgeMesh &mesh;
   gcs::VertexPositionGeometry &vpg;
-  gcs::PlyHalfedgeMeshData &plyData;
+  gcs::RichSurfaceMeshData &plyData;
   Parameters &p;
   ddgsolver::Force &f;
   double tolerance;
@@ -26,7 +25,7 @@ public:
   double tSave;
 
   integrator(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-    gcs::PlyHalfedgeMeshData& plyData_, ddgsolver::Force &f_, double &h, 
+    gcs::RichSurfaceMeshData& plyData_, ddgsolver::Force &f_, double &h, 
     double &T, Parameters &p_, double eps, double tSave_)
       : mesh(mesh_), vpg(vpg_), plyData(plyData_), f(f_), dt(h), total_time(T),
     p(p_), tolerance(eps), tSave(tSave_) {

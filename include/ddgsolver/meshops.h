@@ -1,14 +1,17 @@
 
 #pragma once
 
-#include <geometrycentral/surface/halfedge_factories.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
-#include <geometrycentral/surface/meshio.h>
-#include <geometrycentral/surface/ply_halfedge_mesh_data.h>
-#include <geometrycentral/surface/polygon_soup_mesh.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/vector3.h>
+
+#include <geometrycentral/surface/surface_mesh.h>
+
+// #include <geometrycentral/surface/halfedge_factories.h>
+// #include <geometrycentral/surface/halfedge_mesh.h>
+// #include <geometrycentral/surface/intrinsic_geometry_interface.h>
+// #include <geometrycentral/surface/meshio.h>
+// #include <geometrycentral/surface/ply_halfedge_mesh_data.h>
+// #include <geometrycentral/surface/polygon_soup_mesh.h>
+// #include <geometrycentral/surface/vertex_position_geometry.h>
+// #include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
 

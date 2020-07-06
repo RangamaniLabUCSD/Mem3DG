@@ -74,7 +74,7 @@ void integrator::velocityVerlet() {
     }
 
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
-      gcs::PlyHalfedgeMeshData plyData(f.mesh);
+      gcs::RichSurfaceMeshData plyData(f.mesh);
       plyData.addGeometry(f.vpg);
 
       //gcs::VertexData<double> H(f.mesh);
@@ -169,7 +169,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance, do
     }
 
     if ((i % nSave == 0) || (i == int(total_time/dt))) {
-      gcs::PlyHalfedgeMeshData data(f.mesh);
+      gcs::RichSurfaceMeshData data(f.mesh);
       data.addGeometry(f.vpg);
       char buffer[50];
       sprintf(buffer, "output-file/t=%d.ply", int(i * dt * 100));
