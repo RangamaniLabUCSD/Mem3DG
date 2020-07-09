@@ -26,8 +26,8 @@ void Force::getConservativeForces() {
   M = vpg.vertexLumpedMassMatrix;
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
-  // Initialize the conformal Laplacian matrix
-  L = vpg.cotanLaplacian;
+  ////// Initialize the conformal Laplacian matrix
+  //L = vpg.cotanLaplacian;
 
   // Gaussian curvature per vertex Area
   auto& KG = vpg.vertexGaussianCurvatures.raw();
@@ -55,8 +55,7 @@ void Force::getConservativeForces() {
 
   // initialize the spontaneous curvature matrix
   Eigen::Matrix<double, Eigen::Dynamic, 1> H0_e;
-  H0_e.resize(n_vertices, 1);
-  H0_e.Constant(n_vertices, 1, H0);
+  H0_e.setConstant(n_vertices, 1, H0);
 
   // initialize and calculate intermediary result scalarTerms, set to zero if
   // negative

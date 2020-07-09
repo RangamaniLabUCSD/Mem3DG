@@ -52,15 +52,16 @@ int main(int argc, char* argv[]) {
 	/// choose the .ply file 
 	std::string option = argv[2]; // 1. "input-file/sphere.ply" 2. "input-file/Vt_%d_H0_%d.ply"
 
-	/// initialize mesh and vpg 
-	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
+	std::unique_ptr<gcs::SurfaceMesh> ptrmesh;
 	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
 	std::unique_ptr<gcs::RichSurfaceMeshData> ptrPlyData;
-	std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(option);
+	std::tie(ptrmesh, ptrPlyData) = gcs::RichSurfaceMeshData::readMeshAndData(option);
+	ptrvpg = ptrPlyData->getGeometry();
+	auto& plyData = *ptrPlyData;
 	auto& mesh = *ptrmesh;
 	auto& vpg = *ptrvpg;
 
-	gcs::VertexData<double> meanCurvature = ptrPlyData->getVertexProperty<double>("mean curvature");
+	/*gcs::VertexData<double> meanCurvature = ptrPlyData->getVertexProperty<double>("mean curvature");
 	gcs::VertexData<double> extForce = ptrPlyData->getVertexProperty<double>("external force");
 	gcs::VertexData<double> normalForce = ptrPlyData->getVertexProperty<double>("fn");
 	gcs::VertexData<double> tangentialForce = ptrPlyData->getVertexProperty<double>("ft");
@@ -68,7 +69,7 @@ int main(int argc, char* argv[]) {
 	Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e = meanCurvature.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> extForce_e = extForce.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> normalForce_e = normalForce.raw();
-	Eigen::Matrix<double, Eigen::Dynamic, 1> tangentialForce_e = tangentialForce.raw();
+	Eigen::Matrix<double, Eigen::Dynamic, 1> tangentialForce_e = tangentialForce.raw();*/
 
 	/// initialize force object f
 	ddgsolver::Force f(mesh, vpg, p);
@@ -82,10 +83,11 @@ int main(int argc, char* argv[]) {
 		polyscope::registerSurfaceMesh("Vesicle surface",
 			ptrvpg->inputVertexPositions,
 			ptrmesh->getFaceVertexList());
-		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("mean curvature", meanCurvature_e);
+
+		/*polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("mean curvature", meanCurvature_e);
 		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("applied force", extForce_e);
 		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("tangential force", tangentialForce_e);
-		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("normal force", normalForce_e);
+		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("normal force", normalForce_e);*/
 		polyscope::show();
 	}
 
@@ -94,10 +96,12 @@ int main(int argc, char* argv[]) {
 		polyscope::registerCurveNetwork("Vesicle network",
 			ptrvpg->inputVertexPositions,
 			ptrmesh->getFaceVertexList());
-		polyscope::getCurveNetwork("Vesicle surface")->addNodeScalarQuantity("mean curvature", meanCurvature_e);
+
+		/*polyscope::getCurveNetwork("Vesicle surface")->addNodeScalarQuantity("mean curvature", meanCurvature_e);
 		polyscope::getCurveNetwork("Vesicle surface")->addNodeScalarQuantity("applied force", extForce_e);
 		polyscope::getCurveNetwork("Vesicle surface")->addNodeScalarQuantity("tangential force", tangentialForce_e);
-		polyscope::getCurveNetwork("Vesicle surface")->addNodeScalarQuantity("normal force", normalForce_e);
+		polyscope::getCurveNetwork("Vesicle surface")->addNodeScalarQuantity("normal force", normalForce_e);*/
+
 		polyscope::show();
 	}
 

@@ -27,7 +27,7 @@ int main() {
 	p.Vt = 0.7;			//Vt
 	p.kt = 0.00001;		//Kt 
 	p.ptInd = 0;
-	p.extF = 0.2 * 0;
+	p.extF = 0.2;
 	p.conc = 25;
 
 	/// integration parameters
@@ -41,6 +41,15 @@ int main() {
 	/// choose the starting mesh 
 	std::string option = "input-file/UVsphere.ply"; // 1. "input-file/UVsphere.ply" 
 																								// 2. "input-file/Vt_%d_H0_%d.ply"
+
+	//std::unique_ptr<gcs::SurfaceMesh> ptrmesh;
+	//std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+	//std::unique_ptr<gcs::RichSurfaceMeshData> richData;
+	//std::tie(ptrmesh, richData) = gcs::RichSurfaceMeshData::readMeshAndData(option);
+	//ptrvpg = richData->getGeometry();
+	//auto& plyData = *richData;
+	//auto& mesh = *ptrmesh;
+	//auto& vpg = *ptrvpg;
 
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
