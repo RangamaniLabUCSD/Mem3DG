@@ -10,12 +10,12 @@ namespace ddgsolver {
 	namespace gcs = ::geometrycentral::surface;
 
 	void Force::getExternalForces() {
-		auto externalForces_e = ddgsolver::EigenMap<double, 3>(externalForces);
+		auto externalForces_e = EigenMap<double, 3>(externalForces);
 		if (extF != 0) {
 			// std::cout << "external force::" << appliedForceMagnitude << std::endl;
 			// externalForce_e = vertexAreaGradientNormal.array().colwise() *
 			//	appliedForceMagnitude.array();
-			auto vertexAngleNormal_e = ddgsolver::EigenMap<double, 3>(vpg.vertexNormals);
+			auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
 			externalForces_e = appliedForceMagnitude * vertexAngleNormal_e.row(ptInd);
 		}
 		else {

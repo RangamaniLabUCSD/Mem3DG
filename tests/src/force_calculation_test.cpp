@@ -88,16 +88,23 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> stretchingForces1 =
       f.stretchingForces.raw();
 
+  Eigen::Matrix<double, Eigen::Dynamic, 3> bf1 =
+    EigenMap<double,3>(f.bendingForces);
+
   f.getBendingForces();
   Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> bendingForces2 =
       f.bendingForces.raw();
+
+  Eigen::Matrix<double, Eigen::Dynamic, 3> bf2 =
+    EigenMap<double, 3>(f.bendingForces);
 
   f.getPressureForces();
   Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> pressureForces2 =
       f.pressureForces.raw();
 
+  f.getStretchingForces();
   Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> stretchingForces2 =
-      f.stretchingForces.raw();
+    f.stretchingForces.raw();
 
   ASSERT_EQ(bendingForces1, bendingForces2);
   ASSERT_EQ(pressureForces1, pressureForces2);

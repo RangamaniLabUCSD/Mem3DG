@@ -14,7 +14,7 @@ class DLL_PUBLIC integrator {
 public:
   double &dt;
   double &total_time;
-  gcs::HalfedgeMesh &mesh;
+  gcs::SurfaceMesh &mesh;
   gcs::VertexPositionGeometry &vpg;
   gcs::RichSurfaceMeshData &plyData;
   Parameters &p;
@@ -24,7 +24,7 @@ public:
   double pastTotalEnergy;
   double tSave;
 
-  integrator(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+  integrator(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
     gcs::RichSurfaceMeshData& plyData_, ddgsolver::Force &f_, double &h, 
     double &T, Parameters &p_, double eps, double tSave_)
       : mesh(mesh_), vpg(vpg_), plyData(plyData_), f(f_), dt(h), total_time(T),

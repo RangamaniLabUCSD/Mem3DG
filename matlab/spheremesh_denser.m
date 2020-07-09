@@ -82,7 +82,7 @@ end
 newfaces(removeList,:) = [];
 
 %patch('Faces',newfaces,'Vertices',vertices);
-plywrite("C:\Users\Kieran\Desktop\DDG_membrane\build\bin\Release\input-file\sphere.ply",newfaces,vertices);
+plywrite("C:\Users\Kieran\Desktop\DDG_membrane\build\bin\Release\input-file\UVsphere.ply",newfaces,vertices);
 
 
 

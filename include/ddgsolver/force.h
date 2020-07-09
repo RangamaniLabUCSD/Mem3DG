@@ -54,7 +54,7 @@ struct DLL_PUBLIC Parameters {
 class DLL_PUBLIC Force : public Parameters {
 public:
   /// Cached mesh of interest
-  gcs::HalfedgeMesh &mesh;
+  gcs::SurfaceMesh &mesh;
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
   /// Cached bending forces
@@ -112,7 +112,7 @@ public:
    * @param time_step_    Numerical timestep
    */
 
-  Force(gcs::HalfedgeMesh &mesh_, gcs::VertexPositionGeometry &vpg_, Parameters &p)
+  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_, Parameters &p)
       : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), Parameters(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
