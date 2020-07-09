@@ -57,57 +57,47 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   ddgsolver::Force f(*ptrmesh, *ptrvpg, p);
 
   f.getConservativeForces();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> bendingForces1 =
-      f.bendingForces.raw();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> pressureForces1 =
-      f.pressureForces.raw();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> stretchingForces1 =
-      f.stretchingForces.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingForces1
+    = ddgsolver::EigenMap<double, 3>(f.bendingForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> pressureForces1
+    = ddgsolver::EigenMap<double, 3>(f.pressureForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> stretchingForces1
+    = ddgsolver::EigenMap<double, 3>(f.stretchingForces);
 
   f.getConservativeForces();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> bendingForces2 =
-      f.bendingForces.raw();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> pressureForces2 =
-      f.pressureForces.raw();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> stretchingForces2 =
-      f.stretchingForces.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingForces2
+    = ddgsolver::EigenMap<double, 3>(f.bendingForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> pressureForces2
+    = ddgsolver::EigenMap<double, 3>(f.pressureForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> stretchingForces2
+    = ddgsolver::EigenMap<double, 3>(f.stretchingForces);
 
-  ASSERT_EQ(bendingForces1, bendingForces2);
-  ASSERT_EQ(pressureForces1, pressureForces2);
-  ASSERT_EQ(stretchingForces1, stretchingForces2);
+  ASSERT_TRUE((bendingForces1 - bendingForces2).norm() < 1e-12);
+  ASSERT_TRUE((stretchingForces1 - stretchingForces2).norm() < 1e-12);
+  ASSERT_TRUE((pressureForces1 - pressureForces2).norm() < 1e-12);
 };
 
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   ddgsolver::Force f(*ptrmesh, *ptrvpg, p);
 
   f.getConservativeForces();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> bendingForces1 =
-      f.bendingForces.raw();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> pressureForces1 =
-      f.pressureForces.raw();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> stretchingForces1 =
-      f.stretchingForces.raw();
-
-  Eigen::Matrix<double, Eigen::Dynamic, 3> bf1 =
-    EigenMap<double,3>(f.bendingForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingForces1
+    = ddgsolver::EigenMap<double, 3>(f.bendingForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> pressureForces1
+    = ddgsolver::EigenMap<double, 3>(f.pressureForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> stretchingForces1
+    = ddgsolver::EigenMap<double, 3>(f.stretchingForces);
 
   f.getBendingForces();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> bendingForces2 =
-      f.bendingForces.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingForces2
+    = ddgsolver::EigenMap<double, 3>(f.bendingForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> pressureForces2
+    = ddgsolver::EigenMap<double, 3>(f.pressureForces);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> stretchingForces2
+    = ddgsolver::EigenMap<double, 3>(f.stretchingForces);
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> bf2 =
-    EigenMap<double, 3>(f.bendingForces);
-
-  f.getPressureForces();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> pressureForces2 =
-      f.pressureForces.raw();
-
-  f.getStretchingForces();
-  Eigen::Matrix<gc::Vector3, Eigen::Dynamic, 1> stretchingForces2 =
-    f.stretchingForces.raw();
-
-  ASSERT_EQ(bendingForces1, bendingForces2);
-  ASSERT_EQ(pressureForces1, pressureForces2);
-  ASSERT_EQ(stretchingForces1, stretchingForces2);
+  ASSERT_TRUE((bendingForces1 - bendingForces2).norm() < 1e-12);
+  ASSERT_TRUE((stretchingForces1 - stretchingForces2).norm() < 1e-12);
+  ASSERT_TRUE((pressureForces1 - pressureForces2).norm() < 1e-12);
 };
 } // namespace ddgsolver
