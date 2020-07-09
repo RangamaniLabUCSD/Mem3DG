@@ -26,7 +26,7 @@ void Force::getConservativeForces() {
   M = vpg.vertexLumpedMassMatrix;
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
-  ////// Initialize the conformal Laplacian matrix
+  //// Initialize the conformal Laplacian matrix
   //L = vpg.cotanLaplacian;
 
   // Gaussian curvature per vertex Area
@@ -40,7 +40,7 @@ void Force::getConservativeForces() {
 
   // map the VertexData bendingForces to eigen matrix bendingForces_e
   auto bendingForces_e = EigenMap<double, 3>(bendingForces);
-  bendingForces_e.setZero();
+  //bendingForces_e.setZero();
 
   // the build-in angle-weighted vertex normal
   auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
