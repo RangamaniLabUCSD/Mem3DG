@@ -64,7 +64,7 @@ double driver(std::string option, int nSub, double H0, double Vt, double h,
 
   /// solve
   ddgsolver::Force f(mesh, vpg, p);
-  velocityVerlet(f, h, T, eps);
+  ddgsolver::integration::velocityVerlet(f, h, T, eps,T/10);
 
   /// save the .ply file
   gcs::RichSurfaceMeshData data(mesh);

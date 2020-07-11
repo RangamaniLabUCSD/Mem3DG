@@ -6,41 +6,18 @@
 #include "force.h"
 
 namespace ddgsolver {
-namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
+  namespace integration {
 
+    DLL_PUBLIC double getTotalEnergy(Force& f);
 
-class DLL_PUBLIC integrator {
-public:
-  double &dt;
-  double &total_time;
-  gcs::SurfaceMesh &mesh;
-  gcs::VertexPositionGeometry &vpg;
-  gcs::RichSurfaceMeshData &plyData;
-  Parameters &p;
-  ddgsolver::Force &f;
-  double tolerance;
-  double totalEnergy;
-  double pastTotalEnergy;
-  double tSave;
+    DLL_PUBLIC void stormerVerlet(Force& f, double dt, double total_time,
+      double tolerance);
 
-  integrator(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-    gcs::RichSurfaceMeshData& plyData_, ddgsolver::Force &f_, double &h, 
-    double &T, Parameters &p_, double eps, double tSave_)
-      : mesh(mesh_), vpg(vpg_), plyData(plyData_), f(f_), dt(h), total_time(T),
-    p(p_), tolerance(eps), tSave(tSave_) {
-    totalEnergy = 0;
-    pastTotalEnergy = 0;
-  }
+    DLL_PUBLIC void velocityVerlet(Force& f, double dt, double total_time,
+      double tolerance, double tSave);
 
-  void stormerVerlet();
-  void velocityVerlet();
-  void getTotalEnergy();
-  void getLogFiles();
+    DLL_PUBLIC void getLogFiles(Force& f, double dt, double total_time,
+      double tolerance, double tSave);
 
-};
-
-DLL_PUBLIC void velocityVerlet(Force &f, double dt, double total_time,
-                               double tolerance, double tSave = 0.2);
-
+  }// namespace integration
 } // namespace ddgsolver

@@ -22,7 +22,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-struct DLL_PUBLIC Parameters {
+struct Parameters {
   /// Bending modulus
   double Kb;
   /// Spontaneous curvature
@@ -51,8 +51,10 @@ struct DLL_PUBLIC Parameters {
   double conc;
 };
 
-class DLL_PUBLIC Force : public Parameters {
+class DLL_PUBLIC Force{
 public:
+  /// Parameters
+  Parameters P;
   /// Cached mesh of interest
   gcs::SurfaceMesh &mesh;
   /// Embedding and other geometric details
@@ -113,7 +115,7 @@ public:
    */
 
   Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_, Parameters &p)
-      : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), Parameters(p),
+      : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), P(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
         externalForces(mesh_, {0, 0, 0}), vel(mesh_, { 0, 0, 0 }) {
@@ -175,10 +177,10 @@ public:
 
     // Initialize the magnitude of externally applied force
     gcs::VertexData<double> geodesicDistanceFromAppliedForce 
-      = heatMethodDistance(vpg, mesh.vertex(ptInd));
+      = heatMethodDistance(vpg, mesh.vertex(P.ptInd));
     auto& dist_e = geodesicDistanceFromAppliedForce.raw();
-    double stdDev = dist_e.maxCoeff()/conc;
-    appliedForceMagnitude = extF / (stdDev * pow(pi * 2, 0.5))
+    double stdDev = dist_e.maxCoeff()/P.conc;
+    appliedForceMagnitude = P.extF / (stdDev * pow(pi * 2, 0.5))
       * (-dist_e.array() * dist_e.array()
         / (2 * stdDev * stdDev)).exp();
   }
