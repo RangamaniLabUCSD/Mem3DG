@@ -53,9 +53,12 @@ PYBIND11_MODULE(pyddg, pyddg) {
   pyddg.doc() = "Python wrapper around the DDG solver C++ library.";
 
   pyddg.def("driver", &driver, " a driver function",
-            py::arg("option") = "sphere",
-            py::arg("nSub"), py::arg("H0"), py::arg("Vt"), py::arg("h"),
-            py::arg("T"), py::arg("eps"),
+            py::arg("inputMesh"), py::arg("Kb"), py::arg("H0"), 
+            py::arg("Kse"), py::arg("Ksl"), py::arg("Ksg"),
+            py::arg("Kv"), py::arg("Vt"), py::arg("gamma"), 
+            py::arg("kt"), py::arg("ptInd"), py::arg("extF"), 
+            py::arg("conc"), py::arg("h"), py::arg("T"), 
+            py::arg("eps"), py::arg("tSave"),
             R"delim(
                Run the driver.
 
@@ -65,7 +68,11 @@ PYBIND11_MODULE(pyddg, pyddg) {
                Returns:
                    :py:class:`int`: success.
             )delim");
+
   pyddg.def("visualizePly", &visualizePly, " a visualization function",
     py::arg("fileName"));
+
+  pyddg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
+            py::arg("nSub"), py::arg("path"));
 };
 } // namespace ddgsolver

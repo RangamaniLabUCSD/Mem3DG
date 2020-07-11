@@ -1,78 +1,78 @@
 
 #include <iostream>
 
-#include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/halfedge_factories.h>
-#include <geometrycentral/surface/polygon_soup_mesh.h>
+#include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
+#include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/surface/simple_polygon_mesh.h>
 
 #include "ddgsolver/force.h"
-#include "ddgsolver/icosphere.h"
-#include "ddgsolver/integrator.h"
 #include "ddgsolver/typetraits.h"
 #include "ddgsolver/util.h"
+#include "ddgsolver/integrator.h"
+#include "ddgsolver/icosphere.h"
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-double driver(std::string option, int nSub, double H0, double Vt, double h,
-              double T, double eps) {
-  /// physical parameters
-  ddgsolver::Parameters p;
-  p.Kb = 0.03;    // Kb
-  p.H0 = H0;      // H0
-  p.Kse = 0.1;    // Kse
-  p.Ksl = 3;      // Ksl
-  p.Ksg = 0;      // Ksg
-  p.Kv = 2;       // Kv
-  p.gamma = 1;    // gamma
-  p.Vt = 1 * Vt;  // Vt
-  p.kt = 0.00001; // Kt
+int genIcosphere(size_t nSub, std::string path){
+	/// initialize mesh and vpg 
+	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
+	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
 
-  //// choose the run
-  // std::string run = "visualization"; // 1. "integration 2. "visualization
+	/// initialize icosphere 
+	std::vector<gc::Vector3> coords;
+	std::vector<std::vector<std::size_t>> polygons;
+	ddgsolver::icosphere(coords, polygons, nSub);
+	gcs::SimplePolygonMesh soup(polygons, coords);
+	soup.mergeIdenticalVertices();
+	std::tie(ptrmesh, ptrvpg) =
+		gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
+	writeSurfaceMesh(*ptrmesh, *ptrvpg, path);
 
-  ///// Choose the starting mesh
-  // std::string option = "sphere"; // 1. "sphere" 2. "continue" 3.
-  // "nameOfTheFile" = "output-file/Vt_%d_H0_%d.ply"
+	return 0;
+}
 
-  /// initialize mesh and vpg
-  std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+int driver(std::string inputMesh, double Kb, double H0,
+							double Kse, double Ksl, double Ksg,
+							double Kv, double Vt, double gamma,
+							double kt, size_t ptInd, double extF,
+							double conc, double h, double T,
+							double eps, double tSave) {
 
-  if (option == "continue") {
-    char buffer[50];
-    sprintf(buffer, "output-file/Vt_%d_H0_%d.ply", int(p.Vt * 100),
-            int(p.H0 * 100));
-    std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(buffer);
-  } else if (option == "sphere") {
-    /// initialize icosphere
-    std::vector<gc::Vector3> coords;
-    std::vector<std::vector<std::size_t>> polygons;
-    ddgsolver::icosphere(coords, polygons, nSub);
-    gcs::PolygonSoupMesh soup(polygons, coords);
-    soup.mergeIdenticalVertices();
-    std::tie(ptrmesh, ptrvpg) = gcs::makeHalfedgeAndGeometry(
-        soup.polygons, soup.vertexCoordinates);
-  } else {
-    std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(option);
-  }
+	/// physical parameters 
+	double sigma = sqrt(2 * gamma * kt / h);
+	ddgsolver::Parameters p{ Kb, H0,
+		Ksl, Ksg, Kse,
+		Kv, gamma, Vt,
+	  kt, sigma, ptInd, extF,
+		conc};
 
-  auto &mesh = *ptrmesh;
-  auto &vpg = *ptrvpg;
+	//std::unique_ptr<gcs::SurfaceMesh> ptrmesh;
+	//std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+	//std::unique_ptr<gcs::RichSurfaceMeshData> richData;
+	//std::tie(ptrmesh, richData) = gcs::RichSurfaceMeshData::readMeshAndData(option);
+	//ptrvpg = richData->getGeometry();
+	//auto& plyData = *richData;
+	//auto& mesh = *ptrmesh;
+	//auto& vpg = *ptrvpg;
 
-  /// solve
-  ddgsolver::Force f(mesh, vpg, p);
-  ddgsolver::integration::velocityVerlet(f, h, T, eps,T/10);
+	/// initialize mesh and vpg 
+	std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
+	std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+	std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(inputMesh);
+	auto& mesh = *ptrmesh;
+	auto& vpg = *ptrvpg;
 
-  /// save the .ply file
-  gcs::RichSurfaceMeshData data(mesh);
-  data.addGeometry(vpg);
-  char buffer[50];
-  sprintf(buffer, "output-file/Vt_%d_H0_%d.ply", int(p.Vt * 100),
-          int(p.H0 * 100));
-  data.write(buffer);
+	gcs::RichSurfaceMeshData plyData(mesh);
+	plyData.addGeometry(vpg);
 
-  return 0;
+	/// run the program based on "run"
+	ddgsolver::Force f(mesh, vpg, p);
+	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave);
+
+	return 0;
+
 }
