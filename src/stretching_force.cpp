@@ -59,19 +59,19 @@ void Force::getStretchingForces() {
       gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
       assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
       
-      if(Ksl != 0){
-        localForce += -2 * Ksl * gradient *
+      if(P.Ksl != 0){
+        localForce += -2 * P.Ksl * gradient *
             (face_a[base_he.face()] - initialFaceAreas[base_he.face()]) /
             initialFaceAreas[base_he.face()];
       }
       
-      if (Ksg != 0) {
+      if (P.Ksg != 0) {
         globalForce +=
-          -2 * Ksg * gradient * (surfaceArea - initialSurfaceArea) / initialSurfaceArea;
+          -2 * P.Ksg * gradient * (surfaceArea - initialSurfaceArea) / initialSurfaceArea;
       }
       
-      if (Kse != 0) {
-        edgeForce += -Kse * edgeGradient * 
+      if (P.Kse != 0) {
+        edgeForce += -P.Kse * edgeGradient *
         (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
       }
   

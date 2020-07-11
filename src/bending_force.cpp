@@ -53,7 +53,7 @@ void Force::getBendingForces() {
   Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
 
   // initialize the spontaneous curvature matrix
-  H0n = H0 * vertexAngleNormal_e;
+  H0n = P.H0 * vertexAngleNormal_e;
 
   // initialize and calculate intermediary result scalerTerms, set to zero if
   // negative
@@ -70,6 +70,6 @@ void Force::getBendingForces() {
   productTerms = 2 * rowwiseScaling(scalerTerms, Hn - H0n);
 
   // calculate bendingForce
-  bendingForces_e = M * (-2.0 * Kb * (productTerms + lap_H));
+  bendingForces_e = M * (-2.0 * P.Kb * (productTerms + lap_H));
 }
 } // end namespace ddgsolver

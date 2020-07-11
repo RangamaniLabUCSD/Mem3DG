@@ -63,9 +63,7 @@ int main() {
 
 	/// run the program based on "run"
 	ddgsolver::Force f(mesh, vpg, p);
-	ddgsolver::integrator integration(mesh, vpg, plyData, f, h, T, p, eps, tSave);
-	integration.velocityVerlet();
-	//velocityVerlet(f, h, T, eps, tSave);
+	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave);
 
 	return 0;
 }

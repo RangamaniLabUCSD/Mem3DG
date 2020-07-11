@@ -6,36 +6,40 @@
 using namespace std;
 
 namespace ddgsolver {
-	void integrator::getLogFiles() {
-		ofstream myfile("output-file/output.txt");
-		if (myfile.is_open())
-		{
+	namespace integration {
 
-			myfile << "Physical parameters used: \n";
-			myfile << "\n";
-			myfile << "Kb:     " << f.Kb << "\n"
-				<< "H0:     " << f.H0 << "\n"
-				<< "Kse:    " << f.Kse << "\n"
-				<< "Ksl:    " << f.Ksl << "\n"
-				<< "Ksg:    " << f.Ksg << "\n"
-				<< "Kv:     " << f.Kv << "\n"
-				<< "gamma:  " << f.gamma << "\n"
-				<< "Vt:     " << f.Vt << "\n"
-				<< "kt:     " << f.kt << "\n"
-				<< "sigma:  " << f.sigma << "\n"
-				<< "ptInd:  " << f.ptInd << "\n"
-				<< "extF:   " << f.extF << "\n"
-				<< "conc:   " << f.conc << "\n";
-			myfile << "\n";
-			myfile << "Integration parameters used: \n";
-			myfile << "\n";
-			myfile << "dt:    " << this -> dt << "\n"
-						 << "T:     " << this -> total_time << "\n"
-						 << "eps:		" << this -> tolerance << "\n"
-						 << "tSave: " << this -> tSave << "\n";
+		void getLogFiles(Force& f, double dt, double total_time, double tolerance, double tSave) {
+			ofstream myfile("output-file/output.txt");
+			if (myfile.is_open())
+			{
 
-			myfile.close();
+				myfile << "Physical parameters used: \n";
+				myfile << "\n";
+				myfile << "Kb:     " << f.P.Kb << "\n"
+					<< "H0:     " << f.P.H0 << "\n"
+					<< "Kse:    " << f.P.Kse << "\n"
+					<< "Ksl:    " << f.P.Ksl << "\n"
+					<< "Ksg:    " << f.P.Ksg << "\n"
+					<< "Kv:     " << f.P.Kv << "\n"
+					<< "gamma:  " << f.P.gamma << "\n"
+					<< "Vt:     " << f.P.Vt << "\n"
+					<< "kt:     " << f.P.kt << "\n"
+					<< "sigma:  " << f.P.sigma << "\n"
+					<< "ptInd:  " << f.P.ptInd << "\n"
+					<< "extF:   " << f.P.extF << "\n"
+					<< "conc:   " << f.P.conc << "\n";
+				myfile << "\n";
+				myfile << "Integration parameters used: \n";
+				myfile << "\n";
+				myfile << "dt:    " << dt << "\n"
+					<< "T:     " << total_time << "\n"
+					<< "eps:		" << tolerance << "\n"
+					<< "tSave: " << tSave << "\n";
+
+				myfile.close();
+			}
+			else cout << "Unable to open file";
 		}
-		else cout << "Unable to open file";
-	}
-}
+
+	} // namespace integration
+} // namespace ddgsolver

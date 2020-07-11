@@ -14,171 +14,102 @@
 #include <iostream>
 
 namespace ddgsolver {
-namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
+  namespace integration {
+    namespace gc = ::geometrycentral;
+    namespace gcs = ::geometrycentral::surface;
 
-void integrator::velocityVerlet() {
-  Eigen::Matrix<double, Eigen::Dynamic, 3> force;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> newForce;
-  force.resize(f.mesh.nVertices(), 3);
-  force.setZero();
-  newForce.resize(f.mesh.nVertices(), 3);
-  newForce.setZero();
+    void velocityVerlet(Force& f, double dt, double total_time,
+      double tolerance, double tSave) {
 
-  int nSave = int(tSave / dt);
+      getLogFiles(f, dt, total_time, tolerance, tSave);
 
-  auto vel_e = EigenMap<double, 3>(f.vel);
-  auto pos_e = EigenMap<double, 3>(f.vpg.inputVertexPositions);
+      Eigen::Matrix<double, Eigen::Dynamic, 3> force;
+      Eigen::Matrix<double, Eigen::Dynamic, 3> newForce;
+      force.resize(f.mesh.nVertices(), 3);
+      force.setZero();
+      newForce.resize(f.mesh.nVertices(), 3);
+      newForce.setZero();
 
-  const double hdt = 0.5 * dt;
-  const double hdt2 = hdt * dt;
+      int nSave = int(tSave / dt);
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> staticForce;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> dynamicForce;
+      auto vel_e = EigenMap<double, 3>(f.vel);
+      auto pos_e = EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
-  this -> getLogFiles();
+      const double hdt = 0.5 * dt;
+      const double hdt2 = hdt * dt;
 
-  for (int i = 0; i <= total_time / dt; i++) {
-    // Update all forces
-    //f.getBendingForces();
-    //f.getStretchingForces();
-    //f.getPressureForces();
-    f.getConservativeForces();
-    f.getDPDForces();
-    f.getExternalForces();
+      Eigen::Matrix<double, Eigen::Dynamic, 3> staticForce;
+      Eigen::Matrix<double, Eigen::Dynamic, 3> dynamicForce;
 
-    //std::cout << "bf: " << EigenMap<double, 3>(f.bendingForces).norm()
-    //  << "sf: " << EigenMap<double, 3>(f.stretchingForces).norm()
-    //  << "pf: " << EigenMap<double, 3>(f.pressureForces).norm()c
-    //  << "df: " << EigenMap<double, 3>(f.dampingForces).norm()
-    //  << "xf: " << EigenMap<double, 3>(f.stochasticForces).norm() << std::endl;
+      for (int i = 0; i <= total_time / dt; i++) {
+        // Update all forces
+        //f.getBendingForces();
+        //f.getStretchingForces();
+        //f.getPressureForces();
+        f.getConservativeForces();
+        f.getDPDForces();
+        f.getExternalForces();
 
-    pos_e +=
-      (vel_e.rowwise() - (vel_e.colwise().sum() / f.mesh.nVertices())) * dt +
-      force * hdt2;
+        //std::cout << "bf: " << EigenMap<double, 3>(f.bendingForces).norm()
+        //  << "sf: " << EigenMap<double, 3>(f.stretchingForces).norm()
+        //  << "pf: " << EigenMap<double, 3>(f.pressureForces).norm()
+        //  << "df: " << EigenMap<double, 3>(f.dampingForces).norm()
+        //  << "xf: " << EigenMap<double, 3>(f.stochasticForces).norm() << std::endl;
 
-    staticForce = EigenMap<double, 3>(f.bendingForces) +
-      EigenMap<double, 3>(f.stretchingForces) +
-      EigenMap<double, 3>(f.pressureForces) +
-      EigenMap<double, 3>(f.externalForces);
-    dynamicForce = EigenMap<double, 3>(f.dampingForces) +
-      EigenMap<double, 3>(f.stochasticForces);
-    newForce = staticForce + dynamicForce;
+        pos_e +=
+          (vel_e.rowwise() - (vel_e.colwise().sum() / f.mesh.nVertices())) * dt +
+          force * hdt2;
 
-    vel_e += (force + newForce) * hdt;
-    force = newForce;
-    f.update_Vertex_positions(); // recompute cached values;
-    double staticForce_mag = staticForce.norm();
+        staticForce = EigenMap<double, 3>(f.bendingForces) +
+          EigenMap<double, 3>(f.stretchingForces) +
+          EigenMap<double, 3>(f.pressureForces) +
+          EigenMap<double, 3>(f.externalForces);
+        dynamicForce = EigenMap<double, 3>(f.dampingForces) +
+          EigenMap<double, 3>(f.stochasticForces);
+        newForce = staticForce + dynamicForce;
 
-    if (staticForce_mag < tolerance) {
-      break;
+        vel_e += (force + newForce) * hdt;
+        force = newForce;
+        f.update_Vertex_positions(); // recompute cached values;
+        double staticForce_mag = staticForce.norm();
+
+        if (staticForce_mag < tolerance) {
+          break;
+        }
+
+        if ((i % nSave == 0) || (i == int(total_time / dt))) {
+
+          /*gcs::VertexData<double> H(f.mesh);
+          H.fromVector(f.M_inv * f.H);
+          plyData.addVertexProperty("mean curvature", H);
+
+          gcs::VertexData<double> f_ext(f.mesh);
+          f_ext.fromVector(f.appliedForceMagnitude);
+          plyData.addVertexProperty("external force", f_ext);
+
+          gcs::VertexData<double> fn(f.mesh);
+          fn.fromVector(rowwiseDotProduct(staticForce,
+            EigenMap<double, 3>(f.vpg.vertexNormals)));
+          plyData.addVertexProperty("normal force", fn);
+
+          gcs::VertexData<double> ft(f.mesh);
+          ft.fromVector((staticForce - rowwiseScaling(rowwiseDotProduct(staticForce,
+            EigenMap<double, 3>(f.vpg.vertexNormals)),
+            EigenMap<double, 3>(f.vpg.vertexNormals))).rowwise().norm());
+          plyData.addVertexProperty("tangential force", ft);*/
+
+          char buffer[50];
+          sprintf(buffer, "output-file/t=%d.obj", int(i * dt * 100));
+          //plyData.write(buffer);
+          gcs::writeSurfaceMesh(f.mesh, f.vpg, buffer);
+          std::cout << "time: " << i * dt << std::endl;
+          std::cout << "force: " << staticForce_mag << std::endl;
+          std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
+          std::cout << "total volume:  " << f.volume / f.maxVolume / f.P.Vt << std::endl;
+        }
+
+      }
+
     }
-
-    if ((i % nSave == 0) || (i == int(total_time / dt))) {
-
-      /*gcs::VertexData<double> H(f.mesh);
-      H.fromVector(f.M_inv * f.H);
-      plyData.addVertexProperty("mean curvature", H);
-
-      gcs::VertexData<double> f_ext(f.mesh);
-      f_ext.fromVector(f.appliedForceMagnitude);
-      plyData.addVertexProperty("external force", f_ext);
-
-      gcs::VertexData<double> fn(f.mesh);
-      fn.fromVector(rowwiseDotProduct(staticForce,
-        EigenMap<double, 3>(f.vpg.vertexNormals)));
-      plyData.addVertexProperty("normal force", fn);
-
-      gcs::VertexData<double> ft(f.mesh);
-      ft.fromVector((staticForce - rowwiseScaling(rowwiseDotProduct(staticForce,
-        EigenMap<double, 3>(f.vpg.vertexNormals)),
-        EigenMap<double, 3>(f.vpg.vertexNormals))).rowwise().norm());
-      plyData.addVertexProperty("tangential force", ft);*/
-
-      char buffer[50];
-      sprintf(buffer, "output-file/t=%d.obj", int(i * dt * 100));
-      //plyData.write(buffer);
-      gcs::writeSurfaceMesh(mesh, vpg, buffer);
-      std::cout << "time: " << i * dt << std::endl;
-      std::cout << "force: " << staticForce_mag << std::endl;
-      std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
-      std::cout << "total volume:  " << f.volume / f.maxVolume / f.Vt << std::endl;
-    }
-
-  }
-
-}
-
-void velocityVerlet(Force &f, double dt, double total_time, double tolerance, double tSave) {
-  Eigen::Matrix<double, Eigen::Dynamic, 3> force;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> newForce;
-  force.resize(f.mesh.nVertices(), 3);
-  force.setZero();
-  newForce.resize(f.mesh.nVertices(), 3);
-  newForce.setZero();
-
-  int nSave = int(tSave / dt);
-
-  auto vel_e = ddgsolver::EigenMap<double, 3>(f.vel);
-  auto pos_e = ddgsolver::EigenMap<double, 3>(f.vpg.inputVertexPositions);
-
-  const double hdt = 0.5 * dt;
-  const double hdt2 = hdt * dt;
-
-  Eigen::Matrix<double, Eigen::Dynamic, 3> staticForce;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> dynamicForce;
-
-  //this -> getLogFiles();
-
-  for (int i = 0; i <= total_time / dt; i++) {
-    // Update all forces
-    //f.getBendingForces();
-    //f.getStretchingForces();
-    //f.getPressureForces();
-    f.getConservativeForces();
-    f.getDPDForces();
-    f.getExternalForces();
-
-    std::cout << "bf: " << ddgsolver::EigenMap<double, 3>(f.bendingForces).norm()
-          << "sf: " << ddgsolver::EigenMap<double, 3>(f.stretchingForces).norm()
-          << "pf: " << ddgsolver::EigenMap<double, 3>(f.pressureForces).norm()
-          << "df: " << ddgsolver::EigenMap<double, 3>(f.dampingForces).norm()
-          << "xf: " << ddgsolver::EigenMap<double, 3>(f.stochasticForces).norm() <<std::endl;
-
-    pos_e +=
-        (vel_e.rowwise() - (vel_e.colwise().sum() / f.mesh.nVertices())) * dt +
-        force * hdt2;
-
-    staticForce = ddgsolver::EigenMap<double, 3>(f.bendingForces) +
-                       ddgsolver::EigenMap<double, 3>(f.stretchingForces) +
-                       ddgsolver::EigenMap<double, 3>(f.pressureForces) +
-                       ddgsolver::EigenMap<double, 3>(f.externalForces);
-    dynamicForce = ddgsolver::EigenMap<double, 3>(f.dampingForces) +
-                        ddgsolver::EigenMap<double, 3>(f.stochasticForces);
-    newForce = staticForce + dynamicForce;
-
-    vel_e += (force + newForce) * hdt;
-    force = newForce;
-    f.update_Vertex_positions(); // recompute cached values;
-
-    double staticForce_mag = staticForce.norm();
-
-    if (staticForce_mag < tolerance) {
-      break;
-    }
-
-    if ((i % nSave == 0) || (i == int(total_time/dt))) {
-      gcs::RichSurfaceMeshData data(f.mesh);
-      data.addGeometry(f.vpg);
-      char buffer[50];
-      sprintf(buffer, "output-file/t=%d.ply", int(i * dt * 100));
-      data.write(buffer);
-      // std::cout << "Force: " << staticForce_mag << std::endl;
-      std::cout << "time: " << i * dt << std::endl;
-      std::cout << "force: " << staticForce_mag << std::endl;
-      std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
-      std::cout << "total volume:  " << f.volume / f.maxVolume / f.Vt << std::endl;
-    }
-  }
-}
+  }// namespace integration
 } // namespace ddgsolver

@@ -41,7 +41,7 @@ void Force::getDPDForces() {
 
   // std::default_random_engine random_generator;
   // gcs::EdgeData<double> random_var(mesh);
-  std::normal_distribution<double> normal_dist(0, sigma);
+  std::normal_distribution<double> normal_dist(0, P.sigma);
 
   for (gcs::Edge e : mesh.edges()) {
     gcs::Halfedge he = e.halfedge();
@@ -59,7 +59,7 @@ void Force::getDPDForces() {
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
     
-    gc::Vector3 df = gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
+    gc::Vector3 df = P.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
     dampingForces[v1] -= df;
     dampingForces[v2] += df;
 

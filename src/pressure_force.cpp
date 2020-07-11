@@ -43,7 +43,7 @@ void Force::getPressureForces() {
       // - p1) < 0) <<  std::endl;
       // dVdx *= sign_of_volume[he.face()];
       pressureForces[v] +=
-          -0.5 * Kv * (volume - maxVolume * Vt) / (maxVolume * Vt) * dVdx;
+          -0.5 * P.Kv * (volume - maxVolume * P.Vt) / (maxVolume * P.Vt) * dVdx;
       // for (size_t i = 0; i < 3; i++) {
       //	pressureForces(v_ind[v], i) += dVdx[i];
       //}
