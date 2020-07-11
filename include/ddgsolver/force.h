@@ -44,11 +44,12 @@ struct Parameters {
   /// Noise
   double sigma;
   /// index of node with applied external force 
-  int ptInd;
+  size_t ptInd;
   /// Magnitude of external force 
   double extF;
   /// level of concentration of the external force
   double conc;
+
 };
 
 class DLL_PUBLIC Force{

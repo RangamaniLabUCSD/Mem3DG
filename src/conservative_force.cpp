@@ -61,10 +61,10 @@ void Force::getConservativeForces() {
     // negative
     Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms =
       M_inv * rowwiseProduct(H, H) + M * rowwiseProduct(H0_e, H0_e) - KG;
-    Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
-    zeroMatrix.resize(n_vertices, 1);
-    zeroMatrix.setZero();
-    scalarTerms = scalarTerms.array().max(zeroMatrix.array());
+    //Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+    //zeroMatrix.resize(n_vertices, 1);
+    //zeroMatrix.setZero();
+    //scalarTerms = scalarTerms.array().max(zeroMatrix.array());
 
     // initialize and calculate intermediary result productTerms
     Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
