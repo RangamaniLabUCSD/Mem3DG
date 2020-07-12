@@ -58,7 +58,7 @@ PYBIND11_MODULE(pyddg, pyddg) {
             py::arg("Kv"), py::arg("Vt"), py::arg("gamma"), 
             py::arg("kt"), py::arg("ptInd"), py::arg("extF"), 
             py::arg("conc"), py::arg("h"), py::arg("T"), 
-            py::arg("eps"), py::arg("tSave"),
+            py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
             R"delim(
                Run the driver.
 

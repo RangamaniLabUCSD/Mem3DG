@@ -15,6 +15,9 @@ namespace gcs = ::geometrycentral::surface;
 
 
 int main() {
+
+	std::string outputFolder = "output-file/";
+
 	/// physical parameters 
 	ddgsolver::Parameters p;
 	p.Kb = 0.01;			//Kb
@@ -63,7 +66,7 @@ int main() {
 
 	/// run the program based on "run"
 	ddgsolver::Force f(mesh, vpg, p);
-	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave);
+	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave, outputFolder);
 
 	return 0;
 }

@@ -19,7 +19,7 @@ namespace ddgsolver {
     namespace gcs = ::geometrycentral::surface;
 
     void velocityVerlet(Force& f, double dt, double total_time,
-      double tolerance, double tSave) {
+      double tolerance, double tSave, std::string outputFolder) {
 
       getLogFiles(f, dt, total_time, tolerance, tSave);
 
@@ -99,9 +99,9 @@ namespace ddgsolver {
           plyData.addVertexProperty("tangential force", ft);*/
 
           char buffer[50];
-          sprintf(buffer, "output-file/t=%d.obj", int(i * dt * 100));
+          sprintf(buffer, "t=%d.obj", int(i * dt * 100));
           //plyData.write(buffer);
-          gcs::writeSurfaceMesh(f.mesh, f.vpg, buffer);
+          gcs::writeSurfaceMesh(f.mesh, f.vpg, outputFolder + buffer);
           std::cout << "time: " << i * dt << std::endl;
           std::cout << "force: " << staticForce_mag << std::endl;
           std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
