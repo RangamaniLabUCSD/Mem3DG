@@ -19,7 +19,7 @@
 namespace ddgsolver {
 namespace py = pybind11;
 
-int visualizePly(std::string fileName) {
+int viewer(std::string fileName) {
   /// initialize mesh and vpg 
   std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
@@ -29,20 +29,9 @@ int visualizePly(std::string fileName) {
   auto& vpg = *ptrvpg;
 
   polyscope::init();
-  polyscope::registerCurveNetwork("myNetwork",
+  polyscope::registerSurfaceMesh("SurfaceMesh",
     ptrvpg->inputVertexPositions,
     ptrmesh->getFaceVertexList());
-
-  /// get mean curvature 
-  //ddgsolver::Force f(mesh, vpg);
-  //double Kb = 1.0; //  both of them does not matter
-  //double H0 = 0; // for the calculation of curvature.
-  //f.getBendingForces(Kb, H0);
-  //std::vector<double> xC(f.Hn.rows());
-  //for (size_t i = 0; i < f.Hn.rows(); i++) {
-  //  xC[i] = f.Hn.row(i)[0] / f.vertexAreaGradientNormal.row(i)[0]; // (use the x coordinate as sample data)
-  //}
-  //polyscope::getCurveNetwork("myNetwork")->addNodeScalarQuantity("mean curvature", xC);
 
   polyscope::show();
   return 0;
@@ -69,7 +58,7 @@ PYBIND11_MODULE(pyddg, pyddg) {
                    :py:class:`int`: success.
             )delim");
 
-  pyddg.def("visualizePly", &visualizePly, " a visualization function",
+  pyddg.def("viewer", &viewer, " a visualization function",
     py::arg("fileName"));
 
   pyddg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
