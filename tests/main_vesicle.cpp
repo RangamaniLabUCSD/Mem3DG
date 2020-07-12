@@ -19,6 +19,7 @@ namespace gcs = ::geometrycentral::surface;
 int main() {
 	/// geometric parameters
 	int nSub = 3;
+	std::string outputFolder = "output-file/";
 
 	/// physical parameters 
 	ddgsolver::Parameters p;
@@ -74,7 +75,7 @@ int main() {
 	plyData.addGeometry(vpg);
 
 	ddgsolver::Force f(mesh, vpg, p);
-	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave);
+	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave, outputFolder);
 
 	return 0;
 	}

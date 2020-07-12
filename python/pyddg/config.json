@@ -1,0 +1,45 @@
+{
+    "parameters":{
+
+        "dependencies":
+        {
+            "pyddg" : "C:\\Users\\Kieran\\Desktop\\DDG_membrane\\build\\lib\\Release"
+        },
+
+        "geometry":
+        {
+            "nSub" : 3,
+            "inputMesh" : "input-file/icosphere.obj",
+            "outputDir" : "output-file/"
+        },
+
+        "variables":
+        {
+            "H0" : 0,
+            "Vt" : 0.7,
+            "ptInd" : 0,
+            "extF" : 0,
+            "conc" : 25
+        },
+
+        "properties":
+        {
+            "Kb" : 0.01,
+            "Kse" : 0,     
+            "Ksl" : 1,		
+            "Ksg" : 2,		
+            "Kv"  : 1,
+            "kt" : 0.0001,
+            "gamma" : 1
+        },
+
+        "integration":
+        {
+            "h" : 0.001,
+            "T" : 100,
+            "eps" : 1e-9,
+            "tSave" : 10
+        }
+}
+    
+}

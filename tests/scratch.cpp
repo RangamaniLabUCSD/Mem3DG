@@ -55,7 +55,7 @@ int main() {
   auto &mesh = *ptrmesh;
   auto &vpg = *ptrvpg;
   ddgsolver::Force f(mesh, vpg, p);
-  ddgsolver::integration::velocityVerlet(f, 0.005, 0.4, 1e-9, 0.1);
+  ddgsolver::integration::velocityVerlet(f, 0.005, 0.4, 1e-9, 0.1, "output-file/");
 
   // std::cout << "Damping Forces: " << std::endl;
   // std::cout << ddgsolver::EigenMap<double, 3>(f.dampingForces) << std::endl;

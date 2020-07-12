@@ -40,7 +40,7 @@ int driver(std::string inputMesh, double Kb, double H0,
 							double Kv, double Vt, double gamma,
 							double kt, size_t ptInd, double extF,
 							double conc, double h, double T,
-							double eps, double tSave) {
+							double eps, double tSave, std::string outputDir) {
 
 	/// physical parameters 
 	double sigma = sqrt(2 * gamma * kt / h);
@@ -71,7 +71,7 @@ int driver(std::string inputMesh, double Kb, double H0,
 
 	/// run the program based on "run"
 	ddgsolver::Force f(mesh, vpg, p);
-	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave);
+	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave, outputDir);
 
 	return 0;
 
