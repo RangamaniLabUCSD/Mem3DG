@@ -8,8 +8,8 @@ using namespace std;
 namespace ddgsolver {
 	namespace integration {
 
-		void getLogFiles(Force& f, double dt, double total_time, double tolerance, double tSave) {
-			ofstream myfile("output-file/output.txt");
+		void getLogFiles(Force& f, double dt, double total_time, double tolerance, double tSave, std::string outputDir) {
+			ofstream myfile(outputDir + "output.txt");
 			if (myfile.is_open())
 			{
 

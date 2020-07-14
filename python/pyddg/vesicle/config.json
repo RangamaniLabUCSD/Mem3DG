@@ -9,7 +9,7 @@
         "geometry":
         {
             "nSub" : 3,
-            "inputMesh" : "input-file/icosphere.obj",
+            "inputMesh" : "input-file/icosphere.ply",
             "outputDir" : "output-file/"
         },
 

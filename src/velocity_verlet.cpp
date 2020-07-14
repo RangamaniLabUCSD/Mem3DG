@@ -19,9 +19,9 @@ namespace ddgsolver {
     namespace gcs = ::geometrycentral::surface;
 
     void velocityVerlet(Force& f, double dt, double total_time,
-      double tolerance, double tSave, std::string outputFolder) {
+      double tolerance, double tSave, std::string outputDir) {
 
-      getLogFiles(f, dt, total_time, tolerance, tSave);
+      getLogFiles(f, dt, total_time, tolerance, tSave, outputDir);
 
       Eigen::Matrix<double, Eigen::Dynamic, 3> force;
       Eigen::Matrix<double, Eigen::Dynamic, 3> newForce;
@@ -79,33 +79,36 @@ namespace ddgsolver {
 
         if ((i % nSave == 0) || (i == int(total_time / dt))) {
 
-          /*gcs::VertexData<double> H(f.mesh);
+          f.richData.addGeometry(f.vpg);
+
+          gcs::VertexData<double> H(f.mesh);
           H.fromVector(f.M_inv * f.H);
-          plyData.addVertexProperty("mean curvature", H);
+          f.richData.addVertexProperty("mean_curvature", H);
 
           gcs::VertexData<double> f_ext(f.mesh);
           f_ext.fromVector(f.appliedForceMagnitude);
-          plyData.addVertexProperty("external force", f_ext);
+          f.richData.addVertexProperty("external_force", f_ext);
 
           gcs::VertexData<double> fn(f.mesh);
           fn.fromVector(rowwiseDotProduct(staticForce,
             EigenMap<double, 3>(f.vpg.vertexNormals)));
-          plyData.addVertexProperty("normal force", fn);
+          f.richData.addVertexProperty("normal_force", fn);
 
           gcs::VertexData<double> ft(f.mesh);
           ft.fromVector((staticForce - rowwiseScaling(rowwiseDotProduct(staticForce,
             EigenMap<double, 3>(f.vpg.vertexNormals)),
             EigenMap<double, 3>(f.vpg.vertexNormals))).rowwise().norm());
-          plyData.addVertexProperty("tangential force", ft);*/
+          f.richData.addVertexProperty("tangential_force", ft);
 
           char buffer[50];
-          sprintf(buffer, "t=%d.obj", int(i * dt * 100));
-          //plyData.write(buffer);
-          gcs::writeSurfaceMesh(f.mesh, f.vpg, outputFolder + buffer);
+          sprintf(buffer, "t=%d.ply", int(i * dt * 100));
+          f.richData.write(outputDir + buffer);
+
           std::cout << "time: " << i * dt << std::endl;
           std::cout << "force: " << staticForce_mag << std::endl;
           std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
           std::cout << "total volume:  " << f.volume / f.maxVolume / f.P.Vt << std::endl;
+
         }
 
       }

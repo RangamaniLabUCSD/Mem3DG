@@ -5,11 +5,6 @@
 
 #include "ddgsolver/ddgsolver.h"
 
-/// this is for the visualization python wrapper
-#include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/curve_network.h"
-
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 
@@ -18,24 +13,6 @@
 
 namespace ddgsolver {
 namespace py = pybind11;
-
-int viewer(std::string fileName) {
-  /// initialize mesh and vpg 
-  std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
-
-  std::tie(ptrmesh, ptrvpg) = gcs::loadMesh(fileName);
-  auto& mesh = *ptrmesh;
-  auto& vpg = *ptrvpg;
-
-  polyscope::init();
-  polyscope::registerSurfaceMesh("SurfaceMesh",
-    ptrvpg->inputVertexPositions,
-    ptrmesh->getFaceVertexList());
-
-  polyscope::show();
-  return 0;
-}
 
 // Initialize the `pyddg` module
 PYBIND11_MODULE(pyddg, pyddg) {

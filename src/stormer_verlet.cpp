@@ -18,8 +18,8 @@ namespace ddgsolver {
 			gc::Vector3 totalForce;
 			for (size_t i = 0; i < total_time / dt; i++) {
 				/*polyscope::registerSurfaceMesh("myMesh",
-					ptrvpg->inputVertexPositions,
-					ptrmesh->getFaceVertexList());*/
+					ptrVpg->inputVertexPositions,
+					ptrMesh->getFaceVertexList());*/
 					//polyscope::show();
 				f.getVelocityFromPastPosition(dt);
 				f.getBendingForces();
