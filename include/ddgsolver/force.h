@@ -58,6 +58,8 @@ public:
   Parameters P;
   /// Cached mesh of interest
   gcs::SurfaceMesh &mesh;
+  /// Cached mesh data
+  gcs::RichSurfaceMeshData& richData;
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
   /// Cached bending forces
@@ -115,8 +117,9 @@ public:
    * @param time_step_    Numerical timestep
    */
 
-  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_, Parameters &p)
-      : mesh(mesh_), vpg(vpg_), bendingForces(mesh_, {0, 0, 0}), P(p),
+  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+        gcs::RichSurfaceMeshData &richData_, Parameters &p)
+      : mesh(mesh_), vpg(vpg_), richData(richData_), bendingForces(mesh_, {0, 0, 0}), P(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
         externalForces(mesh_, {0, 0, 0}), vel(mesh_, { 0, 0, 0 }) {

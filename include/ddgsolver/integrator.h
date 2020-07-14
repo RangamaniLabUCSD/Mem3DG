@@ -14,10 +14,10 @@ namespace ddgsolver {
       double tolerance);
 
     DLL_PUBLIC void velocityVerlet(Force& f, double dt, double total_time,
-      double tolerance, double tSave, std::string outputFolder);
+      double tolerance, double tSave, std::string outputDir);
 
     DLL_PUBLIC void getLogFiles(Force& f, double dt, double total_time,
-      double tolerance, double tSave);
+      double tolerance, double tSave, std::string outputDir);
 
   }// namespace integration
 } // namespace ddgsolver

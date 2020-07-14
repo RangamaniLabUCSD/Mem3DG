@@ -22,8 +22,8 @@ namespace gcs = ::geometrycentral::surface;
 class ForceCalculationTest : public testing::Test {
 protected:
   /// initialize mesh and vpg
-  std::unique_ptr<gcs::HalfedgeMesh> ptrmesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   Parameters p;
 
   ForceCalculationTest() {
@@ -48,13 +48,14 @@ protected:
 
     gcs::PolygonSoupMesh soup(polygons, coords);
     soup.mergeIdenticalVertices();
-    std::tie(ptrmesh, ptrvpg) =
+    std::tie(ptrMesh, ptrVpg) =
         gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
   }
 };
 
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
-  ddgsolver::Force f(*ptrmesh, *ptrvpg, p);
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  ddgsolver::Force f(*ptrMesh, *ptrVpg, richData, p);
 
   f.getConservativeForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingForces1
@@ -78,7 +79,8 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 };
 
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
-  ddgsolver::Force f(*ptrmesh, *ptrvpg, p);
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  ddgsolver::Force f(*ptrMesh, *ptrVpg, richData, p);
 
   f.getConservativeForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingForces1
