@@ -28,10 +28,10 @@ void Force::getConservativeForces() {
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
     //// Initialize the conformal Laplacian matrix
-    //L = vpg.cotanLaplacian;
+    // L = vpg.cotanLaplacian;
 
     // Gaussian curvature per vertex Area
-    auto& KG = vpg.vertexGaussianCurvatures.raw();
+    auto &KG = vpg.vertexGaussianCurvatures.raw();
 
     // number of vertices for convenience
     std::size_t n_vertices = (mesh.nVertices());
@@ -41,7 +41,7 @@ void Force::getConservativeForces() {
 
     // map the VertexData bendingForces to eigen matrix bendingForces_e
     auto bendingForces_e = EigenMap<double, 3>(bendingForces);
-    //bendingForces_e.setZero();
+    // bendingForces_e.setZero();
 
     // the build-in angle-weighted vertex normal
     auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
@@ -51,7 +51,7 @@ void Force::getConservativeForces() {
 
     // calculate the Laplacian of mean curvature H
     Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H =
-      L * M_inv * rowwiseScaling(H, vertexAngleNormal_e);
+        L * M_inv * rowwiseScaling(H, vertexAngleNormal_e);
 
     // initialize the spontaneous curvature matrix
     Eigen::Matrix<double, Eigen::Dynamic, 1> H0_e;
@@ -60,24 +60,23 @@ void Force::getConservativeForces() {
     // initialize and calculate intermediary result scalarTerms, set to zero if
     // negative
     Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms =
-      M_inv * rowwiseProduct(H, H) + M * rowwiseProduct(H0_e, H0_e) - KG;
-    //Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
-    //zeroMatrix.resize(n_vertices, 1);
-    //zeroMatrix.setZero();
-    //scalarTerms = scalarTerms.array().max(zeroMatrix.array());
+        M_inv * rowwiseProduct(H, H) + M * rowwiseProduct(H0_e, H0_e) - KG;
+    // Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+    // zeroMatrix.resize(n_vertices, 1);
+    // zeroMatrix.setZero();
+    // scalarTerms = scalarTerms.array().max(zeroMatrix.array());
 
     // initialize and calculate intermediary result productTerms
     Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
     productTerms.resize(n_vertices, 3);
     productTerms =
-      2 * rowwiseScaling(rowwiseProduct(scalarTerms, M_inv * H - H0_e),
-        vertexAngleNormal_e);
+        2 * rowwiseScaling(rowwiseProduct(scalarTerms, M_inv * H - H0_e),
+                           vertexAngleNormal_e);
 
     // calculate bendingForce
     bendingForces_e = -2.0 * P.Kb * (productTerms + lap_H);
-
   }
- 
+
   /// B. PRESSURE FORCES
   pressureForces.fill({0.0, 0.0, 0.0});
   volume = 0;
@@ -107,17 +106,17 @@ void Force::getConservativeForces() {
       gcs::Halfedge base_he = he.next();
 
       // Pressure forces
-      if (P.Kv != 0){
+      if (P.Kv != 0) {
         gc::Vector3 p1 = vpg.inputVertexPositions[base_he.vertex()];
         gc::Vector3 p2 = vpg.inputVertexPositions[base_he.next().vertex()];
         gc::Vector3 dVdx = 0.5 * gc::cross(p1, p2) / 3.0;
         assert(gc::dot(dVdx, vpg.inputVertexPositions[v] - p1) *
-          sign_of_volume[he.face()] >
-          0);
-        pressureForces[v] +=
-          -0.5 * P.Kv * (volume - maxVolume * P.Vt) / (maxVolume * P.Vt) * dVdx;
+                   sign_of_volume[he.face()] >
+               0);
+        pressureForces[v] += -0.5 * P.Kv * (volume - maxVolume * P.Vt) /
+                             (maxVolume * P.Vt) * dVdx;
       }
-      
+
       // Stretching forces
       gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
       gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);

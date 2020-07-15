@@ -58,7 +58,7 @@ void Force::getDPDForces() {
     //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) * -dPos12_n)
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
-    
+
     gc::Vector3 df = P.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
     dampingForces[v1] -= df;
     dampingForces[v2] += df;
