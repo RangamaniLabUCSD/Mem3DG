@@ -20,7 +20,7 @@ TEST_F(DotProductTest, DotProductTest) {
 
   for (int i = 0; i < 10; ++i) {
     A(i, 0) = 3 * i;
-    Am(i, 0) = 3*i;
+    Am(i, 0) = 3 * i;
     A(i, 1) = 3 * i + 1;
     Am(i, 1) = 3 * i + 1;
     A(i, 2) = 3 * i + 2;
@@ -39,7 +39,7 @@ TEST_F(DotProductTest, DotProductTest) {
   auto res = ddgsolver::dot(A, B);
   ASSERT_EQ(A.rows(), res.rows());
   ASSERT_EQ(res.cols(), 1);
-  
+
   auto resm = ddgsolver::dot(Am, Bm);
   ASSERT_EQ(Am.rows(), resm.rows());
   ASSERT_EQ(resm.cols(), 1);
@@ -47,7 +47,7 @@ TEST_F(DotProductTest, DotProductTest) {
 
   Eigen::Matrix<double, sz, 1> manual;
   for (int i = 0; i < 10; ++i) {
-    manual(i) = Am(i,0)*Bm(i,0) + Am(i,1)*Bm(i,1) + Am(i,2)*Bm(i,2);
+    manual(i) = Am(i, 0) * Bm(i, 0) + Am(i, 1) * Bm(i, 1) + Am(i, 2) * Bm(i, 2);
   }
   ASSERT_EQ(true, manual.isApprox(resm));
 }
