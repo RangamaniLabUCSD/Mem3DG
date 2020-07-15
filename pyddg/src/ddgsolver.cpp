@@ -35,11 +35,15 @@ int viewer(std::string fileName) {
 	gcs::VertexData<double> extForce = ptrRichData->getVertexProperty<double>("external_force");
 	gcs::VertexData<double> normalForce = ptrRichData->getVertexProperty<double>("normal_force");
 	gcs::VertexData<double> tangentialForce = ptrRichData->getVertexProperty<double>("tangential_force");
+	/*gcs::VertexData<gc::Vector3> normalForce = ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
+	gcs::VertexData<gc::Vector3> tangentialForce = ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
 
 	Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e = meanCurvature.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> extForce_e = extForce.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> normalForce_e = normalForce.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> tangentialForce_e = tangentialForce.raw();
+	/*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e = ddgsolver::EigenMap<double, 3>(normalForce);
+	Eigen::Matrix<double, Eigen::Dynamic, 3> tangentialForce_e = ddgsolver::EigenMap<double, 3>(tangentialForce);*/
 
 	polyscope::init();
 	polyscope::registerSurfaceMesh("Vesicle surface",
@@ -47,9 +51,11 @@ int viewer(std::string fileName) {
 		ptrMesh->getFaceVertexList());
 
 	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
-		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("applied_force", extForce_e);
-		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("tangential_force", tangentialForce_e);
-		polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("normal_force", normalForce_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("applied_force", extForce_e);
+	/*polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("tangential_force", tangentialForce_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("normal_force", normalForce_e);*/
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexVectorQuantity("normal_force", normalForce_e);
 	polyscope::show();
 }
 
