@@ -21,6 +21,7 @@ namespace ddgsolver {
     void velocityVerlet(Force& f, double dt, double total_time,
       double tolerance, double tSave, std::string outputDir) {
 
+      // print out a .txt file listing all parameters used 
       getLogFiles(f, dt, total_time, tolerance, tSave, outputDir);
 
       Eigen::Matrix<double, Eigen::Dynamic, 3> force;
@@ -77,6 +78,7 @@ namespace ddgsolver {
           break;
         }
 
+        // periodically save the geometric files and print some info
         if ((i % nSave == 0) || (i == int(total_time / dt))) {
 
           f.richData.addGeometry(f.vpg);
@@ -99,6 +101,15 @@ namespace ddgsolver {
             EigenMap<double, 3>(f.vpg.vertexNormals)),
             EigenMap<double, 3>(f.vpg.vertexNormals))).rowwise().norm());
           f.richData.addVertexProperty("tangential_force", ft);
+
+         /* gcs::VertexData<gc::Vector3> fn(f.mesh);
+          EigenMap<double, 3>(fn) = rowwiseScaling((rowwiseDotProduct(staticForce,
+            EigenMap<double, 3>(f.vpg.vertexNormals))), EigenMap<double, 3>(f.vpg.vertexNormals));
+          f.richData.addVertexProperty("normal_force", fn);
+
+          gcs::VertexData<gc::Vector3> ft(f.mesh);
+          EigenMap<double, 3>(ft) = staticForce - EigenMap<double, 3>(fn);
+          f.richData.addVertexProperty("tangential_force", ft);*/
 
           char buffer[50];
           sprintf(buffer, "t=%d.ply", int(i * dt * 100));
