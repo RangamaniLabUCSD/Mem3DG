@@ -72,7 +72,7 @@ void Force::getStretchingForces() {
       
       if (P.Kse != 0) {
         edgeForce += -P.Kse * edgeGradient *
-        (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
+          (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) / targetEdgeLength[he.edge()];
       }
   
     }

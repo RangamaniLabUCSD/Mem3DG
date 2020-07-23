@@ -16,7 +16,7 @@ namespace ddgsolver {
 		namespace gc = ::geometrycentral;
 		namespace gcs = ::geometrycentral::surface;
 
-		double getTotalEnergy(Force& f) {
+		double getBendingEnergy(Force& f) {
 			// comment: this may not be useful, the convergence can be be tested by checking its derivative 
 			// which is the forces excluding the DPD forces. The energy trajectory of could actually numerically
 			// integrated by post processing after saving all forces during the iterations. 
@@ -29,13 +29,8 @@ namespace ddgsolver {
 			//	}
 			//}
 
-			/// bending energy 
-			Eigen::Matrix<double, Eigen::Dynamic, 1> k_dH_sqrd;
-			k_dH_sqrd.resize(f.Hn.rows(), 1);
-			auto difference = f.Hn - f.H0n;
-			k_dH_sqrd = f.P.Kb * (difference.array() * difference.array()).colwise().sum();
-			double bE = (f.M * k_dH_sqrd).sum();
-
+			auto difference = f.M_inv * f.H - f.H0;
+			double bE = (f.P.Kb * f.M * (difference.array() * difference.array()).matrix()).sum();
 			/// stretching energy 
 			//double sE =
 

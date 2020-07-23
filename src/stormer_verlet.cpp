@@ -50,7 +50,7 @@ namespace ddgsolver {
 				//std::cout << "total force:  " << totalForce.norm() << std::endl;
 				f.update_Vertex_positions();
 				f.pastPositions = temp;
-				double totalEnergy = getTotalEnergy(f);
+				double totalEnergy = getBendingEnergy(f);
 				
 				std::cout << "energy: " << totalEnergy << std::endl;
 				std::cout << "process: " << int(double(i) / (total_time / dt) * 100) << "%" << std::endl;

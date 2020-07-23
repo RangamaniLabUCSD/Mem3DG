@@ -103,6 +103,8 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1> H;
   // Spontaneous curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 3> H0n;
+  // Spontaneous curvature of the mesh
+  Eigen::Matrix<double, Eigen::Dynamic, 1> H0;
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -165,7 +167,7 @@ public:
 
     // Initialize maximal volume
     double pi = 2 * std::acos(0.0);
-    maxVolume = std::pow(initialSurfaceArea, 1.5) / std::pow(pi, 0.5) / 6;
+    maxVolume = std::pow(initialSurfaceArea / pi / 4, 1.5) * (4 * pi / 3);
     //for (gcs::Face f : mesh.faces()) {
     //  maxVolume += signedVolumeFromFace(f, vpg);
     //}

@@ -12,7 +12,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 
 void icosphere(std::vector<gc::Vector3> &coords,
-               std::vector<std::vector<std::size_t>> &polygons, int n) {
+               std::vector<std::vector<std::size_t>> &polygons, int n, double R) {
   // Initialize vertex coordinates
   static const double t = (1.0 + sqrt(5.0)) / 2.0;
   auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
@@ -60,10 +60,10 @@ void icosphere(std::vector<gc::Vector3> &coords,
   };
 
   // Preallocate space
-  std::size_t finalsize = polygons.size() * std::pow(4, n);
+  std::size_t finalSize = polygons.size() * std::pow(4, n);
   std::vector<std::vector<std::size_t>> polygons_new;
-  polygons_new.reserve(finalsize);
-  polygons.reserve(finalsize);
+  polygons_new.reserve(finalSize);
+  polygons.reserve(finalSize);
 
   // Subdivide n times by quadrisection
   for (std::size_t iter = 0; iter < n; ++iter) {
@@ -81,6 +81,14 @@ void icosphere(std::vector<gc::Vector3> &coords,
     }
     std::swap(polygons, polygons_new);
   }
+
+  // scale the icosphere
+  if (R != 1) {
+    for (std::size_t iter = 0; iter < finalSize; ++iter) {
+      coords[iter] *= R;
+    }
+  }
+
 }
 
 void tetrahedron(std::vector<gc::Vector3> &coords,

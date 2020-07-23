@@ -32,16 +32,20 @@ int viewer(std::string fileName) {
 	ptrVpg = ptrRichData->getGeometry();
 
 	gcs::VertexData<double> meanCurvature = ptrRichData->getVertexProperty<double>("mean_curvature");
+	gcs::VertexData<double> sponCurvature = ptrRichData->getVertexProperty<double>("spon_curvature");
 	gcs::VertexData<double> extForce = ptrRichData->getVertexProperty<double>("external_force");
 	gcs::VertexData<double> normalForce = ptrRichData->getVertexProperty<double>("normal_force");
 	gcs::VertexData<double> tangentialForce = ptrRichData->getVertexProperty<double>("tangential_force");
+	gcs::VertexData<double> bendingForce = ptrRichData->getVertexProperty<double>("bending_force");
 	/*gcs::VertexData<gc::Vector3> normalForce = ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
 	gcs::VertexData<gc::Vector3> tangentialForce = ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
 
 	Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e = meanCurvature.raw();
+	Eigen::Matrix<double, Eigen::Dynamic, 1> sponCurvature_e = sponCurvature.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> extForce_e = extForce.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> normalForce_e = normalForce.raw();
 	Eigen::Matrix<double, Eigen::Dynamic, 1> tangentialForce_e = tangentialForce.raw();
+	Eigen::Matrix<double, Eigen::Dynamic, 1> bendingForce_e = bendingForce.raw();
 	/*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e = ddgsolver::EigenMap<double, 3>(normalForce);
 	Eigen::Matrix<double, Eigen::Dynamic, 3> tangentialForce_e = ddgsolver::EigenMap<double, 3>(tangentialForce);*/
 
@@ -51,15 +55,21 @@ int viewer(std::string fileName) {
 		ptrMesh->getFaceVertexList());
 
 	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
 	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("applied_force", extForce_e);
-	/*polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("tangential_force", tangentialForce_e);
-	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("normal_force", normalForce_e);*/
-	polyscope::getSurfaceMesh("Vesicle surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
-	polyscope::getSurfaceMesh("Vesicle surface")->addVertexVectorQuantity("normal_force", normalForce_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("tangential_force", tangentialForce_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("normal_force", normalForce_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexScalarQuantity("bending_force", bendingForce_e);
+	/*polyscope::getSurfaceMesh("Vesicle surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
+	polyscope::getSurfaceMesh("Vesicle surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
 	polyscope::show();
+
+	return 0;
 }
 
-int genIcosphere(size_t nSub, std::string path) {
+int genIcosphere(size_t nSub, std::string path, double R) {
+	std::cout << "Constructing input mesh ..." << std::endl;
+
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrMesh;
 	std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
@@ -67,7 +77,7 @@ int genIcosphere(size_t nSub, std::string path) {
 	/// initialize icosphere 
 	std::vector<gc::Vector3> coords;
 	std::vector<std::vector<std::size_t>> polygons;
-	ddgsolver::icosphere(coords, polygons, nSub);
+	ddgsolver::icosphere(coords, polygons, nSub, R);
 	gcs::SimplePolygonMesh soup(polygons, coords);
 	soup.mergeIdenticalVertices();
 	std::tie(ptrMesh, ptrVpg) =
@@ -86,7 +96,8 @@ int driver(std::string inputMesh, double Kb, double H0,
 	double Kv, double Vt, double gamma,
 	double kt, size_t ptInd, double extF,
 	double conc, double h, double T,
-	double eps, double tSave, std::string outputDir) {
+	double eps, double closeZone, double increment, 
+	double tSave, std::string outputDir) {
 
 	/// physical parameters 
 	double sigma = sqrt(2 * gamma * kt / h);
@@ -103,14 +114,17 @@ int driver(std::string inputMesh, double Kb, double H0,
 	std::tie(ptrMesh, ptrRichData) = gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no connectivity for UVsphere.ply
 	ptrVpg = ptrRichData->getGeometry();*/
 
+	std::cout << "Loading input mesh ..." << std::endl;
 	std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
 	gcs::RichSurfaceMeshData richData(*ptrMesh);
 	richData.addMeshConnectivity();
 	richData.addGeometry(*ptrVpg);
 
 	/// run the program based on "run"
+	std::cout << "Initiating the system ..." << std::endl;
 	ddgsolver::Force f(*ptrMesh, *ptrVpg, richData, p);
-	ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave, outputDir);
+	std::cout << "Solving the system ..." << std::endl;
+	ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment, tSave, outputDir);
 
 	return 0;
 
