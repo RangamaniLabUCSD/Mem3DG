@@ -8,16 +8,18 @@
 namespace ddgsolver {
   namespace integration {
 
-    DLL_PUBLIC double getTotalEnergy(Force& f);
+    DLL_PUBLIC double getBendingEnergy(Force& f);
 
     DLL_PUBLIC void stormerVerlet(Force& f, double dt, double total_time,
       double tolerance);
 
     DLL_PUBLIC void velocityVerlet(Force& f, double dt, double total_time,
+      double tolerance, double closeZone, double increment, double tSave, std::string outputDir);
+
+    DLL_PUBLIC void getParameterLog(Force& f, double dt, double total_time,
       double tolerance, double tSave, std::string outputDir);
 
-    DLL_PUBLIC void getLogFiles(Force& f, double dt, double total_time,
-      double tolerance, double tSave, std::string outputDir);
+    DLL_PUBLIC void getSummaryLog(Force& f, double dt, double final_time, double areaError, double volumeError, double bendingError, std::string outputDir);
 
   }// namespace integration
 } // namespace ddgsolver

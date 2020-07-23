@@ -6,11 +6,12 @@ namespace gcs = ::geometrycentral::surface;
 
 int viewer(std::string fileName);
 
-int genIcosphere(size_t nSub, std::string path);
+int genIcosphere(size_t nSub, std::string path, double R);
 
 int driver(std::string inputMesh, double Kb, double H0,
 						double Kse, double Ksl, double Ksg,
 						double Kv, double Vt, double gamma,
 						double kt, size_t ptInd, double extF,
 						double conc, double h, double T,
-						double eps, double tSave, std::string outputDir);
+						double eps, double closeZone, double increment, 
+						double tSave, std::string outputDir);

@@ -19,10 +19,10 @@ namespace ddgsolver {
     namespace gcs = ::geometrycentral::surface;
 
     void velocityVerlet(Force& f, double dt, double total_time,
-      double tolerance, double tSave, std::string outputDir) {
+      double tolerance, double closeZone, double increment, double tSave, std::string outputDir) {
 
       // print out a .txt file listing all parameters used 
-      getLogFiles(f, dt, total_time, tolerance, tSave, outputDir);
+      getParameterLog(f, dt, total_time, tolerance, tSave, outputDir);
 
       Eigen::Matrix<double, Eigen::Dynamic, 3> force;
       Eigen::Matrix<double, Eigen::Dynamic, 3> newForce;
@@ -42,6 +42,12 @@ namespace ddgsolver {
       Eigen::Matrix<double, Eigen::Dynamic, 3> staticForce;
       Eigen::Matrix<double, Eigen::Dynamic, 3> dynamicForce;
 
+      double oldBE = 0.0;
+      double BE;
+      double dBE;
+      double dArea;
+      double dVolume;
+
       for (int i = 0; i <= total_time / dt; i++) {
         // Update all forces
         //f.getBendingForces();
@@ -57,35 +63,30 @@ namespace ddgsolver {
         //  << "df: " << EigenMap<double, 3>(f.dampingForces).norm()
         //  << "xf: " << EigenMap<double, 3>(f.stochasticForces).norm() << std::endl;
 
-        pos_e +=
-          (vel_e.rowwise() - (vel_e.colwise().sum() / f.mesh.nVertices())) * dt +
-          force * hdt2;
-
         staticForce = EigenMap<double, 3>(f.bendingForces) +
           EigenMap<double, 3>(f.stretchingForces) +
           EigenMap<double, 3>(f.pressureForces) +
           EigenMap<double, 3>(f.externalForces);
+        staticForce -= staticForce.colwise().sum() / f.mesh.nVertices();
         dynamicForce = EigenMap<double, 3>(f.dampingForces) +
           EigenMap<double, 3>(f.stochasticForces);
         newForce = staticForce + dynamicForce;
-
-        vel_e += (force + newForce) * hdt;
-        force = newForce;
-        f.update_Vertex_positions(); // recompute cached values;
-        double staticForce_mag = staticForce.norm();
-
-        if (staticForce_mag < tolerance) {
-          break;
-        }
-
-        // periodically save the geometric files and print some info
+        double normalStaticForceMax = rowwiseDotProduct(staticForce,
+          EigenMap<double, 3>(f.vpg.vertexNormals)).rowwise().norm().maxCoeff();
+    
+        // periodically save the geometric files, print some info, compare and adjust
         if ((i % nSave == 0) || (i == int(total_time / dt))) {
-
+          
+          // 1. save
           f.richData.addGeometry(f.vpg);
 
           gcs::VertexData<double> H(f.mesh);
           H.fromVector(f.M_inv * f.H);
           f.richData.addVertexProperty("mean_curvature", H);
+
+          gcs::VertexData<double> H0(f.mesh);
+          H0.fromVector(f.H0);
+          f.richData.addVertexProperty("spon_curvature", H0);
 
           gcs::VertexData<double> f_ext(f.mesh);
           f_ext.fromVector(f.appliedForceMagnitude);
@@ -102,28 +103,76 @@ namespace ddgsolver {
             EigenMap<double, 3>(f.vpg.vertexNormals))).rowwise().norm());
           f.richData.addVertexProperty("tangential_force", ft);
 
-         /* gcs::VertexData<gc::Vector3> fn(f.mesh);
-          EigenMap<double, 3>(fn) = rowwiseScaling((rowwiseDotProduct(staticForce,
-            EigenMap<double, 3>(f.vpg.vertexNormals))), EigenMap<double, 3>(f.vpg.vertexNormals));
-          f.richData.addVertexProperty("normal_force", fn);
+          gcs::VertexData<double> fb(f.mesh);
+          fb.fromVector(rowwiseDotProduct(EigenMap<double, 3>(f.bendingForces),
+            EigenMap<double, 3>(f.vpg.vertexNormals)));
+          f.richData.addVertexProperty("bending_force", fb);
 
-          gcs::VertexData<gc::Vector3> ft(f.mesh);
-          EigenMap<double, 3>(ft) = staticForce - EigenMap<double, 3>(fn);
-          f.richData.addVertexProperty("tangential_force", ft);*/
+          /* gcs::VertexData<gc::Vector3> fn(f.mesh);
+           EigenMap<double, 3>(fn) = rowwiseScaling((rowwiseDotProduct(staticForce,
+             EigenMap<double, 3>(f.vpg.vertexNormals))), EigenMap<double, 3>(f.vpg.vertexNormals));
+           f.richData.addVertexProperty("normal_force", fn);
+
+           gcs::VertexData<gc::Vector3> ft(f.mesh);
+           EigenMap<double, 3>(ft) = staticForce - EigenMap<double, 3>(fn);
+           f.richData.addVertexProperty("tangential_force", ft);*/
+
+          BE = getBendingEnergy(f);
+
+          dBE = abs(BE - oldBE) / BE;
+          dArea = abs(f.surfaceArea / f.initialSurfaceArea - 1);
+          dVolume = abs(f.volume / f.maxVolume / f.P.Vt - 1);
 
           char buffer[50];
           sprintf(buffer, "t=%d.ply", int(i * dt * 100));
           f.richData.write(outputDir + buffer);
 
-          std::cout << "time: " << i * dt << std::endl;
-          std::cout << "force: " << staticForce_mag << std::endl;
-          std::cout << "area: " << f.surfaceArea / f.initialSurfaceArea << std::endl;
-          std::cout << "total volume:  " << f.volume / f.maxVolume / f.P.Vt << std::endl;
+          // 2. print
+          std::cout << "\n"
+            << "time: " << i * dt << "\n"
+            << "dArea: " << dArea << "\n"
+            << "dVolume:  " << dVolume << "\n"
+            << "dBE: " << dBE << "\n"
+            << "bending energy: " << BE << "\n";
+           
 
+          // 3.1 compare and adjust
+          if (( dVolume < closeZone * tolerance)
+            && ( dArea < closeZone * tolerance)
+            && (dBE < closeZone * tolerance)) {
+            double ref = std::max({ dVolume, dArea, dBE });
+            f.P.kt *= 1 - dBE / ref * increment;
+            f.P.Kv *= 1 + dVolume / ref * increment;
+            f.P.Ksg *= 1 + dArea / ref * increment;
+
+            std::cout << "increase global area penalty Ksg to " << f.P.Ksg << "\n"
+                      << "increase volume penalty Kv to " << f.P.Kv << "\n"
+                      << "decrese randomness kT to " << f.P.kt << "\n";
+
+          }
+
+          // 3.1 compare and exit
+          if (( dVolume < tolerance)
+            && ( dArea < tolerance)
+            && ( dBE < tolerance)) {
+            std::cout << "converged" << std::endl;
+            f.richData.write(outputDir + "final.ply");
+            getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, outputDir);
+            break;
+          }
+
+          oldBE = getBendingEnergy(f);
         }
 
-      }
+        pos_e += vel_e * dt + force * hdt2;
+
+        vel_e += (force + newForce) * hdt;
+        force = newForce;
+        f.update_Vertex_positions(); // recompute cached values;
+
+      }// periodic save, print and adjust
 
     }
+
   }// namespace integration
 } // namespace ddgsolver

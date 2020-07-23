@@ -28,7 +28,7 @@ void Force::getConservativeForces() {
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
     //// Initialize the conformal Laplacian matrix
-    //L = vpg.cotanLaplacian;
+    L = vpg.cotanLaplacian;
 
     // Gaussian curvature per vertex Area
     auto& KG = vpg.vertexGaussianCurvatures.raw();
@@ -41,7 +41,6 @@ void Force::getConservativeForces() {
 
     // map the VertexData bendingForces to eigen matrix bendingForces_e
     auto bendingForces_e = EigenMap<double, 3>(bendingForces);
-    //bendingForces_e.setZero();
 
     // the build-in angle-weighted vertex normal
     auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
@@ -54,23 +53,22 @@ void Force::getConservativeForces() {
       L * M_inv * rowwiseScaling(H, vertexAngleNormal_e);
 
     // initialize the spontaneous curvature matrix
-    Eigen::Matrix<double, Eigen::Dynamic, 1> H0_e;
-    H0_e.setConstant(n_vertices, 1, P.H0);
+    H0.setConstant(n_vertices, 1, P.H0);
 
     // initialize and calculate intermediary result scalarTerms, set to zero if
     // negative
     Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms =
-      M_inv * rowwiseProduct(H, H) + M * rowwiseProduct(H0_e, H0_e) - KG;
-    //Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
-    //zeroMatrix.resize(n_vertices, 1);
-    //zeroMatrix.setZero();
-    //scalarTerms = scalarTerms.array().max(zeroMatrix.array());
+      M_inv * rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
+    /*Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+    zeroMatrix.resize(n_vertices, 1);
+    zeroMatrix.setZero();
+    scalarTerms = scalarTerms.array().max(zeroMatrix.array());*/
 
     // initialize and calculate intermediary result productTerms
     Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
     productTerms.resize(n_vertices, 3);
     productTerms =
-      2 * rowwiseScaling(rowwiseProduct(scalarTerms, M_inv * H - H0_e),
+      2 * rowwiseScaling(rowwiseProduct(scalarTerms, M_inv * H - H0),
         vertexAngleNormal_e);
 
     // calculate bendingForce
@@ -115,7 +113,7 @@ void Force::getConservativeForces() {
           sign_of_volume[he.face()] >
           0);
         pressureForces[v] +=
-          -0.5 * P.Kv * (volume - maxVolume * P.Vt) / (maxVolume * P.Vt) * dVdx;
+          -2.0 * P.Kv * (volume - maxVolume * P.Vt) / (maxVolume * P.Vt) * dVdx;
       }
       
       // Stretching forces
@@ -125,20 +123,20 @@ void Force::getConservativeForces() {
       assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
       if (P.Ksl != 0) {
         stretchingForces[v] +=
-            -2 * P.Ksl * gradient *
+            -2.0 * P.Ksl * gradient *
             (face_a[base_he.face()] - initialFaceAreas[base_he.face()]) /
             initialFaceAreas[base_he.face()];
       }
       if (P.Ksg != 0) {
-        stretchingForces[v] += -2 * P.Ksg * gradient *
+        stretchingForces[v] += -2.0 * P.Ksg * gradient *
                                (surfaceArea - initialSurfaceArea) /
                                initialSurfaceArea;
       }
       if (P.Kse != 0) {
         stretchingForces[v] +=
-            -P.Kse * edgeGradient *
-            (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) /
-            targetEdgeLength[he.edge()];
+          -P.Kse * edgeGradient *
+          (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) /
+          targetEdgeLength[he.edge()];
       }
     }
   }

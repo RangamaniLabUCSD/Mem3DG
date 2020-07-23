@@ -58,7 +58,7 @@ void Force::getBendingForces() {
   // initialize and calculate intermediary result scalerTerms, set to zero if
   // negative
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-      rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(H0n, H0n) - KG;
+      rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(Hn, H0n) - KG;
   Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
   zeroMatrix.resize(n_vertices, 1);
   zeroMatrix.setZero();
