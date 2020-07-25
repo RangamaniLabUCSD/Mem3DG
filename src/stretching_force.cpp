@@ -61,13 +61,13 @@ void Force::getStretchingForces() {
       
       if(P.Ksl != 0){
         localForce += -2 * P.Ksl * gradient *
-            (face_a[base_he.face()] - initialFaceAreas[base_he.face()]) /
-            initialFaceAreas[base_he.face()];
+            (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
+            targetFaceAreas[base_he.face()];
       }
       
       if (P.Ksg != 0) {
         globalForce +=
-          -2 * P.Ksg * gradient * (surfaceArea - initialSurfaceArea) / initialSurfaceArea;
+          -2 * P.Ksg * gradient * (surfaceArea - targetSurfaceArea) / targetSurfaceArea;
       }
       
       if (P.Kse != 0) {

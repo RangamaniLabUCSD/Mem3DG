@@ -41,7 +41,8 @@ namespace ddgsolver {
 			else cout << "Unable to open file";
 		}
 
-		void getSummaryLog(Force& f, double dt, double final_time, double areaError, double volumeError, double bendingError, std::string outputDir) {
+		void getSummaryLog(Force& f, double dt, double final_time, double areaError, double volumeError,
+											double bendingError, double bendingEnergy, std::string outputDir) {
 			ofstream myfile(outputDir + "Summary.txt");
 			if (myfile.is_open())
 			{
@@ -69,11 +70,20 @@ namespace ddgsolver {
 					<< "T:     " << final_time << "\n";
 
 				myfile << "\n";
+				myfile << "States: \n";
+				myfile << "\n";
+				myfile << "Bending Energy:   " << bendingEnergy << "\n"
+					<< "Volume:           " << f.volume << " = "
+					<< f.volume / f.maxVolume << " reduced volume" << "\n"
+					<< "Surface area:     " << f.surfaceArea << " = "
+					<< f.surfaceArea / f.targetSurfaceArea << " target surface area" << "\n";
+
+				myfile << "\n";
 				myfile << "Errors: \n";
 				myfile << "\n";
-				myfile << "area error:       " << areaError << "\n"
-							 << "volume error:     " << volumeError << "\n"
-							 << "bending error:    " << bendingError << "\n";
+				myfile << "Bending error:    " << bendingError << "\n"
+					<< "Volume error:     " << volumeError << "\n"
+					<< "Surface area error:       " << areaError << "\n";
 
 				myfile.close();
 			}

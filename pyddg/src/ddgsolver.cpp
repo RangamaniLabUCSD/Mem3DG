@@ -68,7 +68,8 @@ int viewer(std::string fileName) {
 }
 
 int genIcosphere(size_t nSub, std::string path, double R) {
-	std::cout << "Constructing input mesh ..." << std::endl;
+	std::cout << "Constructing " << nSub << "-subdivided icosphere of radius "
+		<< R << " ...";
 
 	/// initialize mesh and vpg 
 	std::unique_ptr<gcs::HalfedgeMesh> ptrMesh;
@@ -88,10 +89,11 @@ int genIcosphere(size_t nSub, std::string path, double R) {
 	richData.addGeometry(*ptrVpg);
 	richData.write(path);
 
+	std::cout << "Finished!" << std::endl;
 	return 0;
 }
 
-int driver(std::string inputMesh, double Kb, double H0,
+int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	double Kse, double Ksl, double Ksg,
 	double Kv, double Vt, double gamma,
 	double kt, size_t ptInd, double extF,
@@ -107,22 +109,28 @@ int driver(std::string inputMesh, double Kb, double H0,
 		kt, sigma, ptInd, extF,
 		conc };
 
+	std::cout << "Loading input mesh " << inputMesh << " ...";
 	std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
 	std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-
 	/*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
 	std::tie(ptrMesh, ptrRichData) = gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no connectivity for UVsphere.ply
 	ptrVpg = ptrRichData->getGeometry();*/
-
-	std::cout << "Loading input mesh ..." << std::endl;
 	std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
 	gcs::RichSurfaceMeshData richData(*ptrMesh);
 	richData.addMeshConnectivity();
 	richData.addGeometry(*ptrVpg);
+	std::cout << "Finished!" << std::endl;
 
-	/// run the program based on "run"
-	std::cout << "Initiating the system ..." << std::endl;
-	ddgsolver::Force f(*ptrMesh, *ptrVpg, richData, p);
+	std::cout << "Loading reference mesh " << refMesh << " ...";
+	std::unique_ptr<gcs::SurfaceMesh> ptrRefMesh;
+	std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg;
+	std::tie(ptrRefMesh, ptrRefVpg) = gcs::readManifoldSurfaceMesh(refMesh);
+	std::cout << "Finished!" << std::endl;
+
+	std::cout << "Initiating the system ...";
+	ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p);
+	std::cout << "Finished!" << std::endl;
+
 	std::cout << "Solving the system ..." << std::endl;
 	ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment, tSave, outputDir);
 
