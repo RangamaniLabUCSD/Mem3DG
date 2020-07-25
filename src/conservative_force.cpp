@@ -124,13 +124,13 @@ void Force::getConservativeForces() {
       if (P.Ksl != 0) {
         stretchingForces[v] +=
             -2.0 * P.Ksl * gradient *
-            (face_a[base_he.face()] - initialFaceAreas[base_he.face()]) /
-            initialFaceAreas[base_he.face()];
+            (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
+            targetFaceAreas[base_he.face()];
       }
       if (P.Ksg != 0) {
         stretchingForces[v] += -2.0 * P.Ksg * gradient *
-                               (surfaceArea - initialSurfaceArea) /
-                               initialSurfaceArea;
+                               (surfaceArea - targetSurfaceArea) /
+                               targetSurfaceArea;
       }
       if (P.Kse != 0) {
         stretchingForces[v] +=

@@ -62,6 +62,8 @@ public:
   gcs::RichSurfaceMeshData& richData;
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
+  /// reference embedding geometry
+  gcs::VertexPositionGeometry &refVpg;
   /// Cached bending forces
   gcs::VertexData<gc::Vector3> bendingForces;
   /// Cached stretching forces
@@ -82,9 +84,9 @@ public:
   /// Cotangent Laplacian
   Eigen::SparseMatrix<double> L;
   /// Target area per face
-  gcs::FaceData<double> initialFaceAreas;
+  gcs::FaceData<double> targetFaceAreas;
   /// Target total face area
-  double initialSurfaceArea = 0.0;
+  double targetSurfaceArea = 0.0;
   /// surface area
   double surfaceArea = 0.0;
   /// Target length per edge
@@ -119,9 +121,9 @@ public:
    * @param time_step_    Numerical timestep
    */
 
-  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_, gcs::VertexPositionGeometry &refVpg_,
         gcs::RichSurfaceMeshData &richData_, Parameters &p)
-      : mesh(mesh_), vpg(vpg_), richData(richData_), bendingForces(mesh_, {0, 0, 0}), P(p),
+      : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), bendingForces(mesh_, {0, 0, 0}), P(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
         externalForces(mesh_, {0, 0, 0}), vel(mesh_, { 0, 0, 0 }) {
@@ -142,6 +144,9 @@ public:
     vpg.requireEdgeLengths();
     vpg.requireVertexNormals();
 
+    refVpg.requireFaceAreas();
+    refVpg.requireEdgeLengths();
+
     /// Initialize the mass matrix
     M = vpg.vertexLumpedMassMatrix;
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
@@ -157,20 +162,24 @@ public:
     // Initialize the conformal Laplacian matrix
     L = vpg.cotanLaplacian;
 
-    // Initialize face areas
-    initialFaceAreas = vpg.faceAreas;
-    auto& faceAreas_e = initialFaceAreas.raw();
-    initialSurfaceArea = faceAreas_e.sum();
+    // Initialize target face/surface areas
+    targetFaceAreas = refVpg.faceAreas.reinterpretTo(mesh);
+    targetSurfaceArea = targetFaceAreas.raw().sum();
 
     // Initialize edge length
-    targetEdgeLength = vpg.edgeLengths;
+    targetEdgeLength = refVpg.edgeLengths.reinterpretTo(mesh);
 
     // Initialize maximal volume
     double pi = 2 * std::acos(0.0);
-    maxVolume = std::pow(initialSurfaceArea / pi / 4, 1.5) * (4 * pi / 3);
-    //for (gcs::Face f : mesh.faces()) {
-    //  maxVolume += signedVolumeFromFace(f, vpg);
-    //}
+    maxVolume = std::pow(targetSurfaceArea / pi / 4, 1.5) * (4 * pi / 3);
+
+    // Initialize surface area
+    surfaceArea = vpg.faceAreas.raw().sum();
+
+    // Initialize volume
+    for (gcs::Face f : mesh.faces()) {
+      volume += signedVolumeFromFace(f, vpg);
+    }
 
     // Initialize the vertex position of the last iteration
     pastPositions = vpg.inputVertexPositions;

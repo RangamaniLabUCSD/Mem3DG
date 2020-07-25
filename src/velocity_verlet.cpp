@@ -120,20 +120,25 @@ namespace ddgsolver {
           BE = getBendingEnergy(f);
 
           dBE = abs(BE - oldBE) / BE;
-          dArea = abs(f.surfaceArea / f.initialSurfaceArea - 1);
+          dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
           dVolume = abs(f.volume / f.maxVolume / f.P.Vt - 1);
 
           char buffer[50];
           sprintf(buffer, "t=%d.ply", int(i * dt * 100));
           f.richData.write(outputDir + buffer);
 
+          if (i == int(total_time / dt)) {
+            std::cout << "\n"
+              << "Fail to converge in given time and Exit" << std::endl;
+          }
+
           // 2. print
           std::cout << "\n"
-            << "time: " << i * dt << "\n"
+            << "Time: " << i * dt << "\n"
             << "dArea: " << dArea << "\n"
             << "dVolume:  " << dVolume << "\n"
             << "dBE: " << dBE << "\n"
-            << "bending energy: " << BE << "\n";
+            << "Bending energy: " << BE << "\n";
            
 
           // 3.1 compare and adjust
@@ -145,19 +150,22 @@ namespace ddgsolver {
             f.P.Kv *= 1 + dVolume / ref * increment;
             f.P.Ksg *= 1 + dArea / ref * increment;
 
-            std::cout << "increase global area penalty Ksg to " << f.P.Ksg << "\n"
-                      << "increase volume penalty Kv to " << f.P.Kv << "\n"
-                      << "decrese randomness kT to " << f.P.kt << "\n";
+            std::cout << "Within the close zone below " << closeZone << " times tolerance("
+                      << tolerance << "): " << "\n"
+                      << "Increase global area penalty Ksg to " << f.P.Ksg << "\n"
+                      << "Increase volume penalty Kv to " << f.P.Kv << "\n"
+                      << "Decrese randomness kT to " << f.P.kt << "\n";
 
           }
 
-          // 3.1 compare and exit
+          // 3.2 compare and exit
           if (( dVolume < tolerance)
             && ( dArea < tolerance)
             && ( dBE < tolerance)) {
-            std::cout << "converged" << std::endl;
+            std::cout << "\n"
+                      << "Converged! Saved to " + outputDir << std::endl;
             f.richData.write(outputDir + "final.ply");
-            getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, outputDir);
+            getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, BE, outputDir);
             break;
           }
 
