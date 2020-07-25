@@ -5,11 +5,10 @@
 
 #include "ddgsolver/ddgsolver.h"
 
-#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
+#include <geometrycentral/surface/surface_mesh.h>
 
 #include "ddgsolver/force.h"
-
 
 namespace ddgsolver {
 namespace py = pybind11;
@@ -37,7 +36,7 @@ PYBIND11_MODULE(pyddg, pyddg) {
             )delim");
 
   pyddg.def("viewer", &viewer, " a visualization function",
-    py::arg("fileName"));
+            py::arg("fileName"));
 
   pyddg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
             py::arg("nSub"), py::arg("path"), py::arg("R"));

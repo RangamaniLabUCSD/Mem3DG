@@ -31,7 +31,7 @@ void Force::getConservativeForces() {
     L = vpg.cotanLaplacian;
 
     // Gaussian curvature per vertex Area
-    auto& KG = vpg.vertexGaussianCurvatures.raw();
+    auto &KG = vpg.vertexGaussianCurvatures.raw();
 
     // number of vertices for convenience
     std::size_t n_vertices = (mesh.nVertices());
@@ -50,7 +50,7 @@ void Force::getConservativeForces() {
 
     // calculate the Laplacian of mean curvature H
     Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H =
-      L * M_inv * rowwiseScaling(H, vertexAngleNormal_e);
+        L * M_inv * rowwiseScaling(H, vertexAngleNormal_e);
 
     // initialize the spontaneous curvature matrix
     H0.setConstant(n_vertices, 1, P.H0);
@@ -73,9 +73,8 @@ void Force::getConservativeForces() {
 
     // calculate bendingForce
     bendingForces_e = -2.0 * P.Kb * (productTerms + lap_H);
-
   }
- 
+
   /// B. PRESSURE FORCES
   pressureForces.fill({0.0, 0.0, 0.0});
   volume = 0;
@@ -105,7 +104,7 @@ void Force::getConservativeForces() {
       gcs::Halfedge base_he = he.next();
 
       // Pressure forces
-      if (P.Kv != 0){
+      if (P.Kv != 0) {
         gc::Vector3 p1 = vpg.inputVertexPositions[base_he.vertex()];
         gc::Vector3 p2 = vpg.inputVertexPositions[base_he.next().vertex()];
         gc::Vector3 dVdx = 0.5 * gc::cross(p1, p2) / 3.0;
@@ -115,7 +114,7 @@ void Force::getConservativeForces() {
         pressureForces[v] +=
           -2.0 * P.Kv * (volume - maxVolume * P.Vt) / (maxVolume * P.Vt) * dVdx;
       }
-      
+
       // Stretching forces
       gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
       gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);

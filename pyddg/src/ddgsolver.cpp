@@ -1,24 +1,23 @@
 
 #include <iostream>
 
-#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
-#include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/surface/simple_polygon_mesh.h>
+#include <geometrycentral/surface/surface_mesh.h>
+#include <geometrycentral/utilities/vector3.h>
 
+#include "polyscope/curve_network.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
-#include "polyscope/curve_network.h"
 
+#include "ddgsolver/ddgsolver.h"
 #include "ddgsolver/force.h"
+#include "ddgsolver/icosphere.h"
+#include "ddgsolver/integrator.h"
 #include "ddgsolver/typetraits.h"
 #include "ddgsolver/util.h"
-#include "ddgsolver/integrator.h"
-#include "ddgsolver/icosphere.h"
-#include "ddgsolver/ddgsolver.h"
-
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -134,6 +133,9 @@ int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	std::cout << "Solving the system ..." << std::endl;
 	ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment, tSave, outputDir);
 
-	return 0;
+  /// run the program based on "run"
+  ddgsolver::Force f(*ptrMesh, *ptrVpg, richData, p);
+  ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave, outputDir);
 
+  return 0;
 }

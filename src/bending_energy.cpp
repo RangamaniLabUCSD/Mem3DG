@@ -1,5 +1,5 @@
-#include "ddgsolver/integrator.h"
 #include "ddgsolver/force.h"
+#include "ddgsolver/integrator.h"
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
@@ -8,7 +8,6 @@
 #include <Eigen/Core>
 
 #include <iostream>
-
 
 namespace ddgsolver {
 	namespace integration {
