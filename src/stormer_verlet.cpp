@@ -48,34 +48,10 @@ void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
     f.update_Vertex_positions();
     f.pastPositions = temp;
-    double totalEnergy = getTotalEnergy(f);
-
-				gcs::VertexData<gc::Vector3> temp = f.vpg.inputVertexPositions;
-				for (gcs::Vertex v : f.mesh.vertices()) {
-					bool flag = true;
-					for (gcs::Face f : v.adjacentFaces()) {
-						if (faceInd[f] == 0) {
-							flag = true; // change it to false to have time integration excluded for a facet of vertices 
-						}
-					}
-					if (flag == true) {
-						f.vpg.inputVertexPositions[v] *= 2;
-						totalForce = f.bendingForces[v]
-							+ f.stretchingForces[v]
-							+ f.pressureForces[v]
-							+ f.dampingForces[v]
-							+ f.stochasticForces[v]
-							+ f.externalForces[v];
-						f.vpg.inputVertexPositions[v] += totalForce * dt * dt - f.pastPositions[v];
-					}
-				}
-				//std::cout << "total force:  " << totalForce.norm() << std::endl;
-				f.update_Vertex_positions();
-				f.pastPositions = temp;
-				double totalEnergy = getBendingEnergy(f);
+    double totalEnergy = getBendingEnergy(f);
 				
-				std::cout << "energy: " << totalEnergy << std::endl;
-				std::cout << "process: " << int(double(i) / (total_time / dt) * 100) << "%" << std::endl;
+				//std::cout << "energy: " << totalEnergy << std::endl;
+				//std::cout << "process: " << int(double(i) / (total_time / dt) * 100) << "%" << std::endl;
 			}
 		}
 	} // namespace integration

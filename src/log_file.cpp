@@ -81,9 +81,9 @@ namespace integration {
 				myfile << "\n";
 				myfile << "Errors: \n";
 				myfile << "\n";
-				myfile << "Bending error:    " << bendingError << "\n"
-					<< "Volume error:     " << volumeError << "\n"
-					<< "Surface area error:       " << areaError << "\n";
+				myfile << "Bending error:       " << bendingError * 100 << "%" << "\n"
+					<< "Volume error:        " << volumeError  * 100 << "%" << "\n"
+					<< "Surface area error:  " << areaError  * 100 << "%" << "\n";
 
 				myfile.close();
 			}
