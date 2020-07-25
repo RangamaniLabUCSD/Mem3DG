@@ -133,9 +133,5 @@ int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	std::cout << "Solving the system ..." << std::endl;
 	ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment, tSave, outputDir);
 
-  /// run the program based on "run"
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, richData, p);
-  ddgsolver::integration::velocityVerlet(f, h, T, eps, tSave, outputDir);
-
   return 0;
 }
