@@ -3,9 +3,9 @@
 #include <cassert>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
+#include <geometrycentral/surface/heat_method_distance.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/surface/heat_method_distance.h>
 
 #include <Eigen/Core>
 #include <Eigen/SparseLU>
@@ -13,9 +13,9 @@
 #include <pcg_random.hpp>
 #include <random>
 
-#include "ddgsolver/util.h"
-#include "ddgsolver/meshops.h"
 #include "ddgsolver/macros.h"
+#include "ddgsolver/meshops.h"
+#include "ddgsolver/util.h"
 
 namespace ddgsolver {
 
@@ -43,23 +43,22 @@ struct Parameters {
   double kt;
   /// Noise
   double sigma;
-  /// index of node with applied external force 
+  /// index of node with applied external force
   size_t ptInd;
-  /// Magnitude of external force 
+  /// Magnitude of external force
   double extF;
   /// level of concentration of the external force
   double conc;
-
 };
 
-class DLL_PUBLIC Force{
+class DLL_PUBLIC Force {
 public:
   /// Parameters
   Parameters P;
   /// Cached mesh of interest
   gcs::SurfaceMesh &mesh;
   /// Cached mesh data
-  gcs::RichSurfaceMeshData& richData;
+  gcs::RichSurfaceMeshData &richData;
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
   /// reference embedding geometry
@@ -126,7 +125,7 @@ public:
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), bendingForces(mesh_, {0, 0, 0}), P(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
-        externalForces(mesh_, {0, 0, 0}), vel(mesh_, { 0, 0, 0 }) {
+        externalForces(mesh_, {0, 0, 0}), vel(mesh_, {0, 0, 0}) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -150,14 +149,14 @@ public:
     /// Initialize the mass matrix
     M = vpg.vertexLumpedMassMatrix;
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-    //M = vpg.vertexGalerkinMassMatrix;
+    // M = vpg.vertexGalerkinMassMatrix;
     //// Initialize the inverted Mass matrix
-    //Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-    //solver.compute(vpg.vertexGalerkinMassMatrix);
-    //std::size_t n = mesh.nVertices();
-    //Eigen::SparseMatrix<double> I(n, n);
-    //I.setIdentity();
-    //M_inv = solver.solve(I);
+    // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    // solver.compute(vpg.vertexGalerkinMassMatrix);
+    // std::size_t n = mesh.nVertices();
+    // Eigen::SparseMatrix<double> I(n, n);
+    // I.setIdentity();
+    // M_inv = solver.solve(I);
 
     // Initialize the conformal Laplacian matrix
     L = vpg.cotanLaplacian;
@@ -191,15 +190,14 @@ public:
     H0n.resize(mesh.nVertices(), 3);
 
     // Initialize the magnitude of externally applied force
-    gcs::VertexData<double> geodesicDistanceFromAppliedForce 
-      = heatMethodDistance(vpg, mesh.vertex(P.ptInd));
-    auto& dist_e = geodesicDistanceFromAppliedForce.raw();
-    double stdDev = dist_e.maxCoeff()/P.conc;
-    appliedForceMagnitude = P.extF / (stdDev * pow(pi * 2, 0.5))
-      * (-dist_e.array() * dist_e.array()
-        / (2 * stdDev * stdDev)).exp();
+    gcs::VertexData<double> geodesicDistanceFromAppliedForce =
+        heatMethodDistance(vpg, mesh.vertex(P.ptInd));
+    auto &dist_e = geodesicDistanceFromAppliedForce.raw();
+    double stdDev = dist_e.maxCoeff() / P.conc;
+    appliedForceMagnitude =
+        P.extF / (stdDev * pow(pi * 2, 0.5)) *
+        (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
   }
-
 
   /**
    * @brief Destroy the Force object
@@ -232,7 +230,6 @@ public:
   void getDPDForces();
 
   void getExternalForces();
-
 
   /**
    * @brief Get velocity from the position of the last iteration

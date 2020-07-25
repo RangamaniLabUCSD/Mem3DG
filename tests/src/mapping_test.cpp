@@ -49,7 +49,6 @@ TEST_F(MappingUtilityTest, MappingTest) {
   ASSERT_EQ(3 * vpg->inputVertexPositions.size(), pos2.rows());
   ASSERT_EQ(1, pos2.cols());
 
-
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     std::size_t xidx = 3 * i;
     std::size_t yidx = 3 * i + 1;
