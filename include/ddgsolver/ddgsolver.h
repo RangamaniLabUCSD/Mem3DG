@@ -14,4 +14,4 @@ int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 						double kt, size_t ptInd, double extF,
 						double conc, double h, double T,
 						double eps, double closeZone, double increment, 
-						double tSave, std::string outputDir);
+						double tSave, double tMollify, std::string outputDir);

@@ -98,7 +98,7 @@ int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	double kt, size_t ptInd, double extF,
 	double conc, double h, double T,
 	double eps, double closeZone, double increment, 
-	double tSave, std::string outputDir) {
+	double tSave, double tMollify, std::string outputDir) {
 
 	/// physical parameters 
 	double sigma = sqrt(2 * gamma * kt / h);
@@ -131,7 +131,7 @@ int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	std::cout << "Finished!" << std::endl;
 
 	std::cout << "Solving the system ..." << std::endl;
-	ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment, tSave, outputDir);
+	ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment, tSave, tMollify, outputDir);
 
   return 0;
 }

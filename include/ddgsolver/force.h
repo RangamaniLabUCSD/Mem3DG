@@ -89,7 +89,7 @@ public:
   /// surface area
   double surfaceArea = 0.0;
   /// Target length per edge
-  gcs::EdgeData<double> targetEdgeLength;
+  gcs::EdgeData<double> targetEdgeLengths;
   /// Maximal volume
   double maxVolume = 0.0;
   /// Volume
@@ -166,7 +166,7 @@ public:
     targetSurfaceArea = targetFaceAreas.raw().sum();
 
     // Initialize edge length
-    targetEdgeLength = refVpg.edgeLengths.reinterpretTo(mesh);
+    targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
     // Initialize maximal volume
     double pi = 2 * std::acos(0.0);
