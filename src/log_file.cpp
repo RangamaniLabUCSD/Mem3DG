@@ -42,7 +42,7 @@ namespace integration {
 }
 
 		void getSummaryLog(Force& f, double dt, double final_time, double areaError, double volumeError,
-											double bendingError, double bendingEnergy, std::string outputDir) {
+											double bendingError, double faceError, double bendingEnergy, std::string outputDir) {
 			ofstream myfile(outputDir + "Summary.txt");
 			if (myfile.is_open())
 			{
@@ -76,14 +76,25 @@ namespace integration {
 					<< "Volume:           " << f.volume << " = "
 					<< f.volume / f.maxVolume << " reduced volume" << "\n"
 					<< "Surface area:     " << f.surfaceArea << " = "
-					<< f.surfaceArea / f.targetSurfaceArea << " target surface area" << "\n";
+					<< f.surfaceArea / f.targetSurfaceArea << " target surface area" << "\n"
+          << "COM (x, y, z):		" << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
+                f.vpg.inputVertexPositions.raw().rows() << "\n";
 
 				myfile << "\n";
 				myfile << "Errors: \n";
 				myfile << "\n";
-				myfile << "Bending error:       " << bendingError * 100 << "%" << "\n"
-					<< "Volume error:        " << volumeError  * 100 << "%" << "\n"
-					<< "Surface area error:  " << areaError  * 100 << "%" << "\n";
+        myfile << "Bending error:       "
+                << bendingError * 100 << "%"
+                << "\n"
+                << "Volume error:        "
+                << volumeError * 100 << "%"
+                << "\n"
+                << "Surface area error:  "
+                << areaError * 100 << "%"
+                << "\n"
+                << "Face area error:     "
+                << faceError * 100 << "%"
+                << "\n";
 
 				myfile.close();
 			}

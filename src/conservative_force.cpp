@@ -58,7 +58,7 @@ void Force::getConservativeForces() {
     // initialize and calculate intermediary result scalarTerms, set to zero if
     // negative
     Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms =
-      M_inv * rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
+        M_inv * rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
     /*Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
     zeroMatrix.resize(n_vertices, 1);
     zeroMatrix.setZero();
@@ -68,8 +68,8 @@ void Force::getConservativeForces() {
     Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
     productTerms.resize(n_vertices, 3);
     productTerms =
-      2 * rowwiseScaling(rowwiseProduct(scalarTerms, M_inv * H - H0),
-        vertexAngleNormal_e);
+        2 * rowwiseScaling(rowwiseProduct(scalarTerms, M_inv * H - H0),
+                           vertexAngleNormal_e);
 
     // calculate bendingForce
     bendingForces_e = -2.0 * P.Kb * (productTerms + lap_H);
@@ -109,10 +109,10 @@ void Force::getConservativeForces() {
         gc::Vector3 p2 = vpg.inputVertexPositions[base_he.next().vertex()];
         gc::Vector3 dVdx = 0.5 * gc::cross(p1, p2) / 3.0;
         assert(gc::dot(dVdx, vpg.inputVertexPositions[v] - p1) *
-          sign_of_volume[he.face()] >
-          0);
-        pressureForces[v] +=
-          -2.0 * P.Kv * (volume - maxVolume * P.Vt) / (maxVolume * P.Vt) * dVdx;
+                   sign_of_volume[he.face()] >
+               0);
+        pressureForces[v] += -2.0 * P.Kv * (volume - maxVolume * P.Vt) /
+                             (maxVolume * P.Vt) * dVdx;
       }
 
       // Stretching forces
@@ -133,9 +133,9 @@ void Force::getConservativeForces() {
       }
       if (P.Kse != 0) {
         stretchingForces[v] +=
-          -P.Kse * edgeGradient *
-          (vpg.edgeLengths[he.edge()] - targetEdgeLength[he.edge()]) /
-          targetEdgeLength[he.edge()];
+            -P.Kse * edgeGradient *
+            (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
+            targetEdgeLengths[he.edge()];
       }
     }
   }
