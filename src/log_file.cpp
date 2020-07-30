@@ -1,3 +1,17 @@
+// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2020:
+//     Laboratory for Computational Cellular Mechanobiology
+//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
+//     Christopher T. Lee (ctlee@ucsd.edu)
+//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
+//     Padmini Rangmani (prangamani@eng.ucsd.edu)
+//
+
 #include "ddgsolver/force.h"
 #include "ddgsolver/integrator.h"
 
@@ -8,10 +22,10 @@ using namespace std;
 namespace ddgsolver {
 namespace integration {
 
-		void getParameterLog(Force& f, double dt, double total_time, double tolerance, double tSave, std::string outputDir) {
-			ofstream myfile(outputDir + "parameter.txt");
-			if (myfile.is_open())
-			{
+void getParameterLog(Force &f, double dt, double total_time, double tolerance,
+                     double tSave, std::string outputDir) {
+  ofstream myfile(outputDir + "parameter.txt");
+  if (myfile.is_open()) {
 
     myfile << "Physical parameters used: \n";
     myfile << "\n";
@@ -41,66 +55,65 @@ namespace integration {
     cout << "Unable to open file";
 }
 
-		void getSummaryLog(Force& f, double dt, double final_time, double areaError, double volumeError,
-											double bendingError, double faceError, double bendingEnergy, std::string outputDir) {
-			ofstream myfile(outputDir + "Summary.txt");
-			if (myfile.is_open())
-			{
+void getSummaryLog(Force &f, double dt, double final_time, double areaError,
+                   double volumeError, double bendingError, double faceError,
+                   double bendingEnergy, std::string outputDir) {
+  ofstream myfile(outputDir + "Summary.txt");
+  if (myfile.is_open()) {
 
-				myfile << "Final parameter: \n";
-				myfile << "\n";
-				myfile << "Kb:     " << f.P.Kb << "\n"
-					<< "H0:     " << f.P.H0 << "\n"
-					<< "Kse:    " << f.P.Kse << "\n"
-					<< "Ksl:    " << f.P.Ksl << "\n"
-					<< "Ksg:    " << f.P.Ksg << "\n"
-					<< "Kv:     " << f.P.Kv << "\n"
-					<< "gamma:  " << f.P.gamma << "\n"
-					<< "Vt:     " << f.P.Vt << "\n"
-					<< "kt:     " << f.P.kt << "\n"
-					<< "sigma:  " << f.P.sigma << "\n"
-					<< "ptInd:  " << f.P.ptInd << "\n"
-					<< "extF:   " << f.P.extF << "\n"
-					<< "conc:   " << f.P.conc << "\n";
+    myfile << "Final parameter: \n";
+    myfile << "\n";
+    myfile << "Kb:     " << f.P.Kb << "\n"
+           << "H0:     " << f.P.H0 << "\n"
+           << "Kse:    " << f.P.Kse << "\n"
+           << "Ksl:    " << f.P.Ksl << "\n"
+           << "Ksg:    " << f.P.Ksg << "\n"
+           << "Kv:     " << f.P.Kv << "\n"
+           << "gamma:  " << f.P.gamma << "\n"
+           << "Vt:     " << f.P.Vt << "\n"
+           << "kt:     " << f.P.kt << "\n"
+           << "sigma:  " << f.P.sigma << "\n"
+           << "ptInd:  " << f.P.ptInd << "\n"
+           << "extF:   " << f.P.extF << "\n"
+           << "conc:   " << f.P.conc << "\n";
 
-				myfile << "\n";
-				myfile << "Integration: \n";
-				myfile << "\n";
-				myfile << "dt:    " << dt << "\n"
-					<< "T:     " << final_time << "\n";
+    myfile << "\n";
+    myfile << "Integration: \n";
+    myfile << "\n";
+    myfile << "dt:    " << dt << "\n"
+           << "T:     " << final_time << "\n";
 
-				myfile << "\n";
-				myfile << "States: \n";
-				myfile << "\n";
-				myfile << "Bending Energy:   " << bendingEnergy << "\n"
-					<< "Volume:           " << f.volume << " = "
-					<< f.volume / f.maxVolume << " reduced volume" << "\n"
-					<< "Surface area:     " << f.surfaceArea << " = "
-					<< f.surfaceArea / f.targetSurfaceArea << " target surface area" << "\n"
-          << "COM (x, y, z):		" << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
-                f.vpg.inputVertexPositions.raw().rows() << "\n";
+    myfile << "\n";
+    myfile << "States: \n";
+    myfile << "\n";
+    myfile << "Bending Energy:   " << bendingEnergy << "\n"
+           << "Volume:           " << f.volume << " = "
+           << f.volume / f.maxVolume << " reduced volume"
+           << "\n"
+           << "Surface area:     " << f.surfaceArea << " = "
+           << f.surfaceArea / f.targetSurfaceArea << " target surface area"
+           << "\n"
+           << "COM (x, y, z):		"
+           << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
+                  f.vpg.inputVertexPositions.raw().rows()
+           << "\n";
 
-				myfile << "\n";
-				myfile << "Errors: \n";
-				myfile << "\n";
-        myfile << "Bending error:       "
-                << bendingError * 100 << "%"
-                << "\n"
-                << "Volume error:        "
-                << volumeError * 100 << "%"
-                << "\n"
-                << "Surface area error:  "
-                << areaError * 100 << "%"
-                << "\n"
-                << "Face area error:     "
-                << faceError * 100 << "%"
-                << "\n";
+    myfile << "\n";
+    myfile << "Errors: \n";
+    myfile << "\n";
+    myfile << "Bending error:       " << bendingError * 100 << "%"
+           << "\n"
+           << "Volume error:        " << volumeError * 100 << "%"
+           << "\n"
+           << "Surface area error:  " << areaError * 100 << "%"
+           << "\n"
+           << "Face area error:     " << faceError * 100 << "%"
+           << "\n";
 
-				myfile.close();
-			}
-			else cout << "Unable to open file";
+    myfile.close();
+  } else
+    cout << "Unable to open file";
+}
 
-		}
-
-	} // namespace integration
+} // namespace integration
 } // namespace ddgsolver

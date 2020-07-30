@@ -1,3 +1,9 @@
+// Copyright (c) 2020 ctlee
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "ddgsolver/force.h"
 #include "ddgsolver/integrator.h"
 
@@ -49,10 +55,11 @@ void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
     f.update_Vertex_positions();
     f.pastPositions = temp;
     double totalEnergy = getBendingEnergy(f);
-				
-				//std::cout << "energy: " << totalEnergy << std::endl;
-				//std::cout << "process: " << int(double(i) / (total_time / dt) * 100) << "%" << std::endl;
-			}
-		}
-	} // namespace integration
+
+    // std::cout << "energy: " << totalEnergy << std::endl;
+    // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<
+    // "%" << std::endl;
+  }
+}
+} // namespace integration
 } // namespace ddgsolver
