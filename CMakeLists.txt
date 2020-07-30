@@ -38,9 +38,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 # Required to tell MSVC to export symbols
-if(MSVC)
-  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
+# if(MSVC)
+#  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+# endif()
 
 # Check if DDG is being used directly or via add_subdirectory
 set(DDG_MASTER_PROJECT OFF)
