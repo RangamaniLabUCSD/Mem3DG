@@ -1,3 +1,17 @@
+// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2020:
+//     Laboratory for Computational Cellular Mechanobiology
+//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
+//     Christopher T. Lee (ctlee@ucsd.edu)
+//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
+//     Padmini Rangmani (prangamani@eng.ucsd.edu)
+//
+
 #include "ddgsolver/force.h"
 #include "ddgsolver/integrator.h"
 #include "ddgsolver/meshops.h"
@@ -19,8 +33,8 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
-                    double closeZone, double increment, double tSave, double tMollify, 
-                    std::string outputDir) {
+                    double closeZone, double increment, double tSave,
+                    double tMollify, std::string outputDir) {
 
   // print out a .txt file listing all parameters used
   getParameterLog(f, dt, total_time, tolerance, tSave, outputDir);
@@ -71,7 +85,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   EigenMap<double, 3>(f.stretchingForces) +
                   EigenMap<double, 3>(f.pressureForces) +
                   EigenMap<double, 3>(f.externalForces);
-    staticForce = staticForce.rowwise() - staticForce.colwise().sum() / f.mesh.nVertices();
+    staticForce = staticForce.rowwise() -
+                  staticForce.colwise().sum() / f.mesh.nVertices();
     dynamicForce = EigenMap<double, 3>(f.dampingForces) +
                    EigenMap<double, 3>(f.stochasticForces);
     newForce = staticForce + dynamicForce;
@@ -133,7 +148,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       } else {
         dBE = 0.0;
       }
-      
+
       if (f.P.Ksg != 0) {
         dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
       } else {
@@ -155,22 +170,23 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       } else {
         dFace = 0.0;
       }
-     
+
       char buffer[50];
       sprintf(buffer, "t=%d.ply", int(i * dt * 100));
       f.richData.write(outputDir + buffer);
 
       // 2. print
-      std::cout << "\n"
-                << "Time: " << i * dt << "\n"
-                << "dArea: " << dArea << "\n"
-                << "dVolume:  " << dVolume << "\n"
-                << "dBE: " << dBE << "\n"
-                << "Bending energy: " << BE << "\n"
-                << "COM: "
-                << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
-                       f.vpg.inputVertexPositions.raw().rows()
-                << "\n";
+      std::cout
+          << "\n"
+          << "Time: " << i * dt << "\n"
+          << "dArea: " << dArea << "\n"
+          << "dVolume:  " << dVolume << "\n"
+          << "dBE: " << dBE << "\n"
+          << "Bending energy: " << BE << "\n"
+          << "COM: "
+          << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
+                 f.vpg.inputVertexPositions.raw().rows()
+          << "\n";
 
       // 3.1 compare and adjust
       if ((dVolume < closeZone * tolerance) &&
@@ -191,7 +207,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       // 3.2 compare and exit
       if ((dVolume < tolerance) && (dArea < tolerance) && (dBE < tolerance)) {
         if (nMollify > 0) {
-          std::cout << "\n" << nMollify << " mollification(s) left" << std::endl;
+          std::cout << "\n"
+                    << nMollify << " mollification(s) left" << std::endl;
           f.P.kt = 0.0;
           nMollify -= 1;
         } else {
@@ -202,7 +219,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                         outputDir);
           break;
         }
-
       }
 
       oldBE = getBendingEnergy(f);

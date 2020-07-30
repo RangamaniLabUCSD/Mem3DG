@@ -1,3 +1,16 @@
+// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2020:
+//     Laboratory for Computational Cellular Mechanobiology
+//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
+//     Christopher T. Lee (ctlee@ucsd.edu)
+//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
+//     Padmini Rangmani (prangamani@eng.ucsd.edu)
+//
 
 #pragma once
 
@@ -121,7 +134,6 @@ ConstAlignedEigenMap_T<T, k, Options> EigenMap(const gcs::MeshData<E, O> &vec) {
       reinterpret_cast<const T *>(getBuffer(vec)), vec.size(), k);
 }
 
-
 /**
  * @brief Generate an Eigen Map to an aligned raw buffer.
  *
@@ -170,12 +182,10 @@ ConstAlignedEigenMap_T<T, 1> FlattenedEigenMap(const gcs::MeshData<E, O> &vec) {
       reinterpret_cast<const T *>(getBuffer(vec)), k * vec.size());
 }
 
-
-
 /**
  * @brief Compute the dot product between two Eigen Matrices
- * 
- * @tparam Derived  Template type values of the matrices 
+ *
+ * @tparam Derived  Template type values of the matrices
  * @param A         the first matrix
  * @param B         The other matrix
  * @return auto     Intermediate return value for Eigen optimization
@@ -184,8 +194,6 @@ template <typename Derived>
 auto dot(Eigen::DenseBase<Derived> &A, Eigen::DenseBase<Derived> &B) {
   return A.derived().cwiseProduct(B.derived()).rowwise().sum();
 }
-
-
 
 // Deprecated
 // /**
@@ -211,8 +219,6 @@ auto dot(Eigen::DenseBase<Derived> &A, Eigen::DenseBase<Derived> &B) {
 // ConstAlignedEigenMap_T<T, 1> EigenMap(const gcs::MeshData<E, T> &vec) {
 //   return ConstAlignedEigenMap_T<T, 1>(getBuffer(vec), vec.size());
 // }
-
-
 
 /**
  * @brief Generate an Eigen Map to an aligned raw buffer.

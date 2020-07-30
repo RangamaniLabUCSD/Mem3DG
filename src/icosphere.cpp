@@ -1,3 +1,16 @@
+// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2020:
+//     Laboratory for Computational Cellular Mechanobiology
+//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
+//     Christopher T. Lee (ctlee@ucsd.edu)
+//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
+//     Padmini Rangmani (prangamani@eng.ucsd.edu)
+//
 
 #include <cassert>
 #include <cmath>
@@ -12,7 +25,8 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 
 void icosphere(std::vector<gc::Vector3> &coords,
-               std::vector<std::vector<std::size_t>> &polygons, int n, double R) {
+               std::vector<std::vector<std::size_t>> &polygons, int n,
+               double R) {
   // Initialize vertex coordinates
   static const double t = (1.0 + sqrt(5.0)) / 2.0;
   auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
@@ -88,7 +102,6 @@ void icosphere(std::vector<gc::Vector3> &coords,
       coords[iter] *= R;
     }
   }
-
 }
 
 void tetrahedron(std::vector<gc::Vector3> &coords,
