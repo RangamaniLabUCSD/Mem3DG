@@ -8,15 +8,18 @@
 
         "geometry":
         {
+            "generateGeometry": false,
+            "R" : 1,
             "nSub" : 3,
-            "inputMesh" : "input-file/icosphere.ply",
-            "outputDir" : "output-file/"
+            "refMesh" : "input-file/prolate.ply",
+            "inputMesh" : "input-file/prolate.ply",
+            "outputDir" : "trial2/"
         },
 
         "variables":
         {
-            "H0" : 0,
-            "Vt" : 0.7,
+            "H0*R" :1.2,
+            "Vt" : 0.69,
             "ptInd" : 0,
             "extF" : 0,
             "conc" : 25
@@ -25,20 +28,23 @@
         "properties":
         {
             "Kb" : 0.01,
-            "Kse" : 0,     
+            "Kse" : 0.1,     
             "Ksl" : 1,		
             "Ksg" : 2,		
-            "Kv"  : 1,
-            "kt" : 0.0001,
-            "gamma" : 1
+            "Kv"  : 2,
+            "kt" : 0.0005,
+            "gamma" : 100
         },
 
         "integration":
         {
             "h" : 0.001,
-            "T" : 300,
-            "eps" : 1e-9,
-            "tSave" : 10
+            "T" : 1000,
+            "eps" : 0.003,
+            "closeZone" : 20,
+            "increment" : 0.2,
+            "tSave" : 20,
+            "tMollify" : 100
         }
 }
     

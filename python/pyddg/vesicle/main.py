@@ -31,16 +31,19 @@ if not os.path.exists(ODir):
     os.mkdir(ODir)
 
 # create starting mesh
-pyddg.genIcosphere( nSub = geo["nSub"] 
-                    , path = geo["inputMesh"])
-# pyddg.genUVsphere( nSub = geo["nSub"] 
-#                    , path = geo["inputMesh"])
+if geo["generateGeometry"] == True:
+    pyddg.genIcosphere( nSub = geo["nSub"] 
+                        , path = geo["refMesh"], R = geo["R"])
+# elif geo["inputMesh"] == "UVsphere.ply":
+#     pyddg.genUVsphere( nSub = geo["nSub"] 
+#                     , path = geo["inputMesh"])
 
 # run simulation
 pyddg.driver(inputMesh = geo["inputMesh"],
             outputDir = geo["outputDir"],
+            refMesh = geo["refMesh"],
 
-            H0 = var["H0"],
+            H0 = var["H0*R"] / geo["R"],
             Vt = var["Vt"],
             ptInd = var["ptInd"],  
             extF = var["extF"],
@@ -57,4 +60,7 @@ pyddg.driver(inputMesh = geo["inputMesh"],
             h = inte["h"],
             T = inte["T"],
             eps = inte["eps"],
-            tSave = inte["tSave"])
+            closeZone = inte["closeZone"],
+            increment = inte["increment"],
+            tSave = inte["tSave"],
+            tMollify = inte["tMollify"])

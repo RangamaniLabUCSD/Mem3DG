@@ -128,14 +128,34 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
       BE = getBendingEnergy(f);
 
-      dBE = abs(BE - oldBE) / BE;
-      dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
-      dVolume = abs(f.volume / f.maxVolume / f.P.Vt - 1);
-      dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
-               f.targetFaceAreas.raw().array())
-                  .abs()
-                  .sum() / f.mesh.nFaces();
+      if (f.P.Kb != 0) {
+        dBE = abs(BE - oldBE) / BE;
+      } else {
+        dBE = 0.0;
+      }
+      
+      if (f.P.Ksg != 0) {
+        dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
+      } else {
+        dArea = 0.0;
+      }
 
+      if (f.P.Kv != 0) {
+        dVolume = abs(f.volume / f.maxVolume / f.P.Vt - 1);
+      } else {
+        dVolume = 0.0;
+      }
+
+      if (f.P.Ksl != 0) {
+        dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
+                 f.targetFaceAreas.raw().array())
+                    .abs()
+                    .sum() /
+                f.mesh.nFaces();
+      } else {
+        dFace = 0.0;
+      }
+     
       char buffer[50];
       sprintf(buffer, "t=%d.ply", int(i * dt * 100));
       f.richData.write(outputDir + buffer);
