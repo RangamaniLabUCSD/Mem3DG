@@ -103,7 +103,8 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/velocity_verlet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bending_energy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/external_force.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/conservative_force.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vesicle_force.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tube_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/log_file.cpp
 
 )
@@ -128,5 +129,9 @@ endif()
 # ##############################################################################
 # Main DDG target
 # ##############################################################################
+add_executable(ddg tests/scratch.cpp)
+target_link_libraries(ddg PRIVATE ddgsolver polyscope)
+set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
 enable_testing()
 add_subdirectory(tests)
