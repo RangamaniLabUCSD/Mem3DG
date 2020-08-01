@@ -31,6 +31,8 @@
 #include "ddgsolver/meshops.h"
 #include "ddgsolver/util.h"
 
+#include <vector>
+
 namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
@@ -125,6 +127,9 @@ public:
   std::normal_distribution<double> normal_dist;
   /// magnitude of externally applied force
   Eigen::Matrix<double, Eigen::Dynamic, 1> appliedForceMagnitude;
+  /// indices for vertices chosen for integration
+  std::vector<size_t> integrationVertices;
+  Eigen::Matrix<bool, Eigen::Dynamic, 3> mask;
 
   /**
    * @brief Construct a new Force object
@@ -134,9 +139,11 @@ public:
    * @param time_step_    Numerical timestep
    */
 
-  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_, gcs::VertexPositionGeometry &refVpg_,
+  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+        gcs::VertexPositionGeometry &refVpg_,
         gcs::RichSurfaceMeshData &richData_, Parameters &p)
-      : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), bendingForces(mesh_, {0, 0, 0}), P(p),
+      : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_),
+        bendingForces(mesh_, {0, 0, 0}), P(p),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
         externalForces(mesh_, {0, 0, 0}), vel(mesh_, {0, 0, 0}) {
@@ -211,6 +218,21 @@ public:
     appliedForceMagnitude =
         P.extF / (stdDev * pow(pi * 2, 0.5)) *
         (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
+
+    // Initialize the indices for vertices chosen for integration
+    for (size_t i = 0; i < geodesicDistanceFromAppliedForce.raw().size(); ++i) {
+      if (geodesicDistanceFromAppliedForce.raw()(i) < 0.7) {
+        integrationVertices.emplace_back(i);
+      }
+    }
+
+    // Initialize the mask 
+    Eigen::Matrix<bool, Eigen::Dynamic, 1> colMask =
+        (geodesicDistanceFromAppliedForce.raw().array() < 0.7).matrix();
+    mask.resize(mesh.nVertices(), 3);
+    mask.col(0) = colMask;
+    mask.col(1) = colMask;
+    mask.col(2) = colMask;
   }
 
   /**
@@ -240,6 +262,8 @@ public:
   void getPressureForces();
 
   void getConservativeForces();
+
+  void getTubeForces();
 
   void getDPDForces();
 

@@ -70,7 +70,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     // f.getBendingForces();
     // f.getStretchingForces();
     // f.getPressureForces();
-    f.getConservativeForces();
+    f.getTubeForces();
     f.getDPDForces();
     f.getExternalForces();
 
@@ -144,7 +144,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       BE = getBendingEnergy(f);
 
       if (f.P.Kb != 0) {
-        dBE = abs(BE - oldBE) / BE;
+        dBE = abs(BE - oldBE) / (BE + 1e-7);
       } else {
         dBE = 0.0;
       }
@@ -224,9 +224,13 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       oldBE = getBendingEnergy(f);
     }
 
-    pos_e += vel_e * dt + force * hdt2;
+    pos_e += vel_e * dt + (f.mask.array().cast<double>() * force.array()).matrix() * hdt2;
+    vel_e +=
+        (f.mask.array().cast<double>() * (force + newForce).array()).matrix() *
+        hdt;
 
-    vel_e += (force + newForce) * hdt;
+    //pos_e += vel_e * dt + force * hdt2;
+    //vel_e += (force + newForce) * hdt;
     force = newForce;
     f.update_Vertex_positions(); // recompute cached values;
 
