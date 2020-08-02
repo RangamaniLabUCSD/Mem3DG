@@ -36,12 +36,17 @@ void Force::getConservativeForces() {
   /// A. BENDING FORCE
   if (P.Kb != 0) {
 
-    // Initialize the mass matrix
-    M = vpg.vertexLumpedMassMatrix;
-    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+  // Initialize the mass matrix
+    // = vpg.vertexLumpedMassMatrix;
 
-    //// Initialize the conformal Laplacian matrix
-    L = vpg.cotanLaplacian;
+    // Initialize the conformal Laplacian matrix
+    // L = vpg.cotanLaplacian;
+
+    // Alternatively use tufted conformal Laplacian and mass matrix
+    getTuftedLaplacianAndMass(M, L, mesh, vpg, 1e-4);
+
+    // Cache the inverse mass matrix
+    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
     // Gaussian curvature per vertex Area
     auto &KG = vpg.vertexGaussianCurvatures.raw();

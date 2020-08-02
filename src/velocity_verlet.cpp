@@ -70,7 +70,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     // f.getBendingForces();
     // f.getStretchingForces();
     // f.getPressureForces();
-    f.getTubeForces();
+    if (f.mesh.hasBoundary()) {
+      f.getTubeForces();
+    } else {
+      f.getConservativeForces();
+    }
     f.getDPDForces();
     f.getExternalForces();
 
@@ -186,10 +190,14 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "COM: "
           << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
                  f.vpg.inputVertexPositions.raw().rows()
-          << "\n";
+          << "\n"
+          << "Height: "
+          << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.P.ptInd)].z) << "\n"
+          << "Increase force spring constant Kv to " << f.P.Kf << "\n";
 
-      // 3.1 compare and adjust
+      // 3.1.1 compare and adjust (in the case of vesicle simulation)
       if ((dVolume < closeZone * tolerance) &&
+          (!f.mesh.hasBoundary()) &&
           (dArea < closeZone * tolerance) && (dBE < closeZone * tolerance)) {
         double ref = std::max({dVolume, dArea, dFace});
         f.P.kt *= 1 - dBE / ref * increment;
@@ -203,6 +211,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << "Increase volume penalty Kv to " << f.P.Kv << "\n"
                   << "Decrese randomness kT to " << f.P.kt << "\n";
       }
+      
+      // 3.1.2 increase the force spring constant 
+      f.P.Kf *= 1 + increment;
 
       // 3.2 compare and exit
       if ((dVolume < tolerance) && (dArea < tolerance) && (dBE < tolerance)) {
@@ -224,10 +235,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       oldBE = getBendingEnergy(f);
     }
 
-    pos_e += vel_e * dt + (f.mask.array().cast<double>() * force.array()).matrix() * hdt2;
-    vel_e +=
-        (f.mask.array().cast<double>() * (force + newForce).array()).matrix() *
-        hdt;
+    pos_e += vel_e * dt + hdt2 * rowwiseScaling(f.mask.cast<double>(), force);
+    vel_e += rowwiseScaling(f.mask.cast<double>(), force + newForce) * hdt;
 
     //pos_e += vel_e * dt + force * hdt2;
     //vel_e += (force + newForce) * hdt;

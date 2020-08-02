@@ -62,9 +62,13 @@ struct Parameters {
   /// index of node with applied external force
   size_t ptInd;
   /// Magnitude of external force
-  double extF;
+  double Kf;
   /// level of concentration of the external force
   double conc;
+  /// target height
+  double height;
+  /// domain of integration
+  double radius;
 };
 
 class DLL_PUBLIC Force {
@@ -91,6 +95,8 @@ public:
   gcs::VertexData<gc::Vector3> stochasticForces;
   /// Cached external forces
   gcs::VertexData<gc::Vector3> externalForces;
+  /// Cached geodesic distance
+  gcs::VertexData<double> geodesicDistanceFromAppliedForce;
 
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
@@ -129,7 +135,7 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1> appliedForceMagnitude;
   /// indices for vertices chosen for integration
   std::vector<size_t> integrationVertices;
-  Eigen::Matrix<bool, Eigen::Dynamic, 3> mask;
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
 
   /**
    * @brief Construct a new Force object
@@ -167,11 +173,12 @@ public:
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
 
-    /// Initialize the mass matrix
+    // Initialize the mass matrix
     M = vpg.vertexLumpedMassMatrix;
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+
+    //// Alternatively, use the Galerkin mass matrix
     // M = vpg.vertexGalerkinMassMatrix;
-    //// Initialize the inverted Mass matrix
     // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
     // solver.compute(vpg.vertexGalerkinMassMatrix);
     // std::size_t n = mesh.nVertices();
@@ -211,28 +218,19 @@ public:
     H0n.resize(mesh.nVertices(), 3);
 
     // Initialize the magnitude of externally applied force
-    gcs::VertexData<double> geodesicDistanceFromAppliedForce =
+    geodesicDistanceFromAppliedForce =
         heatMethodDistance(vpg, mesh.vertex(P.ptInd));
     auto &dist_e = geodesicDistanceFromAppliedForce.raw();
     double stdDev = dist_e.maxCoeff() / P.conc;
     appliedForceMagnitude =
-        P.extF / (stdDev * pow(pi * 2, 0.5)) *
+        P.Kf / (stdDev * pow(pi * 2, 0.5)) *
         (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
 
-    // Initialize the indices for vertices chosen for integration
-    for (size_t i = 0; i < geodesicDistanceFromAppliedForce.raw().size(); ++i) {
-      if (geodesicDistanceFromAppliedForce.raw()(i) < 0.7) {
-        integrationVertices.emplace_back(i);
-      }
-    }
+    // Initialize the mask on choosing integration vertices based on geodesic distance
+    // from the local external force location on the reference geometry 
+    mask = (heatMethodDistance(refVpg, mesh.vertex(P.ptInd)).raw().array() < P.radius)
+            .matrix();
 
-    // Initialize the mask 
-    Eigen::Matrix<bool, Eigen::Dynamic, 1> colMask =
-        (geodesicDistanceFromAppliedForce.raw().array() < 0.7).matrix();
-    mask.resize(mesh.nVertices(), 3);
-    mask.col(0) = colMask;
-    mask.col(1) = colMask;
-    mask.col(2) = colMask;
   }
 
   /**
