@@ -84,9 +84,11 @@ message(DEBUG "CMAKE_VERBOSE_MAKEFILE: " ${CMAKE_VERBOSE_MAKEFILE})
 message(DEBUG "BUILD_SHARED_LIBS: " ${BUILD_SHARED_LIBS})
 
 # ##############################################################################
-# BUNDLED LIBRARIES
+# BUNDLED LIBRARIES & EXTERNAL LIBS
 # ##############################################################################
 add_subdirectory(libraries)
+
+find_package(NetCDF REQUIRED)
 
 # ##############################################################################
 # DDG SOLVER LIBRARY
@@ -108,13 +110,16 @@ set(DDG_SOURCES
 
 )
 
+
 # ddgsolver object library
 add_library(ddgsolver_objlib OBJECT ${DDG_SOURCES} ${DDG_HEADERS})
 target_include_directories(
   ddgsolver_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(ddgsolver_objlib PUBLIC geometry-central pcg::pcg)
+target_link_libraries(ddgsolver_objlib PUBLIC geometry-central 
+                                              pcg::pcg 
+                                              NetCDF::NetCDF)
 set_target_properties(ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden) # VISIBILITY_INLINES_HIDDEN ON)
 
 # ddgsolver library
