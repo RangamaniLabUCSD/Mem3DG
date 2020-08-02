@@ -95,8 +95,8 @@ int genIcosphere(size_t nSub, std::string path, double R) {
 int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	double Kse, double Ksl, double Ksg,
 	double Kv, double Vt, double gamma,
-	double kt, size_t ptInd, double extF,
-	double conc, double h, double T,
+	double kt, size_t ptInd, double kf,
+	double conc, double height, double radius, double h, double T,
 	double eps, double closeZone, double increment, 
 	double tSave, double tMollify, std::string outputDir) {
 
@@ -105,8 +105,8 @@ int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	ddgsolver::Parameters p{ Kb, H0,
 		Ksl, Ksg, Kse,
 		Kv, gamma, Vt,
-		kt, sigma, ptInd, extF,
-		conc };
+		kt, sigma, ptInd, kf,
+		conc, height, radius};
 
 	std::cout << "Loading input mesh " << inputMesh << " ...";
 	std::unique_ptr<gcs::SurfaceMesh> ptrMesh;

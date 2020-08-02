@@ -15,6 +15,8 @@
 #pragma once
 
 #include <geometrycentral/surface/surface_mesh.h>
+#include "geometrycentral/surface/tufted_laplacian.h"
+#include "geometrycentral/surface/halfedge_factories.h"
 
 // #include <geometrycentral/surface/halfedge_factories.h>
 // #include <geometrycentral/surface/halfedge_mesh.h>
@@ -112,4 +114,68 @@ rowwiseScaling(Eigen::Matrix<double, Eigen::Dynamic, 1> a,
                Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
   return (B.array().colwise() * a.array()).matrix();
 }
+
+/**
+ * @brief helper function for constructing tufted laplacian and mass matrix
+ *
+ * @param mass matrix M
+ * @param Laplacian matrix L
+ * @param surfaceMesh mesh
+ * @param vertexPositionGeometry vpg
+ * @param double mollifyFactor
+ */
+///
+DLL_PUBLIC inline void getTuftedLaplacianAndMass(Eigen::SparseMatrix<double> &M,
+  Eigen::SparseMatrix<double> &L, gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
+    double mollifyFactor) {
+  
+  std::vector<gc::Vector3> vecPosition(
+      vpg.inputVertexPositions.raw().data(),
+      vpg.inputVertexPositions.raw().data() +
+          vpg.inputVertexPositions.raw().size());
+
+  std::unique_ptr<gcs::SurfaceMesh> generalMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> generalVpg;
+
+  std::tie(generalMesh, generalVpg) = gcs::makeGeneralHalfedgeAndGeometry(
+      mesh.getFaceVertexList(), vecPosition);
+  std::tie(L, M) = gcs::buildTuftedLaplacian(*generalMesh, *generalVpg, mollifyFactor);
+
+}
+
+/**
+ * @brief Apply vertex shift by moving the vertices chosen for integration to the Barycenter of the it neighbors
+ *
+ * @param surfaceMesh mesh
+ * @param vertexPositionGeometry vpg
+ * @param Eigen boolean vector mask
+ */
+///
+DLL_PUBLIC inline void
+vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
+            Eigen::Matrix<bool, Eigen::Dynamic, 1> mask) {
+
+  for (gcs::Vertex v : mesh.vertices()) {
+
+    if (mask(vpg.vertexIndices[v])) {
+
+      gc::Vector3 baryCenter{0.0, 0.0, 0.0};
+      double n_vAdj = 0.0;
+      for (gcs::Vertex vAdj : v.adjacentVertices()) {
+        baryCenter += vpg.inputVertexPositions[vAdj];
+        n_vAdj += 1.0;
+      }
+      baryCenter /= n_vAdj;
+      for (gcs::Halfedge he : v.outgoingHalfedges()) {
+        gcs::Halfedge base_he = he.next();
+        vpg.inputVertexPositions[v] =
+            baryCenter - gc::dot(vpg.vertexNormals[v],
+                                 baryCenter - vpg.inputVertexPositions[v]) *
+                             vpg.vertexNormals[v];
+
+      }
+    }
+  }
+}
+
 } // namespace ddgsolver
