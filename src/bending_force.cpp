@@ -33,12 +33,18 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getBendingForces() {
+
   // Initialize the mass matrix
-  M = vpg.vertexLumpedMassMatrix;
-  M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+  // = vpg.vertexLumpedMassMatrix;
 
   // Initialize the conformal Laplacian matrix
   // L = vpg.cotanLaplacian;
+
+  // Alternatively use tufted conformal Laplacian and mass matrix
+  getTuftedLaplacianAndMass(M, L, mesh, vpg, 1e-2);
+
+  // Cache the inverse mass matrix
+  M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =

@@ -21,8 +21,8 @@ PYBIND11_MODULE(pyddg, pyddg) {
             py::arg("inputMesh"), py::arg("refMesh"), py::arg("Kb"), py::arg("H0"), 
             py::arg("Kse"), py::arg("Ksl"), py::arg("Ksg"),
             py::arg("Kv"), py::arg("Vt"), py::arg("gamma"), 
-            py::arg("kt"), py::arg("ptInd"), py::arg("extF"), 
-            py::arg("conc"), py::arg("h"), py::arg("T"), 
+            py::arg("kt"), py::arg("ptInd"), py::arg("Kf"), 
+            py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"), py::arg("T"), 
             py::arg("eps"), py::arg("closeZone"), py::arg("increment"), 
             py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"),
             R"delim(
