@@ -40,7 +40,7 @@ void getParameterLog(Force &f, double dt, double total_time, double tolerance,
            << "kt:     " << f.P.kt << "\n"
            << "sigma:  " << f.P.sigma << "\n"
            << "ptInd:  " << f.P.ptInd << "\n"
-           << "extF:   " << f.P.extF << "\n"
+           << "Kf:   " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n";
     myfile << "\n";
     myfile << "Integration parameters used: \n";
@@ -74,7 +74,7 @@ void getSummaryLog(Force &f, double dt, double final_time, double areaError,
            << "kt:     " << f.P.kt << "\n"
            << "sigma:  " << f.P.sigma << "\n"
            << "ptInd:  " << f.P.ptInd << "\n"
-           << "extF:   " << f.P.extF << "\n"
+           << "Kf:   " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n";
 
     myfile << "\n";

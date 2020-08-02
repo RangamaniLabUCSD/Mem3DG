@@ -21,7 +21,8 @@
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
-#include "geometrycentral/surface/intrinsic_mollification.h"
+#include "geometrycentral/surface/simple_polygon_mesh.h"
+#include "geometrycentral/surface/surface_mesh.h"
 
 #include <Eigen/Core>
 
@@ -35,15 +36,24 @@ namespace gcs = ::geometrycentral::surface;
 
 void Force::getTubeForces() {
 
+  /// Start by smoothing the mesh
+  vertexShift(mesh, vpg, mask);
+  update_Vertex_positions();
+
   /// A. BENDING FORCE
   if (P.Kb != 0) {
-
+    
     // Initialize the mass matrix
-    M = vpg.vertexLumpedMassMatrix;
-    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+    //M = vpg.vertexLumpedMassMatrix;
 
-    //// Initialize the conformal Laplacian matrix
-    L = vpg.cotanLaplacian;
+    // Initialize the conformal Laplacian matrix
+    //L = vpg.cotanLaplacian;
+
+    // Alternatively use tufted conformal Laplacian and mass matrix
+    getTuftedLaplacianAndMass(M, L, mesh, vpg, 1e-2);
+
+    // Cache the inverse mass matrix
+    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
     // Gaussian curvature per vertex Area
     auto &KG = vpg.vertexGaussianCurvatures.raw();
@@ -51,14 +61,14 @@ void Force::getTubeForces() {
     // number of vertices for convenience
     std::size_t n_vertices = (mesh.nVertices());
 
-    // map ivp to eigen matrix position
-    auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
-
     // map the VertexData bendingForces to eigen matrix bendingForces_e
     auto bendingForces_e = EigenMap<double, 3>(bendingForces);
 
     // the build-in angle-weighted vertex normal
     auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+
+    // map ivp to eigen matrix position
+    auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
 
     // calculate mean curvature
     H = rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
@@ -118,8 +128,15 @@ void Force::getTubeForces() {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
       gcs::Halfedge base_he = he.next();
 
-      // Pressure forces
+      // Pressure forces = 0 for patch tube simulation
       if (P.Kv != 0) {
+
+        P.Kv = 0;
+        std::cout << "\n"
+                  << "Kv suppose to be 0 in patch tube simulation!!!!"
+                  << "\n"
+                  << "Kv = 0 now" << std::endl;
+
         gc::Vector3 p1 = vpg.inputVertexPositions[base_he.vertex()];
         gc::Vector3 p2 = vpg.inputVertexPositions[base_he.next().vertex()];
         gc::Vector3 dVdx = 0.5 * gc::cross(p1, p2) / 3.0;
@@ -143,10 +160,14 @@ void Force::getTubeForces() {
         stretchingForces[v] += -2.0 * P.Ksg * gradient;
       }
       if (P.Kse != 0) {
-        stretchingForces[v] +=
-            -P.Kse * edgeGradient *
+        double strain =
             (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
             targetEdgeLengths[he.edge()];
+
+        // the cubic penalty is for regularizing the mesh,
+        // need better physical interpretation or alternative method
+        stretchingForces[v] +=
+            -P.Kse * edgeGradient * strain * strain * strain;
       }
     }
   }

@@ -52,7 +52,7 @@ protected:
     p.Vt = 1 * 0.5; // Vt
     p.kt = 0.0001;  // Kt
     p.ptInd = 1;
-    p.extF = 2 * 0;
+    p.Kf = 2 * 0;
     p.conc = 25;
 
     std::vector<gc::Vector3> coords;
