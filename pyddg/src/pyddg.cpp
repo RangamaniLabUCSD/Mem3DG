@@ -18,7 +18,8 @@ PYBIND11_MODULE(pyddg, pyddg) {
   pyddg.doc() = "Python wrapper around the DDG solver C++ library.";
 
   pyddg.def("driver", &driver, " a driver function",
-            py::arg("inputMesh"), py::arg("refMesh"), py::arg("Kb"), py::arg("H0"), 
+            py::arg("inputMesh"), py::arg("refMesh"), py::arg("isTuftedLaplacian"), 
+            py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"), 
             py::arg("Kse"), py::arg("Ksl"), py::arg("Ksg"),
             py::arg("Kv"), py::arg("Vt"), py::arg("gamma"), 
             py::arg("kt"), py::arg("ptInd"), py::arg("Kf"), 

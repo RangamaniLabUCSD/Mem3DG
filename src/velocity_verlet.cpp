@@ -241,7 +241,14 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     //pos_e += vel_e * dt + force * hdt2;
     //vel_e += (force + newForce) * hdt;
     force = newForce;
-    f.update_Vertex_positions(); // recompute cached values;
+
+    // Regularize the vetex position geometry if needed
+    if (f.isVertexShift) {
+      vertexShift(f.mesh, f.vpg, f.mask);
+    } 
+
+    // recompute cached values
+    f.update_Vertex_positions(); 
 
     // 3.3 fail and exit
     if (i == int(total_time / dt)) {
