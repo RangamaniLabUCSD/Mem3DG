@@ -94,7 +94,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     dynamicForce = EigenMap<double, 3>(f.dampingForces) +
                    EigenMap<double, 3>(f.stochasticForces);
     newForce = staticForce + dynamicForce;
-
+    
     // periodically save the geometric files, print some info, compare and
     // adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {

@@ -11,48 +11,48 @@
             "generateGeometry": false,
             "R" : 1,
             "nSub" : 3,
-            "radiusOfIntegration" : 30,
-            "refMesh" : "input-file/prolate.ply",
-            "inputMesh" : "input-file/prolate.ply",
-            "outputDir" : "trial10/"
+            "radiusOfIntegration" : 0.8,
+            "refMesh" : "input-file/patch.ply",
+            "inputMesh" : "trial12/t=80.ply",
+            "outputDir" : "trial13/"
         },
 
         "options":
         {
-            "isTuftedLaplacian" : false,
+            "isTuftedLaplacian" : true,
             "mollifyFactor" : 1e-3,
             "isVertexShift" : false
         },
 
         "variables":
         {
-            "H0*R" : 1.2,
-            "Vt" : 0.69,
-            "ptInd" : 0,
-            "Kf" : 0,
-            "conc" : 25,
-            "height" : 0
+            "H0*R" : 5,
+            "Vt" : 0.7,
+            "ptInd" : 641,
+            "Kf" : 5,
+            "conc" : 50,
+            "height" : 1.5
         },
 
         "properties":
         {
-            "Kb" : 0.01,
-            "Kse" : 0,     
+            "Kb" : 0.05,
+            "Kse" : 10,     
             "Ksl" : 1,		
-            "Ksg" : 2,		
-            "Kv"  : 2,
-            "kt" : 0.0001,
+            "Ksg" : 30,		
+            "Kv"  : 0,
+            "kt" : 0,
             "gamma" : 100
         },
 
         "integration":
         {
-            "h" : 0.001,
+            "h" : 0.00005,
             "T" : 1000,
-            "eps" : 0.005,
-            "closeZone" : 50,
-            "increment" : 0.4,
-            "tSave" : 5,
+            "eps" : 0.01,
+            "closeZone" : 0,
+            "increment" : 0.2,
+            "tSave" : 0.1,      
             "tMollify" : 100
         }
 }

@@ -132,6 +132,7 @@ int driver(std::string inputMesh, std::string refMesh,
 	std::cout << "Initiating the system ...";
 	ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, 
 		isTuftedLaplaician, mollifyFactor, isVertexShift);
+        std::cout << "isvertexshift is" << isVertexShift << std::endl;
 	std::cout << "Finished!" << std::endl;
 
 	std::cout << "Solving the system ..." << std::endl;
