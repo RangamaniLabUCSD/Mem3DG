@@ -22,7 +22,7 @@ add_subdirectory(pcg)
 FetchContent_Declare(
   geometrycentrallib
   GIT_REPOSITORY https://github.com/ctlee/geometry-central.git
-  GIT_TAG origin/data-access-new
+  GIT_TAG origin/raw_access
   GIT_SHALLOW TRUE
   SOURCE_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
@@ -54,4 +54,5 @@ FetchContent_GetProperties(polyscopelib)
 if(NOT polyscopelib_POPULATED)
   FetchContent_Populate(polyscopelib)
   add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
+  set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
 endif()

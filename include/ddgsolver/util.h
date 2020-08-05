@@ -12,6 +12,12 @@
 //     Padmini Rangmani (prangamani@eng.ucsd.edu)
 //
 
+/**
+ * @file util.h
+ * @brief Utility functions primarily for interfacing with Eigen and raw buffers
+ *
+ */
+
 #pragma once
 
 #include <Eigen/Core>
