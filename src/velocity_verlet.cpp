@@ -68,7 +68,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   size_t nMollify = size_t(tMollify / tSave);
 
 #ifdef MEM3DG_WITH_NETCDF
-  TrajFile fd = TrajFile::newFile(outputDir + "traj.nc", f.mesh,
+  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh,
                                   TrajFile::NcFile::replace);
 #endif
 
@@ -110,8 +110,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       std::size_t frame = fd.getNextFrameIndex();
       fd.writeTime(frame, i*dt);
       fd.writeCoords(frame, EigenMap<double,3>(f.vpg.inputVertexPositions));
-      // TrajFile fd = TrajFile::newFile(outputDir + "traj.nc", f.mesh,
-                                      // TrajFile::NcFile::replace);
 #endif
 
       // 1. save
