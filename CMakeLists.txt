@@ -13,33 +13,18 @@
 # 
 
 cmake_minimum_required(VERSION 3.11)
+cmake_policy(SET CMP0063 NEW)
 
 project(
   DDG
   VERSION 0.0.1
   LANGUAGES CXX
 )
-if(MSVC)
-    set(CMAKE_C_FLAGS_DEBUG_INIT "/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1")
-    set(CMAKE_C_FLAGS_MINSIZEREL_INIT     "/MT /O1 /Ob1 /D NDEBUG")
-    set(CMAKE_C_FLAGS_RELEASE_INIT        "/MT /O2 /Ob2 /D NDEBUG")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO_INIT "/MT /Zi /O2 /Ob1 /D NDEBUG")
-else()
-    set(CMAKE_C_FLAGS_RELEASE_INIT        "-O2 -DNDEBUG")
-endif()
-if(MSVC)
-    set(CMAKE_CXX_FLAGS_DEBUG_INIT "/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT     "/MT /O1 /Ob1 /D NDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE_INIT        "/MT /O2 /Ob2 /D NDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "/MT /Zi /O2 /Ob1 /D NDEBUG")
-else()
-    set(CMAKE_CXX_FLAGS_RELEASE_INIT        "-O2 -DNDEBUG")
-endif()
 
 # Add path to custom modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-include(DefaultBuildType)
+include(DefaultBuildTypeAndFlags)
 
 # Require c++14 and standard libraries
 set(CMAKE_CXX_STANDARD 14)
@@ -51,23 +36,16 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
-# Required to tell MSVC to export symbols
-# if(MSVC)
-#  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-# endif()
-
 # Check if DDG is being used directly or via add_subdirectory
 set(DDG_MASTER_PROJECT OFF)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(DDG_MASTER_PROJECT ON)
 endif()
 
-# find_package(Git REQUIRED)
 include(FetchContent)
 
 option(BUILD_PYDDG "Build the python extensions?" ON)
-
-# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" OFF)
 
 message(DEBUG "CMAKE_C_FLAGS is: ${CMAKE_C_FLAGS}")
 message(DEBUG "CMAKE_C_FLAGS_DEBUG is: ${CMAKE_C_FLAGS_DEBUG}")
@@ -88,7 +66,13 @@ message(DEBUG "BUILD_SHARED_LIBS: " ${BUILD_SHARED_LIBS})
 # ##############################################################################
 add_subdirectory(libraries)
 
-find_package(NetCDF REQUIRED)
+set(LINKED_LIBS geometry-central pcg::pcg)
+
+if(WITH_NETCDF)
+  find_package(NetCDF REQUIRED)
+  list(APPEND LINKED_LIBS NetCDF::NetCDF)
+endif()
+
 
 # ##############################################################################
 # DDG SOLVER LIBRARY
@@ -108,9 +92,8 @@ set(DDG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vesicle_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tube_force.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/log_file.cpp
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/trajfile.cpp
 )
-
 
 # ddgsolver object library
 add_library(ddgsolver_objlib OBJECT ${DDG_SOURCES} ${DDG_HEADERS})
@@ -118,10 +101,11 @@ target_include_directories(
   ddgsolver_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(ddgsolver_objlib PUBLIC geometry-central 
-                                              pcg::pcg 
-                                              NetCDF::NetCDF)
+target_link_libraries(ddgsolver_objlib PUBLIC ${LINKED_LIBS})
 set_target_properties(ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden) # VISIBILITY_INLINES_HIDDEN ON)
+if(WITH_NETCDF)
+  target_compile_definitions(ddgsolver_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
+endif()
 
 # ddgsolver library
 add_library(ddgsolver SHARED $<TARGET_OBJECTS:ddgsolver_objlib>)
@@ -134,9 +118,9 @@ endif()
 # ##############################################################################
 # Main DDG target
 # ##############################################################################
-add_executable(ddg tests/scratch.cpp)
-target_link_libraries(ddg PRIVATE ddgsolver polyscope)
-set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
+# add_executable(ddg tests/scratch.cpp)
+# target_link_libraries(ddg PRIVATE ddgsolver polyscope)
+# set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 enable_testing()
 add_subdirectory(tests)
