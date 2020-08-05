@@ -92,7 +92,10 @@ int genIcosphere(size_t nSub, std::string path, double R) {
 	return 0;
 }
 
-int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
+int driver(std::string inputMesh, std::string refMesh, 
+	bool isTuftedLaplaician, double mollifyFactor,
+	bool isVertexShift,
+	double Kb, double H0,
 	double Kse, double Ksl, double Ksg,
 	double Kv, double Vt, double gamma,
 	double kt, size_t ptInd, double kf,
@@ -127,7 +130,9 @@ int driver(std::string inputMesh, std::string refMesh, double Kb, double H0,
 	std::cout << "Finished!" << std::endl;
 
 	std::cout << "Initiating the system ...";
-	ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p);
+	ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, 
+		isTuftedLaplaician, mollifyFactor, isVertexShift);
+        std::cout << "isvertexshift is" << isVertexShift << std::endl;
 	std::cout << "Finished!" << std::endl;
 
 	std::cout << "Solving the system ..." << std::endl;

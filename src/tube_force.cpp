@@ -36,21 +36,16 @@ namespace gcs = ::geometrycentral::surface;
 
 void Force::getTubeForces() {
 
-  /// Start by smoothing the mesh
-  vertexShift(mesh, vpg, mask);
-  update_Vertex_positions();
-
   /// A. BENDING FORCE
   if (P.Kb != 0) {
     
-    // Initialize the mass matrix
-    //M = vpg.vertexLumpedMassMatrix;
-
-    // Initialize the conformal Laplacian matrix
-    //L = vpg.cotanLaplacian;
-
-    // Alternatively use tufted conformal Laplacian and mass matrix
-    getTuftedLaplacianAndMass(M, L, mesh, vpg, 1e-2);
+    // update the (tufted) mass and conformal Laplacian matrix
+    if (isTuftedLaplacian) {
+      getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
+    } else {
+      M = vpg.vertexLumpedMassMatrix;
+      L = vpg.cotanLaplacian;
+    }
 
     // Cache the inverse mass matrix
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
@@ -61,14 +56,14 @@ void Force::getTubeForces() {
     // number of vertices for convenience
     std::size_t n_vertices = (mesh.nVertices());
 
+    // map ivp to eigen matrix position
+    auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
+
     // map the VertexData bendingForces to eigen matrix bendingForces_e
     auto bendingForces_e = EigenMap<double, 3>(bendingForces);
 
     // the build-in angle-weighted vertex normal
     auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
-
-    // map ivp to eigen matrix position
-    auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
 
     // calculate mean curvature
     H = rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
@@ -152,6 +147,8 @@ void Force::getTubeForces() {
       gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
       gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
       assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
+      
+      // patch simulation assumes constant surface tension
       if (P.Ksl != 0) {
         stretchingForces[v] +=
             -2.0 * P.Ksl * gradient;
@@ -159,13 +156,13 @@ void Force::getTubeForces() {
       if (P.Ksg != 0) {
         stretchingForces[v] += -2.0 * P.Ksg * gradient;
       }
+
+      // the cubic penalty is for regularizing the mesh,
+      // need better physical interpretation or alternative method
       if (P.Kse != 0) {
         double strain =
             (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
             targetEdgeLengths[he.edge()];
-
-        // the cubic penalty is for regularizing the mesh,
-        // need better physical interpretation or alternative method
         stretchingForces[v] +=
             -P.Kse * edgeGradient * strain * strain * strain;
       }
