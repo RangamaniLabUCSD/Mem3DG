@@ -95,9 +95,13 @@ public:
   gcs::VertexData<gc::Vector3> stochasticForces;
   /// Cached external forces
   gcs::VertexData<gc::Vector3> externalForces;
-  /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistanceFromAppliedForce;
 
+  /// Whether or not use tufted laplacian matrix
+  bool isTuftedLaplacian;
+  /// Mollify Factor in constructing tufted laplacian matrix
+  double mollifyFactor;
+  /// Whether or not do vertex shift
+  bool isVertexShift;
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
   /// Inverted galerkin mass matrix
@@ -131,6 +135,8 @@ public:
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
+  /// Cached geodesic distance
+  gcs::VertexData<double> geodesicDistanceFromAppliedForce;
   /// magnitude of externally applied force
   Eigen::Matrix<double, Eigen::Dynamic, 1> appliedForceMagnitude;
   /// indices for vertices chosen for integration
@@ -147,9 +153,12 @@ public:
 
   Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         gcs::VertexPositionGeometry &refVpg_,
-        gcs::RichSurfaceMeshData &richData_, Parameters &p)
+        gcs::RichSurfaceMeshData &richData_, Parameters &p, bool isTuftedLaplacian_ = false
+        , double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_),
         bendingForces(mesh_, {0, 0, 0}), P(p),
+        isTuftedLaplacian(isTuftedLaplacian_), mollifyFactor(mollifyFactor_),
+        isVertexShift(isVertexShift_),
         stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
         pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
         externalForces(mesh_, {0, 0, 0}), vel(mesh_, {0, 0, 0}) {
@@ -173,11 +182,39 @@ public:
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
 
-    // Initialize the mass matrix
-    M = vpg.vertexLumpedMassMatrix;
-    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+    // Initialize the magnitude of externally applied force
+    double pi = 2 * std::acos(0.0);
+    geodesicDistanceFromAppliedForce =
+        heatMethodDistance(vpg, mesh.vertex(P.ptInd));
+    auto &dist_e = geodesicDistanceFromAppliedForce.raw();
+    double stdDev = dist_e.maxCoeff() / P.conc;
+    appliedForceMagnitude =
+        P.Kf / (stdDev * pow(pi * 2, 0.5)) *
+        (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
 
-    //// Alternatively, use the Galerkin mass matrix
+    // Initialize the mask on choosing integration vertices based on geodesic
+    // distance from the local external force location on the reference geometry
+    mask = (heatMethodDistance(refVpg, mesh.vertex(P.ptInd)).raw().array() <
+            P.radius)
+               .matrix();
+
+    // Regularize the vetex position geometry if needed
+    if (isVertexShift) {
+      vertexShift(mesh, vpg, mask);
+      update_Vertex_positions();
+    }
+
+    // Initialize the mass and conformal Laplacian matrix
+    if (isTuftedLaplacian) {
+      getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
+    } else {
+      M = vpg.vertexLumpedMassMatrix;
+      L = vpg.cotanLaplacian;
+    }
+
+    // Initialize the inverse mass matrix
+    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+    // Alternatively, use the Galerkin mass matrix
     // M = vpg.vertexGalerkinMassMatrix;
     // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
     // solver.compute(vpg.vertexGalerkinMassMatrix);
@@ -185,9 +222,6 @@ public:
     // Eigen::SparseMatrix<double> I(n, n);
     // I.setIdentity();
     // M_inv = solver.solve(I);
-
-    // Initialize the conformal Laplacian matrix
-    L = vpg.cotanLaplacian;
 
     // Initialize target face/surface areas
     targetFaceAreas = refVpg.faceAreas.reinterpretTo(mesh);
@@ -197,7 +231,6 @@ public:
     targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
     // Initialize maximal volume
-    double pi = 2 * std::acos(0.0);
     maxVolume = std::pow(targetSurfaceArea / pi / 4, 1.5) * (4 * pi / 3);
 
     // Initialize surface area
@@ -216,20 +249,6 @@ public:
 
     // Initialize spontaneous curvature vector
     H0n.resize(mesh.nVertices(), 3);
-
-    // Initialize the magnitude of externally applied force
-    geodesicDistanceFromAppliedForce =
-        heatMethodDistance(vpg, mesh.vertex(P.ptInd));
-    auto &dist_e = geodesicDistanceFromAppliedForce.raw();
-    double stdDev = dist_e.maxCoeff() / P.conc;
-    appliedForceMagnitude =
-        P.Kf / (stdDev * pow(pi * 2, 0.5)) *
-        (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
-
-    // Initialize the mask on choosing integration vertices based on geodesic distance
-    // from the local external force location on the reference geometry 
-    mask = (heatMethodDistance(refVpg, mesh.vertex(P.ptInd)).raw().array() < P.radius)
-            .matrix();
 
   }
 
