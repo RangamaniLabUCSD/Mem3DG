@@ -14,18 +14,9 @@
 
 #pragma once
 
-#include <geometrycentral/surface/surface_mesh.h>
-#include "geometrycentral/surface/tufted_laplacian.h"
 #include "geometrycentral/surface/halfedge_factories.h"
-
-// #include <geometrycentral/surface/halfedge_factories.h>
-// #include <geometrycentral/surface/halfedge_mesh.h>
-// #include <geometrycentral/surface/intrinsic_geometry_interface.h>
-// #include <geometrycentral/surface/meshio.h>
-// #include <geometrycentral/surface/ply_halfedge_mesh_data.h>
-// #include <geometrycentral/surface/polygon_soup_mesh.h>
-// #include <geometrycentral/surface/vertex_position_geometry.h>
-// #include <geometrycentral/utilities/vector3.h>
+#include "geometrycentral/surface/tufted_laplacian.h"
+#include <geometrycentral/surface/surface_mesh.h>
 
 #include <Eigen/Core>
 
@@ -108,7 +99,6 @@ rowwiseProduct(Eigen::Matrix<double, Eigen::Dynamic, 1> A,
  * @param Eigen matrix B
  * @return Eigen matrix C
  */
-///
 DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
 rowwiseScaling(Eigen::Matrix<double, Eigen::Dynamic, 1> a,
                Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
@@ -124,11 +114,11 @@ rowwiseScaling(Eigen::Matrix<double, Eigen::Dynamic, 1> a,
  * @param vertexPositionGeometry vpg
  * @param double mollifyFactor
  */
-///
-DLL_PUBLIC inline void getTuftedLaplacianAndMass(Eigen::SparseMatrix<double> &M,
-  Eigen::SparseMatrix<double> &L, gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
+DLL_PUBLIC inline void getTuftedLaplacianAndMass(
+    Eigen::SparseMatrix<double> &M, Eigen::SparseMatrix<double> &L,
+    gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
     double mollifyFactor) {
-  
+
   std::vector<gc::Vector3> vecPosition(
       vpg.inputVertexPositions.raw().data(),
       vpg.inputVertexPositions.raw().data() +
@@ -139,18 +129,18 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(Eigen::SparseMatrix<double> &M,
 
   std::tie(generalMesh, generalVpg) = gcs::makeGeneralHalfedgeAndGeometry(
       mesh.getFaceVertexList(), vecPosition);
-  std::tie(L, M) = gcs::buildTuftedLaplacian(*generalMesh, *generalVpg, mollifyFactor);
-
+  std::tie(L, M) =
+      gcs::buildTuftedLaplacian(*generalMesh, *generalVpg, mollifyFactor);
 }
 
 /**
- * @brief Apply vertex shift by moving the vertices chosen for integration to the Barycenter of the it neighbors
+ * @brief Apply vertex shift by moving the vertices chosen for integration to
+ * the Barycenter of the it neighbors
  *
  * @param surfaceMesh mesh
  * @param vertexPositionGeometry vpg
  * @param Eigen boolean vector mask
  */
-///
 DLL_PUBLIC inline void
 vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
             Eigen::Matrix<bool, Eigen::Dynamic, 1> mask) {
@@ -172,10 +162,39 @@ vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
             baryCenter - gc::dot(vpg.vertexNormals[v],
                                  baryCenter - vpg.inputVertexPositions[v]) *
                              vpg.vertexNormals[v];
-
       }
     }
   }
+}
+
+/**
+ * @brief Get the Face Vertex Matrix object
+ *
+ * @param mesh   Mesh of interest
+ * @return Eigen matrix of uint32_t indices
+ */
+DLL_PUBLIC inline Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
+getFaceVertexMatrix(gcs::SurfaceMesh &mesh) {
+  if (!mesh.isTriangular())
+    throw std::runtime_error("Mesh is not triangular.");
+
+  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> result(mesh.nFaces(), 3);
+
+  gcs::VertexData<std::size_t> vInd = mesh.getVertexIndices();
+  
+  std::size_t i = 0;
+  for (gcs::Face f : mesh.faces()) {
+    std::uint32_t a, b, c;
+    gcs::Halfedge tmp = f.halfedge();
+    a = vInd[tmp.vertex()];
+    tmp = tmp.next();
+    b = vInd[tmp.vertex()];
+    tmp = tmp.next();
+    c = vInd[tmp.vertex()];
+
+    result.row(i++) << a, b, c;
+  }
+  return result;
 }
 
 } // namespace ddgsolver

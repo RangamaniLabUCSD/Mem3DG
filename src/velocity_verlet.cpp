@@ -12,20 +12,22 @@
 //     Padmini Rangmani (prangamani@eng.ucsd.edu)
 //
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/integrator.h"
-#include "ddgsolver/meshops.h"
+#include <Eigen/Core>
+#include <iostream>
+#include <pcg_random.hpp>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include <Eigen/Core>
+#include "ddgsolver/force.h"
+#include "ddgsolver/integrator.h"
+#include "ddgsolver/meshops.h"
 
-#include <pcg_random.hpp>
-
-#include <iostream>
+#ifdef MEM3DG_WITH_NETCDF
+#include "ddgsolver/trajfile.h"
+#endif
 
 namespace ddgsolver {
 namespace integration {
@@ -65,6 +67,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   double dFace;
   size_t nMollify = size_t(tMollify / tSave);
 
+#ifdef MEM3DG_WITH_NETCDF
+  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh,
+                                  TrajFile::NcFile::replace);
+#endif
+
   for (int i = 0; i <= total_time / dt; i++) {
     // Update all forces
     // f.getBendingForces();
@@ -98,6 +105,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     // periodically save the geometric files, print some info, compare and
     // adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
+
+#ifdef MEM3DG_WITH_NETCDF
+      std::size_t frame = fd.getNextFrameIndex();
+      fd.writeTime(frame, i*dt);
+      fd.writeCoords(frame, EigenMap<double,3>(f.vpg.inputVertexPositions));
+#endif
 
       // 1. save
       f.richData.addGeometry(f.vpg);
@@ -196,8 +209,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Increase force spring constant Kv to " << f.P.Kf << "\n";
 
       // 3.1.1 compare and adjust (in the case of vesicle simulation)
-      if ((dVolume < closeZone * tolerance) &&
-          (!f.mesh.hasBoundary()) &&
+      if ((dVolume < closeZone * tolerance) && (!f.mesh.hasBoundary()) &&
           (dArea < closeZone * tolerance) && (dBE < closeZone * tolerance)) {
         double ref = std::max({dVolume, dArea, dFace});
         f.P.kt *= 1 - dBE / ref * increment;
@@ -211,8 +223,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << "Increase volume penalty Kv to " << f.P.Kv << "\n"
                   << "Decrese randomness kT to " << f.P.kt << "\n";
       }
-      
-      // 3.1.2 increase the force spring constant 
+
+      // 3.1.2 increase the force spring constant
       f.P.Kf *= 1 + increment;
 
       // 3.2 compare and exit
@@ -238,8 +250,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     pos_e += vel_e * dt + hdt2 * rowwiseScaling(f.mask.cast<double>(), force);
     vel_e += rowwiseScaling(f.mask.cast<double>(), force + newForce) * hdt;
 
-    //pos_e += vel_e * dt + force * hdt2;
-    //vel_e += (force + newForce) * hdt;
+    // pos_e += vel_e * dt + force * hdt2;
+    // vel_e += (force + newForce) * hdt;
     force = newForce;
 
     // Regularize the vetex position geometry if needed
