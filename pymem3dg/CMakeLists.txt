@@ -1,3 +1,19 @@
+# Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Copyright (c) 2020:
+#     Laboratory for Computational Cellular Mechanobiology
+#     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
+#     Christopher T. Lee (ctlee@ucsd.edu)
+#     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
+#     Padmini Rangmani (prangamani@eng.ucsd.edu)
+#
+
+include(FetchContent)
+
 # ##############################################################################
 # GET PYBIND11
 # ##############################################################################
@@ -7,9 +23,7 @@ if(BUILD_PYDDG)
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
     GIT_TAG v2.5.0
     GIT_SHALLOW TRUE
-    SOURCE_DIR
-    "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src"
-    BINARY_DIR
+    SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
   )
   FetchContent_GetProperties(pybind11)
@@ -24,11 +38,13 @@ add_library(
   ddgsolver_static STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:ddgsolver_objlib>
 )
 target_link_libraries(ddgsolver_static PUBLIC ddgsolver_objlib)
-set_target_properties(ddgsolver_static PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
+set_target_properties(
+  ddgsolver_static PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET
+                                                           hidden
+)
 
-set(PYMEM3DG_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pyddg.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ddgsolver.cpp
+set(PYMEM3DG_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/pyddg.cpp
+                     ${CMAKE_CURRENT_SOURCE_DIR}/src/ddgsolver.cpp
 )
 
 pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})
