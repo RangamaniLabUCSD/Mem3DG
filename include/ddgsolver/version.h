@@ -9,7 +9,7 @@
 //     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
 //     Christopher T. Lee (ctlee@ucsd.edu)
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangmani (prangamani@eng.ucsd.edu)
+//     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
 #pragma once
@@ -17,6 +17,6 @@
 #include <string>
 
 namespace ddgsolver {
-const std::string MEM3DG_VERSION;
-const std::string MEM3DG_VERSION_SHORT;
+extern const std::string MEM3DG_VERSION;
+extern const std::string MEM3DG_VERSION_SHORT;
 } // end namespace ddgsolver
