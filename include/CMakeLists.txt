@@ -13,6 +13,7 @@
 # 
 
 set(DDG_HEADERS
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/constants.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/ddgsolver.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/force.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/integrator.h"
