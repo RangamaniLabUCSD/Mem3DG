@@ -178,6 +178,7 @@ public:
     vpg.requireFaceIndices();
     vpg.requireEdgeLengths();
     vpg.requireVertexNormals();
+    vpg.requireVertexDualAreas();
 
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
@@ -270,6 +271,8 @@ public:
     vpg.unrequireFaceIndices();
     vpg.unrequireEdgeLengths();
     vpg.unrequireVertexNormals();
+    vpg.unrequireVertexDualAreas();
+
   }
 
   void getBendingForces();
