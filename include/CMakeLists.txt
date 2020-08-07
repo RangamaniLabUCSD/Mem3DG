@@ -13,13 +13,14 @@
 # 
 
 set(DDG_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/ddgsolver.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/force.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/integrator.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/icosphere.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/trajfile.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/typetraits.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/util.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/macros.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/meshops.h
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/ddgsolver.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/force.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/integrator.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/icosphere.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/trajfile.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/typetraits.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/util.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/macros.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/meshops.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/version.h"
     PARENT_SCOPE)

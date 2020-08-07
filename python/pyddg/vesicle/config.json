@@ -3,7 +3,7 @@
 
         "dependencies":
         {
-            "pyddg" : "C:\\Users\\Kieran\\Desktop\\DDG_membrane\\build\\lib\\Release"
+            "pyddg" : "/Users/ctlee/DDG_membrane/build/lib" 
         },
 
         "geometry":
@@ -14,7 +14,7 @@
             "radiusOfIntegration" : 30,
             "refMesh" : "input-file/prolate.ply",
             "inputMesh" : "input-file/prolate.ply",
-            "outputDir" : "trial10/"
+            "outputDir" : "trialnc/"
         },
 
         "options":
@@ -48,7 +48,7 @@
         "integration":
         {
             "h" : 0.001,
-            "T" : 1000,
+            "T" : 50,
             "eps" : 0.005,
             "closeZone" : 50,
             "increment" : 0.4,
