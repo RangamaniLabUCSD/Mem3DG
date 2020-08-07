@@ -26,11 +26,10 @@ add_library(
 target_link_libraries(ddgsolver_static PUBLIC ddgsolver_objlib)
 set_target_properties(ddgsolver_static PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
 
-#set(PYDDG_SOURCES "src/pyddg.cpp")
-set(PYDDG_SOURCES
+set(PYMEM3DG_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pyddg.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ddgsolver.cpp
 )
 
-pybind11_add_module(pyddg MODULE ${PYDDG_SOURCES})
-target_link_libraries(pyddg PRIVATE ddgsolver_static polyscope)
+pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})
+target_link_libraries(pymem3dg PRIVATE ddgsolver_static polyscope)

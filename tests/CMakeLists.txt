@@ -55,8 +55,8 @@ set(TEST_SRCS src/main_test.cpp src/mapping_test.cpp src/dotproduct_test.cpp
               src/force_calculation_test.cpp
 )
 
-add_executable(ddgsolver-test "${TEST_SRCS}")
-target_link_libraries(ddgsolver-test ddgsolver gtest_main)
-set_target_properties(ddgsolver-test PROPERTIES CXX_VISIBILITY_PRESET hidden)
+add_executable(Mem3DG-tests "${TEST_SRCS}")
+target_link_libraries(Mem3DG-tests ddgsolver gtest_main)
+set_target_properties(Mem3DG-tests PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
-add_test(NAME ddgtests COMMAND ddgsolver-test)
+add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)

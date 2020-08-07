@@ -14,6 +14,8 @@
 
 include(FetchContent)
 
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
+
 add_subdirectory(pcg)
 
 # ##############################################################################

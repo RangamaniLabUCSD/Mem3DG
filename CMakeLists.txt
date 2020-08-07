@@ -58,7 +58,7 @@ print_debug_messages()
 
 include(FetchContent)
 
-option(BUILD_PYDDG "Build the python extensions?" ON)
+option(BUILD_PYMEM3DG "Build the python extensions?" ON)
 option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" OFF)
 
 # ##############################################################################
@@ -99,8 +99,8 @@ endif()
 add_library(ddgsolver SHARED $<TARGET_OBJECTS:ddgsolver_objlib>)
 target_link_libraries(ddgsolver PUBLIC ddgsolver_objlib)
 
-if(BUILD_PYDDG)
-  add_subdirectory(pyddg)
+if(BUILD_PYMEM3DG)
+  add_subdirectory(pymem3dg)
 endif()
 
 # ##############################################################################
@@ -109,6 +109,7 @@ endif()
 # add_executable(ddg tests/scratch.cpp) target_link_libraries(ddg PRIVATE
 # ddgsolver polyscope) set_target_properties(ddg PROPERTIES
 # CXX_VISIBILITY_PRESET hidden)
+
 
 enable_testing()
 add_subdirectory(tests)
