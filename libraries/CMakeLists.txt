@@ -9,10 +9,12 @@
 #     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
 #     Christopher T. Lee (ctlee@ucsd.edu)
 #     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-#     Padmini Rangmani (prangamani@eng.ucsd.edu)
+#     Padmini Rangamani (prangamani@eng.ucsd.edu)
 # 
 
 include(FetchContent)
+
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 
 add_subdirectory(pcg)
 

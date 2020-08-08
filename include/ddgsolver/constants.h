@@ -12,10 +12,8 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "gtest/gtest.h"
-
-int main(int argc, char *argv[]) {
-  ::testing::InitGoogleTest(&argc, argv);
-  int ret = RUN_ALL_TESTS();
-  return ret;
+namespace ddgsolver {
+namespace constants {
+const double kBoltzmann = 1.380649e-23; // Joules/Kelvin
 }
+} // namespace ddgsolver

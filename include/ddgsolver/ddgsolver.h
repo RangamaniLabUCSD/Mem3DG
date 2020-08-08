@@ -9,7 +9,7 @@
 //     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
 //     Christopher T. Lee (ctlee@ucsd.edu)
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangmani (prangamani@eng.ucsd.edu)
+//     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
 #pragma once
@@ -19,6 +19,8 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 int viewer(std::string fileName);
+
+int view_animation(std::string &filename);
 
 int genIcosphere(size_t nSub, std::string path, double R);
 
