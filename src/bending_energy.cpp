@@ -12,8 +12,8 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/integrator.h"
+#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/integrator.h"
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>

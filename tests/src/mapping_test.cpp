@@ -22,8 +22,8 @@
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
-#include "ddgsolver/icosphere.h"
-#include "ddgsolver/util.h"
+#include "mem3dg/solver/icosphere.h"
+#include "mem3dg/solver/util.h"
 
 namespace ddgsolver {
 

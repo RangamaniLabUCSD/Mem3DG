@@ -28,7 +28,7 @@
 
 #include <pcg_random.hpp>
 
-#include "ddgsolver/force.h"
+#include "mem3dg/solver/force.h"
 
 namespace ddgsolver {
 

@@ -18,16 +18,13 @@
 #####################################################################
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    # message(STATUS "Doxygen Executable: ${DOXYGEN_EXECUTABLE}")
-    # message(STATUS "Build the Doxygen Mem3DG documentation using `make doxy_docs`")
     # Parse Doxyfile.in and replace CMake @macros@.
     configure_file(${CMAKE_SOURCE_DIR}/docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(docs
-        ALL 
+    add_custom_target(mem3dg_docs
         ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 else()
-    message(STATUS "CMake could not find Doxygen. Please install Doxygen or help me find your Doxygen binary to build the documentation!")
+    message(NOTICE "CMake could not find Doxygen. Please install Doxygen or help me find your Doxygen binary to build the documentation!")
 endif(DOXYGEN_FOUND)

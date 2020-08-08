@@ -24,9 +24,9 @@
 
 #include <Eigen/Core>
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/meshops.h"
-#include "ddgsolver/util.h"
+#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/util.h"
 
 namespace ddgsolver {
 namespace gc = ::geometrycentral;
@@ -69,7 +69,7 @@ void Force::getConservativeForces() {
       M_inv * rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
   // initialize and calculate intermediary result productTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms;
-  productTerms.resize(n_vertices, 3);
+  // productTerms.resize(n_vertices, 1);
   productTerms = rowwiseProduct(scalarTerms, M_inv * H - H0);
   // calculate bendingForce
   bendingForces_e = -2.0 * P.Kb * rowwiseScaling(productTerms + lap_H, vertexAngleNormal_e);

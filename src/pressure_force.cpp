@@ -20,8 +20,8 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/meshops.h"
+#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/meshops.h"
 
 namespace ddgsolver {
 

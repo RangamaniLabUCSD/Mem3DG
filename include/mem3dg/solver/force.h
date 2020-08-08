@@ -27,9 +27,9 @@
 #include <pcg_random.hpp>
 #include <random>
 
-#include "ddgsolver/macros.h"
-#include "ddgsolver/meshops.h"
-#include "ddgsolver/util.h"
+#include "mem3dg/solver/macros.h"
+#include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/util.h"
 
 #include <vector>
 

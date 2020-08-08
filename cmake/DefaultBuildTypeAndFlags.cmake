@@ -12,8 +12,16 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 # 
 
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
+cmake_policy(SET CMP0063 NEW)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
+# Set default build type
+set(CMAKE_BUILD_TYPE_INIT Release)
+
 # Set a default build type if none was specified
 set(default_build_type "Release")
+
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")

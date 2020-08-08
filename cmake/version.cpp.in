@@ -12,7 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 // 
 
-#include "ddgsolver/version.h"
+#include "mem3dg/solver/version.h"
 
 namespace ddgsolver {
 const std::string MEM3DG_VERSION = "@VERSION@";

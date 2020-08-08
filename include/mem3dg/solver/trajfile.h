@@ -33,9 +33,9 @@
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 
-#include "ddgsolver/macros.h"
-#include "ddgsolver/meshops.h"
-#include "ddgsolver/typetraits.h"
+#include "mem3dg/solver/macros.h"
+#include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/typetraits.h"
 
 namespace ddgsolver {
 
