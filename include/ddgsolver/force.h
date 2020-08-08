@@ -117,7 +117,7 @@ public:
   /// Target length per edge
   gcs::EdgeData<double> targetEdgeLengths;
   /// Maximal volume
-  double maxVolume = 0.0;
+  double refVolume = 0.0;
   /// Volume
   double volume = 0.0;
   /// Cached vertex positions from the previous step
@@ -231,8 +231,8 @@ public:
     // Initialize edge length
     targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
-    // Initialize maximal volume
-    maxVolume = std::pow(targetSurfaceArea / pi / 4, 1.5) * (4 * pi / 3);
+    // Initialize reference volume
+    refVolume = std::pow(targetSurfaceArea / pi / 4, 1.5) * (4 * pi / 3);
 
     // Initialize surface area
     surfaceArea = vpg.faceAreas.raw().sum();

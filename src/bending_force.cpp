@@ -62,32 +62,31 @@ void Force::getBendingForces() {
   // the build-in angle-weighted vertex normal
   auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
 
-  // calculate mean curvature and map it to angle-weighted normal
-  Hn = rowwiseScaling(
-      rowwiseDotProduct(vertexAngleNormal_e, M_inv * L * positions / 2.0),
-      vertexAngleNormal_e);
+  // calculate mean curvature
+  H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
 
   // calculate the Laplacian of mean curvature H
-  Eigen::Matrix<double, Eigen::Dynamic, 3> lap_H = M_inv * L * Hn;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * H;
 
   // initialize the spontaneous curvature matrix
-  H0n = P.H0 * vertexAngleNormal_e;
+  H0.setConstant(n_vertices, 1, P.H0);
 
   // initialize and calculate intermediary result scalerTerms, set to zero if
   // negative
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-      rowwiseDotProduct(Hn, Hn) + rowwiseDotProduct(Hn, H0n) - KG;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
-  zeroMatrix.resize(n_vertices, 1);
-  zeroMatrix.setZero();
-  scalerTerms = scalerTerms.array().max(zeroMatrix.array());
+      rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
+  //Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+  //zeroMatrix.resize(n_vertices, 1);
+  //zeroMatrix.setZero();
+  //scalerTerms = scalerTerms.array().max(zeroMatrix.array());
 
   // initialize and calculate intermediary result productTerms
-  Eigen::Matrix<double, Eigen::Dynamic, 3> productTerms;
-  productTerms.resize(n_vertices, 3);
-  productTerms = 2 * rowwiseScaling(scalerTerms, Hn - H0n);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms;
+  productTerms.resize(n_vertices, 1);
+  productTerms = 2 * rowwiseProduct(scalerTerms, H - H0);
 
   // calculate bendingForce
-  bendingForces_e = M * (-2.0 * P.Kb * (productTerms + lap_H));
+  bendingForces_e = rowwiseScaling(M * (-2.0 * P.Kb * (productTerms + lap_H)),
+                                   vertexAngleNormal_e);
 }
 } // end namespace ddgsolver
