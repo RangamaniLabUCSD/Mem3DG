@@ -14,6 +14,7 @@
 
 #include "ddgsolver/force.h"
 #include "ddgsolver/integrator.h"
+#include "ddgsolver/version.h"
 
 #include <fstream>
 #include <iostream>
@@ -26,7 +27,7 @@ void getParameterLog(Force &f, double dt, double total_time, double tolerance,
                      double tSave, std::string outputDir) {
   ofstream myfile(outputDir + "parameter.txt");
   if (myfile.is_open()) {
-
+    myfile << "Mem3DG Version: " << MEM3DG_VERSION << "\n";
     myfile << "Physical parameters used: \n";
     myfile << "\n";
     myfile << "Kb:     " << f.P.Kb << "\n"

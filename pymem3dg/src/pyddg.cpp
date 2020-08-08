@@ -26,11 +26,11 @@
 namespace ddgsolver {
 namespace py = pybind11;
 
-// Initialize the `pyddg` module
-PYBIND11_MODULE(pyddg, pyddg) {
-  pyddg.doc() = "Python wrapper around the DDG solver C++ library.";
+// Initialize the `pymem3dg` module
+PYBIND11_MODULE(pymem3dg, pymem3dg) {
+  pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
-  pyddg.def("driver", &driver, " a driver function",
+  pymem3dg.def("driver", &driver, " a driver function",
             py::arg("inputMesh"), py::arg("refMesh"), py::arg("isTuftedLaplacian"), 
             py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"), 
             py::arg("Kse"), py::arg("Ksl"), py::arg("Ksg"),
@@ -49,10 +49,15 @@ PYBIND11_MODULE(pyddg, pyddg) {
                    :py:class:`int`: success.
             )delim");
 
-  pyddg.def("viewer", &viewer, " a visualization function",
+  pymem3dg.def("viewer", &viewer, " a visualization function",
             py::arg("fileName"));
 
-  pyddg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
+
+  pymem3dg.def("view_animation", &view_animation, " a visualization function",
+            py::arg("fileName"));
+
+
+  pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
             py::arg("nSub"), py::arg("path"), py::arg("R"));
 };
 } // namespace ddgsolver
