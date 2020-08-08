@@ -1,16 +1,16 @@
 // Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// 
+//
 // Copyright (c) 2020:
 //     Laboratory for Computational Cellular Mechanobiology
 //     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
 //     Christopher T. Lee (ctlee@ucsd.edu)
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
-// 
+//
 
 #pragma once
 
@@ -153,15 +153,16 @@ public:
 
   Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         gcs::VertexPositionGeometry &refVpg_,
-        gcs::RichSurfaceMeshData &richData_, Parameters &p, bool isTuftedLaplacian_ = false
-        , double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
+        gcs::RichSurfaceMeshData &richData_, Parameters &p,
+        bool isTuftedLaplacian_ = false, double mollifyFactor_ = 1e-6,
+        bool isVertexShift_ = false)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_),
         bendingForces(mesh_, {0, 0, 0}), P(p),
         isTuftedLaplacian(isTuftedLaplacian_), mollifyFactor(mollifyFactor_),
-        isVertexShift(isVertexShift_),
-        stretchingForces(mesh_, {0, 0, 0}), dampingForces(mesh_, {0, 0, 0}),
-        pressureForces(mesh_, {0, 0, 0}), stochasticForces(mesh_, {0, 0, 0}),
-        externalForces(mesh_, {0, 0, 0}), vel(mesh_, {0, 0, 0}) {
+        isVertexShift(isVertexShift_), stretchingForces(mesh_, {0, 0, 0}),
+        dampingForces(mesh_, {0, 0, 0}), pressureForces(mesh_, {0, 0, 0}),
+        stochasticForces(mesh_, {0, 0, 0}), externalForces(mesh_, {0, 0, 0}),
+        vel(mesh_, {0, 0, 0}) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -250,7 +251,6 @@ public:
 
     // Initialize spontaneous curvature vector
     H0n.resize(mesh.nVertices(), 3);
-
   }
 
   /**
@@ -272,7 +272,6 @@ public:
     vpg.unrequireEdgeLengths();
     vpg.unrequireVertexNormals();
     vpg.unrequireVertexDualAreas();
-
   }
 
   void getBendingForces();

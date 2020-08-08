@@ -3,7 +3,7 @@
 
         "dependencies":
         {
-            "pyddg" : "/Users/ctlee/DDG_membrane/build/lib" 
+            "pymem3dg" : "/Users/ctlee/Mem3DG/build/lib" 
         },
 
         "geometry":
@@ -38,20 +38,20 @@
         {
             "Kb" : 0.01,
             "Kse" : 0,     
-            "Ksl" : 1,		
+            "Ksl" : 0,		
             "Ksg" : 2,		
             "Kv"  : 2,
-            "kt" : 0.0001,
+            "kt" : 0,
             "gamma" : 100
         },
 
         "integration":
         {
             "h" : 0.001,
-            "T" : 50,
+            "T" : 500,
             "eps" : 0.005,
             "closeZone" : 50,
-            "increment" : 0.4,
+            "increment" : 0.1,
             "tSave" : 5,
             "tMollify" : 100
         }

@@ -22,8 +22,8 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/pybind/pybind11.git
   GIT_TAG v2.5.0
   GIT_SHALLOW TRUE
-  SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" 
-  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
+  SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
+  "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
 )
 FetchContent_GetProperties(pybind11)
 if(NOT pybind11_POPULATED)
@@ -38,11 +38,13 @@ add_library(
 target_link_libraries(mem3dg_static PUBLIC mem3dg_objlib)
 set_target_properties(
   mem3dg_static PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET
-                                                           hidden
+                                                        hidden
 )
 
-set(PYMEM3DG_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/pyddg.cpp
-                     ${CMAKE_CURRENT_SOURCE_DIR}/src/ddgsolver.cpp
+set(PYMEM3DG_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/pyddg.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ddgsolver.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/visualization.cpp"
 )
 
 pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})
