@@ -60,6 +60,7 @@ include(FetchContent)
 
 option(BUILD_PYMEM3DG "Build the python extensions?" ON)
 option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" OFF)
+option(BUILD_MEM3DG_DOCS "Build the python extensions?" ON)
 
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS
@@ -110,9 +111,12 @@ endif()
 # ddgsolver polyscope) set_target_properties(ddg PROPERTIES
 # CXX_VISIBILITY_PRESET hidden)
 
-
 enable_testing()
 add_subdirectory(tests)
+
+if(BUILD_MEM3DG_DOCS)
+  add_subdirectory(docs)
+endif()
 
 include(GNUInstallDirs)
 # Install targets and headers
