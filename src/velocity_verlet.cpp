@@ -173,7 +173,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       }
 
       if (f.P.Kv != 0) {
-        dVolume = abs(f.volume / f.maxVolume / f.P.Vt - 1);
+        dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
       } else {
         dVolume = 0.0;
       }

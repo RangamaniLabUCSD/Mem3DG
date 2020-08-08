@@ -35,10 +35,15 @@ namespace gcs = ::geometrycentral::surface;
 void Force::getConservativeForces() {
   
   /// 0. GENERAL
-  // map the VertexData XXForces to eigen matrix XXForces_e
+  // map the MeshData to eigen matrix XXX_e
   auto bendingForces_e = EigenMap<double, 3>(bendingForces);
   auto pressureForces_e = EigenMap<double, 3>(pressureForces);
   auto stretchingForces_e = EigenMap<double, 3>(stretchingForces);
+  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
+  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+
+  // Alias
+  std::size_t n_vertices = (mesh.nVertices());
 
   /// A. BENDING FORCE
   // update the (tufted) mass and conformal Laplacian matrix
@@ -50,28 +55,32 @@ void Force::getConservativeForces() {
   }
   // Cache the inverse mass matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-  // Gaussian curvature per vertex Area
-  auto &KG = vpg.vertexGaussianCurvatures.raw();
-  // number of vertices for convenience
-  std::size_t n_vertices = (mesh.nVertices());
-  // map ivp to eigen matrix position
-  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
-  // the build-in angle-weighted vertex normal
-  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+
   // calculate mean curvature
   H = rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
+
+  // Gaussian curvature
+  auto &KG = vpg.vertexGaussianCurvatures.raw();
+
   // calculate the Laplacian of mean curvature H
   Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = L * M_inv * H;
+
   // initialize the spontaneous curvature matrix
   H0.setConstant(n_vertices, 1, P.H0);
+
   // initialize and calculate intermediary result scalarTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms =
       M_inv * rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
+  /*Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+  zeroMatrix.resize(n_vertices, 1);
+  zeroMatrix.setZero();
+  scalarTerms = scalarTerms.array().max(zeroMatrix.array());*/
+
   // initialize and calculate intermediary result productTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms;
-  productTerms.resize(n_vertices, 3);
-  productTerms = rowwiseProduct(scalarTerms, M_inv * H - H0);
-  // calculate bendingForce
+  productTerms.resize(n_vertices, 1);
+  productTerms = 2.0 * rowwiseProduct(scalarTerms, M_inv * H - H0);
+
   bendingForces_e = -2.0 * P.Kb * rowwiseScaling(productTerms + lap_H, vertexAngleNormal_e);
 
   /// B. PRESSURE FORCES
@@ -88,8 +97,8 @@ void Force::getConservativeForces() {
     }
   } 
   pressureForces_e =
-      rowwiseScaling(-2.0 * P.Kv * (volume - maxVolume * P.Vt) /
-                         (maxVolume * P.Vt) * vpg.vertexDualAreas.raw(),
+      rowwiseScaling(-2.0 * P.Kv * (volume - refVolume * P.Vt) /
+                         (refVolume * P.Vt) * vpg.vertexDualAreas.raw(),
                      vertexAngleNormal_e); 
 
 

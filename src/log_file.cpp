@@ -40,15 +40,17 @@ void getParameterLog(Force &f, double dt, double total_time, double tolerance,
            << "kt:     " << f.P.kt << "\n"
            << "sigma:  " << f.P.sigma << "\n"
            << "ptInd:  " << f.P.ptInd << "\n"
-           << "Kf:   " << f.P.Kf << "\n"
-           << "conc:   " << f.P.conc << "\n";
+           << "Kf:     " << f.P.Kf << "\n"
+           << "conc:   " << f.P.conc << "\n"
+           << "height: " << f.P.height << "\n";
+
     myfile << "\n";
     myfile << "Integration parameters used: \n";
     myfile << "\n";
-    myfile << "dt:    " << dt << "\n"
-           << "T:     " << total_time << "\n"
-           << "eps:		" << tolerance << "\n"
-           << "tSave: " << tSave << "\n";
+    myfile << "dt:       " << dt << "\n"
+           << "T:        " << total_time << "\n"
+           << "eps:		   " << tolerance << "\n"
+           << "tSave:    " << tSave << "\n";
 
     myfile.close();
   } else
@@ -88,7 +90,7 @@ void getSummaryLog(Force &f, double dt, double final_time, double areaError,
     myfile << "\n";
     myfile << "Bending Energy:   " << bendingEnergy << "\n"
            << "Volume:           " << f.volume << " = "
-           << f.volume / f.maxVolume << " reduced volume"
+           << f.volume / f.refVolume << " reduced volume"
            << "\n"
            << "Surface area:     " << f.surfaceArea << " = "
            << f.surfaceArea / f.targetSurfaceArea << " target surface area"
