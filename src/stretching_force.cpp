@@ -24,8 +24,8 @@
 
 #include <Eigen/IterativeLinearSolvers>
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/util.h"
+#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/util.h"
 
 namespace ddgsolver {
 
