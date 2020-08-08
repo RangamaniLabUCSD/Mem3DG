@@ -20,6 +20,8 @@ namespace gcs = ::geometrycentral::surface;
 
 int viewer(std::string fileName);
 
+int view_animation(std::string &filename);
+
 int genIcosphere(size_t nSub, std::string path, double R);
 
 int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, 

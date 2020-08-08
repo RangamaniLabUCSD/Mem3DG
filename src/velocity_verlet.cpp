@@ -101,15 +101,15 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     dynamicForce = EigenMap<double, 3>(f.dampingForces) +
                    EigenMap<double, 3>(f.stochasticForces);
     newForce = staticForce + dynamicForce;
-    
+
     // periodically save the geometric files, print some info, compare and
     // adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
 
 #ifdef MEM3DG_WITH_NETCDF
       std::size_t frame = fd.getNextFrameIndex();
-      fd.writeTime(frame, i*dt);
-      fd.writeCoords(frame, EigenMap<double,3>(f.vpg.inputVertexPositions));
+      fd.writeTime(frame, i * dt);
+      fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
 #endif
 
       // 1. save
@@ -118,6 +118,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       gcs::VertexData<double> H(f.mesh);
       H.fromVector(f.M_inv * f.H);
       f.richData.addVertexProperty("mean_curvature", H);
+
+#ifdef MEM3DG_WITH_NETCDF
+      fd.writeMeanCurvature(frame, H.raw());
+#endif
 
       gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
@@ -257,10 +261,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     // Regularize the vetex position geometry if needed
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
-    } 
+    }
 
     // recompute cached values
-    f.update_Vertex_positions(); 
+    f.update_Vertex_positions();
 
     // 3.3 fail and exit
     if (i == int(total_time / dt)) {

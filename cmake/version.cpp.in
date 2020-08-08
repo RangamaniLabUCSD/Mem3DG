@@ -15,6 +15,6 @@
 #include "ddgsolver/version.h"
 
 namespace ddgsolver {
-const std::string VERSION = "@VERSION@";
-const std::string VERSION_SHORT = "@VERSION_SHORT@";
+const std::string MEM3DG_VERSION = "@VERSION@";
+const std::string MEM3DG_VERSION_SHORT = "@VERSION_SHORT@";
 } // end namespace ddgsolver

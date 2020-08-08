@@ -19,8 +19,8 @@ dep = data["parameters"]["dependencies"]
 opt = data["parameters"]["options"]
 
 # find dependency
-sys.path.append(dep["pyddg"])
-import pyddg
+sys.path.append(dep["pymem3dg"])
+import pymem3dg
 
 # make I/O directories
 cwd = os.getcwd()
@@ -33,14 +33,14 @@ if not os.path.exists(ODir):
 
 # create starting mesh
 if geo["generateGeometry"] == True:
-    pyddg.genIcosphere( nSub = geo["nSub"] 
+    pymem3dg.genIcosphere( nSub = geo["nSub"] 
                         , path = geo["refMesh"], R = geo["R"])
 # elif geo["inputMesh"] == "UVsphere.ply":
-#     pyddg.genUVsphere( nSub = geo["nSub"] 
+#     pymem3dg.genUVsphere( nSub = geo["nSub"] 
 #                     , path = geo["inputMesh"])
 
 # run simulation
-pyddg.driver(inputMesh = geo["inputMesh"],
+pymem3dg.driver(inputMesh = geo["inputMesh"],
             outputDir = geo["outputDir"],
             refMesh = geo["refMesh"],
             radius = geo["radiusOfIntegration"],

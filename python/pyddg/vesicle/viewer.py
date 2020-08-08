@@ -18,8 +18,9 @@ inte = data["parameters"]["integration"]
 dep = data["parameters"]["dependencies"]
 
 # find dependency
-sys.path.append(dep["pyddg"])
-import pyddg
+sys.path.append(dep["pymem3dg"])
+import pymem3dg
 
 # run viewer 
-pyddg.viewer(args.meshFile)
+# pyddg.viewer(args.meshFile)
+pymem3dg.view_animation(args.meshFile)
