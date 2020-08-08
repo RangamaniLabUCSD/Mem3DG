@@ -12,10 +12,11 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "gtest/gtest.h"
+#pragma once
 
-int main(int argc, char *argv[]) {
-  ::testing::InitGoogleTest(&argc, argv);
-  int ret = RUN_ALL_TESTS();
-  return ret;
-}
+#include <string>
+
+namespace ddgsolver {
+extern const std::string MEM3DG_VERSION;
+extern const std::string MEM3DG_VERSION_SHORT;
+} // end namespace ddgsolver

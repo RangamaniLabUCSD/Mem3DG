@@ -9,7 +9,7 @@
 //     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
 //     Christopher T. Lee (ctlee@ucsd.edu)
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangmani (prangamani@eng.ucsd.edu)
+//     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
 /**
@@ -74,7 +74,7 @@ Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
 TrajFile::getTopology() const {
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> vec(
       npolygons_dim.getSize(), POLYGON_ORDER);
-  topology.getVar({0, 0, 0}, vec.data());
+  topology.getVar({0, 0}, {npolygons_dim.getSize(), POLYGON_ORDER}, vec.data());
   return vec;
 }
 
@@ -89,6 +89,27 @@ TrajFile::getTimeAndCoords(const std::size_t idx) const {
   coord_var.getVar({idx, 0, 0}, {1, nvertices_dim.getSize(), SPATIAL_DIMS},
                    vec.data());
   return std::tie(time, vec);
+}
+
+void TrajFile::writeMeanCurvature(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  meancurve_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getMeanCurvature(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  meancurve_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
 }
 } // namespace ddgsolver
 
