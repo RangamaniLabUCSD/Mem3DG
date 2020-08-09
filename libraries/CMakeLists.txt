@@ -14,8 +14,6 @@
 
 include(FetchContent)
 
-set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
-
 add_subdirectory(pcg)
 
 # ##############################################################################
@@ -37,7 +35,7 @@ if(NOT geometrycentrallib_POPULATED)
   add_subdirectory(
     ${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR}
   )
-  set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
+  set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 # ##############################################################################
@@ -56,5 +54,5 @@ FetchContent_GetProperties(polyscopelib)
 if(NOT polyscopelib_POPULATED)
   FetchContent_Populate(polyscopelib)
   add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
-  set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
+  set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()

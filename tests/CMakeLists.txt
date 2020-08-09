@@ -57,6 +57,13 @@ set(TEST_SRCS src/main_test.cpp src/mapping_test.cpp src/dotproduct_test.cpp
 
 add_executable(Mem3DG-tests "${TEST_SRCS}")
 target_link_libraries(Mem3DG-tests ddgsolver gtest_main)
-set_target_properties(Mem3DG-tests PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
+
+
+# ##############################################################################
+# Main DDG target
+# ##############################################################################
+# add_executable(ddg scratch.cpp) target_link_libraries(ddg PRIVATE
+# ddgsolver polyscope) set_target_properties(ddg PROPERTIES
+# CXX_VISIBILITY_PRESET hidden)

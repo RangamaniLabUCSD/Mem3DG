@@ -24,9 +24,9 @@
 
 #include <Eigen/Core>
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/icosphere.h"
-#include "ddgsolver/util.h"
+#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/icosphere.h"
+#include "mem3dg/solver/util.h"
 
 namespace ddgsolver {
 

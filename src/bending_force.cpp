@@ -24,8 +24,8 @@
 
 #include <Eigen/Core>
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/meshops.h"
+#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/meshops.h"
 
 namespace ddgsolver {
 

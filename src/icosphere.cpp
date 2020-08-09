@@ -18,7 +18,7 @@
 
 #include <geometrycentral/utilities/vector3.h>
 
-#include <ddgsolver/icosphere.h>
+#include "mem3dg/solver/icosphere.h"
 
 namespace ddgsolver {
 
