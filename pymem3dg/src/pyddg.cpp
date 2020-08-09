@@ -16,12 +16,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "ddgsolver/ddgsolver.h"
+#include "mem3dg/solver/ddgsolver.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
-#include "ddgsolver/force.h"
+#include "mem3dg/solver/force.h"
 
 namespace ddgsolver {
 namespace py = pybind11;

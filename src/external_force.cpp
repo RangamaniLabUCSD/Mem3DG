@@ -16,7 +16,7 @@
 
 #include <Eigen/Core>
 
-#include "ddgsolver/force.h"
+#include "mem3dg/solver/force.h"
 
 #include <cmath>
 

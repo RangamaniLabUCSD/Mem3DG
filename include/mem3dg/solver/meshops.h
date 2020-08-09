@@ -20,8 +20,8 @@
 
 #include <Eigen/Core>
 
-#include "ddgsolver/macros.h"
-#include "ddgsolver/util.h"
+#include "mem3dg/solver/macros.h"
+#include "mem3dg/solver/util.h"
 
 namespace ddgsolver {
 

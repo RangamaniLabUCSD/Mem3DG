@@ -13,15 +13,15 @@
 # 
 
 set(DDG_HEADERS
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/constants.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/ddgsolver.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/force.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/integrator.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/icosphere.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/trajfile.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/typetraits.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/util.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/macros.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/meshops.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ddgsolver/version.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/constants.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/ddgsolver.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/force.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/icosphere.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/typetraits.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/util.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/macros.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/meshops.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/version.h"
     PARENT_SCOPE)

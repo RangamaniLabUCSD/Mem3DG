@@ -13,10 +13,7 @@
 #
 
 cmake_minimum_required(VERSION 3.11)
-cmake_policy(SET CMP0063 NEW)
 
-# Set default build type
-set(CMAKE_BUILD_TYPE_INIT Release)
 # Add path to custom modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
@@ -60,6 +57,7 @@ include(FetchContent)
 
 option(BUILD_PYMEM3DG "Build the python extensions?" ON)
 option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" OFF)
+option(BUILD_MEM3DG_DOCS "Build the python extensions?" ON)
 
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS
@@ -81,38 +79,32 @@ add_subdirectory(src) # Get list of sources
 list(APPEND DDG_SOURCES ${VERSION_FILE})
 
 # ddgsolver object library
-add_library(ddgsolver_objlib OBJECT ${DDG_SOURCES} ${DDG_HEADERS})
+add_library(mem3dg_objlib OBJECT ${DDG_SOURCES} ${DDG_HEADERS})
 target_include_directories(
-  ddgsolver_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  mem3dg_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(ddgsolver_objlib PUBLIC ${LINKED_LIBS})
+target_link_libraries(mem3dg_objlib PUBLIC ${LINKED_LIBS})
 set_target_properties(
-  ddgsolver_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET
-                                                          hidden
-) # VISIBILITY_INLINES_HIDDEN ON)
+  mem3dg_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON)
 if(WITH_NETCDF)
-  target_compile_definitions(ddgsolver_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
+  target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
 endif()
 
 # ddgsolver library
-add_library(ddgsolver SHARED $<TARGET_OBJECTS:ddgsolver_objlib>)
-target_link_libraries(ddgsolver PUBLIC ddgsolver_objlib)
+add_library(ddgsolver SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
+target_link_libraries(ddgsolver PUBLIC mem3dg_objlib)
 
 if(BUILD_PYMEM3DG)
   add_subdirectory(pymem3dg)
 endif()
 
-# ##############################################################################
-# Main DDG target
-# ##############################################################################
-# add_executable(ddg tests/scratch.cpp) target_link_libraries(ddg PRIVATE
-# ddgsolver polyscope) set_target_properties(ddg PROPERTIES
-# CXX_VISIBILITY_PRESET hidden)
-
-
 enable_testing()
 add_subdirectory(tests)
+
+if(BUILD_MEM3DG_DOCS)
+  add_subdirectory(docs)
+endif()
 
 include(GNUInstallDirs)
 # Install targets and headers

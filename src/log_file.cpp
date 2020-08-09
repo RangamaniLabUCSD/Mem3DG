@@ -12,9 +12,9 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "ddgsolver/force.h"
-#include "ddgsolver/integrator.h"
-#include "ddgsolver/version.h"
+#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/version.h"
 
 #include <fstream>
 #include <iostream>
