@@ -31,29 +31,41 @@ using EigenVectorX3D =
 using EigenTopVec =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
-void updateSurfaceMesh(ddgsolver::TrajFile &fd, int &idx) {
+void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
+                       int &idx) {
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
   }
 
   double time;
   EigenVectorX3D coords;
-  EigenTopVec top = fd.getTopology();
   EigenVectorX1D H = fd.getMeanCurvature(idx);
   std::tie(time, coords) = fd.getTimeAndCoords(idx);
 
-  polyscope::registerSurfaceMesh("Mesh", coords, top);
-  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
-                                                             H);
+  // polyscope::registerSurfaceMesh("Mesh", coords, top);
+  mesh->updateVertexPositions(coords);
+  mesh->addVertexScalarQuantity("mean_curvature", H);
 }
 
-void animate(ddgsolver::TrajFile &fd, int &idx, bool &play) {
-  if (play) {
-    updateSurfaceMesh(fd, idx);
-    idx++;
-    if (idx >= fd.getNextFrameIndex()) {
-      idx = 0;
-    }
+polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd) {
+  double time;
+  EigenVectorX3D coords;
+  EigenTopVec top = fd.getTopology();
+  EigenVectorX1D H = fd.getMeanCurvature(0);
+  std::tie(time, coords) = fd.getTimeAndCoords(0);
+
+  polyscope::SurfaceMesh *mesh =
+      polyscope::registerSurfaceMesh("Mesh", coords, top);
+  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
+                                                             H);
+  return mesh;
+}
+
+void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx) {
+  updateSurfaceMesh(mesh, fd, idx);
+  idx++;
+  if (idx >= fd.getNextFrameIndex()) {
+    idx = 0;
   }
 }
 
@@ -61,8 +73,11 @@ int view_animation(std::string &filename) {
 
   ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(filename);
 
-  int idx = 0;
+  // Visualization state variables
+  int prevFrame = 0;
+  int currFrame = 0;
   bool play = false;
+  int maxFrame = fd.getNextFrameIndex() - 1;
 
   // Some settings for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -76,24 +91,30 @@ int view_animation(std::string &filename) {
 
   polyscope::init();
 
-  auto myCallback = [&fd, &play, &idx]() {
+  auto mesh = registerSurfaceMesh(fd);
+
+  auto myCallback = [&]() {
     // Since options::openImGuiWindowForUserCallback == true by default,
     // we can immediately start using ImGui commands to build a UI
     ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
                                // instead of full width. Must have
                                // matching PopItemWidth() below.
 
-    ImGui::InputInt("index", &idx); // set a float variable
+    ImGui::SliderInt("index", &currFrame, 0, maxFrame); // set a float variable
 
     if (ImGui::Button("Play/Pause")) {
       play = !play;
     }
 
-    if (ImGui::Button("Update Frame")) {
-      updateSurfaceMesh(fd, idx);
+    if (prevFrame != currFrame) {
+      updateSurfaceMesh(mesh, fd, currFrame);
+      prevFrame = currFrame;
     }
 
-    animate(fd, idx, play);
+    if (play) {
+      animate(mesh, fd, currFrame);
+      prevFrame = currFrame;
+    }
     ImGui::PopItemWidth();
   };
 
