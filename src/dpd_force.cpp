@@ -44,10 +44,10 @@ void Force::getVelocityFromPastPosition(double dt) {
 
 void Force::getDPDForces() {
   // Reset forces to zero
-  auto dampingForces_e = EigenMap<double, 3>(dampingForces);
-  auto stochasticForces_e = EigenMap<double, 3>(stochasticForces);
-  dampingForces_e.setZero();
-  stochasticForces_e.setZero();
+  auto dampingForce_e = EigenMap<double, 3>(dampingForce);
+  auto stochasticForce_e = EigenMap<double, 3>(stochasticForce);
+  dampingForce_e.setZero();
+  stochasticForce_e.setZero();
 
   // alias positions
   const auto &pos = vpg.inputVertexPositions;
@@ -73,12 +73,12 @@ void Force::getDPDForces() {
     //           << std::endl;
 
     gc::Vector3 df = P.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
-    dampingForces[v1] -= df;
-    dampingForces[v2] += df;
+    dampingForce[v1] -= df;
+    dampingForce[v2] += df;
 
     double noise = normal_dist(rng);
-    stochasticForces[v1] += noise * dPos12_n;
-    stochasticForces[v2] -= noise * dPos12_n;
+    stochasticForce[v1] += noise * dPos12_n;
+    stochasticForce[v2] -= noise * dPos12_n;
   }
 }
 

@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#ifdef MEM3DG_WITH_NETCDF
 #include <iostream>
 
 #include "polyscope/polyscope.h"
@@ -103,3 +104,4 @@ int view_animation(std::string &filename) {
 
   return 0;
 }
+#endif

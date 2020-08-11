@@ -29,7 +29,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getPressureForces() {
-  pressureForces.fill({0, 0, 0});
+  insidePressure.fill({0, 0, 0});
   volume = 0;
   double face_volume;
   gcs::FaceData<int> sign_of_volume(mesh);
@@ -55,10 +55,10 @@ void Force::getPressureForces() {
       // std::cout << "i am here" << (gc::dot(dVdx, vpg.inputVertexPositions[v]
       // - p1) < 0) <<  std::endl;
       // dVdx *= sign_of_volume[he.face()];
-      pressureForces[v] +=
-          -0.5 * P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) * dVdx;
+      insidePressure[v] +=
+          - P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) * dVdx;
       // for (size_t i = 0; i < 3; i++) {
-      //	pressureForces(v_ind[v], i) += dVdx[i];
+      //	insidePressure(v_ind[v], i) += dVdx[i];
       //}
       // force.row(v_ind[v]) << dVdx.x, dVdx.y, dVdx.z;
     }

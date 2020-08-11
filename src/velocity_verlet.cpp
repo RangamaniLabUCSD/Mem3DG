@@ -41,12 +41,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   // print out a .txt file listing all parameters used
   getParameterLog(f, dt, total_time, tolerance, tSave, outputDir);
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> force;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> newForce;
-  force.resize(f.mesh.nVertices(), 3);
-  force.setZero();
-  newForce.resize(f.mesh.nVertices(), 3);
-  newForce.setZero();
+  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
+  totalPressure.resize(f.mesh.nVertices(), 3);
+  totalPressure.setZero();
+  newTotalPressure.resize(f.mesh.nVertices(), 3);
+  newTotalPressure.setZero();
 
   int nSave = int(tSave / dt);
 
@@ -56,10 +56,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   const double hdt = 0.5 * dt;
   const double hdt2 = hdt * dt;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> staticForce;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> dynamicForce;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> numericalPressure;
 
   double oldBE = 0.0;
+  double totalEnergy;
   double BE;
   double dBE;
   double dArea;
@@ -73,10 +74,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 #endif
 
   for (int i = 0; i <= total_time / dt; i++) {
-    // Update all forces
-    // f.getBendingForces();
-    // f.getStretchingForces();
-    // f.getPressureForces();
     if (f.mesh.hasBoundary()) {
       f.getTubeForces();
     } else {
@@ -85,25 +82,30 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     f.getDPDForces();
     f.getExternalForces();
 
-    // std::cout << "bf: " << EigenMap<double, 3>(f.bendingForces).norm()
-    //  << "sf: " << EigenMap<double, 3>(f.stretchingForces).norm()
-    //  << "pf: " << EigenMap<double, 3>(f.pressureForces).norm()
-    //  << "df: " << EigenMap<double, 3>(f.dampingForces).norm()
-    //  << "xf: " << EigenMap<double, 3>(f.stochasticForces).norm() <<
+    // std::cout << "bf: " << EigenMap<double, 3>(f.bendingPressure).norm()
+    //  << "sf: " << EigenMap<double, 3>(f.capillaryPressure).norm()
+    //  << "pf: " << EigenMap<double, 3>(f.insidePressure).norm()
+    //  << "df: " << EigenMap<double, 3>(f.dampingForce).norm()
+    //  << "xf: " << EigenMap<double, 3>(f.stochasticForce).norm() <<
     //  std::endl;
 
-    staticForce = EigenMap<double, 3>(f.bendingForces) +
-                  EigenMap<double, 3>(f.stretchingForces) +
-                  EigenMap<double, 3>(f.pressureForces) +
-                  EigenMap<double, 3>(f.externalForces);
-    staticForce = staticForce.rowwise() -
-                  staticForce.colwise().sum() / f.mesh.nVertices();
-    dynamicForce = EigenMap<double, 3>(f.dampingForces) +
-                   EigenMap<double, 3>(f.stochasticForces);
-    newForce = staticForce + dynamicForce;
+    physicalPressure = EigenMap<double, 3>(f.bendingPressure) +
+                  EigenMap<double, 3>(f.capillaryPressure) +
+                  EigenMap<double, 3>(f.insidePressure) +
+                  EigenMap<double, 3>(f.externalPressure);
 
-    // periodically save the geometric files, print some info, compare and
-    // adjust
+    // Removing the rigid body translation pressure
+    physicalPressure =
+        physicalPressure.rowwise() - ((f.M * physicalPressure).colwise().sum() /
+                                    (f.surfaceArea * f.mesh.nVertices()));
+
+    numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
+                   EigenMap<double, 3>(f.stochasticForce) +
+                   EigenMap<double, 3>(f.stretchingForce));
+
+    newTotalPressure = physicalPressure + numericalPressure;
+
+    // periodically save the geometric files, print some info, compare and adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -116,7 +118,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       f.richData.addGeometry(f.vpg);
 
       gcs::VertexData<double> H(f.mesh);
-      H.fromVector(f.M_inv * f.H);
+      H.fromVector(f.H);
       f.richData.addVertexProperty("mean_curvature", H);
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -128,41 +130,39 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       f.richData.addVertexProperty("spon_curvature", H0);
 
       gcs::VertexData<double> f_ext(f.mesh);
-      f_ext.fromVector(f.appliedForceMagnitude);
-      f.richData.addVertexProperty("external_force", f_ext);
+      f_ext.fromVector(f.externalPressureMagnitude);
+      f.richData.addVertexProperty("external_pressure", f_ext);
 
       gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
-          staticForce, EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("normal_force", fn);
+          physicalPressure, EigenMap<double, 3>(f.vpg.vertexNormals)));
+      f.richData.addVertexProperty("physical_pressure", fn);
 
       gcs::VertexData<double> ft(f.mesh);
-      ft.fromVector((staticForce -
-                     rowwiseScaling(rowwiseDotProduct(staticForce,
-                                                      EigenMap<double, 3>(
-                                                          f.vpg.vertexNormals)),
-                                    EigenMap<double, 3>(f.vpg.vertexNormals)))
-                        .rowwise()
-                        .norm());
-      f.richData.addVertexProperty("tangential_force", ft);
+      ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
+                                       EigenMap<double, 3>(f.vpg.vertexNormals))
+                         .array() /
+                     f.H.array() / 2)
+                        .matrix());
+      f.richData.addVertexProperty("surface_tension", ft);
 
       gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
-          rowwiseDotProduct(EigenMap<double, 3>(f.bendingForces),
+          rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
                             EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("bending_force", fb);
+      f.richData.addVertexProperty("bending_pressure", fb);
 
       /* gcs::VertexData<gc::Vector3> fn(f.mesh);
        EigenMap<double, 3>(fn) =
-       rowwiseScaling((rowwiseDotProduct(staticForce, EigenMap<double,
+       rowwiseScaling((rowwiseDotProduct(physicalPressure, EigenMap<double,
        3>(f.vpg.vertexNormals))), EigenMap<double, 3>(f.vpg.vertexNormals));
        f.richData.addVertexProperty("normal_force", fn);
 
        gcs::VertexData<gc::Vector3> ft(f.mesh);
-       EigenMap<double, 3>(ft) = staticForce - EigenMap<double, 3>(fn);
+       EigenMap<double, 3>(ft) = physicalPressure - EigenMap<double, 3>(fn);
        f.richData.addVertexProperty("tangential_force", ft);*/
 
-      BE = getBendingEnergy(f);
+      std::tie(totalEnergy, BE) = getFreeEnergy(f);
 
       if (f.P.Kb != 0) {
         dBE = abs(BE - oldBE) / (BE + 1e-7);
@@ -204,6 +204,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "dVolume:  " << dVolume << "\n"
           << "dBE: " << dBE << "\n"
           << "Bending energy: " << BE << "\n"
+          << "Total energy (exclude V^ext): " << totalEnergy << "\n"
           << "COM: "
           << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
                  f.vpg.inputVertexPositions.raw().rows()
@@ -243,20 +244,17 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     << "Converged! Saved to " + outputDir << std::endl;
           f.richData.write(outputDir + "final.ply");
           getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE,
-                        outputDir);
+                        totalEnergy, outputDir);
           break;
         }
       }
 
-      oldBE = getBendingEnergy(f);
+      std::tie(totalEnergy, oldBE) = getFreeEnergy(f);
     }
 
-    pos_e += vel_e * dt + hdt2 * rowwiseScaling(f.mask.cast<double>(), force);
-    vel_e += rowwiseScaling(f.mask.cast<double>(), force + newForce) * hdt;
-
-    // pos_e += vel_e * dt + force * hdt2;
-    // vel_e += (force + newForce) * hdt;
-    force = newForce;
+    pos_e += vel_e * dt + hdt2 * rowwiseScaling(f.mask.cast<double>(), totalPressure);
+    vel_e += rowwiseScaling(f.mask.cast<double>(), totalPressure + newTotalPressure) * hdt;
+    totalPressure = newTotalPressure;
 
     // Regularize the vetex position geometry if needed
     if (f.isVertexShift) {
@@ -273,7 +271,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Fail to converge in given time and Exit. Past data saved to " +
                  outputDir
           << std::endl;
-      getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE, outputDir);
+      getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE, totalEnergy, outputDir);
     }
 
   } // periodic save, print and adjust
