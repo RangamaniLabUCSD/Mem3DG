@@ -22,7 +22,7 @@
 namespace ddgsolver {
 namespace integration {
 
-DLL_PUBLIC double getBendingEnergy(Force &f);
+DLL_PUBLIC std::tuple<double, double> getFreeEnergy(Force &f);
 
 DLL_PUBLIC void stormerVerlet(Force &f, double dt, double total_time,
                               double tolerance);
@@ -39,7 +39,7 @@ DLL_PUBLIC void getParameterLog(Force &f, double dt, double total_time,
 DLL_PUBLIC void getSummaryLog(Force &f, double dt, double final_time,
                               double areaError, double volumeError,
                               double bendingError, double faceError,
-                              double bendingEnergy, std::string outputDir);
+                              double bendingEnergy, double totalEnergy, std::string outputDir);
 
 } // namespace integration
 } // namespace ddgsolver

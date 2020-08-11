@@ -36,16 +36,19 @@ void Force::getConservativeForces() {
   
   /// 0. GENERAL
   // map the MeshData to eigen matrix XXX_e
-  auto bendingForces_e = EigenMap<double, 3>(bendingForces);
-  auto pressureForces_e = EigenMap<double, 3>(pressureForces);
-  auto stretchingForces_e = EigenMap<double, 3>(stretchingForces);
+  auto bendingPressure_e = EigenMap<double, 3>(bendingPressure);
+  auto insidePressure_e = EigenMap<double, 3>(insidePressure);
+  auto capillaryPressure_e = EigenMap<double, 3>(capillaryPressure);
   auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
   auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
 
   // Alias
   std::size_t n_vertices = (mesh.nVertices());
+  const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
+  const gcs::FaceData<double> &face_a = vpg.faceAreas;
 
-  /// A. BENDING FORCE
+  /// A. BENDING PRESSURE
   // update the (tufted) mass and conformal Laplacian matrix
   if (isTuftedLaplacian) {
     getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
@@ -57,63 +60,59 @@ void Force::getConservativeForces() {
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // calculate mean curvature
-  H = rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
+      rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
+  H = M_inv * H_integrated;
 
   // Gaussian curvature
-  auto &KG = vpg.vertexGaussianCurvatures.raw();
-
-  // calculate the Laplacian of mean curvature H
-  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = L * M_inv * H;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> &KG_integrated =
+      vpg.vertexGaussianCurvatures.raw();
 
   // initialize the spontaneous curvature matrix
   H0.setConstant(n_vertices, 1, P.H0);
 
-  // initialize and calculate intermediary result scalarTerms
-  Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms =
-      M_inv * rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
-  /*Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+  // calculate the Laplacian of mean curvature H
+  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
+
+  // initialize and calculate intermediary result scalarTerms_integrated
+  Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms_integrated =
+      M_inv * rowwiseProduct(H_integrated, H_integrated) +
+      rowwiseProduct(H_integrated, H0) - KG_integrated;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
   zeroMatrix.resize(n_vertices, 1);
   zeroMatrix.setZero();
-  scalarTerms = scalarTerms.array().max(zeroMatrix.array());*/
+  scalarTerms_integrated = scalarTerms_integrated.array().max(zeroMatrix.array());
 
-  // initialize and calculate intermediary result productTerms
-  Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms;
-  productTerms.resize(n_vertices, 1);
-  productTerms = 2.0 * rowwiseProduct(scalarTerms, M_inv * H - H0);
+  // initialize and calculate intermediary result productTerms_integrated
+  Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms_integrated;
+  productTerms_integrated.resize(n_vertices, 1);
+  productTerms_integrated =
+      2.0 * rowwiseProduct(scalarTerms_integrated, H - H0);
 
-  bendingForces_e = -2.0 * P.Kb * rowwiseScaling(productTerms + lap_H, vertexAngleNormal_e);
-
-  /// B. PRESSURE FORCES
-  volume = 0;
-  double face_volume;
-  gcs::FaceData<int> sign_of_volume(mesh);
-  for (gcs::Face f : mesh.faces()) {
-    face_volume = signedVolumeFromFace(f, vpg);
-    volume += face_volume;
-    if (face_volume < 0) {
-      sign_of_volume[f] = -1;
-    } else {
-      sign_of_volume[f] = 1;
-    }
-  } 
-  pressureForces_e =
-      rowwiseScaling(-2.0 * P.Kv * (volume - refVolume * P.Vt) /
-                         (refVolume * P.Vt) * vpg.vertexDualAreas.raw(),
-                     vertexAngleNormal_e); 
-
-
-  /// C. STRETCHING FORCES (CAPILLARY PRESSURE)
-  const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
-  const gcs::FaceData<double> &face_a = vpg.faceAreas;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
-  surfaceArea = faceArea_e.sum();
-  stretchingForces_e =
-      rowwiseScaling(-2.0 * P.Ksg * (surfaceArea - targetSurfaceArea) /
-                         targetSurfaceArea * 2.0 * H,
+  bendingPressure_e =
+      -2.0 * P.Kb *
+      rowwiseScaling(M_inv * (productTerms_integrated + lap_H_integrated),
                      vertexAngleNormal_e);
 
+  /// B. INSIDE EXCESS PRESSURE
+  volume = 0;
+  for (gcs::Face f : mesh.faces()) {
+    volume += signedVolumeFromFace(f, vpg);
+  }  
+  insidePressure_e = - P.Kv * (volume - refVolume * P.Vt) /
+                     (refVolume * P.Vt) * vertexAngleNormal_e;
+
+  /// C. CAPILLARY PRESSURE
+  surfaceArea = faceArea_e.sum();
+  capillaryPressure_e =
+    rowwiseScaling(- P.Ksg * (surfaceArea - targetSurfaceArea) /
+                        targetSurfaceArea * 2.0 * H,
+                    vertexAngleNormal_e);
+
   /// D. LOCAL REGULARIZATION
-  if ((P.Ksl != 0) && (P.Kse != 0)) {
+  stretchingForce.fill({0.0, 0.0, 0.0});
+
+  if ((P.Ksl != 0) || (P.Kse != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
 
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -122,18 +121,19 @@ void Force::getConservativeForces() {
         // Stretching forces
         gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
         gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-        gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
-        assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
+        gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
+        assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
+
         if (P.Ksl != 0) {
-          stretchingForces[v] +=
-              -2.0 * P.Ksl * gradient *
+          stretchingForce[v] +=
+              - P.Ksl * localAreaGradient *
               (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
               targetFaceAreas[base_he.face()];
         }
 
         if (P.Kse != 0) {
-          stretchingForces[v] +=
-              -P.Kse * edgeGradient *
+          stretchingForce[v] +=
+              - P.Kse * edgeGradient *
               (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
               targetEdgeLengths[he.edge()];
         }

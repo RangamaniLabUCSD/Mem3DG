@@ -40,22 +40,15 @@ void log(gcs::FaceData<T> face_a, gcs::HalfedgeMesh &mesh, std::string name) {
 }
 
 void Force::getStretchingForces() {
-  stretchingForces.fill({0.0, 0.0, 0.0});
+
+  capillaryPressure.fill({0.0, 0.0, 0.0});
+
+  // Alias & EigenMap
   const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
-  // log(face_n, mesh,"face normal");
-
   const gcs::FaceData<double> &face_a = vpg.faceAreas;
-  // log(face_a, mesh, "faceArea");
-
-  // gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;
-
-  /*Eigen::Matrix<double, Eigen::Dynamic, 3> local_force;
-  local_force.setZero(mesh.nVertices(), 3);*/
-
-  /*Eigen::Matrix<double, Eigen::Dynamic, 3> global_force;
-  global_force.setZero(mesh.nVertices(), 3);*/
-
+  const gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;
   auto &faceArea_e = vpg.faceAreas.raw();
+
   surfaceArea = faceArea_e.sum();
 
   for (gcs::Vertex v : mesh.vertices()) {
@@ -64,33 +57,34 @@ void Force::getStretchingForces() {
     gc::Vector3 edgeForce{0.0, 0.0, 0.0};
 
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
 
+      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
       gcs::Halfedge base_he = he.next();
       gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-      gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
-      assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
+      gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
+      assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
       if (P.Ksl != 0) {
         localForce +=
-            -2 * P.Ksl * gradient *
+            - P.Ksl * localAreaGradient *
             (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
             targetFaceAreas[base_he.face()];
       }
 
       if (P.Ksg != 0) {
-        globalForce += -2 * P.Ksg * gradient *
+        globalForce += - P.Ksg * localAreaGradient *
                        (surfaceArea - targetSurfaceArea) / targetSurfaceArea;
       }
 
       if (P.Kse != 0) {
         edgeForce +=
-            -P.Kse * edgeGradient *
+            - P.Kse * edgeGradient *
             (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
             targetEdgeLengths[he.edge()];
       }
     }
-    stretchingForces[v] = localForce + globalForce + edgeForce;
+    capillaryPressure[v] = globalForce / vpg.vertexDualAreas[v];
+    stretchingForce[v] = localForce + edgeForce;
   }
 }
 } // end namespace ddgsolver

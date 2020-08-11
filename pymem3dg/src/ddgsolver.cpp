@@ -56,14 +56,14 @@ int viewer(std::string fileName) {
       ptrRichData->getVertexProperty<double>("mean_curvature");
   gcs::VertexData<double> sponCurvature =
       ptrRichData->getVertexProperty<double>("spon_curvature");
-  gcs::VertexData<double> extForce =
-      ptrRichData->getVertexProperty<double>("external_force");
-  gcs::VertexData<double> normalForce =
-      ptrRichData->getVertexProperty<double>("normal_force");
-  gcs::VertexData<double> tangentialForce =
-      ptrRichData->getVertexProperty<double>("tangential_force");
-  gcs::VertexData<double> bendingForce =
-      ptrRichData->getVertexProperty<double>("bending_force");
+  gcs::VertexData<double> extPressure =
+      ptrRichData->getVertexProperty<double>("external_pressure");
+  gcs::VertexData<double> physicalPressure =
+      ptrRichData->getVertexProperty<double>("physical_pressure");
+  gcs::VertexData<double> surfaceTension =
+      ptrRichData->getVertexProperty<double>("surface_tension");
+  gcs::VertexData<double> bendingPressure =
+      ptrRichData->getVertexProperty<double>("bending_pressure");
   /*gcs::VertexData<gc::Vector3> normalForce =
   ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
   gcs::VertexData<gc::Vector3> tangentialForce =
@@ -73,11 +73,11 @@ int viewer(std::string fileName) {
       meanCurvature.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> sponCurvature_e =
       sponCurvature.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> extForce_e = extForce.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> normalForce_e = normalForce.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> tangentialForce_e =
-      tangentialForce.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> bendingForce_e = bendingForce.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> extPressure_e = extPressure.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> physicalPressure_e = physicalPressure.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> surfaceTension_e =
+      surfaceTension.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e = bendingPressure.raw();
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
   ddgsolver::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
   Eigen::Dynamic, 3> tangentialForce_e = ddgsolver::EigenMap<double,
@@ -93,13 +93,13 @@ int viewer(std::string fileName) {
   polyscope::getSurfaceMesh("Vesicle surface")
       ->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
   polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("applied_force", extForce_e);
+      ->addVertexScalarQuantity("applied_pressure", extPressure_e);
   polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("tangential_force", tangentialForce_e);
+      ->addVertexScalarQuantity("surface_tension", surfaceTension_e);
   polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("normal_force", normalForce_e);
+      ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
   polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("bending_force", bendingForce_e);
+      ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
   /*polyscope::getSurfaceMesh("Vesicle
   surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
   polyscope::getSurfaceMesh("Vesicle

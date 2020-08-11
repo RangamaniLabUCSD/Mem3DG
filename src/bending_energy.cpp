@@ -29,7 +29,7 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-double getBendingEnergy(Force &f) {
+std::tuple<double, double> getFreeEnergy(Force &f) {
   // comment: this may not be useful, the convergence can be be tested by
   // checking its derivative which is the forces excluding the DPD forces. The
   // energy trajectory of could actually numerically integrated by post
@@ -44,13 +44,34 @@ double getBendingEnergy(Force &f) {
   //	}
   //}
 
-  auto difference = f.M_inv * f.H - f.H0;
-  double bE =
-      (f.P.Kb * f.M * (difference.array() * difference.array()).matrix()).sum();
-  /// stretching energy
-  // double sE =
+  double bE;
+  double sE;
+  double pE;
+  double totalE;
 
-  return bE;
+  if (f.mesh.hasBoundary()) {
+    std::cout << "\n"
+              << "Warning: does not have energy defined yet!!!!"
+              << "\n";
+
+  } else {
+
+    Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = f.H - f.H0;
+    double A_difference = f.surfaceArea - f.targetSurfaceArea;
+    double V_difference = f.volume - f.refVolume * f.P.Vt;
+
+    bE = (f.P.Kb * f.M * (H_difference.array() * H_difference.array()).matrix())
+              .sum();
+    sE = f.P.Ksg * A_difference * A_difference / f.targetSurfaceArea / 2;
+    pE = f.P.Kv * V_difference * V_difference / (f.refVolume * f.P.Vt) / 2;
+
+    totalE = bE + sE + pE;
+
+  }
+
+  std::tuple<double, double> output(totalE, bE);
+  
+  return output;
 }
 } // namespace integration
 } // namespace ddgsolver

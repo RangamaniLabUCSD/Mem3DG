@@ -34,6 +34,14 @@ namespace gcs = ::geometrycentral::surface;
 
 void Force::getBendingForces() {
 
+  // map the MeshData to eigen matrix XXX_e
+  auto bendingPressure_e = EigenMap<double, 3>(bendingPressure);
+  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
+  
+  // Alias
+  std::size_t n_vertices = (mesh.nVertices());
+
   // update the (tufted) mass and conformal Laplacian matrix
   if (isTuftedLaplacian) {
     getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
@@ -41,44 +49,29 @@ void Force::getBendingForces() {
     M = vpg.vertexLumpedMassMatrix;
     L = vpg.cotanLaplacian;
   }
-
   // Cache the inverse mass matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+
+  // calculate mean curvature
+  H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
 
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
       M_inv * vpg.vertexGaussianCurvatures.raw();
 
-  // number of vertices for convenience
-  std::size_t n_vertices = (mesh.nVertices());
-
-  // map ivp to eigen matrix position
-  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
-
-  // map the VertexData bendingForces to eigen matrix bendingForces_e
-  auto bendingForces_e = EigenMap<double, 3>(bendingForces);
-  bendingForces_e.setZero();
-
-  // the build-in angle-weighted vertex normal
-  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
-
-  // calculate mean curvature
-  H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
-
-  // calculate the Laplacian of mean curvature H
-  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * H;
-
   // initialize the spontaneous curvature matrix
   H0.setConstant(n_vertices, 1, P.H0);
 
-  // initialize and calculate intermediary result scalerTerms, set to zero if
-  // negative
+  // calculate the Laplacian of mean curvature H
+  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * (H - H0);
+
+  // initialize and calculate intermediary result scalerTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
       rowwiseProduct(H, H) + rowwiseProduct(H, H0) - KG;
-  //Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
-  //zeroMatrix.resize(n_vertices, 1);
-  //zeroMatrix.setZero();
-  //scalerTerms = scalerTerms.array().max(zeroMatrix.array());
+  Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+  zeroMatrix.resize(n_vertices, 1);
+  zeroMatrix.setZero();
+  scalerTerms = scalerTerms.array().max(zeroMatrix.array());
 
   // initialize and calculate intermediary result productTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms;
@@ -86,7 +79,7 @@ void Force::getBendingForces() {
   productTerms = 2 * rowwiseProduct(scalerTerms, H - H0);
 
   // calculate bendingForce
-  bendingForces_e = rowwiseScaling(M * (-2.0 * P.Kb * (productTerms + lap_H)),
+  bendingPressure_e = rowwiseScaling(-2.0 * P.Kb * (productTerms + lap_H),
                                    vertexAngleNormal_e);
 }
 } // end namespace ddgsolver

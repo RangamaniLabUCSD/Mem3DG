@@ -83,18 +83,22 @@ public:
   gcs::VertexPositionGeometry &vpg;
   /// reference embedding geometry
   gcs::VertexPositionGeometry &refVpg;
-  /// Cached bending forces
-  gcs::VertexData<gc::Vector3> bendingForces;
-  /// Cached stretching forces
-  gcs::VertexData<gc::Vector3> stretchingForces;
-  /// Cached pressure induced forces
-  gcs::VertexData<gc::Vector3> pressureForces;
+
+  /// Cached bending stress
+  gcs::VertexData<gc::Vector3> bendingPressure;
+  /// Cached tension-induced capillary pressure
+  gcs::VertexData<gc::Vector3> capillaryPressure;
+  /// Cached relative inside pressure
+  gcs::VertexData<gc::Vector3> insidePressure;
+  /// Cached externally-applied pressure
+  gcs::VertexData<gc::Vector3> externalPressure;
+
+  /// Cached local stretching forces (in-plane regularization)
+  gcs::VertexData<gc::Vector3> stretchingForce;
   /// Cached damping forces
-  gcs::VertexData<gc::Vector3> dampingForces;
+  gcs::VertexData<gc::Vector3> dampingForce;
   /// Cached stochastic forces
-  gcs::VertexData<gc::Vector3> stochasticForces;
-  /// Cached external forces
-  gcs::VertexData<gc::Vector3> externalForces;
+  gcs::VertexData<gc::Vector3> stochasticForce;
 
   /// Whether or not use tufted laplacian matrix
   bool isTuftedLaplacian;
@@ -102,43 +106,41 @@ public:
   double mollifyFactor;
   /// Whether or not do vertex shift
   bool isVertexShift;
+
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
   /// Inverted galerkin mass matrix
   Eigen::SparseMatrix<double> M_inv;
   /// Cotangent Laplacian
   Eigen::SparseMatrix<double> L;
+  /// Cached geodesic distance
+  gcs::VertexData<double> geodesicDistanceFromAppliedForce;
+
   /// Target area per face
   gcs::FaceData<double> targetFaceAreas;
   /// Target total face area
   double targetSurfaceArea = 0.0;
   /// surface area
   double surfaceArea = 0.0;
-  /// Target length per edge
-  gcs::EdgeData<double> targetEdgeLengths;
   /// Maximal volume
   double refVolume = 0.0;
   /// Volume
   double volume = 0.0;
+  /// Target length per edge
+  gcs::EdgeData<double> targetEdgeLengths;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
   gcs::VertexData<gc::Vector3> vel;
   // Mean curvature of the mesh
-  Eigen::Matrix<double, Eigen::Dynamic, 3> Hn;
-  // Mean curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 1> H;
-  // Spontaneous curvature of the mesh
-  Eigen::Matrix<double, Eigen::Dynamic, 3> H0n;
   // Spontaneous curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 1> H0;
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
-  /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistanceFromAppliedForce;
-  /// magnitude of externally applied force
-  Eigen::Matrix<double, Eigen::Dynamic, 1> appliedForceMagnitude;
+  /// magnitude of externally-applied pressure
+  Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
   /// indices for vertices chosen for integration
   std::vector<size_t> integrationVertices;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
@@ -157,11 +159,11 @@ public:
         bool isTuftedLaplacian_ = false, double mollifyFactor_ = 1e-6,
         bool isVertexShift_ = false)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_),
-        bendingForces(mesh_, {0, 0, 0}), P(p),
-        isTuftedLaplacian(isTuftedLaplacian_), mollifyFactor(mollifyFactor_),
-        isVertexShift(isVertexShift_), stretchingForces(mesh_, {0, 0, 0}),
-        dampingForces(mesh_, {0, 0, 0}), pressureForces(mesh_, {0, 0, 0}),
-        stochasticForces(mesh_, {0, 0, 0}), externalForces(mesh_, {0, 0, 0}),
+        P(p), isTuftedLaplacian(isTuftedLaplacian_), mollifyFactor(mollifyFactor_),
+        isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
+        insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
+        externalPressure(mesh_, {0, 0, 0}), stretchingForce(mesh_, {0,0,0}), 
+        stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}), 
         vel(mesh_, {0, 0, 0}) {
 
     // Initialize RNG
@@ -184,13 +186,13 @@ public:
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
 
-    // Initialize the magnitude of externally applied force
+    // Initialize the magnitude of externally applied pressure
     double pi = 2 * std::acos(0.0);
     geodesicDistanceFromAppliedForce =
         heatMethodDistance(vpg, mesh.vertex(P.ptInd));
     auto &dist_e = geodesicDistanceFromAppliedForce.raw();
     double stdDev = dist_e.maxCoeff() / P.conc;
-    appliedForceMagnitude =
+    externalPressureMagnitude =
         P.Kf / (stdDev * pow(pi * 2, 0.5)) *
         (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
 
@@ -245,12 +247,6 @@ public:
 
     // Initialize the vertex position of the last iteration
     pastPositions = vpg.inputVertexPositions;
-
-    // Initialize mean curvature vector
-    Hn.resize(mesh.nVertices(), 3);
-
-    // Initialize spontaneous curvature vector
-    H0n.resize(mesh.nVertices(), 3);
   }
 
   /**

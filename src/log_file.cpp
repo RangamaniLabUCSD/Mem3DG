@@ -60,7 +60,8 @@ void getParameterLog(Force &f, double dt, double total_time, double tolerance,
 
 void getSummaryLog(Force &f, double dt, double final_time, double areaError,
                    double volumeError, double bendingError, double faceError,
-                   double bendingEnergy, std::string outputDir) {
+                   double bendingEnergy, double totalEnergy,
+                   std::string outputDir) {
   ofstream myfile(outputDir + "Summary.txt");
   if (myfile.is_open()) {
 
@@ -90,6 +91,7 @@ void getSummaryLog(Force &f, double dt, double final_time, double areaError,
     myfile << "States: \n";
     myfile << "\n";
     myfile << "Bending Energy:   " << bendingEnergy << "\n"
+           << "Total Energy:   " << totalEnergy << "\n"
            << "Volume:           " << f.volume << " = "
            << f.volume / f.refVolume << " reduced volume"
            << "\n"

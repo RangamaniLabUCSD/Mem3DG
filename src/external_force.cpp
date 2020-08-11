@@ -27,30 +27,32 @@ namespace gcs = ::geometrycentral::surface;
 
 void Force::getExternalForces() {
 
-  auto externalForces_e = EigenMap<double, 3>(externalForces);
+  auto externalPressure_e = EigenMap<double, 3>(externalPressure);
 
   if (P.Kf != 0) {
 
-    //// Find out the applied force magnitude based on current geometry
+    // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT GEOMETRY
+
     //auto &dist_e = heatMethodDistance(vpg, mesh.vertex(P.ptInd)).raw();
     //double stdDev = dist_e.maxCoeff() / P.conc;
-    //appliedForceMagnitude =
+    //externalPressureMagnitude =
     //    P.Kf / (stdDev * pow(M_PI * 2, 0.5)) *
     //    (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
 
-    //// Apply external forces always normal to the surface 
+    // b. APPLY EXTERNAL PRESSURE NORMAL TO THE SURFACE
+
     //auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
-    //externalForces_e = appliedForceMagnitude * vertexAngleNormal_e.row(P.ptInd);
+    //externalPressure_e = externalPressureMagnitude * vertexAngleNormal_e.row(P.ptInd);
     
-    // Alternatively, applied force maganitude based on initial geometry along a fixed direction, e.g. negative z direction
+    // c. ALTERNATIVELY, PRESSURE BASED ON INITIAL GEOMETRY + ALONG A FIXED DIRECTION, E.G. NEGATIVE Z DIRECTION
+
     Eigen::Matrix<double, 1, 3> zDir;
     zDir << 0.0, 0.0, -1.0;
-    externalForces_e =
-        - appliedForceMagnitude * zDir * (vpg.inputVertexPositions[mesh.vertex(P.ptInd)].z - P.height);
-    ;
+    externalPressure_e =
+        - externalPressureMagnitude * zDir * (vpg.inputVertexPositions[mesh.vertex(P.ptInd)].z - P.height);
 
   } else {
-    externalForces_e.setZero();
+    externalPressure_e.setZero();
   }
 
 }

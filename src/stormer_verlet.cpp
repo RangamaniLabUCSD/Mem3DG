@@ -44,9 +44,10 @@ void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
       }
       if (flag == true) {
         f.vpg.inputVertexPositions[v] *= 2;
-        totalForce = f.bendingForces[v] + f.stretchingForces[v] +
-                     f.pressureForces[v] + f.dampingForces[v] +
-                     f.stochasticForces[v] + f.externalForces[v];
+        totalForce = f.bendingPressure[v] + f.capillaryPressure[v] +
+                     f.insidePressure[v] + f.externalPressure[v] +
+                     ((f.dampingForce[v] + f.stochasticForce[v] +
+                     f.stretchingForce[v])/ f.vpg.vertexDualAreas[v]);
         f.vpg.inputVertexPositions[v] +=
             totalForce * dt * dt - f.pastPositions[v];
       }
@@ -54,7 +55,9 @@ void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
     f.update_Vertex_positions();
     f.pastPositions = temp;
-    double totalEnergy = getBendingEnergy(f);
+    double totalEnergy;
+    double bendingEnergy;
+    std::tie(totalEnergy, bendingEnergy) = getFreeEnergy(f);
 
     // std::cout << "energy: " << totalEnergy << std::endl;
     // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<
