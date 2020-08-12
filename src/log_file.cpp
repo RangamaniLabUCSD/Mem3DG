@@ -23,11 +23,14 @@ using namespace std;
 namespace ddgsolver {
 namespace integration {
 
-void getParameterLog(Force &f, double dt, double total_time, double tolerance,
-                     double tSave, std::string outputDir) {
+void getParameterLog(Force &f, double dt,
+                     double total_time, double tolerance,
+                     double tSave, std::string inputMesh,
+                     std::string outputDir) {
   ofstream myfile(outputDir + "parameter.txt");
   if (myfile.is_open()) {
     myfile << "Mem3DG Version: " << MEM3DG_VERSION << "\n";
+    myfile << "Input Mesh:     " << inputMesh << "\n";
     myfile << "Physical parameters used: \n";
     myfile << "\n";
     myfile << "Kb:     " << f.P.Kb << "\n"
@@ -51,9 +54,11 @@ void getParameterLog(Force &f, double dt, double total_time, double tolerance,
     myfile << "dt:       " << dt << "\n"
            << "T:        " << total_time << "\n"
            << "eps:		   " << tolerance << "\n"
-           << "tSave:    " << tSave << "\n";
-
+           << "tSave:    " << tSave << "\n"
+           << "no. non-integrated: "
+           << f.mask.rows() - f.mask.cast<size_t>().sum() << "\n";
     myfile.close();
+
   } else
     cout << "Unable to open file";
 }
@@ -61,10 +66,10 @@ void getParameterLog(Force &f, double dt, double total_time, double tolerance,
 void getSummaryLog(Force &f, double dt, double final_time, double areaError,
                    double volumeError, double bendingError, double faceError,
                    double bendingEnergy, double totalEnergy,
-                   std::string outputDir) {
+                   std::string inputMesh, std::string outputDir) {
   ofstream myfile(outputDir + "Summary.txt");
   if (myfile.is_open()) {
-
+    myfile << "Input Mesh: " << inputMesh << "\n";
     myfile << "Final parameter: \n";
     myfile << "\n";
     myfile << "Kb:     " << f.P.Kb << "\n"

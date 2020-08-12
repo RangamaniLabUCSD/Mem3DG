@@ -36,17 +36,15 @@ namespace gcs = ::geometrycentral::surface;
 
 void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     double closeZone, double increment, double tSave,
-                    double tMollify, std::string outputDir) {
+                    double tMollify, std::string inputMesh, std::string outputDir) {
 
   // print out a .txt file listing all parameters used
-  getParameterLog(f, dt, total_time, tolerance, tSave, outputDir);
+  getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
 
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
   Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
   totalPressure.resize(f.mesh.nVertices(), 3);
   totalPressure.setZero();
-  newTotalPressure.resize(f.mesh.nVertices(), 3);
-  newTotalPressure.setZero();
 
   int nSave = int(tSave / dt);
 
@@ -77,7 +75,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     if (f.mesh.hasBoundary()) {
       f.getTubeForces();
     } else {
-      f.getConservativeForces();
+      f.getVesicleForces();
     }
     f.getDPDForces();
     f.getExternalForces();
@@ -94,16 +92,21 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   EigenMap<double, 3>(f.insidePressure) +
                   EigenMap<double, 3>(f.externalPressure);
 
-    // Removing the rigid body translation pressure
-    physicalPressure =
-        physicalPressure.rowwise() - ((f.M * physicalPressure).colwise().sum() /
-                                    (f.surfaceArea * f.mesh.nVertices()));
-
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                    EigenMap<double, 3>(f.stochasticForce) +
                    EigenMap<double, 3>(f.stretchingForce));
 
     newTotalPressure = physicalPressure + numericalPressure;
+
+    // Removing the rigid body translation/rotation pressure
+    newTotalPressure =
+        newTotalPressure.rowwise() -
+        ((newTotalPressure).colwise().sum() / f.mesh.nVertices());
+    newTotalPressure =
+        newTotalPressure.rowwise() -
+        (rowwiseCrossProduct(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+                             newTotalPressure).colwise().sum() /
+         f.mesh.nVertices());
 
     // periodically save the geometric files, print some info, compare and adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
@@ -244,7 +247,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     << "Converged! Saved to " + outputDir << std::endl;
           f.richData.write(outputDir + "final.ply");
           getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE,
-                        totalEnergy, outputDir);
+                        totalEnergy, inputMesh, outputDir);
           break;
         }
       }
@@ -271,7 +274,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Fail to converge in given time and Exit. Past data saved to " +
                  outputDir
           << std::endl;
-      getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE, totalEnergy, outputDir);
+      getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE, totalEnergy, inputMesh, outputDir);
     }
 
   } // periodic save, print and adjust

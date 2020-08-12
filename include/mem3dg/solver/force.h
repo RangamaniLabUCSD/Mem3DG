@@ -142,7 +142,6 @@ public:
   /// magnitude of externally-applied pressure
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
   /// indices for vertices chosen for integration
-  std::vector<size_t> integrationVertices;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
 
   /**
@@ -276,7 +275,7 @@ public:
 
   void getPressureForces();
 
-  void getConservativeForces();
+  void getVesicleForces();
 
   void getTubeForces();
 
