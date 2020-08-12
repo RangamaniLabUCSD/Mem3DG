@@ -24,6 +24,10 @@ namespace integration {
 
 DLL_PUBLIC std::tuple<double, double> getFreeEnergy(Force &f);
 
+DLL_PUBLIC double
+getL2ErrorNorm(Eigen::SparseMatrix<double> M,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
+
 DLL_PUBLIC void stormerVerlet(Force &f, double dt, double total_time,
                               double tolerance);
 
@@ -41,6 +45,7 @@ DLL_PUBLIC void getSummaryLog(Force &f, double dt, double final_time,
                               double areaError, double volumeError,
                               double bendingError, double faceError,
                               double bendingEnergy, double totalEnergy,
+                              double L2ErrorNorm,
                               std::string inputMesh, std::string outputDir);
 
 } // namespace integration

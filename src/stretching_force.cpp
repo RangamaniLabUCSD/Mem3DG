@@ -64,6 +64,10 @@ void Force::getStretchingForces() {
       gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
       assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
+      if (P.Kst != 0) {
+        regularizationForce[v] += -P.Kst * localAreaGradient;
+      }
+
       if (P.Ksl != 0) {
         localForce +=
             - P.Ksl * localAreaGradient *
@@ -84,7 +88,7 @@ void Force::getStretchingForces() {
       }
     }
     capillaryPressure[v] = globalForce / vpg.vertexDualAreas[v];
-    stretchingForce[v] = localForce + edgeForce;
+    regularizationForce[v] = localForce + edgeForce;
   }
 }
 } // end namespace ddgsolver

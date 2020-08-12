@@ -59,6 +59,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
   double oldBE = 0.0;
   double totalEnergy;
+  double L2ErrorNorm;
   double BE;
   double dBE;
   double dArea;
@@ -94,7 +95,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                    EigenMap<double, 3>(f.stochasticForce) +
-                   EigenMap<double, 3>(f.stretchingForce));
+                   EigenMap<double, 3>(f.regularizationForce));
 
     newTotalPressure = physicalPressure + numericalPressure;
 
@@ -165,6 +166,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
        EigenMap<double, 3>(ft) = physicalPressure - EigenMap<double, 3>(fn);
        f.richData.addVertexProperty("tangential_force", ft);*/
 
+      L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
       std::tie(totalEnergy, BE) = getFreeEnergy(f);
 
       if (f.P.Kb != 0) {
@@ -208,6 +210,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "dBE: " << dBE << "\n"
           << "Bending energy: " << BE << "\n"
           << "Total energy (exclude V^ext): " << totalEnergy << "\n"
+          << "L2 error norm: " << L2ErrorNorm << "\n"
           << "COM: "
           << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
                  f.vpg.inputVertexPositions.raw().rows()
@@ -247,11 +250,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     << "Converged! Saved to " + outputDir << std::endl;
           f.richData.write(outputDir + "final.ply");
           getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE,
-                        totalEnergy, inputMesh, outputDir);
+                        totalEnergy, L2ErrorNorm, inputMesh, outputDir);
           break;
         }
       }
 
+      L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
       std::tie(totalEnergy, oldBE) = getFreeEnergy(f);
     }
 
@@ -274,7 +278,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Fail to converge in given time and Exit. Past data saved to " +
                  outputDir
           << std::endl;
-      getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE, totalEnergy, inputMesh, outputDir);
+      getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE, totalEnergy, L2ErrorNorm, inputMesh, outputDir);
     }
 
   } // periodic save, print and adjust

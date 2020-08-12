@@ -29,6 +29,16 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+double getL2ErrorNorm(
+    Eigen::SparseMatrix<double> M,
+    Eigen::Matrix<double, Eigen::Dynamic, 3>
+        physicalPressure){
+
+  return sqrt(
+      (M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
+
+}
+
 std::tuple<double, double> getFreeEnergy(Force &f) {
   // comment: this may not be useful, the convergence can be be tested by
   // checking its derivative which is the forces excluding the DPD forces. The
