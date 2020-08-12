@@ -44,14 +44,16 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 int viewer(std::string fileName) {
-  /// initialize mesh and vpg
+  std::cout << "Initializing the mesh and geometry ...";
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
       gcs::RichSurfaceMeshData::readMeshAndData(fileName);
   ptrVpg = ptrRichData->getGeometry();
+  std::cout << "Finished!" << std::endl;
 
+  std::cout << "Reading the vertex properties ...";
   gcs::VertexData<double> meanCurvature =
       ptrRichData->getVertexProperty<double>("mean_curvature");
   gcs::VertexData<double> sponCurvature =
@@ -68,6 +70,7 @@ int viewer(std::string fileName) {
   ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
   gcs::VertexData<gc::Vector3> tangentialForce =
   ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
+  std::cout << "Finished!" << std::endl;
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e =
       meanCurvature.raw();
@@ -83,6 +86,7 @@ int viewer(std::string fileName) {
   Eigen::Dynamic, 3> tangentialForce_e = ddgsolver::EigenMap<double,
   3>(tangentialForce);*/
 
+  std::cout << "Opening Polyscope GUI ...";
   polyscope::init();
   polyscope::registerSurfaceMesh("Vesicle surface",
                                  ptrVpg->inputVertexPositions,
@@ -104,8 +108,9 @@ int viewer(std::string fileName) {
   surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
   polyscope::getSurfaceMesh("Vesicle
   surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
+  std::cout << "Finished!" << std::endl;
   polyscope::show();
-
+  
   return 0;
 }
 
@@ -173,7 +178,7 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
 
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         tSave, tMollify, outputDir);
+                                         tSave, tMollify, inputMesh, outputDir);
 
   return 0;
 }

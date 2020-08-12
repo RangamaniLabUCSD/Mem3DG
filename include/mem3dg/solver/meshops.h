@@ -80,6 +80,30 @@ rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
 }
 
 /**
+ * @brief helper function for taking rowwise cross product of two matrices
+ *
+ * @param Eigen matrix A
+ * @param Eigen matrix B
+ * @return Eigen matrix V
+ */
+DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
+rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
+                  Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
+  Eigen::Matrix<double, Eigen::Dynamic, 3> C;
+  if (A.rows() != B.rows()) {
+    std::cout << "The input matrices must have same sizes!" << std::endl;
+    C.resize(1, 3);
+    return C;
+  } else {
+    C.resize(A.rows(), 3);
+    for (size_t i = 0; i < A.rows(); i++) {
+      C.row(i) = A.row(i).cross(B.row(i));
+    }
+    return C;
+  }
+}
+
+/**
  * @brief helper function for taking rowwise product of two vectors
  *
  * @param Eigen vector A
