@@ -110,9 +110,9 @@ void Force::getVesicleForces() {
                     vertexAngleNormal_e);
 
   /// D. LOCAL REGULARIZATION
-  stretchingForce.fill({0.0, 0.0, 0.0});
+  regularizationForce.fill({0.0, 0.0, 0.0});
 
-  if ((P.Ksl != 0) || (P.Kse != 0)) {
+  if ((P.Ksl != 0) || (P.Kse != 0) || (P.Kst != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
 
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -124,15 +124,19 @@ void Force::getVesicleForces() {
         gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
         assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
+        if (P.Kst != 0) {
+          regularizationForce[v] += -P.Kst * localAreaGradient;
+        }
+
         if (P.Ksl != 0) {
-          stretchingForce[v] +=
+          regularizationForce[v] +=
               - P.Ksl * localAreaGradient *
               (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
               targetFaceAreas[base_he.face()];
         }
 
         if (P.Kse != 0) {
-          stretchingForce[v] +=
+          regularizationForce[v] +=
               - P.Kse * edgeGradient *
               (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
               targetEdgeLengths[he.edge()];

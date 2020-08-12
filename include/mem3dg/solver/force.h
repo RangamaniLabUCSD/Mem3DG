@@ -43,10 +43,12 @@ struct Parameters {
   double Kb;
   /// Spontaneous curvature
   double H0;
-  /// Local stretching modulus
-  double Ksl;
   /// Global stretching modulus
   double Ksg;
+  /// Vertex shifting constant
+  double Kst;
+  /// Local stretching modulus
+  double Ksl;
   /// Edge spring constant
   double Kse;
   /// Volume regularization
@@ -94,7 +96,7 @@ public:
   gcs::VertexData<gc::Vector3> externalPressure;
 
   /// Cached local stretching forces (in-plane regularization)
-  gcs::VertexData<gc::Vector3> stretchingForce;
+  gcs::VertexData<gc::Vector3> regularizationForce;
   /// Cached damping forces
   gcs::VertexData<gc::Vector3> dampingForce;
   /// Cached stochastic forces
@@ -161,7 +163,7 @@ public:
         P(p), isTuftedLaplacian(isTuftedLaplacian_), mollifyFactor(mollifyFactor_),
         isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
         insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
-        externalPressure(mesh_, {0, 0, 0}), stretchingForce(mesh_, {0,0,0}), 
+        externalPressure(mesh_, {0, 0, 0}), regularizationForce(mesh_, {0,0,0}), 
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}), 
         vel(mesh_, {0, 0, 0}) {
 

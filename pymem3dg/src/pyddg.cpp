@@ -33,7 +33,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def("driver", &driver, " a driver function",
             py::arg("inputMesh"), py::arg("refMesh"), py::arg("isTuftedLaplacian"), 
             py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"), 
-            py::arg("Kse"), py::arg("Ksl"), py::arg("Ksg"),
+            py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
             py::arg("Kv"), py::arg("Vt"), py::arg("gamma"), 
             py::arg("kt"), py::arg("ptInd"), py::arg("Kf"), 
             py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"), py::arg("T"), 

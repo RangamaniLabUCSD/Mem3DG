@@ -111,7 +111,7 @@ void Force::getTubeForces() {
                      vertexAngleNormal_e);
 
   /// D. LOCAL REGULARIZATION
-  stretchingForce.fill({0.0, 0.0, 0.0});
+  regularizationForce.fill({0.0, 0.0, 0.0});
 
   if ((P.Ksl != 0) || (P.Kse != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
@@ -127,7 +127,7 @@ void Force::getTubeForces() {
 
         // patch simulation assumes constant surface tension
         if (P.Ksl != 0) {
-          stretchingForce[v] += - P.Ksl * gradient;
+          regularizationForce[v] += - P.Ksl * gradient;
         }
 
         // the cubic penalty is for regularizing the mesh,
@@ -136,7 +136,7 @@ void Force::getTubeForces() {
           double strain =
               (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
               targetEdgeLengths[he.edge()];
-          stretchingForce[v] +=
+          regularizationForce[v] +=
               -P.Kse * edgeGradient * strain * strain * strain;
         }
       }
