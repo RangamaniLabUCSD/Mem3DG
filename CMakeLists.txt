@@ -28,6 +28,10 @@ project(
 )
 message(STATUS "Mem3DG version: ${VERSION}")
 
+if(SKBUILD)
+    message(STATUS "The project is being built using scikit-build")
+endif()
+
 # Configure version.cpp to give access to version in code
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.cpp.in
@@ -78,7 +82,7 @@ add_subdirectory(include) # Get list of headers
 add_subdirectory(src) # Get list of sources
 list(APPEND DDG_SOURCES ${VERSION_FILE})
 
-# ddgsolver object library
+# mem3dg object library
 add_library(mem3dg_objlib OBJECT ${DDG_SOURCES} ${DDG_HEADERS})
 target_include_directories(
   mem3dg_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -91,9 +95,9 @@ if(WITH_NETCDF)
   target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
 endif()
 
-# ddgsolver library
-add_library(ddgsolver SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
-target_link_libraries(ddgsolver PUBLIC mem3dg_objlib)
+# mem3dg library
+add_library(mem3dg SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
+target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
 
 if(BUILD_PYMEM3DG)
   add_subdirectory(pymem3dg)
@@ -109,13 +113,13 @@ endif()
 include(GNUInstallDirs)
 # Install targets and headers
 install(
-  TARGETS ddgsolver
+  TARGETS mem3dg
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(
-  DIRECTORY include/ddgsolver
+  DIRECTORY include/mem3dg
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
   PATTERN "*.h"

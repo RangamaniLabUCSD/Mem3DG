@@ -1,6 +1,6 @@
 # Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
 
-[![Build Status](https://travis-ci.com/RangamaniLabUCSD/DDG_membrane.svg?token=HxusyqZoDyxkhvY6GCzF&branch=master)](https://travis-ci.com/RangamaniLabUCSD/DDG_membrane)
+[![Build Status](https://travis-ci.com/RangamaniLabUCSD/Mem3DG.svg?token=HxusyqZoDyxkhvY6GCzF&branch=master)](https://travis-ci.com/RangamaniLabUCSD/Mem3DG)
 
 3-D computational model for lipid membrane 
 

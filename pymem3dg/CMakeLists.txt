@@ -31,7 +31,7 @@ if(NOT pybind11_POPULATED)
   add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
 endif()
 
-# ddgsolver static library
+# mem3dg static library
 add_library(
   mem3dg_static STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:mem3dg_objlib>
 )
@@ -49,3 +49,18 @@ set(PYMEM3DG_SOURCES
 
 pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})
 target_link_libraries(pymem3dg PRIVATE mem3dg_static polyscope)
+
+
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+             INPUT ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)
+
+if(SKBUILD)
+  install(TARGETS pymem3dg LIBRARY DESTINATION pymem3dg)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py DESTINATION pymem3dg)
+else()
+  message(
+    WARNING
+      "CMake install no longer installs Pymem3DG to your Python site-packages. "
+      "Please configure and install using 'python setup.py install' instead."
+  )
+endif()

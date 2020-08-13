@@ -1,0 +1,11 @@
+  
+# Required for building
+cmake >= 3.10
+scikit-build
+setuptools
+wheel
+numpy
+
+# Recommended
+ninja
+pytest
