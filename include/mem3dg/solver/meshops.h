@@ -91,8 +91,7 @@ rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
                   Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
   Eigen::Matrix<double, Eigen::Dynamic, 3> C;
   if (A.rows() != B.rows()) {
-    std::cout << "The input matrices must have same sizes!" << std::endl;
-    C.resize(1, 3);
+    throw std::runtime_error("The input matrices must have same sizes!");
     return C;
   } else {
     C.resize(A.rows(), 3);
@@ -189,6 +188,35 @@ vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
       }
     }
   }
+}
+
+/**
+ * @brief Remove the rigid body translation
+ *
+ * @param Eigen pressure matrix
+ */
+DLL_PUBLIC inline void 
+ removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
+  pressure = pressure.rowwise() -
+                     ((pressure).colwise().sum() / pressure.rows());
+}
+
+/**
+ * @brief Remove the rigid body Rotation
+ *
+ * @param Eigen pressure matrix
+ * @param Eigen position matrix
+ */
+DLL_PUBLIC inline void removeRotation(
+    Eigen::Matrix<double, Eigen::Dynamic, 3>
+        position, Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
+  pressure =
+      pressure.rowwise() -
+      (rowwiseCrossProduct(position,
+                           pressure)
+           .colwise()
+           .sum() /
+       pressure.rows());
 }
 
 /**

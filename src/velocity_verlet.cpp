@@ -35,7 +35,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
-                    double closeZone, double increment, double tSave,
+                    double closeZone, double increment, double maxKv, double maxKsg, double tSave,
                     double tMollify, std::string inputMesh, std::string outputDir) {
 
   // print out a .txt file listing all parameters used
@@ -57,14 +57,18 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure;
   Eigen::Matrix<double, Eigen::Dynamic, 3> numericalPressure;
 
-  double oldBE = 0.0;
+  bool exitFlag = false;
   double totalEnergy;
+  double oldL2ErrorNorm = 1e6;
   double L2ErrorNorm;
+  double dL2ErrorNorm;
+  double oldBE = 0.0;
   double BE;
   double dBE;
   double dArea;
   double dVolume;
   double dFace;
+  double dRef;
   size_t nMollify = size_t(tMollify / tSave);
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -81,33 +85,24 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     f.getDPDForces();
     f.getExternalForces();
 
-    // std::cout << "bf: " << EigenMap<double, 3>(f.bendingPressure).norm()
-    //  << "sf: " << EigenMap<double, 3>(f.capillaryPressure).norm()
-    //  << "pf: " << EigenMap<double, 3>(f.insidePressure).norm()
-    //  << "df: " << EigenMap<double, 3>(f.dampingForce).norm()
-    //  << "xf: " << EigenMap<double, 3>(f.stochasticForce).norm() <<
-    //  std::endl;
-
     physicalPressure = EigenMap<double, 3>(f.bendingPressure) +
                   EigenMap<double, 3>(f.capillaryPressure) +
                   EigenMap<double, 3>(f.insidePressure) +
                   EigenMap<double, 3>(f.externalPressure);
 
+    removeTranslation(physicalPressure);
+    removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+                   physicalPressure);
+
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                    EigenMap<double, 3>(f.stochasticForce) +
                    EigenMap<double, 3>(f.regularizationForce));
 
-    newTotalPressure = physicalPressure + numericalPressure;
+    removeTranslation(numericalPressure);
+    removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+                   numericalPressure);
 
-    // Removing the rigid body translation/rotation pressure
-    newTotalPressure =
-        newTotalPressure.rowwise() -
-        ((newTotalPressure).colwise().sum() / f.mesh.nVertices());
-    newTotalPressure =
-        newTotalPressure.rowwise() -
-        (rowwiseCrossProduct(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-                             newTotalPressure).colwise().sum() /
-         f.mesh.nVertices());
+    newTotalPressure = physicalPressure + numericalPressure;
 
     // periodically save the geometric files, print some info, compare and adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
@@ -169,6 +164,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
       std::tie(totalEnergy, BE) = getFreeEnergy(f);
 
+      dL2ErrorNorm = L2ErrorNorm - oldL2ErrorNorm;
+
       if (f.P.Kb != 0) {
         dBE = abs(BE - oldBE) / (BE + 1e-7);
       } else {
@@ -198,8 +195,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       }
 
       char buffer[50];
-      sprintf(buffer, "t=%d.ply", int(i * dt * 100));
-      f.richData.write(outputDir + buffer);
+      sprintf(buffer, "t=%d", int(i * dt * 100));
+      f.richData.write(outputDir + buffer + ".ply");
+      getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, dArea, dVolume,
+                   dBE, dFace, BE, totalEnergy, L2ErrorNorm,
+                   f.isTuftedLaplacian, inputMesh);
 
       // 2. print
       std::cout
@@ -207,7 +207,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Time: " << i * dt << "\n"
           << "dArea: " << dArea << "\n"
           << "dVolume:  " << dVolume << "\n"
-          << "dBE: " << dBE << "\n"
+          << "dBE: " << dBE << "\n" 
+          << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
           << "Bending energy: " << BE << "\n"
           << "Total energy (exclude V^ext): " << totalEnergy << "\n"
           << "L2 error norm: " << L2ErrorNorm << "\n"
@@ -217,15 +218,15 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "\n"
           << "Height: "
           << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.P.ptInd)].z) << "\n"
-          << "Increase force spring constant Kv to " << f.P.Kf << "\n";
+          << "Increase force spring constant Kf to " << f.P.Kf << "\n";
 
       // 3.1.1 compare and adjust (in the case of vesicle simulation)
       if ((dVolume < closeZone * tolerance) && (!f.mesh.hasBoundary()) &&
           (dArea < closeZone * tolerance) && (dBE < closeZone * tolerance)) {
-        double ref = std::max({dVolume, dArea, dFace});
-        f.P.kt *= 1 - dBE / ref * increment;
-        f.P.Kv *= 1 + dVolume / ref * increment;
-        f.P.Ksg *= 1 + dArea / ref * increment;
+        dRef = std::max({dVolume, dArea, dFace});
+        f.P.kt *= 1 - dBE / dRef * increment;
+        f.P.Kv = std::min(f.P.Kv * (1 + dVolume / dRef * increment), maxKv);
+        f.P.Ksg = std::min(f.P.Ksg * (1 + dArea / dRef * increment), maxKsg);
 
         std::cout << "Within the close zone below " << closeZone
                   << " times tolerance(" << tolerance << "): "
@@ -239,25 +240,31 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       f.P.Kf *= 1 + increment;
 
       // 3.2 compare and exit
-      if ((dVolume < tolerance) && (dArea < tolerance) && (dBE < tolerance)) {
+      if (((dVolume < tolerance) && (dArea < tolerance) && (dBE < tolerance) && (dL2ErrorNorm > 0))||(exitFlag == true)) {
+        f.P.Kv *= (1 - dVolume / dRef * increment);
+        f.P.Ksg *= (1 - dArea / dRef * increment);
+        exitFlag = true;
+        f.P.kt = 0.0;
+        increment = 0;
         if (nMollify > 0) {
+
           std::cout << "\n"
                     << nMollify << " mollification(s) left" << std::endl;
-          f.P.kt = 0.0;
           nMollify -= 1;
         } else {
           std::cout << "\n"
                     << "Converged! Saved to " + outputDir << std::endl;
           f.richData.write(outputDir + "final.ply");
-          getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE,
-                        totalEnergy, L2ErrorNorm, inputMesh, outputDir);
+          getStatusLog(outputDir + "summary.txt", f, dt, i * dt, dArea, dVolume, dBE,
+                        dFace, BE, totalEnergy, L2ErrorNorm,
+                       f.isTuftedLaplacian, inputMesh);
           break;
         }
       }
 
-      L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
-      std::tie(totalEnergy, oldBE) = getFreeEnergy(f);
-    }
+      oldL2ErrorNorm = L2ErrorNorm;
+      oldBE = BE;
+    }// periodically save the geometric files, print some info, compare and adjust
 
     pos_e += vel_e * dt + hdt2 * rowwiseScaling(f.mask.cast<double>(), totalPressure);
     vel_e += rowwiseScaling(f.mask.cast<double>(), totalPressure + newTotalPressure) * hdt;
@@ -266,6 +273,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     // Regularize the vetex position geometry if needed
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
+    }
+
+    if (f.vpg.cornerAngles.raw().minCoeff() < (M_PI / 6)) {
+      f.isTuftedLaplacian = true;
+    } else {
+      f.isTuftedLaplacian = false;
     }
 
     // recompute cached values
@@ -278,7 +291,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Fail to converge in given time and Exit. Past data saved to " +
                  outputDir
           << std::endl;
-      getSummaryLog(f, dt, i * dt, dArea, dVolume, dBE, dFace, BE, totalEnergy, L2ErrorNorm, inputMesh, outputDir);
+      getStatusLog(outputDir + "failure_report.txt", f, dt, i * dt, dArea,
+                   dVolume, dBE, dFace, BE, totalEnergy, L2ErrorNorm,
+                  f.isTuftedLaplacian, inputMesh);
     }
 
   } // periodic save, print and adjust

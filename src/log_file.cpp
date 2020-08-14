@@ -24,7 +24,7 @@ namespace ddgsolver {
 namespace integration {
 
 void getParameterLog(Force &f, double dt,
-                     double total_time, double tolerance,
+                     double finalTime, double tolerance,
                      double tSave, std::string inputMesh,
                      std::string outputDir) {
   ofstream myfile(outputDir + "parameter.txt");
@@ -37,6 +37,7 @@ void getParameterLog(Force &f, double dt,
            << "H0:     " << f.P.H0 << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
+           << "Kst:    " << f.P.Kst << "\n"
            << "Ksg:    " << f.P.Ksg << "\n"
            << "Kv:     " << f.P.Kv << "\n"
            << "gamma:  " << f.P.gamma << "\n"
@@ -52,7 +53,7 @@ void getParameterLog(Force &f, double dt,
     myfile << "Integration parameters used: \n";
     myfile << "\n";
     myfile << "dt:       " << dt << "\n"
-           << "T:        " << total_time << "\n"
+           << "T:        " << finalTime << "\n"
            << "eps:		   " << tolerance << "\n"
            << "tSave:    " << tSave << "\n"
            << "no. non-integrated: "
@@ -63,11 +64,11 @@ void getParameterLog(Force &f, double dt,
     cout << "Unable to open file";
 }
 
-void getSummaryLog(Force &f, double dt, double final_time, double areaError,
-                   double volumeError, double bendingError, double faceError,
-                   double bendingEnergy, double totalEnergy, double L2ErrorNorm,
-                   std::string inputMesh, std::string outputDir) {
-  ofstream myfile(outputDir + "Summary.txt");
+void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, double areaError,
+                   double volumeError, double bendingError, double faceError, double bendingEnergy, double totalEnergy,
+                  double L2ErrorNorm, bool isTuftedLaplacian,
+                   std::string inputMesh) {
+  ofstream myfile(nameOfFile);
   if (myfile.is_open()) {
     myfile << "Input Mesh: " << inputMesh << "\n";
     myfile << "Final parameter: \n";
@@ -76,6 +77,7 @@ void getSummaryLog(Force &f, double dt, double final_time, double areaError,
            << "H0:     " << f.P.H0 << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
+           << "Kst:    " << f.P.Kst << "\n"
            << "Ksg:    " << f.P.Ksg << "\n"
            << "Kv:     " << f.P.Kv << "\n"
            << "gamma:  " << f.P.gamma << "\n"
@@ -90,21 +92,21 @@ void getSummaryLog(Force &f, double dt, double final_time, double areaError,
     myfile << "Integration: \n";
     myfile << "\n";
     myfile << "dt:    " << dt << "\n"
-           << "T:     " << final_time << "\n";
+           << "T:     " << time << "\n";
 
     myfile << "\n";
     myfile << "States: \n";
     myfile << "\n";
     myfile << "Bending Energy:   " << bendingEnergy << "\n"
-           << "Total Energy:   " << totalEnergy << "\n" 
-           << "L2 error norm:" << L2ErrorNorm << "\n"
+           << "Total Energy:     " << totalEnergy << "\n" 
+           << "L2 error norm:    " << L2ErrorNorm << "\n"
            << "Volume:           " << f.volume << " = "
            << f.volume / f.refVolume << " reduced volume"
            << "\n"
            << "Surface area:     " << f.surfaceArea << " = "
            << f.surfaceArea / f.targetSurfaceArea << " target surface area"
            << "\n"
-           << "COM (x, y, z):		"
+           << "COM (x, y, z):		 "
            << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
                   f.vpg.inputVertexPositions.raw().rows()
            << "\n";
@@ -120,6 +122,11 @@ void getSummaryLog(Force &f, double dt, double final_time, double areaError,
            << "\n"
            << "Face area error:     " << faceError * 100 << "%"
            << "\n";
+
+    myfile << "\n";
+    myfile << "Options: \n";
+    myfile << "\n";
+    myfile << "Is tufted laplacian: " << isTuftedLaplacian << "\n";
 
     myfile.close();
   } else

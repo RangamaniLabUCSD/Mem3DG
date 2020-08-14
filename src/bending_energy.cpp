@@ -36,7 +36,6 @@ double getL2ErrorNorm(
 
   return sqrt(
       (M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
-
 }
 
 std::tuple<double, double> getFreeEnergy(Force &f) {
