@@ -142,7 +142,8 @@ int genIcosphere(size_t nSub, std::string path, double R) {
 
 int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
            double mollifyFactor, bool isVertexShift, double Kb, double H0,
-           double Kse, double Kst, double Ksl, double Ksg, double Kv, double Vt,
+           double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
+           std::vector<double>Kv, double Vt,
            double gamma, double kt, size_t ptInd, double kf, double conc,
            double height, double radius, double h, double T, double eps,
            double closeZone, double increment, double tSave, double tMollify,
@@ -150,7 +151,7 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
 
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
-  ddgsolver::Parameters p{Kb, H0,    Ksg, Kst, Ksl, Kse,  Kv, gamma, Vt,
+  ddgsolver::Parameters p{Kb, H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], gamma, Vt,
                           kt, sigma, ptInd, kf,  conc, height, radius};
 
   std::cout << "Loading input mesh " << inputMesh << " ...";
@@ -178,6 +179,7 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
 
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
+                                         Kv[1], Ksg[1],
                                          tSave, tMollify, inputMesh, outputDir);
 
   return 0;

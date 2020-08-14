@@ -33,7 +33,8 @@ DLL_PUBLIC void stormerVerlet(Force &f, double dt, double total_time,
 
 DLL_PUBLIC void velocityVerlet(Force &f, double dt, double total_time,
                                double tolerance, double closeZone,
-                               double increment, double tSave, double tMollify,
+                               double increment, double maxKv, double maxKsg,
+                               double tSave, double tMollify,
                                std::string inputMesh, std::string outputDir);
 
 DLL_PUBLIC void getParameterLog(Force &f, double dt,
@@ -41,12 +42,12 @@ DLL_PUBLIC void getParameterLog(Force &f, double dt,
                                 double tolerance, double tSave,
                                 std::string inputMesh, std::string outputDir);
 
-DLL_PUBLIC void getSummaryLog(Force &f, double dt, double final_time,
+DLL_PUBLIC void getStatusLog(std::string nameOfFile, Force &f, double dt, double final_time,
                               double areaError, double volumeError,
                               double bendingError, double faceError,
                               double bendingEnergy, double totalEnergy,
-                              double L2ErrorNorm,
-                              std::string inputMesh, std::string outputDir);
+                              double L2ErrorNorm, bool isTuftedLaplacian,
+                              std::string inputMesh);
 
 } // namespace integration
 } // namespace ddgsolver
