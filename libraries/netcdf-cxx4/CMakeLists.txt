@@ -1,0 +1,40 @@
+## This is a CMake file, part of Unidata's netcdf-cxx package.
+###
+# Set up headers and sources
+###
+
+file(GLOB CXX_HEADERS *.h)
+file(GLOB CXX_SOURCES nc*.cpp)
+
+find_package(NetCDF REQUIRED)
+
+ADD_LIBRARY(netcdf-cxx4 ${CXX_SOURCES})
+
+TARGET_INCLUDE_DIRECTORIES(netcdf-cxx4 PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+  )
+TARGET_LINK_LIBRARIES(netcdf-cxx4 PUBLIC netCDF::netcdf)
+# TARGET_LINK_LIBRARIES(netcdf-cxx4 PUBLIC ${ALL_TLL_LIBS})
+# target_include_directories(netcdf-cxx4 SYSTEM PUBLIC "${HDF5_INCLUDE_DIRS}")
+
+# SET_TARGET_PROPERTIES(netcdf-cxx4 PROPERTIES
+#   VERSION ${NCXX_LIB_VERSION}
+#   SOVERSION ${NCXX_SO_VERSION}
+#   )
+
+# INSTALL(
+#   FILES ${CXX_HEADERS}
+#   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#   )
+# INSTALL(
+#   FILES netcdf
+#   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#   )
+# INSTALL(
+#   TARGETS netcdf-cxx4
+#   EXPORT netcdf-cxx4Targets
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#   )
