@@ -71,8 +71,7 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg)
 
 if(WITH_NETCDF)
-  find_package(NetCDF_cxx4 REQUIRED)
-  list(APPEND LINKED_LIBS NetCDF::NetCDF_cxx4)
+  list(APPEND LINKED_LIBS netcdf-cxx4)
 endif()
 
 # ##############################################################################

@@ -15,6 +15,9 @@
 include(FetchContent)
 
 add_subdirectory(pcg)
+if(WITH_NETCDF)
+  add_subdirectory(netcdf-cxx4)
+endif()
 
 # ##############################################################################
 # GET GEOMETRY CENTRAL
