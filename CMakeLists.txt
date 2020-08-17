@@ -71,24 +71,28 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg)
 
 if(WITH_NETCDF)
-
   find_package(netCDF CONFIG REQUIRED)
-
-  find_path(netcdf-cxx4_INCLUDE_DIRS NAMES netcdf)
-    include(SelectLibraryConfigurations)
-  find_library(netcdf-cxx4_LIBRARY_RELEASE NAMES netcdf-cxx4)
-  find_library(netcdf-cxx4_LIBRARY_DEBUG NAMES netcdf-cxx4 PATH_SUFFIXES debug/lib)
-  select_library_configurations(netcdf-cxx4)
-  
-  message(STATUS ${netcdf-cxx4_INCLUDE_DIRS})
-  message(STATUS ${netcdf-cxx4_LIBRARY})
-
   message(STATUS ${netCDF_VERSION})
   message(STATUS ${netCDF_DIR})
-  message(STATUS ${netCDF_LDFLAGS})
   message(STATUS ${netCDF_LIBRARIES})
-  
-  list(APPEND LINKED_LIBS ${netcdf-cxx4_LIBRARY} netCDF::netcdf)
+  list(APPEND LINKED_LIBS netCDF::netcdf)
+
+  find_package(NetCDF_cxx4)
+
+  if(NetCDF_cxx4_FOUND)
+    list(APPEND LINKED_LIBS NetCDF::NetCDF_cxx4)
+  else()
+    find_path(netcdf-cxx4_INCLUDE_DIRS NAMES netcdf REQUIRED)
+    include(SelectLibraryConfigurations)
+    find_library(netcdf-cxx4_LIBRARY_RELEASE NAMES netcdf-cxx4)
+    find_library(netcdf-cxx4_LIBRARY_DEBUG NAMES netcdf-cxx4 PATH_SUFFIXES debug/lib)
+    select_library_configurations(netcdf-cxx4)
+    
+    message(STATUS ${netcdf-cxx4_INCLUDE_DIRS})
+    message(STATUS ${netcdf-cxx4_LIBRARY})
+
+    list(APPEND LINKED_LIBS ${netcdf-cxx4_LIBRARY})
+  endif()
 endif()
 
 # ##############################################################################
