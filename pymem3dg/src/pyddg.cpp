@@ -53,8 +53,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             py::arg("fileName"));
 
 
-  /*pymem3dg.def("view_animation", &view_animation, " a visualization function",
-            py::arg("fileName"));*/
+  pymem3dg.def("view_animation", &view_animation, " a visualization function",
+            py::arg("fileName"));
 
 
   pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
