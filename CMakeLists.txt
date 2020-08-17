@@ -60,7 +60,7 @@ print_debug_messages()
 include(FetchContent)
 
 option(BUILD_PYMEM3DG "Build the python extensions?" ON)
-option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" OFF)
+option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" ON)
 option(BUILD_MEM3DG_DOCS "Build the python extensions?" ON)
 
 # ##############################################################################
@@ -71,7 +71,24 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg)
 
 if(WITH_NETCDF)
-  list(APPEND LINKED_LIBS netcdf-cxx4)
+
+  find_package(netCDF CONFIG REQUIRED)
+
+  find_path(netcdf-cxx4_INCLUDE_DIRS NAMES netcdf)
+    include(SelectLibraryConfigurations)
+  find_library(netcdf-cxx4_LIBRARY_RELEASE NAMES netcdf-cxx4)
+  find_library(netcdf-cxx4_LIBRARY_DEBUG NAMES netcdf-cxx4 PATH_SUFFIXES debug/lib)
+  select_library_configurations(netcdf-cxx4)
+  
+  message(STATUS ${netcdf-cxx4_INCLUDE_DIRS})
+  message(STATUS ${netcdf-cxx4_LIBRARY})
+
+  message(STATUS ${netCDF_VERSION})
+  message(STATUS ${netCDF_DIR})
+  message(STATUS ${netCDF_LDFLAGS})
+  message(STATUS ${netCDF_LIBRARIES})
+  
+  list(APPEND LINKED_LIBS ${netcdf-cxx4_LIBRARY} netCDF::netcdf)
 endif()
 
 # ##############################################################################
@@ -92,6 +109,7 @@ set_target_properties(
   mem3dg_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON)
 if(WITH_NETCDF)
   target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
+  target_include_directories(mem3dg_objlib PRIVATE ${netcdf-cxx4_INCLUDE_DIRS})
 endif()
 
 # mem3dg library
