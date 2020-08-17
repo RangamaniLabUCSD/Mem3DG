@@ -1,0 +1,18 @@
+include VERSION
+include README.md
+include pyproject.toml
+
+# CMake Helpers
+include cmake/*
+include CMakeLists.txt
+
+# C++ sources
+include include/mem3dg/solver/*
+include src/*
+recursive-include libraries *
+
+# PyMem3DG sources
+recursive-include pymem3dg *
+
+# Unit Test
+recursive-include tests *

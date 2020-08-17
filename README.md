@@ -1,6 +1,6 @@
 # Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
 
-[![Build Status](https://travis-ci.com/RangamaniLabUCSD/DDG_membrane.svg?token=HxusyqZoDyxkhvY6GCzF&branch=master)](https://travis-ci.com/RangamaniLabUCSD/DDG_membrane)
+[![Build Status](https://travis-ci.com/RangamaniLabUCSD/Mem3DG.svg?token=HxusyqZoDyxkhvY6GCzF&branch=master)](https://travis-ci.com/RangamaniLabUCSD/Mem3DG)
 
 3-D computational model for lipid membrane 
 
@@ -17,6 +17,19 @@ cd build
 cmake -DBUILD_PYDDG=ON -DWITH_NETCDF=ON -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 ```
+
+## Temporary notes for setting up netcdf (especially on windows...)
+
+1. Download `vcpkg` and follow the instructions to install
+2. Install 32 or 64 bit version of `netcdf-c` and `netcdf-cxx4` libraries depending upon your configuration.
+
+   `vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows`
+
+   Remove the `:x64-windows` from the above string for the 32 bit libraries.
+
+3. Configure the vcpkg CMake toolchain `vcpkg integrate install`
+4. Copy and paste the `-DCMAKE_TOOLCHAIN...` string as an input into your CMake configuration.
+5. Build as normal
 
 ## Dependencies
 
