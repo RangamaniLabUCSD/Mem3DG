@@ -31,6 +31,8 @@ cmake --build . --config Release
 4. Copy and paste the `-DCMAKE_TOOLCHAIN...` string as an input into your CMake configuration.
 5. Build as normal
 
+1.  python setup.py build -- -DCMAKE_TOOLCHAIN_FILE="C:/Users/Kieran/vcpkg/scripts/buildsystems/vcpkg.cmake" -G "Visual Studio 16 2019" -T host=x64 -A x64 -- /m:6
+
 ## Dependencies
 
 * Optional trajectory output uses NetCDF. Both the NetCDF and NetCDF_cxx4 libraries must be available on your system to use this feature.
