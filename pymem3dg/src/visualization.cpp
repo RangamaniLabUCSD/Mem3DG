@@ -14,6 +14,7 @@
 
 #ifdef MEM3DG_WITH_NETCDF
 #include <iostream>
+#include <time.h>
 
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
@@ -25,6 +26,12 @@
 #else
 #include <unistd.h>
 #endif
+
+void wait(unsigned timeout)
+{
+  timeout += std::clock(); 
+  while(std::clock() < timeout) continue;
+}
 
 using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 using EigenVectorX3D =
@@ -62,12 +69,13 @@ polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd) {
   return mesh;
 }
 
-void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx) {
+void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx, int &waitTime) {
   updateSurfaceMesh(mesh, fd, idx);
   idx++;
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
   }
+  wait(waitTime);
 }
 
 int view_animation(std::string &filename) {
@@ -79,6 +87,8 @@ int view_animation(std::string &filename) {
   int currFrame = 0;
   bool play = false;
   int maxFrame = fd.getNextFrameIndex() - 1;
+  int maxWaitTime = 500;
+  int waitTime = 0;
 
   // Some settings for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -103,6 +113,8 @@ int view_animation(std::string &filename) {
 
     ImGui::SliderInt("index", &currFrame, 0, maxFrame); // set a float variable
 
+    ImGui::SliderInt("slow-mo", &waitTime, 0, maxWaitTime); // set a float variable
+
     if (ImGui::Button("Play/Pause")) {
       play = !play;
     }
@@ -113,7 +125,7 @@ int view_animation(std::string &filename) {
     }
 
     if (play) {
-      animate(mesh, fd, currFrame);
+      animate(mesh, fd, currFrame, waitTime);
       prevFrame = currFrame;
     }
     ImGui::PopItemWidth();
