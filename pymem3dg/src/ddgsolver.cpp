@@ -20,6 +20,7 @@
 #include <geometrycentral/surface/simple_polygon_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include "polyscope/curve_network.h"
 #include "polyscope/point_cloud.h"
@@ -82,8 +83,8 @@ int viewer(std::string fileName) {
       surfaceTension.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e = bendingPressure.raw();
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
-  ddgsolver::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
-  Eigen::Dynamic, 3> tangentialForce_e = ddgsolver::EigenMap<double,
+  gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
+  Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
   3>(tangentialForce);*/
 
   std::cout << "Opening Polyscope GUI ...";

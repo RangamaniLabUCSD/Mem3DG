@@ -51,7 +51,7 @@ FetchContent_MakeAvailable(googletest)
 set_property(TARGET gtest PROPERTY CXX_STANDARD 11)
 
 # Build the tests
-set(TEST_SRCS src/main_test.cpp src/mapping_test.cpp src/dotproduct_test.cpp
+set(TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
               src/force_calculation_test.cpp
 )
 

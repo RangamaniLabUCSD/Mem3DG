@@ -21,6 +21,7 @@
 #include <geometrycentral/surface/polygon_soup_mesh.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <Eigen/Core>
 
@@ -73,19 +74,19 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 
   f.getVesicleForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =
-      ddgsolver::EigenMap<double, 3>(f.bendingPressure);
+      gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure1 =
-      ddgsolver::EigenMap<double, 3>(f.insidePressure);
+      gc::EigenMap<double, 3>(f.insidePressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure1 =
-      ddgsolver::EigenMap<double, 3>(f.capillaryPressure);
+      gc::EigenMap<double, 3>(f.capillaryPressure);
 
   f.getVesicleForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure2 =
-      ddgsolver::EigenMap<double, 3>(f.bendingPressure);
+      gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure2 =
-      ddgsolver::EigenMap<double, 3>(f.insidePressure);
+      gc::EigenMap<double, 3>(f.insidePressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure2 =
-      ddgsolver::EigenMap<double, 3>(f.capillaryPressure);
+      gc::EigenMap<double, 3>(f.capillaryPressure);
 
   ASSERT_TRUE((bendingPressure1 - bendingPressure2).norm() < 1e-12);
   ASSERT_TRUE((capillaryPressure1 - capillaryPressure2).norm() < 1e-12);
@@ -98,19 +99,19 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
 
   f.getVesicleForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =
-      ddgsolver::EigenMap<double, 3>(f.bendingPressure);
+      gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure1 =
-      ddgsolver::EigenMap<double, 3>(f.insidePressure);
+      gc::EigenMap<double, 3>(f.insidePressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure1 =
-      ddgsolver::EigenMap<double, 3>(f.capillaryPressure);
+      gc::EigenMap<double, 3>(f.capillaryPressure);
 
   f.getBendingForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure2 =
-      ddgsolver::EigenMap<double, 3>(f.bendingPressure);
+      gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure2 =
-      ddgsolver::EigenMap<double, 3>(f.insidePressure);
+      gc::EigenMap<double, 3>(f.insidePressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure2 =
-      ddgsolver::EigenMap<double, 3>(f.capillaryPressure);
+      gc::EigenMap<double, 3>(f.capillaryPressure);
 
   ASSERT_TRUE((bendingPressure1 - bendingPressure2).norm() < 1e-12);
   ASSERT_TRUE((capillaryPressure1 - capillaryPressure2).norm() < 1e-12);

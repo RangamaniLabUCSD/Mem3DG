@@ -23,6 +23,7 @@
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <Eigen/Core>
 
@@ -36,16 +37,16 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getVelocityFromPastPosition(double dt) {
-  auto vel_e = EigenMap<double, 3>(vel);
-  auto pos_e = EigenMap<double, 3>(vpg.inputVertexPositions);
-  auto pastpos_e = EigenMap<double, 3>(pastPositions);
+  auto vel_e = gc::EigenMap<double, 3>(vel);
+  auto pos_e = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
+  auto pastpos_e = gc::EigenMap<double, 3>(pastPositions);
   vel_e = (pos_e - pastpos_e) / dt;
 }
 
 void Force::getDPDForces() {
   // Reset forces to zero
-  auto dampingForce_e = EigenMap<double, 3>(dampingForce);
-  auto stochasticForce_e = EigenMap<double, 3>(stochasticForce);
+  auto dampingForce_e = gc::EigenMap<double, 3>(dampingForce);
+  auto stochasticForce_e = gc::EigenMap<double, 3>(stochasticForce);
   dampingForce_e.setZero();
   stochasticForce_e.setZero();
 

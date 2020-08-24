@@ -21,6 +21,7 @@
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <Eigen/Core>
 
@@ -36,11 +37,11 @@ void Force::getVesicleForces() {
   
   /// 0. GENERAL
   // map the MeshData to eigen matrix XXX_e
-  auto bendingPressure_e = EigenMap<double, 3>(bendingPressure);
-  auto insidePressure_e = EigenMap<double, 3>(insidePressure);
-  auto capillaryPressure_e = EigenMap<double, 3>(capillaryPressure);
-  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
-  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+  auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
+  auto insidePressure_e = gc::EigenMap<double, 3>(insidePressure);
+  auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
+  auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
   Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
 
   // Alias

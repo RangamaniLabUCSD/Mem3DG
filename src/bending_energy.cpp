@@ -18,6 +18,7 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <Eigen/Core>
 
@@ -44,7 +45,7 @@ std::tuple<double, double> getFreeEnergy(Force &f) {
   // energy trajectory of could actually numerically integrated by post
   // processing after saving all forces during the iterations.
 
-  // auto positions = ddgsolver::EigenMap<double, 3>(vpg.inputVertexPositions);
+  // auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
   // auto A = f.L.transpose() * f.M_inv * f.L; //could further cached since the
   // same for all time pt for (size_t i = 0; i < positions.rows(); i++) {
   // for
