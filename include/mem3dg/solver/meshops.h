@@ -20,6 +20,8 @@
 
 #include <Eigen/Core>
 
+#include <math.h>
+
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/util.h"
 
@@ -217,6 +219,38 @@ DLL_PUBLIC inline void removeRotation(
            .colwise()
            .sum() /
        pressure.rows());
+}
+
+/**
+ * @brief Gaussian distribution
+ *
+ * @param distance vector 
+ * @param standard deviation
+ */
+DLL_PUBLIC inline void
+gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1>& distribution,
+                         Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
+                     double stdDev) {
+  distribution = (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
+      (stdDev * pow(M_PI * 2, 0.5));
+}
+
+/**
+ * @brief height = 1 tanh step function with radius r
+ *
+ * @param (double) sharpness of transition
+ * @param (double) radius of height = 1
+ * @param (Eigen vector) distance vector
+ * 
+ */
+DLL_PUBLIC inline void
+tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1>& distribution,
+                     Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
+                     double sharpness, double radius) {
+  distribution.resize(distance.rows(), 1);
+  for (size_t i = 0; i < distance.rows(); i++) {
+    distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
+  }
 }
 
 /**

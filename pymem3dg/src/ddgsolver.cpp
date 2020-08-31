@@ -140,10 +140,10 @@ int genIcosphere(size_t nSub, std::string path, double R) {
   return 0;
 }
 
-int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
+int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, bool isProtein,
            double mollifyFactor, bool isVertexShift, double Kb, double H0, double sharpness,
            double r_H0, double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
-           std::vector<double>Kv, double Vt,
+           std::vector<double>Kv, double epsilon, double Vt,
            double gamma, double kt, size_t ptInd, double kf, double conc,
            double height, double radius, double h, double T, double eps,
            double closeZone, double increment, double tSave, double tMollify,
@@ -151,7 +151,7 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
 
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
-  ddgsolver::Parameters p{Kb, H0, sharpness, r_H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], gamma, Vt,
+  ddgsolver::Parameters p{Kb, H0, sharpness, r_H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], epsilon, gamma, Vt,
                           kt, sigma, ptInd, kf,  conc, height, radius};
 
   std::cout << "Loading input mesh " << inputMesh << " ...";
@@ -169,11 +169,12 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
 
   std::cout << "Loading reference mesh " << refMesh << " ...";
   std::unique_ptr<gcs::SurfaceMesh> ptrRefMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg = ptrVpg->copy();
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg;
+  std::tie(ptrRefMesh, ptrRefVpg) = gcs::readManifoldSurfaceMesh(refMesh);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Initiating the system ...";
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p,
+  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
