@@ -141,8 +141,8 @@ int genIcosphere(size_t nSub, std::string path, double R) {
 }
 
 int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
-           double mollifyFactor, bool isVertexShift, double Kb, double H0,
-           double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
+           double mollifyFactor, bool isVertexShift, double Kb, double H0, double sharpness,
+           double r_H0, double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
            std::vector<double>Kv, double Vt,
            double gamma, double kt, size_t ptInd, double kf, double conc,
            double height, double radius, double h, double T, double eps,
@@ -151,7 +151,7 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
 
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
-  ddgsolver::Parameters p{Kb, H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], gamma, Vt,
+  ddgsolver::Parameters p{Kb, H0, sharpness, r_H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], gamma, Vt,
                           kt, sigma, ptInd, kf,  conc, height, radius};
 
   std::cout << "Loading input mesh " << inputMesh << " ...";

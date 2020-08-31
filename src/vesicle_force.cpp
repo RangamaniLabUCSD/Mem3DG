@@ -68,9 +68,6 @@ void Force::getVesicleForces() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> &KG_integrated =
       vpg.vertexGaussianCurvatures.raw();
 
-  // initialize the spontaneous curvature matrix
-  H0.setConstant(n_vertices, 1, P.H0);
-
   // calculate the Laplacian of mean curvature H
   Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
 

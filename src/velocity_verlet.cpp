@@ -104,14 +104,14 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
     newTotalPressure = physicalPressure + numericalPressure;
 
+    #ifdef MEM3DG_WITH_NETCDF
+    std::size_t frame = fd.getNextFrameIndex();
+    fd.writeTime(frame, i * dt);
+    fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
+    #endif
+
     // periodically save the geometric files, print some info, compare and adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
-
-#ifdef MEM3DG_WITH_NETCDF
-      std::size_t frame = fd.getNextFrameIndex();
-      fd.writeTime(frame, i * dt);
-      fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
-#endif
 
       // 1. save
       f.richData.addGeometry(f.vpg);

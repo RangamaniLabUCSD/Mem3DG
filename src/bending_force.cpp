@@ -23,7 +23,6 @@
 #include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
-
 #include "mem3dg/solver/force.h"
 #include "mem3dg/solver/meshops.h"
 
@@ -58,9 +57,6 @@ void Force::getBendingForces() {
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
       M_inv * vpg.vertexGaussianCurvatures.raw();
-
-  // initialize the spontaneous curvature matrix
-  H0.setConstant(n_vertices, 1, P.H0);
 
   // calculate the Laplacian of mean curvature H
   Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * (H - H0);
