@@ -78,4 +78,20 @@ void Force::getBendingForces() {
   bendingPressure_e = rowwiseScaling(-2.0 * P.Kb * (productTerms + lap_H),
                                    vertexAngleNormal_e);
 }
+
+void Force::getChemicalPotential() { 
+  
+  Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
+      (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
+
+  H0 = (2 * proteinDensitySq.array() / (1 + proteinDensitySq.array())).matrix();
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> dH0dphi =
+      (P.H0 * proteinDensity.raw().array() /
+            ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array()))).matrix();
+
+  chemicalPotential.raw() =
+      (P.epsilon - (2 * P.Kb * (H - H0)).array() * dH0dphi.array()).matrix();
+}
+
 } // end namespace ddgsolver

@@ -85,6 +85,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     f.getDPDForces();
     f.getExternalForces();
 
+    if (f.isProtein) {
+      f.getChemicalPotential();
+    }
+    
     physicalPressure = EigenMap<double, 3>(f.bendingPressure) +
                   EigenMap<double, 3>(f.capillaryPressure) +
                   EigenMap<double, 3>(f.insidePressure) +
@@ -266,9 +270,13 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       oldBE = BE;
     }// periodically save the geometric files, print some info, compare and adjust
 
+
+    // integration
     pos_e += vel_e * dt + hdt2 * rowwiseScaling(f.mask.cast<double>(), totalPressure);
     vel_e += rowwiseScaling(f.mask.cast<double>(), totalPressure + newTotalPressure) * hdt;
     totalPressure = newTotalPressure;
+
+    f.proteinDensity.raw() += -f.chemicalPotential.raw() * dt * 5;
 
     // Regularize the vetex position geometry if needed
     if (f.isVertexShift) {
