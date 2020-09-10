@@ -34,7 +34,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             py::arg("inputMesh"), py::arg("refMesh"), py::arg("isTuftedLaplacian"), py::arg("isProtein"),
             py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
             py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-            py::arg("Kv"), py::arg("epsilon"), py::arg("Vt"), py::arg("gamma"), 
+            py::arg("Kv"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("gamma"), 
             py::arg("kt"), py::arg("ptInd"), py::arg("Kf"), 
             py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"), py::arg("T"), 
             py::arg("eps"), py::arg("closeZone"), py::arg("increment"), 

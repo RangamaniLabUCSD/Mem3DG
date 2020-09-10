@@ -62,10 +62,12 @@ int viewer(std::string fileName) {
       ptrRichData->getVertexProperty<double>("external_pressure");
   gcs::VertexData<double> physicalPressure =
       ptrRichData->getVertexProperty<double>("physical_pressure");
-  gcs::VertexData<double> surfaceTension =
-      ptrRichData->getVertexProperty<double>("surface_tension");
+  gcs::VertexData<double> capillaryPressure =
+      ptrRichData->getVertexProperty<double>("capillary_pressure");
   gcs::VertexData<double> bendingPressure =
       ptrRichData->getVertexProperty<double>("bending_pressure");
+  /*gcs::VertexData<gc::Vector3> vertexVelocity =
+      ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
   /*gcs::VertexData<gc::Vector3> normalForce =
   ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
   gcs::VertexData<gc::Vector3> tangentialForce =
@@ -78,9 +80,11 @@ int viewer(std::string fileName) {
       sponCurvature.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> extPressure_e = extPressure.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> physicalPressure_e = physicalPressure.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> surfaceTension_e =
-      surfaceTension.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> capillaryPressure_e =
+      capillaryPressure.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e = bendingPressure.raw();
+  //Eigen::Matrix<double, Eigen::Dynamic, 3> vertexVelocity_e =
+  //    ddgsolver::EigenMap<double, 3>(vertexVelocity);
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
   ddgsolver::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
   Eigen::Dynamic, 3> tangentialForce_e = ddgsolver::EigenMap<double,
@@ -99,11 +103,13 @@ int viewer(std::string fileName) {
   polyscope::getSurfaceMesh("Vesicle surface")
       ->addVertexScalarQuantity("applied_pressure", extPressure_e);
   polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("surface_tension", surfaceTension_e);
+      ->addVertexScalarQuantity("surface_tension", capillaryPressure_e);
   polyscope::getSurfaceMesh("Vesicle surface")
       ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
   polyscope::getSurfaceMesh("Vesicle surface")
       ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
+  /*polyscope::getSurfaceMesh("Vesicle surface")
+      ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
   /*polyscope::getSurfaceMesh("Vesicle
   surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
   polyscope::getSurfaceMesh("Vesicle
@@ -143,7 +149,7 @@ int genIcosphere(size_t nSub, std::string path, double R) {
 int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, bool isProtein,
            double mollifyFactor, bool isVertexShift, double Kb, double H0, double sharpness,
            double r_H0, double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
-           std::vector<double>Kv, double epsilon, double Vt,
+           std::vector<double>Kv, double epsilon, double Bc, double Vt,
            double gamma, double kt, size_t ptInd, double kf, double conc,
            double height, double radius, double h, double T, double eps,
            double closeZone, double increment, double tSave, double tMollify,
@@ -151,7 +157,7 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, b
 
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
-  ddgsolver::Parameters p{Kb, H0, sharpness, r_H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], epsilon, gamma, Vt,
+  ddgsolver::Parameters p{Kb, H0, sharpness, r_H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], epsilon, Bc, gamma, Vt,
                           kt, sigma, ptInd, kf,  conc, height, radius};
 
   std::cout << "Loading input mesh " << inputMesh << " ...";

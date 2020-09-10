@@ -111,6 +111,119 @@ TrajFile::getMeanCurvature(const std::size_t idx) const {
   meancurve_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
+
+void TrajFile::writeSponCurvature(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  sponcurve_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getSponCurvature(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  sponcurve_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
+void TrajFile::writeExternalPressure(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  externpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getExternalPressure(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  externpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
+                               vec.data());
+  return vec;
+}
+
+void TrajFile::writePhysicalPressure(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  physpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()},
+                              data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getPhysicalPressure(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  physpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
+                              vec.data());
+  return vec;
+}
+
+void TrajFile::writeCapillaryPressure(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  cappress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()},
+                               data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getCapillaryPressure(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  cappress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
+                               vec.data());
+  return vec;
+}
+
+void TrajFile::writeBendingPressure(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  bendpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()},
+                               data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getBendingPressure(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  bendpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
+                               vec.data());
+  return vec;
+}
+
 } // namespace ddgsolver
 
 #endif

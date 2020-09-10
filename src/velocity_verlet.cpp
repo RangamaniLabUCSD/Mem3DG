@@ -108,12 +108,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
     newTotalPressure = physicalPressure + numericalPressure;
 
-    #ifdef MEM3DG_WITH_NETCDF
-    std::size_t frame = fd.getNextFrameIndex();
-    fd.writeTime(frame, i * dt);
-    fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
-    #endif
-
     // periodically save the geometric files, print some info, compare and adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
 
@@ -123,10 +117,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       gcs::VertexData<double> H(f.mesh);
       H.fromVector(f.H);
       f.richData.addVertexProperty("mean_curvature", H);
-
-#ifdef MEM3DG_WITH_NETCDF
-      fd.writeMeanCurvature(frame, H.raw());
-#endif
 
       gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
@@ -147,13 +137,15 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                          .array() /
                      f.H.array() / 2)
                         .matrix());
-      f.richData.addVertexProperty("surface_tension", ft);
+      f.richData.addVertexProperty("capillary_pressure", ft);
 
       gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
                             EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("bending_pressure", fb);
+
+      /*f.richData.addVertexProperty("vertex_velocity", f.vel);*/
 
       /* gcs::VertexData<gc::Vector3> fn(f.mesh);
        EigenMap<double, 3>(fn) =
@@ -165,9 +157,20 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
        EigenMap<double, 3>(ft) = physicalPressure - EigenMap<double, 3>(fn);
        f.richData.addVertexProperty("tangential_force", ft);*/
 
+      #ifdef MEM3DG_WITH_NETCDF
+        std::size_t frame = fd.getNextFrameIndex();
+        fd.writeTime(frame, i * dt);
+        fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
+        fd.writeMeanCurvature(frame, H.raw());
+        fd.writeSponCurvature(frame, H0.raw());
+        fd.writeExternalPressure(frame, f_ext.raw());
+        fd.writePhysicalPressure(frame, fn.raw());
+        fd.writeCapillaryPressure(frame, ft.raw());
+        fd.writeBendingPressure(frame, fb.raw());
+      #endif
+
       L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
       std::tie(totalEnergy, BE) = getFreeEnergy(f);
-
       dL2ErrorNorm = L2ErrorNorm - oldL2ErrorNorm;
 
       if (f.P.Kb != 0) {
@@ -228,9 +231,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       if ((dVolume < closeZone * tolerance) && (!f.mesh.hasBoundary()) &&
           (dArea < closeZone * tolerance) && (dBE < closeZone * tolerance)) {
         dRef = std::max({dVolume, dArea, dFace});
-        f.P.kt *= 1 - dBE / dRef * increment;
-        f.P.Kv = std::min(f.P.Kv * (1 + dVolume / dRef * increment), maxKv);
-        f.P.Ksg = std::min(f.P.Ksg * (1 + dArea / dRef * increment), maxKsg);
+        if (dRef*increment != 0) {
+          f.P.kt *= 1 - dBE / dRef * increment;
+          f.P.Kv = std::min(f.P.Kv * (1 + dVolume / dRef * increment), maxKv);
+          f.P.Ksg = std::min(f.P.Ksg * (1 + dArea / dRef * increment), maxKsg);
+        }
 
         std::cout << "Within the close zone below " << closeZone
                   << " times tolerance(" << tolerance << "): "
@@ -276,7 +281,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     vel_e += rowwiseScaling(f.mask.cast<double>(), totalPressure + newTotalPressure) * hdt;
     totalPressure = newTotalPressure;
 
-    f.proteinDensity.raw() += -f.chemicalPotential.raw() * dt * 5;
+    if (f.isProtein) {
+      f.proteinDensity.raw() += - f.P.Bc * f.chemicalPotential.raw() * dt;    
+    }
 
     // Regularize the vetex position geometry if needed
     if (f.isVertexShift) {
