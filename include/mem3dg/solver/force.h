@@ -61,6 +61,8 @@ struct Parameters {
   double Kv;
   /// binding energy per protein
   double epsilon;
+  /// binding constant
+  double Bc;
   /// Dissipation coefficient
   double gamma;
   /// Reduced volume

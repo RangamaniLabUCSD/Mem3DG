@@ -87,6 +87,16 @@ static const std::string TOPO_VAR = "topology";
 static const std::string VEL_VAR = "velocities";
 /// Name of the mean curvature data
 static const std::string MEANCURVE_VAR = "meancurvature";
+/// Name of the spontaneous curvature data
+static const std::string SPONCURVE_VAR = "sponcurvature";
+/// Name of the external pressure data
+static const std::string EXTERNPRESS_VAR = "externpressure";
+/// Name of the physical pressure data
+static const std::string PHYSPRESS_VAR = "physpressure";
+/// Name of the capillary pressure data
+static const std::string CAPPRESS_VAR = "cappressure";
+/// Name of the bending pressure data
+static const std::string BENDPRESS_VAR = "bendpressure";
 
 /**
  * @class TrajFile
@@ -184,7 +194,40 @@ public:
   void writeMeanCurvature(const std::size_t idx,
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> getMeanCurvature(const std::size_t idx) const;
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getMeanCurvature(const std::size_t idx) const;
+
+  void writeSponCurvature(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getSponCurvature(const std::size_t idx) const;
+
+  void writeExternalPressure(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getExternalPressure(const std::size_t idx) const;
+
+  void writePhysicalPressure(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+    getPhysicalPressure(const std::size_t idx) const;
+
+  void
+  writeCapillaryPressure(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getCapillaryPressure(const std::size_t idx) const;
+
+  void
+  writeBendingPressure(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getBendingPressure(const std::size_t idx) const;
 
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
   getTopology() const;
@@ -218,6 +261,11 @@ private:
     time_var = fd->getVar(TIME_VAR);
     coord_var = fd->getVar(COORD_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
+    sponcurve_var = fd->getVar(SPONCURVE_VAR);
+    externpress_var = fd->getVar(EXTERNPRESS_VAR);
+    physpress_var = fd->getVar(PHYSPRESS_VAR);
+    cappress_var = fd->getVar(CAPPRESS_VAR);
+    bendpress_var = fd->getVar(BENDPRESS_VAR);
     // vel_var = fd->getVar(VEL_VAR);
   }
 
@@ -266,6 +314,21 @@ private:
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
 
+    sponcurve_var =
+        fd->addVar(SPONCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
+    externpress_var =
+        fd->addVar(EXTERNPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
+    physpress_var =
+        fd->addVar(PHYSPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    
+    cappress_var =
+        fd->addVar(CAPPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    
+    bendpress_var =
+        fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    
     // vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
     //                      {frame_dim, nvertices_dim, spatial_dim});
   }
@@ -285,6 +348,11 @@ private:
   nc::NcVar time_var;
   nc::NcVar coord_var;
   nc::NcVar meancurve_var;
+  nc::NcVar sponcurve_var;
+  nc::NcVar externpress_var;
+  nc::NcVar physpress_var;
+  nc::NcVar cappress_var; 
+  nc::NcVar bendpress_var;
   // nc::NcVar vel_var;
 
   /// Filepath to file

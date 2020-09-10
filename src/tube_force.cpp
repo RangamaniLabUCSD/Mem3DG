@@ -119,12 +119,12 @@ void Force::getTubeForces() {
         // Stretching forces
         gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
         gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-        gc::Vector3 gradient = -gc::cross(base_vec, face_n[he.face()]);
-        assert((gc::dot(gradient, vecFromHalfedge(he, vpg))) < 0);
+        gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
+        assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
         // patch simulation assumes constant surface tension
-        if (P.Ksl != 0) {
-          regularizationForce[v] += - P.Ksl * gradient;
+        if (P.Kst != 0) {
+          regularizationForce[v] += - P.Kst * localAreaGradient;
         }
 
         // the cubic penalty is for regularizing the mesh,

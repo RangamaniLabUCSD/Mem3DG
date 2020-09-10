@@ -48,11 +48,21 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
   double time;
   EigenVectorX3D coords;
   EigenVectorX1D H = fd.getMeanCurvature(idx);
+  EigenVectorX1D H0 = fd.getSponCurvature(idx);
+  EigenVectorX1D f_ext = fd.getExternalPressure(idx);
+  EigenVectorX1D fn = fd.getPhysicalPressure(idx);
+  EigenVectorX1D ft = fd.getCapillaryPressure(idx);
+  EigenVectorX1D fb = fd.getBendingPressure(idx);
   std::tie(time, coords) = fd.getTimeAndCoords(idx);
 
   // polyscope::registerSurfaceMesh("Mesh", coords, top);
   mesh->updateVertexPositions(coords);
   mesh->addVertexScalarQuantity("mean_curvature", H);
+  mesh->addVertexScalarQuantity("spon_curvature", H0);
+  mesh->addVertexScalarQuantity("external_pressure", f_ext);
+  mesh->addVertexScalarQuantity("physical_pressure", fn);
+  mesh->addVertexScalarQuantity("capillary_pressure", ft);
+  mesh->addVertexScalarQuantity("bending_pressure", fb);
 }
 
 polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd) {
@@ -60,12 +70,27 @@ polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd) {
   EigenVectorX3D coords;
   EigenTopVec top = fd.getTopology();
   EigenVectorX1D H = fd.getMeanCurvature(0);
+  EigenVectorX1D H0 = fd.getSponCurvature(0);
+  EigenVectorX1D f_ext = fd.getExternalPressure(0);
+  EigenVectorX1D fn = fd.getPhysicalPressure(0);
+  EigenVectorX1D ft = fd.getCapillaryPressure(0);
+  EigenVectorX1D fb = fd.getBendingPressure(0);
   std::tie(time, coords) = fd.getTimeAndCoords(0);
 
   polyscope::SurfaceMesh *mesh =
       polyscope::registerSurfaceMesh("Mesh", coords, top);
   polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
                                                              H);
+  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("spon_curvature",
+                                                             H0);
+  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("external_pressure",
+                                                             f_ext);
+  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("physical_pressure",
+                                                             fn);
+  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("capillary_pressure",
+                                                             ft);
+  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("bending_pressure",
+                                                             fb);
   return mesh;
 }
 
