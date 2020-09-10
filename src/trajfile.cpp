@@ -70,6 +70,19 @@ void TrajFile::writeCoords(
                    data.data());
 }
 
+void TrajFile::writeVelocities(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
+        &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  vel_var.putVar({idx, 0, 0}, {1, nvertices_dim.getSize(), SPATIAL_DIMS},
+                 data.data());
+}
+
 Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
 TrajFile::getTopology() const {
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> vec(
@@ -89,6 +102,15 @@ TrajFile::getTimeAndCoords(const std::size_t idx) const {
   coord_var.getVar({idx, 0, 0}, {1, nvertices_dim.getSize(), SPATIAL_DIMS},
                    vec.data());
   return std::tie(time, vec);
+}
+
+TrajFile::EigenVector TrajFile::getVelocities(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  EigenVector vec(nvertices_dim.getSize(), SPATIAL_DIMS);
+  vel_var.getVar({idx, 0, 0}, {1, nvertices_dim.getSize(), SPATIAL_DIMS},
+                 vec.data());
+  return vec;
 }
 
 void TrajFile::writeMeanCurvature(

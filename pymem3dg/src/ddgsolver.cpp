@@ -170,7 +170,8 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian,
 
   std::cout << "Loading reference mesh " << refMesh << " ...";
   std::unique_ptr<gcs::SurfaceMesh> ptrRefMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg = ptrVpg->copy();
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg; // = ptrVpg->copy();
+  std::tie(ptrRefMesh, ptrRefVpg) = gcs::readManifoldSurfaceMesh(refMesh);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Initiating the system ...";

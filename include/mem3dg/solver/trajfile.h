@@ -181,15 +181,20 @@ public:
 
   void writeCoords(const std::size_t idx, const EigenVector &data);
 
+  void writeVelocities(const std::size_t idx, const EigenVector &data);
+
   void writeMeanCurvature(const std::size_t idx,
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> getMeanCurvature(const std::size_t idx) const;
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getMeanCurvature(const std::size_t idx) const;
 
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
   getTopology() const;
 
   std::tuple<double, EigenVector> getTimeAndCoords(const std::size_t idx) const;
+
+  EigenVector getVelocities(const std::size_t idx) const;
 
 private:
   /**
@@ -217,8 +222,8 @@ private:
     topology = fd->getVar(TOPO_VAR);
     time_var = fd->getVar(TIME_VAR);
     coord_var = fd->getVar(COORD_VAR);
+    vel_var = fd->getVar(VEL_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
-    // vel_var = fd->getVar(VEL_VAR);
   }
 
   /**
@@ -263,11 +268,11 @@ private:
                            {frame_dim, nvertices_dim, spatial_dim});
     coord_var.putAtt(UNITS, LEN_UNITS);
 
+    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
+                         {frame_dim, nvertices_dim, spatial_dim});
+
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    // vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
-    //                      {frame_dim, nvertices_dim, spatial_dim});
   }
 
   /// Bound NcFile
@@ -285,7 +290,7 @@ private:
   nc::NcVar time_var;
   nc::NcVar coord_var;
   nc::NcVar meancurve_var;
-  // nc::NcVar vel_var;
+  nc::NcVar vel_var;
 
   /// Filepath to file
   std::string filename;
