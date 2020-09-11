@@ -191,6 +191,15 @@ public:
 
   void writeCoords(const std::size_t idx, const EigenVector &data);
 
+  std::tuple<double, EigenVector> getTimeAndCoords(const std::size_t idx) const;
+  
+  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> getTopology() const;
+
+  void writeVelocity(const std::size_t idx, const EigenVector &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
+  getVelocity(const std::size_t idx) const;
+
   void writeMeanCurvature(const std::size_t idx,
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
@@ -213,7 +222,7 @@ public:
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
-    getPhysicalPressure(const std::size_t idx) const;
+  getPhysicalPressure(const std::size_t idx) const;
 
   void
   writeCapillaryPressure(const std::size_t idx,
@@ -228,11 +237,6 @@ public:
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getBendingPressure(const std::size_t idx) const;
-
-  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
-  getTopology() const;
-
-  std::tuple<double, EigenVector> getTimeAndCoords(const std::size_t idx) const;
 
 private:
   /**
@@ -266,7 +270,7 @@ private:
     physpress_var = fd->getVar(PHYSPRESS_VAR);
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
-    // vel_var = fd->getVar(VEL_VAR);
+    vel_var = fd->getVar(VEL_VAR);
   }
 
   /**
@@ -329,8 +333,8 @@ private:
     bendpress_var =
         fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
     
-    // vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
-    //                      {frame_dim, nvertices_dim, spatial_dim});
+    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
+                         {frame_dim, nvertices_dim, spatial_dim});
   }
 
   /// Bound NcFile
@@ -353,7 +357,7 @@ private:
   nc::NcVar physpress_var;
   nc::NcVar cappress_var; 
   nc::NcVar bendpress_var;
-  // nc::NcVar vel_var;
+  nc::NcVar vel_var;
 
   /// Filepath to file
   std::string filename;
