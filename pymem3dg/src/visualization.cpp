@@ -47,6 +47,7 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
 
   double time;
   EigenVectorX3D coords;
+  EigenVectorX3D vel = fd.getVelocity(idx);
   EigenVectorX1D H = fd.getMeanCurvature(idx);
   EigenVectorX1D H0 = fd.getSponCurvature(idx);
   EigenVectorX1D f_ext = fd.getExternalPressure(idx);
@@ -57,6 +58,7 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
 
   // polyscope::registerSurfaceMesh("Mesh", coords, top);
   mesh->updateVertexPositions(coords);
+  mesh->addVertexVectorQuantity("velocity", vel);
   mesh->addVertexScalarQuantity("mean_curvature", H);
   mesh->addVertexScalarQuantity("spon_curvature", H0);
   mesh->addVertexScalarQuantity("external_pressure", f_ext);
@@ -68,6 +70,7 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
 polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd) {
   double time;
   EigenVectorX3D coords;
+  EigenVectorX3D vel = fd.getVelocity(0);
   EigenTopVec top = fd.getTopology();
   EigenVectorX1D H = fd.getMeanCurvature(0);
   EigenVectorX1D H0 = fd.getSponCurvature(0);
@@ -79,6 +82,8 @@ polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd) {
 
   polyscope::SurfaceMesh *mesh =
       polyscope::registerSurfaceMesh("Mesh", coords, top);
+  polyscope::getSurfaceMesh("Mesh")->addVertexVectorQuantity("velocity",
+                                                             vel);
   polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
                                                              H);
   polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("spon_curvature",
