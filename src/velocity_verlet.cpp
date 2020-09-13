@@ -72,7 +72,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   size_t nMollify = size_t(tMollify / tSave);
 
 #ifdef MEM3DG_WITH_NETCDF
-  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh,
+  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                                   TrajFile::NcFile::replace);
 #endif
 
@@ -270,6 +270,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                        f.isTuftedLaplacian, inputMesh);
           break;
         }
+      }
+
+      // 3.3 fail and exit 
+      if (isnan(dL2ErrorNorm)) {
+        break;
       }
 
       oldL2ErrorNorm = L2ErrorNorm;

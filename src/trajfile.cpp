@@ -93,6 +93,14 @@ TrajFile::getTopology() const {
   return vec;
 }
 
+// reference coordinate
+TrajFile::EigenVector
+TrajFile::getRefcoordinate() const {
+  EigenVector vec(nvertices_dim.getSize(), SPATIAL_DIMS);
+  refcoord.getVar({0, 0}, {nvertices_dim.getSize(), SPATIAL_DIMS}, vec.data());
+  return vec;
+}
+
 // velocity 
 void TrajFile::writeVelocity(
     const std::size_t idx,

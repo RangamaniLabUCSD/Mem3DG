@@ -79,10 +79,12 @@ int viewer(std::string fileName) {
   Eigen::Matrix<double, Eigen::Dynamic, 1> sponCurvature_e =
       sponCurvature.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> extPressure_e = extPressure.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> physicalPressure_e = physicalPressure.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> physicalPressure_e =
+      physicalPressure.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> capillaryPressure_e =
       capillaryPressure.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e = bendingPressure.raw();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e =
+      bendingPressure.raw();
   //Eigen::Matrix<double, Eigen::Dynamic, 3> vertexVelocity_e =
   //    ddgsolver::EigenMap<double, 3>(vertexVelocity);
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
