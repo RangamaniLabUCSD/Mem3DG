@@ -83,7 +83,9 @@ static const std::string TIME_VAR = "time";
 static const std::string COORD_VAR = "coordinates";
 /// Name of the mesh topology data
 static const std::string TOPO_VAR = "topology";
-/// Name of the velocity data
+/// Name of the refMesh coordinates data
+static const std::string REFCOORD_VAR = "refcoordinates";
+    /// Name of the velocity data
 static const std::string VEL_VAR = "velocities";
 /// Name of the mean curvature data
 static const std::string MEANCURVE_VAR = "meancurvature";
@@ -114,6 +116,9 @@ public:
   using EigenVector =
       Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>;
 
+  //template <typename T>
+  //using EigenVector_T = Eigen::Matrix<T, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>;
+
   TrajFile() = delete;
 
   TrajFile(TrajFile &&rhs) = default;
@@ -130,12 +135,12 @@ public:
    *
    * @return TrajFile helper object to manipulate the bound NetCDF file.
    */
-  static TrajFile newFile(const std::string &filename, gcs::SurfaceMesh &mesh,
+  static TrajFile newFile(const std::string &filename, gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &refVpg,
                           bool replace = false) {
     if (replace)
-      return TrajFile(filename, mesh, NcFile::replace);
+      return TrajFile(filename, mesh, refVpg, NcFile::replace);
     else
-      return TrajFile(filename, mesh, NcFile::newFile);
+      return TrajFile(filename, mesh, refVpg, NcFile::newFile);
   };
 
   /**
@@ -194,6 +199,9 @@ public:
   std::tuple<double, EigenVector> getTimeAndCoords(const std::size_t idx) const;
   
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> getTopology() const;
+
+  Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
+      getRefcoordinate() const;
 
   void writeVelocity(const std::size_t idx, const EigenVector &data);
 
@@ -262,6 +270,7 @@ private:
     polygon_order_dim = fd->getDim(POLYGON_ORDER_NAME);
 
     topology = fd->getVar(TOPO_VAR);
+    refcoord = fd->getVar(REFCOORD_VAR);
     time_var = fd->getVar(TIME_VAR);
     coord_var = fd->getVar(COORD_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
@@ -283,7 +292,7 @@ private:
    * @param fMode    Mode to create file with (replace, newFile)
    */
   TrajFile(const std::string &filename, gcs::SurfaceMesh &mesh,
-           const NcFile::FileMode fMode)
+           gcs::VertexPositionGeometry &refVpg, const NcFile::FileMode fMode)
       : filename(filename), // fd(new NcFile(filename, fMode)),
         writeable(true) {
 
@@ -307,6 +316,16 @@ private:
         faceMatrix = getFaceVertexMatrix(mesh);
     std::uint32_t *topodata = faceMatrix.data();
     topology.putVar(topodata);
+
+    // Initialize reference coordinate data block
+    refcoord = fd->addVar(REFCOORD_VAR, netCDF::ncDouble,
+                          {nvertices_dim, spatial_dim});
+
+    // Populate reference coordinate data
+    double *refcoorddata;
+    refcoorddata = EigenMap<double, 3>(refVpg.inputVertexPositions).data();
+    refcoord.putVar(refcoorddata);
+
 
     time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
     time_var.putAtt(UNITS, TIME_UNITS);
@@ -349,6 +368,7 @@ private:
 
   // Save variables
   nc::NcVar topology;
+  nc::NcVar refcoord;
   nc::NcVar time_var;
   nc::NcVar coord_var;
   nc::NcVar meancurve_var;
