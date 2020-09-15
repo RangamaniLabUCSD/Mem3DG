@@ -42,8 +42,8 @@ DLL_PUBLIC void getParameterLog(Force &f, double dt,
                                 double tolerance, double tSave,
                                 std::string inputMesh, std::string outputDir);
 
-DLL_PUBLIC void getStatusLog(std::string nameOfFile, Force &f, double dt, double final_time,
-                              double areaError, double volumeError,
+DLL_PUBLIC void getStatusLog(std::string nameOfFile, Force &f, double dt, double time,
+                              std::size_t frame, double areaError, double volumeError,
                               double bendingError, double faceError,
                               double bendingEnergy, double totalEnergy,
                               double L2ErrorNorm, bool isTuftedLaplacian,

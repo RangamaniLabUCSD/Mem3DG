@@ -74,6 +74,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                                   TrajFile::NcFile::replace);
+  std::size_t frame;
 #endif
 
   for (int i = 0; i <= total_time / dt; i++) {
@@ -158,7 +159,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
        f.richData.addVertexProperty("tangential_force", ft);*/
 
       #ifdef MEM3DG_WITH_NETCDF
-        std::size_t frame = fd.getNextFrameIndex();
+        frame = fd.getNextFrameIndex();
         fd.writeTime(frame, i * dt);
         fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
         fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
@@ -205,7 +206,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       char buffer[50];
       sprintf(buffer, "t=%d", int(i * dt * 100));
       f.richData.write(outputDir + buffer + ".ply");
-      getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, dArea, dVolume,
+      getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea, dVolume,
                    dBE, dFace, BE, totalEnergy, L2ErrorNorm,
                    f.isTuftedLaplacian, inputMesh);
 
@@ -265,7 +266,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           std::cout << "\n"
                     << "Converged! Saved to " + outputDir << std::endl;
           f.richData.write(outputDir + "final.ply");
-          getStatusLog(outputDir + "summary.txt", f, dt, i * dt, dArea, dVolume, dBE,
+          getStatusLog(outputDir + "summary.txt", f, dt, i * dt, frame, dArea, dVolume, dBE,
                         dFace, BE, totalEnergy, L2ErrorNorm,
                        f.isTuftedLaplacian, inputMesh);
           break;
@@ -312,7 +313,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Fail to converge in given time and Exit. Past data saved to " +
                  outputDir
           << std::endl;
-      getStatusLog(outputDir + "failure_report.txt", f, dt, i * dt, dArea,
+      getStatusLog(outputDir + "failure_report.txt", f, dt, i * dt, frame, dArea,
                    dVolume, dBE, dFace, BE, totalEnergy, L2ErrorNorm,
                   f.isTuftedLaplacian, inputMesh);
     }

@@ -24,10 +24,19 @@ int view_animation(std::string &filename);
 
 int genIcosphere(size_t nSub, std::string path, double R);
 
-int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, bool isProtein, 
+int driver_ply(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, bool isProtein, 
            double mollifyFactor, bool isVertexShift, double Kb, double H0,
            double sharpness, double r_H0, double Kse, double Kst, double Ksl, std::vector<double> Ksg,
            std::vector<double> Kv, double epsilon, double Bc, double Vt, 
            double gamma, double kt, size_t ptInd, double Kf, double conc, double height, double radius,
+           double h, double T, double eps, double closeZone, double increment,
+           double tSave, double tMollify, std::string outputDir);
+
+int driver_nc(std::string trajFile, std::size_t startingFrame, bool isTuftedLaplacian,
+           bool isProtein, double mollifyFactor, bool isVertexShift, double Kb,
+           double H0, double sharpness, double r_H0, double Kse, double Kst,
+           double Ksl, std::vector<double> Ksg, std::vector<double> Kv,
+           double epsilon, double Bc, double Vt, double gamma, double kt,
+           size_t ptInd, double Kf, double conc, double height, double radius,
            double h, double T, double eps, double closeZone, double increment,
            double tSave, double tMollify, std::string outputDir);

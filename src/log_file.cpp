@@ -64,7 +64,7 @@ void getParameterLog(Force &f, double dt,
     cout << "Unable to open file";
 }
 
-void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, double areaError,
+void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std::size_t frame, double areaError,
                    double volumeError, double bendingError, double faceError, double bendingEnergy, double totalEnergy,
                   double L2ErrorNorm, bool isTuftedLaplacian,
                    std::string inputMesh) {
@@ -92,7 +92,8 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, doub
     myfile << "Integration: \n";
     myfile << "\n";
     myfile << "dt:    " << dt << "\n"
-           << "T:     " << time << "\n";
+           << "T:     " << time << "\n"
+           << "frame: " << frame << "\n";
 
     myfile << "\n";
     myfile << "States: \n";
