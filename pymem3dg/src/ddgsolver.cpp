@@ -34,6 +34,8 @@
 #include "mem3dg/solver/typetraits.h"
 #include "mem3dg/solver/util.h"
 
+#include <Eigen/Core>
+
 #ifdef _WIN32
 #include <Windows.h>
 #else
@@ -148,11 +150,11 @@ int genIcosphere(size_t nSub, std::string path, double R) {
   return 0;
 }
 
-int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, bool isProtein,
+int driver_ply(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, bool isProtein,
            double mollifyFactor, bool isVertexShift, double Kb, double H0, double sharpness,
            double r_H0, double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
            std::vector<double>Kv, double epsilon, double Bc, double Vt,
-           double gamma, double kt, size_t ptInd, double kf, double conc,
+           double gamma, double kt, size_t ptInd, double Kf, double conc,
            double height, double radius, double h, double T, double eps,
            double closeZone, double increment, double tSave, double tMollify,
            std::string outputDir) {
@@ -160,7 +162,7 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, b
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
   ddgsolver::Parameters p{Kb, H0, sharpness, r_H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], epsilon, Bc, gamma, Vt,
-                          kt, sigma, ptInd, kf,  conc, height, radius};
+                          kt, sigma, ptInd, Kf,  conc, height, radius};
 
   std::cout << "Loading input mesh " << inputMesh << " ...";
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
@@ -193,3 +195,58 @@ int driver(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, b
 
   return 0;
 }
+
+#ifdef MEM3DG_WITH_NETCDF
+int driver_nc(std::string trajFile, std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
+  double mollifyFactor, bool isVertexShift, double Kb, double H0,
+  double sharpness, double r_H0, double Kse, double Kst, double Ksl,
+  std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
+  double Bc, double Vt, double gamma, double kt, size_t ptInd,
+  double Kf, double conc, double height, double radius, double h,
+  double T, double eps, double closeZone, double increment,
+  double tSave, double tMollify, std::string outputDir) {
+
+  using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+  using EigenVectorX3D =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  using EigenTopVec =
+      Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  
+  std::cout << "Loading input mesh from trajectory file " << trajFile << " ...";
+  ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(trajFile);
+  gcs::ManifoldSurfaceMesh mesh(fd.getTopology());
+
+  double time;
+  EigenVectorX3D coords;
+  std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
+  gcs::VertexPositionGeometry vpg(mesh, coords);
+
+  gcs::RichSurfaceMeshData richData(mesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(vpg);
+  std::cout << "Finished!" << std::endl;
+
+  std::cout << "Loading reference mesh from trajectory file" << trajFile << " ...";
+  gcs::VertexPositionGeometry refVpg(mesh, fd.getRefcoordinate());
+  std::cout << "Finished!" << std::endl;
+
+  std::cout << "Initiating the system ...";
+  /// physical parameters
+  double sigma = sqrt(2 * gamma * kt / h);
+  ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
+                          Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
+                          sigma, ptInd, Kf,        conc, height, radius};
+  ddgsolver::Force f(mesh, vpg, refVpg, richData, p, isProtein,
+                     isTuftedLaplacian, mollifyFactor, isVertexShift);
+  ddgsolver::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
+  std::cout << "Finished!" << std::endl;
+
+  std::cout << "Solving the system ..." << std::endl;
+  ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
+                                         Kv[1], Ksg[1], tSave, tMollify,
+                                         trajFile, outputDir);
+
+
+  return 0;
+}
+#endif

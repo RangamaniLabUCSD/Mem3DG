@@ -30,7 +30,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
-  pymem3dg.def("driver", &driver, " a driver function",
+  pymem3dg.def("driver_ply", &driver_ply, "the driver function for input .ply mesh file ",
             py::arg("inputMesh"), py::arg("refMesh"), py::arg("isTuftedLaplacian"), py::arg("isProtein"),
             py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
             py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
@@ -40,6 +40,26 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             py::arg("eps"), py::arg("closeZone"), py::arg("increment"), 
             py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"),
             R"delim(
+               Run the driver.
+
+               Args:
+                   filename (:py:class:`str`): Filename to read.
+            
+               Returns:
+                   :py:class:`int`: success.
+            )delim");
+
+    pymem3dg.def("driver_nc", &driver_nc, " a driver function for input .nc trajectory file",
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("isTuftedLaplacian"), py::arg("isProtein"),
+      py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"),
+      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("gamma"),
+      py::arg("kt"), py::arg("ptInd"), py::arg("Kf"), py::arg("conc"),
+      py::arg("height"), py::arg("radius"), py::arg("h"), py::arg("T"),
+      py::arg("eps"), py::arg("closeZone"), py::arg("increment"),
+      py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"),
+      R"delim(
                Run the driver.
 
                Args:
