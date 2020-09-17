@@ -97,7 +97,8 @@ void Force::getTubeForces() {
   /// B. INSIDE EXCESS PRESSURE
   volume = 0;
   for (gcs::Face f : mesh.faces()) {
-    volume += signedVolumeFromFace(f, vpg);
+    volume += signedVolumeFromFace(
+        f, vpg, refVpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
   }
   insidePressure_e = - P.Kv * vertexAngleNormal_e;
 

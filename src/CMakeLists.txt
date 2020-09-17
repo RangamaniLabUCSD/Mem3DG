@@ -23,7 +23,7 @@ set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/bending_energy.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/vesicle_force.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tube_force.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/patch_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/log_file.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/trajfile.cpp"
     PARENT_SCOPE

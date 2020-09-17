@@ -38,7 +38,7 @@ double getL2ErrorNorm(
       (M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
-std::tuple<double, double> getFreeEnergy(Force &f) {
+std::tuple<double, double, double, double, double> getFreeEnergy(Force &f) {
   // comment: this may not be useful, the convergence can be be tested by
   // checking its derivative which is the forces excluding the DPD forces. The
   // energy trajectory of could actually numerically integrated by post
@@ -56,12 +56,25 @@ std::tuple<double, double> getFreeEnergy(Force &f) {
   double bE;
   double sE;
   double pE;
+  double cE = 0;
   double totalE;
 
   if (f.mesh.hasBoundary()) {
-    std::cout << "\n"
-              << "Warning: does not have energy defined yet!!!!"
-              << "\n";
+
+    Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = f.H - f.H0;
+    double A_difference = f.surfaceArea - f.targetSurfaceArea;
+    double V_difference = f.volume - f.refVolume * f.P.Vt;
+
+    bE = (f.P.Kb * f.M * (H_difference.array() * H_difference.array()).matrix())
+             .sum();
+    sE = f.P.Ksg * A_difference;
+    pE = f.P.Kv * V_difference;
+
+    if (f.isProtein) {
+      double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
+    }
+
+    totalE = bE + sE + pE + cE;
 
   } else {
 
@@ -74,11 +87,14 @@ std::tuple<double, double> getFreeEnergy(Force &f) {
     sE = f.P.Ksg * A_difference * A_difference / f.targetSurfaceArea / 2;
     pE = f.P.Kv * V_difference * V_difference / (f.refVolume * f.P.Vt) / 2;
 
-    totalE = bE + sE + pE;
+    if (f.isProtein) {
+      double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum(); 
+    }
 
+    totalE = bE + sE + pE + cE;
   }
 
-  std::tuple<double, double> output(totalE, bE);
+  std::tuple<double, double, double, double, double> output(totalE, bE, sE, pE, cE);
   
   return output;
 }

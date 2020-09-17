@@ -65,8 +65,9 @@ void getParameterLog(Force &f, double dt,
 }
 
 void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std::size_t frame, double areaError,
-                   double volumeError, double bendingError, double faceError, double bendingEnergy, double totalEnergy,
-                  double L2ErrorNorm, bool isTuftedLaplacian,
+                   double volumeError, double bendingError, double faceError, double bendingEnergy, double surfaceEnergy, 
+                   double pressureEnergy, double chemicalEnergy, double totalEnergy,
+                  double L2ErrorNorm, bool isTuftedLaplacian, bool isProtein, bool isVertexShift,
                    std::string inputMesh) {
   ofstream myfile(nameOfFile);
   if (myfile.is_open()) {
@@ -93,12 +94,15 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
     myfile << "\n";
     myfile << "dt:    " << dt << "\n"
            << "T:     " << time << "\n"
-           << "frame: " << frame << "\n";
+           << "Frame: " << frame << "\n";
 
     myfile << "\n";
     myfile << "States: \n";
     myfile << "\n";
     myfile << "Bending Energy:   " << bendingEnergy << "\n"
+           << "Surface Energy:   " << surfaceEnergy << "\n"
+           << "Pressure Work:    " << pressureEnergy << "\n"
+           << "Chemical Energy:  " << chemicalEnergy << "\n"
            << "Total Energy:     " << totalEnergy << "\n" 
            << "L2 error norm:    " << L2ErrorNorm << "\n"
            << "Volume:           " << f.volume << " = "
@@ -127,7 +131,9 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
     myfile << "\n";
     myfile << "Options: \n";
     myfile << "\n";
-    myfile << "Is tufted laplacian: " << isTuftedLaplacian << "\n";
+    myfile << "Is tufted laplacian:    " << isTuftedLaplacian << "\n"
+           << "Is considering protein: " << isProtein << "\n"
+           << "Is vertex shift: " << isVertexShift << "\n";
 
     myfile.close();
   } else

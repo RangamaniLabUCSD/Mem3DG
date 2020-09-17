@@ -38,11 +38,11 @@ namespace gcs = ::geometrycentral::surface;
  * @return double
  */
 DLL_PUBLIC inline double
-signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg) {
+signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg, gc::Vector3 center) {
   gc::Vector3 p[3];
   size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
-    p[i] = vpg.inputVertexPositions[v];
+    p[i] = vpg.inputVertexPositions[v] - center;
     i++;
   }
   double v321 = p[2].x * p[1].y * p[0].z;
