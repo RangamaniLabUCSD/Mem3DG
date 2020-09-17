@@ -58,10 +58,16 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   Eigen::Matrix<double, Eigen::Dynamic, 3> numericalPressure;
 
   bool exitFlag = false;
+  
   double totalEnergy;
+  double sE;
+  double pE;
+  double cE;
+
   double oldL2ErrorNorm = 1e6;
   double L2ErrorNorm;
   double dL2ErrorNorm;
+
   double oldBE = 0.0;
   double BE;
   double dBE;
@@ -69,6 +75,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   double dVolume;
   double dFace;
   double dRef;
+
   size_t nMollify = size_t(tMollify / tSave);
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -146,18 +153,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                             EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("bending_pressure", fb);
 
-      /*f.richData.addVertexProperty("vertex_velocity", f.vel);*/
-
-      /* gcs::VertexData<gc::Vector3> fn(f.mesh);
-       EigenMap<double, 3>(fn) =
-       rowwiseScaling((rowwiseDotProduct(physicalPressure, EigenMap<double,
-       3>(f.vpg.vertexNormals))), EigenMap<double, 3>(f.vpg.vertexNormals));
-       f.richData.addVertexProperty("normal_force", fn);
-
-       gcs::VertexData<gc::Vector3> ft(f.mesh);
-       EigenMap<double, 3>(ft) = physicalPressure - EigenMap<double, 3>(fn);
-       f.richData.addVertexProperty("tangential_force", ft);*/
-
       #ifdef MEM3DG_WITH_NETCDF
         frame = fd.getNextFrameIndex();
         fd.writeTime(frame, i * dt);
@@ -172,28 +167,28 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       #endif
 
       L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
-      std::tie(totalEnergy, BE) = getFreeEnergy(f);
+      std::tie(totalEnergy, BE, sE, pE, cE) = getFreeEnergy(f);
       dL2ErrorNorm = L2ErrorNorm - oldL2ErrorNorm;
 
-      if (f.P.Kb != 0) {
-        dBE = abs(BE - oldBE) / (BE + 1e-7);
-      } else {
+      if (f.P.Kb != 0 ) {
+        dBE = abs(BE - oldBE) / (BE);
+      }else {
         dBE = 0.0;
       }
 
-      if (f.P.Ksg != 0) {
+      if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
         dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
       } else {
         dArea = 0.0;
       }
 
-      if (f.P.Kv != 0) {
+      if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
         dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
       } else {
         dVolume = 0.0;
       }
 
-      if (f.P.Ksl != 0) {
+      if (f.P.Ksl != 0 && !f.mesh.hasBoundary()) {
         dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
                  f.targetFaceAreas.raw().array())
                     .abs()
@@ -207,8 +202,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       sprintf(buffer, "t=%d", int(i * dt * 100));
       f.richData.write(outputDir + buffer + ".ply");
       getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea, dVolume,
-                   dBE, dFace, BE, totalEnergy, L2ErrorNorm,
-                   f.isTuftedLaplacian, inputMesh);
+                   dBE, dFace, BE, sE, pE, cE, totalEnergy, L2ErrorNorm,
+                   f.isTuftedLaplacian, f.isProtein, f.isVertexShift, inputMesh);
 
       // 2. print
       std::cout
@@ -229,6 +224,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.P.ptInd)].z) << "\n"
           << "Increase force spring constant Kf to " << f.P.Kf << "\n";
 
+      /* for optimization purpose
       // 3.1.1 compare and adjust (in the case of vesicle simulation)
       if ((dVolume < closeZone * tolerance) && (!f.mesh.hasBoundary()) &&
           (dArea < closeZone * tolerance) && (dBE < closeZone * tolerance)) {
@@ -266,12 +262,13 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           std::cout << "\n"
                     << "Converged! Saved to " + outputDir << std::endl;
           f.richData.write(outputDir + "final.ply");
-          getStatusLog(outputDir + "summary.txt", f, dt, i * dt, frame, dArea, dVolume, dBE,
-                        dFace, BE, totalEnergy, L2ErrorNorm,
-                       f.isTuftedLaplacian, inputMesh);
+          getStatusLog(outputDir + "summary.txt", f, dt, i * dt, frame, dArea,
+                       dVolume, dBE, dFace, BE, sE, pE, cE, totalEnergy,
+                       L2ErrorNorm, f.isTuftedLaplacian, f.isProtein, f.isVertexShift, inputMesh);
           break;
         }
       }
+      */ 
 
       // 3.3 fail and exit 
       if (isnan(dL2ErrorNorm)) {
@@ -306,16 +303,31 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     // recompute cached values
     f.update_Vertex_positions();
 
-    // 3.3 fail and exit
+    /* for optimization purpose
+    // 3.3.A fail and exit
     if (i == int(total_time / dt)) {
       std::cout
           << "\n"
           << "Fail to converge in given time and Exit. Past data saved to " +
                  outputDir
           << std::endl;
-      getStatusLog(outputDir + "failure_report.txt", f, dt, i * dt, frame, dArea,
-                   dVolume, dBE, dFace, BE, totalEnergy, L2ErrorNorm,
-                  f.isTuftedLaplacian, inputMesh);
+      getStatusLog(outputDir + "failure_report.txt", f, dt, i * dt, frame,
+                   dArea, dVolume, dBE, dFace, BE, sE, pE, cE, totalEnergy,
+                   L2ErrorNorm, f.isTuftedLaplacian, f.isProtein, f.isVertexShift, inputMesh);
+    }
+    */
+
+    // 3.3.B finish and exit
+    if (i == int(total_time / dt)) {
+      std::cout
+          << "\n"
+          << "Simulation finished, and data saved to " +
+                 outputDir
+          << std::endl;
+      getStatusLog(outputDir + "final_report.txt", f, dt, i * dt, frame,
+                   dArea, dVolume, dBE, dFace, BE, sE, pE, cE, totalEnergy,
+                   L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
+                   f.isVertexShift, inputMesh);
     }
 
   } // periodic save, print and adjust

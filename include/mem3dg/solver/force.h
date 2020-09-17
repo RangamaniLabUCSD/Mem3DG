@@ -263,14 +263,19 @@ public:
     targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
     // Initialize reference volume
-    refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
+    if (mesh.hasBoundary()) {
+      refVolume = 0.0;
+    } else {
+      refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3); 
+    }
 
     // Initialize surface area
     surfaceArea = vpg.faceAreas.raw().sum();
 
     // Initialize volume
     for (gcs::Face f : mesh.faces()) {
-      volume += signedVolumeFromFace(f, vpg);
+      volume += signedVolumeFromFace(
+          f, vpg, vpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
     }
 
     // Initialize the vertex position of the last iteration

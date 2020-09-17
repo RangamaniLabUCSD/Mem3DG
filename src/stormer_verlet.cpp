@@ -57,7 +57,10 @@ void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
     f.pastPositions = temp;
     double totalEnergy;
     double bendingEnergy;
-    std::tie(totalEnergy, bendingEnergy) = getFreeEnergy(f);
+    double surfaceEnergy;
+    double pressureEnergy;
+    double chemicalEnergy;
+    std::tie(totalEnergy, bendingEnergy, surfaceEnergy, pressureEnergy, chemicalEnergy) = getFreeEnergy(f);
 
     // std::cout << "energy: " << totalEnergy << std::endl;
     // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<

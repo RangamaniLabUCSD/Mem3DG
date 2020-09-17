@@ -158,12 +158,6 @@ int driver_ply(std::string inputMesh, std::string refMesh, bool isTuftedLaplacia
            double height, double radius, double h, double T, double eps,
            double closeZone, double increment, double tSave, double tMollify,
            std::string outputDir) {
-
-  /// physical parameters
-  double sigma = sqrt(2 * gamma * kt / h);
-  ddgsolver::Parameters p{Kb, H0, sharpness, r_H0, Ksg[0], Kst, Ksl, Kse,  Kv[0], epsilon, Bc, gamma, Vt,
-                          kt, sigma, ptInd, Kf,  conc, height, radius};
-
   std::cout << "Loading input mesh " << inputMesh << " ...";
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
@@ -184,6 +178,15 @@ int driver_ply(std::string inputMesh, std::string refMesh, bool isTuftedLaplacia
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Initiating the system ...";
+  /// physical parameters
+  double sigma = sqrt(2 * gamma * kt / h);
+  if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
+    Vt = 1.0;
+    std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
+  }
+  ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
+                          Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
+                          sigma, ptInd, Kf, conc, height, radius};
   ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
@@ -233,6 +236,10 @@ int driver_nc(std::string trajFile, std::size_t startingFrame, bool isTuftedLapl
   std::cout << "Initiating the system ...";
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
+  if (mesh.hasBoundary() && (Vt != 1.0)) {
+    Vt = 1.0;
+    std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
+  }
   ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
                           Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
                           sigma, ptInd, Kf,        conc, height, radius};
