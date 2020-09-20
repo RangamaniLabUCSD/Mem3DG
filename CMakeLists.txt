@@ -71,11 +71,11 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg)
 
 if(WITH_NETCDF)
-  find_package(netCDF CONFIG REQUIRED)
+  find_package(netCDF REQUIRED)
   message(STATUS ${netCDF_VERSION})
   message(STATUS ${netCDF_DIR})
   message(STATUS ${netCDF_LIBRARIES})
-  list(APPEND LINKED_LIBS netCDF::netcdf)
+  list(APPEND LINKED_LIBS NetCDF::NetCDF)
 
   find_package(NetCDF_cxx4)
 
