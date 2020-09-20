@@ -69,9 +69,6 @@ void Force::getVesicleForces() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> &KG_integrated =
       vpg.vertexGaussianCurvatures.raw();
 
-  // initialize the spontaneous curvature matrix
-  H0.setConstant(n_vertices, 1, P.H0);
-
   // calculate the Laplacian of mean curvature H
   Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
 
@@ -98,8 +95,9 @@ void Force::getVesicleForces() {
   /// B. INSIDE EXCESS PRESSURE
   volume = 0;
   for (gcs::Face f : mesh.faces()) {
-    volume += signedVolumeFromFace(f, vpg);
-  }  
+    volume += signedVolumeFromFace(
+        f, vpg, refVpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
+  } 
   insidePressure_e = - P.Kv * (volume - refVolume * P.Vt) /
                      (refVolume * P.Vt) * vertexAngleNormal_e;
 

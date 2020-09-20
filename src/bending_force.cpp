@@ -24,7 +24,6 @@
 #include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
-
 #include "mem3dg/solver/force.h"
 #include "mem3dg/solver/meshops.h"
 
@@ -60,9 +59,6 @@ void Force::getBendingForces() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
       M_inv * vpg.vertexGaussianCurvatures.raw();
 
-  // initialize the spontaneous curvature matrix
-  H0.setConstant(n_vertices, 1, P.H0);
-
   // calculate the Laplacian of mean curvature H
   Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * (H - H0);
 
@@ -83,4 +79,21 @@ void Force::getBendingForces() {
   bendingPressure_e =
       rowwiseScaling(-2.0 * P.Kb * (productTerms + lap_H), vertexAngleNormal_e);
 }
+
+void Force::getChemicalPotential() { 
+  
+  Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
+      (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
+
+  H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+           .matrix();
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> dH0dphi =
+      (2 * P.H0 * proteinDensity.raw().array() /
+            ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array()))).matrix();
+
+  chemicalPotential.raw() =
+      (P.epsilon - (2 * P.Kb * (H - H0)).array() * dH0dphi.array()).matrix();
+}
+
 } // end namespace ddgsolver

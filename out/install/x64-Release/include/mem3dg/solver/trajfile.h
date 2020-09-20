@@ -32,7 +32,6 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/meshops.h"
@@ -84,22 +83,10 @@ static const std::string TIME_VAR = "time";
 static const std::string COORD_VAR = "coordinates";
 /// Name of the mesh topology data
 static const std::string TOPO_VAR = "topology";
-/// Name of the refMesh coordinates data
-static const std::string REFCOORD_VAR = "refcoordinates";
 /// Name of the velocity data
 static const std::string VEL_VAR = "velocities";
 /// Name of the mean curvature data
 static const std::string MEANCURVE_VAR = "meancurvature";
-/// Name of the spontaneous curvature data
-static const std::string SPONCURVE_VAR = "sponcurvature";
-/// Name of the external pressure data
-static const std::string EXTERNPRESS_VAR = "externpressure";
-/// Name of the physical pressure data
-static const std::string PHYSPRESS_VAR = "physpressure";
-/// Name of the capillary pressure data
-static const std::string CAPPRESS_VAR = "cappressure";
-/// Name of the bending pressure data
-static const std::string BENDPRESS_VAR = "bendpressure";
 
 /**
  * @class TrajFile
@@ -116,10 +103,6 @@ public:
   using NcException = nc::exceptions::NcException;
   using EigenVector =
       Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>;
-
-  // template <typename T>
-  // using EigenVector_T = Eigen::Matrix<T, Eigen::Dynamic, SPATIAL_DIMS,
-  // Eigen::RowMajor>;
 
   TrajFile() = delete;
 
@@ -138,12 +121,11 @@ public:
    * @return TrajFile helper object to manipulate the bound NetCDF file.
    */
   static TrajFile newFile(const std::string &filename, gcs::SurfaceMesh &mesh,
-                          gcs::VertexPositionGeometry &refVpg,
                           bool replace = false) {
     if (replace)
-      return TrajFile(filename, mesh, refVpg, NcFile::replace);
+      return TrajFile(filename, mesh, NcFile::replace);
     else
-      return TrajFile(filename, mesh, refVpg, NcFile::newFile);
+      return TrajFile(filename, mesh, NcFile::newFile);
   };
 
   /**
@@ -199,60 +181,15 @@ public:
 
   void writeCoords(const std::size_t idx, const EigenVector &data);
 
-  std::tuple<double, EigenVector> getTimeAndCoords(const std::size_t idx) const;
+  void writeMeanCurvature(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> getMeanCurvature(const std::size_t idx) const;
 
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
   getTopology() const;
 
-  Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
-  getRefcoordinate() const;
-
-  void writeVelocity(const std::size_t idx, const EigenVector &data);
-
-  Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
-  getVelocity(const std::size_t idx) const;
-
-  void writeMeanCurvature(const std::size_t idx,
-                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getMeanCurvature(const std::size_t idx) const;
-
-  void writeSponCurvature(const std::size_t idx,
-                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getSponCurvature(const std::size_t idx) const;
-
-  void
-  writeExternalPressure(const std::size_t idx,
-                        const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getExternalPressure(const std::size_t idx) const;
-
-  void
-  writePhysicalPressure(const std::size_t idx,
-                        const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getPhysicalPressure(const std::size_t idx) const;
-
-  void
-  writeCapillaryPressure(const std::size_t idx,
-                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getCapillaryPressure(const std::size_t idx) const;
-
-  void
-  writeBendingPressure(const std::size_t idx,
-                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getBendingPressure(const std::size_t idx) const;
-
-  EigenVector getVelocities(const std::size_t idx) const;
+  std::tuple<double, EigenVector> getTimeAndCoords(const std::size_t idx) const;
 
 private:
   /**
@@ -278,17 +215,10 @@ private:
     polygon_order_dim = fd->getDim(POLYGON_ORDER_NAME);
 
     topology = fd->getVar(TOPO_VAR);
-    refcoord = fd->getVar(REFCOORD_VAR);
     time_var = fd->getVar(TIME_VAR);
     coord_var = fd->getVar(COORD_VAR);
-    vel_var = fd->getVar(VEL_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
-    sponcurve_var = fd->getVar(SPONCURVE_VAR);
-    externpress_var = fd->getVar(EXTERNPRESS_VAR);
-    physpress_var = fd->getVar(PHYSPRESS_VAR);
-    cappress_var = fd->getVar(CAPPRESS_VAR);
-    bendpress_var = fd->getVar(BENDPRESS_VAR);
-    vel_var = fd->getVar(VEL_VAR);
+    // vel_var = fd->getVar(VEL_VAR);
   }
 
   /**
@@ -301,7 +231,7 @@ private:
    * @param fMode    Mode to create file with (replace, newFile)
    */
   TrajFile(const std::string &filename, gcs::SurfaceMesh &mesh,
-           gcs::VertexPositionGeometry &refVpg, const NcFile::FileMode fMode)
+           const NcFile::FileMode fMode)
       : filename(filename), // fd(new NcFile(filename, fMode)),
         writeable(true) {
 
@@ -326,15 +256,6 @@ private:
     std::uint32_t *topodata = faceMatrix.data();
     topology.putVar(topodata);
 
-    // Initialize reference coordinate data block
-    refcoord = fd->addVar(REFCOORD_VAR, netCDF::ncDouble,
-                          {nvertices_dim, spatial_dim});
-
-    // Populate reference coordinate data
-    double *refcoorddata;
-    refcoorddata = gc::EigenMap<double, 3>(refVpg.inputVertexPositions).data();
-    refcoord.putVar(refcoorddata);
-
     time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
     time_var.putAtt(UNITS, TIME_UNITS);
 
@@ -342,29 +263,11 @@ private:
                            {frame_dim, nvertices_dim, spatial_dim});
     coord_var.putAtt(UNITS, LEN_UNITS);
 
-    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
-                         {frame_dim, nvertices_dim, spatial_dim});
-
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
 
-    sponcurve_var =
-        fd->addVar(SPONCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    externpress_var = fd->addVar(EXTERNPRESS_VAR, netCDF::ncDouble,
-                                 {frame_dim, nvertices_dim});
-
-    physpress_var =
-        fd->addVar(PHYSPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    cappress_var =
-        fd->addVar(CAPPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    bendpress_var =
-        fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
-                         {frame_dim, nvertices_dim, spatial_dim});
+    // vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
+    //                      {frame_dim, nvertices_dim, spatial_dim});
   }
 
   /// Bound NcFile
@@ -379,16 +282,10 @@ private:
 
   // Save variables
   nc::NcVar topology;
-  nc::NcVar refcoord;
   nc::NcVar time_var;
   nc::NcVar coord_var;
   nc::NcVar meancurve_var;
-  nc::NcVar sponcurve_var;
-  nc::NcVar externpress_var;
-  nc::NcVar physpress_var;
-  nc::NcVar cappress_var;
-  nc::NcVar bendpress_var;
-  nc::NcVar vel_var;
+  // nc::NcVar vel_var;
 
   /// Filepath to file
   std::string filename;

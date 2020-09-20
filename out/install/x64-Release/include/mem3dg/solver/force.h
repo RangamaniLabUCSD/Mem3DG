@@ -59,10 +59,6 @@ struct Parameters {
   double Kse;
   /// Volume regularization
   double Kv;
-  /// binding energy per protein
-  double epsilon;
-  /// binding constant
-  double Bc;
   /// Dissipation coefficient
   double gamma;
   /// Reduced volume
@@ -112,19 +108,12 @@ public:
   /// Cached stochastic forces
   gcs::VertexData<gc::Vector3> stochasticForce;
 
-  /// Cached protein surface density 
-  gcs::VertexData<double> proteinDensity;
-  /// Cached chemical potential
-  gcs::VertexData<double> chemicalPotential;
-
   /// Whether or not use tufted laplacian matrix
   bool isTuftedLaplacian;
   /// Mollify Factor in constructing tufted laplacian matrix
   double mollifyFactor;
   /// Whether or not do vertex shift
   bool isVertexShift;
-  /// Whether or not consider protein binding
-  bool isProtein;
 
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
@@ -163,7 +152,7 @@ public:
   /// indices for vertices chosen for integration
   Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
 
-  /*
+  /**
    * @brief Construct a new Force object
    *
    * @param mesh_         Mesh connectivity
@@ -173,16 +162,16 @@ public:
 
   Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         gcs::VertexPositionGeometry &refVpg_,
-        gcs::RichSurfaceMeshData &richData_, Parameters &p, bool isProtein_ = false,
+        gcs::RichSurfaceMeshData &richData_, Parameters &p,
         bool isTuftedLaplacian_ = false, double mollifyFactor_ = 1e-6,
         bool isVertexShift_ = false)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_),
-        P(p), isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_), mollifyFactor(mollifyFactor_),
+        P(p), isTuftedLaplacian(isTuftedLaplacian_), mollifyFactor(mollifyFactor_),
         isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
         insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
         externalPressure(mesh_, {0, 0, 0}), regularizationForce(mesh_, {0,0,0}), 
-        stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
-        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}) {
+        stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}), 
+        vel(mesh_, {0, 0, 0}) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -205,23 +194,19 @@ public:
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
 
-    // Initialize the geodesic distance from ptInd
+    // Initialize the magnitude of externally applied pressure
     geodesicDistanceFromAppliedForce =
         heatMethodDistance(vpg, mesh.vertex(P.ptInd));
     auto &dist_e = geodesicDistanceFromAppliedForce.raw();
-
-    // Initialize the external pressure magnitude distribution
-    gaussianDistribution(externalPressureMagnitude, dist_e,
-                         dist_e.maxCoeff() / P.conc);
-    externalPressureMagnitude *= P.Kf;
+    double stdDev = dist_e.maxCoeff() / P.conc;
+    externalPressureMagnitude =
+        P.Kf / (stdDev * pow(M_PI * 2, 0.5)) *
+        (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
 
     // Initialize the spontaneous curvature distribution
-    if (isProtein) {
-      proteinDensity.raw().setZero();
-      H0.setZero(mesh.nVertices(), 1);
-    } else {
-      tanhDistribution(H0, dist_e, P.sharpness, P.r_H0);
-      H0 *= P.H0;
+    H0.resize(dist_e.rows(), 1);
+    for (size_t i = 0; i < dist_e.rows(); i++){
+      H0[i] = 0.5 * P.H0 * (1 + tanh( P.sharpness * (P.r_H0 - dist_e[i])));
     }
 
     // Initialize the mask on choosing integration vertices based on geodesic
@@ -263,19 +248,14 @@ public:
     targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
     // Initialize reference volume
-    if (mesh.hasBoundary()) {
-      refVolume = 0.0;
-    } else {
-      refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3); 
-    }
+    refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
 
     // Initialize surface area
     surfaceArea = vpg.faceAreas.raw().sum();
 
     // Initialize volume
     for (gcs::Face f : mesh.faces()) {
-      volume += signedVolumeFromFace(
-          f, vpg, vpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
+      volume += signedVolumeFromFace(f, vpg);
     }
 
     // Initialize the vertex position of the last iteration
@@ -305,8 +285,6 @@ public:
   }
 
   void getBendingForces();
-
-  void getChemicalPotential();
 
   void getStretchingForces();
 
