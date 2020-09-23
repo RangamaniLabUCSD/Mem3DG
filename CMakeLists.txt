@@ -63,6 +63,8 @@ option(BUILD_PYMEM3DG "Build the python extensions?" ON)
 option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" ON)
 option(BUILD_MEM3DG_DOCS "Build the python extensions?" ON)
 
+#set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS
 # ##############################################################################
@@ -71,11 +73,11 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg)
 
 if(WITH_NETCDF)
-  find_package(netCDF CONFIG REQUIRED)
+  find_package(netCDF REQUIRED)
   message(STATUS ${netCDF_VERSION})
   message(STATUS ${netCDF_DIR})
   message(STATUS ${netCDF_LIBRARIES})
-  list(APPEND LINKED_LIBS netCDF::netcdf)
+  list(APPEND LINKED_LIBS NetCDF::NetCDF)
 
   find_package(NetCDF_cxx4)
 
@@ -110,7 +112,7 @@ target_include_directories(
 )
 target_link_libraries(mem3dg_objlib PUBLIC ${LINKED_LIBS})
 set_target_properties(
-  mem3dg_objlib PROPERTIES POSIION_INDEPENDENT_CODE ON)
+  mem3dg_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(WITH_NETCDF)
   target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
   target_include_directories(mem3dg_objlib PRIVATE ${netcdf-cxx4_INCLUDE_DIRS})
@@ -119,6 +121,7 @@ endif()
 # mem3dg library
 add_library(mem3dg SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
 target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
+#set_target_properties(mem3dg PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(BUILD_PYMEM3DG)
   add_subdirectory(pymem3dg)
