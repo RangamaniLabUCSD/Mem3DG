@@ -168,7 +168,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
       L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
       std::tie(totalEnergy, BE, sE, pE, cE) = getFreeEnergy(f);
-      dL2ErrorNorm = L2ErrorNorm - oldL2ErrorNorm;
+      dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm)/oldL2ErrorNorm;
 
       if (f.P.Kb != 0 ) {
         dBE = abs(BE - oldBE) / (BE);
@@ -271,7 +271,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       */ 
 
       // 3.3 fail and exit 
-      if (isnan(dL2ErrorNorm)) {
+      if (abs(dL2ErrorNorm)>1) {
         break;
       }
 
