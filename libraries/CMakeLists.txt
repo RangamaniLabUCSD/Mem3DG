@@ -56,3 +56,27 @@ if(BUILD_PYMEM3DG)
     set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
   endif()
 endif()
+
+
+# ##############################################################################
+# GET netcdf-cxx4
+# ##############################################################################
+# FetchContent_Declare(
+#   netcdf-cxx4
+#   GIT_REPOSITORY https://github.com/ctlee/netcdf-cxx4.git
+#   GIT_SHALLOW TRUE
+#   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/netcdf-cxx4-src" 
+#   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/netcdf-cxx4-build"
+# )
+# FetchContent_GetProperties(netcdf-cxx4)
+# if(NOT netcdf-cxx4_POPULATED)
+#   FetchContent_Populate(netcdf-cxx4)
+#   add_subdirectory(${netcdf-cxx4_SOURCE_DIR} ${netcdf-cxx4_BINARY_DIR})
+#   set_target_properties(netcdf-cxx4 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+#   if(NOT TARGET NetCDF::NetCDF-cxx4)
+#     add_library(NetCDF::NetCDF-cxx4 UNKNOWN IMPORTED)
+#     set_target_properties(
+#       NetCDF::NetCDF-cxx4 PROPERTIES INTERFACE_LINK_LIBRARIES "netcdf-cxx4"
+#     )
+#   endif()
+# endif()
