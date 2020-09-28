@@ -6,7 +6,6 @@ notifications:
 language: cpp
 
 dist: bionic
-sudo: false
 
 # Don't shallow clone as this may break the versioning
 git:
@@ -29,12 +28,14 @@ matrix:
     addons:
       homebrew:
         packages: ['cmake', 'ninja', 'netcdf']
+        update: true
 
   - os: osx
     osx_image: xcode10.3
     addons:
       homebrew:
         packages: ['cmake', 'ninja', 'netcdf']
+        update: true
 
   - os: osx
     osx_image: xcode11.6
@@ -69,6 +70,7 @@ matrix:
   - os: linux
     compiler: gcc
     env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+    python: 3.7
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
@@ -77,6 +79,7 @@ matrix:
   - os: linux
     compiler: gcc
     env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+    python: 3.7
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
@@ -85,6 +88,7 @@ matrix:
   - os: linux
     compiler: gcc
     env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+    python: 3.7
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
@@ -94,6 +98,7 @@ matrix:
   - os: linux
     compiler: clang
     env: MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+    python: 3.7
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-7']
@@ -102,6 +107,7 @@ matrix:
   - os: linux
     compiler: clang
     env: MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+    python: 3.7
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-8']
@@ -110,6 +116,7 @@ matrix:
   - os: linux
     compiler: clang
     env: MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+    python: 3.7
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-9']
@@ -120,12 +127,13 @@ before_install:
 - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       pwd
+      cd ../..
+      pwd
       git clone https://github.com/microsoft/vcpkg 
       cd vcpkg
       "vcpkg/bootstrap-vcpkg.bat"
       vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
       vcpkg integrate install
-      cd ..
     fi
 - if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
 
@@ -136,11 +144,12 @@ before_install:
 install:
 - mkdir build; cd build;
 - |
+    cd $TRAVIS_BUILD_DIR
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
-      cmake -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON \
+      cmake -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON \
             -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake" ..
     else
-      cmake -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
+      cmake -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
     fi
 - cmake --build . --config Release
 
