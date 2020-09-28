@@ -12,7 +12,7 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.11)
 
 include(FetchContent)
 
