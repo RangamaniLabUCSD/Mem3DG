@@ -135,9 +135,9 @@ before_install:
       cd ../..
       git clone https://github.com/microsoft/vcpkg 
       cd vcpkg
-      bootstrap-vcpkg.bat
-      vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
-      vcpkg integrate install
+      ./bootstrap-vcpkg.bat
+      ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
+      ./vcpkg integrate install
     fi
 - if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
 
