@@ -25,42 +25,46 @@ matrix:
   - os: windows
   # OSX
   - os: osx
-    osx_image: xcode9.3
-
-  - os: osx
     osx_image: xcode9.4
+    addons:
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf']
 
   - os: osx
-    osx_image: xcode10
-
-  - os: osx
-    osx_image: xcode10.1
-
-  - os: osx
-    osx_image: xcode10.2
+    osx_image: xcode10.3
+    addons:
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf']
 
   - os: osx
     osx_image: xcode11.6
-  
+    addons:
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf']
+
   - os: osx
     osx_image: xcode12
-  
-  # LINUX GCC
-  - os: linux
-    compiler: gcc
-    env: MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
     addons:
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-5', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf']
 
-  - os: linux
-    compiler: gcc
-    env: MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-    addons:
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-6', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+
+  # LINUX GCC
+  # - os: linux
+  #   compiler: gcc
+  #   env: MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+  #   addons:
+  #     apt:
+  #       sources: ['ubuntu-toolchain-r-test']
+  #       packages: ['g++-5', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
+
+  # - os: linux
+  #   compiler: gcc
+  #   env: MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+  #   addons:
+  #     apt:
+  #       sources: ['ubuntu-toolchain-r-test']
+  #       packages: ['g++-6', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
 
   - os: linux
     compiler: gcc
@@ -68,7 +72,7 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-7', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+        packages: ['g++-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
 
   - os: linux
     compiler: gcc
@@ -76,7 +80,7 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-8', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+        packages: ['g++-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
 
   - os: linux
     compiler: gcc
@@ -84,7 +88,7 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-9', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+        packages: ['g++-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
 
   # LINUX CLANG
   - os: linux
@@ -93,7 +97,7 @@ matrix:
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-7']
-        packages: ['clang-7', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+        packages: ['clang-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
 
   - os: linux
     compiler: clang
@@ -101,7 +105,7 @@ matrix:
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-8']
-        packages: ['clang-8', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+        packages: ['clang-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
 
   - os: linux
     compiler: clang
@@ -109,24 +113,19 @@ matrix:
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-9']
-        packages: ['clang-9', 'ninja-build', 'libnetcdf', 'libnetcdf-dev', 'libnetcdf-c++4', 'libnetcdf-c++4-dev']
+        packages: ['clang-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
 
 
 before_install:
 - |
-    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      brew update
-      brew install cmake ninja netcdf 
-      brew upgrade cmake
-      cmake --version
-    fi
-- |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       pwd
       git clone https://github.com/microsoft/vcpkg 
-      ./vcpkg/vcpkg/bootstrap-vcpkg.bat
-      ./vcpkg/vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
-      ./vcpkg/vcpkg integrate install
+      cd vcpkg
+      "vcpkg/bootstrap-vcpkg.bat"
+      vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
+      vcpkg integrate install
+      cd ..
     fi
 - if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
 
