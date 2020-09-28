@@ -72,7 +72,7 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
+        packages: ['g++-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
   - os: linux
     compiler: gcc
@@ -80,7 +80,7 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
+        packages: ['g++-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
   - os: linux
     compiler: gcc
@@ -88,7 +88,7 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
+        packages: ['g++-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
   # LINUX CLANG
   - os: linux
@@ -97,7 +97,7 @@ matrix:
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-7']
-        packages: ['clang-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
+        packages: ['clang-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
   - os: linux
     compiler: clang
@@ -105,7 +105,7 @@ matrix:
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-8']
-        packages: ['clang-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
+        packages: ['clang-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
   - os: linux
     compiler: clang
@@ -113,7 +113,7 @@ matrix:
     addons:
       apt:
         sources: ['llvm-toolchain-bionic-9']
-        packages: ['clang-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
+        packages: ['clang-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
 
 before_install:
