@@ -19,9 +19,9 @@ branches:
 matrix:
   fast_finish: true
   allow_failures:
-  - os: windows
   - osx_image: xcode9.4
   - osx_image: xcode10.3
+  - dist: bionic
   - env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
   - env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
   - env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
@@ -150,7 +150,7 @@ before_install:
 install:
 - mkdir build; cd build;
 - |
-    cd $TRAVIS_BUILD_DIR/Mem3DG
+    cd $TRAVIS_BUILD_DIR
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       cmake -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake" ..
     else
