@@ -150,7 +150,12 @@ before_install:
 install:
 - mkdir build; cd build;
 - |
-    cd $TRAVIS_BUILD_DIR
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      cd $TRAVIS_BUILD_DIR/Mem3DG
+    else
+      cd $TRAVIS_BUILD_DIR
+    fi 
+
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       cmake -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake" ..
     else
