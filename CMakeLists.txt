@@ -102,7 +102,6 @@ target_link_libraries(mem3dg_objlib PUBLIC ${LINKED_LIBS})
 set_target_properties(mem3dg_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(WITH_NETCDF)
   target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
-  target_include_directories(mem3dg_objlib PRIVATE ${netcdf-cxx4_INCLUDE_DIRS})
 endif()
 
 # mem3dg library
