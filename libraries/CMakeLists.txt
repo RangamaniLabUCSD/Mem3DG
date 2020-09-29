@@ -17,12 +17,36 @@ include(FetchContent)
 add_subdirectory(pcg)
 
 # ##############################################################################
+# GET EIGEN
+# ##############################################################################
+FetchContent_Declare(
+  eigen
+  GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
+  GIT_TAG         3.3.7
+  GIT_SHALLOW     TRUE
+  SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-src"
+  BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-build"
+)
+FetchContent_GetProperties(eigen)
+if(NOT eigen_POPULATED)
+    FetchContent_Populate(eigen)
+    include(EigenChecker)
+    eigen3checker(${eigen_SOURCE_DIR} 3.3)
+endif()
+add_library (eigen INTERFACE)
+add_library (Eigen3::Eigen ALIAS eigen)
+target_include_directories(eigen INTERFACE
+    $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
+    )
+
+# ##############################################################################
 # GET GEOMETRY CENTRAL
 # ##############################################################################
 FetchContent_Declare(
   geometrycentrallib
-  GIT_REPOSITORY https://github.com/ctlee/geometry-central.git
-  GIT_TAG origin/raw_access
+  GIT_REPOSITORY https://github.com/nmwsharp/geometry-central.git
+  GIT_TAG origin/master
   GIT_SHALLOW TRUE
   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src" 
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-build"
@@ -37,6 +61,7 @@ if(NOT geometrycentrallib_POPULATED)
     geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON
   )
 endif()
+
 
 if(BUILD_PYMEM3DG)
   # ############################################################################
