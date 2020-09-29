@@ -140,7 +140,7 @@ before_install:
       git remote add origin https://github.com/microsoft/vcpkg 
       git fetch origin master
       git checkout -b master origin/master
-      ./bootstrap-vcpkg.bat --disable-metrics 
+      ./bootstrap-vcpkg.bat
       ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
       popd
     fi
