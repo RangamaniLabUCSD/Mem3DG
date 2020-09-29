@@ -9,6 +9,10 @@ language: cpp
 git:
   depth: false
 
+env:
+  global:
+    - DEPS_DIR=${HOME}/deps
+
 branches:
   only:
   - master
@@ -19,7 +23,6 @@ matrix:
   allow_failures:
   - osx_image: xcode9.4
   - osx_image: xcode10.3
-  - dist: bionic
   - env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
   - env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
   - env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
@@ -57,14 +60,6 @@ matrix:
 
 
   # LINUX GCC
-  - os: linux
-    dist: bionic
-    compiler: gcc
-    python: 3.7
-    addons:
-      apt:
-        packages: ['cmake', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev']
-
   - os: linux
     dist: focal
     compiler: gcc
@@ -136,17 +131,19 @@ matrix:
 
 
 before_install:
+- if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
 - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
-      cd /c/Users/travis/build
-      if [ ! -d "vcpkg" ]; then
-        git clone https://github.com/microsoft/vcpkg 
-      fi
-      cd vcpkg
+      mkdir -p ${DEPS_DIR}/vcpkg
+      pushd ${DEP_DIR}/vcpkg
+      git init
+      git remote add origin https://github.com/microsoft/vcpkg 
+      git fetch origin master
+      git checkout -b master origin/master
       ./bootstrap-vcpkg.bat --disable-metrics 
       ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
+      popd
     fi
-- if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
 
 # Show OS/compiler version
 - uname -a
@@ -154,16 +151,14 @@ before_install:
 
 cache: 
   directories: 
-    - /c/Users/travis/build/vcpkg
+    - ${DEPS_DIR}/vcpkg/installed
     - /c/Users/travis/AppData/Local/vcpkg/archives
-    - $TRAVIS_BUILD_DIR/Mem3DG/build/libraries
 
 install:
-- mkdir build; cd build;
+- mkdir -p build && cd build;
 - |
-    cd $TRAVIS_BUILD_DIR/Mem3DG
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
-      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="/c/Users/travis/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
+      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${DEPS_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
     else
       cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
     fi
