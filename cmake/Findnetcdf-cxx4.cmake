@@ -30,15 +30,12 @@ find_path(
   DOC "netcdf-cxx4 include directories"
 )
 mark_as_advanced(netcdf-cxx4_INCLUDE_DIR)
-message(STATUS ${netcdf-cxx4_INCLUDE_DIR})
-
 
 find_library(
   netcdf-cxx4_LIBRARY_RELEASE
   NAMES netcdf-cxx4 netcdf_c++4
   DOC "netcdf-cxx4 release library"
 )
-message(STATUS ${netcdf-cxx4_LIBRARY_RELEASE})
 
 find_library(
   netcdf-cxx4_LIBRARY_DEBUG
@@ -46,7 +43,6 @@ find_library(
   PATH_SUFFIXES debug/lib
   DOC "netcdf-cxx4 debug library"
 )
-message(STATUS ${netcdf-cxx4_LIBRARY_DEBUG})
 include(SelectLibraryConfigurations)
 select_library_configurations(netcdf-cxx4)
 
