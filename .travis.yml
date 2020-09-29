@@ -135,7 +135,7 @@ before_install:
 - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       mkdir -p ${DEPS_DIR}/vcpkg
-      pushd ${DEP_DIR}/vcpkg
+      pushd ${DEPS_DIR}/vcpkg
       git init
       git remote add origin https://github.com/microsoft/vcpkg 
       git fetch origin master
