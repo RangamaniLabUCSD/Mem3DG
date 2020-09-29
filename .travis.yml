@@ -172,9 +172,9 @@ install:
 - mkdir -p build && cd build;
 - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
-      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${DEPS_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" -G "Visual Studio 15 2017 Win64" ..
+      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${DEPS_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" -G "Visual Studio 15 2017 Win64" ..
     else
-      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
+      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
     fi
 - cmake --build . --config Release
 
