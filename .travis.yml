@@ -4,6 +4,10 @@ notifications:
     secure: "qXwdryidmlwL5RcX3JoAL7BgCF4w/W0dJdmU5r3Bko6N31Xbv4YlFmFKKlh8BwpHidN2X4mBYHHI7vYvsKYr8iW45sSwIs0gYWZkiBtFGU5UpAv0aWT4ZzgEkN4TQ/8XImZcK57E4KFKu1l8bbJt7d0ZNNh0M/elrhrsw0oX/BQ725z5wvmpcaVm0g//Pk2ydk/yH8NwLK0R+t3NwPJ66pS4aBRxBP0qTTqvCzwHuqau0u1QmucdeQJaeg71SZdahYHTqtIfhn//sucxUPzZMRtJDweuCNB5SEeZZxLcpnshkFTa1NDmMMFwzJEIId1QAAoXLR4h6b2lmEfrmdWhbWz/mk0xbIEzhODgMGJRZb62boKiW8XLvdIJfSE9rAHcXRzuFHYaudDquah/WQ7zh5rLX3UMT00FD2XwWzeKclVtiPTfWkukVeWqhdpSMOhr9/bTIIoT1ns751AlyQGOa4sZkVEeUbhPPuTPF5jT9S+PwIhB9x84NZ7AwAxH09rUNgi0liqhNr5pQwtUyl0M2aZA3s1yZBKqVsc3ZBmQIIfEeOSSGZjxn58TxHgUw/28hUdrLUdiix213pKIYppQ+LUJeb3v+5kmIOBLproQkPkcEtLwN5+eYE81RAMG27sHnSDVhQVHb56fY4WR1tB2R1Lrmy3LzduQ9IIQ5ucWQz8="
 
 language: cpp
+cache: 
+  directories: 
+    - /c/Users/travis/build/vcpkg
+    - $TRAVIS_BUILD_DIR/Mem3DG/build/libraries
 
 dist: focal
 
@@ -150,12 +154,7 @@ before_install:
 install:
 - mkdir build; cd build;
 - |
-    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      cd $TRAVIS_BUILD_DIR/Mem3DG
-    else
-      cd $TRAVIS_BUILD_DIR
-    fi 
-
+    cd $TRAVIS_BUILD_DIR/Mem3DG
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       cmake -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake" ..
     else
