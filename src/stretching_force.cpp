@@ -43,7 +43,7 @@ void Force::getStretchingForces() {
 
   capillaryPressure.fill({0.0, 0.0, 0.0});
 
-  // Alias & EigenMap
+  // Alias & gc::EigenMap
   const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
   const gcs::FaceData<double> &face_a = vpg.faceAreas;
   const gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;

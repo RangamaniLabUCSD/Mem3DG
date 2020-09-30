@@ -1,15 +1,17 @@
 include VERSION
 include README.md
 include pyproject.toml
+recursive-include docs *
+
 
 # CMake Helpers
 include cmake/*
 include CMakeLists.txt
 
 # C++ sources
-include include/mem3dg/solver/*
 include src/*
 recursive-include libraries *
+recursive-include include *
 
 # PyMem3DG sources
 recursive-include pymem3dg *

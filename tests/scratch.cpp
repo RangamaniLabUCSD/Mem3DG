@@ -11,6 +11,7 @@
 #include <geometrycentral/surface/simple_polygon_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 // We are writing 2D data, a 6 x 12 grid
 constexpr int nx = 6;
@@ -42,9 +43,9 @@ int main() {
   file.writeTime(file.getNextFrameIndex(), 2);
 
   file.writeCoords(
-      0, ddgsolver::EigenMap<double, 3>(ptrVpg->inputVertexPositions));
+      0, gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions));
   file.writeCoords(
-      3, ddgsolver::EigenMap<double, 3>(ptrVpg->inputVertexPositions));
+      3, gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions));
 
   double x, y;
   ddgsolver::TrajFile::EigenVector vec1, vec2;

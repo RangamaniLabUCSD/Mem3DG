@@ -5,12 +5,13 @@ notifications:
 
 language: cpp
 
-dist: bionic
-sudo: false
-
 # Don't shallow clone as this may break the versioning
 git:
   depth: false
+
+env:
+  global:
+    - DEPS_DIR=${HOME}/deps
 
 branches:
   only:
@@ -19,117 +20,180 @@ branches:
 # BUILD MATRIX
 matrix:
   fast_finish: true
-  allow_failures:
-  - os: windows
+  
+  # allow_failures:
+  # - osx_image: xcode9.4
+  # - osx_image: xcode10.3
+  # - env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+  # - env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+  # - env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+  # - env: MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+  # - env: MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+  # - env: MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+
   include:
+  # Windows  
   - os: windows
+  
+  
   # OSX
-  - os: osx
-    osx_image: xcode9.3
+  # - os: osx
+  #   osx_image: xcode9.4
+  #   addons:
+  #     homebrew:
+  #       packages: ['cmake', 'ninja', 'netcdf']
+  #       update: true
 
-  - os: osx
-    osx_image: xcode9.4
-
-  - os: osx
-    osx_image: xcode10
-
-  - os: osx
-    osx_image: xcode10.1
-
-  - os: osx
-    osx_image: xcode10.2
+  # - os: osx
+  #   osx_image: xcode10.3
+  #   addons:
+  #     homebrew:
+  #       packages: ['cmake', 'ninja', 'netcdf']
+  #       update: true
 
   - os: osx
     osx_image: xcode11.6
-  
+    addons:
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf']
+
   - os: osx
     osx_image: xcode12
-  
+    addons:
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf']
+
+
   # LINUX GCC
   - os: linux
+    dist: bionic
     compiler: gcc
-    env: MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+    python: 3.6
     addons:
       apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-5', 'ninja-build']
+        packages: ['ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
   - os: linux
+    dist: focal
     compiler: gcc
-    env: MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+    python: 3.7
     addons:
       apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-6', 'ninja-build']
+        packages: ['ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
+    env:
+      - BUILD_DOCS=1
 
-  - os: linux
-    compiler: gcc
-    env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-    addons:
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-7', 'ninja-build']
+  # - os: linux
+  #   dist: focal
+  #   compiler: gcc
+  #   env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+  #   python: 3.7
+  #   addons:
+  #     apt:
+  #       sources: ['ubuntu-toolchain-r-test']
+  #       packages: ['g++-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
-  - os: linux
-    compiler: gcc
-    env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
-    addons:
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-8', 'ninja-build']
+  # - os: linux
+  #   dist: focal
+  #   compiler: gcc
+  #   env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+  #   python: 3.7
+  #   addons:
+  #     apt:
+  #       sources: ['ubuntu-toolchain-r-test']
+  #       packages: ['g++-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
-  - os: linux
-    compiler: gcc
-    env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-    addons:
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-9', 'ninja-build']
+  # - os: linux
+  #   dist: focal
+  #   compiler: gcc
+  #   env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+  #   python: 3.7
+  #   addons:
+  #     apt:
+  #       sources: ['ubuntu-toolchain-r-test']
+  #       packages: ['g++-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
-  # LINUX CLANG
-  - os: linux
-    compiler: clang
-    env: MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
-    addons:
-      apt:
-        sources: ['llvm-toolchain-bionic-7']
-        packages: ['clang-7', 'ninja-build']
 
-  - os: linux
-    compiler: clang
-    env: MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-    addons:
-      apt:
-        sources: ['llvm-toolchain-bionic-8']
-        packages: ['clang-8', 'ninja-build']
+  # # LINUX CLANG
+  # - os: linux
+  #   dist: focal
+  #   compiler: clang
+  #   env: MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+  #   python: 3.7
+  #   addons:
+  #     apt:
+  #       sources: ['llvm-toolchain-bionic-7']
+  #       packages: ['clang-7', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
-  - os: linux
-    compiler: clang
-    env: MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
-    addons:
-      apt:
-        sources: ['llvm-toolchain-bionic-9']
-        packages: ['clang-9', 'ninja-build']
+  # - os: linux
+  #   dist: focal
+  #   compiler: clang
+  #   env: MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+  #   python: 3.7
+  #   addons:
+  #     apt:
+  #       sources: ['llvm-toolchain-bionic-8']
+  #       packages: ['clang-8', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
+
+  # - os: linux
+  #   dist: focal
+  #   compiler: clang
+  #   env: MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+  #   python: 3.7
+  #   addons:
+  #     apt:
+  #       sources: ['llvm-toolchain-bionic-9']
+  #       packages: ['clang-9', 'ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev']
 
 
 before_install:
-- |
-   if [[ (-x $(which brew)) ]]; then
-     brew update
-     brew install cmake ninja
-     brew upgrade cmake
-     cmake --version
-   fi
 - if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
+- |
+    if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+      mkdir -p ${DEPS_DIR}/vcpkg
+      pushd ${DEPS_DIR}/vcpkg
+      git init
+      git remote add origin https://github.com/microsoft/vcpkg 
+      git fetch origin master
+      git checkout -b master origin/master
+      ./bootstrap-vcpkg.bat
+      ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows
+      popd
+    fi
 
 # Show OS/compiler version
 - uname -a
 - $CXX --version
 
+cache: 
+  directories: 
+    - ${DEPS_DIR}/vcpkg/installed
+    - /c/Users/travis/AppData/Local/vcpkg/archives
+
 install:
-- mkdir build; cd build;
-- cmake -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -GNinja ..
+- mkdir -p build && cd build;
+- |
+    if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${DEPS_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" -G "Visual Studio 15 2017 Win64" ..
+    else
+      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
+    fi
 - cmake --build . --config Release
 
 script:
 - ctest -C Release -V -j
+
+after_success:
+  - if [[ $BUILD_DOCS == 1 ]]; then
+      cmake ..;
+      make mem3dg_docs;
+    fi;
+deploy:
+  provider: pages
+  local-dir: build/html
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN
+  keep-history: false
+  on:
+    branch: master
+    condition: $BUILD_DOCS == 1

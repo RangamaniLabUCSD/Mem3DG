@@ -16,6 +16,8 @@
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/version.h"
 
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
+
 #include <fstream>
 #include <iostream>
 using namespace std;
@@ -112,7 +114,7 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
            << f.surfaceArea / f.targetSurfaceArea << " target surface area"
            << "\n"
            << "COM (x, y, z):		 "
-           << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
+           << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
                   f.vpg.inputVertexPositions.raw().rows()
            << "\n";
 

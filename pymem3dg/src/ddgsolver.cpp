@@ -20,6 +20,7 @@
 #include <geometrycentral/surface/simple_polygon_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include "polyscope/curve_network.h"
 #include "polyscope/point_cloud.h"
@@ -90,8 +91,8 @@ int viewer(std::string fileName) {
   //Eigen::Matrix<double, Eigen::Dynamic, 3> vertexVelocity_e =
   //    ddgsolver::EigenMap<double, 3>(vertexVelocity);
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
-  ddgsolver::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
-  Eigen::Dynamic, 3> tangentialForce_e = ddgsolver::EigenMap<double,
+  gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
+  Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
   3>(tangentialForce);*/
 
   std::cout << "Opening Polyscope GUI ...";
@@ -245,7 +246,7 @@ int driver_nc(std::string trajFile, std::size_t startingFrame, bool isTuftedLapl
                           sigma, ptInd, Kf,        conc, height, radius};
   ddgsolver::Force f(mesh, vpg, refVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
-  ddgsolver::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
+  gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;

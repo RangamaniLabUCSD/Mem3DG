@@ -62,7 +62,11 @@ else:
     else:
         version = "0.0.0"
 
-cmake_args=['-DBUILD_PYMEM3DG=ON']
+cmake_args=['-DBUILD_PYMEM3DG=ON', '-DSUITESPARSE=OFF']
+
+if('CONDA_PREFIX' in os.environ):
+    print("Setting library search path (CMAKE_PREFIX_PATH): %s"%(os.environ['CONDA_PREFIX']))
+    cmake_args.append('-DCMAKE_PREFIX_PATH=%s'%(os.environ['CONDA_PREFIX']))
 
 DOCLINES = __doc__.split("\n")
 
@@ -89,6 +93,8 @@ except ImportError:
     print('Please run:', file=sys.stderr)
     print('', file=sys.stderr)
     print('  python -m pip install scikit-build\n', file=sys.stderr)
+    print('  -- or --\n', file=sys.stderr)
+    print('  conda install scikit-build', file=sys.stderr)
     sys.exit(1)
 
 tests_require = ["pytest"]

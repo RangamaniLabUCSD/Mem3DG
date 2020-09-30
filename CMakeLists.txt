@@ -29,7 +29,7 @@ project(
 message(STATUS "Mem3DG version: ${VERSION}")
 
 if(SKBUILD)
-    message(STATUS "The project is being built using scikit-build")
+  message(STATUS "The project is being built using scikit-build")
 endif()
 
 # Configure version.cpp to give access to version in code
@@ -63,8 +63,6 @@ option(BUILD_PYMEM3DG "Build the python extensions?" ON)
 option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" ON)
 option(BUILD_MEM3DG_DOCS "Build the python extensions?" ON)
 
-#set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS
 # ##############################################################################
@@ -74,27 +72,17 @@ set(LINKED_LIBS geometry-central pcg::pcg)
 
 if(WITH_NETCDF)
   find_package(netCDF REQUIRED)
-  message(STATUS ${netCDF_VERSION})
-  message(STATUS ${netCDF_DIR})
-  message(STATUS ${netCDF_LIBRARIES})
+  message(DEBUG "netCDF version: ${netCDF_VERSION}")
+  message(DEBUG "netCDF dir: ${netCDF_DIR}")
+  message(DEBUG "netCDF include dir: ${netCDF_INCLUDE_DIR}")
+  message(DEBUG "netCDF libraries: ${netCDF_LIBRARIES}")
   list(APPEND LINKED_LIBS NetCDF::NetCDF)
 
-  find_package(NetCDF_cxx4)
-
-  if(NetCDF_cxx4_FOUND)
-    list(APPEND LINKED_LIBS NetCDF::NetCDF_cxx4)
-  else()
-    find_path(netcdf-cxx4_INCLUDE_DIRS NAMES netcdf REQUIRED)
-    include(SelectLibraryConfigurations)
-    find_library(netcdf-cxx4_LIBRARY_RELEASE NAMES netcdf-cxx4)
-    find_library(netcdf-cxx4_LIBRARY_DEBUG NAMES netcdf-cxx4 PATH_SUFFIXES debug/lib)
-    select_library_configurations(netcdf-cxx4)
-    
-    message(STATUS ${netcdf-cxx4_INCLUDE_DIRS})
-    message(STATUS ${netcdf-cxx4_LIBRARY})
-
-    list(APPEND LINKED_LIBS ${netcdf-cxx4_LIBRARY})
-  endif()
+  find_package(netcdf-cxx4 REQUIRED)
+  message(DEBUG "netcdf-cxx4 include: ${netcdf-cxx4_INCLUDE_DIRS}")
+  message(DEBUG "netcdf-cxx4 library: ${netcdf-cxx4_LIBRARIES}")
+  message(DEBUG "netcdf-cxx4 version: ${netcdf-cxx4_VERSION}")
+  list(APPEND LINKED_LIBS NetCDF::NetCDF-cxx4)
 endif()
 
 # ##############################################################################
@@ -108,20 +96,17 @@ list(APPEND DDG_SOURCES ${VERSION_FILE})
 add_library(mem3dg_objlib OBJECT ${DDG_SOURCES} ${DDG_HEADERS})
 target_include_directories(
   mem3dg_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(mem3dg_objlib PUBLIC ${LINKED_LIBS})
-set_target_properties(
-  mem3dg_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(mem3dg_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(WITH_NETCDF)
   target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
-  target_include_directories(mem3dg_objlib PRIVATE ${netcdf-cxx4_INCLUDE_DIRS})
 endif()
 
 # mem3dg library
 add_library(mem3dg SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
 target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
-#set_target_properties(mem3dg PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(BUILD_PYMEM3DG)
   add_subdirectory(pymem3dg)
