@@ -190,7 +190,7 @@ after_success:
     fi;
 deploy:
   provider: pages
-  local-dir: build/html
+  local-dir: build/docs/html
   skip-cleanup: true
   github-token: $GITHUB_TOKEN
   keep-history: false
