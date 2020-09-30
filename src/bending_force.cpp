@@ -20,6 +20,7 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
@@ -34,10 +35,10 @@ namespace gcs = ::geometrycentral::surface;
 void Force::getBendingForces() {
 
   // map the MeshData to eigen matrix XXX_e
-  auto bendingPressure_e = EigenMap<double, 3>(bendingPressure);
-  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
-  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
-  
+  auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
+  auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
+
   // Alias
   std::size_t n_vertices = (mesh.nVertices());
 
@@ -75,8 +76,8 @@ void Force::getBendingForces() {
   productTerms = 2 * rowwiseProduct(scalerTerms, H - H0);
 
   // calculate bendingForce
-  bendingPressure_e = rowwiseScaling(-2.0 * P.Kb * (productTerms + lap_H),
-                                   vertexAngleNormal_e);
+  bendingPressure_e =
+      rowwiseScaling(-2.0 * P.Kb * (productTerms + lap_H), vertexAngleNormal_e);
 }
 
 void Force::getChemicalPotential() { 

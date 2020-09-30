@@ -17,6 +17,7 @@
 #include <Eigen/Core>
 
 #include "mem3dg/solver/force.h"
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <cmath>
 
@@ -27,7 +28,7 @@ namespace gcs = ::geometrycentral::surface;
 
 void Force::getExternalForces() {
 
-  auto externalPressure_e = EigenMap<double, 3>(externalPressure);
+  auto externalPressure_e = gc::EigenMap<double, 3>(externalPressure);
 
   if (P.Kf != 0) {
 
@@ -41,7 +42,7 @@ void Force::getExternalForces() {
 
     // b. APPLY EXTERNAL PRESSURE NORMAL TO THE SURFACE
 
-    //auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+    //auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
     //externalPressure_e = externalPressureMagnitude * vertexAngleNormal_e.row(P.ptInd);
     
     // c. ALTERNATIVELY, PRESSURE BASED ON INITIAL GEOMETRY + ALONG A FIXED DIRECTION, E.G. NEGATIVE Z DIRECTION

@@ -20,6 +20,7 @@
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include "mem3dg/solver/force.h"
 #include "mem3dg/solver/integrator.h"
@@ -48,8 +49,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
   int nSave = int(tSave / dt);
 
-  auto vel_e = EigenMap<double, 3>(f.vel);
-  auto pos_e = EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   const double hdt = 0.5 * dt;
   const double hdt2 = hdt * dt;
@@ -107,8 +108,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                    physicalPressure);
 
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-                   EigenMap<double, 3>(f.stochasticForce) +
-                   EigenMap<double, 3>(f.regularizationForce));
+                   gc::EigenMap<double, 3>(f.stochasticForce) +
+                   gc::EigenMap<double, 3>(f.regularizationForce));
 
     removeTranslation(numericalPressure);
     removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
@@ -136,12 +137,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
       gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
-          physicalPressure, EigenMap<double, 3>(f.vpg.vertexNormals)));
+          physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("physical_pressure", fn);
 
       gcs::VertexData<double> ft(f.mesh);
       ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                                       EigenMap<double, 3>(f.vpg.vertexNormals))
+                                       gc::EigenMap<double, 3>(f.vpg.vertexNormals))
                          .array() /
                      f.H.array() / 2)
                         .matrix());
@@ -150,7 +151,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                            EigenMap<double, 3>(f.vpg.vertexNormals)));
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("bending_pressure", fb);
 
       #ifdef MEM3DG_WITH_NETCDF
@@ -217,7 +218,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           << "Total energy (exclude V^ext): " << totalEnergy << "\n"
           << "L2 error norm: " << L2ErrorNorm << "\n"
           << "COM: "
-          << EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
+          << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
                  f.vpg.inputVertexPositions.raw().rows()
           << "\n"
           << "Height: "

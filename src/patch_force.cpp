@@ -16,13 +16,14 @@
 #include <cmath>
 #include <iostream>
 
+#include "geometrycentral/surface/simple_polygon_mesh.h"
+#include "geometrycentral/surface/surface_mesh.h"
 #include <geometrycentral/numerical/linear_solvers.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
-#include "geometrycentral/surface/simple_polygon_mesh.h"
-#include "geometrycentral/surface/surface_mesh.h"
 
 #include <Eigen/Core>
 
@@ -38,11 +39,11 @@ void Force::getTubeForces() {
 
   /// 0. GENERAL
   // map the MeshData to eigen matrix XXX_e
-  auto bendingPressure_e = EigenMap<double, 3>(bendingPressure);
-  auto insidePressure_e = EigenMap<double, 3>(insidePressure);
-  auto capillaryPressure_e = EigenMap<double, 3>(capillaryPressure);
-  auto positions = EigenMap<double, 3>(vpg.inputVertexPositions);
-  auto vertexAngleNormal_e = EigenMap<double, 3>(vpg.vertexNormals);
+  auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
+  auto insidePressure_e = gc::EigenMap<double, 3>(insidePressure);
+  auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
+  auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
   Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
 
   // Alias
@@ -100,13 +101,11 @@ void Force::getTubeForces() {
     volume += signedVolumeFromFace(
         f, vpg, refVpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
   }
-  insidePressure_e = - P.Kv * vertexAngleNormal_e;
+  insidePressure_e = -P.Kv * vertexAngleNormal_e;
 
   /// C. CAPILLARY PRESSURE
   surfaceArea = faceArea_e.sum();
-  capillaryPressure_e =
-      rowwiseScaling(- P.Ksg * 2.0 * H,
-                     vertexAngleNormal_e);
+  capillaryPressure_e = rowwiseScaling(-P.Ksg * 2.0 * H, vertexAngleNormal_e);
 
   /// D. LOCAL REGULARIZATION
   regularizationForce.fill({0.0, 0.0, 0.0});
