@@ -186,7 +186,7 @@ script:
 after_success:
   - if [[ $BUILD_DOCS == 1 ]]; then
       cmake ..;
-      make mem3dg_docs;
+      ninja mem3dg_docs;
     fi;
 deploy:
   provider: pages
