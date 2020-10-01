@@ -116,10 +116,8 @@ setup(
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
     keywords='meshing',
     cmake_args=cmake_args,
-    setup_requires=["setuptools", "wheel", "scikit-build", "pytest-runner", "cmake"],
     install_requires=[],
     extras_require={
-        # "docs" : docs_require,
         "test" : tests_require,
     },
     zip_safe=False,
