@@ -20,12 +20,20 @@ if (netCDF_FOUND)
     add_library(NetCDF::NetCDF INTERFACE IMPORTED)
     if (TARGET "netCDF::netcdf")
       # 4.7.3
+
+      # temporary hack to workaround netcdf packaging in conda
+      get_target_property(_libs netCDF::netcdf INTERFACE_LINK_LIBRARIES)
+      list(FILTER _libs EXCLUDE REGEX ".*/x86_64-conda_cos6-linux-gnu/.*")
+      set_target_properties(netCDF::netcdf PROPERTIES INTERFACE_LINK_LIBRARIES "${_libs}")
+
+
       set_target_properties(NetCDF::NetCDF PROPERTIES
         INTERFACE_LINK_LIBRARIES "netCDF::netcdf")
     elseif (TARGET "netcdf")
       set_target_properties(NetCDF::NetCDF PROPERTIES
         INTERFACE_LINK_LIBRARIES "netcdf")
     else ()
+      list(FILTER ${netCDF_LIBRARIES} EXCLUDE REGEX "$ENV{BUILD_PREFIX}")
       set_target_properties(NetCDF::NetCDF PROPERTIES
         INTERFACE_LINK_LIBRARIES "${netCDF_LIBRARIES}")
     endif ()
