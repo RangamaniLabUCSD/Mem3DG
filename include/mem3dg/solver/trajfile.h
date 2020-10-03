@@ -139,7 +139,7 @@ public:
    */
   static TrajFile newFile(const std::string &filename, gcs::SurfaceMesh &mesh,
                           gcs::VertexPositionGeometry &refVpg,
-                          bool replace = false) {
+                          bool replace = true) {
     if (replace)
       return TrajFile(filename, mesh, refVpg, NcFile::replace);
     else
@@ -252,8 +252,6 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getBendingPressure(const std::size_t idx) const;
 
-  EigenVector getVelocities(const std::size_t idx) const;
-
 private:
   /**
    * @brief Private constructor for opening an existing file.
@@ -362,9 +360,6 @@ private:
 
     bendpress_var =
         fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
-                         {frame_dim, nvertices_dim, spatial_dim});
   }
 
   /// Bound NcFile
