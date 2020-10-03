@@ -288,7 +288,6 @@ private:
     physpress_var = fd->getVar(PHYSPRESS_VAR);
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
-    vel_var = fd->getVar(VEL_VAR);
   }
 
   /**
@@ -363,8 +362,6 @@ private:
     bendpress_var =
         fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
 
-    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
-                         {frame_dim, nvertices_dim, spatial_dim});
   }
 
   /// Bound NcFile
