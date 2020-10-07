@@ -60,6 +60,8 @@ static const std::size_t SPATIAL_DIMS = 3;
 static const std::string FRAME_NAME = "frame";
 /// nvertices
 static const std::string NVERTICES_NAME = "nvertices";
+/// nconers
+static const std::string NCORNERS_NAME = "ncorners";
 
 /// Name of conventions
 static const std::string CONVENTIONS_NAME = "Conventions";
@@ -84,6 +86,8 @@ static const std::string TIME_VAR = "time";
 static const std::string COORD_VAR = "coordinates";
 /// Name of the mesh topology data
 static const std::string TOPO_VAR = "topology";
+/// Name of the mesh corner angle data
+static const std::string ANGLE_VAR = "angle";
 /// Name of the refMesh coordinates data
 static const std::string REFCOORD_VAR = "refcoordinates";
 /// Name of the velocity data
@@ -218,6 +222,11 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
   getRefcoordinate() const;
 
+  void writeAngles(const std::size_t idx,
+                   const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+  
+  Eigen::Matrix<double, Eigen::Dynamic, 1> getAngles(const std::size_t idx) const;
+
   void writeVelocity(const std::size_t idx, const EigenVector &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
@@ -310,11 +319,13 @@ private:
     frame_dim = fd->getDim(FRAME_NAME);
     npolygons_dim = fd->getDim(NPOLYGONS_NAME);
     nvertices_dim = fd->getDim(NVERTICES_NAME);
+    ncorners_dim = fd->getDim(NCORNERS_NAME);
     spatial_dim = fd->getDim(SPATIAL_DIMS_NAME);
     polygon_order_dim = fd->getDim(POLYGON_ORDER_NAME);
 
     topology = fd->getVar(TOPO_VAR);
     refcoord = fd->getVar(REFCOORD_VAR);
+    angle_var = fd->getVar(ANGLE_VAR);
     time_var = fd->getVar(TIME_VAR);
     coord_var = fd->getVar(COORD_VAR);
     vel_var = fd->getVar(VEL_VAR);
@@ -349,6 +360,7 @@ private:
     frame_dim = fd->addDim(FRAME_NAME);
     npolygons_dim = fd->addDim(NPOLYGONS_NAME, mesh.nFaces());
     nvertices_dim = fd->addDim(NVERTICES_NAME, mesh.nVertices());
+    ncorners_dim = fd->addDim(NCORNERS_NAME, mesh.nCorners());
     spatial_dim = fd->addDim(SPATIAL_DIMS_NAME, SPATIAL_DIMS);
     polygon_order_dim = fd->addDim(POLYGON_ORDER_NAME, POLYGON_ORDER);
 
@@ -377,6 +389,9 @@ private:
     coord_var = fd->addVar(COORD_VAR, netCDF::ncDouble,
                            {frame_dim, nvertices_dim, spatial_dim});
     coord_var.putAtt(UNITS, LEN_UNITS);
+
+    angle_var =
+        fd->addVar(ANGLE_VAR, netCDF::ncDouble, {frame_dim, ncorners_dim});
 
     vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
                          {frame_dim, nvertices_dim, spatial_dim});
@@ -419,6 +434,7 @@ private:
   nc::NcDim frame_dim;
   nc::NcDim npolygons_dim;
   nc::NcDim nvertices_dim;
+  nc::NcDim ncorners_dim;
   nc::NcDim spatial_dim;
   nc::NcDim polygon_order_dim;
 
@@ -427,6 +443,7 @@ private:
   nc::NcVar refcoord;
   nc::NcVar time_var;
   nc::NcVar coord_var;
+  nc::NcVar angle_var;
   nc::NcVar vel_var;
   nc::NcVar meancurve_var;
   nc::NcVar sponcurve_var;

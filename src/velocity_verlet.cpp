@@ -161,6 +161,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
             fd.writeTime(frame, i * dt);
             fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
             fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
+            fd.writeAngles(frame, f.vpg.cornerAngles.raw());
 
             fd.writeMeanCurvature(frame, H.raw());
             fd.writeSponCurvature(frame, H0.raw());
