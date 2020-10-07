@@ -33,7 +33,6 @@ if (netCDF_FOUND)
       set_target_properties(NetCDF::NetCDF PROPERTIES
         INTERFACE_LINK_LIBRARIES "netcdf")
     else ()
-      list(FILTER ${netCDF_LIBRARIES} EXCLUDE REGEX "$ENV{BUILD_PREFIX}")
       set_target_properties(NetCDF::NetCDF PROPERTIES
         INTERFACE_LINK_LIBRARIES "${netCDF_LIBRARIES}")
     endif ()
