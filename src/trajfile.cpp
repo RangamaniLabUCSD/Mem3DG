@@ -264,6 +264,96 @@ TrajFile::getBendingPressure(const std::size_t idx) const {
   return vec;
 }
 
+// bending energy
+void TrajFile::writeBendEnergy(const std::size_t idx, const double bendEnergy) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  bendener_var.putVar({idx}, &bendEnergy);
+}
+
+double TrajFile::getBendEnergy(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double bendEnergy;
+  bendener_var.getVar({idx}, &bendEnergy);
+  return bendEnergy;
+}
+
+// surface energy
+void TrajFile::writeSurfEnergy(const std::size_t idx, const double Energy) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  surfener_var.putVar({idx}, &Energy);
+}
+
+double TrajFile::getSurfEnergy(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double Energy;
+  surfener_var.getVar({idx}, &Energy);
+  return Energy;
+}
+
+// pressure energy
+void TrajFile::writePressEnergy(const std::size_t idx, const double Energy) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  pressener_var.putVar({idx}, &Energy);
+}
+
+double TrajFile::getPressEnergy(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double Energy;
+  pressener_var.getVar({idx}, &Energy);
+  return Energy;
+}
+
+// kinetic energy
+void TrajFile::writeKineEnergy(const std::size_t idx, const double Energy) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  kineener_var.putVar({idx}, &Energy);
+}
+
+double TrajFile::getKineEnergy(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double Energy;
+  kineener_var.getVar({idx}, &Energy);
+  return Energy;
+}
+
+// chemical energy
+void TrajFile::writeChemEnergy(const std::size_t idx, const double Energy) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  chemener_var.putVar({idx}, &Energy);
+}
+
+double TrajFile::getChemEnergy(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double Energy;
+  chemener_var.getVar({idx}, &Energy);
+  return Energy;
+}
+
+// total energy
+void TrajFile::writeTotalEnergy(const std::size_t idx, const double Energy) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  totalener_var.putVar({idx}, &Energy);
+}
+
+double TrajFile::getTotalEnergy(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double Energy;
+  totalener_var.getVar({idx}, &Energy);
+  return Energy;
+}
+
 } // namespace ddgsolver
 
 #endif

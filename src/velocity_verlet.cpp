@@ -63,6 +63,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   double totalEnergy;
   double sE;
   double pE;
+  double kE;
   double cE;
 
   double oldL2ErrorNorm = 1e6;
@@ -154,21 +155,29 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("bending_pressure", fb);
 
+      std::tie(totalEnergy, BE, sE, pE, kE, cE) = getFreeEnergy(f);
       #ifdef MEM3DG_WITH_NETCDF
-        frame = fd.getNextFrameIndex();
-        fd.writeTime(frame, i * dt);
-        fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
-        fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
-        fd.writeMeanCurvature(frame, H.raw());
-        fd.writeSponCurvature(frame, H0.raw());
-        fd.writeExternalPressure(frame, f_ext.raw());
-        fd.writePhysicalPressure(frame, fn.raw());
-        fd.writeCapillaryPressure(frame, ft.raw());
-        fd.writeBendingPressure(frame, fb.raw());
-      #endif
+            frame = fd.getNextFrameIndex();
+            fd.writeTime(frame, i * dt);
+            fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
+            fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
 
+            fd.writeMeanCurvature(frame, H.raw());
+            fd.writeSponCurvature(frame, H0.raw());
+            fd.writeExternalPressure(frame, f_ext.raw());
+            fd.writePhysicalPressure(frame, fn.raw());
+            fd.writeCapillaryPressure(frame, ft.raw());
+            fd.writeBendingPressure(frame, fb.raw());
+
+            fd.writeBendEnergy(frame, BE);
+            fd.writeSurfEnergy(frame, sE);
+            fd.writePressEnergy(frame, pE);
+            fd.writeKineEnergy(frame, kE);
+            fd.writeChemEnergy(frame, cE);
+            fd.writeTotalEnergy(frame, totalEnergy);
+      #endif
+      
       L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
-      std::tie(totalEnergy, BE, sE, pE, cE) = getFreeEnergy(f);
       dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm)/oldL2ErrorNorm;
 
       if (f.P.Kb != 0 ) {
@@ -203,9 +212,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       sprintf(buffer, "t=%d", int(i * dt * 100));
       f.richData.write(outputDir + buffer + ".ply");
       getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea, dVolume,
-                   dBE, dFace, BE, sE, pE, cE, totalEnergy, L2ErrorNorm,
+                   dBE, dFace, BE, sE, pE, kE, cE, totalEnergy, L2ErrorNorm,
                    f.isTuftedLaplacian, f.isProtein, f.isVertexShift, inputMesh);
-
+      getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
       // 2. print
       std::cout
           << "\n"
@@ -326,7 +335,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                  outputDir
           << std::endl;
       getStatusLog(outputDir + "final_report.txt", f, dt, i * dt, frame,
-                   dArea, dVolume, dBE, dFace, BE, sE, pE, cE, totalEnergy,
+                   dArea, dVolume, dBE, dFace, BE, sE, pE, kE, cE, totalEnergy,
                    L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                    f.isVertexShift, inputMesh);
     }

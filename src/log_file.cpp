@@ -68,7 +68,7 @@ void getParameterLog(Force &f, double dt,
 
 void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std::size_t frame, double areaError,
                    double volumeError, double bendingError, double faceError, double bendingEnergy, double surfaceEnergy, 
-                   double pressureEnergy, double chemicalEnergy, double totalEnergy,
+                   double pressureEnergy, double kineticEnergy, double chemicalEnergy, double totalEnergy,
                   double L2ErrorNorm, bool isTuftedLaplacian, bool isProtein, bool isVertexShift,
                    std::string inputMesh) {
   ofstream myfile(nameOfFile);
@@ -104,6 +104,7 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
     myfile << "Bending Energy:   " << bendingEnergy << "\n"
            << "Surface Energy:   " << surfaceEnergy << "\n"
            << "Pressure Work:    " << pressureEnergy << "\n"
+           << "Kinetic Work:    " << kineticEnergy << "\n"
            << "Chemical Energy:  " << chemicalEnergy << "\n"
            << "Total Energy:     " << totalEnergy << "\n" 
            << "L2 error norm:    " << L2ErrorNorm << "\n"
@@ -137,6 +138,21 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
            << "Is considering protein: " << isProtein << "\n"
            << "Is vertex shift: " << isVertexShift << "\n";
 
+    myfile.close();
+  } else
+    cout << "Unable to open file";
+}
+
+void getEnergyLog(double time, double bendingEnergy,
+                  double surfaceEnergy, double pressureEnergy,
+                  double kineticEnergy, double chemicalEnergy,
+                  double totalEnergy, std::string outputDir) {
+  ofstream myfile(outputDir + "energy.txt", std::ios::app);
+  if (myfile.is_open()) {
+    myfile << time << "," << bendingEnergy << "," << surfaceEnergy << ","
+           << pressureEnergy << ","
+           << kineticEnergy << "," << chemicalEnergy << "," << totalEnergy
+           << "\n";
     myfile.close();
   } else
     cout << "Unable to open file";
