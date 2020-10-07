@@ -197,7 +197,7 @@ deploy:
   strategy: git
   local_dir: build/docs/html
   skip_cleanup: true
-  github-token: $GITHUB_TOKEN
+  token: $GITHUB_TOKEN
   keep_history: false
   on:
     branch: master
