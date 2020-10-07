@@ -101,6 +101,30 @@ TrajFile::getRefcoordinate() const {
   return vec;
 }
 
+// corner angles 
+void TrajFile::writeAngles(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == ncorners_dim.getSize());
+
+  angle_var.putVar({idx, 0}, {1, ncorners_dim.getSize()},
+                 data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getAngles(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(ncorners_dim.getSize(), 1);
+
+  angle_var.getVar({idx, 0}, {1, ncorners_dim.getSize()}, vec.data());
+  return vec;
+}
+
+
 // velocity 
 void TrajFile::writeVelocity(
     const std::size_t idx,
