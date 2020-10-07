@@ -23,7 +23,7 @@ if (netCDF_FOUND)
 
       # temporary hack to workaround netcdf packaging in conda
       get_target_property(_libs netCDF::netcdf INTERFACE_LINK_LIBRARIES)
-      if(${_libs})
+      if(_libs)
         list(FILTER _libs EXCLUDE REGEX ".*/x86_64-conda_cos6-linux-gnu/.*")
         set_target_properties(netCDF::netcdf PROPERTIES INTERFACE_LINK_LIBRARIES "${_libs}")
       endif ()
