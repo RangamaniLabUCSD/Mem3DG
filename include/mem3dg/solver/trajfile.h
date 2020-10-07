@@ -100,7 +100,18 @@ static const std::string PHYSPRESS_VAR = "physpressure";
 static const std::string CAPPRESS_VAR = "cappressure";
 /// Name of the bending pressure data
 static const std::string BENDPRESS_VAR = "bendpressure";
-
+/// Name of the bending energy data 
+static const std::string BENDENER_VAR = "bendenergy";
+/// Name of the surface energy data
+static const std::string SURFENER_VAR = "surfenergy";
+/// Name of the pressure energy data
+static const std::string PRESSENER_VAR = "pressenergy";
+/// Name of the kinetic energy data
+static const std::string KINEENER_VAR = "kineenergy";
+/// Name of the chemical energy data
+static const std::string CHEMENER_VAR = "chemenergy";
+/// Name of the chemical energy data
+static const std::string TOTALENER_VAR = "totalenergy";
 /**
  * @class TrajFile
  * @brief Trajectory interface to help with manipulating trajectories
@@ -254,6 +265,31 @@ public:
 
   EigenVector getVelocities(const std::size_t idx) const;
 
+  void writeBendEnergy(const std::size_t idx, const double bendEnergy);
+
+  double getBendEnergy(const std::size_t idx) const;
+
+  void writeSurfEnergy(const std::size_t idx, const double Energy);
+
+  double getSurfEnergy(const std::size_t idx) const;
+
+  void writePressEnergy(const std::size_t idx, const double Energy);
+
+  double getPressEnergy(const std::size_t idx) const;
+
+  void writeKineEnergy(const std::size_t idx, const double Energy);
+
+  double getKineEnergy(const std::size_t idx) const;
+
+  void writeChemEnergy(const std::size_t idx, const double Energy);
+
+  double getChemEnergy(const std::size_t idx) const;
+
+  void writeTotalEnergy(const std::size_t idx, const double Energy);
+
+  double getTotalEnergy(const std::size_t idx) const;
+
+
 private:
   /**
    * @brief Private constructor for opening an existing file.
@@ -288,6 +324,7 @@ private:
     physpress_var = fd->getVar(PHYSPRESS_VAR);
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
+    bendener_var = fd->getVar(BENDENER_VAR);
   }
 
   /**
@@ -362,6 +399,17 @@ private:
     bendpress_var =
         fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
 
+    bendener_var = fd->addVar(BENDENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    surfener_var = fd->addVar(SURFENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    pressener_var = fd->addVar(PRESSENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    kineener_var = fd->addVar(KINEENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    chemener_var = fd->addVar(CHEMENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
   }
 
   /// Bound NcFile
@@ -379,13 +427,19 @@ private:
   nc::NcVar refcoord;
   nc::NcVar time_var;
   nc::NcVar coord_var;
+  nc::NcVar vel_var;
   nc::NcVar meancurve_var;
   nc::NcVar sponcurve_var;
   nc::NcVar externpress_var;
   nc::NcVar physpress_var;
   nc::NcVar cappress_var;
   nc::NcVar bendpress_var;
-  nc::NcVar vel_var;
+  nc::NcVar bendener_var;
+  nc::NcVar surfener_var;
+  nc::NcVar pressener_var;
+  nc::NcVar kineener_var;
+  nc::NcVar chemener_var;
+  nc::NcVar totalener_var;
 
   /// Filepath to file
   std::string filename;

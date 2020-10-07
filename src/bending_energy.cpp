@@ -39,7 +39,7 @@ double getL2ErrorNorm(
       (M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
-std::tuple<double, double, double, double, double> getFreeEnergy(Force &f) {
+std::tuple<double, double, double, double, double, double> getFreeEnergy(Force &f) {
   // comment: this may not be useful, the convergence can be be tested by
   // checking its derivative which is the forces excluding the DPD forces. The
   // energy trajectory of could actually numerically integrated by post
@@ -57,6 +57,8 @@ std::tuple<double, double, double, double, double> getFreeEnergy(Force &f) {
   double bE;
   double sE;
   double pE;
+  
+  double kE;
   double cE = 0;
   double totalE;
 
@@ -71,11 +73,14 @@ std::tuple<double, double, double, double, double> getFreeEnergy(Force &f) {
     sE = f.P.Ksg * A_difference;
     pE = f.P.Kv * V_difference;
 
+    auto vel = gc::EigenMap<double, 3>(f.vel);
+    kE = 0.5 * (vel.array() * vel.array()).sum();
+
     if (f.isProtein) {
       double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
     }
 
-    totalE = bE + sE + pE + cE;
+    totalE = bE + sE + pE + kE + cE;
 
   } else {
 
@@ -88,14 +93,17 @@ std::tuple<double, double, double, double, double> getFreeEnergy(Force &f) {
     sE = f.P.Ksg * A_difference * A_difference / f.targetSurfaceArea / 2;
     pE = f.P.Kv * V_difference * V_difference / (f.refVolume * f.P.Vt) / 2;
 
+    auto vel = gc::EigenMap<double, 3>(f.vel);
+    kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();
+
     if (f.isProtein) {
       double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum(); 
     }
 
-    totalE = bE + sE + pE + cE;
+    totalE = bE + sE + pE + kE + cE;
   }
 
-  std::tuple<double, double, double, double, double> output(totalE, bE, sE, pE, cE);
+  std::tuple<double, double, double, double, double, double> output(totalE, bE, sE, pE, kE, cE);
   
   return output;
 }
