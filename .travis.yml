@@ -20,6 +20,7 @@ env:
 branches:
   only:
   - master
+  - development
 
 # BUILD MATRIX
 jobs:
@@ -192,6 +193,17 @@ after_success:
       cmake ..;
       ninja mem3dg_docs;
     fi;
+
+deploy:
+  provider: pypi
+  username: "__token__"
+  password:
+    secure: "Mhu/KyVtx+3bPns2FcxnqqK+QTDWHPwkm0vVCwO3VhIZQR1h7XTiPqlmJDaSpNUHbj+9evvniXY3ShQMQdKjDJAq4dzdOHOfvkqk+HFlPs09Uc6R+QqiwwYVjgLsRukeacCmfJiDCVcDOOPmJTUjnXHsvEe+qmaYl60n6EPxMIAjEa0o7J5Yag31amfqLOGBzRVfU7JBQ5GUQtPfUGsCHZvtIKkuwxzYkOSnOw8i7X/UCyMN6MLmgg6DrN6UN/6eZVCXJLFahPHqof1k6OSUt49EjyCTLX97AEeVU2H7gc8NwJP1nOGZ1CjN3u0+gjjtZV98AS7Yb2psnUsyOOrfVydxYQqnUD0qwU0y/vcB0AmzT06G0hJiekC+QOux1zBHgUHYf6RNOOKuOegwQF2BMfmbl9C6E4WtLO/RGLqPJNsvC9z6T16NU2GqzRIgQ9+NuntpAWW5z7cmi1vojkvQjZ81VfXxzgI+QwPVEKpv8/SREtPN8jKOu/k63U8IWa+SHTX+DxAwjM/1LYQGw4XoV0k6x/W56xr5fw/kvHRdwOwQFEaySFQ1/tMy1H58DPAXguThBj6UbT3bOhJnyKikmLXCWprQ8YptbWppxkCCbg0pQTVYBfj6Ua5q7rrQT0vO8uG9/Utl4wKJc9qE+z9JH33venPC/tn+XtuCp4lcShs="
+  skip_cleanup: true
+  skip_existing: true
+  on:
+    tags: true
+
 deploy:
   provider: pages
   strategy: git
