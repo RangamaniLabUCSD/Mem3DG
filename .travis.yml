@@ -101,7 +101,7 @@ jobs:
     before_install: skip
     install: skip
     script:
-      - pypthon -m pip install scikit-build pytest
+      - python -m pip install scikit-build pytest
       - python setup.py sdist;
     deploy:
       provider: pypi
