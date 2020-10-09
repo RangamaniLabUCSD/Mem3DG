@@ -22,12 +22,6 @@ branches:
   - master
   - development
 
-stages:
-  - name: test
-  - name: build
-  - name: deploy
-    if: repo = RangamaniLabUCSD/Mem3DG AND branch = master
-
 # BUILD MATRIX
 jobs:
   fast_finish: true
@@ -92,6 +86,9 @@ jobs:
       skip_cleanup: true
       token: $GITHUB_TOKEN
       keep_history: false
+      on:
+        branch: master
+        repo: RangamaniLabUCSD/Mem3DG
   
   - stage: deploy
     os: linux
