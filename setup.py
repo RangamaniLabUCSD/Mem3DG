@@ -60,7 +60,7 @@ VERSION_PATTERN = r"""
             [-_\.]?
             (?P<commits_since>[0-9]+)?
             [-_\.]?
-            (?P<sha>[a-f0-9]*)?
+            (?P<sha>[a-z0-9]*)?
             [-_\.]? 
             (?P<dirty>dirty)?
         )?
@@ -75,28 +75,30 @@ _regex = re.compile(
 version = git_version()
 if not version == "Unknown":
     match = _regex.match(version)
-    if match.group('release'):
-        version = match.group('release') 
-        if match.group('pre_l'):
-            version += match.group('pre_l')
-        if match.group('pre_n'):
-            version += match.group('pre_n')
-        else:
-            version += '0'
+    if match:
+        if match.group('release'):
+            version = match.group('release') 
+            if match.group('pre_l'):
+                version += match.group('pre_l')
+            if match.group('pre_n'):
+                version += match.group('pre_n')
+            else:
+                version += '0'
     else:
         version = "0.0.0"
 else:
     with open('VERSION', 'r') as f:
        version = f.readline()
     match = _regex.match(version)
-    if match.group('release'):
-        version = match.group('release') 
-        if match.group('pre_l'):
-            version += match.group('pre_l')
-        if match.group('pre_n'):
-            version += match.group('pre_n')
-        else:
-            version += '0'
+    if match:
+        if match.group('release'):
+            version = match.group('release') 
+            if match.group('pre_l'):
+                version += match.group('pre_l')
+            if match.group('pre_n'):
+                version += match.group('pre_n')
+            else:
+                version += '0'
     else:
         version = "0.0.0"
 
