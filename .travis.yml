@@ -207,6 +207,7 @@ deploy:
   on:
     tags: true
     condition: $BUILD_DOCS == 1
+    repo: RangamaniLabUCSD/Mem3DG
 
 deploy:
   provider: pages
@@ -218,3 +219,4 @@ deploy:
   on:
     branch: master
     condition: $BUILD_DOCS == 1
+    repo: RangamaniLabUCSD/Mem3DG
