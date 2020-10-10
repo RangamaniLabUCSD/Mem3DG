@@ -21,6 +21,7 @@ branches:
   only:
   - master
   - development
+  - /^v?((\d+)(\.\d+)*)(-?(a|b|c|rc|alpha|beta)([0-9]+)?)?$/
 
 # BUILD MATRIX
 jobs:
@@ -91,6 +92,7 @@ jobs:
         repo: RangamaniLabUCSD/Mem3DG
   
   - stage: deploy
+    if: branch =~ ^v?((\d+)(\.\d+)*)(-?(a|b|c|rc|alpha|beta)([0-9]+)?)?$
     os: linux
     dist: focal
     compiler: gcc
