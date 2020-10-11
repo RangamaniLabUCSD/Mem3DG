@@ -111,7 +111,7 @@ if('CONDA_PREFIX' in os.environ):
 DOCLINES = __doc__.split("\n")
 
 CLASSIFIERS = """\
-Development Status :: 2 - Pre-Alpha
+Development Status :: 3 - Alpha
 Environment :: Console
 Intended Audience :: Science/Research
 License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)
@@ -147,18 +147,13 @@ setup(
     author='The Mem3DG Team',
     author_email='cuzhu@ucsd.edu, ctlee@ucsd.edu',
     url='https://github.com/RangamaniLabUCSD/Mem3DG',
-    license='MPL 2.0',
     packages=["pymem3dg"],
     description=DOCLINES[0],
     long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type="text/markdown",
     platforms=["Windows", "Linux", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
-    keywords='meshing',
+    keywords='meshing membrane mechanics',
     cmake_args=cmake_args,
-    install_requires=[],
-    extras_require={
-        "test" : tests_require,
-    },
     zip_safe=False,
 )
