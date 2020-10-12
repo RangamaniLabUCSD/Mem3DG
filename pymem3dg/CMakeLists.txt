@@ -12,23 +12,27 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
 
-include(FetchContent)
 
 # ##############################################################################
 # GET PYBIND11
 # ##############################################################################
-FetchContent_Declare(
-  pybind11
-  GIT_REPOSITORY https://github.com/pybind/pybind11.git
-  GIT_TAG v2.5.0
-  GIT_SHALLOW TRUE
-  SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
-  "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
-)
-FetchContent_GetProperties(pybind11)
-if(NOT pybind11_POPULATED)
-  FetchContent_Populate(pybind11)
-  add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
+if(M3DG_GET_OWN_PYBIND11)
+  include(FetchContent)
+  FetchContent_Declare(
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    GIT_TAG v2.5.0
+    GIT_SHALLOW TRUE
+    SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
+  )
+  FetchContent_GetProperties(pybind11)
+  if(NOT pybind11_POPULATED)
+    FetchContent_Populate(pybind11)
+    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
+  endif()
+else()
+  find_package(pybind11 REQUIRED)
 endif()
 
 # mem3dg static library
@@ -57,10 +61,4 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
 if(SKBUILD)
   install(TARGETS pymem3dg LIBRARY DESTINATION pymem3dg)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py DESTINATION pymem3dg)
-else()
-  message(
-    WARNING
-      "CMake install no longer installs Pymem3DG to your Python site-packages. "
-      "Please configure and install using 'python setup.py install' instead."
-  )
 endif()

@@ -53,7 +53,7 @@ VERSION_PATTERN = r"""
         (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
         (?P<pre>                                          # pre-release
             [-_\.]?
-            (?P<pre_l>(a|b|c|rc|alpha|beta))
+            (?P<pre_l>(alpha|beta|a|b|c|rc))
             (?P<pre_n>[0-9]+)?
         )?
         (?P<meta>

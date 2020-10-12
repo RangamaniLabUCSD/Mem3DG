@@ -2,20 +2,24 @@ include VERSION
 include LICENSE
 include README.md
 include pyproject.toml
-recursive-include docs *
-
-
-# CMake Helpers
-include cmake/*
 include CMakeLists.txt
 
+# CMake Helpers
+graft cmake
+
 # C++ sources
-include src/*
-recursive-include libraries *
-recursive-include include *
+graft src
+graft libraries
+graft include 
 
 # PyMem3DG sources
-recursive-include pymem3dg *
+graft pymem3dg
+
+# Documentation
+graft docs
 
 # Unit Test
-recursive-include tests *
+graft tests
+
+# Exclusions
+global-exclude *.py[co]

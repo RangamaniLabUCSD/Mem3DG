@@ -1,0 +1,6 @@
+[submodule "libraries/geometry-central"]
+	path = libraries/geometry-central
+	url = https://github.com/nmwsharp/geometry-central.git
+[submodule "libraries/polyscope"]
+	path = libraries/polyscope
+	url = https://github.com/nmwsharp/polyscope.git
