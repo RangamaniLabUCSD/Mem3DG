@@ -14,6 +14,7 @@ Development of Mem3DG is funded in part by AFOSR MURI FA9550-18-1-0051, and a Ha
 ## Installation
 
 ```
+git submodule --init --recursive
 mkdir build
 cd build
 cmake -DBUILD_PYDDG=ON -DWITH_NETCDF=ON -DCMAKE_BUILD_TYPE=Release ..
@@ -27,7 +28,7 @@ Source released can also be obtained from [PyPi](https://pypi.org/project/pymem3
 1. Download `vcpkg` and follow the instructions to install
 2. Install 32 or 64 bit version of `netcdf-c` and `netcdf-cxx4` libraries depending upon your configuration.
 
-   `vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows`
+   `vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows`
 
    Remove the `:x64-windows` from the above string for the 32 bit libraries.
 
