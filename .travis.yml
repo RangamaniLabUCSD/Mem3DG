@@ -53,18 +53,6 @@ jobs:
       homebrew:
         packages: ['cmake', 'ninja', 'netcdf', 'eigen', 'pybind11']
 
-  - os: osx
-    osx_image: xcode12
-    addons:
-      homebrew:
-        packages: ['cmake', 'ninja', 'netcdf', 'eigen', 'pybind11']
-    before_install:
-      - python -m pip install scikit-build pytest
-    install:
-      - python setup.py install
-    script:
-      - pytest
-
   - stage: test 
     os: linux
     dist: bionic
@@ -84,6 +72,7 @@ jobs:
         packages: ['ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev', 'libeigen3-dev', 'pybind11-dev']
 
   - stage: test
+    name: "PyMem3DG Test"
     os: linux
     dist: focal
     compiler: gcc
@@ -91,10 +80,10 @@ jobs:
     addons:
       apt:
         packages: ['ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev', 'libeigen3-dev', 'pybind11-dev']
-    before_install:
-      - python -m pip install scikit-build pytest
+    before_install: skip
     install:
-      - python setup.py install
+      - python -m pip install scikit-build pytest
+      - pip install .
     script:
       - pytest
 
