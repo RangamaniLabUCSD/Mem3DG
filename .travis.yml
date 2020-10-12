@@ -79,7 +79,7 @@ jobs:
     script:
       - |
         mkdir -p build && cd build;
-        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DBUILD_MEM3DG_DOCS -GNinja ..;
+        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DBUILD_MEM3DG_DOCS=ON -GNinja ..;
         ninja mem3dg_docs;
     deploy: 
       provider: pages
