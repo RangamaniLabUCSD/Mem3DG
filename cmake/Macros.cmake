@@ -14,41 +14,32 @@
 
 #[[
 Macro sets the following variables
-
-  * `VERSION_MAJOR`
-  * `VERSION_MINOR`
-  * `VERSION_PATCH`
+  * `VERSION_SHORT`
   * `VERSION_INFO`
   * `VERSION_SHA1`
   * `VERSION_DIRTY`
-  * `VERSION_SHORT`
 #]]
 macro(get_version_from_git)
   # Look for version from GIT
   include(GetGitRevisionDescription)
-  git_describe(VERSION --tags --dirty=.dirty --always)
+  git_describe_working_tree(VERSION --tags --always)
 
   # parse the version information into pieces.
-  string(
-    REGEX
-      MATCH
-      "^v([0-9]+)\\.([0-9]+)\\.([0-9]+)-*(alpha|beta|dev|)-*([A-Za-z0-9_-]*)\\.*(dirty|)$"
+  string(REGEX MATCH
+      "^v?(([0-9]+)(\\.?[0-9]+)*)-?(alpha[0-9]*|beta[0-9]*|dev[0-9]*|a[0-9]*|b[0-9]*|c[0-9]*)?-?([0-9]+)?-?([a-z0-9]+)?-?(dirty)?$"
       MATCH_RESULT
       "${VERSION}"
   )
-
   if(MATCH_RESULT)
-    # message(STATUS "Results: ${CMAKE_MATCH_0} ${CMAKE_MATCH_1}
-    # ${CMAKE_MATCH_2} ${CMAKE_MATCH_3} ${CMAKE_MATCH_4} ${CMAKE_MATCH_5}
-    # ${CMAKE_MATCH_6}")
-    set(VERSION_MAJOR ${CMAKE_MATCH_1})
-    set(VERSION_MINOR ${CMAKE_MATCH_2})
-    set(VERSION_PATCH ${CMAKE_MATCH_3})
+    # foreach(_TMP RANGE 10)
+    #   message(STATUS "MATCH ${_TMP}: ${CMAKE_MATCH_${_TMP}}")
+    # endforeach()
+    set(VERSION_SHORT ${CMAKE_MATCH_1})
     set(VERSION_INFO ${CMAKE_MATCH_4})
     set(VERSION_SHA1 ${CMAKE_MATCH_5})
     set(VERSION_DIRTY ${CMAKE_MATCH_6})
 
-    set(VERSION_DUMP "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+    set(VERSION_DUMP "${VERSION_SHORT}")
     if(VERSION_INFO)
       string(CONCAT VERSION_DUMP ${VERSION_DUMP} "-${VERSION_INFO}")
     endif()
@@ -60,23 +51,22 @@ macro(get_version_from_git)
     message(STATUS "No GIT VCS found pulling version from file")
     file(READ ${CMAKE_CURRENT_SOURCE_DIR}/VERSION VERSION)
     string(STRIP "${VERSION}" VERSION)
-    string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)-*(alpha|beta|dev|)$"
-                 MATCH_RESULT "${VERSION}"
+    string(REGEX MATCH
+        "^v?(([0-9]+)(\\.?[0-9]+)*)-?(alpha[0-9]*|beta[0-9]*|dev[0-9]*|a[0-9]*|b[0-9]*|c[0-9]*)?$"
+        MATCH_RESULT
+        "${VERSION}"
     )
+    # foreach(_TMP RANGE 9)
+    #   message(STATUS "MATCH ${_TMP}: ${CMAKE_MATCH_${_TMP}}")
+    # endforeach()
     if(MATCH_RESULT)
-      set(VERSION_MAJOR ${CMAKE_MATCH_1})
-      set(VERSION_MINOR ${CMAKE_MATCH_2})
-      set(VERSION_PATCH ${CMAKE_MATCH_3})
-      set(VERSION_INFO ${CMAKE_MATCH_4})
-    else()
-      # default values
-      set(VERSION_MAJOR "0")
-      set(VERSION_MINOR "0")
-      set(VERSION_PATCH "0")
+      set(VERSION_SHORT ${CMAKE_MATCH_1})
+      if(CMAKE_MATCH_4)
+        set(VERSION_INFO ${CMAKE_MATCH_4})
+      endif()
     endif()
   endif()
 
-  set(VERSION_SHORT "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 endmacro(get_version_from_git)
 
 

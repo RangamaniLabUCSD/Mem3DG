@@ -16,92 +16,75 @@ include(FetchContent)
 
 add_subdirectory(pcg)
 
-# ##############################################################################
-# GET EIGEN
-# ##############################################################################
-FetchContent_Declare(
-  eigen
-  GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
-  GIT_TAG         3.3.7
-  GIT_SHALLOW     TRUE
-  SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-src"
-  BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-build"
-)
-FetchContent_GetProperties(eigen)
-if(NOT eigen_POPULATED)
-    FetchContent_Populate(eigen)
-    include(EigenChecker)
-    eigen3checker(${eigen_SOURCE_DIR} 3.3)
+if(M3DG_GET_OWN_EIGEN)
+  # ############################################################################
+  # GET EIGEN
+  # ############################################################################
+  FetchContent_Declare(
+    eigen
+    GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
+    GIT_TAG         3.3.7
+    GIT_SHALLOW     TRUE
+    SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-src"
+    BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-build"
+  )
+  FetchContent_GetProperties(eigen)
+  if(NOT eigen_POPULATED)
+      FetchContent_Populate(eigen)
+      include(EigenChecker)
+      eigen3checker(${eigen_SOURCE_DIR} 3.3)
+  endif()
+  add_library (eigen INTERFACE)
+  add_library (Eigen3::Eigen ALIAS eigen)
+  target_include_directories(eigen INTERFACE
+      $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+      $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
+      )
+else()
+  find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 endif()
-add_library (eigen INTERFACE)
-add_library (Eigen3::Eigen ALIAS eigen)
-target_include_directories(eigen INTERFACE
-    $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
-    )
 
-# ##############################################################################
+# #############################################################################
 # GET GEOMETRY CENTRAL
 # ##############################################################################
-FetchContent_Declare(
-  geometrycentrallib
-  GIT_REPOSITORY https://github.com/nmwsharp/geometry-central.git
-  GIT_TAG origin/master
-  GIT_SHALLOW TRUE
-  SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src" 
-  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-build"
-)
-FetchContent_GetProperties(geometrycentrallib)
-if(NOT geometrycentrallib_POPULATED)
-  FetchContent_Populate(geometrycentrallib)
-  add_subdirectory(
-    ${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR}
-  )
-  set_target_properties(
-    geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON
-  )
-endif()
-
+# FetchContent_Declare(
+#   geometrycentrallib
+#   GIT_REPOSITORY https://github.com/nmwsharp/geometry-central.git
+#   GIT_TAG origin/master
+#   GIT_SHALLOW TRUE
+#   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src" 
+#   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-build"
+# )
+# FetchContent_GetProperties(geometrycentrallib)
+# if(NOT geometrycentrallib_POPULATED)
+#   FetchContent_Populate(geometrycentrallib)
+#   add_subdirectory(
+#     ${geometrycentrallib_SOURCE_DIR} ${geometrycentrallib_BINARY_DIR}
+#   )
+#   set_target_properties(
+#     geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON
+#   )
+# endif()
+add_subdirectory(geometry-central)
+set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(BUILD_PYMEM3DG)
   # ############################################################################
   # GET polyscope
   # ############################################################################
-  FetchContent_Declare(
-    polyscopelib
-    GIT_REPOSITORY https://github.com/nmwsharp/polyscope.git
-    GIT_SHALLOW TRUE
-    SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/polyscope-src" 
-    BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/polyscope-build"
-  )
-  FetchContent_GetProperties(polyscopelib)
-  if(NOT polyscopelib_POPULATED)
-    FetchContent_Populate(polyscopelib)
-    add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
-    set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  endif()
+  add_subdirectory(polyscope)
+  set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  # FetchContent_Declare(
+  #   polyscopelib
+  #   GIT_REPOSITORY https://github.com/nmwsharp/polyscope.git
+  #   GIT_SHALLOW TRUE
+  #   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/polyscope-src" 
+  #   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/polyscope-build"
+  # )
+  # FetchContent_GetProperties(polyscopelib)
+  # if(NOT polyscopelib_POPULATED)
+  #   FetchContent_Populate(polyscopelib)
+  #   add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
+  #   set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  # endif()
 endif()
-
-
-# ##############################################################################
-# GET netcdf-cxx4
-# ##############################################################################
-# FetchContent_Declare(
-#   netcdf-cxx4
-#   GIT_REPOSITORY https://github.com/ctlee/netcdf-cxx4.git
-#   GIT_SHALLOW TRUE
-#   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/netcdf-cxx4-src" 
-#   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/netcdf-cxx4-build"
-# )
-# FetchContent_GetProperties(netcdf-cxx4)
-# if(NOT netcdf-cxx4_POPULATED)
-#   FetchContent_Populate(netcdf-cxx4)
-#   add_subdirectory(${netcdf-cxx4_SOURCE_DIR} ${netcdf-cxx4_BINARY_DIR})
-#   set_target_properties(netcdf-cxx4 PROPERTIES POSITION_INDEPENDENT_CODE ON)
-#   if(NOT TARGET NetCDF::NetCDF-cxx4)
-#     add_library(NetCDF::NetCDF-cxx4 UNKNOWN IMPORTED)
-#     set_target_properties(
-#       NetCDF::NetCDF-cxx4 PROPERTIES INTERFACE_LINK_LIBRARIES "netcdf-cxx4"
-#     )
-#   endif()
-# endif()
