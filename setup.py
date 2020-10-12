@@ -39,26 +39,66 @@ def git_version():
         return out
 
     try:
-        out = _minimal_ext_cmd(['git', 'describe', '--tags', '--dirty=.dirty', '--always'])
+        out = _minimal_ext_cmd(['git', 'describe', '--tags', '--dirty', '--always'])
         GIT_REVISION = out.strip().decode('ascii')
     except (subprocess.SubprocessError, OSError):
         GIT_REVISION = "Unknown"
 
     return GIT_REVISION
 
+VERSION_PATTERN = r"""
+    v?
+    (?:
+        (?:(?P<epoch>[0-9]+)!)?                           # epoch
+        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+        (?P<pre>                                          # pre-release
+            [-_\.]?
+            (?P<pre_l>(alpha|beta|a|b|c|rc))
+            (?P<pre_n>[0-9]+)?
+        )?
+        (?P<meta>
+            [-_\.]?
+            (?P<commits_since>[0-9]+)?
+            [-_\.]?
+            (?P<sha>[a-z0-9]*)?
+            [-_\.]? 
+            (?P<dirty>dirty)?
+        )?
+    )
+"""
+
+_regex = re.compile(
+    r"^\s*" + VERSION_PATTERN + r"\s*$",
+    re.VERBOSE | re.IGNORECASE,
+)
+
 version = git_version()
 if not version == "Unknown":
-    match = re.search('v(\d+)\.(\d+)\.(\d+)-*(alpha|beta|dev|)-*([A-Za-z0-9_-]*)\.*(dirty|)', version)
+    match = _regex.match(version)
     if match:
-        version = "%s.%s.%s"%(match.group(1), match.group(2), match.group(3))
+        if match.group('release'):
+            version = match.group('release') 
+            if match.group('pre_l'):
+                version += match.group('pre_l')
+            if match.group('pre_n'):
+                version += match.group('pre_n')
+            else:
+                version += '0'
     else:
         version = "0.0.0"
 else:
     with open('VERSION', 'r') as f:
        version = f.readline()
-    match = re.search('(\d+)\.(\d+)\.(\d+)-*(alpha|beta|dev|)', version)
+    match = _regex.match(version)
     if match:
-        version = "%s.%s.%s"%(match.group(1), match.group(2), match.group(3))
+        if match.group('release'):
+            version = match.group('release') 
+            if match.group('pre_l'):
+                version += match.group('pre_l')
+            if match.group('pre_n'):
+                version += match.group('pre_n')
+            else:
+                version += '0'
     else:
         version = "0.0.0"
 
@@ -71,7 +111,7 @@ if('CONDA_PREFIX' in os.environ):
 DOCLINES = __doc__.split("\n")
 
 CLASSIFIERS = """\
-Development Status :: 2 - Pre-Alpha
+Development Status :: 3 - Alpha
 Environment :: Console
 Intended Audience :: Science/Research
 License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)
@@ -107,20 +147,13 @@ setup(
     author='The Mem3DG Team',
     author_email='cuzhu@ucsd.edu, ctlee@ucsd.edu',
     url='https://github.com/RangamaniLabUCSD/Mem3DG',
-    license='MPL 2.0',
     packages=["pymem3dg"],
     description=DOCLINES[0],
     long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type="text/markdown",
     platforms=["Windows", "Linux", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
-    keywords='meshing',
+    keywords='meshing membrane mechanics',
     cmake_args=cmake_args,
-    setup_requires=["setuptools", "wheel", "scikit-build", "pytest-runner", "cmake"],
-    install_requires=[],
-    extras_require={
-        # "docs" : docs_require,
-        "test" : tests_require,
-    },
     zip_safe=False,
 )
