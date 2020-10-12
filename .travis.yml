@@ -47,6 +47,24 @@ jobs:
       homebrew:
         packages: ['cmake', 'ninja', 'netcdf', 'eigen', 'pybind11']
 
+  - os: osx
+    osx_image: xcode12
+    addons:
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf', 'eigen', 'pybind11']
+
+  - os: osx
+    osx_image: xcode12
+    addons:
+      homebrew:
+        packages: ['cmake', 'ninja', 'netcdf', 'eigen', 'pybind11']
+    before_install:
+      - python -m pip install scikit-build pytest
+    install:
+      - python setup.py install
+    script:
+      - pytest
+
   - stage: test 
     os: linux
     dist: bionic
@@ -65,6 +83,21 @@ jobs:
       apt:
         packages: ['ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev', 'libeigen3-dev', 'pybind11-dev']
 
+  - stage: test
+    os: linux
+    dist: focal
+    compiler: gcc
+    python: 3.7
+    addons:
+      apt:
+        packages: ['ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev', 'libeigen3-dev', 'pybind11-dev']
+    before_install:
+      - python -m pip install scikit-build pytest
+    install:
+      - python setup.py install
+    script:
+      - pytest
+
   - stage: deploy
     if: branch = master
     os: linux
@@ -77,10 +110,9 @@ jobs:
     before_install: skip
     install: skip
     script:
-      - |
-        mkdir -p build && cd build;
-        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DBUILD_MEM3DG_DOCS=ON -GNinja ..;
-        ninja mem3dg_docs;
+      - mkdir -p build && cd build;
+      - cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DBUILD_MEM3DG_DOCS=ON -GNinja ..;
+      - ninja mem3dg_docs;
     deploy: 
       provider: pages
       strategy: git
@@ -98,9 +130,7 @@ jobs:
     dist: focal
     compiler: gcc
     python: 3.7
-    addons:
-      apt:
-        packages: ['ninja-build', 'libnetcdf-dev', 'libnetcdf-c++4-dev', 'xorg-dev', 'libeigen3-dev', 'pybind11-dev', 'doxygen', 'graphviz']
+    cache: pip
     before_install: skip
     install: skip
     script:
@@ -120,33 +150,31 @@ jobs:
        
         
 before_install:
-- if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
-- |
-    if [ "$TRAVIS_OS_NAME" = "windows" ]; then
-      mkdir -p ${DEPS_DIR}/vcpkg
-      pushd ${DEPS_DIR}/vcpkg
-      git init
-      git remote add origin https://github.com/microsoft/vcpkg 
-      git fetch origin master
-      git checkout -b master origin/master
-      ./bootstrap-vcpkg.bat
-      ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
-      popd
-    fi
-
-# Show OS/compiler version
-- uname -a
-- $CXX --version
+  - if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
+  - |
+      if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+        mkdir -p ${DEPS_DIR}/vcpkg
+        pushd ${DEPS_DIR}/vcpkg
+        git init
+        git remote add origin https://github.com/microsoft/vcpkg 
+        git fetch origin master
+        git checkout -b master origin/master
+        ./bootstrap-vcpkg.bat
+        ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
+        popd
+      fi
+  - uname -a
+  - $CXX --version
 
 install:
-- mkdir -p build && cd build;
-- |
-    if [ "$TRAVIS_OS_NAME" = "windows" ]; then
-      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${DEPS_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" -G "Visual Studio 15 2017 Win64" ..
-    else
-      cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
-    fi
-- cmake --build . --config Release
+  - mkdir -p build && cd build;
+  - |
+      if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${DEPS_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" -G "Visual Studio 15 2017 Win64" ..
+      else
+        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -GNinja ..
+      fi
+  - cmake --build . --config Release
 
 script:
-- ctest -C Release -V -j
+  - ctest -C Release -V -j
