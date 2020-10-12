@@ -286,7 +286,6 @@ private:
     physpress_var = fd->getVar(PHYSPRESS_VAR);
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
-    vel_var = fd->getVar(VEL_VAR);
   }
 
   /**
