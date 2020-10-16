@@ -30,8 +30,10 @@ namespace py = pybind11;
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
-  pymem3dg.def("driver_ply", &driver_ply, "the driver function for input .ply mesh file ",
-            py::arg("inputMesh"), py::arg("refMesh"), py::arg("isTuftedLaplacian"), py::arg("isProtein"),
+  pymem3dg.def("driver_ply", &driver_ply,
+               "the driver function for input .ply mesh file ",
+               py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
+               py::arg("isTuftedLaplacian"), py::arg("isProtein"),
             py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
             py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
             py::arg("Kv"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("gamma"), 
