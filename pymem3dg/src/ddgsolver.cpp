@@ -151,7 +151,7 @@ int genIcosphere(size_t nSub, std::string path, double R) {
   return 0;
 }
 
-int driver_ply(std::string inputMesh, std::string refMesh, bool isTuftedLaplacian, bool isProtein,
+int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub, bool isTuftedLaplacian, bool isProtein,
            double mollifyFactor, bool isVertexShift, double Kb, double H0, double sharpness,
            double r_H0, double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
            std::vector<double>Kv, double epsilon, double Bc, double Vt,
@@ -160,23 +160,36 @@ int driver_ply(std::string inputMesh, std::string refMesh, bool isTuftedLaplacia
            double closeZone, double increment, double tSave, double tMollify,
            std::string outputDir) {
   std::cout << "Loading input mesh " << inputMesh << " ...";
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
   connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
   std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*ptrVpg);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Loading reference mesh " << refMesh << " ...";
-  std::unique_ptr<gcs::SurfaceMesh> ptrRefMesh;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg;
   std::tie(ptrRefMesh, ptrRefVpg) = gcs::readManifoldSurfaceMesh(refMesh);
   std::cout << "Finished!" << std::endl;
+
+  if (nSub > 0) {
+    std::cout << "Subdivide input and reference mesh " << nSub << " time(s) ...";
+    ddgsolver::subdivide(*ptrMesh, *ptrVpg, nSub);
+    ddgsolver::subdivide(*ptrRefMesh, *ptrRefVpg, nSub);
+    std::cout << "Finished!" << std::endl;
+  }
+
+  //polyscope::init();
+  //auto *psMesh = polyscope::registerSurfaceMesh(
+  //    "subdiv mesh", ptrVpg->inputVertexPositions, ptrMesh->getFaceVertexList());
+  //polyscope::show();
+
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
 
   std::cout << "Initiating the system ...";
   /// physical parameters

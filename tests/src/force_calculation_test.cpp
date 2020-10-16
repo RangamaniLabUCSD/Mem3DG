@@ -37,7 +37,7 @@ namespace gcs = ::geometrycentral::surface;
 class ForceCalculationTest : public testing::Test {
 protected:
   /// initialize mesh and vpg
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   Parameters p;
 

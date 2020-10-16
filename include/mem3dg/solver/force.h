@@ -88,7 +88,7 @@ public:
   /// Parameters
   Parameters P;
   /// Cached mesh of interest
-  gcs::SurfaceMesh &mesh;
+  gcs::ManifoldSurfaceMesh &mesh;
   /// Cached mesh data
   gcs::RichSurfaceMeshData &richData;
   /// Embedding and other geometric details
@@ -171,7 +171,7 @@ public:
    * @param time_step_    Numerical timestep
    */
 
-  Force(gcs::SurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+  Force(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         gcs::VertexPositionGeometry &refVpg_,
         gcs::RichSurfaceMeshData &richData_, Parameters &p, bool isProtein_ = false,
         bool isTuftedLaplacian_ = false, double mollifyFactor_ = 1e-6,

@@ -20,6 +20,7 @@
 namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
 
 /**
  * @brief Construct an icosphere mesh in PolygonSoup form
@@ -34,4 +35,7 @@ DLL_PUBLIC void icosphere(std::vector<gc::Vector3> &coords,
 
 DLL_PUBLIC void tetrahedron(std::vector<gc::Vector3> &coords,
                             std::vector<std::vector<std::size_t>> &polygons);
+
+DLL_PUBLIC void subdivide(gcs::ManifoldSurfaceMesh &mesh,
+                          gcs::VertexPositionGeometry &vpg, std::size_t nSub);
 } // end namespace ddgsolver
