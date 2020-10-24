@@ -177,15 +177,10 @@ int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub, bool isT
 
   if (nSub > 0) {
     std::cout << "Subdivide input and reference mesh " << nSub << " time(s) ...";
-    ddgsolver::subdivide(*ptrMesh, *ptrVpg, nSub);
-    ddgsolver::subdivide(*ptrRefMesh, *ptrRefVpg, nSub);
+    ddgsolver::subdivide(ptrMesh, ptrVpg, nSub);
+    ddgsolver::subdivide(ptrRefMesh, ptrRefVpg, nSub);
     std::cout << "Finished!" << std::endl;
   }
-
-  //polyscope::init();
-  //auto *psMesh = polyscope::registerSurfaceMesh(
-  //    "subdiv mesh", ptrVpg->inputVertexPositions, ptrMesh->getFaceVertexList());
-  //polyscope::show();
 
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();

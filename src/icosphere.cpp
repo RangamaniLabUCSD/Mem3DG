@@ -16,9 +16,11 @@
 #include <cmath>
 #include <iostream>
 
-#include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include "geometrycentral/surface/halfedge_factories.h"
+#include "geometrycentral/surface/surface_mesh_factories.h"
+#include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
 #include "mem3dg/solver/icosphere.h"
@@ -28,29 +30,30 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void subdivide(gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg, std::size_t nSub) {
+void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh, std::unique_ptr<gcs::VertexPositionGeometry> &vpg,
+               std::size_t nSub) {
   for (std::size_t iter = 0; iter < nSub; ++iter) {
-    gcs::VertexData<bool> isOrigVert(mesh, true);
-    gcs::EdgeData<bool> isOrigEdge(mesh, true);
+    gcs::VertexData<bool> isOrigVert(*mesh, true);
+    gcs::EdgeData<bool> isOrigEdge(*mesh, true);
     std::vector<gcs::Edge> toFlip;
 
-    for (gcs::Edge e : mesh.edges()) { // loop over all edges
+    for (gcs::Edge e : mesh->edges()) { // loop over all edges
       if (!isOrigEdge[e])
         continue; // don't keep processing new edges
 
       // gather both vertices incident on the edge, and their positions
       gcs::Vertex oldA = e.halfedge().tipVertex();
       gcs::Vertex oldB = e.halfedge().tailVertex();
-      gc::Vector3 oldAPos = vpg.inputVertexPositions[oldA];
-      gc::Vector3 oldBPos = vpg.inputVertexPositions[oldB];
+      gc::Vector3 oldAPos = vpg->inputVertexPositions[oldA];
+      gc::Vector3 oldBPos = vpg->inputVertexPositions[oldB];
 
       // split the edge
-      gcs::Vertex newV = mesh.splitEdgeTriangular(e).vertex();
+      gcs::Vertex newV = mesh->splitEdgeTriangular(e).vertex();
       isOrigVert[newV] = false;
 
       // position the new vertex
       gc::Vector3 newPos = 0.5 * (oldAPos + oldBPos);
-      vpg.inputVertexPositions[newV] = newPos;
+      vpg->inputVertexPositions[newV] = newPos;
 
       // iterate through the edges incident on the new vertex
       for (gcs::Edge e : newV.adjacentEdges()) {
@@ -62,18 +65,16 @@ void subdivide(gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
           toFlip.push_back(e);
         }
       }
-      std::cout << "Mesh is compressed: " << mesh.isCompressed() << std::endl;
-      mesh.compress();
-      std::cout << "Mesh is compressed: " << mesh.isCompressed() << std::endl;
-      std::cout << "mesh: " << mesh.nVertices() << std::endl;
-      std::cout << "vpg: " << vpg.inputVertexPositions.raw().size() << std::endl;
     }
 
     for (gcs::Edge e : toFlip) {
-      mesh.flip(e);
+      mesh->flip(e);
     }
   }
-  mesh.compress();
+  // mesh->compress();
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      gc::EigenMap<double, 3, Eigen::RowMajor>(vpg->inputVertexPositions),
+      mesh->getFaceVertexMatrix<size_t>());
 }
 
 void icosphere(std::vector<gc::Vector3> &coords,

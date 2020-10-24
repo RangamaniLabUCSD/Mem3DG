@@ -14,6 +14,9 @@
 
 #pragma once
 
+#include <geometrycentral/surface/manifold_surface_mesh.h>
+#include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/surface/surface_mesh.h>
 #include "geometrycentral/utilities/vector3.h"
 #include "macros.h"
 
@@ -36,6 +39,6 @@ DLL_PUBLIC void icosphere(std::vector<gc::Vector3> &coords,
 DLL_PUBLIC void tetrahedron(std::vector<gc::Vector3> &coords,
                             std::vector<std::vector<std::size_t>> &polygons);
 
-DLL_PUBLIC void subdivide(gcs::ManifoldSurfaceMesh &mesh,
-                          gcs::VertexPositionGeometry &vpg, std::size_t nSub);
+DLL_PUBLIC void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
+                          std::unique_ptr<gcs::VertexPositionGeometry> &vpg, std::size_t nSub);
 } // end namespace ddgsolver

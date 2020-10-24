@@ -53,7 +53,9 @@ set(PYMEM3DG_SOURCES
 
 pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})
 target_link_libraries(pymem3dg PRIVATE mem3dg_static polyscope)
-
+if(WITH_NETCDF)
+  target_compile_definitions(pymem3dg PUBLIC -DMEM3DG_WITH_NETCDF)
+endif()
 
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
              INPUT ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)
