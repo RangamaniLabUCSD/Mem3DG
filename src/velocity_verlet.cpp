@@ -46,7 +46,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
   totalPressure.resize(f.mesh.nVertices(), 3);
   totalPressure.setZero();
-  std::cout << "number of vertices: " << f.mesh.nVertices() << std::endl;
 
   int nSave = int(tSave / dt);
 
@@ -81,10 +80,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
   size_t nMollify = size_t(tMollify / tSave);
 
+std::size_t frame = 0;
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                                   TrajFile::NcFile::replace);
-  std::size_t frame;
 #endif
 
   for (int i = 0; i <= total_time / dt; i++) {
@@ -119,8 +118,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
     newTotalPressure = physicalPressure + numericalPressure;
 
-    std::cout << "hello" << std::endl;
-
     // periodically save the geometric files, print some info, compare and adjust
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
 
@@ -128,10 +125,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       gcs::VertexData<double> H(f.mesh);
       H.fromVector(f.H);
       f.richData.addVertexProperty("mean_curvature", H);
-
-      std::cout << "hello" << std::endl;
-      std::cout << f.H0.size() << std::endl;
-      std::cout << f.mesh.nVertices() << std::endl;
 
       gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
@@ -141,8 +134,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       gcs::VertexData<double> f_ext(f.mesh);
       f_ext.fromVector(f.externalPressureMagnitude);
       f.richData.addVertexProperty("external_pressure", f_ext);
-
-      std::cout << "hello" << std::endl;
 
       gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
@@ -163,8 +154,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("bending_pressure", fb);
 
-
-      std::cout << "hello" << std::endl;
       std::tie(totalEnergy, BE, sE, pE, kE, cE) = getFreeEnergy(f);
       #ifdef MEM3DG_WITH_NETCDF
             frame = fd.getNextFrameIndex();
