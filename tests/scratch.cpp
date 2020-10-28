@@ -12,34 +12,18 @@
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/simple_polygon_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
-#include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector3.h>
 
-// We are writing 2D data, a 6 x 12 grid
-constexpr int nx = 6;
-constexpr int ny = 12;
-
-// Return this in event of a problem
-constexpr int nc_err = 2;
+#include <igl/cotmatrix.h>
 
 int main() {
-  namespace gc = ::geometrycentral;
-  namespace gcs = ::geometrycentral::surface;
-
-  std::vector<gc::Vector3> coords;
-  std::vector<std::vector<std::size_t>> polygons;
-
-  ddgsolver::icosphere(coords, polygons, 1, 1);
-
-  gcs::SimplePolygonMesh soup(polygons, coords);
-  soup.mergeIdenticalVertices();
-
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  std::tie(ptrMesh, ptrVpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons, soup.vertexCoordinates);
-  // std::unique_ptr<gcs::ManifoldSurfaceMesh> mMesh = ptrMesh->toManifoldMesh();
-  ddgsolver::subdivide(ptrMesh, ptrVpg, 2);
-  std::cout << ptrMesh->nVertices() << std::endl;
-  std::cout << ptrVpg->inputVertexPositions.raw().size() << std::endl;
+  Eigen::MatrixXd V(4, 2);
+  V << 0, 0, 1, 0, 1, 1, 0, 1;
+  Eigen::MatrixXi F(2, 3);
+  F << 0, 1, 2, 0, 2, 3;
+  Eigen::SparseMatrix<double> L;
+  igl::cotmatrix(V, F, L);
+  std::cout << "Hello, mesh: " << std::endl << L * V << std::endl;
+  return 0;
 }
