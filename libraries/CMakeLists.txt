@@ -16,6 +16,7 @@ include(FetchContent)
 
 add_subdirectory(pcg)
 
+
 if(M3DG_GET_OWN_EIGEN)
   # ############################################################################
   # GET EIGEN
@@ -43,6 +44,7 @@ if(M3DG_GET_OWN_EIGEN)
 else()
   find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 endif()
+
 
 # #############################################################################
 # GET GEOMETRY CENTRAL
@@ -88,3 +90,5 @@ if(BUILD_PYMEM3DG)
   #   set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
   # endif()
 endif()
+
+add_subdirectory(libigl)
