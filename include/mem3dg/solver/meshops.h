@@ -37,8 +37,9 @@ namespace gcs = ::geometrycentral::surface;
  * @param vpg
  * @return double
  */
-DLL_PUBLIC inline double
-signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg, gc::Vector3 center) {
+DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
+                                              gcs::VertexPositionGeometry &vpg,
+                                              gc::Vector3 center) {
   gc::Vector3 p[3];
   size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
@@ -90,7 +91,7 @@ rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
  */
 DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
 rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
-                  Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
+                    Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
   Eigen::Matrix<double, Eigen::Dynamic, 3> C;
   if (A.rows() != B.rows()) {
     throw std::runtime_error("The input matrices must have same sizes!");
@@ -197,10 +198,10 @@ vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
  *
  * @param Eigen pressure matrix
  */
-DLL_PUBLIC inline void 
- removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
-  pressure = pressure.rowwise() -
-                     ((pressure).colwise().sum() / pressure.rows());
+DLL_PUBLIC inline void
+removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
+  pressure =
+      pressure.rowwise() - ((pressure).colwise().sum() / pressure.rows());
 }
 
 /**
@@ -209,29 +210,26 @@ DLL_PUBLIC inline void
  * @param Eigen pressure matrix
  * @param Eigen position matrix
  */
-DLL_PUBLIC inline void removeRotation(
-    Eigen::Matrix<double, Eigen::Dynamic, 3>
-        position, Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
-  pressure =
-      pressure.rowwise() -
-      (rowwiseCrossProduct(position,
-                           pressure)
-           .colwise()
-           .sum() /
-       pressure.rows());
+DLL_PUBLIC inline void
+removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
+  pressure = pressure.rowwise() -
+             (rowwiseCrossProduct(position, pressure).colwise().sum() /
+              pressure.rows());
 }
 
 /**
  * @brief Gaussian distribution
  *
- * @param distance vector 
+ * @param distance vector
  * @param standard deviation
  */
 DLL_PUBLIC inline void
-gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1>& distribution,
-                         Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
+gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
+                     Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
                      double stdDev) {
-  distribution = (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
+  distribution =
+      (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
       (stdDev * pow(M_PI * 2, 0.5));
 }
 
@@ -241,15 +239,37 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1>& distribution,
  * @param (double) sharpness of transition
  * @param (double) radius of height = 1
  * @param (Eigen vector) distance vector
- * 
+ *
  */
 DLL_PUBLIC inline void
-tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1>& distribution,
-                     Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
-                     double sharpness, double radius) {
+tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
+                 Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
+                 double sharpness, double radius) {
   distribution.resize(distance.rows(), 1);
   for (size_t i = 0; i < distance.rows(); i++) {
     distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
+  }
+}
+
+/**
+ * @brief compute the cross length ratio of the geometry
+ *
+ * @param manifold mesh
+ * @param vertex position geometry
+ * @param edgedata cross length ratio 
+ */
+DLL_PUBLIC inline void getCrossLengthRatio(gcs::ManifoldSurfaceMesh &mesh,
+                                           gcs::VertexPositionGeometry &vpg,
+                                           gcs::EdgeData<double> &clr) {
+  for (gcs::Edge e : mesh.edges()) {
+    gcs::Edge lj = e.halfedge().next().edge();
+    gcs::Edge ki = e.halfedge().twin().next().edge();
+    gcs::Edge il = e.halfedge().next().next().edge();
+    gcs::Edge jk = e.halfedge().twin().next().next().edge();
+    // clr[e] = edgeLength[il] * edgeLength[jk] / edgeLength[ki] /
+    //          edgeLength[lj];
+     clr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
+              vpg.edgeLengths[lj];
   }
 }
 
@@ -259,15 +279,17 @@ tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1>& distribution,
  * @param mesh   Mesh of interest
  * @return Eigen matrix of uint32_t indices
  */
-DLL_PUBLIC inline Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
+DLL_PUBLIC inline Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3,
+                                Eigen::RowMajor>
 getFaceVertexMatrix(gcs::SurfaceMesh &mesh) {
   if (!mesh.isTriangular())
     throw std::runtime_error("Mesh is not triangular.");
 
-  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> result(mesh.nFaces(), 3);
+  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> result(
+      mesh.nFaces(), 3);
 
   gcs::VertexData<std::size_t> vInd = mesh.getVertexIndices();
-  
+
   std::size_t i = 0;
   for (gcs::Face f : mesh.faces()) {
     std::uint32_t a, b, c;
