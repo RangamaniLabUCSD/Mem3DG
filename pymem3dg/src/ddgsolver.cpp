@@ -184,7 +184,7 @@ int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub, bool isT
 
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();
-  richData.addGeometry(*ptrVpg);
+  //richData.addGeometry(*ptrVpg);
 
   std::cout << "Initiating the system ...";
   /// physical parameters

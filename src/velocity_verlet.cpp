@@ -109,8 +109,7 @@ std::size_t frame = 0;
                    physicalPressure);
 
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-                   gc::EigenMap<double, 3>(f.stochasticForce) +
-                   gc::EigenMap<double, 3>(f.regularizationForce));
+                   gc::EigenMap<double, 3>(f.stochasticForce));
 
     removeTranslation(numericalPressure);
     removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
@@ -300,6 +299,8 @@ std::size_t frame = 0;
     }
 
     // Regularize the vetex position geometry if needed
+    pos_e += f.M_inv * gc::EigenMap<double, 3>(f.regularizationForce) * dt;
+
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
