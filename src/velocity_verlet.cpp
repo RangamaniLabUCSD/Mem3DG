@@ -281,7 +281,7 @@ std::size_t frame = 0;
       */ 
 
       // 3.3 fail and exit 
-      if (abs(dL2ErrorNorm)>1) {
+      if (abs(dL2ErrorNorm)>5) {
         break;
       }
 

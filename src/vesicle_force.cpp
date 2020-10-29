@@ -20,8 +20,8 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
 
@@ -34,7 +34,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void Force::getVesicleForces() {
-  
+
   /// 0. GENERAL
   // map the MeshData to eigen matrix XXX_e
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
@@ -79,7 +79,8 @@ void Force::getVesicleForces() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
   zeroMatrix.resize(n_vertices, 1);
   zeroMatrix.setZero();
-  scalarTerms_integrated = scalarTerms_integrated.array().max(zeroMatrix.array());
+  scalarTerms_integrated =
+      scalarTerms_integrated.array().max(zeroMatrix.array());
 
   // initialize and calculate intermediary result productTerms_integrated
   Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms_integrated;
@@ -97,19 +98,20 @@ void Force::getVesicleForces() {
   for (gcs::Face f : mesh.faces()) {
     volume += signedVolumeFromFace(
         f, vpg, refVpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
-  } 
-  insidePressure_e = - P.Kv * (volume - refVolume * P.Vt) /
-                     (refVolume * P.Vt) * vertexAngleNormal_e;
+  }
+  insidePressure_e = -P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) *
+                     vertexAngleNormal_e;
 
   /// C. CAPILLARY PRESSURE
   surfaceArea = faceArea_e.sum();
-  capillaryPressure_e =
-    rowwiseScaling(- P.Ksg * (surfaceArea - targetSurfaceArea) /
-                        targetSurfaceArea * 2.0 * H,
-                    vertexAngleNormal_e);
+  capillaryPressure_e = rowwiseScaling(
+      -P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea * 2.0 * H,
+      vertexAngleNormal_e);
 
   /// D. LOCAL REGULARIZATION
   regularizationForce.fill({0.0, 0.0, 0.0});
+  gcs::EdgeData<double> clr(mesh);
+  getCrossLengthRatio(mesh, vpg, clr);
 
   if ((P.Ksl != 0) || (P.Kse != 0) || (P.Kst != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
@@ -124,25 +126,41 @@ void Force::getVesicleForces() {
         assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
         if (P.Kst != 0) {
-          regularizationForce[v] += -P.Kst * localAreaGradient;
+          gcs::Halfedge jl = he.next();
+          gcs::Halfedge li = jl.next();
+          gcs::Halfedge ik = he.twin().next();
+          gcs::Halfedge kj = ik.next();
+
+          gc::Vector3 grad_li =
+              vecFromHalfedge(li, vpg).normalize();
+          gc::Vector3 grad_ik =
+              vecFromHalfedge(ik.twin(), vpg).normalize();
+          regularizationForce[v] +=
+              - P.Kst * (clr[he.edge()] - targetclr[he.edge()]) / targetclr[he.edge()] *
+              (vpg.edgeLengths[kj.edge()] /
+              vpg.edgeLengths[jl.edge()])
+              * (grad_li * vpg.edgeLengths[ik.edge()] -
+               grad_ik * vpg.edgeLengths[li.edge()]) /
+              vpg.edgeLengths[ik.edge()] /
+              vpg.edgeLengths[ik.edge()];
+          // regularizationForce[v] += -P.Kst * localAreaGradient;
         }
 
         if (P.Ksl != 0) {
           regularizationForce[v] +=
-              - P.Ksl * localAreaGradient *
+              -P.Ksl * localAreaGradient *
               (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
               targetFaceAreas[base_he.face()];
         }
 
         if (P.Kse != 0) {
           regularizationForce[v] +=
-              - P.Kse * edgeGradient *
+              -P.Kse * edgeGradient *
               (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
               targetEdgeLengths[he.edge()];
         }
       }
     }
   }
-
 }
 } // end namespace ddgsolver

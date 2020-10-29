@@ -28,6 +28,9 @@
 #include <random>
 
 #include <math.h>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/meshops.h"
@@ -45,7 +48,7 @@ struct Parameters {
   double Kb;
   /// Spontaneous curvature
   double H0;
-  /// Sharpness of the spontaneous curvature hetergeneity 
+  /// Sharpness of the spontaneous curvature hetergeneity
   double sharpness;
   /// radius of non-zero spontaneous curvature
   double r_H0;
@@ -112,7 +115,7 @@ public:
   /// Cached stochastic forces
   gcs::VertexData<gc::Vector3> stochasticForce;
 
-  /// Cached protein surface density 
+  /// Cached protein surface density
   gcs::VertexData<double> proteinDensity;
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
@@ -147,6 +150,8 @@ public:
   double volume = 0.0;
   /// Target length per edge
   gcs::EdgeData<double> targetEdgeLengths;
+  /// Target edge cross length ratio
+  gcs::EdgeData<double> targetclr;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
@@ -173,14 +178,15 @@ public:
 
   Force(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         gcs::VertexPositionGeometry &refVpg_,
-        gcs::RichSurfaceMeshData &richData_, Parameters &p, bool isProtein_ = false,
-        bool isTuftedLaplacian_ = false, double mollifyFactor_ = 1e-6,
-        bool isVertexShift_ = false)
-      : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_),
-        P(p), isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_), mollifyFactor(mollifyFactor_),
-        isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
-        insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
-        externalPressure(mesh_, {0, 0, 0}), regularizationForce(mesh_, {0,0,0}), 
+        gcs::RichSurfaceMeshData &richData_, Parameters &p,
+        bool isProtein_ = false, bool isTuftedLaplacian_ = false,
+        double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
+      : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
+        isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
+        mollifyFactor(mollifyFactor_), isVertexShift(isVertexShift_),
+        bendingPressure(mesh_, {0, 0, 0}), insidePressure(mesh_, {0, 0, 0}),
+        capillaryPressure(mesh_, {0, 0, 0}), externalPressure(mesh_, {0, 0, 0}),
+        regularizationForce(mesh_, {0, 0, 0}), targetclr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
         proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}) {
 
@@ -262,11 +268,14 @@ public:
     // Initialize edge length
     targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
+    // Initialize target cross length ration
+    getCrossLengthRatio(mesh, refVpg, targetclr);
+
     // Initialize reference volume
     if (mesh.hasBoundary()) {
       refVolume = 0.0;
     } else {
-      refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3); 
+      refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
     }
 
     // Initialize surface area
