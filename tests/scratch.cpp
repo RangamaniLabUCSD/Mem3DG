@@ -26,51 +26,19 @@ constexpr int nc_err = 2;
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-int genIcosphere(size_t nSub, std::string path, double R) {
-  std::cout << "Constructing " << nSub << "-subdivided icosphere of radius "
-            << R << " ...";
-
-  /// initialize mesh and vpg
-  std::unique_ptr<gcs::HalfedgeMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-
-  /// initialize icosphere
+int main() {
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
-  ddgsolver::icosphere(coords, polygons, nSub, R);
+  ddgsolver::icosphere(coords, polygons, 1, 1);
   gcs::SimplePolygonMesh soup(polygons, coords);
   soup.mergeIdenticalVertices();
-  std::tie(ptrMesh, ptrVpg) =
-      gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
-  // writeSurfaceMesh(*ptrMesh, *ptrVpg, path);
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*ptrVpg);
-  richData.write(path);
-
-  std::cout << "Finished!" << std::endl;
-  return 0;
-}
-
-int main() {
-
-  std::string inputMesh = "./icosphere.ply";
-  std::string refMesh = inputMesh;
-  genIcosphere(1, inputMesh, 1);
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  std::cout << "Loading input mesh " << inputMesh << " ...";
-  std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  std::cout << "Finished!" << std::endl;
+  std::tie(ptrMesh, ptrVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons, soup.vertexCoordinates);
+  gcs::VertexPositionGeometry *ptrRefVpg =
+      new gcs::VertexPositionGeometry(*ptrMesh, ptrVpg->inputVertexPositions);
 
-  std::cout << "Loading reference mesh " << refMesh << " ...";
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
-  std::tie(ptrRefMesh, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
-  std::cout << "Finished!" << std::endl;
-
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg =
-      ptrRefVpg_->reinterpretTo(*ptrMesh);
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();
   richData.addGeometry(*ptrVpg);
@@ -97,10 +65,11 @@ int main() {
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
-  // std::cout << "Solving the system ..." << std::endl;
+  std::cout << "Solving the system ..." << std::endl;
+  // double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 5e-1. tMollify = 100, 
   // ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-  //                                        Kv[1], Ksg[1], tSave, tMollify,
+  //                                        Kv, Ksg, tSave, tMollify,
   //                                        inputMesh, outputDir);
-
+  delete ptrRefVpg;
   return 0;
 }
