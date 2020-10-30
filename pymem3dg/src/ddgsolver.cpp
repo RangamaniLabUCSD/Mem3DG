@@ -19,8 +19,8 @@
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/simple_polygon_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
-#include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector3.h>
 
 #include "polyscope/curve_network.h"
 #include "polyscope/point_cloud.h"
@@ -34,6 +34,8 @@
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/typetraits.h"
 #include "mem3dg/solver/util.h"
+
+#include "igl/loop.h"
 
 #include <Eigen/Core>
 
@@ -88,7 +90,7 @@ int viewer(std::string fileName) {
       capillaryPressure.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e =
       bendingPressure.raw();
-  //Eigen::Matrix<double, Eigen::Dynamic, 3> vertexVelocity_e =
+  // Eigen::Matrix<double, Eigen::Dynamic, 3> vertexVelocity_e =
   //    ddgsolver::EigenMap<double, 3>(vertexVelocity);
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
   gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
@@ -121,7 +123,7 @@ int viewer(std::string fileName) {
   surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
   std::cout << "Finished!" << std::endl;
   polyscope::show();
-  
+
   return 0;
 }
 
@@ -151,22 +153,26 @@ int genIcosphere(size_t nSub, std::string path, double R) {
   return 0;
 }
 
-int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub, bool isTuftedLaplacian, bool isProtein,
-           double mollifyFactor, bool isVertexShift, double Kb, double H0, double sharpness,
-           double r_H0, double Kse, double Kst, double Ksl, std::vector<double> Ksg, 
-           std::vector<double>Kv, double epsilon, double Bc, double Vt,
-           double gamma, double kt, size_t ptInd, double Kf, double conc,
-           double height, double radius, double h, double T, double eps,
-           double closeZone, double increment, double tSave, double tMollify,
-           std::string outputDir) {
+int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub,
+               bool isTuftedLaplacian, bool isProtein, double mollifyFactor,
+               bool isVertexShift, double Kb, double H0, double sharpness,
+               double r_H0, double Kse, double Kst, double Ksl,
+               std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
+               double Bc, double Vt, double gamma, double kt, size_t ptInd,
+               double Kf, double conc, double height, double radius, double h,
+               double T, double eps, double closeZone, double increment,
+               double tSave, double tMollify, std::string outputDir) {
   std::cout << "Loading input mesh " << inputMesh << " ...";
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
   connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
   std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  gcs::ManifoldSurfaceMesh &mesh = *ptrMesh;
+  gcs::VertexPositionGeometry &vpg = *ptrVpg;
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Loading reference mesh " << refMesh << " ...";
@@ -176,15 +182,30 @@ int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub, bool isT
   std::cout << "Finished!" << std::endl;
 
   if (nSub > 0) {
-    std::cout << "Subdivide input and reference mesh " << nSub << " time(s) ...";
-    ddgsolver::subdivide(ptrMesh, ptrVpg, nSub);
-    ddgsolver::subdivide(ptrRefMesh, ptrRefVpg, nSub);
+    std::cout << "Subdivide input and reference mesh " << nSub
+              << " time(s) ...";
+    Eigen::Matrix<double, Eigen::Dynamic, 3> coords;
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> faces;
+
+    Eigen::Matrix<double, Eigen::Dynamic, 3> refcoords;
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> reffaces;
+    // ddgsolver::subdivide(ptrMesh, ptrVpg, nSub);
+    // ddgsolver::subdivide(ptrRefMesh, ptrRefVpg, nSub);
+    igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
+              ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
+    igl::loop(gc::EigenMap<double, 3>(ptrRefVpg->inputVertexPositions),
+              ptrRefMesh->getFaceVertexMatrix<size_t>(), refcoords, reffaces,
+              nSub);
+    std::tie(ptrMesh, ptrVpg) =
+        gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
+    std::tie(ptrRefMesh, ptrRefVpg) =
+        gcs::makeManifoldSurfaceMeshAndGeometry(refcoords, reffaces);
     std::cout << "Finished!" << std::endl;
   }
 
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();
-  //richData.addGeometry(*ptrVpg);
+  richData.addGeometry(*ptrVpg);
 
   std::cout << "Initiating the system ...";
   /// physical parameters
@@ -202,44 +223,57 @@ int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub, bool isT
 
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv[1], Ksg[1],
-                                         tSave, tMollify, inputMesh, outputDir);
+                                         Kv[1], Ksg[1], tSave, tMollify,
+                                         inputMesh, outputDir);
 
   return 0;
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-int driver_nc(std::string trajFile, std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
-  double mollifyFactor, bool isVertexShift, double Kb, double H0,
-  double sharpness, double r_H0, double Kse, double Kst, double Ksl,
-  std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
-  double Bc, double Vt, double gamma, double kt, size_t ptInd,
-  double Kf, double conc, double height, double radius, double h,
-  double T, double eps, double closeZone, double increment,
-  double tSave, double tMollify, std::string outputDir) {
+int driver_nc(std::string trajFile, std::size_t startingFrame,
+              bool isTuftedLaplacian, bool isProtein, double mollifyFactor,
+              bool isVertexShift, double Kb, double H0, double sharpness,
+              double r_H0, double Kse, double Kst, double Ksl,
+              std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
+              double Bc, double Vt, double gamma, double kt, size_t ptInd,
+              double Kf, double conc, double height, double radius, double h,
+              double T, double eps, double closeZone, double increment,
+              double tSave, double tMollify, std::string outputDir) {
 
   using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
   using EigenVectorX3D =
       Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
   using EigenTopVec =
       Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
-  
+
   std::cout << "Loading input mesh from trajectory file " << trajFile << " ...";
   ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(trajFile);
-  gcs::ManifoldSurfaceMesh mesh(fd.getTopology());
-
   double time;
   EigenVectorX3D coords;
   std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
-  gcs::VertexPositionGeometry vpg(mesh, coords);
 
+  //   gcs::ManifoldSurfaceMesh *ptrMesh =
+  //       new gcs::ManifoldSurfaceMesh(fd.getTopology());
+  //   gcs::ManifoldSurfaceMesh &mesh = *ptrMesh;
+  //   gcs::VertexPositionGeometry *ptrVpg =
+  //       new gcs::VertexPositionGeometry(mesh, coords);
+  //   gcs::VertexPositionGeometry &vpg = *ptrVpg;
+
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::tie(ptrMesh, ptrVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
+  gcs::ManifoldSurfaceMesh &mesh = *ptrMesh;
+  gcs::VertexPositionGeometry &vpg = *ptrVpg;
   gcs::RichSurfaceMeshData richData(mesh);
   richData.addMeshConnectivity();
   richData.addGeometry(vpg);
   std::cout << "Finished!" << std::endl;
 
-  std::cout << "Loading reference mesh from trajectory file" << trajFile << " ...";
-  gcs::VertexPositionGeometry refVpg(mesh, fd.getRefcoordinate());
+  std::cout << "Loading reference mesh from trajectory file" << trajFile
+            << " ...";
+  gcs::VertexPositionGeometry *ptrRefVpg =
+      new gcs::VertexPositionGeometry(mesh, fd.getRefcoordinate());
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Initiating the system ...";
@@ -252,7 +286,7 @@ int driver_nc(std::string trajFile, std::size_t startingFrame, bool isTuftedLapl
   ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
                           Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
                           sigma, ptInd, Kf,        conc, height, radius};
-  ddgsolver::Force f(mesh, vpg, refVpg, richData, p, isProtein,
+  ddgsolver::Force f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;
@@ -262,6 +296,7 @@ int driver_nc(std::string trajFile, std::size_t startingFrame, bool isTuftedLapl
                                          Kv[1], Ksg[1], tSave, tMollify,
                                          trajFile, outputDir);
 
+  delete ptrRefVpg;
 
   return 0;
 }
