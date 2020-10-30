@@ -64,7 +64,7 @@ DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
  * @return gc::Vector3
  */
 DLL_PUBLIC inline gc::Vector3
-vecFromHalfedge(gcs::Halfedge &he, gcs::VertexPositionGeometry &vpg) {
+vecFromHalfedge(const gcs::Halfedge &he, const gcs::VertexPositionGeometry &vpg) {
   return vpg.inputVertexPositions[he.next().vertex()] -
          vpg.inputVertexPositions[he.vertex()];
 }
