@@ -29,7 +29,7 @@ void getParameterLog(Force &f, double dt,
                      double finalTime, double tolerance,
                      double tSave, std::string inputMesh,
                      std::string outputDir) {
-  ofstream myfile(outputDir + "parameter.txt");
+  ofstream myfile(outputDir + "/parameter.txt");
   if (myfile.is_open()) {
     myfile << "Mem3DG Version: " << MEM3DG_VERSION << "\n";
     myfile << "Input Mesh:     " << inputMesh << "\n";

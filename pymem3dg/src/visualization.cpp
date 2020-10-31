@@ -15,6 +15,7 @@
 #ifdef MEM3DG_WITH_NETCDF
 #include <iostream>
 #include <time.h>
+#include <csignal>
 
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
@@ -26,6 +27,8 @@
 #else
 #include <unistd.h>
 #endif
+
+void signalHandler(int signum);
 
 void wait(unsigned timeout)
 {
@@ -113,6 +116,7 @@ void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx, in
 }
 
 int view_animation(std::string &filename) {
+  signal(SIGINT, signalHandler);
 
   ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(filename);
 

@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include <csignal>
 #include <iostream>
 
 #include <geometrycentral/surface/halfedge_factories.h>
@@ -35,6 +36,8 @@
 #include "mem3dg/solver/typetraits.h"
 #include "mem3dg/solver/util.h"
 
+#include <pybind11/embed.h>
+
 #include "igl/loop.h"
 
 #include <Eigen/Core>
@@ -48,7 +51,15 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+void signalHandler(int signum) {
+  std::cout << "Interrupt signal (" << signum << ") received.\n";
+  exit(signum);
+}
+
 int viewer(std::string fileName) {
+
+  signal(SIGINT, signalHandler);
+
   std::cout << "Initializing the mesh and geometry ...";
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
@@ -162,6 +173,10 @@ int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                double Kf, double conc, double height, double radius, double h,
                double T, double eps, double closeZone, double increment,
                double tSave, double tMollify, std::string outputDir) {
+
+  signal(SIGINT, signalHandler);
+  // pybind11::scoped_interpreter guard{};
+
   std::cout << "Loading input mesh " << inputMesh << " ...";
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
@@ -216,7 +231,7 @@ int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub,
   }
   ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
                           Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
-                          sigma, ptInd, Kf, conc, height, radius};
+                          sigma, ptInd, Kf,        conc, height, radius};
   ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
@@ -239,6 +254,8 @@ int driver_nc(std::string trajFile, std::size_t startingFrame,
               double Kf, double conc, double height, double radius, double h,
               double T, double eps, double closeZone, double increment,
               double tSave, double tMollify, std::string outputDir) {
+
+  signal(SIGINT, signalHandler);
 
   using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
   using EigenVectorX3D =
@@ -300,4 +317,5 @@ int driver_nc(std::string trajFile, std::size_t startingFrame,
 
   return 0;
 }
+
 #endif
