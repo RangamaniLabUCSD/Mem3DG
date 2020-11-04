@@ -71,7 +71,7 @@ std::tuple<double, double, double, double, double, double> getFreeEnergy(Force &
     bE = (f.P.Kb * f.M * (H_difference.array() * H_difference.array()).matrix())
              .sum();
     sE = f.P.Ksg * A_difference;
-    pE = f.P.Kv * V_difference;
+    pE = -f.P.Kv * V_difference;
 
     auto vel = gc::EigenMap<double, 3>(f.vel);
     kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();
