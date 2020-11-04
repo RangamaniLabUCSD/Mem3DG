@@ -38,7 +38,7 @@ namespace gcs = ::geometrycentral::surface;
 void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     double closeZone, double increment, double maxKv,
                     double maxKsg, double tSave, double tMollify,
-                    std::string inputMesh, std::string outputDir) {
+                    std::string inputMesh, std::string outputDir, double init_time) {
 
   // print out a .txt file listing all parameters used
   getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
@@ -87,7 +87,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                                   TrajFile::NcFile::replace);
 #endif
   
-  for (int i = 0; i <= total_time / dt; i++) {
+  for (int i = 0; i <= (total_time - init_time) / dt; i++) {
     if (f.mesh.hasBoundary()) {
       f.getTubeForces();
     } else {
@@ -158,7 +158,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       std::tie(totalEnergy, BE, sE, pE, kE, cE) = getFreeEnergy(f);
 #ifdef MEM3DG_WITH_NETCDF
       frame = fd.getNextFrameIndex();
-      fd.writeTime(frame, i * dt);
+      fd.writeTime(frame, i * dt + init_time);
       fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
       fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
       fd.writeAngles(frame, f.vpg.cornerAngles.raw());
@@ -178,7 +178,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       fd.writeTotalEnergy(frame, totalEnergy);
 #endif
 
-      L2ErrorNorm = getL2ErrorNorm(f.M, physicalPressure);
+      L2ErrorNorm = getL2ErrorNorm(f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
       dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
 
       if (f.P.Kb != 0) {
@@ -219,7 +219,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       // getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
       // 2. print
       std::cout << "\n"
-                << "Time: " << i * dt << "\n"
+                << "Time: " << i * dt + init_time << "\n"
                 << "Frame: "<< frame << "\n"
                 << "dArea: " << dArea << "\n"
                 << "dVolume:  " << dVolume << "\n"
@@ -338,7 +338,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     */
 
     // 3.3.B finish and exit
-    if (i == int(total_time / dt)) {
+    if (i == int((total_time - init_time) / dt)) {
       std::cout << "\n"
                 << "Simulation finished, and data saved to " + outputDir
                 << std::endl;
