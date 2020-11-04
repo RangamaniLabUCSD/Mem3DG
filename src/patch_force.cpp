@@ -101,7 +101,7 @@ void Force::getTubeForces() {
     volume += signedVolumeFromFace(
         f, vpg, refVpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
   }
-  insidePressure_e = -P.Kv * vertexAngleNormal_e;
+  insidePressure_e = P.Kv * vertexAngleNormal_e;
 
   /// C. CAPILLARY PRESSURE
   surfaceArea = faceArea_e.sum();
