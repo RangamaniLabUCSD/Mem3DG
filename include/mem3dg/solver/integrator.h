@@ -35,7 +35,8 @@ DLL_PUBLIC void velocityVerlet(Force &f, double dt, double total_time,
                                double tolerance, double closeZone,
                                double increment, double maxKv, double maxKsg,
                                double tSave, double tMollify,
-                               std::string inputMesh, std::string outputDir);
+                               std::string inputMesh, std::string outputDir, 
+                               double init_time = 0);
 
 DLL_PUBLIC void getParameterLog(Force &f, double dt,
                                 double total_time,

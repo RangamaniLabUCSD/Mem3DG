@@ -62,8 +62,8 @@ include(FetchContent)
 option(BUILD_PYMEM3DG "Build the python extensions?" ON)
 option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" ON)
 option(BUILD_MEM3DG_DOCS "Configure documentation" OFF)
-option(M3DG_GET_OWN_EIGEN "Download own Eigen" OFF)
-option(M3DG_GET_OWN_PYBIND11 "Download own pybind11" OFF)
+option(M3DG_GET_OWN_EIGEN "Download own Eigen" ON)
+option(M3DG_GET_OWN_PYBIND11 "Download own pybind11" ON)
 
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS

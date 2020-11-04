@@ -268,6 +268,7 @@ int driver_nc(std::string trajFile, std::size_t startingFrame,
   double time;
   EigenVectorX3D coords;
   std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
+  std::cout << "Continuing from time t=" << time << " ...";
 
   //   gcs::ManifoldSurfaceMesh *ptrMesh =
   //       new gcs::ManifoldSurfaceMesh(fd.getTopology());
@@ -311,7 +312,7 @@ int driver_nc(std::string trajFile, std::size_t startingFrame,
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
                                          Kv[1], Ksg[1], tSave, tMollify,
-                                         trajFile, outputDir);
+                                         trajFile, outputDir, time);
 
   delete ptrRefVpg;
 
