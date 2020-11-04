@@ -74,7 +74,7 @@ std::tuple<double, double, double, double, double, double> getFreeEnergy(Force &
     pE = f.P.Kv * V_difference;
 
     auto vel = gc::EigenMap<double, 3>(f.vel);
-    kE = 0.5 * (vel.array() * vel.array()).sum();
+    kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();
 
     if (f.isProtein) {
       double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
