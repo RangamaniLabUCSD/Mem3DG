@@ -109,6 +109,8 @@ void Force::getTubeForces() {
 
   /// D. LOCAL REGULARIZATION
   regularizationForce.fill({0.0, 0.0, 0.0});
+  gcs::EdgeData<double> clr(mesh);
+  getCrossLengthRatio(mesh, vpg, clr);
 
   if ((P.Ksl != 0) || (P.Kse != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
@@ -124,7 +126,21 @@ void Force::getTubeForces() {
 
         // patch simulation assumes constant surface tension
         if (P.Kst != 0) {
-          regularizationForce[v] += - P.Kst * localAreaGradient;
+          gcs::Halfedge jl = he.next();
+          gcs::Halfedge li = jl.next();
+          gcs::Halfedge ik = he.twin().next();
+          gcs::Halfedge kj = ik.next();
+
+          gc::Vector3 grad_li = vecFromHalfedge(li, vpg).normalize();
+          gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), vpg).normalize();
+          regularizationForce[v] +=
+              -P.Kst * (clr[he.edge()] - targetclr[he.edge()]) /
+              targetclr[he.edge()] *
+              (vpg.edgeLengths[kj.edge()] / vpg.edgeLengths[jl.edge()]) *
+              (grad_li * vpg.edgeLengths[ik.edge()] -
+               grad_ik * vpg.edgeLengths[li.edge()]) /
+              vpg.edgeLengths[ik.edge()] / vpg.edgeLengths[ik.edge()];
+          // regularizationForce[v] += - P.Kst * localAreaGradient;
         }
 
         // the cubic penalty is for regularizing the mesh,
