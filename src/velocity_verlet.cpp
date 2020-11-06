@@ -38,10 +38,13 @@ namespace gcs = ::geometrycentral::surface;
 void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     double closeZone, double increment, double maxKv,
                     double maxKsg, double tSave, double tMollify,
-                    std::string inputMesh, std::string outputDir, double init_time) {
+                    const size_t verbosity, std::string inputMesh,
+                    std::string outputDir, double init_time) {
 
   // print out a .txt file listing all parameters used
-  getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
+  if (verbosity > 1) {
+    getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
+  }
 
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
   Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
@@ -77,16 +80,16 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   double dArea;
   double dVolume;
   double dFace;
-  double dRef;
+  // double dRef;
 
   size_t nMollify = size_t(tMollify / tSave);
 
   std::size_t frame = 0;
 #ifdef MEM3DG_WITH_NETCDF
-  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
-                                  TrajFile::NcFile::replace);
+  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh,
+                                         f.refVpg, TrajFile::NcFile::replace);
 #endif
-  
+
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
     if (f.mesh.hasBoundary()) {
       f.getTubeForces();
@@ -178,7 +181,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       fd.writeTotalEnergy(frame, totalEnergy);
 #endif
 
-      L2ErrorNorm = getL2ErrorNorm(f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
+      L2ErrorNorm = getL2ErrorNorm(
+          f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
       dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
 
       if (f.P.Kb != 0) {
@@ -209,35 +213,40 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         dFace = 0.0;
       }
 
-      char buffer[50];
-      sprintf(buffer, "/t=%d", int(i * dt * 100));
-      f.richData.write(outputDir + buffer + ".ply");
-      getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea,
-                   dVolume, dBE, dFace, BE, sE, pE, kE, cE, totalEnergy,
-                   L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                   f.isVertexShift, inputMesh);
-      // getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
+      if (verbosity > 1) {
+        char buffer[50];
+        sprintf(buffer, "/t=%d", int(i * dt * 100));
+        f.richData.write(outputDir + buffer + ".ply");
+        getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea,
+                     dVolume, dBE, dFace, BE, sE, pE, kE, cE, totalEnergy,
+                     L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
+                     f.isVertexShift, inputMesh);
+        // getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
+      }
+
       // 2. print
-      std::cout << "\n"
-                << "Time: " << i * dt + init_time << "\n"
-                << "Frame: "<< frame << "\n"
-                << "dArea: " << dArea << "\n"
-                << "dVolume:  " << dVolume << "\n"
-                << "dBE: " << dBE << "\n"
-                << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
-                << "Bending energy: " << BE << "\n"
-                << "Total energy (exclude V^ext): " << totalEnergy << "\n"
-                << "L2 error norm: " << L2ErrorNorm << "\n"
-                << "COM: "
-                << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
-                           .colwise()
-                           .sum() /
-                       f.vpg.inputVertexPositions.raw().rows()
-                << "\n"
-                << "Height: "
-                << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.P.ptInd)].z)
-                << "\n"
-                << "Increase force spring constant Kf to " << f.P.Kf << "\n";
+      if (verbosity > 0) {
+        std::cout << "\n"
+                  << "Time: " << i * dt + init_time << "\n"
+                  << "Frame: " << frame << "\n"
+                  << "dArea: " << dArea << "\n"
+                  << "dVolume:  " << dVolume << "\n"
+                  << "dBE: " << dBE << "\n"
+                  << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
+                  << "Bending energy: " << BE << "\n"
+                  << "Total energy (exclude V^ext): " << totalEnergy << "\n"
+                  << "L2 error norm: " << L2ErrorNorm << "\n"
+                  << "COM: "
+                  << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
+                             .colwise()
+                             .sum() /
+                         f.vpg.inputVertexPositions.raw().rows()
+                  << "\n"
+                  << "Height: "
+                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.P.ptInd)].z)
+                  << "\n"
+                  << "Increase force spring constant Kf to " << f.P.Kf << "\n";
+      }
 
       /* for optimization purpose
       // 3.1.1 compare and adjust (in the case of vesicle simulation)
@@ -285,8 +294,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       */
 
       // 3.3 fail and exit
-      if (abs(dL2ErrorNorm) > 5) {
-        break;
+      if (verbosity > 0) {
+        if (abs(dL2ErrorNorm) > 5) {
+          std::cout << "Error Norm changes rapidly. Save data and quit."
+                    << std::endl;
+          break;
+        }
       }
 
       oldL2ErrorNorm = L2ErrorNorm;
@@ -338,16 +351,17 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     */
 
     // 3.3.B finish and exit
-    if (i == int((total_time - init_time) / dt)) {
-      std::cout << "\n"
-                << "Simulation finished, and data saved to " + outputDir
-                << std::endl;
-      getStatusLog(outputDir + "/final_report.txt", f, dt, i * dt, frame, dArea,
-                   dVolume, dBE, dFace, BE, sE, pE, kE, cE, totalEnergy,
-                   L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                   f.isVertexShift, inputMesh);
+    if (verbosity > 0) {
+      if (i == int((total_time - init_time) / dt)) {
+        std::cout << "\n"
+                  << "Simulation finished, and data saved to " + outputDir
+                  << std::endl;
+        getStatusLog(outputDir + "/final_report.txt", f, dt, i * dt, frame,
+                     dArea, dVolume, dBE, dFace, BE, sE, pE, kE, cE,
+                     totalEnergy, L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
+                     f.isVertexShift, inputMesh);
+      }
     }
-
   } // periodic save, print and adjust
 }
 

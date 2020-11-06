@@ -7,6 +7,7 @@
 #include "mem3dg/solver/icosphere.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/util.h"
+#include "mem3dg/solver/integrator.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -43,9 +44,9 @@ int main() {
   richData.addMeshConnectivity();
   richData.addGeometry(*ptrVpg);
 
-  double Kb = 8.22e-5, H0 = 0, sharpness = 10, r_H0 = 100, Kst = 0, Ksl = 0,
+  double Kb = 8.22e-5, H0 = 0, sharpness = 10, r_H0 = 100, Kst = 10, Ksl = 0,
          Kse = 0, epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Kf = 0,
-         conc = 25, height = 0, radius = 100, kt = 0, h = 1e-5, Kv = 5e-2,
+         conc = 25, height = 0, radius = 0.9, kt = 0, h = 1e-5, Kv = 5e-2,
          Ksg = 0.1, mollifyFactor = 1e-3;
   size_t ptInd = 1;
 
@@ -60,16 +61,16 @@ int main() {
   std::cout << "Initiating the system ...";
   ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg,    Kst,   Ksl,
                           Kse,   Kv,    epsilon,   Bc,   gamma,  Vt,    kt,
-                          sigma, ptInd, Kf,        conc, height, radius};
+                          sigma + 1e-18, ptInd, Kf, conc, height, radius};
   ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
-  // double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 5e-1. tMollify = 100, 
-  // ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-  //                                        Kv, Ksg, tSave, tMollify,
-  //                                        inputMesh, outputDir);
+  double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1, tMollify = 100;
+  size_t verbosity = 0;
+  ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
+                                         Kv, Ksg, tSave, tMollify, verbosity);
   delete ptrRefVpg;
   return 0;
 }
