@@ -164,15 +164,16 @@ int genIcosphere(size_t nSub, std::string path, double R) {
   return 0;
 }
 
-int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub,
-               bool isTuftedLaplacian, bool isProtein, double mollifyFactor,
-               bool isVertexShift, double Kb, double H0, double sharpness,
-               double r_H0, double Kse, double Kst, double Ksl,
-               std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
-               double Bc, double Vt, double gamma, double kt, size_t ptInd,
-               double Kf, double conc, double height, double radius, double h,
-               double T, double eps, double closeZone, double increment,
-               double tSave, double tMollify, std::string outputDir) {
+int driver_ply(const size_t verbosity, std::string inputMesh,
+               std::string refMesh, size_t nSub, bool isTuftedLaplacian,
+               bool isProtein, double mollifyFactor, bool isVertexShift,
+               double Kb, double H0, double sharpness, double r_H0, double Kse,
+               double Kst, double Ksl, std::vector<double> Ksg,
+               std::vector<double> Kv, double epsilon, double Bc, double Vt,
+               double gamma, double kt, size_t ptInd, double Kf, double conc,
+               double height, double radius, double h, double T, double eps,
+               double closeZone, double increment, double tSave,
+               double tMollify, std::string outputDir) {
 
   signal(SIGINT, signalHandler);
   // pybind11::scoped_interpreter guard{};
@@ -238,17 +239,17 @@ int driver_ply(std::string inputMesh, std::string refMesh, size_t nSub,
 
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv[1], Ksg[1], tSave, tMollify,
-                                         inputMesh, outputDir);
+                                         Kv[1], Ksg[1], tSave, tMollify, verbosity,
+                                          inputMesh, outputDir);
 
   return 0;
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-int driver_nc(std::string trajFile, std::size_t startingFrame,
-              bool isTuftedLaplacian, bool isProtein, double mollifyFactor,
-              bool isVertexShift, double Kb, double H0, double sharpness,
-              double r_H0, double Kse, double Kst, double Ksl,
+int driver_nc(const size_t verbosity, std::string trajFile,
+              std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
+              double mollifyFactor, bool isVertexShift, double Kb, double H0,
+              double sharpness, double r_H0, double Kse, double Kst, double Ksl,
               std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
               double Bc, double Vt, double gamma, double kt, size_t ptInd,
               double Kf, double conc, double height, double radius, double h,
@@ -311,7 +312,7 @@ int driver_nc(std::string trajFile, std::size_t startingFrame,
 
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv[1], Ksg[1], tSave, tMollify,
+                                         Kv[1], Ksg[1], tSave, tMollify, verbosity,
                                          trajFile, outputDir, time);
 
   delete ptrRefVpg;

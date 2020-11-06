@@ -49,7 +49,8 @@ getFreeEnergy(Force &f) {
   // auto A = f.L.transpose() * f.M_inv * f.L; //could further cached since the
   // same for all time pt for (size_t i = 0; i < positions.rows(); i++) {
   // for
-  //(size_t j = 0; j < positions.rows(); j++) { 		Eb += positions.row(i)
+  //(size_t j = 0; j < positions.rows(); j++) { 		Eb +=
+  //positions.row(i)
   //* A * positions.transpose().col(j);
   //	}
   //}
@@ -68,7 +69,10 @@ getFreeEnergy(Force &f) {
     double A_difference = f.surfaceArea - f.targetSurfaceArea;
     double V_difference = f.volume - f.refVolume * f.P.Vt;
 
-    bE = (f.P.Kb * f.M * (f.mask.cast<double>().array() * H_difference.array() * H_difference.array()).matrix())
+    bE = (f.P.Kb * f.M *
+          (f.mask.cast<double>().array() * H_difference.array() *
+           H_difference.array())
+              .matrix())
              .sum();
     sE = f.P.Ksg * A_difference;
     pE = -f.P.Kv * V_difference;
@@ -88,7 +92,10 @@ getFreeEnergy(Force &f) {
     double A_difference = f.surfaceArea - f.targetSurfaceArea;
     double V_difference = f.volume - f.refVolume * f.P.Vt;
 
-    bE = (f.P.Kb * f.M * (f.mask.cast<double>().array() * H_difference.array() * H_difference.array()).matrix())
+    bE = (f.P.Kb * f.M *
+          (f.mask.cast<double>().array() * H_difference.array() *
+           H_difference.array())
+              .matrix())
              .sum();
     sE = f.P.Ksg * A_difference * A_difference / f.targetSurfaceArea / 2;
     pE = f.P.Kv * V_difference * V_difference / (f.refVolume * f.P.Vt) / 2;
