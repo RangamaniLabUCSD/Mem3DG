@@ -86,8 +86,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
   std::size_t frame = 0;
 #ifdef MEM3DG_WITH_NETCDF
-  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh,
-                                         f.refVpg, TrajFile::NcFile::replace);
+  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
+                                  TrajFile::NcFile::replace);
 #endif
 
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
@@ -107,17 +107,17 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                        EigenMap<double, 3>(f.capillaryPressure) +
                        EigenMap<double, 3>(f.insidePressure) +
                        EigenMap<double, 3>(f.externalPressure);
-
-    removeTranslation(physicalPressure);
-    removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-                   physicalPressure);
-
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                                    gc::EigenMap<double, 3>(f.stochasticForce));
+    if (!f.mesh.hasBoundary()) {
+      removeTranslation(physicalPressure);
+      removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+                     physicalPressure);
 
-    removeTranslation(numericalPressure);
-    removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-                   numericalPressure);
+      removeTranslation(numericalPressure);
+      removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+                     numericalPressure);
+    }
 
     newTotalPressure = physicalPressure + numericalPressure;
 
