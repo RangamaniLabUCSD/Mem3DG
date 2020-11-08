@@ -34,9 +34,10 @@ DLL_PUBLIC void stormerVerlet(Force &f, double dt, double total_time,
 
 /*
 verbosity:
-  0: Traj.nc
-  1: All above + console printing
-  2: All above + txt + .ply
+  0: no output file
+  1: Traj.nc
+  2: All above + console printing
+  3: All above + txt + .ply
 */
 DLL_PUBLIC void
 velocityVerlet(Force &f, double dt, double total_time, double tolerance,

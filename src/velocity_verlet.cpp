@@ -42,7 +42,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     std::string outputDir, double init_time) {
 
   // print out a .txt file listing all parameters used
-  if (verbosity > 1) {
+  if (verbosity > 2) {
     getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
   }
 
@@ -86,8 +86,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
   std::size_t frame = 0;
 #ifdef MEM3DG_WITH_NETCDF
-  TrajFile fd = TrajFile::newFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
-                                  TrajFile::NcFile::replace);
+  TrajFile fd;
+  if (verbosity > 0) {
+    fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
+                                 TrajFile::NcFile::replace);
+  }
 #endif
 
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
@@ -160,25 +163,27 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
       std::tie(totalEnergy, BE, sE, pE, kE, cE) = getFreeEnergy(f);
 #ifdef MEM3DG_WITH_NETCDF
-      frame = fd.getNextFrameIndex();
-      fd.writeTime(frame, i * dt + init_time);
-      fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
-      fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
-      fd.writeAngles(frame, f.vpg.cornerAngles.raw());
+      if (verbosity > 0) {
+        frame = fd.getNextFrameIndex();
+        fd.writeTime(frame, i * dt + init_time);
+        fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
+        fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
+        fd.writeAngles(frame, f.vpg.cornerAngles.raw());
 
-      fd.writeMeanCurvature(frame, H.raw());
-      fd.writeSponCurvature(frame, H0.raw());
-      fd.writeExternalPressure(frame, f_ext.raw());
-      fd.writePhysicalPressure(frame, fn.raw());
-      fd.writeCapillaryPressure(frame, ft.raw());
-      fd.writeBendingPressure(frame, fb.raw());
+        fd.writeMeanCurvature(frame, H.raw());
+        fd.writeSponCurvature(frame, H0.raw());
+        fd.writeExternalPressure(frame, f_ext.raw());
+        fd.writePhysicalPressure(frame, fn.raw());
+        fd.writeCapillaryPressure(frame, ft.raw());
+        fd.writeBendingPressure(frame, fb.raw());
 
-      fd.writeBendEnergy(frame, BE);
-      fd.writeSurfEnergy(frame, sE);
-      fd.writePressEnergy(frame, pE);
-      fd.writeKineEnergy(frame, kE);
-      fd.writeChemEnergy(frame, cE);
-      fd.writeTotalEnergy(frame, totalEnergy);
+        fd.writeBendEnergy(frame, BE);
+        fd.writeSurfEnergy(frame, sE);
+        fd.writePressEnergy(frame, pE);
+        fd.writeKineEnergy(frame, kE);
+        fd.writeChemEnergy(frame, cE);
+        fd.writeTotalEnergy(frame, totalEnergy);
+      }
 #endif
 
       L2ErrorNorm = getL2ErrorNorm(
@@ -213,7 +218,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         dFace = 0.0;
       }
 
-      if (verbosity > 1) {
+      if (verbosity > 2) {
         char buffer[50];
         sprintf(buffer, "/t=%d", int(i * dt * 100));
         f.richData.write(outputDir + buffer + ".ply");
@@ -225,7 +230,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       }
 
       // 2. print
-      if (verbosity > 0) {
+      if (verbosity > 1) {
         std::cout << "\n"
                   << "Time: " << i * dt + init_time << "\n"
                   << "Frame: " << frame << "\n"
@@ -294,7 +299,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       */
 
       // 3.3 fail and exit
-      if (verbosity > 0) {
+      if (verbosity > 1) {
         if (abs(dL2ErrorNorm) > 5) {
           std::cout << "Error Norm changes rapidly. Save data and quit."
                     << std::endl;
