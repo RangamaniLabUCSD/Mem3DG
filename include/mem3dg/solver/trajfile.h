@@ -104,7 +104,7 @@ static const std::string PHYSPRESS_VAR = "physpressure";
 static const std::string CAPPRESS_VAR = "cappressure";
 /// Name of the bending pressure data
 static const std::string BENDPRESS_VAR = "bendpressure";
-/// Name of the bending energy data 
+/// Name of the bending energy data
 static const std::string BENDENER_VAR = "bendenergy";
 /// Name of the surface energy data
 static const std::string SURFENER_VAR = "surfenergy";
@@ -136,7 +136,122 @@ public:
   // using EigenVector_T = Eigen::Matrix<T, Eigen::Dynamic, SPATIAL_DIMS,
   // Eigen::RowMajor>;
 
-  TrajFile() = delete;
+  TrajFile() : writeable(false), fd(nullptr){};
+
+  void open(const std::string &filename, const NcFile::FileMode fMode) {
+    if (fd != nullptr) {
+      throw std::runtime_error("Cannot open an already open ...");
+    }
+
+    fd = new NcFile(filename, fMode);
+    writeable = fMode != NcFile::read;
+    check_metadata();
+
+    frame_dim = fd->getDim(FRAME_NAME);
+    npolygons_dim = fd->getDim(NPOLYGONS_NAME);
+    nvertices_dim = fd->getDim(NVERTICES_NAME);
+    ncorners_dim = fd->getDim(NCORNERS_NAME);
+    spatial_dim = fd->getDim(SPATIAL_DIMS_NAME);
+    polygon_order_dim = fd->getDim(POLYGON_ORDER_NAME);
+
+    topology = fd->getVar(TOPO_VAR);
+    refcoord = fd->getVar(REFCOORD_VAR);
+    angle_var = fd->getVar(ANGLE_VAR);
+    time_var = fd->getVar(TIME_VAR);
+    coord_var = fd->getVar(COORD_VAR);
+    vel_var = fd->getVar(VEL_VAR);
+    meancurve_var = fd->getVar(MEANCURVE_VAR);
+    sponcurve_var = fd->getVar(SPONCURVE_VAR);
+    externpress_var = fd->getVar(EXTERNPRESS_VAR);
+    physpress_var = fd->getVar(PHYSPRESS_VAR);
+    cappress_var = fd->getVar(CAPPRESS_VAR);
+    bendpress_var = fd->getVar(BENDPRESS_VAR);
+    bendener_var = fd->getVar(BENDENER_VAR);
+  }
+
+  void createNewFile(const std::string &filename, gcs::SurfaceMesh &mesh,
+                     gcs::VertexPositionGeometry &refVpg,
+                     const NcFile::FileMode fMode) {
+    if (fd != nullptr) {
+      throw std::runtime_error("Cannot open an already open ...");
+    }
+
+    writeable = true;
+
+    fd = new NcFile(filename, fMode);
+    // initialize data
+    fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
+    fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
+
+    frame_dim = fd->addDim(FRAME_NAME);
+    npolygons_dim = fd->addDim(NPOLYGONS_NAME, mesh.nFaces());
+    nvertices_dim = fd->addDim(NVERTICES_NAME, mesh.nVertices());
+    ncorners_dim = fd->addDim(NCORNERS_NAME, mesh.nCorners());
+    spatial_dim = fd->addDim(SPATIAL_DIMS_NAME, SPATIAL_DIMS);
+    polygon_order_dim = fd->addDim(POLYGON_ORDER_NAME, POLYGON_ORDER);
+
+    // Initialize topology data block
+    topology =
+        fd->addVar(TOPO_VAR, nc::ncUint, {npolygons_dim, polygon_order_dim});
+
+    // Populate topology data
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
+        faceMatrix = getFaceVertexMatrix(mesh);
+    std::uint32_t *topodata = faceMatrix.data();
+    topology.putVar(topodata);
+
+    // Initialize reference coordinate data block
+    refcoord = fd->addVar(REFCOORD_VAR, netCDF::ncDouble,
+                          {nvertices_dim, spatial_dim});
+
+    // Populate reference coordinate data
+    double *refcoorddata;
+    refcoorddata = gc::EigenMap<double, 3>(refVpg.inputVertexPositions).data();
+    refcoord.putVar(refcoorddata);
+
+    time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
+    time_var.putAtt(UNITS, TIME_UNITS);
+
+    coord_var = fd->addVar(COORD_VAR, netCDF::ncDouble,
+                           {frame_dim, nvertices_dim, spatial_dim});
+    coord_var.putAtt(UNITS, LEN_UNITS);
+
+    angle_var =
+        fd->addVar(ANGLE_VAR, netCDF::ncDouble, {frame_dim, ncorners_dim});
+
+    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
+                         {frame_dim, nvertices_dim, spatial_dim});
+
+    meancurve_var =
+        fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
+    sponcurve_var =
+        fd->addVar(SPONCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
+    externpress_var = fd->addVar(EXTERNPRESS_VAR, netCDF::ncDouble,
+                                 {frame_dim, nvertices_dim});
+
+    physpress_var =
+        fd->addVar(PHYSPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
+    cappress_var =
+        fd->addVar(CAPPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
+    bendpress_var =
+        fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
+    bendener_var = fd->addVar(BENDENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    surfener_var = fd->addVar(SURFENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    pressener_var = fd->addVar(PRESSENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    kineener_var = fd->addVar(KINEENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    chemener_var = fd->addVar(CHEMENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
+  }
 
   TrajFile(TrajFile &&rhs) = default;
 
@@ -224,8 +339,9 @@ public:
 
   void writeAngles(const std::size_t idx,
                    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
-  
-  Eigen::Matrix<double, Eigen::Dynamic, 1> getAngles(const std::size_t idx) const;
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getAngles(const std::size_t idx) const;
 
   void writeVelocity(const std::size_t idx, const EigenVector &data);
 
@@ -298,7 +414,6 @@ public:
 
   double getTotalEnergy(const std::size_t idx) const;
 
-
 private:
   /**
    * @brief Private constructor for opening an existing file.
@@ -312,30 +427,7 @@ private:
   TrajFile(const std::string &filename, const NcFile::FileMode fMode)
       : filename(filename), // fd(new NcFile(filename, fMode)),
         writeable(fMode != NcFile::read) {
-
-    fd = new NcFile(filename, fMode);
-    check_metadata();
-
-    frame_dim = fd->getDim(FRAME_NAME);
-    npolygons_dim = fd->getDim(NPOLYGONS_NAME);
-    nvertices_dim = fd->getDim(NVERTICES_NAME);
-    ncorners_dim = fd->getDim(NCORNERS_NAME);
-    spatial_dim = fd->getDim(SPATIAL_DIMS_NAME);
-    polygon_order_dim = fd->getDim(POLYGON_ORDER_NAME);
-
-    topology = fd->getVar(TOPO_VAR);
-    refcoord = fd->getVar(REFCOORD_VAR);
-    angle_var = fd->getVar(ANGLE_VAR);
-    time_var = fd->getVar(TIME_VAR);
-    coord_var = fd->getVar(COORD_VAR);
-    vel_var = fd->getVar(VEL_VAR);
-    meancurve_var = fd->getVar(MEANCURVE_VAR);
-    sponcurve_var = fd->getVar(SPONCURVE_VAR);
-    externpress_var = fd->getVar(EXTERNPRESS_VAR);
-    physpress_var = fd->getVar(PHYSPRESS_VAR);
-    cappress_var = fd->getVar(CAPPRESS_VAR);
-    bendpress_var = fd->getVar(BENDPRESS_VAR);
-    bendener_var = fd->getVar(BENDENER_VAR);
+      open(filename, fMode);
   }
 
   /**
@@ -351,80 +443,7 @@ private:
            gcs::VertexPositionGeometry &refVpg, const NcFile::FileMode fMode)
       : filename(filename), // fd(new NcFile(filename, fMode)),
         writeable(true) {
-
-    fd = new NcFile(filename, fMode);
-    // initialize data
-    fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
-    fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
-
-    frame_dim = fd->addDim(FRAME_NAME);
-    npolygons_dim = fd->addDim(NPOLYGONS_NAME, mesh.nFaces());
-    nvertices_dim = fd->addDim(NVERTICES_NAME, mesh.nVertices());
-    ncorners_dim = fd->addDim(NCORNERS_NAME, mesh.nCorners());
-    spatial_dim = fd->addDim(SPATIAL_DIMS_NAME, SPATIAL_DIMS);
-    polygon_order_dim = fd->addDim(POLYGON_ORDER_NAME, POLYGON_ORDER);
-
-    // Initialize topology data block
-    topology =
-        fd->addVar(TOPO_VAR, nc::ncUint, {npolygons_dim, polygon_order_dim});
-
-    // Populate topology data
-    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
-        faceMatrix = getFaceVertexMatrix(mesh);
-    std::uint32_t *topodata = faceMatrix.data();
-    topology.putVar(topodata);
-
-    // Initialize reference coordinate data block
-    refcoord = fd->addVar(REFCOORD_VAR, netCDF::ncDouble,
-                          {nvertices_dim, spatial_dim});
-
-    // Populate reference coordinate data
-    double *refcoorddata;
-    refcoorddata = gc::EigenMap<double, 3>(refVpg.inputVertexPositions).data();
-    refcoord.putVar(refcoorddata);
-
-    time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
-    time_var.putAtt(UNITS, TIME_UNITS);
-
-    coord_var = fd->addVar(COORD_VAR, netCDF::ncDouble,
-                           {frame_dim, nvertices_dim, spatial_dim});
-    coord_var.putAtt(UNITS, LEN_UNITS);
-
-    angle_var =
-        fd->addVar(ANGLE_VAR, netCDF::ncDouble, {frame_dim, ncorners_dim});
-
-    vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
-                         {frame_dim, nvertices_dim, spatial_dim});
-
-    meancurve_var =
-        fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    sponcurve_var =
-        fd->addVar(SPONCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    externpress_var = fd->addVar(EXTERNPRESS_VAR, netCDF::ncDouble,
-                                 {frame_dim, nvertices_dim});
-
-    physpress_var =
-        fd->addVar(PHYSPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    cappress_var =
-        fd->addVar(CAPPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    bendpress_var =
-        fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-
-    bendener_var = fd->addVar(BENDENER_VAR, netCDF::ncDouble, {frame_dim});
-
-    surfener_var = fd->addVar(SURFENER_VAR, netCDF::ncDouble, {frame_dim});
-
-    pressener_var = fd->addVar(PRESSENER_VAR, netCDF::ncDouble, {frame_dim});
-
-    kineener_var = fd->addVar(KINEENER_VAR, netCDF::ncDouble, {frame_dim});
-
-    chemener_var = fd->addVar(CHEMENER_VAR, netCDF::ncDouble, {frame_dim});
-
-    totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
+    createNewFile(filename, mesh, refVpg, fMode);
   }
 
   /// Bound NcFile
