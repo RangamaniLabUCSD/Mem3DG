@@ -122,7 +122,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                      numericalPressure);
     }
 
-    newTotalPressure = physicalPressure + numericalPressure;
+    newTotalPressure = rowwiseScaling(f.mask.cast<double>(),physicalPressure + numericalPressure);
 
     // periodically save the geometric files, print some info, compare and
     // adjust
@@ -314,10 +314,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
     // integration
     pos_e += vel_e * dt +
-             hdt2 * rowwiseScaling(f.mask.cast<double>(), totalPressure);
-    vel_e += rowwiseScaling(f.mask.cast<double>(),
-                            totalPressure + newTotalPressure) *
-             hdt;
+             hdt2 * totalPressure;
+    vel_e += (totalPressure + newTotalPressure) * hdt;
     totalPressure = newTotalPressure;
 
     if (f.isProtein) {
