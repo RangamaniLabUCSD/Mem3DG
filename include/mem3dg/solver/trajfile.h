@@ -116,12 +116,16 @@ static const std::string KINEENER_VAR = "kineenergy";
 static const std::string CHEMENER_VAR = "chemenergy";
 /// Name of the chemical energy data
 static const std::string TOTALENER_VAR = "totalenergy";
-/**
- * @class TrajFile
- * @brief Trajectory interface to help with manipulating trajectories
- *
- */
-class DLL_PUBLIC TrajFile {
+/// Name of the mask data
+static const std::string MASK_VAR = "mask";
+/// Name of the curvature difference data
+static const std::string H_H0_VAR = "curvaturediff";
+    /**
+     * @class TrajFile
+     * @brief Trajectory interface to help with manipulating trajectories
+     *
+     */
+    class DLL_PUBLIC TrajFile {
 private:
   TrajFile *operator=(const TrajFile &rhs) = delete;
   TrajFile(const TrajFile &rhs) = delete;
@@ -167,6 +171,8 @@ public:
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
+    mask_var = fd->getVar(MASK_VAR);
+    H_H0_var = fd->getVar(H_H0_VAR);
   }
 
   void createNewFile(const std::string &filename, gcs::SurfaceMesh &mesh,
@@ -208,6 +214,8 @@ public:
     double *refcoorddata;
     refcoorddata = gc::EigenMap<double, 3>(refVpg.inputVertexPositions).data();
     refcoord.putVar(refcoorddata);
+
+    mask_var = fd->addVar(MASK_VAR, netCDF::ncByte, {nvertices_dim});
 
     time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
     time_var.putAtt(UNITS, TIME_UNITS);
@@ -251,6 +259,8 @@ public:
     chemener_var = fd->addVar(CHEMENER_VAR, netCDF::ncDouble, {frame_dim});
 
     totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    H_H0_var = fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
   }
 
   TrajFile(TrajFile &&rhs) = default;
@@ -343,6 +353,10 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getAngles(const std::size_t idx) const;
 
+  void writeMask(const Eigen::Matrix<int, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<int, Eigen::Dynamic, 1> getMask() const;
+
   void writeVelocity(const std::size_t idx, const EigenVector &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
@@ -388,7 +402,11 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getBendingPressure(const std::size_t idx) const;
 
-  EigenVector getVelocities(const std::size_t idx) const;
+  void writeH_H0_diff(const std::size_t idx,
+                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getH_H0_diff(const std::size_t idx) const;
 
   void writeBendEnergy(const std::size_t idx, const double bendEnergy);
 
@@ -427,7 +445,7 @@ private:
   TrajFile(const std::string &filename, const NcFile::FileMode fMode)
       : filename(filename), // fd(new NcFile(filename, fMode)),
         writeable(fMode != NcFile::read) {
-      open(filename, fMode);
+    open(filename, fMode);
   }
 
   /**
@@ -476,6 +494,8 @@ private:
   nc::NcVar kineener_var;
   nc::NcVar chemener_var;
   nc::NcVar totalener_var;
+  nc::NcVar mask_var;
+  nc::NcVar H_H0_var;
 
   /// Filepath to file
   std::string filename;

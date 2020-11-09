@@ -89,7 +89,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("fileName"), py::arg("ref_coord"), py::arg("velocity"),
                py::arg("mean_curvature"), py::arg("spon_curvature"),
                py::arg("ext_pressure"), py::arg("physical_pressure"),
-               py::arg("capillary_pressure"), py::arg("bending_pressure"));
+               py::arg("capillary_pressure"), py::arg("bending_pressure"),
+               py::arg("mask"), py::arg("H_H0"));
 #endif
 };
 } // namespace ddgsolver

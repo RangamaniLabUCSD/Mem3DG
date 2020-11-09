@@ -51,7 +51,7 @@ bool TrajFile::check_metadata() {
   return true;
 }
 
-// time & coordinate 
+// time & coordinate
 void TrajFile::writeTime(const std::size_t idx, const double time) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
@@ -84,7 +84,7 @@ TrajFile::getTimeAndCoords(const std::size_t idx) const {
   return std::tie(time, vec);
 }
 
-// topology 
+// topology
 Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
 TrajFile::getTopology() const {
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> vec(
@@ -94,14 +94,13 @@ TrajFile::getTopology() const {
 }
 
 // reference coordinate
-TrajFile::EigenVector
-TrajFile::getRefcoordinate() const {
+TrajFile::EigenVector TrajFile::getRefcoordinate() const {
   EigenVector vec(nvertices_dim.getSize(), SPATIAL_DIMS);
   refcoord.getVar({0, 0}, {nvertices_dim.getSize(), SPATIAL_DIMS}, vec.data());
   return vec;
 }
 
-// corner angles 
+// corner angles
 void TrajFile::writeAngles(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
@@ -110,8 +109,7 @@ void TrajFile::writeAngles(
 
   assert(data.rows() == ncorners_dim.getSize());
 
-  angle_var.putVar({idx, 0}, {1, ncorners_dim.getSize()},
-                 data.data());
+  angle_var.putVar({idx, 0}, {1, ncorners_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -124,8 +122,21 @@ TrajFile::getAngles(const std::size_t idx) const {
   return vec;
 }
 
+// Mask
+void TrajFile::writeMask(const Eigen::Matrix<int, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  assert(data.rows() == nvertices_dim.getSize());
+  mask_var.putVar({0}, {nvertices_dim.getSize()}, data.data());
+}
 
-// velocity 
+Eigen::Matrix<int, Eigen::Dynamic, 1> TrajFile::getMask() const {
+  Eigen::Matrix<int, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+  mask_var.getVar({0}, {nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
+// velocity
 void TrajFile::writeVelocity(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
@@ -171,7 +182,7 @@ TrajFile::getMeanCurvature(const std::size_t idx) const {
   return vec;
 }
 
-// spontaneous curvature 
+// spontaneous curvature
 void TrajFile::writeSponCurvature(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
@@ -193,7 +204,29 @@ TrajFile::getSponCurvature(const std::size_t idx) const {
   return vec;
 }
 
-// external pressure 
+// mean - spon curvature
+void TrajFile::writeH_H0_diff(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  H_H0_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getH_H0_diff(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  H_H0_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
+// external pressure
 void TrajFile::writeExternalPressure(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
@@ -211,12 +244,11 @@ TrajFile::getExternalPressure(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  externpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
-                               vec.data());
+  externpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
-// physical pressure 
+// physical pressure
 void TrajFile::writePhysicalPressure(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
@@ -225,8 +257,7 @@ void TrajFile::writePhysicalPressure(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  physpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()},
-                              data.data());
+  physpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -235,12 +266,11 @@ TrajFile::getPhysicalPressure(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  physpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
-                              vec.data());
+  physpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
-// capillary pressure 
+// capillary pressure
 void TrajFile::writeCapillaryPressure(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
@@ -249,8 +279,7 @@ void TrajFile::writeCapillaryPressure(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  cappress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()},
-                               data.data());
+  cappress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -259,12 +288,11 @@ TrajFile::getCapillaryPressure(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  cappress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
-                               vec.data());
+  cappress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
-// bending pressure 
+// bending pressure
 void TrajFile::writeBendingPressure(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
@@ -273,8 +301,7 @@ void TrajFile::writeBendingPressure(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  bendpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()},
-                               data.data());
+  bendpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -283,8 +310,7 @@ TrajFile::getBendingPressure(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  bendpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()},
-                               vec.data());
+  bendpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
