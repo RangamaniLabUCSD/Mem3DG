@@ -139,8 +139,8 @@ public:
   TrajFile() : writeable(false), fd(nullptr){};
 
   void open(const std::string &filename, const NcFile::FileMode fMode) {
-    if (fd != nullptr) {
-      throw std::runtime_error("Cannot open an already open ...");
+    if ((fd != nullptr) && (fMode != NcFile::read)) {
+      throw std::runtime_error("Cannot open an already opened ...");
     }
 
     fd = new NcFile(filename, fMode);

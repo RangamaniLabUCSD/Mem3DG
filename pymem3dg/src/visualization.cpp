@@ -13,9 +13,9 @@
 //
 
 #ifdef MEM3DG_WITH_NETCDF
+#include <csignal>
 #include <iostream>
 #include <time.h>
-#include <csignal>
 
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
@@ -30,10 +30,10 @@
 
 void signalHandler(int signum);
 
-void wait(unsigned timeout)
-{
-  timeout += std::clock(); 
-  while(std::clock() < timeout) continue;
+void wait(unsigned timeout) {
+  timeout += std::clock();
+  while (std::clock() < timeout)
+    continue;
 }
 
 using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
@@ -43,71 +43,122 @@ using EigenTopVec =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
-                       int &idx) {
+                       int &idx, const bool ref_coord, const bool velocity,
+                       const bool mean_curvature, const bool spon_curvature,
+                       const bool ext_pressure, const bool physical_pressure,
+                       const bool capillary_pressure,
+                       const bool bending_pressure) {
+
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
   }
 
   double time;
   EigenVectorX3D coords;
-  EigenVectorX3D refcoords = fd.getRefcoordinate();
-  EigenVectorX3D vel = fd.getVelocity(idx);
-  EigenVectorX1D H = fd.getMeanCurvature(idx);
-  EigenVectorX1D H0 = fd.getSponCurvature(idx);
-  EigenVectorX1D f_ext = fd.getExternalPressure(idx);
-  EigenVectorX1D fn = fd.getPhysicalPressure(idx);
-  EigenVectorX1D ft = fd.getCapillaryPressure(idx);
-  EigenVectorX1D fb = fd.getBendingPressure(idx);
   std::tie(time, coords) = fd.getTimeAndCoords(idx);
-
-  // polyscope::registerSurfaceMesh("Mesh", coords, top);
   mesh->updateVertexPositions(coords);
-  mesh->addVertexVectorQuantity("velocity", vel);
-  mesh->addVertexVectorQuantity("ref_coordinate", refcoords);
-  mesh->addVertexScalarQuantity("mean_curvature", H);
-  mesh->addVertexScalarQuantity("spon_curvature", H0);
-  mesh->addVertexScalarQuantity("external_pressure", f_ext);
-  mesh->addVertexScalarQuantity("physical_pressure", fn);
-  mesh->addVertexScalarQuantity("capillary_pressure", ft);
-  mesh->addVertexScalarQuantity("bending_pressure", fb);
+
+  if (ref_coord) {
+    EigenVectorX3D refcoords = fd.getRefcoordinate();
+    mesh->addVertexVectorQuantity("ref_coordinate", refcoords);
+  }
+
+  if (velocity) {
+    EigenVectorX3D vel = fd.getVelocity(idx);
+    mesh->addVertexVectorQuantity("velocity", vel);
+  }
+  if (mean_curvature) {
+    EigenVectorX1D H = fd.getMeanCurvature(idx);
+    mesh->addVertexScalarQuantity("mean_curvature", H);
+  }
+  if (spon_curvature) {
+    EigenVectorX1D H0 = fd.getSponCurvature(idx);
+    mesh->addVertexScalarQuantity("spon_curvature", H0);
+  }
+  if (ext_pressure) {
+    EigenVectorX1D f_ext = fd.getExternalPressure(idx);
+    mesh->addVertexScalarQuantity("external_pressure", f_ext);
+  }
+  if (physical_pressure) {
+    EigenVectorX1D fn = fd.getPhysicalPressure(idx);
+    mesh->addVertexScalarQuantity("physical_pressure", fn);
+  }
+  if (capillary_pressure) {
+    EigenVectorX1D ft = fd.getCapillaryPressure(idx);
+    mesh->addVertexScalarQuantity("capillary_pressure", ft);
+  }
+  if (bending_pressure) {
+    EigenVectorX1D fb = fd.getBendingPressure(idx);
+    mesh->addVertexScalarQuantity("bending_pressure", fb);
+  }
+  // polyscope::registerSurfaceMesh("Mesh", coords, top);
 }
 
-polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd) {
+polyscope::SurfaceMesh *
+registerSurfaceMesh(ddgsolver::TrajFile &fd, const bool ref_coord,
+                    const bool velocity, const bool mean_curvature,
+                    const bool spon_curvature, const bool ext_pressure,
+                    const bool physical_pressure, const bool capillary_pressure,
+                    const bool bending_pressure) {
   double time;
   EigenVectorX3D coords;
-  EigenVectorX3D refcoords = fd.getRefcoordinate();
-  EigenVectorX3D vel = fd.getVelocity(0);
   EigenTopVec top = fd.getTopology();
-  EigenVectorX1D H = fd.getMeanCurvature(0);
-  EigenVectorX1D H0 = fd.getSponCurvature(0);
-  EigenVectorX1D f_ext = fd.getExternalPressure(0);
-  EigenVectorX1D fn = fd.getPhysicalPressure(0);
-  EigenVectorX1D ft = fd.getCapillaryPressure(0);
-  EigenVectorX1D fb = fd.getBendingPressure(0);
   std::tie(time, coords) = fd.getTimeAndCoords(0);
-
   polyscope::SurfaceMesh *mesh =
       polyscope::registerSurfaceMesh("Mesh", coords, top);
-  polyscope::getSurfaceMesh("Mesh")->addVertexVectorQuantity("velocity",
-                                                             vel);
-  polyscope::getSurfaceMesh("Mesh")->addVertexVectorQuantity("ref_coordinate", refcoords);
-  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
-                                                             H);
-  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("spon_curvature",
-                                                             H0);
-  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("external_pressure",
-                                                             f_ext);
-  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("physical_pressure",
-                                                             fn);
-  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("capillary_pressure",
-                                                             ft);
-  polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("bending_pressure",
-                                                             fb);
+
+  if (ref_coord) {
+    EigenVectorX3D refcoords = fd.getRefcoordinate();
+    polyscope::getSurfaceMesh("Mesh")->addVertexVectorQuantity("ref_coordinate",
+                                                               refcoords);
+  }
+
+  if (velocity) {
+    EigenVectorX3D vel = fd.getVelocity(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexVectorQuantity("velocity", vel);
+  }
+  if (mean_curvature) {
+    EigenVectorX1D H = fd.getMeanCurvature(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
+                                                               H);
+  }
+  if (spon_curvature) {
+    EigenVectorX1D H0 = fd.getSponCurvature(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("spon_curvature",
+                                                               H0);
+  }
+  if (ext_pressure) {
+    EigenVectorX1D f_ext = fd.getExternalPressure(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
+        "external_pressure", f_ext);
+  }
+  if (physical_pressure) {
+    EigenVectorX1D fn = fd.getPhysicalPressure(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
+        "physical_pressure", fn);
+  }
+  if (capillary_pressure) {
+    EigenVectorX1D ft = fd.getCapillaryPressure(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
+        "capillary_pressure", ft);
+  }
+  if (bending_pressure) {
+    EigenVectorX1D fb = fd.getBendingPressure(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
+        "bending_pressure", fb);
+  }
   return mesh;
 }
 
-void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx, int &waitTime) {
-  updateSurfaceMesh(mesh, fd, idx);
+void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx,
+             int &waitTime, const bool ref_coord, const bool velocity,
+             const bool mean_curvature, const bool spon_curvature,
+             const bool ext_pressure, const bool physical_pressure,
+             const bool capillary_pressure, const bool bending_pressure) {
+               
+  updateSurfaceMesh(mesh, fd, idx, ref_coord, velocity, mean_curvature, spon_curvature,
+                    ext_pressure, physical_pressure, capillary_pressure,
+                    bending_pressure);
   idx++;
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
@@ -115,10 +166,14 @@ void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx, in
   wait(waitTime);
 }
 
-int view_animation(std::string &filename) {
+int view_animation(std::string &filename, const bool ref_coord,
+                   const bool velocity, const bool mean_curvature,
+                   const bool spon_curvature, const bool ext_pressure,
+                   const bool physical_pressure, const bool capillary_pressure,
+                   const bool bending_pressure) {
   signal(SIGINT, signalHandler);
-
   ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(filename);
+
 
   // Visualization state variables
   int prevFrame = 0;
@@ -140,7 +195,9 @@ int view_animation(std::string &filename) {
 
   polyscope::init();
 
-  auto mesh = registerSurfaceMesh(fd);
+  auto mesh = registerSurfaceMesh(
+      fd, ref_coord, velocity, mean_curvature, spon_curvature, ext_pressure,
+      physical_pressure, capillary_pressure, bending_pressure);
 
   auto myCallback = [&]() {
     // Since options::openImGuiWindowForUserCallback == true by default,
@@ -151,19 +208,25 @@ int view_animation(std::string &filename) {
 
     ImGui::SliderInt("index", &currFrame, 0, maxFrame); // set a float variable
 
-    ImGui::SliderInt("slow-mo", &waitTime, 0, maxWaitTime); // set a float variable
+    ImGui::SliderInt("slow-mo", &waitTime, 0,
+                     maxWaitTime); // set a float variable
 
     if (ImGui::Button("Play/Pause")) {
       play = !play;
     }
 
     if (prevFrame != currFrame) {
-      updateSurfaceMesh(mesh, fd, currFrame);
+      updateSurfaceMesh(mesh, fd, currFrame, ref_coord, velocity,
+                        mean_curvature, spon_curvature, ext_pressure,
+                        physical_pressure, capillary_pressure,
+                        bending_pressure);
       prevFrame = currFrame;
     }
 
     if (play) {
-      animate(mesh, fd, currFrame, waitTime);
+      animate(mesh, fd, currFrame, waitTime, ref_coord, velocity,
+              mean_curvature, spon_curvature, ext_pressure, physical_pressure,
+              capillary_pressure, bending_pressure);
       prevFrame = currFrame;
     }
     ImGui::PopItemWidth();

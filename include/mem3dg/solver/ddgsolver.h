@@ -18,9 +18,15 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-int viewer(std::string fileName);
+int viewer(std::string fileName, const bool mean_curvature = 0, const bool spon_curvature = 0,
+           const bool ext_pressure = 0, const bool physical_pressure = 0, const bool capillary_pressure = 0,
+           const bool bending_pressure = 0);
 
-int view_animation(std::string &filename);
+int view_animation(std::string &filename, const bool ref_coord = 0, const bool velocity = 0,
+                       const bool mean_curvature = 0, const bool spon_curvature = 0,
+                       const bool ext_pressure = 0, const bool physical_pressure = 0,
+                       const bool capillary_pressure = 0,
+                       const bool bending_pressure = 0);
 
 int genIcosphere(size_t nSub, std::string path, double R);
 
