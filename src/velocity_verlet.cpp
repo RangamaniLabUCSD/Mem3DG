@@ -89,7 +89,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   TrajFile fd;
   if (verbosity > 0) {
     fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
-                                 TrajFile::NcFile::replace);
+                     TrajFile::NcFile::replace);
+    fd.writeMask(f.mask.cast<int>());
   }
 #endif
 
@@ -122,7 +123,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                      numericalPressure);
     }
 
-    newTotalPressure = rowwiseScaling(f.mask.cast<double>(),physicalPressure + numericalPressure);
+    newTotalPressure = rowwiseScaling(f.mask.cast<double>(),
+                                      physicalPressure + numericalPressure);
 
     // periodically save the geometric files, print some info, compare and
     // adjust
@@ -172,6 +174,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
         fd.writeMeanCurvature(frame, H.raw());
         fd.writeSponCurvature(frame, H0.raw());
+        fd.writeH_H0_diff(
+            frame, ((H.raw() - H0.raw()).array() * (H.raw() - H0.raw()).array())
+                       .matrix());
         fd.writeExternalPressure(frame, f_ext.raw());
         fd.writePhysicalPressure(frame, fn.raw());
         fd.writeCapillaryPressure(frame, ft.raw());
@@ -313,8 +318,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       // adjust
 
     // integration
-    pos_e += vel_e * dt +
-             hdt2 * totalPressure;
+    pos_e += vel_e * dt + hdt2 * totalPressure;
     vel_e += (totalPressure + newTotalPressure) * hdt;
     totalPressure = newTotalPressure;
 
