@@ -42,7 +42,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double gamma, double kt, size_t ptInd, double Kf, double conc,
                double height, double radius, double h, double T, double eps,
                double closeZone, double increment, double tSave,
-               double tMollify, std::string outputDir);
+               double tMollify, std::string outputDir, double errorJumpLim);
 
 int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
@@ -52,4 +52,4 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               double Bc, double Vt, double gamma, double kt, size_t ptInd,
               double Kf, double conc, double height, double radius, double h,
               double T, double eps, double closeZone, double increment,
-              double tSave, double tMollify, std::string outputDir);
+              double tSave, double tMollify, std::string outputDir, double errorJumpLim);
