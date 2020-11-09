@@ -3,11 +3,12 @@
 #include <netcdf>
 #endif
 
+#include "mem3dg/solver/ddgsolver.h"
 #include "mem3dg/solver/force.h"
 #include "mem3dg/solver/icosphere.h"
+#include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/util.h"
-#include "mem3dg/solver/integrator.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -36,9 +37,11 @@ int main() {
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   std::tie(ptrMesh, ptrVpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons, soup.vertexCoordinates);
+      gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons,
+      soup.vertexCoordinates);
   gcs::VertexPositionGeometry *ptrRefVpg =
-      new gcs::VertexPositionGeometry(*ptrMesh, ptrVpg->inputVertexPositions);
+      new gcs::VertexPositionGeometry(*ptrMesh,
+      ptrVpg->inputVertexPositions);
 
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();
@@ -67,10 +70,13 @@ int main() {
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
-  double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1, tMollify = 100;
-  size_t verbosity = 0;
+  double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
+  tMollify = 100; size_t verbosity = 0;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv, Ksg, tSave, tMollify, verbosity);
+                                         Kv, Ksg, tSave, tMollify,
+                                         verbosity);
   delete ptrRefVpg;
+  return 0;
+
   return 0;
 }

@@ -56,82 +56,91 @@ void signalHandler(int signum) {
   exit(signum);
 }
 
-int viewer(std::string fileName) {
+int viewer(std::string fileName, const bool mean_curvature, const bool spon_curvature,
+           const bool ext_pressure, const bool physical_pressure, const bool capillary_pressure,
+           const bool bending_pressure){
 
   signal(SIGINT, signalHandler);
 
-  std::cout << "Initializing the mesh and geometry ...";
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
       gcs::RichSurfaceMeshData::readMeshAndData(fileName);
   ptrVpg = ptrRichData->getGeometry();
-  std::cout << "Finished!" << std::endl;
 
-  std::cout << "Reading the vertex properties ...";
-  gcs::VertexData<double> meanCurvature =
-      ptrRichData->getVertexProperty<double>("mean_curvature");
-  gcs::VertexData<double> sponCurvature =
-      ptrRichData->getVertexProperty<double>("spon_curvature");
-  gcs::VertexData<double> extPressure =
-      ptrRichData->getVertexProperty<double>("external_pressure");
-  gcs::VertexData<double> physicalPressure =
-      ptrRichData->getVertexProperty<double>("physical_pressure");
-  gcs::VertexData<double> capillaryPressure =
-      ptrRichData->getVertexProperty<double>("capillary_pressure");
-  gcs::VertexData<double> bendingPressure =
-      ptrRichData->getVertexProperty<double>("bending_pressure");
+  polyscope::init();
+  polyscope::registerSurfaceMesh("Vesicle surface",
+                                 ptrVpg->inputVertexPositions,
+                                 ptrMesh->getFaceVertexList());
+
+  if (mean_curvature) {
+    gcs::VertexData<double> meanCurvature =
+        ptrRichData->getVertexProperty<double>("mean_curvature");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e =
+        meanCurvature.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
+  }
+  if (spon_curvature) {
+    gcs::VertexData<double> sponCurvature =
+        ptrRichData->getVertexProperty<double>("spon_curvature");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> sponCurvature_e =
+        sponCurvature.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
+  }
+  if (ext_pressure) {
+    gcs::VertexData<double> extPressure =
+        ptrRichData->getVertexProperty<double>("external_pressure");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> extPressure_e = extPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("applied_pressure", extPressure_e);
+  }
+  if (physical_pressure) {
+    gcs::VertexData<double> physicalPressure =
+        ptrRichData->getVertexProperty<double>("physical_pressure");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> physicalPressure_e =
+        physicalPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
+  }
+  if (capillary_pressure) {
+    gcs::VertexData<double> capillaryPressure =
+        ptrRichData->getVertexProperty<double>("capillary_pressure");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> capillaryPressure_e =
+        capillaryPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("surface_tension", capillaryPressure_e);
+  }
+  if (bending_pressure) {
+    gcs::VertexData<double> bendingPressure =
+        ptrRichData->getVertexProperty<double>("bending_pressure");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e =
+        bendingPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
+  }
+
   /*gcs::VertexData<gc::Vector3> vertexVelocity =
       ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
   /*gcs::VertexData<gc::Vector3> normalForce =
   ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
   gcs::VertexData<gc::Vector3> tangentialForce =
   ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
-  std::cout << "Finished!" << std::endl;
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e =
-      meanCurvature.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> sponCurvature_e =
-      sponCurvature.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> extPressure_e = extPressure.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> physicalPressure_e =
-      physicalPressure.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> capillaryPressure_e =
-      capillaryPressure.raw();
-  Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e =
-      bendingPressure.raw();
   // Eigen::Matrix<double, Eigen::Dynamic, 3> vertexVelocity_e =
   //    ddgsolver::EigenMap<double, 3>(vertexVelocity);
   /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
   gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
   Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
   3>(tangentialForce);*/
-
-  std::cout << "Opening Polyscope GUI ...";
-  polyscope::init();
-  polyscope::registerSurfaceMesh("Vesicle surface",
-                                 ptrVpg->inputVertexPositions,
-                                 ptrMesh->getFaceVertexList());
-
-  polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
-  polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
-  polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("applied_pressure", extPressure_e);
-  polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("surface_tension", capillaryPressure_e);
-  polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
-  polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
   /*polyscope::getSurfaceMesh("Vesicle surface")
       ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
   /*polyscope::getSurfaceMesh("Vesicle
   surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
   polyscope::getSurfaceMesh("Vesicle
   surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
+  
   std::cout << "Finished!" << std::endl;
   polyscope::show();
 
@@ -239,8 +248,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv[1], Ksg[1], tSave, tMollify, verbosity,
-                                          inputMesh, outputDir);
+                                         Kv[1], Ksg[1], tSave, tMollify,
+                                         verbosity, inputMesh, outputDir);
 
   return 0;
 }
@@ -312,8 +321,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
 
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv[1], Ksg[1], tSave, tMollify, verbosity,
-                                         trajFile, outputDir, time);
+                                         Kv[1], Ksg[1], tSave, tMollify,
+                                         verbosity, trajFile, outputDir, time);
 
   delete ptrRefVpg;
 

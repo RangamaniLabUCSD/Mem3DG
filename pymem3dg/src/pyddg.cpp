@@ -53,6 +53,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
+  pymem3dg.def("viewer", &viewer, " a visualization function",
+               py::arg("fileName"), py::arg("mean_curvature"),
+               py::arg("spon_curvature"), py::arg("ext_pressure"),
+               py::arg("physical_pressure"), py::arg("capillary_pressure"),
+               py::arg("bending_pressure"));
+
+  pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
+               py::arg("nSub"), py::arg("path"), py::arg("R"));
+
 #ifdef MEM3DG_WITH_NETCDF
   pymem3dg.def(
       "driver_nc", &driver_nc,
@@ -76,17 +85,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                Returns:
                    :py:class:`int`: success.
             )delim");
-#endif
-
-  pymem3dg.def("viewer", &viewer, " a visualization function",
-               py::arg("fileName"));
-
-#ifdef MEM3DG_WITH_NETCDF
   pymem3dg.def("view_animation", &view_animation, " a visualization function",
-               py::arg("fileName"));
+               py::arg("fileName"), py::arg("ref_coord"), py::arg("velocity"),
+               py::arg("mean_curvature"), py::arg("spon_curvature"),
+               py::arg("ext_pressure"), py::arg("physical_pressure"),
+               py::arg("capillary_pressure"), py::arg("bending_pressure"));
 #endif
-
-  pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
-               py::arg("nSub"), py::arg("path"), py::arg("R"));
 };
 } // namespace ddgsolver

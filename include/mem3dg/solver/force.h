@@ -232,9 +232,13 @@ public:
 
     // Initialize the mask on choosing integration vertices based on geodesic
     // distance from the local external force location on the reference geometry
-    mask = (heatMethodDistance(refVpg, mesh.vertex(P.ptInd)).raw().array() <
+    mask =     
+    (heatMethodDistance(refVpg, mesh.vertex(P.ptInd)).raw().array() <
             P.radius)
                .matrix();
+    if (mesh.hasBoundary()){
+      boundaryMask(mesh, mask);
+    }
 
     // Regularize the vetex position geometry if needed
     if (isVertexShift) {

@@ -194,6 +194,26 @@ vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
 }
 
 /**
+ * @brief Apply boundary condition mask
+ *
+ * @param mesh 
+ * @param mask
+ * 
+ */
+DLL_PUBLIC inline void
+boundaryMask(gcs::SurfaceMesh &mesh,
+            Eigen::Matrix<bool, Eigen::Dynamic, 1> &mask) {
+  for (gcs::Vertex v : mesh.vertices()) {
+    if (v.isBoundary()){
+      mask[v.getIndex()] = 0;
+      for (gcs::Halfedge he : v.outgoingHalfedges()){
+        mask[he.next().vertex().getIndex()] = 0;
+      }
+    }
+  }
+}
+
+/**
  * @brief Remove the rigid body translation
  *
  * @param Eigen pressure matrix
