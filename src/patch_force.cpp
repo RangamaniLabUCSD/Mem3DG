@@ -72,7 +72,7 @@ void Force::getTubeForces() {
       vpg.vertexGaussianCurvatures.raw();
 
   // calculate the Laplacian of mean curvature H
-  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * H;
 
   // initialize and calculate intermediary result scalarTerms_integrated
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms_integrated =
