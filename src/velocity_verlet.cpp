@@ -39,7 +39,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     double closeZone, double increment, double maxKv,
                     double maxKsg, double tSave, double tMollify,
                     const size_t verbosity, std::string inputMesh,
-                    std::string outputDir, double init_time) {
+                    std::string outputDir, double init_time, double errorJumpLim) {
 
   // print out a .txt file listing all parameters used
   if (verbosity > 2) {
@@ -304,12 +304,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       */
 
       // 3.3 fail and exit
-      if (verbosity > 1) {
-        if (abs(dL2ErrorNorm) > 5) {
+      if (abs(dL2ErrorNorm) > errorJumpLim) {
+        if (verbosity > 0) {
           std::cout << "Error Norm changes rapidly. Save data and quit."
                     << std::endl;
-          break;
         }
+        break;
       }
 
       oldL2ErrorNorm = L2ErrorNorm;
