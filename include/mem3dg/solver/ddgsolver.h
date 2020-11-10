@@ -13,10 +13,10 @@
 //
 
 #pragma once
-// #include <geometrycentral/surface/surface_mesh.h>
+#include <geometrycentral/surface/surface_mesh.h>
 
-// namespace gc = ::geometrycentral;
-// namespace gcs = ::geometrycentral::surface;
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
 
 int viewer(std::string fileName, const bool mean_curvature = 0,
            const bool spon_curvature = 0, const bool ext_pressure = 0,
@@ -39,7 +39,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double Kb, double H0, double sharpness, double r_H0, double Kse,
                double Kst, double Ksl, std::vector<double> Ksg,
                std::vector<double> Kv, double epsilon, double Bc, double Vt,
-               double gamma, double kt, size_t ptInd, double Kf, double conc,
+               double gamma, double kt, std::vector<double> pt, double Kf, double conc,
                double height, double radius, double h, double T, double eps,
                double closeZone, double increment, double tSave,
                double tMollify, std::string outputDir);
@@ -49,7 +49,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, double r_H0, double Kse, double Kst, double Ksl,
               std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
-              double Bc, double Vt, double gamma, double kt, size_t ptInd,
+              double Bc, double Vt, double gamma, double kt, std::vector<double> pt,
               double Kf, double conc, double height, double radius, double h,
               double T, double eps, double closeZone, double increment,
               double tSave, double tMollify, std::string outputDir);
