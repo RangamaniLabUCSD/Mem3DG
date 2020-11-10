@@ -64,7 +64,8 @@ DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
  * @return gc::Vector3
  */
 DLL_PUBLIC inline gc::Vector3
-vecFromHalfedge(const gcs::Halfedge &he, const gcs::VertexPositionGeometry &vpg) {
+vecFromHalfedge(const gcs::Halfedge &he,
+                const gcs::VertexPositionGeometry &vpg) {
   return vpg.inputVertexPositions[he.next().vertex()] -
          vpg.inputVertexPositions[he.vertex()];
 }
@@ -196,17 +197,17 @@ vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
 /**
  * @brief Apply boundary condition mask
  *
- * @param mesh 
+ * @param mesh
  * @param mask
- * 
+ *
  */
 DLL_PUBLIC inline void
 boundaryMask(gcs::SurfaceMesh &mesh,
-            Eigen::Matrix<bool, Eigen::Dynamic, 1> &mask) {
+             Eigen::Matrix<bool, Eigen::Dynamic, 1> &mask) {
   for (gcs::Vertex v : mesh.vertices()) {
-    if (v.isBoundary()){
+    if (v.isBoundary()) {
       mask[v.getIndex()] = 0;
-      for (gcs::Halfedge he : v.outgoingHalfedges()){
+      for (gcs::Halfedge he : v.outgoingHalfedges()) {
         mask[he.next().vertex().getIndex()] = 0;
       }
     }
@@ -254,6 +255,28 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
 }
 
 /**
+ * @brief find the closest point index to a given point
+ *
+ * @param
+ * @param standard deviation
+ */
+DLL_PUBLIC inline void closestPtIndToPt(gcs::SurfaceMesh &mesh,
+                                            gcs::VertexPositionGeometry &vpg,
+                                            std::vector<double> position,
+                                            size_t &ptInd) {
+  ptInd = 0;
+  double shorestDistance = 1e18;
+  gc::Vector3 position_vec{position[0], position[1], position[2]};
+  for (gcs::Vertex v : mesh.vertices()){
+    double distance = (vpg.inputVertexPositions[v] - position_vec).norm();
+    if ( distance < shorestDistance){
+      shorestDistance = distance;
+      ptInd = v.getIndex();
+    }
+  }
+}
+
+/**
  * @brief height = 1 tanh step function with radius r
  *
  * @param (double) sharpness of transition
@@ -276,7 +299,7 @@ tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  *
  * @param manifold mesh
  * @param vertex position geometry
- * @param edgedata cross length ratio 
+ * @param edgedata cross length ratio
  */
 DLL_PUBLIC inline void getCrossLengthRatio(gcs::ManifoldSurfaceMesh &mesh,
                                            gcs::VertexPositionGeometry &vpg,
@@ -288,8 +311,8 @@ DLL_PUBLIC inline void getCrossLengthRatio(gcs::ManifoldSurfaceMesh &mesh,
     gcs::Edge jk = e.halfedge().twin().next().next().edge();
     // clr[e] = edgeLength[il] * edgeLength[jk] / edgeLength[ki] /
     //          edgeLength[lj];
-     clr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-              vpg.edgeLengths[lj];
+    clr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
+             vpg.edgeLengths[lj];
   }
 }
 

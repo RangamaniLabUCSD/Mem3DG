@@ -50,7 +50,7 @@ void Force::getExternalForces() {
     Eigen::Matrix<double, 1, 3> zDir;
     zDir << 0.0, 0.0, -1.0;
     externalPressure_e =
-        - externalPressureMagnitude * zDir * (vpg.inputVertexPositions[mesh.vertex(P.ptInd)].z - P.height);
+        - externalPressureMagnitude * zDir * (vpg.inputVertexPositions[mesh.vertex(ptInd)].z - P.height);
 
   } else {
     externalPressure_e.setZero();

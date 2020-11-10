@@ -253,7 +253,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                          f.vpg.inputVertexPositions.raw().rows()
                   << "\n"
                   << "Height: "
-                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.P.ptInd)].z)
+                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
                   << "\n"
                   << "Increase force spring constant Kf to " << f.P.Kf << "\n";
       }

@@ -179,7 +179,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double Kb, double H0, double sharpness, double r_H0, double Kse,
                double Kst, double Ksl, std::vector<double> Ksg,
                std::vector<double> Kv, double epsilon, double Bc, double Vt,
-               double gamma, double kt, size_t ptInd, double Kf, double conc,
+               double gamma, double kt, std::vector<double> pt, double Kf, double conc,
                double height, double radius, double h, double T, double eps,
                double closeZone, double increment, double tSave,
                double tMollify, std::string outputDir, double errorJumpLim) {
@@ -241,7 +241,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   }
   ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
                           Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
-                          sigma, ptInd, Kf,        conc, height, radius};
+                          sigma, pt, Kf,        conc, height, radius};
   ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
@@ -260,7 +260,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, double r_H0, double Kse, double Kst, double Ksl,
               std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
-              double Bc, double Vt, double gamma, double kt, size_t ptInd,
+              double Bc, double Vt, double gamma, double kt, std::vector<double> pt,
               double Kf, double conc, double height, double radius, double h,
               double T, double eps, double closeZone, double increment,
               double tSave, double tMollify, std::string outputDir, double errorJumpLim) {
@@ -313,7 +313,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   }
   ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
                           Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
-                          sigma, ptInd, Kf,        conc, height, radius};
+                          sigma, pt, Kf,        conc, height, radius};
   ddgsolver::Force f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
