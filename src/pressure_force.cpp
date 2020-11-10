@@ -36,7 +36,7 @@ void Force::getPressureForces() {
 
   for (gcs::Face f : mesh.faces()) {
     face_volume = signedVolumeFromFace(
-        f, vpg, refVpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
+        f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
     volume += face_volume;
     if (face_volume < 0) {
       sign_of_volume[f] = -1;

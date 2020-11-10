@@ -52,7 +52,7 @@ protected:
     p.gamma = 1;    // gamma
     p.Vt = 1 * 0.5; // Vt
     p.kt = 0.0001;  // Kt
-    p.ptInd = 1;
+    p.pt = {1,1,1};
     p.Kf = 2 * 0;
     p.conc = 25;
     p.sharpness = 1;

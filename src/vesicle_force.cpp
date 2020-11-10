@@ -97,7 +97,7 @@ void Force::getVesicleForces() {
   volume = 0;
   for (gcs::Face f : mesh.faces()) {
     volume += signedVolumeFromFace(
-        f, vpg, refVpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
+        f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
   }
   insidePressure_e = -P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) *
                      vertexAngleNormal_e;

@@ -75,7 +75,7 @@ struct Parameters {
   /// Noise
   double sigma;
   /// index of node with applied external force
-  size_t ptInd;
+  std::vector<double> pt;
   /// Magnitude of external force
   double Kf;
   /// level of concentration of the external force
@@ -167,6 +167,8 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
   /// indices for vertices chosen for integration
   Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
+  /// "the point" index
+  size_t ptInd;
 
   /*
    * @brief Construct a new Force object
@@ -211,9 +213,12 @@ public:
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
 
+    // Find the closest point index to P.pt in refVpg
+    closestPtIndToPt(mesh, refVpg, P.pt, ptInd);
+
     // Initialize the geodesic distance from ptInd
     geodesicDistanceFromAppliedForce =
-        heatMethodDistance(vpg, mesh.vertex(P.ptInd));
+        heatMethodDistance(vpg, mesh.vertex(ptInd));
     auto &dist_e = geodesicDistanceFromAppliedForce.raw();
 
     // Initialize the external pressure magnitude distribution
@@ -233,7 +238,7 @@ public:
     // Initialize the mask on choosing integration vertices based on geodesic
     // distance from the local external force location on the reference geometry
     mask =     
-    (heatMethodDistance(refVpg, mesh.vertex(P.ptInd)).raw().array() <
+    (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() <
             P.radius)
                .matrix();
     if (mesh.hasBoundary()){
@@ -288,7 +293,7 @@ public:
     // Initialize volume
     for (gcs::Face f : mesh.faces()) {
       volume += signedVolumeFromFace(
-          f, vpg, vpg.inputVertexPositions[mesh.vertex(P.ptInd)]);
+          f, vpg, vpg.inputVertexPositions[mesh.vertex(ptInd)]);
     }
 
     // Initialize the vertex position of the last iteration

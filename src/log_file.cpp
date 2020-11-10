@@ -46,7 +46,7 @@ void getParameterLog(Force &f, double dt,
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.kt << "\n"
            << "sigma:  " << f.P.sigma << "\n"
-           << "ptInd:  " << f.P.ptInd << "\n"
+           << "ptInd:  " << f.ptInd << "\n"
            << "Kf:     " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n"
            << "height: " << f.P.height << "\n";
@@ -87,7 +87,7 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.kt << "\n"
            << "sigma:  " << f.P.sigma << "\n"
-           << "ptInd:  " << f.P.ptInd << "\n"
+           << "ptInd:  " << f.ptInd << "\n"
            << "Kf:   " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n";
 
