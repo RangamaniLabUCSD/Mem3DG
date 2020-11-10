@@ -13,8 +13,8 @@
 //
 
 #include <cassert>
-#include <cmath>
 #include <iostream>
+#include <math.h>
 
 #include "geometrycentral/surface/simple_polygon_mesh.h"
 #include "geometrycentral/surface/surface_mesh.h"
@@ -114,6 +114,31 @@ void Force::getTubeForces() {
 
   if ((P.Ksl != 0) || (P.Kse != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
+      if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
+          (H0[v.getIndex()] < (0.9 * P.H0))) {
+        gc::Vector3 gradient{0.0, 0.0, 0.0};
+        for (gcs::Halfedge he : v.outgoingHalfedges()) {
+          gradient +=
+              vecFromHalfedge(he, vpg) *
+              (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()]) /
+              vpg.edgeLengths[he.edge()];
+        }
+        gradient.normalize();
+        gc::Vector3 tangentVector =
+            gc::cross(gradient, vpg.vertexNormals[v]).normalize();
+        gc::Vector2 principalDirection1 =
+            vpg.vertexPrincipalCurvatureDirections[v];
+        gc::Vector3 PD1InWorldCoords =
+            vpg.vertexTangentBasis[v][0] * principalDirection1.x +
+            vpg.vertexTangentBasis[v][1] * principalDirection1.y;
+        double cosT = gc::dot(tangentVector, PD1InWorldCoords.normalize());
+        double K1 =
+            (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
+        double K2 =
+            (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
+        capillaryPressure[v] += -vpg.vertexNormals[v] *
+                                (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2);
+      }
 
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
         gcs::Halfedge base_he = he.next();
