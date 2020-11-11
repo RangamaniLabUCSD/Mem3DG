@@ -191,7 +191,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double Vt, double gamma, double kt, std::vector<double> pt,
                double Kf, double conc, double height, double radius, double h,
                double T, double eps, double closeZone, double increment,
-               double tSave, double tMollify, std::string outputDir) {
+               double tSave, double tMollify, std::string outputDir, double errorJumpLim) {
 
   signal(SIGINT, signalHandler);
   // pybind11::scoped_interpreter guard{};
@@ -259,7 +259,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
                                          Kv[1], Ksg[1], tSave, tMollify,
-                                         verbosity, inputMesh, outputDir);
+                                         verbosity, inputMesh, outputDir, 0, errorJumpLim);
 
   return 0;
 }
@@ -274,7 +274,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::vector<double> pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double closeZone,
               double increment, double tSave, double tMollify,
-              std::string outputDir) {
+              std::string outputDir, double errorJumpLim) {
 
   signal(SIGINT, signalHandler);
 
@@ -334,7 +334,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   std::cout << "Solving the system ..." << std::endl;
   ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
                                          Kv[1], Ksg[1], tSave, tMollify,
-                                         verbosity, trajFile, outputDir, time);
+                                         verbosity, trajFile, outputDir, time, errorJumpLim);
 
   delete ptrRefVpg;
 
