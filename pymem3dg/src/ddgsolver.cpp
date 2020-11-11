@@ -56,9 +56,10 @@ void signalHandler(int signum) {
   exit(signum);
 }
 
-int viewer(std::string fileName, const bool mean_curvature, const bool spon_curvature,
-           const bool ext_pressure, const bool physical_pressure, const bool capillary_pressure,
-           const bool bending_pressure){
+int viewer(std::string fileName, const bool mean_curvature,
+           const bool spon_curvature, const bool ext_pressure,
+           const bool physical_pressure, const bool capillary_pressure,
+           const bool bending_pressure) {
 
   signal(SIGINT, signalHandler);
 
@@ -140,7 +141,7 @@ int viewer(std::string fileName, const bool mean_curvature, const bool spon_curv
   surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
   polyscope::getSurfaceMesh("Vesicle
   surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
-  
+
   std::cout << "Finished!" << std::endl;
   polyscope::show();
 
@@ -178,11 +179,11 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                bool isProtein, double mollifyFactor, bool isVertexShift,
                double Kb, double H0, double sharpness, double r_H0, double Kse,
                double Kst, double Ksl, std::vector<double> Ksg,
-               std::vector<double> Kv, double epsilon, double Bc, double Vt,
-               double gamma, double kt, std::vector<double> pt, double Kf, double conc,
-               double height, double radius, double h, double T, double eps,
-               double closeZone, double increment, double tSave,
-               double tMollify, std::string outputDir) {
+               std::vector<double> Kv, double eta, double epsilon, double Bc,
+               double Vt, double gamma, double kt, std::vector<double> pt,
+               double Kf, double conc, double height, double radius, double h,
+               double T, double eps, double closeZone, double increment,
+               double tSave, double tMollify, std::string outputDir) {
 
   signal(SIGINT, signalHandler);
   // pybind11::scoped_interpreter guard{};
@@ -239,9 +240,10 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     Vt = 1.0;
     std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
   }
-  ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
-                          Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
-                          sigma, pt, Kf,        conc, height, radius};
+  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
+                          Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
+                          gamma, Vt,     kt,        sigma, pt,      Kf,
+                          conc,  height, radius};
   ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
@@ -259,11 +261,12 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, double r_H0, double Kse, double Kst, double Ksl,
-              std::vector<double> Ksg, std::vector<double> Kv, double epsilon,
-              double Bc, double Vt, double gamma, double kt, std::vector<double> pt,
-              double Kf, double conc, double height, double radius, double h,
-              double T, double eps, double closeZone, double increment,
-              double tSave, double tMollify, std::string outputDir) {
+              std::vector<double> Ksg, std::vector<double> Kv, double eta,
+              double epsilon, double Bc, double Vt, double gamma, double kt,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double closeZone,
+              double increment, double tSave, double tMollify,
+              std::string outputDir) {
 
   signal(SIGINT, signalHandler);
 
@@ -311,9 +314,10 @@ int driver_nc(const size_t verbosity, std::string trajFile,
     Vt = 1.0;
     std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
   }
-  ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg[0], Kst,   Ksl,
-                          Kse,   Kv[0], epsilon,   Bc,   gamma,  Vt,    kt,
-                          sigma, pt, Kf,        conc, height, radius};
+  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
+                          Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
+                          gamma, Vt,     kt,        sigma, pt,      Kf,
+                          conc,  height, radius};
   ddgsolver::Force f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);

@@ -62,6 +62,8 @@ struct Parameters {
   double Kse;
   /// Volume regularization
   double Kv;
+  /// Line tension
+  double eta;
   /// binding energy per protein
   double epsilon;
   /// binding constant
@@ -103,6 +105,8 @@ public:
   gcs::VertexData<gc::Vector3> bendingPressure;
   /// Cached tension-induced capillary pressure
   gcs::VertexData<gc::Vector3> capillaryPressure;
+  /// Cached interfacial line tension
+  gcs::VertexData<gc::Vector3> lineTensionForce;
   /// Cached relative inside pressure
   gcs::VertexData<gc::Vector3> insidePressure;
   /// Cached externally-applied pressure
@@ -187,7 +191,8 @@ public:
         isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
         mollifyFactor(mollifyFactor_), isVertexShift(isVertexShift_),
         bendingPressure(mesh_, {0, 0, 0}), insidePressure(mesh_, {0, 0, 0}),
-        capillaryPressure(mesh_, {0, 0, 0}), externalPressure(mesh_, {0, 0, 0}),
+        capillaryPressure(mesh_, {0, 0, 0}), lineTensionForce(mesh_, {0, 0, 0}),
+        externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetclr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
         proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}) {
@@ -232,18 +237,29 @@ public:
     if (isProtein) {
       proteinDensity.raw().setZero();
       H0.setZero(mesh.nVertices(), 1);
-    } else {
+    } else if (P.H0 != 0) {
       tanhDistribution(H0, dist_e, P.sharpness, P.r_H0);
+      Eigen::Matrix<double, Eigen::Dynamic, 1> constDtb;
+      constDtb.Constant(mesh.nVertices(), 1, 1.0);
+      if (((H0 - constDtb).norm() < 1e-12) && (P.eta != 0) ) {
+          P.eta = 0;
+          std::cout << "No interface, eta set to 0" << std::endl;
+      }
       H0 *= P.H0;
+    } else {
+      H0.setZero(mesh.nVertices(), 1);
+      if (P.eta != 0) {
+        P.eta = 0;
+        std::cout << "No interface, eta set to 0" << std::endl;
+      }
     }
 
     // Initialize the mask on choosing integration vertices based on geodesic
     // distance from the local external force location on the reference geometry
-    mask =     
-    (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() <
+    mask = (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() <
             P.radius)
                .matrix();
-    if (mesh.hasBoundary()){
+    if (mesh.hasBoundary()) {
       boundaryMask(mesh, mask);
     }
 
