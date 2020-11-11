@@ -42,7 +42,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
       py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
       py::arg("T"), py::arg("eps"), py::arg("closeZone"), py::arg("increment"),
-      py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"),
+      py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"), py::arg("errorJumpLim"),
       R"delim(
                Run the driver.
 
@@ -75,7 +75,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
       py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
       py::arg("T"), py::arg("eps"), py::arg("closeZone"), py::arg("increment"),
-      py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"),
+      py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"), py::arg("errorJumpLim"),
       R"delim(
                Run the driver.
 
