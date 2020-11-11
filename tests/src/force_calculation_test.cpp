@@ -49,6 +49,7 @@ protected:
     p.Ksl = 3;      // Ksl
     p.Ksg = 1;      // Ksg
     p.Kv = 2;       // Kv
+    p.eta = 0;
     p.gamma = 1;    // gamma
     p.Vt = 1 * 0.5; // Vt
     p.kt = 0.0001;  // Kt

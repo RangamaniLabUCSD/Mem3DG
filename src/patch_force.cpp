@@ -42,6 +42,7 @@ void Force::getTubeForces() {
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
   auto insidePressure_e = gc::EigenMap<double, 3>(insidePressure);
   auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
+  auto lineTensionForce_e = gc::EigenMap<double, 3>(lineTensionForce);
   auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
   Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
@@ -61,6 +62,16 @@ void Force::getTubeForces() {
   }
   // Cache the inverse mass matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+
+  // Update the spontaneous curvature based on new distance function
+  // when not constraining the local size of the mesh
+  geodesicDistanceFromAppliedForce =
+      heatMethodDistance(vpg, mesh.vertex(ptInd));
+  if (P.H0 != 0) {
+    tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
+                     P.r_H0);
+    H0 *= P.H0;
+  }
 
   // calculate mean curvature
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
@@ -107,39 +118,42 @@ void Force::getTubeForces() {
   surfaceArea = faceArea_e.sum();
   capillaryPressure_e = rowwiseScaling(-P.Ksg * 2.0 * H, vertexAngleNormal_e);
 
-  /// D. LOCAL REGULARIZATION
+  /// D. LINE TENSION FORCE
+  lineTensionForce.fill({0.0, 0.0, 0.0});
+  if (P.eta > 0) {
+    gcs::Vertex startingVertex;
+    for (gcs::Vertex v : mesh.vertices()) {
+      if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
+          (H0[v.getIndex()] < (0.9 * P.H0))) {
+        startingVertex = v;
+        break;
+      }
+    }
+    size_t count = 0;
+    gc::Vector3 gradH0{0.0, 0.0, 0.0};
+    gcs::Halfedge isoHe = findIsoHe(vpg, H0, startingVertex, gradH0);
+    findVertexLineTension(vpg, P.eta, H, startingVertex, isoHe, gradH0,
+                          lineTensionForce);
+    gc::Vertex nextVertex = isoHe.next().vertex();
+    while (nextVertex != startingVertex) {
+      if (count > mesh.nVertices()) {
+        throw std::runtime_error("Cannot find the line tension loop!");
+      }
+      isoHe = findIsoHe(vpg, H0, nextVertex, isoHe.vertex(), gradH0);
+      findVertexLineTension(vpg, P.eta, H, nextVertex, isoHe, gradH0,
+                            lineTensionForce);
+      gc::Vertex nextVertex = isoHe.next().vertex();
+      count++;
+    }
+  }
+
+  /// E. LOCAL REGULARIZATION
   regularizationForce.fill({0.0, 0.0, 0.0});
   gcs::EdgeData<double> clr(mesh);
   getCrossLengthRatio(mesh, vpg, clr);
 
   if ((P.Ksl != 0) || (P.Kse != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
-      if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
-          (H0[v.getIndex()] < (0.9 * P.H0))) {
-        gc::Vector3 gradient{0.0, 0.0, 0.0};
-        for (gcs::Halfedge he : v.outgoingHalfedges()) {
-          gradient +=
-              vecFromHalfedge(he, vpg) *
-              (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()]) /
-              vpg.edgeLengths[he.edge()];
-        }
-        gradient.normalize();
-        gc::Vector3 tangentVector =
-            gc::cross(gradient, vpg.vertexNormals[v]).normalize();
-        gc::Vector2 principalDirection1 =
-            vpg.vertexPrincipalCurvatureDirections[v];
-        gc::Vector3 PD1InWorldCoords =
-            vpg.vertexTangentBasis[v][0] * principalDirection1.x +
-            vpg.vertexTangentBasis[v][1] * principalDirection1.y;
-        double cosT = gc::dot(tangentVector, PD1InWorldCoords.normalize());
-        double K1 =
-            (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
-        double K2 =
-            (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
-        capillaryPressure[v] += -vpg.vertexNormals[v] *
-                                (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2);
-      }
-
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
         gcs::Halfedge base_he = he.next();
 
@@ -149,7 +163,7 @@ void Force::getTubeForces() {
         gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
         assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
-        // patch simulation assumes constant surface tension
+        // conformal regularization
         if (P.Kst != 0) {
           gcs::Halfedge jl = he.next();
           gcs::Halfedge li = jl.next();

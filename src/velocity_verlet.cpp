@@ -107,10 +107,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       f.getChemicalPotential();
     }
 
-    physicalPressure = EigenMap<double, 3>(f.bendingPressure) +
-                       EigenMap<double, 3>(f.capillaryPressure) +
-                       EigenMap<double, 3>(f.insidePressure) +
-                       EigenMap<double, 3>(f.externalPressure);
+    physicalPressure = gc::EigenMap<double, 3>(f.bendingPressure) +
+                       gc::EigenMap<double, 3>(f.capillaryPressure) +
+                       gc::EigenMap<double, 3>(f.insidePressure) +
+                       gc::EigenMap<double, 3>(f.externalPressure) +
+                       f.M_inv * (gc::EigenMap<double, 3>(f.lineTensionForce));
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                                    gc::EigenMap<double, 3>(f.stochasticForce));
     if (!f.mesh.hasBoundary()) {

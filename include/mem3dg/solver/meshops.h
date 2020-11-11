@@ -261,19 +261,168 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  * @param standard deviation
  */
 DLL_PUBLIC inline void closestPtIndToPt(gcs::SurfaceMesh &mesh,
-                                            gcs::VertexPositionGeometry &vpg,
-                                            std::vector<double> position,
-                                            size_t &ptInd) {
+                                        gcs::VertexPositionGeometry &vpg,
+                                        std::vector<double> position,
+                                        size_t &ptInd) {
   ptInd = 0;
   double shorestDistance = 1e18;
   gc::Vector3 position_vec{position[0], position[1], position[2]};
-  for (gcs::Vertex v : mesh.vertices()){
+  for (gcs::Vertex v : mesh.vertices()) {
     double distance = (vpg.inputVertexPositions[v] - position_vec).norm();
-    if ( distance < shorestDistance){
+    if (distance < shorestDistance) {
       shorestDistance = distance;
       ptInd = v.getIndex();
     }
   }
+}
+
+/**
+ * @brief find the outgoing halfedge with smallest gradient
+ *
+ * @param vertexPositionGeometry vpg
+ * @param spontaneous curvature H0
+ * @param vertex v
+ */
+DLL_PUBLIC inline gcs::Halfedge
+findIsoHe(const gcs::VertexPositionGeometry &vpg,
+          const Eigen::Matrix<double, Eigen::Dynamic, 1> &H0,
+          const gcs::Vertex v) {
+  gcs::Halfedge theHe = v.halfedge();
+  double minGrad =
+      (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+      vpg.edgeLengths[theHe.edge()];
+  for (gcs::Halfedge he : v.outgoingHalfedges()) {
+    double grad =
+        (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+        vpg.edgeLengths[theHe.edge()];
+    if (grad < minGrad) {
+      minGrad = grad;
+      theHe = he;
+    }
+  }
+  return theHe;
+}
+
+/**
+ * @brief overload findIsoHe to provide the option of excluding the source
+ * vertex
+ *
+ * @param vertexPositionGeometry vpg
+ * @param spontaneous curvature H0
+ * @param vertex v
+ * @param vertex of source srcVertex
+ */
+DLL_PUBLIC inline gcs::Halfedge
+findIsoHe(const gcs::VertexPositionGeometry &vpg,
+          const Eigen::Matrix<double, Eigen::Dynamic, 1> &H0,
+          const gcs::Vertex v, const gcs::Vertex srcv) {
+  gcs::Halfedge theHe = v.halfedge();
+  double minGrad =
+      (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+      vpg.edgeLengths[theHe.edge()];
+  for (gcs::Halfedge he : v.outgoingHalfedges()) {
+    double grad =
+        (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+        vpg.edgeLengths[theHe.edge()];
+    if ((grad < minGrad) && (he.next().vertex() != srcv)) {
+      minGrad = grad;
+      theHe = he;
+    }
+  }
+  return theHe;
+}
+
+/**
+ * @brief overload findIsoHe to provide the option of calculating gradient
+ * vector
+ *
+ * @param vertexPositionGeometry vpg
+ * @param spontaneous curvature H0
+ * @param vertex v
+ * @param approximation gradient vector gradVec
+ */
+DLL_PUBLIC inline gcs::Halfedge
+findIsoHe(const gcs::VertexPositionGeometry &vpg,
+          const Eigen::Matrix<double, Eigen::Dynamic, 1> &H0,
+          const gcs::Vertex v, gc::Vector3 &gradVec) {
+  gcs::Halfedge theHe = v.halfedge();
+  gradVec.x = gradVec.y = gradVec.z = 0;
+  double minGrad =
+      (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+      vpg.edgeLengths[theHe.edge()];
+  for (gcs::Halfedge he : v.outgoingHalfedges()) {
+    double grad =
+        (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+        vpg.edgeLengths[theHe.edge()];
+    gradVec += vecFromHalfedge(he, vpg) * grad;
+    if (grad < minGrad) {
+      minGrad = grad;
+      theHe = he;
+    }
+  }
+  gradVec.normalize();
+  return theHe;
+} // namespace ddgsolver
+
+/**
+ * @brief overload findIsoHe to provide the option of excluding the source
+ * vertex and calculate gradient vector
+ *
+ * @param vertexPositionGeometry vpg
+ * @param spontaneous curvature H0
+ * @param vertex v
+ * @param vertex of source srcVertex
+ * @param approximation gradient vector gradVec
+ */
+DLL_PUBLIC inline gcs::Halfedge
+findIsoHe(const gcs::VertexPositionGeometry &vpg,
+          const Eigen::Matrix<double, Eigen::Dynamic, 1> &H0,
+          const gcs::Vertex v, const gcs::Vertex srcv, gc::Vector3 &gradVec) {
+  gcs::Halfedge theHe = v.halfedge();
+  gradVec.x = gradVec.y = gradVec.z = 0;
+  double minGrad =
+      (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+      vpg.edgeLengths[theHe.edge()];
+  for (gcs::Halfedge he : v.outgoingHalfedges()) {
+    double grad =
+        (H0[theHe.next().vertex().getIndex()] - H0[theHe.vertex().getIndex()]) /
+        vpg.edgeLengths[theHe.edge()];
+    gradVec += vecFromHalfedge(he, vpg) * grad;
+    if ((grad < minGrad) && (he.next().vertex() != srcv)) {
+      minGrad = grad;
+      theHe = he;
+    }
+  }
+  gradVec.normalize();
+  return theHe;
+}
+
+/**
+ * @brief Calculate the line tension
+ *
+ * @param vertexPositionGeometry
+ * @param mean curvature H
+ * @param vertex v
+ * @param lineTensionForce
+ */
+DLL_PUBLIC inline void
+findVertexLineTension(const gcs::VertexPositionGeometry &vpg, const double eta,
+                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &H,
+                      const gcs::Vertex v, const gcs::Halfedge isoHe,
+                      gc::Vector3 gradVec,
+                      gcs::VertexData<gc::Vector3> &lineTensionForce) {
+  gc::Vector3 tangentVector =
+      gc::cross(gradVec, vpg.vertexNormals[v]).normalize();
+  gc::Vector2 principalDirection1 = vpg.vertexPrincipalCurvatureDirections[v];
+  gc::Vector3 PD1InWorldCoords =
+      vpg.vertexTangentBasis[v][0] * principalDirection1.x +
+      vpg.vertexTangentBasis[v][1] * principalDirection1.y;
+  double cosT = gc::dot(tangentVector, PD1InWorldCoords.normalize());
+  double K1 = (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
+  double K2 = (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
+  lineTensionForce[v] += -eta * vpg.edgeLengths[isoHe.edge()] *
+                         vpg.vertexNormals[v] *
+                         (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2);
 }
 
 /**
