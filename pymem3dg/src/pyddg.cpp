@@ -37,11 +37,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("isTuftedLaplacian"), py::arg("isProtein"),
       py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"),
       py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("gamma"),
-      py::arg("kt"), py::arg("pt"), py::arg("Kf"), py::arg("conc"),
-      py::arg("height"), py::arg("radius"), py::arg("h"), py::arg("T"),
-      py::arg("eps"), py::arg("closeZone"), py::arg("increment"),
+      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+      py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("closeZone"), py::arg("increment"),
       py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"),
       R"delim(
                Run the driver.
@@ -57,7 +57,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("fileName"), py::arg("mean_curvature"),
                py::arg("spon_curvature"), py::arg("ext_pressure"),
                py::arg("physical_pressure"), py::arg("capillary_pressure"),
-               py::arg("bending_pressure"));
+               py::arg("bending_pressure"), py::arg("line_pressure"));
 
   pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
                py::arg("nSub"), py::arg("path"), py::arg("R"));
@@ -70,11 +70,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("isTuftedLaplacian"), py::arg("isProtein"),
       py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"),
       py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("gamma"),
-      py::arg("kt"), py::arg("pt"), py::arg("Kf"), py::arg("conc"),
-      py::arg("height"), py::arg("radius"), py::arg("h"), py::arg("T"),
-      py::arg("eps"), py::arg("closeZone"), py::arg("increment"),
+      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+      py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("closeZone"), py::arg("increment"),
       py::arg("tSave"), py::arg("tMollify"), py::arg("outputDir"),
       R"delim(
                Run the driver.
@@ -90,7 +90,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("mean_curvature"), py::arg("spon_curvature"),
                py::arg("ext_pressure"), py::arg("physical_pressure"),
                py::arg("capillary_pressure"), py::arg("bending_pressure"),
-               py::arg("mask"), py::arg("H_H0"));
+               py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
 #endif
 };
 } // namespace ddgsolver

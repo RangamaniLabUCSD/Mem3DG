@@ -59,7 +59,7 @@ void signalHandler(int signum) {
 int viewer(std::string fileName, const bool mean_curvature,
            const bool spon_curvature, const bool ext_pressure,
            const bool physical_pressure, const bool capillary_pressure,
-           const bool bending_pressure) {
+           const bool bending_pressure, const bool line_pressure) {
 
   signal(SIGINT, signalHandler);
 
@@ -121,6 +121,14 @@ int viewer(std::string fileName, const bool mean_curvature,
         bendingPressure.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
+  }
+  if (line_pressure) {
+    gcs::VertexData<double> linePressure =
+        ptrRichData->getVertexProperty<double>("line_tension_pressure");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> linePressure_e =
+        linePressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("line_tension_pressure", linePressure_e);
   }
 
   /*gcs::VertexData<gc::Vector3> vertexVelocity =

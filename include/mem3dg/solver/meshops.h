@@ -403,14 +403,14 @@ findIsoHe(const gcs::VertexPositionGeometry &vpg,
  * @param vertexPositionGeometry
  * @param mean curvature H
  * @param vertex v
- * @param lineTensionForce
+ * @param lineTensionPressure
  */
 DLL_PUBLIC inline void
 findVertexLineTension(const gcs::VertexPositionGeometry &vpg, const double eta,
                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &H,
                       const gcs::Vertex v, const gcs::Halfedge isoHe,
                       gc::Vector3 gradVec,
-                      gcs::VertexData<gc::Vector3> &lineTensionForce) {
+                      gcs::VertexData<gc::Vector3> &lineTensionPressure) {
   gc::Vector3 tangentVector =
       gc::cross(gradVec, vpg.vertexNormals[v]).normalize();
   gc::Vector2 principalDirection1 = vpg.vertexPrincipalCurvatureDirections[v];
@@ -420,9 +420,9 @@ findVertexLineTension(const gcs::VertexPositionGeometry &vpg, const double eta,
   double cosT = gc::dot(tangentVector, PD1InWorldCoords.normalize());
   double K1 = (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
   double K2 = (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
-  lineTensionForce[v] += -eta * vpg.edgeLengths[isoHe.edge()] *
+  lineTensionPressure[v] += -eta * vpg.edgeLengths[isoHe.edge()] *
                          vpg.vertexNormals[v] *
-                         (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2);
+                         (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2) / vpg.vertexDualAreas[v];
 }
 
 /**

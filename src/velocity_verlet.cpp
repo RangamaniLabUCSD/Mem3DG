@@ -111,7 +111,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                        gc::EigenMap<double, 3>(f.capillaryPressure) +
                        gc::EigenMap<double, 3>(f.insidePressure) +
                        gc::EigenMap<double, 3>(f.externalPressure) +
-                       f.M_inv * (gc::EigenMap<double, 3>(f.lineTensionForce));
+                       (gc::EigenMap<double, 3>(f.lineTensionPressure));
     numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                                    gc::EigenMap<double, 3>(f.stochasticForce));
     if (!f.mesh.hasBoundary()) {
@@ -164,6 +164,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("bending_pressure", fb);
 
+      gcs::VertexData<double> fl(f.mesh);
+      fb.fromVector(
+          rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+      f.richData.addVertexProperty("line_tension_pressure", fb);
+
       std::tie(totalEnergy, BE, sE, pE, kE, cE) = getFreeEnergy(f);
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
@@ -182,7 +188,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         fd.writePhysicalPressure(frame, fn.raw());
         fd.writeCapillaryPressure(frame, ft.raw());
         fd.writeBendingPressure(frame, fb.raw());
-
+        fd.writeLinePressure(frame, fl.raw());
         fd.writeBendEnergy(frame, BE);
         fd.writeSurfEnergy(frame, sE);
         fd.writePressEnergy(frame, pE);

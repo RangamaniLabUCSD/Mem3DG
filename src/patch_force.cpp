@@ -42,7 +42,7 @@ void Force::getTubeForces() {
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
   auto insidePressure_e = gc::EigenMap<double, 3>(insidePressure);
   auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
-  auto lineTensionForce_e = gc::EigenMap<double, 3>(lineTensionForce);
+  auto lineTensionForce_e = gc::EigenMap<double, 3>(lineTensionPressure);
   auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
   Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
@@ -119,7 +119,7 @@ void Force::getTubeForces() {
   capillaryPressure_e = rowwiseScaling(-P.Ksg * 2.0 * H, vertexAngleNormal_e);
 
   /// D. LINE TENSION FORCE
-  lineTensionForce.fill({0.0, 0.0, 0.0});
+  lineTensionPressure.fill({0.0, 0.0, 0.0});
   if (P.eta > 0) {
     gcs::Vertex startingVertex;
     for (gcs::Vertex v : mesh.vertices()) {
@@ -133,7 +133,7 @@ void Force::getTubeForces() {
     gc::Vector3 gradH0{0.0, 0.0, 0.0};
     gcs::Halfedge isoHe = findIsoHe(vpg, H0, startingVertex, gradH0);
     findVertexLineTension(vpg, P.eta, H, startingVertex, isoHe, gradH0,
-                          lineTensionForce);
+                          lineTensionPressure);
     gc::Vertex nextVertex = isoHe.next().vertex();
     while (nextVertex != startingVertex) {
       if (count > mesh.nVertices()) {
@@ -141,7 +141,7 @@ void Force::getTubeForces() {
       }
       isoHe = findIsoHe(vpg, H0, nextVertex, isoHe.vertex(), gradH0);
       findVertexLineTension(vpg, P.eta, H, nextVertex, isoHe, gradH0,
-                            lineTensionForce);
+                            lineTensionPressure);
       gc::Vertex nextVertex = isoHe.next().vertex();
       count++;
     }

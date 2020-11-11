@@ -104,6 +104,8 @@ static const std::string PHYSPRESS_VAR = "physpressure";
 static const std::string CAPPRESS_VAR = "cappressure";
 /// Name of the bending pressure data
 static const std::string BENDPRESS_VAR = "bendpressure";
+/// Name of the line tension pressure data
+static const std::string LINEPRESS_VAR = "linepressure";
 /// Name of the bending energy data
 static const std::string BENDENER_VAR = "bendenergy";
 /// Name of the surface energy data
@@ -120,12 +122,12 @@ static const std::string TOTALENER_VAR = "totalenergy";
 static const std::string MASK_VAR = "mask";
 /// Name of the curvature difference data
 static const std::string H_H0_VAR = "curvaturediff";
-    /**
-     * @class TrajFile
-     * @brief Trajectory interface to help with manipulating trajectories
-     *
-     */
-    class DLL_PUBLIC TrajFile {
+/**
+ * @class TrajFile
+ * @brief Trajectory interface to help with manipulating trajectories
+ *
+ */
+class DLL_PUBLIC TrajFile {
 private:
   TrajFile *operator=(const TrajFile &rhs) = delete;
   TrajFile(const TrajFile &rhs) = delete;
@@ -170,6 +172,7 @@ public:
     physpress_var = fd->getVar(PHYSPRESS_VAR);
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
+    linepress_var = fd->getVar(LINEPRESS_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
     mask_var = fd->getVar(MASK_VAR);
     H_H0_var = fd->getVar(H_H0_VAR);
@@ -248,6 +251,9 @@ public:
     bendpress_var =
         fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
 
+    linepress_var =
+        fd->addVar(LINEPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+
     bendener_var = fd->addVar(BENDENER_VAR, netCDF::ncDouble, {frame_dim});
 
     surfener_var = fd->addVar(SURFENER_VAR, netCDF::ncDouble, {frame_dim});
@@ -260,7 +266,8 @@ public:
 
     totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
 
-    H_H0_var = fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    H_H0_var =
+        fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
   }
 
   TrajFile(TrajFile &&rhs) = default;
@@ -402,6 +409,13 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getBendingPressure(const std::size_t idx) const;
 
+  void
+  writeLinePressure(const std::size_t idx,
+                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getLinePressure(const std::size_t idx) const;
+
   void writeH_H0_diff(const std::size_t idx,
                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
@@ -488,6 +502,7 @@ private:
   nc::NcVar physpress_var;
   nc::NcVar cappress_var;
   nc::NcVar bendpress_var;
+  nc::NcVar linepress_var;
   nc::NcVar bendener_var;
   nc::NcVar surfener_var;
   nc::NcVar pressener_var;
