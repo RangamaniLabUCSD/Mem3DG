@@ -106,7 +106,7 @@ public:
   /// Cached tension-induced capillary pressure
   gcs::VertexData<gc::Vector3> capillaryPressure;
   /// Cached interfacial line tension
-  gcs::VertexData<gc::Vector3> lineTensionForce;
+  gcs::VertexData<gc::Vector3> lineTensionPressure;
   /// Cached relative inside pressure
   gcs::VertexData<gc::Vector3> insidePressure;
   /// Cached externally-applied pressure
@@ -191,7 +191,7 @@ public:
         isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
         mollifyFactor(mollifyFactor_), isVertexShift(isVertexShift_),
         bendingPressure(mesh_, {0, 0, 0}), insidePressure(mesh_, {0, 0, 0}),
-        capillaryPressure(mesh_, {0, 0, 0}), lineTensionForce(mesh_, {0, 0, 0}),
+        capillaryPressure(mesh_, {0, 0, 0}), lineTensionPressure(mesh_, {0, 0, 0}),
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetclr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),

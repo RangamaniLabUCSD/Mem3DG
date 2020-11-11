@@ -52,6 +52,7 @@ struct checkBox {
   const bool physical_pressure;
   const bool capillary_pressure;
   const bool bending_pressure;
+  const bool line_pressure;
   const bool mask;
   const bool H_H0;
 };
@@ -100,6 +101,10 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
   if (options.bending_pressure) {
     EigenVectorX1D fb = fd.getBendingPressure(idx);
     mesh->addVertexScalarQuantity("bending_pressure", fb);
+  }
+  if (options.bending_pressure) {
+    EigenVectorX1D fl = fd.getLinePressure(idx);
+    mesh->addVertexScalarQuantity("line_tension_pressure", fl);
   }
   if (options.mask) {
     EigenVectorX1D_i msk = fd.getMask();
@@ -188,13 +193,14 @@ int view_animation(std::string &filename, const bool ref_coord,
                    const bool velocity, const bool mean_curvature,
                    const bool spon_curvature, const bool ext_pressure,
                    const bool physical_pressure, const bool capillary_pressure,
-                   const bool bending_pressure, const bool mask, const bool H_H0) {
+                   const bool bending_pressure, const bool line_pressure,
+                   const bool mask, const bool H_H0) {
   signal(SIGINT, signalHandler);
   ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(filename);
 
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,
-                    bending_pressure, mask, H_H0});
+                    bending_pressure, line_pressure, mask, H_H0});
 
   // Visualization state variables
   int prevFrame = 0;

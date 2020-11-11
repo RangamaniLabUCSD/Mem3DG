@@ -314,6 +314,28 @@ TrajFile::getBendingPressure(const std::size_t idx) const {
   return vec;
 }
 
+// line tension pressure
+void TrajFile::writeLinePressure(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  linepress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getLinePressure(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  linepress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
 // bending energy
 void TrajFile::writeBendEnergy(const std::size_t idx, const double bendEnergy) {
   if (!writeable)
