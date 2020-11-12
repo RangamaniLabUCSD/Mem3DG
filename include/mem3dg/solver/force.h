@@ -191,7 +191,8 @@ public:
         isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
         mollifyFactor(mollifyFactor_), isVertexShift(isVertexShift_),
         bendingPressure(mesh_, {0, 0, 0}), insidePressure(mesh_, {0, 0, 0}),
-        capillaryPressure(mesh_, {0, 0, 0}), lineTensionPressure(mesh_, {0, 0, 0}),
+        capillaryPressure(mesh_, {0, 0, 0}),
+        lineTensionPressure(mesh_, {0, 0, 0}),
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetclr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
@@ -239,11 +240,11 @@ public:
       H0.setZero(mesh.nVertices(), 1);
     } else if (P.H0 != 0) {
       tanhDistribution(H0, dist_e, P.sharpness, P.r_H0);
-      Eigen::Matrix<double, Eigen::Dynamic, 1> constDtb;
-      constDtb.Constant(mesh.nVertices(), 1, 1.0);
-      if (((H0 - constDtb).norm() < 1e-12) && (P.eta != 0) ) {
-          P.eta = 0;
-          std::cout << "No interface, eta set to 0" << std::endl;
+      if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
+           1e-12) &&
+          (P.eta != 0)) {
+        P.eta = 0;
+        std::cout << " No interface, eta set to 0" << std::endl;
       }
       H0 *= P.H0;
     } else {
