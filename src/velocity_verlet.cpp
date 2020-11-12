@@ -39,7 +39,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                     double closeZone, double increment, double maxKv,
                     double maxKsg, double tSave, double tMollify,
                     const size_t verbosity, std::string inputMesh,
-                    std::string outputDir, double init_time, double errorJumpLim) {
+                    std::string outputDir, double init_time,
+                    double errorJumpLim) {
 
   // print out a .txt file listing all parameters used
   if (verbosity > 2) {
@@ -165,10 +166,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       f.richData.addVertexProperty("bending_pressure", fb);
 
       gcs::VertexData<double> fl(f.mesh);
-      fb.fromVector(
+      fl.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("line_tension_pressure", fb);
+      f.richData.addVertexProperty("line_tension_pressure", fl);
 
       std::tie(totalEnergy, BE, sE, pE, kE, cE) = getFreeEnergy(f);
 #ifdef MEM3DG_WITH_NETCDF
@@ -321,6 +322,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
       oldL2ErrorNorm = L2ErrorNorm;
       oldBE = BE;
+
     } // periodically save the geometric files, print some info, compare and
       // adjust
 

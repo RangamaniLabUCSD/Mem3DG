@@ -102,7 +102,7 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd,
     EigenVectorX1D fb = fd.getBendingPressure(idx);
     mesh->addVertexScalarQuantity("bending_pressure", fb);
   }
-  if (options.bending_pressure) {
+  if (options.line_pressure) {
     EigenVectorX1D fl = fd.getLinePressure(idx);
     mesh->addVertexScalarQuantity("line_tension_pressure", fl);
   }
@@ -165,6 +165,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd,
     EigenVectorX1D fb = fd.getBendingPressure(0);
     polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
         "bending_pressure", fb);
+  }
+  if (options.line_pressure) {
+    EigenVectorX1D fb = fd.getLinePressure(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
+        "line_tension_pressure", fb);
   }
   if (options.mask) {
     EigenVectorX1D_i msk = fd.getMask();
