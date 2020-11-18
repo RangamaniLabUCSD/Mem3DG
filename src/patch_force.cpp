@@ -64,13 +64,13 @@ void Force::getTubeForces() {
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // update distance
-  geodesicDistanceFromAppliedForce =
-      heatMethodDistance(vpg, mesh.vertex(ptInd));
-  if (P.H0 != 0) {
-    tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
-                     P.sharpness, P.r_H0);
-    H0 *= P.H0;
-  }
+  // geodesicDistanceFromAppliedForce =
+  //     heatMethodDistance(vpg, mesh.vertex(ptInd));
+  // if (P.H0 != 0) {
+  //   tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
+  //                    P.sharpness, P.r_H0);
+  //   H0 *= P.H0;
+  // }
 
   // calculate mean curvature
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
@@ -82,7 +82,7 @@ void Force::getTubeForces() {
       vpg.vertexGaussianCurvatures.raw();
 
   // calculate the Laplacian of mean curvature H
-  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * H;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
 
   // initialize and calculate intermediary result scalarTerms_integrated
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms_integrated =
