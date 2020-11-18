@@ -18,6 +18,8 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+int viewPly(std::string fileName);
+
 int viewer(std::string fileName, const bool mean_curvature = 0,
            const bool spon_curvature = 0, const bool ext_pressure = 0,
            const bool physical_pressure = 0, const bool capillary_pressure = 0,

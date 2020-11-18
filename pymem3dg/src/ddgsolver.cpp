@@ -56,6 +56,23 @@ void signalHandler(int signum) {
   exit(signum);
 }
 
+int viewPly(std::string fileName) {
+
+  signal(SIGINT, signalHandler);
+
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(fileName);
+
+  polyscope::init();
+  polyscope::registerSurfaceMesh("Vesicle surface",
+                                 ptrVpg->inputVertexPositions,
+                                 ptrMesh->getFaceVertexList());
+  polyscope::show();
+
+  return 0;
+}
+
 int viewer(std::string fileName, const bool mean_curvature,
            const bool spon_curvature, const bool ext_pressure,
            const bool physical_pressure, const bool capillary_pressure,
