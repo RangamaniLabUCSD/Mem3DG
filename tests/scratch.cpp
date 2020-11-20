@@ -18,13 +18,6 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-// We are writing 2D data, a 6 x 12 grid
-constexpr int nx = 6;
-constexpr int ny = 12;
-
-// Return this in event of a problem
-constexpr int nc_err = 2;
-
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 

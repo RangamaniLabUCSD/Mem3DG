@@ -208,7 +208,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double Vt, double gamma, double kt, std::vector<double> pt,
                double Kf, double conc, double height, double radius, double h,
                double T, double eps, double closeZone, double increment,
-               double tSave, double tMollify, std::string outputDir, double errorJumpLim) {
+               double tSave, double tMollify, std::string outputDir,
+               double errorJumpLim) {
 
   signal(SIGINT, signalHandler);
   // pybind11::scoped_interpreter guard{};
@@ -228,10 +229,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 
   std::cout << "Loading reference mesh " << refMesh << " ...";
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg;
-  std::tie(ptrRefMesh, ptrRefVpg) = gcs::readManifoldSurfaceMesh(refMesh);
-  std::cout << "Finished!" << std::endl;
-
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
+  std::tie(ptrRefMesh, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
   if (nSub > 0) {
     std::cout << "Subdivide input and reference mesh " << nSub
               << " time(s) ...";
@@ -244,16 +243,17 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     // ddgsolver::subdivide(ptrRefMesh, ptrRefVpg, nSub);
     igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
               ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
-    igl::loop(gc::EigenMap<double, 3>(ptrRefVpg->inputVertexPositions),
+    igl::loop(gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions),
               ptrRefMesh->getFaceVertexMatrix<size_t>(), refcoords, reffaces,
               nSub);
     std::tie(ptrMesh, ptrVpg) =
         gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
-    std::tie(ptrRefMesh, ptrRefVpg) =
+    std::tie(ptrRefMesh, ptrRefVpg_) =
         gcs::makeManifoldSurfaceMeshAndGeometry(refcoords, reffaces);
     std::cout << "Finished!" << std::endl;
   }
-
+  gcs::VertexPositionGeometry *ptrRefVpg = new gcs::VertexPositionGeometry(
+      mesh, gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();
   richData.addGeometry(*ptrVpg);
@@ -274,10 +274,11 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
-  ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv[1], Ksg[1], tSave, tMollify,
-                                         verbosity, inputMesh, outputDir, 0, errorJumpLim);
+  ddgsolver::integration::velocityVerlet(
+      f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
+      verbosity, inputMesh, outputDir, 0, errorJumpLim);
 
+  delete ptrRefVpg;
   return 0;
 }
 
@@ -349,9 +350,9 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
-  ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv[1], Ksg[1], tSave, tMollify,
-                                         verbosity, trajFile, outputDir, time, errorJumpLim);
+  ddgsolver::integration::velocityVerlet(
+      f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
+      verbosity, trajFile, outputDir, time, errorJumpLim);
 
   delete ptrRefVpg;
 

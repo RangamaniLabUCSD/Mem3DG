@@ -54,3 +54,7 @@ add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
 add_executable(ddg scratch.cpp) 
 target_link_libraries(ddg PRIVATE mem3dg polyscope) 
 set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+add_executable(ddg_patch scratch_patch.cpp) 
+target_link_libraries(ddg_patch PRIVATE mem3dg polyscope) 
+set_target_properties(ddg_patch PROPERTIES CXX_VISIBILITY_PRESET hidden)

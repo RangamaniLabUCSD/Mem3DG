@@ -64,13 +64,13 @@ void Force::getTubeForces() {
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // update distance
-  // geodesicDistanceFromAppliedForce =
-  //     heatMethodDistance(vpg, mesh.vertex(ptInd));
-  // if (P.H0 != 0) {
-  //   tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
-  //                    P.sharpness, P.r_H0);
-  //   H0 *= P.H0;
-  // }
+  geodesicDistanceFromAppliedForce =
+      heatMethodDistance(vpg, mesh.vertex(ptInd));
+  if (P.H0 != 0) {
+    tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
+                     P.sharpness, P.r_H0);
+    H0 *= P.H0;
+  }
 
   // calculate mean curvature
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
@@ -119,50 +119,47 @@ void Force::getTubeForces() {
 
   /// D. LINE TENSION FORCE
   lineTensionPressure.fill({0.0, 0.0, 0.0});
-  if (P.eta > 0) {
-  }
 
   /// E. LOCAL REGULARIZATION
   regularizationForce.fill({0.0, 0.0, 0.0});
-  gcs::EdgeData<double> clr(mesh);
-  getCrossLengthRatio(mesh, vpg, clr);
 
-  if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst)) {
+  if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
+
+      // Calculate interfacial tension
       if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
-          (H0[v.getIndex()] < (0.9 * P.H0))) {
-        if (H[v.getIndex()] == 0) {
-          lineTensionPressure[v].x = lineTensionPressure[v].y =
-              lineTensionPressure[v].z = 0;
-        } else {
-          gc::Vector3 gradient{0.0, 0.0, 0.0};
-          double length = 0;
-          for (gcs::Halfedge he : v.outgoingHalfedges()) {
-            gradient += vecFromHalfedge(he, vpg) *
-                        (H0[he.next().vertex().getIndex()] -
-                         H0[he.vertex().getIndex()]) /
-                        vpg.edgeLengths[he.edge()];
-            length = 0.5 * vpg.edgeLengths[he.edge()];
-          }
-          gradient.normalize();
-          gc::Vector3 tangentVector =
-              gc::cross(gradient, vpg.vertexNormals[v]).normalize();
-          gc::Vector2 principalDirection1 =
-              vpg.vertexPrincipalCurvatureDirections[v];
-          gc::Vector3 PD1InWorldCoords =
-              vpg.vertexTangentBasis[v][0] * principalDirection1.x +
-              vpg.vertexTangentBasis[v][1] * principalDirection1.y;
-          double cosT = gc::dot(tangentVector, PD1InWorldCoords.normalize());
-          double K1 =
-              (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
-          double K2 =
-              (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
-          lineTensionPressure[v] +=
-              -P.eta * vpg.vertexNormals[v] * length *
-              (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2) /
-              vpg.vertexDualAreas[v];
+          (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] == 0)) {
+        gc::Vector3 gradient{0.0, 0.0, 0.0};
+        double length = 0;
+        // Calculate gradient of spon curv
+        for (gcs::Halfedge he : v.outgoingHalfedges()) {
+          gradient +=
+              vecFromHalfedge(he, vpg) *
+              (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()]) /
+              vpg.edgeLengths[he.edge()];
+          length = 0.5 * vpg.edgeLengths[he.edge()];
         }
+        gradient.normalize();
+        // Find angle between tangent & principal direction
+        gc::Vector3 tangentVector =
+            gc::cross(gradient, vpg.vertexNormals[v]).normalize();
+        gc::Vector2 principalDirection1 =
+            vpg.vertexPrincipalCurvatureDirections[v];
+        gc::Vector3 PD1InWorldCoords =
+            vpg.vertexTangentBasis[v][0] * principalDirection1.x +
+            vpg.vertexTangentBasis[v][1] * principalDirection1.y;
+        double cosT = gc::dot(tangentVector, PD1InWorldCoords.normalize());
+        // Deduce normal curvature
+        double K1 =
+            (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
+        double K2 =
+            (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
+        lineTensionPressure[v] +=
+            -P.eta * vpg.vertexNormals[v] * length *
+            (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2) /
+            vpg.vertexDualAreas[v];
       }
+
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
         gcs::Halfedge base_he = he.next();
 
@@ -174,6 +171,8 @@ void Force::getTubeForces() {
 
         // conformal regularization
         if (P.Kst != 0) {
+          gcs::EdgeData<double> clr(mesh);
+          getCrossLengthRatio(mesh, vpg, clr);
           gcs::Halfedge jl = he.next();
           gcs::Halfedge li = jl.next();
           gcs::Halfedge ik = he.twin().next();
