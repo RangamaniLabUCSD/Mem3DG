@@ -240,13 +240,13 @@ public:
       H0.setZero(mesh.nVertices(), 1);
     } else if (P.H0 != 0) {
       tanhDistribution(H0, dist_e, P.sharpness, P.r_H0);
+      H0 *= P.H0;
       if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
            1e-12) &&
           (P.eta != 0)) {
         P.eta = 0;
         std::cout << " No interface, eta set to 0" << std::endl;
       }
-      H0 *= P.H0;
     } else {
       H0.setZero(mesh.nVertices(), 1);
       if (P.eta != 0) {
