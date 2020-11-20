@@ -167,6 +167,8 @@ public:
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
+  /// Distance solver 
+  gcs::HeatMethodDistanceSolver heatSolver;
   /// magnitude of externally-applied pressure
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
   /// indices for vertices chosen for integration
@@ -196,7 +198,7 @@ public:
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetclr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
-        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}) {
+        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}), heatSolver(vpg) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -226,8 +228,11 @@ public:
 
     // Initialize the geodesic distance from ptInd
     geodesicDistanceFromAppliedForce =
-        heatMethodDistance(vpg, mesh.vertex(ptInd));
+        heatSolver.computeDistance(mesh.vertex(ptInd));
     auto &dist_e = geodesicDistanceFromAppliedForce.raw();
+    // geodesicDistanceFromAppliedForce =
+    //     heatMethodDistance(vpg, mesh.vertex(ptInd));
+    // auto &dist_e = geodesicDistanceFromAppliedForce.raw();
 
     // Initialize the external pressure magnitude distribution
     gaussianDistribution(externalPressureMagnitude, dist_e,
