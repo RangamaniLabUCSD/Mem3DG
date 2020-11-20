@@ -60,6 +60,15 @@ void Force::getVesicleForces() {
   // Cache the inverse mass matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
+  // update distance
+  // geodesicDistanceFromAppliedForce =
+  //     heatSolver.computeDistance(mesh.vertex(ptInd));
+  // if (P.H0 != 0) {
+  //   tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
+  //                    P.r_H0);
+  //   H0 *= P.H0;
+  // }
+
   // calculate mean curvature
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
       rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
@@ -131,18 +140,15 @@ void Force::getVesicleForces() {
           gcs::Halfedge ik = he.twin().next();
           gcs::Halfedge kj = ik.next();
 
-          gc::Vector3 grad_li =
-              vecFromHalfedge(li, vpg).normalize();
-          gc::Vector3 grad_ik =
-              vecFromHalfedge(ik.twin(), vpg).normalize();
+          gc::Vector3 grad_li = vecFromHalfedge(li, vpg).normalize();
+          gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), vpg).normalize();
           regularizationForce[v] +=
-              - P.Kst * (clr[he.edge()] - targetclr[he.edge()]) / targetclr[he.edge()] *
-              (vpg.edgeLengths[kj.edge()] /
-              vpg.edgeLengths[jl.edge()])
-              * (grad_li * vpg.edgeLengths[ik.edge()] -
+              -P.Kst * (clr[he.edge()] - targetclr[he.edge()]) /
+              targetclr[he.edge()] *
+              (vpg.edgeLengths[kj.edge()] / vpg.edgeLengths[jl.edge()]) *
+              (grad_li * vpg.edgeLengths[ik.edge()] -
                grad_ik * vpg.edgeLengths[li.edge()]) /
-              vpg.edgeLengths[ik.edge()] /
-              vpg.edgeLengths[ik.edge()];
+              vpg.edgeLengths[ik.edge()] / vpg.edgeLengths[ik.edge()];
           // regularizationForce[v] += -P.Kst * localAreaGradient;
         }
 

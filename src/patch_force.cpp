@@ -65,7 +65,7 @@ void Force::getTubeForces() {
 
   // update distance
   geodesicDistanceFromAppliedForce =
-      heatMethodDistance(vpg, mesh.vertex(ptInd));
+      heatSolver.computeDistance(mesh.vertex(ptInd));
   if (P.H0 != 0) {
     tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
                      P.sharpness, P.r_H0);
@@ -128,7 +128,7 @@ void Force::getTubeForces() {
 
       // Calculate interfacial tension
       if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
-          (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] == 0)) {
+          (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
         gc::Vector3 gradient{0.0, 0.0, 0.0};
         double length = 0;
         // Calculate gradient of spon curv
