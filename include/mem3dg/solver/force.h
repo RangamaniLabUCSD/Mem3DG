@@ -125,13 +125,13 @@ public:
   gcs::VertexData<double> chemicalPotential;
 
   /// Whether or not use tufted laplacian matrix
-  bool isTuftedLaplacian;
+  const bool isTuftedLaplacian;
   /// Mollify Factor in constructing tufted laplacian matrix
-  double mollifyFactor;
+  const double mollifyFactor;
   /// Whether or not do vertex shift
-  bool isVertexShift;
+  const bool isVertexShift;
   /// Whether or not consider protein binding
-  bool isProtein;
+  const bool isProtein;
 
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
@@ -145,13 +145,15 @@ public:
   /// Target area per face
   gcs::FaceData<double> targetFaceAreas;
   /// Target total face area
-  double targetSurfaceArea = 0.0;
+  double targetSurfaceArea;
   /// surface area
   double surfaceArea = 0.0;
   /// Maximal volume
-  double refVolume = 0.0;
+  double refVolume;
   /// Volume
   double volume = 0.0;
+  /// Interface Area;
+  double interArea;
   /// Target length per edge
   gcs::EdgeData<double> targetEdgeLengths;
   /// Target edge cross length ratio
@@ -167,7 +169,7 @@ public:
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
-  /// Distance solver 
+  /// Distance solver
   gcs::HeatMethodDistanceSolver heatSolver;
   /// magnitude of externally-applied pressure
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
@@ -247,17 +249,12 @@ public:
       tanhDistribution(H0, dist_e, P.sharpness, P.r_H0);
       H0 *= P.H0;
       if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
-           1e-12) &&
-          (P.eta != 0)) {
-        P.eta = 0;
-        std::cout << " No interface, eta set to 0" << std::endl;
+           1e-12)) {
+        assert(P.eta == 0);
       }
     } else {
       H0.setZero(mesh.nVertices(), 1);
-      if (P.eta != 0) {
-        P.eta = 0;
-        std::cout << "No interface, eta set to 0" << std::endl;
-      }
+      assert(P.eta == 0);
     }
 
     // Initialize the mask on choosing integration vertices based on geodesic
@@ -295,7 +292,7 @@ public:
     // M_inv = solver.solve(I);
 
     // Initialize target face/surface areas
-    targetFaceAreas = refVpg.faceAreas.reinterpretTo(mesh);
+    targetFaceAreas = refVpg.faceAreas;
     targetSurfaceArea = targetFaceAreas.raw().sum();
 
     // Initialize edge length
@@ -303,6 +300,7 @@ public:
 
     // Initialize target cross length ration
     getCrossLengthRatio(mesh, refVpg, targetclr);
+    // targetclr.fill(1);
 
     // Initialize reference volume
     if (mesh.hasBoundary()) {

@@ -261,9 +261,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::cout << "Initiating the system ...";
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
-  if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
-    Vt = 1.0;
-    std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
+  if (ptrMesh->hasBoundary()) {
+      assert(Vt == 1.0);
   }
   ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
@@ -336,9 +335,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   std::cout << "Initiating the system ...";
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
-  if (mesh.hasBoundary() && (Vt != 1.0)) {
-    Vt = 1.0;
-    std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
+  if (mesh.hasBoundary()) {
+      assert(Vt == 1.0);
   }
   ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
