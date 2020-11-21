@@ -22,7 +22,7 @@
 namespace ddgsolver {
 namespace integration {
 
-DLL_PUBLIC std::tuple<double, double, double, double, double, double>
+DLL_PUBLIC std::tuple<double, double, double, double, double, double, double>
 getFreeEnergy(Force &f);
 
 DLL_PUBLIC double
@@ -56,6 +56,7 @@ DLL_PUBLIC void getStatusLog(std::string nameOfFile, Force &f, double dt,
                              double faceError, double bendingEnergy,
                              double surfaceEnergy, double pressureEnergy,
                              double kineticEnergy, double chemicalEnergy,
+                             double lineEnergy, 
                              double totalEnergy, double L2ErrorNorm,
                              bool isTuftedLaplacian, bool isProtein,
                              bool isVertexShift, std::string inputMesh);

@@ -411,6 +411,21 @@ double TrajFile::getChemEnergy(const std::size_t idx) const {
   return Energy;
 }
 
+// line tension energy
+void TrajFile::writeLineEnergy(const std::size_t idx, const double Energy) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  lineener_var.putVar({idx}, &Energy);
+}
+
+double TrajFile::getLineEnergy(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double Energy;
+  lineener_var.getVar({idx}, &Energy);
+  return Energy;
+}
+
 // total energy
 void TrajFile::writeTotalEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
