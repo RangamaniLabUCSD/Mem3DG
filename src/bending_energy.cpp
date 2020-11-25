@@ -82,10 +82,10 @@ getFreeEnergy(Force &f) {
     kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();
 
     if (f.isProtein) {
-      double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
+      cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
     }
 
-    double lE = (f.P.eta * f.interArea * f.P.sharpness);
+    lE = (f.P.eta * f.interArea * f.P.sharpness);
 
     totalE = bE + sE + pE + kE + cE + lE;
 
@@ -107,10 +107,10 @@ getFreeEnergy(Force &f) {
     kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();
 
     if (f.isProtein) {
-      double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
+      cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
     }
 
-    double lE = (f.P.eta * f.interArea * f.P.sharpness);
+    lE = (f.P.eta * f.interArea * f.P.sharpness);
 
     totalE = bE + sE + pE + kE + cE + lE;
   }
