@@ -38,7 +38,7 @@ getL2ErrorNorm(Eigen::SparseMatrix<double> M,
       (M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
-std::tuple<double, double, double, double, double, double>
+std::tuple<double, double, double, double, double, double, double>
 getFreeEnergy(Force &f) {
   // comment: this may not be useful, the convergence can be be tested by
   // checking its derivative which is the forces excluding the DPD forces. The
@@ -50,7 +50,7 @@ getFreeEnergy(Force &f) {
   // same for all time pt for (size_t i = 0; i < positions.rows(); i++) {
   // for
   //(size_t j = 0; j < positions.rows(); j++) { 		Eb +=
-  //positions.row(i)
+  // positions.row(i)
   //* A * positions.transpose().col(j);
   //	}
   //}
@@ -61,6 +61,7 @@ getFreeEnergy(Force &f) {
 
   double kE;
   double cE = 0;
+  double lE = 0;
   double totalE;
 
   if (f.mesh.hasBoundary()) {
@@ -81,10 +82,12 @@ getFreeEnergy(Force &f) {
     kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();
 
     if (f.isProtein) {
-      double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
+      cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
     }
 
-    totalE = bE + sE + pE + kE + cE;
+    lE = (f.P.eta * f.interArea * f.P.sharpness);
+
+    totalE = bE + sE + pE + kE + cE + lE;
 
   } else {
 
@@ -104,14 +107,16 @@ getFreeEnergy(Force &f) {
     kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();
 
     if (f.isProtein) {
-      double cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
+      cE = (f.M * f.P.epsilon * f.proteinDensity.raw()).sum();
     }
 
-    totalE = bE + sE + pE + kE + cE;
+    lE = (f.P.eta * f.interArea * f.P.sharpness);
+
+    totalE = bE + sE + pE + kE + cE + lE;
   }
 
-  std::tuple<double, double, double, double, double, double> output(
-      totalE, bE, sE, pE, kE, cE);
+  std::tuple<double, double, double, double, double, double, double> output(
+      totalE, bE, sE, pE, kE, cE, lE);
 
   return output;
 }

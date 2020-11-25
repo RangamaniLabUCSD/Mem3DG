@@ -68,7 +68,7 @@ void getParameterLog(Force &f, double dt,
 
 void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std::size_t frame, double areaError,
                    double volumeError, double bendingError, double faceError, double bendingEnergy, double surfaceEnergy, 
-                   double pressureEnergy, double kineticEnergy, double chemicalEnergy, double totalEnergy,
+                   double pressureEnergy, double kineticEnergy, double chemicalEnergy, double lineEnergy, double totalEnergy,
                   double L2ErrorNorm, bool isTuftedLaplacian, bool isProtein, bool isVertexShift,
                    std::string inputMesh) {
   ofstream myfile(nameOfFile);
@@ -106,6 +106,7 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
            << "Pressure Work:    " << pressureEnergy << "\n"
            << "Kinetic Work:    " << kineticEnergy << "\n"
            << "Chemical Energy:  " << chemicalEnergy << "\n"
+           << "Line tension Energy:  " << lineEnergy << "\n"
            << "Total Energy:     " << totalEnergy << "\n" 
            << "L2 error norm:    " << L2ErrorNorm << "\n"
            << "Volume:           " << f.volume << " = "
