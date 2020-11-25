@@ -116,6 +116,8 @@ static const std::string PRESSENER_VAR = "pressenergy";
 static const std::string KINEENER_VAR = "kineenergy";
 /// Name of the chemical energy data
 static const std::string CHEMENER_VAR = "chemenergy";
+/// Name of the line tension energy data
+static const std::string LINEENER_VAR = "lineenergy";
 /// Name of the chemical energy data
 static const std::string TOTALENER_VAR = "totalenergy";
 /// Name of the mask data
@@ -264,6 +266,8 @@ public:
 
     chemener_var = fd->addVar(CHEMENER_VAR, netCDF::ncDouble, {frame_dim});
 
+    lineener_var = fd->addVar(LINEENER_VAR, netCDF::ncDouble, {frame_dim});
+
     totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
 
     H_H0_var =
@@ -409,9 +413,8 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getBendingPressure(const std::size_t idx) const;
 
-  void
-  writeLinePressure(const std::size_t idx,
-                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+  void writeLinePressure(const std::size_t idx,
+                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getLinePressure(const std::size_t idx) const;
@@ -441,6 +444,10 @@ public:
   void writeChemEnergy(const std::size_t idx, const double Energy);
 
   double getChemEnergy(const std::size_t idx) const;
+
+  void writeLineEnergy(const std::size_t idx, const double Energy);
+
+  double getLineEnergy(const std::size_t idx) const;
 
   void writeTotalEnergy(const std::size_t idx, const double Energy);
 
@@ -508,6 +515,7 @@ private:
   nc::NcVar pressener_var;
   nc::NcVar kineener_var;
   nc::NcVar chemener_var;
+  nc::NcVar lineener_var;
   nc::NcVar totalener_var;
   nc::NcVar mask_var;
   nc::NcVar H_H0_var;

@@ -52,6 +52,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   totalPressure.resize(f.mesh.nVertices(), 3);
   totalPressure.setZero();
 
+  Eigen::Matrix<double, Eigen::Dynamic, 3>  regularizationForce_e;
+  regularizationForce_e.resize(f.mesh.nVertices(), 3);
+  regularizationForce_e.setZero();
+
   int nSave = int(tSave / dt);
 
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -70,6 +74,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   double pE;
   double kE;
   double cE;
+  double lE;
 
   double oldL2ErrorNorm = 1e6;
   double L2ErrorNorm;
@@ -171,7 +176,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       f.richData.addVertexProperty("line_tension_pressure", fl);
 
-      std::tie(totalEnergy, BE, sE, pE, kE, cE) = getFreeEnergy(f);
+      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
         frame = fd.getNextFrameIndex();
@@ -195,6 +200,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         fd.writePressEnergy(frame, pE);
         fd.writeKineEnergy(frame, kE);
         fd.writeChemEnergy(frame, cE);
+        fd.writeLineEnergy(frame, lE);
         fd.writeTotalEnergy(frame, totalEnergy);
       }
 #endif
@@ -236,7 +242,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         sprintf(buffer, "/t=%d", int(i * dt * 100));
         f.richData.write(outputDir + buffer + ".ply");
         getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea,
-                     dVolume, dBE, dFace, BE, sE, pE, kE, cE, totalEnergy,
+                     dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
                      L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
         // getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
@@ -252,6 +258,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << "dBE: " << dBE << "\n"
                   << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
                   << "Bending energy: " << BE << "\n"
+                  << "Line energy: " << lE << "\n"
                   << "Total energy (exclude V^ext): " << totalEnergy << "\n"
                   << "L2 error norm: " << L2ErrorNorm << "\n"
                   << "COM: "
@@ -336,17 +343,19 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     }
 
     // Regularize the vetex position geometry if needed
-    pos_e += f.M_inv * gc::EigenMap<double, 3>(f.regularizationForce) * dt;
+    regularizationForce_e = rowwiseScaling(f.mask.cast<double>(),
+                                      gc::EigenMap<double, 3>(f.regularizationForce));
+    pos_e +=  regularizationForce_e * dt;
 
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
 
-    if (f.vpg.cornerAngles.raw().minCoeff() < (M_PI / 6)) {
-      f.isTuftedLaplacian = true;
-    } else {
-      f.isTuftedLaplacian = false;
-    }
+    // if (f.vpg.cornerAngles.raw().minCoeff() < (M_PI / 6)) {
+    //   f.isTuftedLaplacian = true;
+    // } else {
+    //   f.isTuftedLaplacian = false;
+    // }
 
     // recompute cached values
     f.update_Vertex_positions();
@@ -373,7 +382,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
         getStatusLog(outputDir + "/final_report.txt", f, dt, i * dt, frame,
-                     dArea, dVolume, dBE, dFace, BE, sE, pE, kE, cE,
+                     dArea, dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE,
                      totalEnergy, L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
       }
