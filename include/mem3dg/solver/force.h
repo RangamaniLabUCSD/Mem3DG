@@ -157,7 +157,7 @@ public:
   /// Target length per edge
   gcs::EdgeData<double> targetEdgeLengths;
   /// Target edge cross length ratio
-  gcs::EdgeData<double> targetclr;
+  gcs::EdgeData<double> targetLcr;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
@@ -198,7 +198,7 @@ public:
         capillaryPressure(mesh_, {0, 0, 0}),
         lineTensionPressure(mesh_, {0, 0, 0}),
         externalPressure(mesh_, {0, 0, 0}),
-        regularizationForce(mesh_, {0, 0, 0}), targetclr(mesh_),
+        regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
         proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}), heatSolver(vpg) {
 
@@ -299,7 +299,7 @@ public:
     targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
     // Initialize target cross length ration
-    getCrossLengthRatio(mesh, refVpg, targetclr);
+    getCrossLengthRatio(mesh, refVpg, targetLcr);
     // targetclr.fill(1);
 
     // Initialize reference volume

@@ -52,6 +52,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   totalPressure.resize(f.mesh.nVertices(), 3);
   totalPressure.setZero();
 
+  Eigen::Matrix<double, Eigen::Dynamic, 3>  regularizationForce_e;
+  regularizationForce_e.resize(f.mesh.nVertices(), 3);
+  regularizationForce_e.setZero();
+
   int nSave = int(tSave / dt);
 
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -254,6 +258,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << "dBE: " << dBE << "\n"
                   << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
                   << "Bending energy: " << BE << "\n"
+                  << "Line energy: " << lE << "\n"
                   << "Total energy (exclude V^ext): " << totalEnergy << "\n"
                   << "L2 error norm: " << L2ErrorNorm << "\n"
                   << "COM: "
@@ -338,7 +343,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     }
 
     // Regularize the vetex position geometry if needed
-    pos_e += f.M_inv * gc::EigenMap<double, 3>(f.regularizationForce) * dt;
+    regularizationForce_e = rowwiseScaling(f.mask.cast<double>(),
+                                      gc::EigenMap<double, 3>(f.regularizationForce));
+    pos_e +=  regularizationForce_e * dt;
 
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);

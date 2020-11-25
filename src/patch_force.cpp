@@ -123,8 +123,8 @@ void Force::getTubeForces() {
 
   /// E. LOCAL REGULARIZATION
   regularizationForce.fill({0.0, 0.0, 0.0});
-  gcs::EdgeData<double> clr(mesh);
-  getCrossLengthRatio(mesh, vpg, clr);
+  gcs::EdgeData<double> lcr(mesh);
+  getCrossLengthRatio(mesh, vpg, lcr);
 
   if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
@@ -136,7 +136,7 @@ void Force::getTubeForces() {
         // Calculate gradient of spon curv
         for (gcs::Halfedge he : v.outgoingHalfedges()) {
           gradient +=
-              vecFromHalfedge(he, vpg) *
+              vecFromHalfedge(he, vpg).normalize() *
               (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()]) /
               vpg.edgeLengths[he.edge()];
         }
@@ -180,8 +180,8 @@ void Force::getTubeForces() {
           gc::Vector3 grad_li = vecFromHalfedge(li, vpg).normalize();
           gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), vpg).normalize();
           regularizationForce[v] +=
-              -P.Kst * (clr[he.edge()] - targetclr[he.edge()]) /
-              targetclr[he.edge()] *
+              -P.Kst * (lcr[he.edge()] - targetLcr[he.edge()]) /
+              targetLcr[he.edge()] *
               (vpg.edgeLengths[kj.edge()] / vpg.edgeLengths[jl.edge()]) *
               (grad_li * vpg.edgeLengths[ik.edge()] -
                grad_ik * vpg.edgeLengths[li.edge()]) /
