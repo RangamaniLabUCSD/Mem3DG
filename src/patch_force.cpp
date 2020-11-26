@@ -67,7 +67,7 @@ void Force::getTubeForces() {
   geodesicDistanceFromAppliedForce =
       heatSolver.computeDistance(mesh.vertex(ptInd));
   if (P.H0 != 0) {
-    tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
+    tanhDistribution(vpg, H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
                      P.r_H0);
     H0 *= P.H0;
   }

@@ -51,7 +51,7 @@ struct Parameters {
   /// Sharpness of the spontaneous curvature hetergeneity
   double sharpness;
   /// radius of non-zero spontaneous curvature
-  double r_H0;
+  std::vector<double> r_H0;
   /// Global stretching modulus
   double Ksg;
   /// Vertex shifting constant
@@ -246,7 +246,7 @@ public:
       proteinDensity.raw().setZero();
       H0.setZero(mesh.nVertices(), 1);
     } else if (P.H0 != 0) {
-      tanhDistribution(H0, dist_e, P.sharpness, P.r_H0);
+      tanhDistribution(vpg, H0, dist_e, P.sharpness, P.r_H0);
       H0 *= P.H0;
       if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
            1e-12)) {
