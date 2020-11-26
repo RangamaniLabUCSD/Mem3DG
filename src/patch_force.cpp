@@ -35,7 +35,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getTubeForces() {
+void Force::getPatchForces() {
 
   /// 0. GENERAL
   // map the MeshData to eigen matrix XXX_e
@@ -126,7 +126,7 @@ void Force::getTubeForces() {
   gcs::EdgeData<double> lcr(mesh);
   getCrossLengthRatio(mesh, vpg, lcr);
 
-  if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
+  if ((P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
 
       // Calculate interfacial tension
@@ -155,9 +155,8 @@ void Force::getTubeForces() {
             (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
         double K2 =
             (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
-        lineTensionPressure[v] =
-            -P.eta * vpg.vertexNormals[v] *
-            (cosT * cosT * K1 + (1.0 - cosT * cosT) * K2) * P.sharpness;
+        lineTensionPressure[v] = -P.eta * vpg.vertexNormals[v] *
+                                 (cosT * cosT * (K1 - K2) + K2) * P.sharpness;
         interArea += vpg.vertexDualAreas[v];
       }
 

@@ -356,7 +356,7 @@ public:
 
   void getVesicleForces();
 
-  void getTubeForces();
+  void getPatchForces();
 
   void getDPDForces();
 

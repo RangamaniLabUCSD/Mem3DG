@@ -40,6 +40,7 @@ void Force::getVesicleForces() {
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
   auto insidePressure_e = gc::EigenMap<double, 3>(insidePressure);
   auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
+  auto lineTensionForce_e = gc::EigenMap<double, 3>(lineTensionPressure);
   auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
   Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
@@ -61,13 +62,13 @@ void Force::getVesicleForces() {
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // update distance
-  // geodesicDistanceFromAppliedForce =
-  //     heatSolver.computeDistance(mesh.vertex(ptInd));
-  // if (P.H0 != 0) {
-  //   tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
-  //                    P.r_H0);
-  //   H0 *= P.H0;
-  // }
+  geodesicDistanceFromAppliedForce =
+      heatSolver.computeDistance(mesh.vertex(ptInd));
+  if (P.H0 != 0) {
+    tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
+                     P.r_H0);
+    H0 *= P.H0;
+  }
 
   // calculate mean curvature
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
@@ -117,13 +118,48 @@ void Force::getVesicleForces() {
       -P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea * 2.0 * H,
       vertexAngleNormal_e);
 
-  /// D. LOCAL REGULARIZATION
+  /// D. LINE TENSION FORCE
+  lineTensionPressure.fill({0.0, 0.0, 0.0});
+  interArea = 0.0;
+
+  /// E. LOCAL REGULARIZATION
   regularizationForce.fill({0.0, 0.0, 0.0});
   gcs::EdgeData<double> lcr(mesh);
   getCrossLengthRatio(mesh, vpg, lcr);
 
-  if ((P.Ksl != 0) || (P.Kse != 0) || (P.Kst != 0)) {
+  if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
     for (gcs::Vertex v : mesh.vertices()) {
+
+      // Calculate interfacial tension
+      if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
+          (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
+        gc::Vector3 gradient{0.0, 0.0, 0.0};
+        // Calculate gradient of spon curv
+        for (gcs::Halfedge he : v.outgoingHalfedges()) {
+          gradient +=
+              vecFromHalfedge(he, vpg).normalize() *
+              (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()]) /
+              vpg.edgeLengths[he.edge()];
+        }
+        gradient.normalize();
+        // Find angle between tangent & principal direction
+        gc::Vector3 tangentVector =
+            gc::cross(gradient, vpg.vertexNormals[v]).normalize();
+        gc::Vector2 principalDirection1 =
+            vpg.vertexPrincipalCurvatureDirections[v];
+        gc::Vector3 PD1InWorldCoords =
+            vpg.vertexTangentBasis[v][0] * principalDirection1.x +
+            vpg.vertexTangentBasis[v][1] * principalDirection1.y;
+        double cosT = gc::dot(tangentVector, PD1InWorldCoords.normalize());
+        // Deduce normal curvature
+        double K1 =
+            (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
+        double K2 =
+            (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
+        lineTensionPressure[v] = -P.eta * vpg.vertexNormals[v] *
+                                 (cosT * cosT * (K1 - K2) + K2) * P.sharpness;
+        interArea += vpg.vertexDualAreas[v];
+      }
 
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
         gcs::Halfedge base_he = he.next();
@@ -134,6 +170,7 @@ void Force::getVesicleForces() {
         gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
         assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
+        // Conformal regularization
         if (P.Kst != 0) {
           gcs::Halfedge jl = he.next();
           gcs::Halfedge li = jl.next();
