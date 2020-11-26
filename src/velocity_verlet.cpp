@@ -47,50 +47,31 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
   }
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure;
   totalPressure.resize(f.mesh.nVertices(), 3);
   totalPressure.setZero();
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3>  regularizationForce_e;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce_e;
   regularizationForce_e.resize(f.mesh.nVertices(), 3);
   regularizationForce_e.setZero();
 
-  int nSave = int(tSave / dt);
+  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure, numericalPressure;
 
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
-  const double hdt = 0.5 * dt;
-  const double hdt2 = hdt * dt;
-
-  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> numericalPressure;
+  const double hdt = 0.5 * dt, hdt2 = hdt * dt;
 
   bool exitFlag = false;
 
-  double totalEnergy;
-  double sE;
-  double pE;
-  double kE;
-  double cE;
-  double lE;
-
-  double oldL2ErrorNorm = 1e6;
-  double L2ErrorNorm;
-  double dL2ErrorNorm;
-
-  double oldBE = 0.0;
-  double BE;
-  double dBE;
-  double dArea;
-  double dVolume;
-  double dFace;
+  double totalEnergy, sE, pE, kE, cE, lE, oldL2ErrorNorm = 1e6, L2ErrorNorm,
+                                          dL2ErrorNorm, oldBE = 0.0, BE, dBE,
+                                          dArea, dVolume, dFace;
   // double dRef;
 
-  size_t nMollify = size_t(tMollify / tSave);
+  size_t nMollify = size_t(tMollify / tSave), frame = 0,
+         nSave = size_t(tSave / dt);
 
-  std::size_t frame = 0;
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
@@ -102,7 +83,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
     if (f.mesh.hasBoundary()) {
-      f.getTubeForces();
+      f.getPatchForces();
     } else {
       f.getVesicleForces();
     }
@@ -343,9 +324,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     }
 
     // Regularize the vetex position geometry if needed
-    regularizationForce_e = rowwiseScaling(f.mask.cast<double>(),
-                                      gc::EigenMap<double, 3>(f.regularizationForce));
-    pos_e +=  regularizationForce_e * dt;
+    regularizationForce_e = rowwiseScaling(
+        f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
+    pos_e += regularizationForce_e * dt;
 
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
