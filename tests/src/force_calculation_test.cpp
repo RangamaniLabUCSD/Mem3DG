@@ -57,7 +57,7 @@ protected:
     p.Kf = 2 * 0;
     p.conc = 25;
     p.sharpness = 1;
-    p.r_H0 = 1;
+    p.r_H0 = {1,1};
 
     std::vector<gc::Vector3> coords;
     std::vector<std::vector<std::size_t>> polygons;

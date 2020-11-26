@@ -82,12 +82,13 @@ int main() {
 
   std::cout << "Initiating the system ...";
   /// physical parameters
-  double Kb = 8.22e-5, H0 = 40, sharpness = 50, r_H0 = 0.15, Kst = 0, Ksl = 0,
+  double Kb = 8.22e-5, H0 = 40, sharpness = 50, Kst = 0, Ksl = 0,
          Kse = 0, epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Kf = 0,
          conc = 25, height = 0, radius = 100, kt = 0, h = 1e-5, Kv = 0, eta = 0,
          Ksg = 0.05, mollifyFactor = 1e-3;
 
   std::vector<double> pt = {0, 0, 0};
+  std::vector<double> r_H0 = {0.15, 0.15};
   bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false;
   double sigma = sqrt(2 * gamma * kt / h);
 

@@ -288,9 +288,7 @@ DLL_PUBLIC inline void
 findVertexLineTension(gcs::VertexPositionGeometry &vpg, double eta,
                       Eigen::Matrix<double, Eigen::Dynamic, 1> &H,
                       gcs::Vertex v, gcs::Halfedge isoHe, gc::Vector3 gradVec,
-                      gcs::VertexData<gc::Vector3> &lineTensionPressure) {
-
-}
+                      gcs::VertexData<gc::Vector3> &lineTensionPressure) {}
 
 /**
  * @brief height = 1 tanh step function with radius r
@@ -306,6 +304,33 @@ tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
                  double sharpness, double radius) {
   distribution.resize(distance.rows(), 1);
   for (size_t i = 0; i < distance.rows(); i++) {
+    distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
+  }
+}
+
+/**
+ * @brief height = 1 tanh step function with radius r
+ *
+ * @param (double) sharpness of transition
+ * @param (double) radius of height = 1
+ * @param (Eigen vector) distance vector
+ * @param (vertexPositionGeometry) vpg
+ *
+ */
+DLL_PUBLIC inline void
+tanhDistribution(gcs::VertexPositionGeometry &vpg,
+                 Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
+                 Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
+                 double sharpness, std::vector<double> axes) {
+  distribution.resize(distance.rows(), 1);
+  for (size_t i = 0; i < distance.rows(); i++) {
+    double cos_t =
+        vpg.inputVertexPositions[i].x /
+        sqrt(vpg.inputVertexPositions[i].x * vpg.inputVertexPositions[i].x +
+             vpg.inputVertexPositions[i].y * vpg.inputVertexPositions[i].y);
+    double sin_t = sqrt(1 - cos_t * cos_t);
+    double radius = sqrt(axes[0] * axes[0] * cos_t * cos_t +
+                         axes[1] * axes[1] * sin_t * sin_t);
     distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
   }
 }
