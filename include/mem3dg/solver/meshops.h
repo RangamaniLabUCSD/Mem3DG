@@ -305,7 +305,9 @@ tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
   distribution.resize(distance.rows(), 1);
   Eigen::MatrixXd radius_vec =
       Eigen::MatrixXd::Constant(distance.rows(), 1, radius);
-  distribution = 0.5 * (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
+  distribution =
+      0.5 *
+      (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
 }
 
 /**
@@ -323,14 +325,14 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
                  Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
                  double sharpness, std::vector<double> axes) {
   distribution.resize(distance.rows(), 1);
+  double x, y, cos_t, radius;
   for (size_t i = 0; i < distance.rows(); i++) {
-    double cos_t =
-        vpg.inputVertexPositions[i].x /
-        sqrt(vpg.inputVertexPositions[i].x * vpg.inputVertexPositions[i].x +
-             vpg.inputVertexPositions[i].y * vpg.inputVertexPositions[i].y);
-    double sin_t = sqrt(1 - cos_t * cos_t);
-    double radius = sqrt(axes[0] * axes[0] * cos_t * cos_t +
-                         axes[1] * axes[1] * sin_t * sin_t);
+    x = vpg.inputVertexPositions[i].x;
+    y = vpg.inputVertexPositions[i].y;
+    cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
+    radius = axes[0] * axes[1] /
+             sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
+                  axes[1] * axes[1]);
     distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
   }
 }
