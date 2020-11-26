@@ -303,9 +303,9 @@ tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
                  Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
                  double sharpness, double radius) {
   distribution.resize(distance.rows(), 1);
-  for (size_t i = 0; i < distance.rows(); i++) {
-    distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
-  }
+  Eigen::MatrixXd radius_vec =
+      Eigen::MatrixXd::Constant(distance.rows(), 1, radius);
+  distribution = 0.5 * (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
 }
 
 /**
