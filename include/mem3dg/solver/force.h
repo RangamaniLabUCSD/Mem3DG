@@ -132,6 +132,8 @@ public:
   const bool isVertexShift;
   /// Whether or not consider protein binding
   const bool isProtein;
+  /// Whether circular spon curv domain
+  const bool isCircle;
 
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
@@ -193,9 +195,9 @@ public:
         double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
         isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
-        mollifyFactor(mollifyFactor_), isVertexShift(isVertexShift_),
-        bendingPressure(mesh_, {0, 0, 0}), insidePressure(mesh_, {0, 0, 0}),
-        capillaryPressure(mesh_, {0, 0, 0}),
+        isCircle(p.r_H0[0] == p.r_H0[1]), mollifyFactor(mollifyFactor_),
+        isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
+        insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
         lineTensionPressure(mesh_, {0, 0, 0}),
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
@@ -246,7 +248,11 @@ public:
       proteinDensity.raw().setZero();
       H0.setZero(mesh.nVertices(), 1);
     } else if (P.H0 != 0) {
-      tanhDistribution(vpg, H0, dist_e, P.sharpness, P.r_H0);
+      if (isCircle) {
+        tanhDistribution(H0, dist_e, P.sharpness, P.r_H0[0]);
+      } else {
+        tanhDistribution(vpg, H0, dist_e, P.sharpness, P.r_H0);
+      }
       H0 *= P.H0;
       if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
            1e-12)) {
