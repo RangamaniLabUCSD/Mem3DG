@@ -109,7 +109,7 @@ int main() {
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
-  ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment, Kv,
+  ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv,
                                          Ksg, tSave, tMollify, verbosity,
                                          inputMesh, outputDir, 0, errorJumpLim);
 

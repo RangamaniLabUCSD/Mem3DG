@@ -46,20 +46,26 @@ velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                std::string inputMesh = "./", std::string outputDir = "./",
                double init_time = 0, double errorJumpLim = 5);
 
-DLL_PUBLIC void getParameterLog(Force &f, double dt, double total_time,
-                                double tolerance, double tSave,
-                                std::string inputMesh, std::string outputDir);
+DLL_PUBLIC void euler(Force &f, double dt, double total_time, double tolerance,
+                      double closeZone, double increment, double maxKv,
+                      double maxKsg, double tSave, double tMollify,
+                      size_t verbosity = 2, std::string inputMesh = "./",
+                      std::string outputDir = "./", double init_time = 0,
+                      double errorJumpLim = 5);
 
-DLL_PUBLIC void getStatusLog(std::string nameOfFile, Force &f, double dt,
-                             double time, std::size_t frame, double areaError,
-                             double volumeError, double bendingError,
-                             double faceError, double bendingEnergy,
-                             double surfaceEnergy, double pressureEnergy,
-                             double kineticEnergy, double chemicalEnergy,
-                             double lineEnergy, 
-                             double totalEnergy, double L2ErrorNorm,
-                             bool isTuftedLaplacian, bool isProtein,
-                             bool isVertexShift, std::string inputMesh);
+DLL_PUBLIC
+void getParameterLog(Force &f, double dt, double total_time, double tolerance,
+                     double tSave, std::string inputMesh,
+                     std::string outputDir);
+
+DLL_PUBLIC void
+getStatusLog(std::string nameOfFile, Force &f, double dt, double time,
+             std::size_t frame, double areaError, double volumeError,
+             double bendingError, double faceError, double bendingEnergy,
+             double surfaceEnergy, double pressureEnergy, double kineticEnergy,
+             double chemicalEnergy, double lineEnergy, double totalEnergy,
+             double L2ErrorNorm, bool isTuftedLaplacian, bool isProtein,
+             bool isVertexShift, std::string inputMesh);
 
 void getEnergyLog(double time, double bendingEnergy, double surfaceEnergy,
                   double pressureEnergy, double kineticEnergy,

@@ -202,14 +202,14 @@ int genIcosphere(size_t nSub, std::string path, double R) {
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isTuftedLaplacian,
                bool isProtein, double mollifyFactor, bool isVertexShift,
-               double Kb, double H0, double sharpness, std::vector<double> r_H0, double Kse,
-               double Kst, double Ksl, std::vector<double> Ksg,
+               double Kb, double H0, double sharpness, std::vector<double> r_H0,
+               double Kse, double Kst, double Ksl, std::vector<double> Ksg,
                std::vector<double> Kv, double eta, double epsilon, double Bc,
                double Vt, double gamma, double kt, std::vector<double> pt,
                double Kf, double conc, double height, double radius, double h,
                double T, double eps, double closeZone, double increment,
                double tSave, double tMollify, std::string outputDir,
-               double errorJumpLim) {
+               double errorJumpLim, std::string integrationMethod) {
 
   signal(SIGINT, signalHandler);
   // pybind11::scoped_interpreter guard{};
@@ -262,7 +262,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
   if (ptrMesh->hasBoundary()) {
-      assert(Vt == 1.0);
+    assert(Vt == 1.0);
   }
   ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
@@ -273,9 +273,16 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
-  ddgsolver::integration::velocityVerlet(
-      f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-      verbosity, inputMesh, outputDir, 0, errorJumpLim);
+
+  if (integrationMethod == "velocity verlet") {
+    ddgsolver::integration::velocityVerlet(
+        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
+        verbosity, inputMesh, outputDir, 0, errorJumpLim);
+  } else if (integrationMethod == "euler") {
+    ddgsolver::integration::euler(
+        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
+        verbosity, inputMesh, outputDir, 0, errorJumpLim);
+  }
 
   delete ptrRefVpg;
   return 0;
@@ -285,13 +292,14 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
-              double sharpness, std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-              std::vector<double> Ksg, std::vector<double> Kv, double eta,
-              double epsilon, double Bc, double Vt, double gamma, double kt,
-              std::vector<double> pt, double Kf, double conc, double height,
-              double radius, double h, double T, double eps, double closeZone,
-              double increment, double tSave, double tMollify,
-              std::string outputDir, double errorJumpLim) {
+              double sharpness, std::vector<double> r_H0, double Kse,
+              double Kst, double Ksl, std::vector<double> Ksg,
+              std::vector<double> Kv, double eta, double epsilon, double Bc,
+              double Vt, double gamma, double kt, std::vector<double> pt,
+              double Kf, double conc, double height, double radius, double h,
+              double T, double eps, double closeZone, double increment,
+              double tSave, double tMollify, std::string outputDir,
+              double errorJumpLim, std::string integrationMethod) {
 
   signal(SIGINT, signalHandler);
 
@@ -336,7 +344,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
   if (mesh.hasBoundary()) {
-      assert(Vt == 1.0);
+    assert(Vt == 1.0);
   }
   ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
@@ -348,9 +356,16 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
-  ddgsolver::integration::velocityVerlet(
-      f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-      verbosity, trajFile, outputDir, time, errorJumpLim);
+
+  if (integrationMethod == "velocity verlet") {
+    ddgsolver::integration::velocityVerlet(
+        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
+        verbosity, trajFile, outputDir, time, errorJumpLim);
+  } else if (integrationMethod == "euler") {
+    ddgsolver::integration::euler(
+        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
+        verbosity, trajFile, outputDir, time, errorJumpLim);
+  }
 
   delete ptrRefVpg;
 

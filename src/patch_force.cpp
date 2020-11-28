@@ -67,8 +67,13 @@ void Force::getPatchForces() {
   geodesicDistanceFromAppliedForce =
       heatSolver.computeDistance(mesh.vertex(ptInd));
   if (P.H0 != 0) {
-    tanhDistribution(vpg, H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
-                     P.r_H0);
+    if (isCircle) {
+      tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(), P.sharpness,
+                       P.r_H0[0]);
+    } else {
+      tanhDistribution(vpg, H0, geodesicDistanceFromAppliedForce.raw(),
+                       P.sharpness, P.r_H0);
+    }
     H0 *= P.H0;
   }
 
