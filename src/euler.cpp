@@ -50,21 +50,22 @@ void euler(Force &f, double dt, double total_time, double tolerance,
   regularizationForce_e.resize(f.mesh.nVertices(), 3);
   regularizationForce_e.setZero();
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure, numericalPressure;
-  numericalPressure.resize(f.mesh.nVertices(), 3);
-  numericalPressure.setZero();
+  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure;
+  // , numericalPressure;
+  // numericalPressure.resize(f.mesh.nVertices(), 3);
+  // numericalPressure.setZero();
 
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> pastPosition;
-  pastPosition.resize(f.mesh.nVertices(), 3);
-  pastPosition = pos_e;
+  // Eigen::Matrix<double, Eigen::Dynamic, 3> pastPosition;
+  // pastPosition.resize(f.mesh.nVertices(), 3);
+  // pastPosition = pos_e;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> nextPosition;
-  nextPosition.resize(f.mesh.nVertices(), 3);
+  // Eigen::Matrix<double, Eigen::Dynamic, 3> nextPosition;
+  // nextPosition.resize(f.mesh.nVertices(), 3);
 
-  //const double hdt = 0.5 * dt, hdt2 = hdt * dt;
+  // const double hdt = 0.5 * dt, hdt2 = hdt * dt;
 
   bool exitFlag = false;
 
@@ -104,19 +105,22 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                        gc::EigenMap<double, 3>(f.externalPressure) +
                        gc::EigenMap<double, 3>(f.lineTensionPressure);
     // numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-    //                                gc::EigenMap<double, 3>(f.stochasticForce));
+    //                                gc::EigenMap<double,
+    //                                3>(f.stochasticForce));
     if (!f.mesh.hasBoundary()) {
       removeTranslation(physicalPressure);
       removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
                      physicalPressure);
 
-      removeTranslation(numericalPressure);
-      removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-                     numericalPressure);
+      // removeTranslation(numericalPressure);
+      // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+      //                numericalPressure);
     }
 
     vel_e = rowwiseScaling(f.mask.cast<double>(),
-                                      physicalPressure + numericalPressure);
+                           physicalPressure);
+    // vel_e = rowwiseScaling(f.mask.cast<double>(),
+    //                        physicalPressure + numericalPressure);
 
     // periodically save the geometric files, print some info, compare and
     // adjust
@@ -319,14 +323,10 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       // adjust
 
     // integration
-    nextPosition = pastPosition + 2 * vel_e * dt;
-    pastPosition = pos_e;
-    pos_e = nextPosition;
-    // pos_e += vel_e * dt;
-
-    // pos_e += vel_e * dt + hdt2 * totalPressure;
-    // vel_e += (totalPressure + newTotalPressure) * hdt;
-    // totalPressure = newTotalPressure;
+    // nextPosition = pastPosition + 2 * vel_e * dt;
+    // pastPosition = pos_e;
+    // pos_e = nextPosition;
+    pos_e += vel_e * dt;
 
     if (f.isProtein) {
       f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
