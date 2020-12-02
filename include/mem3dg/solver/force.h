@@ -20,6 +20,7 @@
 #include <geometrycentral/surface/heat_method_distance.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <Eigen/Core>
 #include <Eigen/SparseLU>
@@ -278,13 +279,13 @@ public:
       update_Vertex_positions();
     }
 
-    // Initialize the mass and conformal Laplacian matrix
-    if (isTuftedLaplacian) {
-      getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
-    } else {
-      M = vpg.vertexLumpedMassMatrix;
-      L = vpg.cotanLaplacian;
-    }
+    // // Initialize the mass and conformal Laplacian matrix
+    // if (isTuftedLaplacian) {
+    //   getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
+    // } else {
+    //   M = vpg.vertexLumpedMassMatrix;
+    //   L = vpg.cotanLaplacian;
+    // }
 
     // Initialize the inverse mass matrix
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
@@ -315,17 +316,19 @@ public:
       refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
     }
 
-    // Initialize surface area
-    surfaceArea = vpg.faceAreas.raw().sum();
+    // // Initialize surface area
+    // surfaceArea = vpg.faceAreas.raw().sum();
 
-    // Initialize volume
-    for (gcs::Face f : mesh.faces()) {
-      volume += signedVolumeFromFace(
-          f, vpg, vpg.inputVertexPositions[mesh.vertex(ptInd)]);
-    }
+    // // Initialize volume
+    // for (gcs::Face f : mesh.faces()) {
+    //   volume += signedVolumeFromFace(
+    //       f, vpg, vpg.inputVertexPositions[mesh.vertex(ptInd)]);
+    // }
 
     // Initialize the vertex position of the last iteration
     pastPositions = vpg.inputVertexPositions;
+
+    update_Vertex_positions();
   }
 
   /**
@@ -379,8 +382,62 @@ public:
    * @brief Update the vertex position and recompute cached values
    *
    */
-  void update_Vertex_positions() { vpg.refreshQuantities(); }
+  void update_Vertex_positions() {
+    // update all quantities that characterizes the current energy state 
+    vpg.refreshQuantities();
 
+    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
+    auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
+
+    if (isTuftedLaplacian) {
+      getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
+    } else {
+      M = vpg.vertexLumpedMassMatrix;
+      L = vpg.cotanLaplacian;
+    }
+
+    // update the inverse mass matrix
+    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+
+    // update distance and spontaneous curvature
+    geodesicDistanceFromAppliedForce =
+        heatSolver.computeDistance(mesh.vertex(ptInd));
+    if (P.H0 != 0) {
+      if (isCircle) {
+        tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
+                         P.sharpness, P.r_H0[0]);
+      } else {
+        tanhDistribution(vpg, H0, geodesicDistanceFromAppliedForce.raw(),
+                         P.sharpness, P.r_H0);
+      }
+      H0 *= P.H0;
+    }
+
+    // update mean curvature
+    Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
+        rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
+    H = M_inv * H_integrated;
+
+    /// udate excess pressure
+    volume = 0;
+    for (gcs::Face f : mesh.faces()) {
+      volume += signedVolumeFromFace(
+          f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
+    }
+
+    // update total surface area
+    surfaceArea = vpg.faceAreas.raw().sum();
+
+    // update intersection area
+    interArea = 0.0;
+    for (gcs::Vertex v : mesh.vertices()) {
+      if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
+          (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
+        interArea += vpg.vertexDualAreas[v];
+      }
+    }
+  }
+  
   void pcg_test();
 };
 } // end namespace ddgsolver
