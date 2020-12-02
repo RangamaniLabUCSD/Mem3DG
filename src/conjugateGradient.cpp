@@ -13,6 +13,7 @@
 //
 
 #include <Eigen/Core>
+#include <assert.h>
 #include <iostream>
 #include <pcg_random.hpp>
 
@@ -78,13 +79,14 @@ getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
   return physicalPressure + regularizationForce_e;
 }
 
-void backtrack(Force &f, const double dt, double rho, double &time, const double totalEnergy_pre,
+void backtrack(Force &f, const double dt, double rho, double &time,
+               const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
-  //calculate initial energy as reference level
-  // Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
-  //     gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  // calculate initial energy as reference level
+  Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
+      gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
   double init_time = time;
 
   // declare variables used in backtracking iterations
@@ -93,28 +95,24 @@ void backtrack(Force &f, const double dt, double rho, double &time, const double
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   pos_e += alpha * direction;
-  //f.update_Vertex_positions();
+  f.update_Vertex_positions();
   std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
 
-  // while (totalEnergy > (totalEnergy_pre -
-  //                       0.1 * alpha * (force.array() * direction.array()).sum()) ||
-  //        count > 30) {
-  // while (totalEnergy > (totalEnergy_pre)) {
-  //   assert(count < 30);
-  //   alpha = rho * alpha;
-  //   pos_e = init_position + alpha * direction;
-  //   f.update_Vertex_positions();
-  //   std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
-  //   count++;
-  //   std::cout << count << std::endl;
-  // }
-
-  std::cout << "before :" << totalEnergy_pre << "after: " << totalEnergy << std::endl;
-  if (totalEnergy > totalEnergy_pre){
-    std::cout << "not allowed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  // while (totalEnergy >
+  //        (totalEnergy_pre -
+  //         0.05 * alpha * (force.array() * direction.array()).sum())) {
+  while (totalEnergy > totalEnergy_pre) {
+    if (count > 40) {
+      throw std::runtime_error("line search failure!");
+    }
+    alpha = rho * alpha;
+    pos_e = init_position + alpha * direction;
+    f.update_Vertex_positions();
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+    count++;
   }
+
   time = init_time + alpha;
-  //std::cout << time << std::endl;
 }
 
 void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
@@ -334,7 +332,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       currentNorm2 = vel_e.squaredNorm();
       direction = currentNorm2 / pastNorm2 * direction + vel_e;
       pastNorm2 = currentNorm2;
-      //pos_e += direction * dt;
+      // pos_e += direction * dt;
       backtrack(f, dt, 0.8, time, totalEnergy, vel_e, direction);
       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
     }
