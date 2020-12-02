@@ -102,7 +102,7 @@ void backtrack(Force &f, const double dt, double rho, double &time,
   //        (totalEnergy_pre -
   //         0.05 * alpha * (force.array() * direction.array()).sum())) {
   while (totalEnergy > totalEnergy_pre) {
-    if (count > 40) {
+    if (count > 500) {
       throw std::runtime_error("line search failure!");
     }
     alpha = rho * alpha;
@@ -162,7 +162,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
         f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
 
     if (verbosity > 0) {
-      if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-5)) {
+      if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-4)) {
         std::cout << "\n"
                   << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
@@ -322,18 +322,19 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
       oldL2ErrorNorm = L2ErrorNorm;
       oldBE = BE;
+    }
 
+    if (i % 5 == 0) {
       pos_e += vel_e * dt;
       pastNorm2 = vel_e.squaredNorm();
       direction = vel_e;
       time += dt;
-
     } else {
       currentNorm2 = vel_e.squaredNorm();
       direction = currentNorm2 / pastNorm2 * direction + vel_e;
       pastNorm2 = currentNorm2;
       // pos_e += direction * dt;
-      backtrack(f, dt, 0.8, time, totalEnergy, vel_e, direction);
+      backtrack(f, dt, 0.5, time, totalEnergy, vel_e, direction);
       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
     }
 
