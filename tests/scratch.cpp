@@ -66,11 +66,12 @@ int main() {
   std::cout << "Solving the system ..." << std::endl;
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
   tMollify = 100; size_t verbosity = 0;
-  ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-                                         Kv, Ksg, tSave, tMollify,
-                                         verbosity);
+  // ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
+  //                                        Kv, Ksg, tSave, tMollify,
+  //                                        verbosity);
+  ddgsolver::integration::conjugateGradient(
+        f, h, T, eps, closeZone, increment, Kv, Ksg, tSave, tMollify,
+        verbosity);
   delete ptrRefVpg;
-  return 0;
-
   return 0;
 }

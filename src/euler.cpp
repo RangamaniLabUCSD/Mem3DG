@@ -99,14 +99,21 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       f.getChemicalPotential();
     }
 
-    physicalPressure = gc::EigenMap<double, 3>(f.bendingPressure) +
-                       gc::EigenMap<double, 3>(f.capillaryPressure) +
-                       gc::EigenMap<double, 3>(f.insidePressure) +
-                       gc::EigenMap<double, 3>(f.externalPressure) +
-                       gc::EigenMap<double, 3>(f.lineTensionPressure);
+    physicalPressure =
+        rowwiseScaling(f.mask.cast<double>(),
+                       gc::EigenMap<double, 3>(f.bendingPressure) +
+                           gc::EigenMap<double, 3>(f.capillaryPressure) +
+                           gc::EigenMap<double, 3>(f.insidePressure) +
+                           gc::EigenMap<double, 3>(f.externalPressure) +
+                           gc::EigenMap<double, 3>(f.lineTensionPressure));
+
+    regularizationForce_e = rowwiseScaling(
+        f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
+
     // numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
     //                                gc::EigenMap<double,
     //                                3>(f.stochasticForce));
+
     if (!f.mesh.hasBoundary()) {
       removeTranslation(physicalPressure);
       removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
@@ -117,33 +124,20 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       //                numericalPressure);
     }
 
-    vel_e = rowwiseScaling(f.mask.cast<double>(),
-                           physicalPressure);
-    // vel_e = rowwiseScaling(f.mask.cast<double>(),
-    //                        physicalPressure + numericalPressure);
+    vel_e = physicalPressure + regularizationForce_e;
 
-    // periodically save the geometric files, print some info, compare and
-    // adjust
+    // 1. save
+    // periodically save the geometric files, print some info
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
-
-      // 1. save
       gcs::VertexData<double> H(f.mesh);
       H.fromVector(f.H);
-      f.richData.addVertexProperty("mean_curvature", H);
-
       gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
-      f.richData.addVertexProperty("spon_curvature", H0);
-
       gcs::VertexData<double> f_ext(f.mesh);
       f_ext.fromVector(f.externalPressureMagnitude);
-      f.richData.addVertexProperty("external_pressure", f_ext);
-
       gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
           physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("physical_pressure", fn);
-
       gcs::VertexData<double> ft(f.mesh);
       ft.fromVector(
           (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
@@ -151,21 +145,29 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                .array() /
            f.H.array() / 2)
               .matrix());
-      f.richData.addVertexProperty("capillary_pressure", ft);
-
       gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("bending_pressure", fb);
-
       gcs::VertexData<double> fl(f.mesh);
       fl.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("line_tension_pressure", fl);
 
       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+
+      // 1.1 save to .ply file
+      if (verbosity > 2) {
+        f.richData.addVertexProperty("mean_curvature", H);
+        f.richData.addVertexProperty("spon_curvature", H0);
+        f.richData.addVertexProperty("external_pressure", f_ext);
+        f.richData.addVertexProperty("physical_pressure", fn);
+        f.richData.addVertexProperty("capillary_pressure", ft);
+        f.richData.addVertexProperty("bending_pressure", fb);
+        f.richData.addVertexProperty("line_tension_pressure", fl);
+      }
+
+      // 1.2 save to .nc file
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
         frame = fd.getNextFrameIndex();
@@ -331,11 +333,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
     if (f.isProtein) {
       f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
     }
-
-    // Regularize the vetex position geometry if needed
-    regularizationForce_e = rowwiseScaling(
-        f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
-    pos_e += regularizationForce_e * dt;
 
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);

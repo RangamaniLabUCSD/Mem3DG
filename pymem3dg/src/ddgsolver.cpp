@@ -279,9 +279,14 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
         f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
         verbosity, inputMesh, outputDir, 0, errorJumpLim);
   } else if (integrationMethod == "euler") {
-    ddgsolver::integration::euler(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, inputMesh, outputDir, 0, errorJumpLim);
+    ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
+                                  Ksg[1], tSave, tMollify, verbosity, inputMesh,
+                                  outputDir, 0, errorJumpLim);
+  } else if (integrationMethod == "conjugate gradient") {
+    ddgsolver::integration::conjugateGradient(
+        f, h, T, eps, closeZone, increment, Kv[1],
+                                  Ksg[1], tSave, tMollify, verbosity, inputMesh,
+                                  outputDir, 0, errorJumpLim);
   }
 
   delete ptrRefVpg;
@@ -362,7 +367,11 @@ int driver_nc(const size_t verbosity, std::string trajFile,
         f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
         verbosity, trajFile, outputDir, time, errorJumpLim);
   } else if (integrationMethod == "euler") {
-    ddgsolver::integration::euler(
+    ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
+                                  Ksg[1], tSave, tMollify, verbosity, trajFile,
+                                  outputDir, time, errorJumpLim);
+  } else if (integrationMethod == "conjugate gradient") {
+    ddgsolver::integration::conjugateGradient(
         f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
         verbosity, trajFile, outputDir, time, errorJumpLim);
   }
