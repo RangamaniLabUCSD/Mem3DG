@@ -78,6 +78,10 @@ getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
   return physicalPressure + regularizationForce_e;
 }
 
+double backtrack(Force &f, double dt,
+                 Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+}
+
 void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                        double closeZone, double increment, double maxKv,
                        double maxKsg, double tSave, double tMollify,
@@ -285,8 +289,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
       oldL2ErrorNorm = L2ErrorNorm;
       oldBE = BE;
-
-      std::cout << "hello" << std::endl;
+      
       pos_e += vel_e * dt;
       pastNorm = vel_e.norm();
       direction = vel_e;
