@@ -78,14 +78,11 @@ getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
   return physicalPressure + regularizationForce_e;
 }
 
-void backtrack(Force &f, const double dt, double rho, double &time,
+void backtrack(Force &f, const double dt, double rho, double &time, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
-  // calculate initial energy as reference level
-  // double totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre;
-  // std::tie(totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre) =
-  //     getFreeEnergy(f);
+  //calculate initial energy as reference level
   // Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
   //     gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
   double init_time = time;
@@ -111,6 +108,8 @@ void backtrack(Force &f, const double dt, double rho, double &time,
   //   count++;
   //   std::cout << count << std::endl;
   // }
+
+  // std::cout << "before :" << totalEnergy_pre << "after: " << totalEnergy << std::endl;
   // if (totalEnergy > totalEnergy_pre){
   //   std::cout << "not allowed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
   // }
@@ -336,7 +335,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       direction = currentNorm2 / pastNorm2 * direction + vel_e;
       pastNorm2 = currentNorm2;
       pos_e += direction * dt;
-      //backtrack(f, dt, 0.8, time, vel_e, direction);
+      //backtrack(f, dt, 0.8, time, totalEnergy, vel_e, direction);
     }
 
     if (f.isProtein) {
