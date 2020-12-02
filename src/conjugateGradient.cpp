@@ -78,8 +78,34 @@ getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
   return physicalPressure + regularizationForce_e;
 }
 
-double backtrack(Force &f, double dt,
-                 Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+void backtrack(Force &f, const double dt, double rho,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+
+  // calculate initial energy as reference level
+  double totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre;
+  std::tie(totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre) =
+      getFreeEnergy(f);
+  // Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
+  //     gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+
+  // declare variables used in backtracking iterations
+  double alpha = dt, totalEnergy, BE, sE, pE, kE, cE, lE;
+  size_t count = 0;
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+
+  pos_e += alpha * direction;
+  f.update_Vertex_positions();
+  std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+
+  while (totalEnergy > (totalEnergy_pre +
+                        alpha * (force.array() * direction.array()).sum()) || count > 30) {
+    alpha = rho * alpha;
+    pos_e += alpha * direction;
+    f.update_Vertex_positions();
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+    count ++;
+  }
 }
 
 void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
@@ -107,7 +133,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
   double totalEnergy, sE, pE, kE, cE, lE,
       oldL2ErrorNorm = 1e6, L2ErrorNorm = 1e6, dL2ErrorNorm, oldBE = 0.0, BE,
-      dBE, dArea, dVolume, dFace, currentNorm, pastNorm;
+      dBE, dArea, dVolume, dFace, currentNorm2, pastNorm2, alpha;
   // double dRef;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
@@ -289,15 +315,17 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
       oldL2ErrorNorm = L2ErrorNorm;
       oldBE = BE;
-      
+
       pos_e += vel_e * dt;
-      pastNorm = vel_e.norm();
+      pastNorm2 = vel_e.squaredNorm();
       direction = vel_e;
 
     } else {
-      currentNorm = vel_e.norm();
-      direction = currentNorm / pastNorm * direction + vel_e;
+      currentNorm2 = vel_e.squaredNorm();
+      direction = currentNorm2 / pastNorm2 * direction + vel_e;
+      pastNorm2 = currentNorm2;
       pos_e += direction * dt;
+      //backtrack(f, dt, 0.6, vel_e, direction);
     }
 
     if (f.isProtein) {
