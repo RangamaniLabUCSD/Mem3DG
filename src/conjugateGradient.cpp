@@ -78,16 +78,17 @@ getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
   return physicalPressure + regularizationForce_e;
 }
 
-void backtrack(Force &f, const double dt, double rho,
+void backtrack(Force &f, const double dt, double rho, double &time,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
   // calculate initial energy as reference level
-  double totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre;
-  std::tie(totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre) =
-      getFreeEnergy(f);
+  // double totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre;
+  // std::tie(totalEnergy_pre, BE_pre, sE_pre, pE_pre, kE_pre, cE_pre, lE_pre) =
+  //     getFreeEnergy(f);
   // Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
   //     gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  double init_time = time;
 
   // declare variables used in backtracking iterations
   double alpha = dt, totalEnergy, BE, sE, pE, kE, cE, lE;
@@ -95,17 +96,26 @@ void backtrack(Force &f, const double dt, double rho,
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   pos_e += alpha * direction;
-  f.update_Vertex_positions();
+  //f.update_Vertex_positions();
   std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
 
-  while (totalEnergy > (totalEnergy_pre +
-                        alpha * (force.array() * direction.array()).sum()) || count > 30) {
-    alpha = rho * alpha;
-    pos_e += alpha * direction;
-    f.update_Vertex_positions();
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
-    count ++;
-  }
+  // while (totalEnergy > (totalEnergy_pre -
+  //                       0.1 * alpha * (force.array() * direction.array()).sum()) ||
+  //        count > 30) {
+  // while (totalEnergy > (totalEnergy_pre)) {
+  //   assert(count < 30);
+  //   alpha = rho * alpha;
+  //   pos_e = init_position + alpha * direction;
+  //   f.update_Vertex_positions();
+  //   std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+  //   count++;
+  //   std::cout << count << std::endl;
+  // }
+  // if (totalEnergy > totalEnergy_pre){
+  //   std::cout << "not allowed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  // }
+  time = init_time + alpha;
+  //std::cout << time << std::endl;
 }
 
 void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
@@ -133,7 +143,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
   double totalEnergy, sE, pE, kE, cE, lE,
       oldL2ErrorNorm = 1e6, L2ErrorNorm = 1e6, dL2ErrorNorm, oldBE = 0.0, BE,
-      dBE, dArea, dVolume, dFace, currentNorm2, pastNorm2, alpha;
+      dBE, dArea, dVolume, dFace, currentNorm2, pastNorm2, time = init_time;
   // double dRef;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
@@ -213,7 +223,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
         frame = fd.getNextFrameIndex();
-        fd.writeTime(frame, i * dt + init_time);
+        fd.writeTime(frame, time);
         fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
         fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
         fd.writeAngles(frame, f.vpg.cornerAngles.raw());
@@ -282,7 +292,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
         }
 
         std::cout << "\n"
-                  << "Time: " << i * dt + init_time << "\n"
+                  << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
@@ -317,15 +327,16 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       oldBE = BE;
 
       pos_e += vel_e * dt;
-      pastNorm2 = vel_e.squaredNorm();
+      pastNorm2 = vel_e.norm();
       direction = vel_e;
+      time += dt;
 
     } else {
-      currentNorm2 = vel_e.squaredNorm();
+      currentNorm2 = vel_e.norm();
       direction = currentNorm2 / pastNorm2 * direction + vel_e;
       pastNorm2 = currentNorm2;
       pos_e += direction * dt;
-      //backtrack(f, dt, 0.6, vel_e, direction);
+      //backtrack(f, dt, 0.8, time, vel_e, direction);
     }
 
     if (f.isProtein) {

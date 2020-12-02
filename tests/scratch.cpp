@@ -42,7 +42,7 @@ int main() {
 
   double Kb = 8.22e-5, H0 = 0, sharpness = 10, Kst = 10, Ksl = 0,
          Kse = 0, epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Kf = 0,
-         conc = 25, height = 0, radius = 0.9, kt = 0, h = 1e-5, Kv = 5e-2, eta = 0,
+         conc = 25, height = 0, radius = 0.9, kt = 0, h = 5e-4, Kv = 5e-2, eta = 0,
          Ksg = 0.1, mollifyFactor = 1e-3;
   std::vector<double> pt = {1,1,1};
   std::vector<double> r_H0 = {100, 100};
