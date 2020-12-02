@@ -109,10 +109,10 @@ void backtrack(Force &f, const double dt, double rho, double &time, const double
   //   std::cout << count << std::endl;
   // }
 
-  // std::cout << "before :" << totalEnergy_pre << "after: " << totalEnergy << std::endl;
-  // if (totalEnergy > totalEnergy_pre){
-  //   std::cout << "not allowed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-  // }
+  std::cout << "before :" << totalEnergy_pre << "after: " << totalEnergy << std::endl;
+  if (totalEnergy > totalEnergy_pre){
+    std::cout << "not allowed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  }
   time = init_time + alpha;
   //std::cout << time << std::endl;
 }
@@ -326,16 +326,17 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       oldBE = BE;
 
       pos_e += vel_e * dt;
-      pastNorm2 = vel_e.norm();
+      pastNorm2 = vel_e.squaredNorm();
       direction = vel_e;
       time += dt;
 
     } else {
-      currentNorm2 = vel_e.norm();
+      currentNorm2 = vel_e.squaredNorm();
       direction = currentNorm2 / pastNorm2 * direction + vel_e;
       pastNorm2 = currentNorm2;
-      pos_e += direction * dt;
-      //backtrack(f, dt, 0.8, time, totalEnergy, vel_e, direction);
+      //pos_e += direction * dt;
+      backtrack(f, dt, 0.8, time, totalEnergy, vel_e, direction);
+      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
     }
 
     if (f.isProtein) {
