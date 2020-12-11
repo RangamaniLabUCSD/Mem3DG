@@ -80,7 +80,7 @@ getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
 }
 
 void backtrack(Force &f, const double dt, double rho, double &time,
-               const double totalEnergy_pre,
+               const size_t verbosity, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
@@ -102,16 +102,22 @@ void backtrack(Force &f, const double dt, double rho, double &time,
   //        (totalEnergy_pre -
   //         0.05 * alpha * (force.array() * direction.array()).sum())) {
   while (totalEnergy > totalEnergy_pre) {
-    if (count > 500) {
+    if (count > 20) {
       throw std::runtime_error("line search failure!");
     }
-    alpha = rho * alpha;
+    alpha *= rho;
     pos_e = init_position + alpha * direction;
     f.update_Vertex_positions();
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+    std::cout << totalEnergy - totalEnergy_pre << std::endl;
+    // std::cout << totalEnergy_pre << std::endl;
+    //std::cout << totalEnergy << std::endl;
     count++;
   }
 
+  if (alpha != dt && verbosity > 1){
+    std::cout << "dt = " << dt << " -> " << alpha << std::endl;
+  }
   time = init_time + alpha;
 }
 
@@ -136,12 +142,9 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
-  bool exitFlag = false;
-
   double totalEnergy, sE, pE, kE, cE, lE,
       oldL2ErrorNorm = 1e6, L2ErrorNorm = 1e6, dL2ErrorNorm, oldBE = 0.0, BE,
       dBE, dArea, dVolume, dFace, currentNorm2, pastNorm2, time = init_time;
-  // double dRef;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
@@ -158,19 +161,14 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
     vel_e = getForces(f, physicalPressure, regularizationForce_e);
-    L2ErrorNorm = getL2ErrorNorm(
-        f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
+    L2ErrorNorm = getL2ErrorNorm(rowwiseScaling(f.mask.cast<double>(), physicalPressure));
 
-    if (verbosity > 0) {
-      if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-4)) {
+    if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-3)) {
+      break;
+      if (verbosity > 0) {
         std::cout << "\n"
                   << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
-        getStatusLog(outputDir + "/final_report.txt", f, dt, i * dt, frame,
-                     dArea, dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE,
-                     totalEnergy, L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                     f.isVertexShift, inputMesh);
-        break;
       }
     }
 
@@ -253,18 +251,10 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                      dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
                      L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
-        // getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
       }
 
       // 2. print
       if (verbosity > 1) {
-        dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
-
-        if (f.P.Kb != 0) {
-          dBE = abs(BE - oldBE) / (BE);
-        } else {
-          dBE = 0.0;
-        }
 
         if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
           dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
@@ -278,25 +268,11 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
           dVolume = 0.0;
         }
 
-        if (f.P.Ksl != 0 && !f.mesh.hasBoundary()) {
-          dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
-                   f.targetFaceAreas.raw().array())
-                      .abs()
-                      .sum() /
-                  f.mesh.nFaces();
-        } else {
-          dFace = 0.0;
-        }
-
         std::cout << "\n"
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
-                  << "dBE: " << dBE << "\n"
-                  << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
-                  << "Bending energy: " << BE << "\n"
-                  << "Line energy: " << lE << "\n"
                   << "Total energy (exclude V^ext): " << totalEnergy << "\n"
                   << "L2 error norm: " << L2ErrorNorm << "\n"
                   << "COM: "
@@ -311,20 +287,10 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                   << "Increase force spring constant Kf to " << f.P.Kf << "\n";
       }
 
-      // // 3.3 fail and exit
-      // if (abs(dL2ErrorNorm) > errorJumpLim) {
-      //   if (verbosity > 0) {
-      //     std::cout << "Error Norm changes rapidly. Save data and quit."
-      //               << std::endl;
-      //   }
-      //   break;
-      // }
-
-      oldL2ErrorNorm = L2ErrorNorm;
-      oldBE = BE;
     }
 
-    if (i % 5 == 0) {
+    /// time integration
+    if (i % 20 == 0) {
       pos_e += vel_e * dt;
       pastNorm2 = vel_e.squaredNorm();
       direction = vel_e;
@@ -334,7 +300,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       direction = currentNorm2 / pastNorm2 * direction + vel_e;
       pastNorm2 = currentNorm2;
       // pos_e += direction * dt;
-      backtrack(f, dt, 0.5, time, totalEnergy, vel_e, direction);
+      backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, direction);
       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
     }
 
@@ -348,8 +314,9 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
     // recompute cached values
     f.update_Vertex_positions();
-  } // periodic save, print and adjust
-}
+    
+  } // integration 
+} // euler
 
 } // namespace integration
 } // namespace ddgsolver
