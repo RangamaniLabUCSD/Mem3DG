@@ -25,8 +25,7 @@ using namespace std;
 namespace ddgsolver {
 namespace integration {
 
-void getParameterLog(Force &f, double dt,
-                     double finalTime, double tolerance,
+void getParameterLog(Force &f, double dt, double finalTime, double tolerance,
                      double tSave, std::string inputMesh,
                      std::string outputDir) {
   ofstream myfile(outputDir + "/parameter.txt");
@@ -66,11 +65,14 @@ void getParameterLog(Force &f, double dt,
     cout << "Unable to open file";
 }
 
-void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std::size_t frame, double areaError,
-                   double volumeError, double bendingError, double faceError, double bendingEnergy, double surfaceEnergy, 
-                   double pressureEnergy, double kineticEnergy, double chemicalEnergy, double lineEnergy, double totalEnergy,
-                  double L2ErrorNorm, bool isTuftedLaplacian, bool isProtein, bool isVertexShift,
-                   std::string inputMesh) {
+void getStatusLog(std::string nameOfFile, Force &f, double dt, double time,
+                  std::size_t frame, double areaError, double volumeError,
+                  double bendingError, double faceError, double bendingEnergy,
+                  double surfaceEnergy, double pressureEnergy,
+                  double kineticEnergy, double chemicalEnergy,
+                  double lineEnergy, double totalEnergy, double L2ErrorNorm,
+                  bool isTuftedLaplacian, bool isProtein, bool isVertexShift,
+                  std::string inputMesh) {
   ofstream myfile(nameOfFile);
   if (myfile.is_open()) {
     myfile << "Input Mesh: " << inputMesh << "\n";
@@ -101,24 +103,25 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
     myfile << "\n";
     myfile << "States: \n";
     myfile << "\n";
-    myfile << "Bending Energy:   " << bendingEnergy << "\n"
-           << "Surface Energy:   " << surfaceEnergy << "\n"
-           << "Pressure Work:    " << pressureEnergy << "\n"
-           << "Kinetic Work:    " << kineticEnergy << "\n"
-           << "Chemical Energy:  " << chemicalEnergy << "\n"
-           << "Line tension Energy:  " << lineEnergy << "\n"
-           << "Total Energy:     " << totalEnergy << "\n" 
-           << "L2 error norm:    " << L2ErrorNorm << "\n"
-           << "Volume:           " << f.volume << " = "
-           << f.volume / f.refVolume << " reduced volume"
-           << "\n"
-           << "Surface area:     " << f.surfaceArea << " = "
-           << f.surfaceArea / f.targetSurfaceArea << " target surface area"
-           << "\n"
-           << "COM (x, y, z):		 "
-           << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
-                  f.vpg.inputVertexPositions.raw().rows()
-           << "\n";
+    myfile
+        << "Bending Energy:   " << bendingEnergy << "\n"
+        << "Surface Energy:   " << surfaceEnergy << "\n"
+        << "Pressure Work:    " << pressureEnergy << "\n"
+        << "Kinetic Work:    " << kineticEnergy << "\n"
+        << "Chemical Energy:  " << chemicalEnergy << "\n"
+        << "Line tension Energy:  " << lineEnergy << "\n"
+        << "Total Energy:     " << totalEnergy << "\n"
+        << "L2 error norm:    " << L2ErrorNorm << "\n"
+        << "Volume:           " << f.volume << " = " << f.volume / f.refVolume
+        << " reduced volume"
+        << "\n"
+        << "Surface area:     " << f.surfaceArea << " = "
+        << f.surfaceArea / f.targetSurfaceArea << " target surface area"
+        << "\n"
+        << "COM (x, y, z):		 "
+        << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
+               f.vpg.inputVertexPositions.raw().rows()
+        << "\n";
 
     myfile << "\n";
     myfile << "Errors: \n";
@@ -144,16 +147,15 @@ void getStatusLog(std::string nameOfFile, Force &f, double dt, double time, std:
     cout << "Unable to open file";
 }
 
-void getEnergyLog(double time, double bendingEnergy,
-                  double surfaceEnergy, double pressureEnergy,
-                  double kineticEnergy, double chemicalEnergy,
-                  double totalEnergy, std::string outputDir) {
+void getEnergyLog(double time, double bendingEnergy, double surfaceEnergy,
+                  double pressureEnergy, double kineticEnergy,
+                  double chemicalEnergy, double totalEnergy,
+                  std::string outputDir) {
   ofstream myfile(outputDir + "energy.txt", std::ios::app);
   if (myfile.is_open()) {
     myfile << time << "," << bendingEnergy << "," << surfaceEnergy << ","
-           << pressureEnergy << ","
-           << kineticEnergy << "," << chemicalEnergy << "," << totalEnergy
-           << "\n";
+           << pressureEnergy << "," << kineticEnergy << "," << chemicalEnergy
+           << "," << totalEnergy << "\n";
     myfile.close();
   } else
     cout << "Unable to open file";

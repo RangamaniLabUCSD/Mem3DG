@@ -31,11 +31,8 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 double
-getL2ErrorNorm(Eigen::SparseMatrix<double> M,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
-
-  return sqrt(
-      (M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
+getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
+  return sqrt((rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
 std::tuple<double, double, double, double, double, double, double>

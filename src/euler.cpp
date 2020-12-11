@@ -35,6 +35,11 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+void backtrack(Force &f, const double dt, double rho, double &time,
+               const size_t verbosity, const double totalEnergy_pre,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
+
 void euler(Force &f, double dt, double total_time, double tolerance,
            double closeZone, double increment, double maxKv, double maxKsg,
            double tSave, double tMollify, const size_t verbosity,
@@ -67,9 +72,7 @@ void euler(Force &f, double dt, double total_time, double tolerance,
 
   // const double hdt = 0.5 * dt, hdt2 = hdt * dt;
 
-  bool exitFlag = false;
-
-  double totalEnergy, sE, pE, kE, cE, lE, oldL2ErrorNorm = 1e6, L2ErrorNorm,
+  double time, totalEnergy, sE, pE, kE, cE, lE, oldL2ErrorNorm = 1e6, L2ErrorNorm,
                                           dL2ErrorNorm, oldBE = 0.0, BE, dBE,
                                           dArea, dVolume, dFace;
   // double dRef;
@@ -87,6 +90,8 @@ void euler(Force &f, double dt, double total_time, double tolerance,
 #endif
 
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
+    time = i * dt + init_time;
+
     if (f.mesh.hasBoundary()) {
       f.getPatchForces();
     } else {
@@ -126,9 +131,10 @@ void euler(Force &f, double dt, double total_time, double tolerance,
 
     vel_e = physicalPressure + regularizationForce_e;
 
-    // 1. save
     // periodically save the geometric files, print some info
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
+      
+      // 1. save
       gcs::VertexData<double> H(f.mesh);
       H.fromVector(f.H);
       gcs::VertexData<double> H0(f.mesh);
@@ -196,15 +202,7 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       }
 #endif
 
-      L2ErrorNorm = getL2ErrorNorm(
-          f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
-      dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
-
-      if (f.P.Kb != 0) {
-        dBE = abs(BE - oldBE) / (BE);
-      } else {
-        dBE = 0.0;
-      }
+      L2ErrorNorm = getL2ErrorNorm(rowwiseScaling(f.mask.cast<double>(), physicalPressure));
 
       if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
         dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
@@ -216,16 +214,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
         dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
       } else {
         dVolume = 0.0;
-      }
-
-      if (f.P.Ksl != 0 && !f.mesh.hasBoundary()) {
-        dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
-                 f.targetFaceAreas.raw().array())
-                    .abs()
-                    .sum() /
-                f.mesh.nFaces();
-      } else {
-        dFace = 0.0;
       }
 
       if (verbosity > 2) {
@@ -242,14 +230,10 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       // 2. print
       if (verbosity > 1) {
         std::cout << "\n"
-                  << "Time: " << i * dt + init_time << "\n"
+                  << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
-                  << "dBE: " << dBE << "\n"
-                  << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
-                  << "Bending energy: " << BE << "\n"
-                  << "Line energy: " << lE << "\n"
                   << "Total energy (exclude V^ext): " << totalEnergy << "\n"
                   << "L2 error norm: " << L2ErrorNorm << "\n"
                   << "COM: "
@@ -260,75 +244,13 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                   << "\n"
                   << "Height: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n"
-                  << "Increase force spring constant Kf to " << f.P.Kf << "\n";
+                  << "\n";
       }
-
-      /* for optimization purpose
-      // 3.1.1 compare and adjust (in the case of vesicle simulation)
-      if ((dVolume < closeZone * tolerance) && (!f.mesh.hasBoundary()) &&
-          (dArea < closeZone * tolerance) && (dBE < closeZone * tolerance)) {
-        dRef = std::max({dVolume, dArea, dFace});
-        if (dRef*increment != 0) {
-          f.P.kt *= 1 - dBE / dRef * increment;
-          f.P.Kv = std::min(f.P.Kv * (1 + dVolume / dRef * increment), maxKv);
-          f.P.Ksg = std::min(f.P.Ksg * (1 + dArea / dRef * increment), maxKsg);
-        }
-
-        std::cout << "Within the close zone below " << closeZone
-                  << " times tolerance(" << tolerance << "): "
-                  << "\n"
-                  << "Increase global area penalty Ksg to " << f.P.Ksg << "\n"
-                  << "Increase volume penalty Kv to " << f.P.Kv << "\n"
-                  << "Decrese randomness kT to " << f.P.kt << "\n";
-      }
-
-      // 3.1.2 increase the force spring constant
-      f.P.Kf *= 1 + increment;
-
-      // 3.2 compare and exit
-      if (((dVolume < tolerance) && (dArea < tolerance) && (dBE < tolerance) &&
-      (dL2ErrorNorm > 0))||(exitFlag == true)) { f.P.Kv *= (1 - dVolume / dRef *
-      increment); f.P.Ksg *= (1 - dArea / dRef * increment); exitFlag = true;
-        f.P.kt = 0.0;
-        increment = 0;
-        if (nMollify > 0) {
-
-          std::cout << "\n"
-                    << nMollify << " mollification(s) left" << std::endl;
-          nMollify -= 1;
-        } else {
-          std::cout << "\n"
-                    << "Converged! Saved to " + outputDir << std::endl;
-          f.richData.write(outputDir + "final.ply");
-          getStatusLog(outputDir + "summary.txt", f, dt, i * dt, frame, dArea,
-                       dVolume, dBE, dFace, BE, sE, pE, cE, totalEnergy,
-                       L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-      f.isVertexShift, inputMesh); break;
-        }
-      }
-      */
-
-      // 3.3 fail and exit
-      if (abs(dL2ErrorNorm) > errorJumpLim) {
-        if (verbosity > 0) {
-          std::cout << "Error Norm changes rapidly. Save data and quit."
-                    << std::endl;
-        }
-        break;
-      }
-
-      oldL2ErrorNorm = L2ErrorNorm;
-      oldBE = BE;
-
-    } // periodically save the geometric files, print some info, compare and
-      // adjust
+    } // periodically save the geometric files, print some info
 
     // integration
-    // nextPosition = pastPosition + 2 * vel_e * dt;
-    // pastPosition = pos_e;
-    // pos_e = nextPosition;
-    pos_e += vel_e * dt;
+    backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, vel_e);
+    //pos_e += vel_e * dt;
 
     if (f.isProtein) {
       f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
@@ -347,21 +269,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
     // recompute cached values
     f.update_Vertex_positions();
 
-    /* for optimization purpose
-    // 3.3.A fail and exit
-    if (i == int(total_time / dt)) {
-      std::cout
-          << "\n"
-          << "Fail to converge in given time and Exit. Past data saved to " +
-                 outputDir
-          << std::endl;
-      getStatusLog(outputDir + "failure_report.txt", f, dt, i * dt, frame,
-                   dArea, dVolume, dBE, dFace, BE, sE, pE, cE, totalEnergy,
-                   L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-    f.isVertexShift, inputMesh);
-    }
-    */
-
     // 3.3.B finish and exit
     if (verbosity > 0) {
       if (i == int((total_time - init_time) / dt)) {
@@ -374,8 +281,9 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                      f.isVertexShift, inputMesh);
       }
     }
-  } // periodic save, print and adjust
-}
+    
+  } // integration
+} // euler
 
 } // namespace integration
 } // namespace ddgsolver
