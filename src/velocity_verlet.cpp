@@ -63,7 +63,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
 
   bool exitFlag = false;
-
+  outputQuantities output(mesh);
   double totalEnergy, sE, pE, kE, cE, lE, oldL2ErrorNorm = 1e6, L2ErrorNorm,
                                           dL2ErrorNorm, oldBE = 0.0, BE, dBE,
                                           dArea, dVolume, dFace;
@@ -119,45 +119,37 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     if ((i % nSave == 0) || (i == int(total_time / dt))) {
 
       // 1. save
-      gcs::VertexData<double> H(f.mesh);
-      H.fromVector(f.H);
-      f.richData.addVertexProperty("mean_curvature", H);
-
-      gcs::VertexData<double> H0(f.mesh);
-      H0.fromVector(f.H0);
-      f.richData.addVertexProperty("spon_curvature", H0);
-
-      gcs::VertexData<double> f_ext(f.mesh);
-      f_ext.fromVector(f.externalPressureMagnitude);
-      f.richData.addVertexProperty("external_pressure", f_ext);
-
-      gcs::VertexData<double> fn(f.mesh);
-      fn.fromVector(rowwiseDotProduct(
-          physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("physical_pressure", fn);
-
-      gcs::VertexData<double> ft(f.mesh);
-      ft.fromVector(
+      std::tie(output.totalEnergy, output.BE, output.sE, output.pE, output.kE,
+               output.cE, output.lE) = getFreeEnergy(f);
+      output.time = i * dt + init_time;
+      output.frame = frame;
+      output.Angles = &f.vpg.cornerAngles.raw();
+      output.H = &f.H;
+      output.H0 = &f.H0;
+      *output.H_H0_diff = ((f.H.array() - f.H0.array()) * (f.H.array() - f.H0.array())).matrix();
+      output.f_ext = &f.externalPressureMagnitude;
+      *output.fn =
+          rowwiseDotProduct(physicalPressure,
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+      *output.ft =
           (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
                              gc::EigenMap<double, 3>(f.vpg.vertexNormals))
                .array() /
            f.H.array() / 2)
-              .matrix());
-      f.richData.addVertexProperty("capillary_pressure", ft);
-
-      gcs::VertexData<double> fb(f.mesh);
-      fb.fromVector(
+              .matrix();
+      *output.fb =
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("bending_pressure", fb);
-
-      gcs::VertexData<double> fl(f.mesh);
-      fl.fromVector(
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+      *output.fl =
           rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      f.richData.addVertexProperty("line_tension_pressure", fl);
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+      output.coords = &EigenMap<double, 3>(f.vpg.inputVertexPositions);
+      output.velocity = &EigenMap<double, 3>(f.vel);
+      // 1.1 save to .ply file
+      if (verbosity > 2) {
+        writePly(f, physicalPressure);
+      }
 
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
         frame = fd.getNextFrameIndex();
@@ -187,7 +179,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 #endif
 
       L2ErrorNorm = getL2ErrorNorm(
-          f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
+          rowwiseScaling(f.mask.cast<double>(), physicalPressure));
       dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
 
       if (f.P.Kb != 0) {
