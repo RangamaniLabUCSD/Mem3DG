@@ -79,7 +79,27 @@ void getEnergyLog(double time, double bendingEnergy, double surfaceEnergy,
                   double chemicalEnergy, double totalEnergy,
                   std::string outputDir);
 
+void writePly(Force &f,
+              Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
 
+struct outputQuantities(gcs::ManifoldSurfaceMesh &mesh) {
+  double time, BE, pE, kE, cE, lE, totalEnergy;
+  size_t frame;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> *Angles, *H, *H0, *H_H0_diff, *f_ext,
+      *fn, *ft, *fb, *fl;
+  Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 3>> *coords, *velocity;
+  *Angles.resize(mesh.nVertices(), 1);
+  *H.resize(mesh.nVertices(), 1);
+  *H0.resize(mesh.nVertices(), 1);
+  *H_H0_diff.resize(mesh.nVertices(), 1);
+  *f_ext.resize(mesh.nVertices(), 1);
+  *fn.resize(mesh.nVertices(), 1);
+  *ft.resize(mesh.nVertices(), 1);
+  *fb.resize(mesh.nVertices(), 1);
+  *fl.resize(mesh.nVertices(), 1);
+  *coords.resize(mesh.nVertices(), 3);
+  *velocity.resize(mesh.nVertices(), 3);
+};
 
 } // namespace integration
 } // namespace ddgsolver
