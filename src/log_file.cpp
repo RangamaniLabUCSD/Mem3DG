@@ -161,40 +161,5 @@ void getEnergyLog(double time, double bendingEnergy, double surfaceEnergy,
     cout << "Unable to open file";
 }
 
-void writePly(Force &f,
-              Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
-  gcs::VertexData<double> H(f.mesh);
-  H.fromVector(f.H);
-  gcs::VertexData<double> H0(f.mesh);
-  H0.fromVector(f.H0);
-  gcs::VertexData<double> f_ext(f.mesh);
-  f_ext.fromVector(f.externalPressureMagnitude);
-  gcs::VertexData<double> fn(f.mesh);
-  fn.fromVector(rowwiseDotProduct(
-      physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  gcs::VertexData<double> ft(f.mesh);
-  ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-                     .array() /
-                 f.H.array() / 2)
-                    .matrix());
-  gcs::VertexData<double> fb(f.mesh);
-  fb.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  gcs::VertexData<double> fl(f.mesh);
-  fl.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-
-  f.richData.addVertexProperty("mean_curvature", H);
-  f.richData.addVertexProperty("spon_curvature", H0);
-  f.richData.addVertexProperty("external_pressure", f_ext);
-  f.richData.addVertexProperty("physical_pressure", fn);
-  f.richData.addVertexProperty("capillary_pressure", ft);
-  f.richData.addVertexProperty("bending_pressure", fb);
-  f.richData.addVertexProperty("line_tension_pressure", fl);
-}
-
 } // namespace integration
 } // namespace ddgsolver

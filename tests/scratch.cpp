@@ -69,7 +69,7 @@ int main() {
   // ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
   //                                        Kv, Ksg, tSave, tMollify,
   //                                        verbosity);
-  ddgsolver::integration::euler(
+  ddgsolver::integration::conjugateGradient(
         f, h, T, eps, closeZone, increment, Kv, Ksg, tSave, tMollify,
         verbosity);
   delete ptrRefVpg;
