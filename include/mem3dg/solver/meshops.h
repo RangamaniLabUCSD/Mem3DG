@@ -99,6 +99,7 @@ rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
     return C;
   } else {
     C.resize(A.rows(), 3);
+    #pragma omp prallel for 
     for (size_t i = 0; i < A.rows(); i++) {
       C.row(i) = A.row(i).cross(B.row(i));
     }
@@ -171,7 +172,7 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
 DLL_PUBLIC inline void
 vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
             Eigen::Matrix<bool, Eigen::Dynamic, 1> mask) {
-
+  #pragma omp parallel for 
   for (gcs::Vertex v : mesh.vertices()) {
 
     if (mask(vpg.vertexIndices[v])) {
