@@ -32,25 +32,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-template <typename T>
-void log(gcs::FaceData<T> face_a, gcs::HalfedgeMesh &mesh, std::string name) {
-  for (gcs::Face f : mesh.faces()) {
-    std::cout << name << face_a[f] << std::endl;
-  }
-}
-
 void Force::getStretchingForces() {
-
-  capillaryPressure.fill({0.0, 0.0, 0.0});
-
-  // Alias & gc::EigenMap
-  const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
-  const gcs::FaceData<double> &face_a = vpg.faceAreas;
-  const gcs::VertexData<size_t> &v_ind = vpg.vertexIndices;
-  auto &faceArea_e = vpg.faceAreas.raw();
-
-  surfaceArea = faceArea_e.sum();
-
   for (gcs::Vertex v : mesh.vertices()) {
     gc::Vector3 localForce{0.0, 0.0, 0.0};
     gc::Vector3 globalForce{0.0, 0.0, 0.0};
@@ -61,7 +43,7 @@ void Force::getStretchingForces() {
       gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
       gcs::Halfedge base_he = he.next();
       gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-      gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
+      gc::Vector3 localAreaGradient = -gc::cross(base_vec, vpg.faceNormals[he.face()]);
       assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
       if (P.Kst != 0) {
@@ -71,7 +53,7 @@ void Force::getStretchingForces() {
       if (P.Ksl != 0) {
         localForce +=
             - P.Ksl * localAreaGradient *
-            (face_a[base_he.face()] - targetFaceAreas[base_he.face()]) /
+            (vpg.faceAreas[base_he.face()] - targetFaceAreas[base_he.face()]) /
             targetFaceAreas[base_he.face()];
       }
 

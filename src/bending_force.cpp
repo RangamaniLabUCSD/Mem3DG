@@ -42,19 +42,6 @@ void Force::getBendingForces() {
   // Alias
   std::size_t n_vertices = (mesh.nVertices());
 
-  // update the (tufted) mass and conformal Laplacian matrix
-  if (isTuftedLaplacian) {
-    getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
-  } else {
-    M = vpg.vertexLumpedMassMatrix;
-    L = vpg.cotanLaplacian;
-  }
-  // Cache the inverse mass matrix
-  M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-
-  // calculate mean curvature
-  H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
-
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
       M_inv * vpg.vertexGaussianCurvatures.raw();

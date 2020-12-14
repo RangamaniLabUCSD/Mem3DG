@@ -45,47 +45,11 @@ void Force::getPatchForces() {
   auto lineTensionForce_e = gc::EigenMap<double, 3>(lineTensionPressure);
   auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-  Eigen::Matrix<double, Eigen::Dynamic, 1> faceArea_e = vpg.faceAreas.raw();
 
   // Alias
   std::size_t n_vertices = (mesh.nVertices());
-  const gcs::FaceData<gc::Vector3> &face_n = vpg.faceNormals;
-  const gcs::FaceData<double> &face_a = vpg.faceAreas;
-
+  
   /// A. BENDING PRESSURE
-  // // update the (tufted) mass and conformal Laplacian matrix
-  // if (isTuftedLaplacian) {
-  //   getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
-  // } else {
-  //   M = vpg.vertexLumpedMassMatrix;
-  //   L = vpg.cotanLaplacian;
-  // }
-  // // Cache the inverse mass matrix
-  // M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-
-  // // update distance
-  // geodesicDistanceFromPtInd =
-  //     heatSolver.computeDistance(mesh.vertex(ptInd));
-  // if (P.H0 != 0) {
-  //   if (isCircle) {
-  //     tanhDistribution(H0, geodesicDistanceFromPtInd.raw(),
-  //     P.sharpness,
-  //                      P.r_H0[0]);
-  //   } else {
-  //     tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(),
-  //                      P.sharpness, P.r_H0);
-  //   }
-  //   H0 *= P.H0;
-  // }
-
-  // // calculate mean curvature
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
-  //     rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
-  // H = M_inv * H_integrated;
-
-  // Gaussian curvature
-  Eigen::Matrix<double, Eigen::Dynamic, 1> &KG_integrated =
-      vpg.vertexGaussianCurvatures.raw();
 
   // calculate the Laplacian of mean curvature H
   Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
@@ -94,7 +58,7 @@ void Force::getPatchForces() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated = M * H;
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms_integrated =
       M_inv * rowwiseProduct(H_integrated, H_integrated) +
-      rowwiseProduct(H_integrated, H0) - KG_integrated;
+      rowwiseProduct(H_integrated, H0) - vpg.vertexGaussianCurvatures.raw();
   Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
   zeroMatrix.resize(n_vertices, 1);
   zeroMatrix.setZero();
@@ -113,23 +77,14 @@ void Force::getPatchForces() {
                      vertexAngleNormal_e);
 
   /// B. INSIDE EXCESS PRESSURE
-  // volume = 0;
-  // for (gcs::Face f : mesh.faces()) {
-  //   volume += signedVolumeFromFace(
-  //       f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
-  // }
   insidePressure_e = P.Kv * vertexAngleNormal_e;
 
   /// C. CAPILLARY PRESSURE
-  // surfaceArea = faceArea_e.sum();
   capillaryPressure_e = rowwiseScaling(-P.Ksg * 2.0 * H, vertexAngleNormal_e);
 
   /// D. LINE TENSION FORCE
-  lineTensionPressure.fill({0.0, 0.0, 0.0});
-  // interArea = 0.0;
 
   /// E. LOCAL REGULARIZATION
-  regularizationForce.fill({0.0, 0.0, 0.0});
   gcs::EdgeData<double> lcr(mesh);
   getCrossLengthRatio(mesh, vpg, lcr);
 
@@ -164,7 +119,6 @@ void Force::getPatchForces() {
             (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
         lineTensionPressure[v] = -P.eta * vpg.vertexNormals[v] *
                                  (cosT * cosT * (K1 - K2) + K2) * P.sharpness;
-        // interArea += vpg.vertexDualAreas[v];
       }
 
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -173,7 +127,8 @@ void Force::getPatchForces() {
         // Stretching forces
         gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
         gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-        gc::Vector3 localAreaGradient = -gc::cross(base_vec, face_n[he.face()]);
+        gc::Vector3 localAreaGradient =
+            -gc::cross(base_vec, vpg.faceNormals[he.face()]);
         assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
 
         // conformal regularization
