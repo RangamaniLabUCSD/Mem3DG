@@ -83,7 +83,8 @@ void getForces(Force &f,
     removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
                    physicalPressure);
     // removeTranslation(DPDForce);
-    // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions), DPDForce);
+    // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+    // DPDForce);
   }
 }
 
@@ -108,7 +109,7 @@ void backtrack(Force &f, const double dt, double rho, double &time,
 
   // while (totalEnergy >
   //        (totalEnergy_pre -
-  //         0.05 * alpha * (force.array() * direction.array()).sum())) {
+  //         0.02 * alpha * (force.array() * direction.array()).sum())) {
   while (totalEnergy > totalEnergy_pre) {
     if (count > 20) {
       throw std::runtime_error("line search failure!");
@@ -117,9 +118,8 @@ void backtrack(Force &f, const double dt, double rho, double &time,
     pos_e = init_position + alpha * direction;
     f.update_Vertex_positions();
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
-    std::cout << totalEnergy - totalEnergy_pre << std::endl;
-    // std::cout << totalEnergy_pre << std::endl;
-    // std::cout << totalEnergy << std::endl;
+    // std::cout << "energy pre:" << totalEnergy_pre << std::endl;
+    // std::cout << "energy: " << totalEnergy << std::endl;
     count++;
   }
 
@@ -169,9 +169,8 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   // time integration loop
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
-    // compute summerized forces
-    getForces(f, physicalPressure, DPDforce, regularizationForce);
-    vel_e = physicalPressure + DPDforce + regularizationForce;
+    // compute the free energy of the system
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
     // measure the error norm, exit if smaller than tolerance
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
@@ -183,6 +182,10 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                   << std::endl;
       }
     }
+    
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDforce, regularizationForce);
+    vel_e = physicalPressure + DPDforce + regularizationForce;
 
     // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
@@ -209,8 +212,6 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                .array() /
            f.H.array() / 2)
               .matrix());
-
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
       // save variable to richData
       if (verbosity > 2) {
@@ -320,6 +321,6 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
     f.update_Vertex_positions();
 
   } // integration
-} 
+}
 } // namespace integration
 } // namespace ddgsolver
