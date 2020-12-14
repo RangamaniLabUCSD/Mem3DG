@@ -39,6 +39,10 @@ void backtrack(Force &f, const double dt, double rho, double &time,
                const size_t verbosity, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
+void getForces(Force &f,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
 void euler(Force &f, double dt, double total_time, double tolerance,
            double closeZone, double increment, double maxKv, double maxKsg,
@@ -46,40 +50,27 @@ void euler(Force &f, double dt, double total_time, double tolerance,
            std::string inputMesh, std::string outputDir, double init_time,
            double errorJumpLim) {
 
-  // print out a .txt file listing all parameters used
+  // print out a txt file listing all parameters used
   if (verbosity > 2) {
     getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
   }
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce_e;
-  regularizationForce_e.resize(f.mesh.nVertices(), 3);
-  regularizationForce_e.setZero();
+  // initialize variables used in time integration
+  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
+      physicalPressure, DPDforce;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure;
-  // , numericalPressure;
-  // numericalPressure.resize(f.mesh.nVertices(), 3);
-  // numericalPressure.setZero();
-
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
-
-  // Eigen::Matrix<double, Eigen::Dynamic, 3> pastPosition;
-  // pastPosition.resize(f.mesh.nVertices(), 3);
-  // pastPosition = pos_e;
-
-  // Eigen::Matrix<double, Eigen::Dynamic, 3> nextPosition;
-  // nextPosition.resize(f.mesh.nVertices(), 3);
-
-  // const double hdt = 0.5 * dt, hdt2 = hdt * dt;
-
-  double time, totalEnergy, sE, pE, kE, cE, lE, exE, oldL2ErrorNorm = 1e6, L2ErrorNorm,
-                                          dL2ErrorNorm, oldBE = 0.0, BE, dBE,
-                                          dArea, dVolume, dFace;
-  // double dRef;
+  double time = init_time, totalEnergy, sE, pE, kE, cE, lE, exE,
+         oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
+         dArea, dVolume, dFace;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
 
+  // map the raw eigen datatype for computation
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+
+  // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
@@ -89,71 +80,43 @@ void euler(Force &f, double dt, double total_time, double tolerance,
   }
 #endif
 
+  // time integration loop
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
-    time = i * dt + init_time;
 
-    if (f.mesh.hasBoundary()) {
-      f.getPatchForces();
-    } else {
-      f.getVesicleForces();
-    }
-    f.getDPDForces();
-    f.getExternalForces();
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDforce, regularizationForce);
+    vel_e = physicalPressure + DPDforce + regularizationForce;
 
-    if (f.isProtein) {
-      f.getChemicalPotential();
-    }
-
-    physicalPressure =
-        rowwiseScaling(f.mask.cast<double>(),
-                       gc::EigenMap<double, 3>(f.bendingPressure) +
-                           gc::EigenMap<double, 3>(f.capillaryPressure) +
-                           gc::EigenMap<double, 3>(f.insidePressure) +
-                           gc::EigenMap<double, 3>(f.externalPressure) +
-                           gc::EigenMap<double, 3>(f.lineTensionPressure));
-
-    regularizationForce_e = rowwiseScaling(
-        f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
-
-    // numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-    //                                gc::EigenMap<double,
-    //                                3>(f.stochasticForce));
-
-    if (!f.mesh.hasBoundary()) {
-      removeTranslation(physicalPressure);
-      removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-                     physicalPressure);
-
-      // removeTranslation(numericalPressure);
-      // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-      //                numericalPressure);
+    // measure the error norm, exit if smaller than tolerance
+    L2ErrorNorm = getL2ErrorNorm(physicalPressure);
+    if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-3)) {
+      break;
+      if (verbosity > 0) {
+        std::cout << "\n"
+                  << "Simulation finished, and data saved to " + outputDir
+                  << std::endl;
+      }
     }
 
-    vel_e = physicalPressure + regularizationForce_e;
-
-    // periodically save the geometric files, print some info
+    // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
 
-      gcs::VertexData<double> H(f.mesh);
+      gcs::VertexData<double> H(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
+          fb(f.mesh), fl(f.mesh), ft(f.mesh);
+
       H.fromVector(f.H);
-      gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
-      gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
           physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> f_ext(f.mesh);
       f_ext.fromVector(
           rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> fl(f.mesh);
       fl.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> ft(f.mesh);
       ft.fromVector(
           (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
                              gc::EigenMap<double, 3>(f.vpg.vertexNormals))
@@ -163,7 +126,7 @@ void euler(Force &f, double dt, double total_time, double tolerance,
 
       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
-      // 1.1 save to .ply file
+      // save variable to richData
       if (verbosity > 2) {
         f.richData.addVertexProperty("mean_curvature", H);
         f.richData.addVertexProperty("spon_curvature", H0);
@@ -174,11 +137,11 @@ void euler(Force &f, double dt, double total_time, double tolerance,
         f.richData.addVertexProperty("line_tension_pressure", fl);
       }
 
-      // 1.2 save to .nc file
+      // Save variables to netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
         frame = fd.getNextFrameIndex();
-        fd.writeTime(frame, i * dt + init_time);
+        fd.writeTime(frame, time);
         fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
         fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
         fd.writeAngles(frame, f.vpg.cornerAngles.raw());
@@ -203,20 +166,7 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       }
 #endif
 
-      L2ErrorNorm = getL2ErrorNorm(rowwiseScaling(f.mask.cast<double>(), physicalPressure));
-
-      if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
-        dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
-      } else {
-        dArea = 0.0;
-      }
-
-      if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
-        dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
-      } else {
-        dVolume = 0.0;
-      }
-
+      // print in-progress information in the console
       if (verbosity > 2) {
         char buffer[50];
         sprintf(buffer, "/t=%d", int(i * dt * 100));
@@ -225,11 +175,18 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                      dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
                      L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
-        // getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
       }
-
-      // 2. print
       if (verbosity > 1) {
+        if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
+          dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
+        } else {
+          dArea = 0.0;
+        }
+        if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
+          dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
+        } else {
+          dVolume = 0.0;
+        }
         std::cout << "\n"
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
@@ -245,46 +202,28 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                   << "\n"
                   << "Height: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n";
+                  << "\n"
+                  << "Increase force spring constant Kf to " << f.P.Kf << "\n";
       }
-    } // periodically save the geometric files, print some info
-
-    // integration
-    backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, vel_e);
-    //pos_e += vel_e * dt;
-
-    if (f.isProtein) {
-      f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
     }
 
+    // time stepping on vertex position
+    backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, vel_e);
+    // pos_e += vel_e * dt;
+    // time += dt;
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
 
-    // if (f.vpg.cornerAngles.raw().minCoeff() < (M_PI / 6)) {
-    //   f.isTuftedLaplacian = true;
-    // } else {
-    //   f.isTuftedLaplacian = false;
-    // }
+    // time stepping on protein density
+    if (f.isProtein) {
+      f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+    }
 
     // recompute cached values
     f.update_Vertex_positions();
 
-    // 3.3.B finish and exit
-    if (verbosity > 0) {
-      if (i == int((total_time - init_time) / dt)) {
-        std::cout << "\n"
-                  << "Simulation finished, and data saved to " + outputDir
-                  << std::endl;
-        getStatusLog(outputDir + "/final_report.txt", f, dt, i * dt, frame,
-                     dArea, dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE,
-                     totalEnergy, L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                     f.isVertexShift, inputMesh);
-      }
-    }
-    
   } // integration
-} // euler
-
+} 
 } // namespace integration
 } // namespace ddgsolver

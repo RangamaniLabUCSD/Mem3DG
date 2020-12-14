@@ -36,9 +36,20 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-Eigen::Matrix<double, Eigen::Dynamic, 3>
-getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-          Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce_e) {
+/**
+ * @brief Summerize forces into 3 categories: physcialPressure, DPDForce and
+ * regularizationForce. Note that the forces has been removed rigid body mode
+ * and masked for integration
+ *
+ * @param f
+ * @param physicalPressure
+ * @param regularizationForce
+ * @return
+ */
+void getForces(Force &f,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
   if (f.mesh.hasBoundary()) {
     f.getPatchForces();
   } else {
@@ -59,24 +70,21 @@ getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
                          gc::EigenMap<double, 3>(f.externalPressure) +
                          gc::EigenMap<double, 3>(f.lineTensionPressure));
 
-  regularizationForce_e = rowwiseScaling(
+  regularizationForce = rowwiseScaling(
       f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
 
-  // numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-  //                                gc::EigenMap<double,
-  //                                3>(f.stochasticForce));
+  DPDForce =
+      rowwiseScaling(f.mask.cast<double>(),
+                     f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
+                                gc::EigenMap<double, 3>(f.stochasticForce)));
 
   if (!f.mesh.hasBoundary()) {
     removeTranslation(physicalPressure);
     removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
                    physicalPressure);
-
-    // removeTranslation(numericalPressure);
-    // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-    //                numericalPressure);
+    // removeTranslation(DPDForce);
+    // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions), DPDForce);
   }
-
-  return physicalPressure + regularizationForce_e;
 }
 
 void backtrack(Force &f, const double dt, double rho, double &time,
@@ -128,27 +136,27 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                        std::string outputDir, double init_time,
                        double errorJumpLim) {
 
-  // print out a .txt file listing all parameters used
+  // print out a txt file listing all parameters used
   if (verbosity > 2) {
     getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
   }
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce_e;
-  regularizationForce_e.resize(f.mesh.nVertices(), 3);
-  regularizationForce_e.setZero();
-
-  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure, direction;
-
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  // initialize variables used in time integration
+  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
+      physicalPressure, DPDforce, direction;
 
   double totalEnergy, sE, pE, kE, cE, lE, exE,
       oldL2ErrorNorm = 1e6, L2ErrorNorm = 1e6, dL2ErrorNorm, oldBE = 0.0, BE,
-      dBE, dArea, dVolume, dFace, currentNorm2, pastNorm2, time = init_time;
+      dBE, dArea, dVolume, dFace, currentNormSq, pastNormSq, time = init_time;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
 
+  // map the raw eigen datatype for computation
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+
+  // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
@@ -158,12 +166,15 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   }
 #endif
 
+  // time integration loop
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
-    vel_e = getForces(f, physicalPressure, regularizationForce_e);
-    L2ErrorNorm =
-        getL2ErrorNorm(rowwiseScaling(f.mask.cast<double>(), physicalPressure));
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDforce, regularizationForce);
+    vel_e = physicalPressure + DPDforce + regularizationForce;
 
+    // measure the error norm, exit if smaller than tolerance
+    L2ErrorNorm = getL2ErrorNorm(physicalPressure);
     if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-3)) {
       break;
       if (verbosity > 0) {
@@ -173,30 +184,25 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       }
     }
 
-    // 1. save
-    // periodically save the geometric files, print some info
+    // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
 
-      gcs::VertexData<double> H(f.mesh);
+      gcs::VertexData<double> H(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
+          fb(f.mesh), fl(f.mesh), ft(f.mesh);
+
       H.fromVector(f.H);
-      gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
-      gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
           physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> f_ext(f.mesh);
       f_ext.fromVector(
           rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> fl(f.mesh);
       fl.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> ft(f.mesh);
       ft.fromVector(
           (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
                              gc::EigenMap<double, 3>(f.vpg.vertexNormals))
@@ -206,7 +212,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
-      // 1.1 save to .ply file
+      // save variable to richData
       if (verbosity > 2) {
         f.richData.addVertexProperty("mean_curvature", H);
         f.richData.addVertexProperty("spon_curvature", H0);
@@ -217,7 +223,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
         f.richData.addVertexProperty("line_tension_pressure", fl);
       }
 
-      // 1.2 save to .nc file
+      // Save variables to netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
         frame = fd.getNextFrameIndex();
@@ -246,6 +252,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       }
 #endif
 
+      // print in-progress information in the console
       if (verbosity > 2) {
         char buffer[50];
         sprintf(buffer, "/t=%d", int(i * dt * 100));
@@ -255,22 +262,17 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                      L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
       }
-
-      // 2. print
       if (verbosity > 1) {
-
         if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
           dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
         } else {
           dArea = 0.0;
         }
-
         if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
           dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
         } else {
           dVolume = 0.0;
         }
-
         std::cout << "\n"
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
@@ -291,34 +293,33 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       }
     }
 
-    /// time integration
+    // time stepping on vertex position
     if (i % 20 == 0) {
       pos_e += vel_e * dt;
-      pastNorm2 = vel_e.squaredNorm();
+      pastNormSq = vel_e.squaredNorm();
       direction = vel_e;
       time += dt;
     } else {
-      currentNorm2 = vel_e.squaredNorm();
-      direction = currentNorm2 / pastNorm2 * direction + vel_e;
-      pastNorm2 = currentNorm2;
+      currentNormSq = vel_e.squaredNorm();
+      direction = currentNormSq / pastNormSq * direction + vel_e;
+      pastNormSq = currentNormSq;
       // pos_e += direction * dt;
       backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, direction);
       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
     }
-
-    if (f.isProtein) {
-      f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
-    }
-
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
+    }
+
+    // time stepping on protein density
+    if (f.isProtein) {
+      f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
     }
 
     // recompute cached values
     f.update_Vertex_positions();
 
   } // integration
-} // euler
-
+} 
 } // namespace integration
 } // namespace ddgsolver
