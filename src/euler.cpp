@@ -83,9 +83,8 @@ void euler(Force &f, double dt, double total_time, double tolerance,
   // time integration loop
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
-    // compute summerized forces
-    getForces(f, physicalPressure, DPDforce, regularizationForce);
-    vel_e = physicalPressure + DPDforce + regularizationForce;
+    // compute the free energy of the system
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
     // measure the error norm, exit if smaller than tolerance
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
@@ -97,6 +96,10 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                   << std::endl;
       }
     }
+
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDforce, regularizationForce);
+    vel_e = physicalPressure + DPDforce + regularizationForce;
 
     // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
@@ -224,6 +227,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
     f.update_Vertex_positions();
 
   } // integration
-} 
+}
 } // namespace integration
 } // namespace ddgsolver

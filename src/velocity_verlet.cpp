@@ -79,11 +79,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
-    // compute summerized forces
-    getForces(f, physicalPressure, DPDForce, regularizationForce);
-    totalPressure.resize(f.mesh.nVertices(), 3);
-    totalPressure.setZero();
-    newTotalPressure = physicalPressure + DPDForce;
+    // compute the free energy of the system
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
     // measure the error norm, exit if smaller than tolerance or reach time
     // limit
@@ -96,6 +93,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << std::endl;
       }
     }
+    
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDForce, regularizationForce);
+    totalPressure.resize(f.mesh.nVertices(), 3);
+    totalPressure.setZero();
+    newTotalPressure = physicalPressure + DPDForce;
 
     // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
@@ -122,8 +125,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                .array() /
            f.H.array() / 2)
               .matrix());
-
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
       // save variable to richData
       if (verbosity > 2) {
