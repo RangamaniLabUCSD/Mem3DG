@@ -143,7 +143,7 @@ public:
   /// Cotangent Laplacian
   Eigen::SparseMatrix<double> L;
   /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistanceFromAppliedForce;
+  gcs::VertexData<double> geodesicDistanceFromPtInd;
 
   /// Target area per face
   gcs::FaceData<double> targetFaceAreas;
@@ -228,44 +228,15 @@ public:
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
 
+    /// compute nonconstant values during simulation
+    update_Vertex_positions();
+
+    /// compute constant values during simulation
     // Find the closest point index to P.pt in refVpg
     closestPtIndToPt(mesh, refVpg, P.pt, ptInd);
 
-    // Initialize the geodesic distance from ptInd
-    geodesicDistanceFromAppliedForce =
-        heatSolver.computeDistance(mesh.vertex(ptInd));
-    auto &dist_e = geodesicDistanceFromAppliedForce.raw();
-    // geodesicDistanceFromAppliedForce =
-    //     heatMethodDistance(vpg, mesh.vertex(ptInd));
-    // auto &dist_e = geodesicDistanceFromAppliedForce.raw();
-
-    // Initialize the external pressure magnitude distribution
-    gaussianDistribution(externalPressureMagnitude, dist_e,
-                         dist_e.maxCoeff() / P.conc);
-    externalPressureMagnitude *= P.Kf;
-
-    // Initialize the spontaneous curvature distribution
-    if (isProtein) {
-      proteinDensity.raw().setZero();
-      H0.setZero(mesh.nVertices(), 1);
-    } else if (P.H0 != 0) {
-      if (isCircle) {
-        tanhDistribution(H0, dist_e, P.sharpness, P.r_H0[0]);
-      } else {
-        tanhDistribution(vpg, H0, dist_e, P.sharpness, P.r_H0);
-      }
-      H0 *= P.H0;
-      if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
-           1e-12)) {
-        assert(P.eta == 0);
-      }
-    } else {
-      H0.setZero(mesh.nVertices(), 1);
-      assert(P.eta == 0);
-    }
-
-    // Initialize the mask on choosing integration vertices based on geodesic
-    // distance from the local external force location on the reference geometry
+    // Initialize the constant mask based on distance from the point specified
+    // Or mask boundary element
     mask = (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() <
             P.radius)
                .matrix();
@@ -273,62 +244,28 @@ public:
       boundaryMask(mesh, mask);
     }
 
-    // Regularize the vetex position geometry if needed
-    if (isVertexShift) {
-      vertexShift(mesh, vpg, mask);
-      update_Vertex_positions();
-    }
-
-    // // Initialize the mass and conformal Laplacian matrix
-    // if (isTuftedLaplacian) {
-    //   getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
-    // } else {
-    //   M = vpg.vertexLumpedMassMatrix;
-    //   L = vpg.cotanLaplacian;
-    // }
-
-    // Initialize the inverse mass matrix
-    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-    // Alternatively, use the Galerkin mass matrix
-    // M = vpg.vertexGalerkinMassMatrix;
-    // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-    // solver.compute(vpg.vertexGalerkinMassMatrix);
-    // std::size_t n = mesh.nVertices();
-    // Eigen::SparseMatrix<double> I(n, n);
-    // I.setIdentity();
-    // M_inv = solver.solve(I);
-
-    // Initialize target face/surface areas
+    // Initialize the constant target face/surface areas
     targetFaceAreas = refVpg.faceAreas;
     targetSurfaceArea = targetFaceAreas.raw().sum();
 
-    // Initialize edge length
+    // Initialize the constant target edge length
     targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
 
-    // Initialize target cross length ration
+    // Initialize the target constant cross length ration
     getCrossLengthRatio(mesh, refVpg, targetLcr);
-    // targetclr.fill(1);
 
-    // Initialize reference volume
+    // Initialize the constant reference volume
     if (mesh.hasBoundary()) {
       refVolume = 0.0;
     } else {
       refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
     }
 
-    // // Initialize surface area
-    // surfaceArea = vpg.faceAreas.raw().sum();
-
-    // // Initialize volume
-    // for (gcs::Face f : mesh.faces()) {
-    //   volume += signedVolumeFromFace(
-    //       f, vpg, vpg.inputVertexPositions[mesh.vertex(ptInd)]);
-    // }
-
-    // Initialize the vertex position of the last iteration
-    pastPositions = vpg.inputVertexPositions;
-
-    update_Vertex_positions();
+    // Regularize the vetex position geometry if needed
+    if (isVertexShift) {
+      vertexShift(mesh, vpg, mask);
+      update_Vertex_positions();
+    }
   }
 
   /**
@@ -380,55 +317,69 @@ public:
 
   /**
    * @brief Update the vertex position and recompute cached values
+   * (all quantities that characterizes the current energy state)
    *
    */
   void update_Vertex_positions() {
-    // update all quantities that characterizes the current energy state 
     vpg.refreshQuantities();
 
     auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
     auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
 
+    // initialize/update (inverse) mass and Laplacian matrix
     if (isTuftedLaplacian) {
       getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
     } else {
       M = vpg.vertexLumpedMassMatrix;
       L = vpg.cotanLaplacian;
     }
-
-    // update the inverse mass matrix
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
-    // update distance and spontaneous curvature
-    geodesicDistanceFromAppliedForce =
-        heatSolver.computeDistance(mesh.vertex(ptInd));
-    if (P.H0 != 0) {
+    // initialize/update distance from the point specified
+    geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh.vertex(ptInd));
+    auto &dist_e = geodesicDistanceFromPtInd.raw();
+
+    // initialize/update spontaneous curvature
+    if (isProtein) {
+      proteinDensity.raw().setZero();
+      H0.setZero(mesh.nVertices(), 1);
+    } else if (P.H0 != 0) {
       if (isCircle) {
-        tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
-                         P.sharpness, P.r_H0[0]);
+        tanhDistribution(H0, dist_e, P.sharpness, P.r_H0[0]);
       } else {
-        tanhDistribution(vpg, H0, geodesicDistanceFromAppliedForce.raw(),
-                         P.sharpness, P.r_H0);
+        tanhDistribution(vpg, H0, dist_e, P.sharpness, P.r_H0);
       }
       H0 *= P.H0;
+      if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
+           1e-12)) {
+        assert(P.eta == 0);
+      }
+    } else {
+      H0.setZero(mesh.nVertices(), 1);
+      assert(P.eta == 0);
     }
 
-    // update mean curvature
+    // initialize/update mean curvature
     Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
         rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
     H = M_inv * H_integrated;
 
-    /// udate excess pressure
+    /// initialize/udate excess pressure
     volume = 0;
     for (gcs::Face f : mesh.faces()) {
       volume += signedVolumeFromFace(
           f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
     }
 
-    // update total surface area
+    // initialize/update the external pressure magnitude distribution
+    gaussianDistribution(externalPressureMagnitude, dist_e,
+                         dist_e.maxCoeff() / P.conc);
+    externalPressureMagnitude *= P.Kf;
+
+    // initialize/update total surface area
     surfaceArea = vpg.faceAreas.raw().sum();
 
-    // update intersection area
+    // initialize/update intersection area
     interArea = 0.0;
     for (gcs::Vertex v : mesh.vertices()) {
       if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
@@ -436,8 +387,11 @@ public:
         interArea += vpg.vertexDualAreas[v];
       }
     }
+
+    // initialize/update the vertex position of the last iteration
+    pastPositions = vpg.inputVertexPositions;
   }
-  
+
   void pcg_test();
 };
 } // end namespace ddgsolver

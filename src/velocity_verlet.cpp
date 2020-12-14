@@ -186,8 +186,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       }
 #endif
 
-      L2ErrorNorm = getL2ErrorNorm(
-          f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
+      L2ErrorNorm = getL2ErrorNorm(rowwiseScaling(f.mask.cast<double>(), physicalPressure));
       dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
 
       if (f.P.Kb != 0) {
@@ -261,7 +260,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         dRef = std::max({dVolume, dArea, dFace});
         if (dRef*increment != 0) {
           f.P.kt *= 1 - dBE / dRef * increment;
-          f.P.Kv = std::min(f.P.Kv * (1 + dVolume / dRef * increment), maxKv);
+          f.P.Kv = std::min(f.P.Kv * (1 + dVolume / dRef * increment), maxKv);  
           f.P.Ksg = std::min(f.P.Ksg * (1 + dArea / dRef * increment), maxKsg);
         }
 

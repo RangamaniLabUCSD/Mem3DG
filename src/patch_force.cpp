@@ -64,15 +64,15 @@ void Force::getPatchForces() {
   // M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // // update distance
-  // geodesicDistanceFromAppliedForce =
+  // geodesicDistanceFromPtInd =
   //     heatSolver.computeDistance(mesh.vertex(ptInd));
   // if (P.H0 != 0) {
   //   if (isCircle) {
-  //     tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
+  //     tanhDistribution(H0, geodesicDistanceFromPtInd.raw(),
   //     P.sharpness,
   //                      P.r_H0[0]);
   //   } else {
-  //     tanhDistribution(vpg, H0, geodesicDistanceFromAppliedForce.raw(),
+  //     tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(),
   //                      P.sharpness, P.r_H0);
   //   }
   //   H0 *= P.H0;
