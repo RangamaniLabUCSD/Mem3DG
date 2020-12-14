@@ -72,7 +72,7 @@ void euler(Force &f, double dt, double total_time, double tolerance,
 
   // const double hdt = 0.5 * dt, hdt2 = hdt * dt;
 
-  double time, totalEnergy, sE, pE, kE, cE, lE, oldL2ErrorNorm = 1e6, L2ErrorNorm,
+  double time, totalEnergy, sE, pE, kE, cE, lE, exE, oldL2ErrorNorm = 1e6, L2ErrorNorm,
                                           dL2ErrorNorm, oldBE = 0.0, BE, dBE,
                                           dArea, dVolume, dFace;
   // double dRef;
@@ -132,25 +132,19 @@ void euler(Force &f, double dt, double total_time, double tolerance,
     vel_e = physicalPressure + regularizationForce_e;
 
     // periodically save the geometric files, print some info
-    if ((i % nSave == 0) || (i == int(total_time / dt))) {
-      
-      // 1. save
+    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
+
       gcs::VertexData<double> H(f.mesh);
       H.fromVector(f.H);
       gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
-      gcs::VertexData<double> f_ext(f.mesh);
-      f_ext.fromVector(f.externalPressureMagnitude);
       gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
           physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> ft(f.mesh);
-      ft.fromVector(
-          (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                             gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-               .array() /
-           f.H.array() / 2)
-              .matrix());
+      gcs::VertexData<double> f_ext(f.mesh);
+      f_ext.fromVector(
+          rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
@@ -159,8 +153,15 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       fl.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+      gcs::VertexData<double> ft(f.mesh);
+      ft.fromVector(
+          (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
+                             gc::EigenMap<double, 3>(f.vpg.vertexNormals))
+               .array() /
+           f.H.array() / 2)
+              .matrix());
 
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
       // 1.1 save to .ply file
       if (verbosity > 2) {

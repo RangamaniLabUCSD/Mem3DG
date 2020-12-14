@@ -22,7 +22,7 @@
 namespace ddgsolver {
 namespace integration {
 
-DLL_PUBLIC std::tuple<double, double, double, double, double, double, double>
+DLL_PUBLIC std::tuple<double, double, double, double, double, double, double, double>
 getFreeEnergy(Force &f);
 
 DLL_PUBLIC double

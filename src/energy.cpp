@@ -35,31 +35,10 @@ getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
   return sqrt((rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
-std::tuple<double, double, double, double, double, double, double>
+std::tuple<double, double, double, double, double, double, double, double>
 getFreeEnergy(Force &f) {
-  // comment: this may not be useful, the convergence can be be tested by
-  // checking its derivative which is the forces excluding the DPD forces. The
-  // energy trajectory of could actually numerically integrated by post
-  // processing after saving all forces during the iterations.
-
-  // auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
-  // auto A = f.L.transpose() * f.M_inv * f.L; //could further cached since the
-  // same for all time pt for (size_t i = 0; i < positions.rows(); i++) {
-  // for
-  //(size_t j = 0; j < positions.rows(); j++) { 		Eb +=
-  // positions.row(i)
-  //* A * positions.transpose().col(j);
-  //	}
-  //}
-
-  double bE;
-  double sE;
-  double pE;
-
-  double kE;
-  double cE = 0;
-  double lE = 0;
-  double totalE;
+  double bE = 0.0, sE = 0.0, pE = 0.0, kE = 0.0, exE = 0.0, cE = 0.0, lE = 0.0,
+         totalE = 0.0;
 
   if (f.mesh.hasBoundary()) {
 
@@ -84,7 +63,12 @@ getFreeEnergy(Force &f) {
 
     lE = (f.P.eta * f.interArea * f.P.sharpness);
 
-    totalE = bE + sE + pE + kE + cE + lE;
+    exE =
+        -rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
+                           gc::EigenMap<double, 3>(f.vpg.inputVertexPositions))
+             .sum();
+
+    totalE = bE + sE + pE + kE + cE + lE + exE;
 
   } else {
 
@@ -109,11 +93,16 @@ getFreeEnergy(Force &f) {
 
     lE = (f.P.eta * f.interArea * f.P.sharpness);
 
-    totalE = bE + sE + pE + kE + cE + lE;
+    exE =
+        -rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
+                           gc::EigenMap<double, 3>(f.vpg.inputVertexPositions))
+             .sum();
+
+    totalE = bE + sE + pE + kE + cE + lE + exE;
   }
 
-  std::tuple<double, double, double, double, double, double, double> output(
-      totalE, bE, sE, pE, kE, cE, lE);
+  std::tuple<double, double, double, double, double, double, double, double> output(
+      totalE, bE, sE, pE, kE, cE, lE, exE);
 
   return output;
 }
