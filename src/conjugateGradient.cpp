@@ -90,13 +90,13 @@ void backtrack(Force &f, const double dt, double rho, double &time,
   double init_time = time;
 
   // declare variables used in backtracking iterations
-  double alpha = dt, totalEnergy, BE, sE, pE, kE, cE, lE;
+  double alpha = dt, totalEnergy, BE, sE, pE, kE, cE, lE, exE;
   size_t count = 0;
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   pos_e += alpha * direction;
   f.update_Vertex_positions();
-  std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+  std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
   // while (totalEnergy >
   //        (totalEnergy_pre -
@@ -108,14 +108,14 @@ void backtrack(Force &f, const double dt, double rho, double &time,
     alpha *= rho;
     pos_e = init_position + alpha * direction;
     f.update_Vertex_positions();
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
     std::cout << totalEnergy - totalEnergy_pre << std::endl;
     // std::cout << totalEnergy_pre << std::endl;
-    //std::cout << totalEnergy << std::endl;
+    // std::cout << totalEnergy << std::endl;
     count++;
   }
 
-  if (alpha != dt && verbosity > 1){
+  if (alpha != dt && verbosity > 1) {
     std::cout << "dt = " << dt << " -> " << alpha << std::endl;
   }
   time = init_time + alpha;
@@ -142,7 +142,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
-  double totalEnergy, sE, pE, kE, cE, lE,
+  double totalEnergy, sE, pE, kE, cE, lE, exE,
       oldL2ErrorNorm = 1e6, L2ErrorNorm = 1e6, dL2ErrorNorm, oldBE = 0.0, BE,
       dBE, dArea, dVolume, dFace, currentNorm2, pastNorm2, time = init_time;
 
@@ -161,7 +161,8 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
     vel_e = getForces(f, physicalPressure, regularizationForce_e);
-    L2ErrorNorm = getL2ErrorNorm(rowwiseScaling(f.mask.cast<double>(), physicalPressure));
+    L2ErrorNorm =
+        getL2ErrorNorm(rowwiseScaling(f.mask.cast<double>(), physicalPressure));
 
     if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-3)) {
       break;
@@ -180,18 +181,13 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       H.fromVector(f.H);
       gcs::VertexData<double> H0(f.mesh);
       H0.fromVector(f.H0);
-      gcs::VertexData<double> f_ext(f.mesh);
-      f_ext.fromVector(f.externalPressureMagnitude);
       gcs::VertexData<double> fn(f.mesh);
       fn.fromVector(rowwiseDotProduct(
           physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> ft(f.mesh);
-      ft.fromVector(
-          (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                             gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-               .array() /
-           f.H.array() / 2)
-              .matrix());
+      gcs::VertexData<double> f_ext(f.mesh);
+      f_ext.fromVector(
+          rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
       gcs::VertexData<double> fb(f.mesh);
       fb.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
@@ -200,8 +196,15 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       fl.fromVector(
           rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+      gcs::VertexData<double> ft(f.mesh);
+      ft.fromVector(
+          (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
+                             gc::EigenMap<double, 3>(f.vpg.vertexNormals))
+               .array() /
+           f.H.array() / 2)
+              .matrix());
 
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
       // 1.1 save to .ply file
       if (verbosity > 2) {
@@ -286,7 +289,6 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                   << "\n"
                   << "Increase force spring constant Kf to " << f.P.Kf << "\n";
       }
-
     }
 
     /// time integration
@@ -301,7 +303,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       pastNorm2 = currentNorm2;
       // pos_e += direction * dt;
       backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, direction);
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
     }
 
     if (f.isProtein) {
@@ -314,8 +316,8 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
     // recompute cached values
     f.update_Vertex_positions();
-    
-  } // integration 
+
+  } // integration
 } // euler
 
 } // namespace integration

@@ -250,8 +250,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
         gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
     std::tie(ptrRefMesh, ptrRefVpg_) =
         gcs::makeManifoldSurfaceMeshAndGeometry(refcoords, reffaces);
-    std::cout << "Finished!" << std::endl;
   }
+  std::cout << "Finished!" << std::endl;
+
   gcs::VertexPositionGeometry *ptrRefVpg = new gcs::VertexPositionGeometry(
       mesh, gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
   gcs::RichSurfaceMeshData richData(*ptrMesh);
@@ -269,7 +270,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                           gamma, Vt,     kt,        sigma, pt,      Kf,
                           conc,  height, radius};
   ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                     isTuftedLaplacian, mollifyFactor, isVertexShift);
+                    isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
