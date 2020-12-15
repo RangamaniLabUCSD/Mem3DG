@@ -143,11 +143,11 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
-      physicalPressure, DPDforce, direction;
+      physicalPressure, DPDForce, direction;
 
   double totalEnergy, sE, pE, kE, cE, lE, exE,
-      oldL2ErrorNorm = 1e6, L2ErrorNorm = 1e6, dL2ErrorNorm, oldBE = 0.0, BE,
-      dBE, dArea, dVolume, dFace, currentNormSq, pastNormSq, time = init_time;
+      oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
+      dArea, dVolume, dFace, currentNormSq, pastNormSq, time = init_time;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
@@ -169,6 +169,10 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   // time integration loop
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDForce, regularizationForce);
+    vel_e = physicalPressure + DPDForce + regularizationForce;
+
     // compute the free energy of the system
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
@@ -182,10 +186,6 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                   << std::endl;
       }
     }
-    
-    // compute summerized forces
-    getForces(f, physicalPressure, DPDforce, regularizationForce);
-    vel_e = physicalPressure + DPDforce + regularizationForce;
 
     // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
@@ -296,17 +296,18 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
     // time stepping on vertex position
     if (i % 20 == 0) {
-      pos_e += vel_e * dt;
+      // pos_e += vel_e * dt;
+      // time += dt;
+      backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, vel_e);
       pastNormSq = vel_e.squaredNorm();
       direction = vel_e;
-      time += dt;
     } else {
       currentNormSq = vel_e.squaredNorm();
       direction = currentNormSq / pastNormSq * direction + vel_e;
       pastNormSq = currentNormSq;
       // pos_e += direction * dt;
+      // time += dt;
       backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, direction);
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
     }
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);

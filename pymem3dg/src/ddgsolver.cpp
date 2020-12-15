@@ -263,7 +263,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
-    throw("Vt has to be 1 for open boundary simulation!");
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
   ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
@@ -281,14 +281,14 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
         verbosity, inputMesh, outputDir, 0, errorJumpLim);
   } else if (integrationMethod == "euler") {
     if (p.gamma != 0) {
-      throw("gamma has to be 0 for euler integration!");
+      throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
     ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
                                   Ksg[1], tSave, tMollify, verbosity, inputMesh,
                                   outputDir, 0, errorJumpLim);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
-      throw("gamma has to be 0 for CG optimization!");
+      throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
     ddgsolver::integration::conjugateGradient(
         f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
@@ -355,7 +355,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   /// physical parameters
   double sigma = sqrt(2 * gamma * kt / h);
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
-    throw("Vt has to be 1 for open boundary simulation!");
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
   ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
@@ -374,14 +374,14 @@ int driver_nc(const size_t verbosity, std::string trajFile,
         verbosity, trajFile, outputDir, time, errorJumpLim);
   } else if (integrationMethod == "euler") {
     if (p.gamma != 0) {
-      throw("gamma has to be 0 for euler integration!");
+      throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
     ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
                                   Ksg[1], tSave, tMollify, verbosity, trajFile,
                                   outputDir, time, errorJumpLim);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
-      throw("gamma has to be 0 for CG optimization!");
+      throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
     ddgsolver::integration::conjugateGradient(
         f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,

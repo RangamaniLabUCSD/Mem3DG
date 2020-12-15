@@ -59,7 +59,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
   double totalEnergy, sE, pE, kE, cE, lE, exE,
       oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
-      dArea, dVolume, dFace; // double dRef;
+      dArea, dVolume, dFace, time = init_time; // double dRef;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
@@ -68,6 +68,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
+// initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
@@ -77,13 +78,17 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   }
 #endif
 
+  // time integration loop
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
+
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDForce, regularizationForce);
+    vel_e = physicalPressure + DPDForce + regularizationForce;
 
     // compute the free energy of the system
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
-    // measure the error norm, exit if smaller than tolerance or reach time
-    // limit
+    // measure the error norm, exit if smaller than tolerance
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
     if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-3)) {
       break;
@@ -93,12 +98,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << std::endl;
       }
     }
-    
-    // compute summerized forces
-    getForces(f, physicalPressure, DPDForce, regularizationForce);
-    totalPressure.resize(f.mesh.nVertices(), 3);
-    totalPressure.setZero();
-    newTotalPressure = physicalPressure + DPDForce;
 
     // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
@@ -137,10 +136,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         f.richData.addVertexProperty("line_tension_pressure", fl);
       }
 
+      // Save variables to netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
         frame = fd.getNextFrameIndex();
-        fd.writeTime(frame, i * dt + init_time);
+        fd.writeTime(frame, time);
         fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
         fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
         fd.writeAngles(frame, f.vpg.cornerAngles.raw());
@@ -206,7 +206,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
           dFace = 0.0;
         }
         std::cout << "\n"
-                  << "Time: " << i * dt + init_time << "\n"
+                  << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
@@ -230,9 +230,9 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
       if (verbosity > 2) {
         char buffer[50];
-        sprintf(buffer, "/t=%d", int(i * dt * 100));
+        sprintf(buffer, "/t=%d", int(time * 100));
         f.richData.write(outputDir + buffer + ".ply");
-        getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea,
+        getStatusLog(outputDir + buffer + ".txt", f, dt, time, frame, dArea,
                      dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
                      L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
@@ -244,6 +244,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     pos_e += regularizationForce * dt;
     vel_e += (totalPressure + newTotalPressure) * hdt;
     totalPressure = newTotalPressure;
+    time += dt;
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
@@ -255,8 +256,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 
     // recompute cached values
     f.update_Vertex_positions();
-  }
-}
 
+  } // integration
+}
 } // namespace integration
 } // namespace ddgsolver
