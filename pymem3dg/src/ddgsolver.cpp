@@ -231,6 +231,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
   std::tie(ptrRefMesh, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
+  std::cout << "Finished!" << std::endl;
+  
   if (nSub > 0) {
     std::cout << "Subdivide input and reference mesh " << nSub
               << " time(s) ...";
@@ -250,8 +252,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
         gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
     std::tie(ptrRefMesh, ptrRefVpg_) =
         gcs::makeManifoldSurfaceMeshAndGeometry(refcoords, reffaces);
+    std::cout << "Finished!" << std::endl;
   }
-  std::cout << "Finished!" << std::endl;
 
   gcs::VertexPositionGeometry *ptrRefVpg = new gcs::VertexPositionGeometry(
       mesh, gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
