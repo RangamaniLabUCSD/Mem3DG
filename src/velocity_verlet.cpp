@@ -79,6 +79,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
 
+  bool EXIT = false;
+
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
@@ -102,23 +104,30 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     totalPressure.setZero();
     newTotalPressure = physicalPressure + DPDForce;
 
-    // measure the error norm, exit if smaller than tolerance or reach time
-    // limit
+    // measure the error norm and constraint, exit if smaller than tolerance or
+    // reach time limit
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
-    if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < tolerance)) {
-      break;
+    dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
+                ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
+                : 0.0;
+    dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+                  ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+                  : 0.0;
+    if ((i == int((total_time - init_time) / dt)) ||
+        (L2ErrorNorm < tolerance)) {
       if (verbosity > 0) {
         std::cout << "\n"
                   << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
       }
+      EXIT = true;
     }
 
     // compute the free energy of the system
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
     // Save files every nSave iteration and print some info
-    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
+    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt)) || EXIT) {
 
       // save variable to richData
       if (verbosity > 2) {
@@ -152,19 +161,6 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
         } else {
           dBE = 0.0;
         }
-
-        if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
-          dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
-        } else {
-          dArea = 0.0;
-        }
-
-        if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
-          dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
-        } else {
-          dVolume = 0.0;
-        }
-
         if (f.P.Ksl != 0 && !f.mesh.hasBoundary()) {
           dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
                    f.targetFaceAreas.raw().array())
@@ -206,6 +202,10 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                      L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
       }
+    }
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      break;
     }
 
     // time stepping on vertex position

@@ -81,8 +81,8 @@ getFreeEnergy(Force &f) {
            H_difference.array())
               .matrix())
              .sum();
-    sE = f.P.Ksg * A_difference * A_difference / f.targetSurfaceArea / 2;
-    pE = f.P.Kv * V_difference * V_difference / (f.refVolume * f.P.Vt) / 2;
+    sE = f.P.Ksg * A_difference * A_difference / f.targetSurfaceArea / 2 + f.P.lambdaSG * A_difference;
+    pE = f.P.Kv * V_difference * V_difference / (f.refVolume * f.P.Vt) / 2 + f.P.lambdaV * V_difference;
 
     auto vel = gc::EigenMap<double, 3>(f.vel);
     kE = 0.5 * (f.M * (vel.array() * vel.array()).matrix()).sum();

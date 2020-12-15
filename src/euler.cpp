@@ -40,7 +40,7 @@ void getForces(Force &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
-void backtrack(Force &f, const double dt, double rho, double &time,
+void backtrack(Force &f, const double dt, double rho, double &time, bool &EXIT,
                const size_t verbosity, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
@@ -82,6 +82,8 @@ void euler(Force &f, double dt, double total_time, double tolerance,
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
 
+  bool EXIT = false;
+
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
@@ -103,22 +105,29 @@ void euler(Force &f, double dt, double total_time, double tolerance,
     getForces(f, physicalPressure, DPDForce, regularizationForce);
     vel_e = physicalPressure + DPDForce + regularizationForce;
 
-    // compute the free energy of the system
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
-
-    // measure the error norm, exit if smaller than tolerance
+    // measure the error norm and constraint, exit if smaller than tolerance
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
-    if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < tolerance)) {
-      break;
+    dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
+                ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
+                : 0.0;
+    dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+                  ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+                  : 0.0;
+    if ((i == int((total_time - init_time) / dt)) ||
+        (L2ErrorNorm < tolerance)) {
       if (verbosity > 0) {
         std::cout << "\n"
                   << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
       }
+      EXIT = true;
     }
 
+    // compute the free energy of the system
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+
     // Save files every nSave iteration and print some info
-    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
+    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt)) || EXIT) {
 
       // save variable to richData
       if (verbosity > 2) {
@@ -145,16 +154,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                      f.isVertexShift, inputMesh);
       }
       if (verbosity > 1) {
-        if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
-          dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
-        } else {
-          dArea = 0.0;
-        }
-        if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
-          dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
-        } else {
-          dVolume = 0.0;
-        }
         std::cout << "\n"
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
@@ -175,8 +174,13 @@ void euler(Force &f, double dt, double total_time, double tolerance,
       }
     }
 
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      break;
+    }
+
     // time stepping on vertex position
-    backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, vel_e);
+    backtrack(f, dt, 0.5, time, EXIT, verbosity, totalEnergy, vel_e, vel_e);
     // pos_e += vel_e * dt;
     // time += dt;
     if (f.isVertexShift) {
