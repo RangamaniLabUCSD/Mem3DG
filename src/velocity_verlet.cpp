@@ -73,9 +73,8 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       regularizationForce, physicalPressure, DPDForce;
 
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
-  double totalEnergy, sE, pE, kE, cE, lE, exE,
-      oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
-      dArea, dVolume, dFace, time = init_time; // double dRef;
+  double totalEnergy, BE, sE, pE, kE, cE, lE, exE, L2ErrorNorm, dArea, dVolume,
+      time = init_time; // double dRef;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0;
 
@@ -140,42 +139,12 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       }
 #endif
 
-      // print in-progress information in the console
-      dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
-      if (abs(dL2ErrorNorm) > errorJumpLim) {
-        if (verbosity > 0) {
-          std::cout << "Error Norm changes rapidly. Save data and quit."
-                    << std::endl;
-        }
-        break;
-      }
-      oldL2ErrorNorm = L2ErrorNorm;
-      oldBE = BE;
-
       if (verbosity > 1) {
-        if (f.P.Kb != 0) {
-          dBE = abs(BE - oldBE) / (BE);
-        } else {
-          dBE = 0.0;
-        }
-        if (f.P.Ksl != 0 && !f.mesh.hasBoundary()) {
-          dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
-                   f.targetFaceAreas.raw().array())
-                      .abs()
-                      .sum() /
-                  f.mesh.nFaces();
-        } else {
-          dFace = 0.0;
-        }
         std::cout << "\n"
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
-                  << "dBE: " << dBE << "\n"
-                  << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
-                  << "Bending energy: " << BE << "\n"
-                  << "Line energy: " << lE << "\n"
                   << "Total energy (exclude V^ext): " << totalEnergy << "\n"
                   << "L2 error norm: " << L2ErrorNorm << "\n"
                   << "COM: "
@@ -186,18 +155,13 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
                   << "\n"
                   << "Height: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n"
-                  << "Increase force spring constant Kf to " << f.P.Kf << "\n";
+                  << "\n";
       }
 
       if (verbosity > 2) {
         char buffer[50];
         sprintf(buffer, "/t=%d", int(time * 100));
         f.richData.write(outputDir + buffer + ".ply");
-        getStatusLog(outputDir + buffer + ".txt", f, dt, time, frame, dArea,
-                     dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
-                     L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                     f.isVertexShift, inputMesh);
       }
     }
     // break loop if EXIT flag is on
