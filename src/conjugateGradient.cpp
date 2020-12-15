@@ -137,7 +137,7 @@ void backtrack(Force &f, const double dt, double rho, double &time,
   }
 
   if (alpha != dt && verbosity > 1) {
-    std::cout << "dt = " << dt << " -> " << alpha << std::endl;
+    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
   }
   time = init_time + alpha;
 }
@@ -303,12 +303,20 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
     // measure the error norm, exit if smaller than tolerance
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
-    if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < tolerance)) {
-      break;
-      if (verbosity > 0) {
-        std::cout << "\n"
-                  << "Simulation finished, and data saved to " + outputDir
-                  << std::endl;
+    if ((i == int((total_time - init_time) / dt)) ||
+        (L2ErrorNorm < tolerance)) {
+      if (dArea < tolerance && dVolume < tolerance) {
+        break;
+        if (verbosity > 0) {
+          std::cout << "\n"
+                    << "Simulation finished, and data saved to " + outputDir
+                    << std::endl;
+        }
+      }else{
+        std::cout << "[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]";
+        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) / f.targetSurfaceArea;
+        f.P.lambdaV += f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
+        std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]" << std::endl;
       }
     }
 
