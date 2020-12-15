@@ -108,7 +108,7 @@ void euler(Force &f, double dt, double total_time, double tolerance,
 
     // measure the error norm, exit if smaller than tolerance
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
-    if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-3)) {
+    if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < tolerance)) {
       break;
       if (verbosity > 0) {
         std::cout << "\n"
