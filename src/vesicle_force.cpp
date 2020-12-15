@@ -33,7 +33,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getVesicleForces() {
+void System::getVesicleForces() {
 
   /// 0. GENERAL
   // map the MeshData to eigen matrix XXX_e

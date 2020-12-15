@@ -23,12 +23,12 @@ namespace ddgsolver {
 namespace integration {
 
 DLL_PUBLIC std::tuple<double, double, double, double, double, double, double, double>
-getFreeEnergy(Force &f);
+getFreeEnergy(System &f);
 
 DLL_PUBLIC double
 getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
 
-DLL_PUBLIC void stormerVerlet(Force &f, double dt, double total_time,
+DLL_PUBLIC void stormerVerlet(System &f, double dt, double total_time,
                               double tolerance);
 
 /*
@@ -39,13 +39,13 @@ verbosity:
   3: All above + txt + .ply
 */
 DLL_PUBLIC void
-velocityVerlet(Force &f, double dt, double total_time, double tolerance,
+velocityVerlet(System &f, double dt, double total_time, double tolerance,
                double closeZone, double increment, double maxKv, double maxKsg,
                double tSave, double tMollify, size_t verbosity = 2,
                std::string inputMesh = "./", std::string outputDir = "./",
                double init_time = 0, double errorJumpLim = 5);
 
-DLL_PUBLIC void euler(Force &f, double dt, double total_time, double tolerance,
+DLL_PUBLIC void euler(System &f, double dt, double total_time, double tolerance,
                       double closeZone, double increment, double maxKv,
                       double maxKsg, double tSave, double tMollify,
                       size_t verbosity = 2, std::string inputMesh = "./",
@@ -53,7 +53,7 @@ DLL_PUBLIC void euler(Force &f, double dt, double total_time, double tolerance,
                       double errorJumpLim = 5);
 
 DLL_PUBLIC void
-conjugateGradient(Force &f, double dt, double total_time, double tolerance,
+conjugateGradient(System &f, double dt, double total_time, double tolerance,
                   double closeZone, double increment, double maxKv,
                   double maxKsg, double tSave, double tMollify,
                   size_t verbosity = 2, std::string inputMesh = "./",
@@ -61,12 +61,12 @@ conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                   double errorJumpLim = 5);
 
 DLL_PUBLIC
-void getParameterLog(Force &f, double dt, double total_time, double tolerance,
+void getParameterLog(System &f, double dt, double total_time, double tolerance,
                      double tSave, std::string inputMesh,
                      std::string outputDir);
 
 DLL_PUBLIC void
-getStatusLog(std::string nameOfFile, Force &f, double dt, double time,
+getStatusLog(std::string nameOfFile, System &f, double dt, double time,
              std::size_t frame, double areaError, double volumeError,
              double bendingError, double faceError, double bendingEnergy,
              double surfaceEnergy, double pressureEnergy, double kineticEnergy,

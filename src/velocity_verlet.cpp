@@ -36,19 +36,19 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void getForces(Force &f,
+void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
 void saveRichData(
-    const Force &f,
+    const System &f,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity);
 
 #ifdef MEM3DG_WITH_NETCDF
 void saveNetcdfData(
-    const Force &f, size_t &frame, const double &time, TrajFile &fd,
+    const System &f, size_t &frame, const double &time, TrajFile &fd,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const std::tuple<double, double, double, double, double, double, double,
                      double>
@@ -56,7 +56,7 @@ void saveNetcdfData(
     const size_t &verbosity);
 #endif
 
-void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
+void velocityVerlet(System &f, double dt, double total_time, double tolerance,
                     double closeZone, double increment, double maxKv,
                     double maxKsg, double tSave, double tMollify,
                     const size_t verbosity, std::string inputMesh,

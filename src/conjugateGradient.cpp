@@ -48,7 +48,7 @@ namespace gcs = ::geometrycentral::surface;
  * @param regularizationForce
  * @return
  */
-void getForces(Force &f,
+void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
@@ -104,7 +104,7 @@ void getForces(Force &f,
  * @param direction, direction, most likely some function of gradient
  * @return
  */
-void backtrack(Force &f, const double dt, double rho, double &time, bool &EXIT,
+void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
                const size_t verbosity, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
@@ -163,7 +163,7 @@ void backtrack(Force &f, const double dt, double rho, double &time, bool &EXIT,
  * @return
  */
 void saveRichData(
-    const Force &f,
+    const System &f,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity) {
   gcs::VertexData<double> H(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
@@ -211,7 +211,7 @@ void saveRichData(
  * @return
  */
 void saveNetcdfData(
-    const Force &f, size_t &frame, const double &time, TrajFile &fd,
+    const System &f, size_t &frame, const double &time, TrajFile &fd,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const std::tuple<double, double, double, double, double, double, double,
                      double>
@@ -261,7 +261,7 @@ void saveNetcdfData(
 }
 #endif
 
-void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
+void conjugateGradient(System &f, double dt, double total_time, double tolerance,
                        double closeZone, double increment, double maxKv,
                        double maxKsg, double tSave, double tMollify,
                        const size_t verbosity, std::string inputMesh,

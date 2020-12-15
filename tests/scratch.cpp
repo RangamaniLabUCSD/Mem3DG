@@ -59,7 +59,7 @@ int main() {
   ddgsolver::Parameters p{Kb,    H0,    sharpness, r_H0, Ksg,    Kst,   Ksl,
                           Kse,   Kv, eta,   epsilon,   Bc,   gamma,  Vt,    kt,
                           sigma + 1e-18, pt, Kf, conc, height, radius};
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 

@@ -28,7 +28,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getPressureForces() {
+void System::getPressureForces() {
   volume = 0;
   double face_volume;
   gcs::FaceData<int> sign_of_volume(mesh);

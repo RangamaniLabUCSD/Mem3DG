@@ -73,7 +73,7 @@ protected:
 
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
 
   f.getVesicleForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =
@@ -98,7 +98,7 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
 
   f.getVesicleForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =

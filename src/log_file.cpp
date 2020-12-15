@@ -25,7 +25,7 @@ using namespace std;
 namespace ddgsolver {
 namespace integration {
 
-void getParameterLog(Force &f, double dt, double finalTime, double tolerance,
+void getParameterLog(System &f, double dt, double finalTime, double tolerance,
                      double tSave, std::string inputMesh,
                      std::string outputDir) {
   ofstream myfile(outputDir + "/parameter.txt");
@@ -65,7 +65,7 @@ void getParameterLog(Force &f, double dt, double finalTime, double tolerance,
     cout << "Unable to open file";
 }
 
-void getStatusLog(std::string nameOfFile, Force &f, double dt, double time,
+void getStatusLog(std::string nameOfFile, System &f, double dt, double time,
                   std::size_t frame, double areaError, double volumeError,
                   double bendingError, double faceError, double bendingEnergy,
                   double surfaceEnergy, double pressureEnergy,
