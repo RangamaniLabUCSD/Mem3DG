@@ -87,6 +87,10 @@ struct Parameters {
   double height;
   /// domain of integration
   double radius;
+  /// augmented Lagrangian parameter for area
+  double lambdaSG = 0;
+  /// augmented Lagrangian parameter for volume
+  double lambdaV = 0;
 };
 
 class DLL_PUBLIC Force {

@@ -75,12 +75,12 @@ void Force::getVesicleForces() {
                      vertexAngleNormal_e);
 
   /// B. INSIDE EXCESS PRESSURE
-  insidePressure_e = -P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) *
+  insidePressure_e = - (P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV) *
                      vertexAngleNormal_e;
 
   /// C. CAPILLARY PRESSURE
   capillaryPressure_e = rowwiseScaling(
-      -P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea * 2.0 * H,
+      - (P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea + P.lambdaSG) * 2.0 * H,
       vertexAngleNormal_e);
 
   /// D. LINE TENSION FORCE
