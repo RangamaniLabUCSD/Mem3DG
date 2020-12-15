@@ -44,6 +44,7 @@ namespace gcs = ::geometrycentral::surface;
  *
  * @param f
  * @param physicalPressure
+ * @param DPDForce
  * @param regularizationForce
  * @return
  */
@@ -275,13 +276,9 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce, direction;
-
-  double totalEnergy, sE, pE, kE, cE, lE, exE,
-      oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
-      dArea, dVolume, dFace, currentNormSq, pastNormSq, time = init_time;
-
-  size_t nMollify = size_t(tMollify / tSave), frame = 0;
-
+  double totalEnergy, BE, sE, pE, kE, cE, lE, exE, L2ErrorNorm, dArea, dVolume,
+      currentNormSq, pastNormSq, time = init_time;
+  size_t frame = 0;
   bool EXIT = false;
 
   // map the raw eigen datatype for computation
@@ -356,10 +353,6 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
         char buffer[50];
         sprintf(buffer, "/t=%d", int(time * 100));
         f.richData.write(outputDir + buffer + ".ply");
-        getStatusLog(outputDir + buffer + ".txt", f, dt, time, frame, dArea,
-                     dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
-                     L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                     f.isVertexShift, inputMesh);
       }
       if (verbosity > 1) {
         std::cout << "\n"
@@ -377,8 +370,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                   << "\n"
                   << "Height: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n"
-                  << "Increase force spring constant Kf to " << f.P.Kf << "\n";
+                  << "\n";
       }
     }
 

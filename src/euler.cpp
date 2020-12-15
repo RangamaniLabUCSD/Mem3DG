@@ -76,12 +76,10 @@ void euler(Force &f, double dt, double total_time, double tolerance,
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce;
 
-  double totalEnergy, sE, pE, kE, cE, lE, exE,
-      oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
-      dArea, dVolume, dFace, time = init_time;
+  double totalEnergy, BE, sE, pE, kE, cE, lE, exE, L2ErrorNorm, dArea, dVolume,
+      time = init_time;
 
-  size_t nMollify = size_t(tMollify / tSave), frame = 0,
-         nSave = size_t(tSave / dt);
+  size_t frame = 0;
 
   bool EXIT = false;
 
@@ -146,10 +144,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
         char buffer[50];
         sprintf(buffer, "/t=%d", int(time * 100));
         f.richData.write(outputDir + buffer + ".ply");
-        getStatusLog(outputDir + buffer + ".txt", f, dt, time, frame, dArea,
-                     dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
-                     L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                     f.isVertexShift, inputMesh);
       }
       if (verbosity > 1) {
         std::cout << "\n"
