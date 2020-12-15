@@ -14,6 +14,7 @@
 
 #include <Eigen/Core>
 #include <iostream>
+#include <math.h>
 #include <pcg_random.hpp>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
@@ -76,8 +77,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
       oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
       dArea, dVolume, dFace, time = init_time; // double dRef;
 
-  size_t nMollify = size_t(tMollify / tSave), frame = 0,
-         nSave = size_t(tSave / dt);
+  size_t nMollify = size_t(tMollify / tSave), frame = 0;
 
   bool EXIT = false;
 
@@ -96,7 +96,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
 #endif
 
   // time integration loop
-  for (int i = 0; i <= (total_time - init_time) / dt; i++) {
+  while (time <= total_time) {
 
     // compute summerized forces
     getForces(f, physicalPressure, DPDForce, regularizationForce);
@@ -113,21 +113,18 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
                   ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                   : 0.0;
-    if ((i == int((total_time - init_time) / dt)) ||
-        (L2ErrorNorm < tolerance)) {
-      if (verbosity > 0) {
-        std::cout << "\n"
-                  << "Simulation finished, and data saved to " + outputDir
-                  << std::endl;
-      }
+    if (L2ErrorNorm < tolerance) {
       EXIT = true;
     }
 
     // compute the free energy of the system
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
-    // Save files every nSave iteration and print some info
-    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt)) || EXIT) {
+    // Save files every tSave period and print some info
+    static double lastSave;
+    if (time - lastSave >= tSave - 1e-12 || time == total_time ||
+        time == init_time || EXIT) {
+      lastSave = time;
 
       // save variable to richData
       if (verbosity > 2) {
@@ -205,6 +202,11 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     }
     // break loop if EXIT flag is on
     if (EXIT) {
+      if (verbosity > 0) {
+        std::cout << "\n"
+                  << "Simulation finished, and data saved to " + outputDir
+                  << std::endl;
+      }
       break;
     }
 

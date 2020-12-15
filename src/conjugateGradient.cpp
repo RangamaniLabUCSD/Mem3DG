@@ -15,6 +15,7 @@
 #include <Eigen/Core>
 #include <assert.h>
 #include <iostream>
+#include <math.h>
 #include <pcg_random.hpp>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
@@ -121,14 +122,21 @@ void backtrack(Force &f, const double dt, double rho, double &time, bool &EXIT,
   f.update_Vertex_positions();
   std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
-  // while (totalEnergy >
-  //        (totalEnergy_pre -
-  //         0.02 * alpha * (force.array() * direction.array()).sum())) {
-  while (totalEnergy > totalEnergy_pre) {
-    if (count > 20) {
-      std::cout << "\nline search failure! Simulation stopped. \n"
-                << std::endl;
+  while (totalEnergy >
+         (totalEnergy_pre -
+          0 * alpha * (force.array() * direction.array()).sum())) {
+    // while (totalEnergy > totalEnergy_pre) {
+    if (count > 50) {
+      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
+
+      // restore entry configuration
+      alpha = dt;
+      pos_e = init_position;
+      f.update_Vertex_positions();
+      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+      time = init_time - alpha;
+
       break;
     }
     alpha *= rho;
@@ -272,8 +280,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
       dArea, dVolume, dFace, currentNormSq, pastNormSq, time = init_time;
 
-  size_t nMollify = size_t(tMollify / tSave), frame = 0,
-         nSave = size_t(tSave / dt);
+  size_t nMollify = size_t(tMollify / tSave), frame = 0;
 
   bool EXIT = false;
 
@@ -292,7 +299,7 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 #endif
 
   // time integration loop
-  for (int i = 0; i <= (total_time - init_time) / dt; i++) {
+  while (time <= total_time) {
 
     // compute summerized forces
     getForces(f, physicalPressure, DPDForce, regularizationForce);
@@ -305,28 +312,12 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
     dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
                   ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                   : 0.0;
-    // if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
-    //   dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
-    // } else {
-    //   dArea = 0.0;
-    // }
-    // if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
-    //   dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
-    // } else {
-    //   dVolume = 0.0;
-    // }
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
-    if ((i == int((total_time - init_time) / dt)) ||
-        (L2ErrorNorm < tolerance)) {
+    if (L2ErrorNorm < tolerance) {
       if (dArea < tolerance && dVolume < tolerance) {
-        if (verbosity > 0) {
-          std::cout << "\n"
-                    << "Simulation finished, and data saved to " + outputDir
-                    << std::endl;
-        }
         EXIT = true;
       } else {
-        std::cout << "[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
+        std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
                   << f.P.lambdaV << "]";
         f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
                         f.targetSurfaceArea;
@@ -340,8 +331,11 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
     // compute the free energy of the system
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
-    // Save files every nSave iteration and print some info
-    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt)) || EXIT) {
+    // Save files every tSave period and print some info
+    static double lastSave;
+    if (time - lastSave >= tSave - 1e-12 || time == total_time ||
+        time == init_time || EXIT) {
+      lastSave = time;
 
       // save variable to richData
       if (verbosity > 2) {
@@ -360,9 +354,9 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       // print in-progress information in the console
       if (verbosity > 2) {
         char buffer[50];
-        sprintf(buffer, "/t=%d", int(i * dt * 100));
+        sprintf(buffer, "/t=%d", int(time * 100));
         f.richData.write(outputDir + buffer + ".ply");
-        getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea,
+        getStatusLog(outputDir + buffer + ".txt", f, dt, time, frame, dArea,
                      dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
                      L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
                      f.isVertexShift, inputMesh);
@@ -390,25 +384,29 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
 
     // break loop if EXIT flag is on
     if (EXIT) {
+      if (verbosity > 0) {
+        std::cout << "\n"
+                  << "Simulation finished, and data saved to " + outputDir
+                  << std::endl;
+      }
       break;
     }
 
     // time stepping on vertex position
-    if (i % 20 == 0) {
-      // pos_e += vel_e * dt;
-      // time += dt;
-      backtrack(f, dt, 0.5, time, EXIT, verbosity, totalEnergy, vel_e, vel_e);
+    size_t countCG = 0;
+    if (countCG % 20 == 0) {
       pastNormSq = vel_e.squaredNorm();
       direction = vel_e;
+      countCG = 0;
     } else {
       currentNormSq = vel_e.squaredNorm();
       direction = currentNormSq / pastNormSq * direction + vel_e;
       pastNormSq = currentNormSq;
-      // pos_e += direction * dt;
-      // time += dt;
-      backtrack(f, dt, 0.5, time, EXIT, verbosity, totalEnergy, vel_e,
-                direction);
+      countCG++;
     }
+    // pos_e += direction * dt;
+    // time += dt;
+    backtrack(f, dt, 0.5, time, EXIT, verbosity, totalEnergy, vel_e, direction);
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
