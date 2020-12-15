@@ -95,13 +95,14 @@ void getForces(Force &f,
  * @param dt, initial step size
  * @param rho, discount factor
  * @param time, simulation time
+ * @param EXIT, exit flag for integration loop
  * @param verbosity, verbosity setting
  * @param totalEnergy_pre, previous energy evaluation
  * @param force, gradient of the energy
  * @param direction, direction, most likely some function of gradient
  * @return
  */
-void backtrack(Force &f, const double dt, double rho, double &time,
+void backtrack(Force &f, const double dt, double rho, double &time, bool &EXIT,
                const size_t verbosity, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
@@ -125,7 +126,10 @@ void backtrack(Force &f, const double dt, double rho, double &time,
   //         0.02 * alpha * (force.array() * direction.array()).sum())) {
   while (totalEnergy > totalEnergy_pre) {
     if (count > 20) {
-      throw std::runtime_error("line search failure!");
+      std::cout << "\nline search failure! Simulation stopped. \n"
+                << std::endl;
+      EXIT = true;
+      break;
     }
     alpha *= rho;
     pos_e = init_position + alpha * direction;
@@ -204,29 +208,24 @@ void saveNetcdfData(
                      double>
         energy,
     const size_t &verbosity) {
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft;
   double totalEnergy, BE, sE, pE, kE, cE, lE, exE;
   std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = energy;
-  gcs::VertexData<double> H(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
-      fb(f.mesh), fl(f.mesh), ft(f.mesh);
 
-  H.fromVector(f.H);
-  H0.fromVector(f.H0);
-  fn.fromVector(rowwiseDotProduct(
-      physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  f_ext.fromVector(
-      rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  fb.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  fl.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-                     .array() /
-                 f.H.array() / 2)
-                    .matrix());
+  fn = rowwiseDotProduct(physicalPressure,
+                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+  f_ext = rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
+                            gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+  fb = rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
+                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+  fl = rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
+                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+  ft = (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
+                          gc::EigenMap<double, 3>(f.vpg.vertexNormals))
+            .array() /
+        f.H.array() / 2)
+           .matrix();
 
   frame = fd.getNextFrameIndex();
   fd.writeTime(frame, time);
@@ -234,16 +233,15 @@ void saveNetcdfData(
   fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
   fd.writeAngles(frame, f.vpg.cornerAngles.raw());
 
-  fd.writeMeanCurvature(frame, H.raw());
-  fd.writeSponCurvature(frame, H0.raw());
-  fd.writeH_H0_diff(
-      frame,
-      ((H.raw() - H0.raw()).array() * (H.raw() - H0.raw()).array()).matrix());
-  fd.writeExternalPressure(frame, f_ext.raw());
-  fd.writePhysicalPressure(frame, fn.raw());
-  fd.writeCapillaryPressure(frame, ft.raw());
-  fd.writeBendingPressure(frame, fb.raw());
-  fd.writeLinePressure(frame, fl.raw());
+  fd.writeMeanCurvature(frame, f.H);
+  fd.writeSponCurvature(frame, f.H0);
+  fd.writeH_H0_diff(frame,
+                    ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
+  fd.writeExternalPressure(frame, f_ext);
+  fd.writePhysicalPressure(frame, fn);
+  fd.writeCapillaryPressure(frame, ft);
+  fd.writeBendingPressure(frame, fb);
+  fd.writeLinePressure(frame, fl);
   fd.writeBendEnergy(frame, BE);
   fd.writeSurfEnergy(frame, sE);
   fd.writePressEnergy(frame, pE);
@@ -277,6 +275,8 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
 
+  bool EXIT = false;
+
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
@@ -298,30 +298,50 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
     getForces(f, physicalPressure, DPDForce, regularizationForce);
     vel_e = physicalPressure + DPDForce + regularizationForce;
 
-    // compute the free energy of the system
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
-
-    // measure the error norm, exit if smaller than tolerance
+    // measure the error norm and constraints, exit if smaller than tolerance
+    dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
+                ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
+                : 0.0;
+    dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+                  ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+                  : 0.0;
+    // if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
+    //   dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
+    // } else {
+    //   dArea = 0.0;
+    // }
+    // if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
+    //   dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
+    // } else {
+    //   dVolume = 0.0;
+    // }
     L2ErrorNorm = getL2ErrorNorm(physicalPressure);
     if ((i == int((total_time - init_time) / dt)) ||
         (L2ErrorNorm < tolerance)) {
       if (dArea < tolerance && dVolume < tolerance) {
-        break;
         if (verbosity > 0) {
           std::cout << "\n"
                     << "Simulation finished, and data saved to " + outputDir
                     << std::endl;
         }
-      }else{
-        std::cout << "[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) / f.targetSurfaceArea;
-        f.P.lambdaV += f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
-        std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]" << std::endl;
+        EXIT = true;
+      } else {
+        std::cout << "[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
+                  << f.P.lambdaV << "]";
+        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
+                        f.targetSurfaceArea;
+        f.P.lambdaV +=
+            f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
+        std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
+                  << std::endl;
       }
     }
 
+    // compute the free energy of the system
+    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+
     // Save files every nSave iteration and print some info
-    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
+    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt)) || EXIT) {
 
       // save variable to richData
       if (verbosity > 2) {
@@ -348,16 +368,6 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                      f.isVertexShift, inputMesh);
       }
       if (verbosity > 1) {
-        if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
-          dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
-        } else {
-          dArea = 0.0;
-        }
-        if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
-          dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
-        } else {
-          dVolume = 0.0;
-        }
         std::cout << "\n"
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
@@ -378,11 +388,16 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       }
     }
 
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      break;
+    }
+
     // time stepping on vertex position
     if (i % 20 == 0) {
       // pos_e += vel_e * dt;
       // time += dt;
-      backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, vel_e);
+      backtrack(f, dt, 0.5, time, EXIT, verbosity, totalEnergy, vel_e, vel_e);
       pastNormSq = vel_e.squaredNorm();
       direction = vel_e;
     } else {
@@ -391,7 +406,8 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
       pastNormSq = currentNormSq;
       // pos_e += direction * dt;
       // time += dt;
-      backtrack(f, dt, 0.5, time, verbosity, totalEnergy, vel_e, direction);
+      backtrack(f, dt, 0.5, time, EXIT, verbosity, totalEnergy, vel_e,
+                direction);
     }
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
