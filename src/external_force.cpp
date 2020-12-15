@@ -26,7 +26,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getExternalForces() {
+void System::getExternalForces() {
 
   auto externalPressure_e = gc::EigenMap<double, 3>(externalPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;

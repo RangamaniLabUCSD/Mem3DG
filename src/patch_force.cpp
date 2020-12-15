@@ -35,7 +35,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getPatchForces() {
+void System::getPatchForces() {
 
   /// 0. GENERAL
   // map the MeshData to eigen matrix XXX_e

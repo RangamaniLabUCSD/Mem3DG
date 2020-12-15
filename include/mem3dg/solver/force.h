@@ -93,7 +93,7 @@ struct Parameters {
   double lambdaV = 0;
 };
 
-class DLL_PUBLIC Force {
+class DLL_PUBLIC System {
 public:
   /// Parameters
   Parameters P;
@@ -192,7 +192,7 @@ public:
    * @param time_step_    Numerical timestep
    */
 
-  Force(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+  System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
         gcs::VertexPositionGeometry &refVpg_,
         gcs::RichSurfaceMeshData &richData_, Parameters &p,
         bool isProtein_ = false, bool isTuftedLaplacian_ = false,
@@ -278,7 +278,7 @@ public:
    * is another pointer to the HalfEdgeMesh and VertexPositionGeometry
    * elsewhere, calculation of dependent quantities should be respected.
    */
-  ~Force() {
+  ~System() {
     vpg.unrequireFaceNormals();
     vpg.unrequireVertexGalerkinMassMatrix();
     vpg.unrequireVertexLumpedMassMatrix();

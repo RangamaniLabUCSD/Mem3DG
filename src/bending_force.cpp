@@ -32,7 +32,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getBendingForces() {
+void System::getBendingForces() {
 
   // map the MeshData to eigen matrix XXX_e
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
@@ -67,7 +67,7 @@ void Force::getBendingForces() {
       rowwiseScaling(-2.0 * P.Kb * (productTerms + lap_H), vertexAngleNormal_e);
 }
 
-void Force::getChemicalPotential() { 
+void System::getChemicalPotential() { 
   
   Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
       (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();

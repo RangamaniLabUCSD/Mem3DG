@@ -32,7 +32,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getStretchingForces() {
+void System::getStretchingForces() {
   for (gcs::Vertex v : mesh.vertices()) {
     gc::Vector3 localForce{0.0, 0.0, 0.0};
     gc::Vector3 globalForce{0.0, 0.0, 0.0};

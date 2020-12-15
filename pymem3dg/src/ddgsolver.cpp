@@ -271,7 +271,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
                           gamma, Vt,     kt,        sigma, pt,      Kf,
                           conc,  height, radius};
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
@@ -363,7 +363,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
                           Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
                           gamma, Vt,     kt,        sigma, pt,      Kf,
                           conc,  height, radius};
-  ddgsolver::Force f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
+  ddgsolver::System f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;

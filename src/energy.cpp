@@ -36,7 +36,7 @@ getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
 }
 
 std::tuple<double, double, double, double, double, double, double, double>
-getFreeEnergy(Force &f) {
+getFreeEnergy(System &f) {
   double bE = 0.0, sE = 0.0, pE = 0.0, kE = 0.0, exE = 0.0, cE = 0.0, lE = 0.0,
          totalE = 0.0;
 
