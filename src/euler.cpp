@@ -35,14 +35,14 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void backtrack(Force &f, const double dt, double rho, double &time,
-               const size_t verbosity, const double totalEnergy_pre,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
 void getForces(Force &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
+void backtrack(Force &f, const double dt, double rho, double &time,
+               const size_t verbosity, const double totalEnergy_pre,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
 
 void euler(Force &f, double dt, double total_time, double tolerance,
            double closeZone, double increment, double maxKv, double maxKsg,
@@ -57,11 +57,11 @@ void euler(Force &f, double dt, double total_time, double tolerance,
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
-      physicalPressure, DPDforce;
+      physicalPressure, DPDForce;
 
-  double time = init_time, totalEnergy, sE, pE, kE, cE, lE, exE,
+  double totalEnergy, sE, pE, kE, cE, lE, exE,
          oldL2ErrorNorm = 1e6, L2ErrorNorm, dL2ErrorNorm, oldBE = 0.0, BE, dBE,
-         dArea, dVolume, dFace;
+         dArea, dVolume, dFace, time = init_time;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0,
          nSave = size_t(tSave / dt);
@@ -83,6 +83,10 @@ void euler(Force &f, double dt, double total_time, double tolerance,
   // time integration loop
   for (int i = 0; i <= (total_time - init_time) / dt; i++) {
 
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDForce, regularizationForce);
+    vel_e = physicalPressure + DPDForce + regularizationForce;
+
     // compute the free energy of the system
     std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
@@ -96,10 +100,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                   << std::endl;
       }
     }
-
-    // compute summerized forces
-    getForces(f, physicalPressure, DPDforce, regularizationForce);
-    vel_e = physicalPressure + DPDforce + regularizationForce;
 
     // Save files every nSave iteration and print some info
     if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
@@ -126,8 +126,6 @@ void euler(Force &f, double dt, double total_time, double tolerance,
                .array() /
            f.H.array() / 2)
               .matrix());
-
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
 
       // save variable to richData
       if (verbosity > 2) {
