@@ -276,7 +276,7 @@ void conjugateGradient(System &f, double dt, double total_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce, direction;
-  double L2ErrorNorm, dArea, dVolume, currentNormSq, pastNormSq,
+  double dArea, dVolume, currentNormSq, pastNormSq,
       time = init_time;
   size_t frame = 0;
   bool EXIT = false;
@@ -309,8 +309,8 @@ void conjugateGradient(System &f, double dt, double total_time,
     dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
                   ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                   : 0.0;
-    L2ErrorNorm = f.getL2ErrorNorm(physicalPressure);
-    if (L2ErrorNorm < tolerance) {
+    f.getL2ErrorNorm(physicalPressure);
+    if (f.L2ErrorNorm < tolerance) {
       if (dArea < tolerance && dVolume < tolerance) {
         EXIT = true;
       } else {
@@ -361,7 +361,7 @@ void conjugateGradient(System &f, double dt, double total_time,
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
                   << "Total energy (exclude V^ext): " << f.E.totalE << "\n"
-                  << "L2 error norm: " << L2ErrorNorm << "\n"
+                  << "L2 error norm: " << f.L2ErrorNorm << "\n"
                   << "COM: "
                   << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
                              .colwise()

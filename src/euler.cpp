@@ -76,7 +76,7 @@ void euler(System &f, double dt, double total_time, double tolerance,
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce;
 
-  double L2ErrorNorm, dArea, dVolume, time = init_time;
+  double dArea, dVolume, time = init_time;
 
   size_t frame = 0;
 
@@ -104,14 +104,14 @@ void euler(System &f, double dt, double total_time, double tolerance,
     vel_e = physicalPressure + DPDForce + regularizationForce;
 
     // measure the error norm and constraint, exit if smaller than tolerance
-    L2ErrorNorm = f.getL2ErrorNorm(physicalPressure);
+    f.getL2ErrorNorm(physicalPressure);
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
     dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
                   ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                   : 0.0;
-    if (L2ErrorNorm < tolerance) {
+    if (f.L2ErrorNorm < tolerance) {
       EXIT = true;
     }
 
@@ -152,7 +152,7 @@ void euler(System &f, double dt, double total_time, double tolerance,
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
                   << "Total energy (exclude V^ext): " << f.E.totalE << "\n"
-                  << "L2 error norm: " << L2ErrorNorm << "\n"
+                  << "L2 error norm: " << f.L2ErrorNorm << "\n"
                   << "COM: "
                   << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
                              .colwise()

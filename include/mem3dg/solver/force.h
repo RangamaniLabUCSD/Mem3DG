@@ -183,6 +183,8 @@ public:
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
 
+  /// L2 error norm
+  double L2ErrorNorm;
   /// surface area
   double surfaceArea;
   /// Volume
@@ -338,9 +340,10 @@ public:
   void getFreeEnergy();
 
   /**
-   * @brief Get the L2 norm of the force (pressure), which is the residual of the PDE
+   * @brief Get the L2 norm of the force (pressure), which is the residual of
+   * the PDE
    */
-  double
+  void
   getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
 
   /**

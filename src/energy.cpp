@@ -28,9 +28,9 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-double
-System::getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
-  return sqrt((rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
+void System::getL2ErrorNorm(
+    Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
+  L2ErrorNorm = sqrt((rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
 void System::getFreeEnergy() {
@@ -42,10 +42,10 @@ void System::getFreeEnergy() {
     double V_difference = volume - refVolume * P.Vt;
 
     E.BE = (P.Kb * M *
-          (mask.cast<double>().array() * H_difference.array() *
-           H_difference.array())
-              .matrix())
-             .sum();
+            (mask.cast<double>().array() * H_difference.array() *
+             H_difference.array())
+                .matrix())
+               .sum();
     E.sE = P.Ksg * A_difference;
     E.pE = -P.Kv * V_difference;
 
@@ -72,12 +72,14 @@ void System::getFreeEnergy() {
     double V_difference = volume - refVolume * P.Vt;
 
     E.BE = (P.Kb * M *
-          (mask.cast<double>().array() * H_difference.array() *
-           H_difference.array())
-              .matrix())
-             .sum();
-    E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 + P.lambdaSG * A_difference;
-    E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 + P.lambdaV * V_difference;
+            (mask.cast<double>().array() * H_difference.array() *
+             H_difference.array())
+                .matrix())
+               .sum();
+    E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 +
+           P.lambdaSG * A_difference;
+    E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
+           P.lambdaV * V_difference;
 
     auto velocity = gc::EigenMap<double, 3>(vel);
     E.kE = 0.5 * (M * (velocity.array() * velocity.array()).matrix()).sum();
@@ -95,6 +97,5 @@ void System::getFreeEnergy() {
 
     E.totalE = E.BE + E.sE + E.pE + E.kE + E.cE + E.lE + E.exE;
   }
-
 }
 } // namespace ddgsolver
