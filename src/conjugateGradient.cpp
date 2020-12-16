@@ -123,9 +123,8 @@ void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
   f.update_Vertex_positions();
   f.getFreeEnergy();
 
-  while (f.E.totalE >
-         (totalEnergy_pre -
-          0 * alpha * (force.array() * direction.array()).sum())) {
+  while (f.E.totalE > (totalEnergy_pre -
+                       0 * alpha * (force.array() * direction.array()).sum())) {
     // while (f.E.totalE > totalEnergy_pre) {
     if (count > 50) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
@@ -213,14 +212,9 @@ void saveRichData(
 void saveNetcdfData(
     const System &f, size_t &frame, const double &time, TrajFile &fd,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const std::tuple<double, double, double, double, double, double, double,
-                     double>
-        energy,
     const size_t &verbosity) {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft;
-  double totalE, BE, sE, pE, kE, cE, lE, exE;
-  std::tie(totalE, BE, sE, pE, kE, cE, lE, exE) = energy;
 
   fn = rowwiseDotProduct(physicalPressure,
                          gc::EigenMap<double, 3>(f.vpg.vertexNormals));
@@ -251,13 +245,13 @@ void saveNetcdfData(
   fd.writeCapillaryPressure(frame, ft);
   fd.writeBendingPressure(frame, fb);
   fd.writeLinePressure(frame, fl);
-  fd.writeBendEnergy(frame, BE);
-  fd.writeSurfEnergy(frame, sE);
-  fd.writePressEnergy(frame, pE);
-  fd.writeKineEnergy(frame, kE);
-  fd.writeChemEnergy(frame, cE);
-  fd.writeLineEnergy(frame, lE);
-  fd.writeTotalEnergy(frame, totalE);
+  fd.writeBendEnergy(frame, f.E.BE);
+  fd.writeSurfEnergy(frame, f.E.sE);
+  fd.writePressEnergy(frame, f.E.pE);
+  fd.writeKineEnergy(frame, f.E.kE);
+  fd.writeChemEnergy(frame, f.E.cE);
+  fd.writeLineEnergy(frame, f.E.lE);
+  fd.writeTotalEnergy(frame, f.E.totalE);
 }
 #endif
 
@@ -276,8 +270,7 @@ void conjugateGradient(System &f, double dt, double total_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce, direction;
-  double dArea, dVolume, currentNormSq, pastNormSq,
-      time = init_time;
+  double dArea, dVolume, currentNormSq, pastNormSq, time = init_time;
   size_t frame = 0;
   bool EXIT = false;
 
@@ -342,9 +335,7 @@ void conjugateGradient(System &f, double dt, double total_time,
 #ifdef MEM3DG_WITH_NETCDF
       // save variable to netcdf traj file
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, time, fd, physicalPressure,
-                       std::tie(f.E.totalE, f.E.BE, f.E.sE, f.E.pE, f.E.kE, f.E.cE, f.E.lE, f.E.exE),
-                       verbosity);
+        saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
       }
 #endif
 

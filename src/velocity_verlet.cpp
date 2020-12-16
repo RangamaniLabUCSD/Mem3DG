@@ -50,9 +50,6 @@ void saveRichData(
 void saveNetcdfData(
     const System &f, size_t &frame, const double &time, TrajFile &fd,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const std::tuple<double, double, double, double, double, double, double,
-                     double>
-        energy,
     const size_t &verbosity);
 #endif
 
@@ -132,10 +129,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tolerance,
 #ifdef MEM3DG_WITH_NETCDF
       // save variable to netcdf traj file
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, time, fd, physicalPressure,
-                       std::tie(f.E.totalE, f.E.BE, f.E.sE, f.E.pE, f.E.kE,
-                                f.E.cE, f.E.lE, f.E.exE),
-                       verbosity);
+        saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
       }
 #endif
 
