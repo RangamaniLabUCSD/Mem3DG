@@ -115,18 +115,18 @@ void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
   double init_time = time;
 
   // declare variables used in backtracking iterations
-  double alpha = dt, totalEnergy, BE, sE, pE, kE, cE, lE, exE;
+  double alpha = dt;
   size_t count = 0;
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   pos_e += alpha * direction;
   f.update_Vertex_positions();
-  std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+  f.getFreeEnergy();
 
-  while (totalEnergy >
+  while (f.E.totalE >
          (totalEnergy_pre -
           0 * alpha * (force.array() * direction.array()).sum())) {
-    // while (totalEnergy > totalEnergy_pre) {
+    // while (f.E.totalE > totalEnergy_pre) {
     if (count > 50) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
@@ -135,7 +135,7 @@ void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
       alpha = dt;
       pos_e = init_position;
       f.update_Vertex_positions();
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+      f.getFreeEnergy();
       time = init_time - alpha;
 
       break;
@@ -143,9 +143,9 @@ void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
     alpha *= rho;
     pos_e = init_position + alpha * direction;
     f.update_Vertex_positions();
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+    f.getFreeEnergy();
     // std::cout << "energy pre:" << totalEnergy_pre << std::endl;
-    // std::cout << "energy: " << totalEnergy << std::endl;
+    // std::cout << "energy: " << f.E.totalE << std::endl;
     count++;
   }
 
@@ -205,7 +205,7 @@ void saveRichData(
  * @param time, simulation time
  * @param fd, netcdf trajFile object
  * @param physcialPressure, physical pressre eigen matrix
- * @param energy, components of energy - totalEnergy, BE, sE, pE, kE, cE, lE,
+ * @param energy, components of energy - totalE, BE, sE, pE, kE, cE, lE,
  * exE
  * @param verbosity, verbosity setting
  * @return
@@ -219,8 +219,8 @@ void saveNetcdfData(
     const size_t &verbosity) {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft;
-  double totalEnergy, BE, sE, pE, kE, cE, lE, exE;
-  std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = energy;
+  double totalE, BE, sE, pE, kE, cE, lE, exE;
+  std::tie(totalE, BE, sE, pE, kE, cE, lE, exE) = energy;
 
   fn = rowwiseDotProduct(physicalPressure,
                          gc::EigenMap<double, 3>(f.vpg.vertexNormals));
@@ -257,16 +257,16 @@ void saveNetcdfData(
   fd.writeKineEnergy(frame, kE);
   fd.writeChemEnergy(frame, cE);
   fd.writeLineEnergy(frame, lE);
-  fd.writeTotalEnergy(frame, totalEnergy);
+  fd.writeTotalEnergy(frame, totalE);
 }
 #endif
 
-void conjugateGradient(System &f, double dt, double total_time, double tolerance,
-                       double closeZone, double increment, double maxKv,
-                       double maxKsg, double tSave, double tMollify,
-                       const size_t verbosity, std::string inputMesh,
-                       std::string outputDir, double init_time,
-                       double errorJumpLim) {
+void conjugateGradient(System &f, double dt, double total_time,
+                       double tolerance, double closeZone, double increment,
+                       double maxKv, double maxKsg, double tSave,
+                       double tMollify, const size_t verbosity,
+                       std::string inputMesh, std::string outputDir,
+                       double init_time, double errorJumpLim) {
 
   // print out a txt file listing all parameters used
   if (verbosity > 2) {
@@ -276,8 +276,8 @@ void conjugateGradient(System &f, double dt, double total_time, double tolerance
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce, direction;
-  double totalEnergy, BE, sE, pE, kE, cE, lE, exE, L2ErrorNorm, dArea, dVolume,
-      currentNormSq, pastNormSq, time = init_time;
+  double L2ErrorNorm, dArea, dVolume, currentNormSq, pastNormSq,
+      time = init_time;
   size_t frame = 0;
   bool EXIT = false;
 
@@ -309,7 +309,7 @@ void conjugateGradient(System &f, double dt, double total_time, double tolerance
     dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
                   ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                   : 0.0;
-    L2ErrorNorm = getL2ErrorNorm(physicalPressure);
+    L2ErrorNorm = f.getL2ErrorNorm(physicalPressure);
     if (L2ErrorNorm < tolerance) {
       if (dArea < tolerance && dVolume < tolerance) {
         EXIT = true;
@@ -326,7 +326,7 @@ void conjugateGradient(System &f, double dt, double total_time, double tolerance
     }
 
     // compute the free energy of the system
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+    f.getFreeEnergy();
 
     // Save files every tSave period and print some info
     static double lastSave;
@@ -343,7 +343,7 @@ void conjugateGradient(System &f, double dt, double total_time, double tolerance
       // save variable to netcdf traj file
       if (verbosity > 0) {
         saveNetcdfData(f, frame, time, fd, physicalPressure,
-                       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE),
+                       std::tie(f.E.totalE, f.E.BE, f.E.sE, f.E.pE, f.E.kE, f.E.cE, f.E.lE, f.E.exE),
                        verbosity);
       }
 #endif
@@ -360,7 +360,7 @@ void conjugateGradient(System &f, double dt, double total_time, double tolerance
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
-                  << "Total energy (exclude V^ext): " << totalEnergy << "\n"
+                  << "Total energy (exclude V^ext): " << f.E.totalE << "\n"
                   << "L2 error norm: " << L2ErrorNorm << "\n"
                   << "COM: "
                   << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
@@ -398,7 +398,7 @@ void conjugateGradient(System &f, double dt, double total_time, double tolerance
     }
     // pos_e += direction * dt;
     // time += dt;
-    backtrack(f, dt, 0.5, time, EXIT, verbosity, totalEnergy, vel_e, direction);
+    backtrack(f, dt, 0.5, time, EXIT, verbosity, f.E.totalE, vel_e, direction);
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
