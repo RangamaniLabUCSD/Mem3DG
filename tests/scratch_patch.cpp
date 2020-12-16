@@ -110,7 +110,8 @@ int main() {
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
-  ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir);
+  ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir,
+                                true, 0.5, 1e-4);
 
   delete ptrRefVpg;
   return 0;

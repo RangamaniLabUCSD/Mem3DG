@@ -203,13 +203,13 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isTuftedLaplacian,
                bool isProtein, double mollifyFactor, bool isVertexShift,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
-               double Kse, double Kst, double Ksl, std::vector<double> Ksg,
-               std::vector<double> Kv, double eta, double epsilon, double Bc,
-               double Vt, double gamma, double kt, std::vector<double> pt,
-               double Kf, double conc, double height, double radius, double h,
-               double T, double eps, double closeZone, double increment,
-               double tSave, double tMollify, std::string outputDir,
-               double errorJumpLim, std::string integrationMethod) {
+               double Kse, double Kst, double Ksl, double Ksg, double Kv,
+               double eta, double epsilon, double Bc, double Vt, double gamma,
+               double kt, std::vector<double> pt, double Kf, double conc,
+               double height, double radius, double h, double T, double eps,
+               double tSave, std::string outputDir,
+               std::string integrationMethod, bool isBacktrack, double rho,
+               double c1) {
 
   signal(SIGINT, signalHandler);
   // pybind11::scoped_interpreter guard{};
@@ -267,10 +267,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
-                          Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
-                          gamma, Vt,     kt,        sigma, pt,      Kf,
-                          conc,  height, radius};
+  ddgsolver::Parameters p{Kb,  H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                       isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
@@ -278,20 +277,20 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::cout << "Solving the system ..." << std::endl;
 
   if (integrationMethod == "velocity verlet") {
-    ddgsolver::integration::velocityVerlet(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, inputMesh, outputDir, 0, errorJumpLim);
+    ddgsolver::integration::velocityVerlet(f, h, 0, T, tSave, eps, verbosity,
+                                           outputDir);
   } else if (integrationMethod == "euler") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
-    ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir);
+    ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir,
+                                  isBacktrack, rho, c1);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
     ddgsolver::integration::conjugateGradient(f, h, 0, T, tSave, eps, verbosity,
-                                              outputDir);
+                                              outputDir, isBacktrack, rho, c1);
   }
 
   delete ptrRefVpg;
@@ -303,13 +302,12 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, std::vector<double> r_H0, double Kse,
-              double Kst, double Ksl, std::vector<double> Ksg,
-              std::vector<double> Kv, double eta, double epsilon, double Bc,
-              double Vt, double gamma, double kt, std::vector<double> pt,
-              double Kf, double conc, double height, double radius, double h,
-              double T, double eps, double closeZone, double increment,
-              double tSave, double tMollify, std::string outputDir,
-              double errorJumpLim, std::string integrationMethod) {
+              double Kst, double Ksl, double Ksg, double Kv, double eta,
+              double epsilon, double Bc, double Vt, double gamma, double kt,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double tSave,
+              std::string outputDir, std::string integrationMethod,
+              bool isBacktrack, double rho, double c1) {
 
   signal(SIGINT, signalHandler);
 
@@ -356,10 +354,9 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
-                          Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
-                          gamma, Vt,     kt,        sigma, pt,      Kf,
-                          conc,  height, radius};
+  ddgsolver::Parameters p{Kb,  H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
   ddgsolver::System f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
                       isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
@@ -368,21 +365,20 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   std::cout << "Solving the system ..." << std::endl;
 
   if (integrationMethod == "velocity verlet") {
-    ddgsolver::integration::velocityVerlet(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, trajFile, outputDir, time, errorJumpLim);
+    ddgsolver::integration::velocityVerlet(f, h, time, T, tSave, eps, verbosity,
+                                           outputDir);
   } else if (integrationMethod == "euler") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
     ddgsolver::integration::euler(f, h, time, T, tSave, eps, verbosity,
-                                  outputDir);
+                                  outputDir, isBacktrack, rho, c1);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
-    ddgsolver::integration::conjugateGradient(f, h, time, T, tSave, eps,
-                                              verbosity, outputDir);
+    ddgsolver::integration::conjugateGradient(
+        f, h, time, T, tSave, eps, verbosity, outputDir, isBacktrack, rho, c1);
   }
 
   delete ptrRefVpg;
