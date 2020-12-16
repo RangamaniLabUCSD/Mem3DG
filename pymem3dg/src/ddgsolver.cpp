@@ -232,7 +232,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
   std::tie(ptrRefMesh, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
   std::cout << "Finished!" << std::endl;
-  
+
   if (nSub > 0) {
     std::cout << "Subdivide input and reference mesh " << nSub
               << " time(s) ...";
@@ -272,7 +272,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                           gamma, Vt,     kt,        sigma, pt,      Kf,
                           conc,  height, radius};
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                     isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
@@ -285,16 +285,13 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
-    ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
-                                  Ksg[1], tSave, tMollify, verbosity, inputMesh,
-                                  outputDir, 0, errorJumpLim);
+    ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
-    ddgsolver::integration::conjugateGradient(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, inputMesh, outputDir, 0, errorJumpLim);
+    ddgsolver::integration::conjugateGradient(f, h, 0, T, tSave, eps, verbosity,
+                                              outputDir);
   }
 
   delete ptrRefVpg;
@@ -364,7 +361,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
                           gamma, Vt,     kt,        sigma, pt,      Kf,
                           conc,  height, radius};
   ddgsolver::System f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
-                     isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;
 
@@ -378,16 +375,14 @@ int driver_nc(const size_t verbosity, std::string trajFile,
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
-    ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
-                                  Ksg[1], tSave, tMollify, verbosity, trajFile,
-                                  outputDir, time, errorJumpLim);
+    ddgsolver::integration::euler(f, h, time, T, tSave, eps, verbosity,
+                                  outputDir);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
-    ddgsolver::integration::conjugateGradient(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, trajFile, outputDir, time, errorJumpLim);
+    ddgsolver::integration::conjugateGradient(f, h, time, T, tSave, eps,
+                                              verbosity, outputDir);
   }
 
   delete ptrRefVpg;

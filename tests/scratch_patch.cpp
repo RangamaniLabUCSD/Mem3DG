@@ -39,7 +39,7 @@ int main() {
   gcs::VertexPositionGeometry &vpg = *ptrVpg;
   std::cout << "Finished!" << std::endl;
 
-  // To ensure that refVpg maps to mesh, take detour 
+  // To ensure that refVpg maps to mesh, take detour
   // by first read and then construct
   std::string refMesh =
       "C://Users//Kieran//Dev//2020-Mem3DG-"
@@ -82,9 +82,9 @@ int main() {
 
   std::cout << "Initiating the system ...";
   /// physical parameters
-  double Kb = 8.22e-5, H0 = 40, sharpness = 50, Kst = 0, Ksl = 0,
-         Kse = 0, epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Kf = 0,
-         conc = 25, height = 0, radius = 100, kt = 0, h = 1e-5, Kv = 0, eta = 0,
+  double Kb = 8.22e-5, H0 = 40, sharpness = 50, Kst = 0, Ksl = 0, Kse = 0,
+         epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Kf = 0, conc = 25,
+         height = 0, radius = 100, kt = 0, h = 1e-5, Kv = 0, eta = 0,
          Ksg = 0.05, mollifyFactor = 1e-3;
 
   std::vector<double> pt = {0, 0, 0};
@@ -97,11 +97,12 @@ int main() {
     std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
   }
 
-  ddgsolver::Parameters p{Kb,  H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
-                          kt,  sigma + 1e-18, pt,        Kf,      conc, height, radius};
+  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,          Ksg,     Kst,
+                          Ksl,   Kse,    Kv,        eta,           epsilon, Bc,
+                          gamma, Vt,     kt,        sigma + 1e-18, pt,      Kf,
+                          conc,  height, radius};
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                     isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
@@ -109,9 +110,7 @@ int main() {
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
-  ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv,
-                                         Ksg, tSave, tMollify, verbosity,
-                                         inputMesh, outputDir, 0, errorJumpLim);
+  ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir);
 
   delete ptrRefVpg;
   return 0;

@@ -39,20 +39,15 @@ velocityVerlet(System &f, double dt, double total_time, double tolerance,
                std::string inputMesh = "./", std::string outputDir = "./",
                double init_time = 0, double errorJumpLim = 5);
 
-DLL_PUBLIC void euler(System &f, double dt, double total_time, double tolerance,
-                      double closeZone, double increment, double maxKv,
-                      double maxKsg, double tSave, double tMollify,
-                      size_t verbosity = 2, std::string inputMesh = "./",
-                      std::string outputDir = "./", double init_time = 0,
-                      double errorJumpLim = 5);
+DLL_PUBLIC void euler(System &f, double dt, double init_time,
+                                  double total_time, double tSave,
+                                  double tolerance, const size_t verbosity,
+                                  std::string outputDir);
 
-DLL_PUBLIC void
-conjugateGradient(System &f, double dt, double total_time, double tolerance,
-                  double closeZone, double increment, double maxKv,
-                  double maxKsg, double tSave, double tMollify,
-                  size_t verbosity = 2, std::string inputMesh = "./",
-                  std::string outputDir = "./", double init_time = 0,
-                  double errorJumpLim = 5);
+DLL_PUBLIC void conjugateGradient(System &f, double dt, double init_time,
+                                  double total_time, double tSave,
+                                  double tolerance, const size_t verbosity,
+                                  std::string outputDir);
 
 DLL_PUBLIC
 void getParameterLog(System &f, double dt, double total_time, double tolerance,
