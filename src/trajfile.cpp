@@ -441,6 +441,21 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
   return Energy;
 }
 
+// L2 error norm
+void TrajFile::writeL2ErrorNorm(const std::size_t idx, const double L2ErronNorm) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l2errornorm_var.putVar({idx}, &L2ErronNorm);
+}
+
+double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double L2ErronNorm;
+  l2errornorm_var.getVar({idx}, &L2ErronNorm);
+  return L2ErronNorm;
+}
+
 } // namespace ddgsolver
 
 #endif

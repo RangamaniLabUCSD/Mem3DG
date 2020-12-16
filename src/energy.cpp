@@ -30,7 +30,7 @@ namespace gcs = ::geometrycentral::surface;
 
 void System::getL2ErrorNorm(
     Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
-  L2ErrorNorm = sqrt((rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
+  L2ErrorNorm = sqrt((M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
 void System::getFreeEnergy() {

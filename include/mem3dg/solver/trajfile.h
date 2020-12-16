@@ -120,6 +120,8 @@ static const std::string CHEMENER_VAR = "chemenergy";
 static const std::string LINEENER_VAR = "lineenergy";
 /// Name of the chemical energy data
 static const std::string TOTALENER_VAR = "totalenergy";
+/// Name of the L2 Error Norm data
+static const std::string L2ERRORNORM_VAR = "l2errornorm";
 /// Name of the mask data
 static const std::string MASK_VAR = "mask";
 /// Name of the curvature difference data
@@ -176,6 +178,7 @@ public:
     bendpress_var = fd->getVar(BENDPRESS_VAR);
     linepress_var = fd->getVar(LINEPRESS_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
+    l2errornorm_var = fd->getVar(L2ERRORNORM_VAR);
     mask_var = fd->getVar(MASK_VAR);
     H_H0_var = fd->getVar(H_H0_VAR);
   }
@@ -269,6 +272,8 @@ public:
     lineener_var = fd->addVar(LINEENER_VAR, netCDF::ncDouble, {frame_dim});
 
     totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    l2errornorm_var = fd->addVar(L2ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
 
     H_H0_var =
         fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -453,6 +458,10 @@ public:
 
   double getTotalEnergy(const std::size_t idx) const;
 
+  void writeL2ErrorNorm(const std::size_t idx, const double L2ErrorNorm);
+   
+  double getL2ErrorNorm(const std::size_t idx) const;
+
 private:
   /**
    * @brief Private constructor for opening an existing file.
@@ -517,6 +526,7 @@ private:
   nc::NcVar chemener_var;
   nc::NcVar lineener_var;
   nc::NcVar totalener_var;
+  nc::NcVar l2errornorm_var;
   nc::NcVar mask_var;
   nc::NcVar H_H0_var;
 
