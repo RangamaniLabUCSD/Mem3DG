@@ -73,7 +73,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tolerance,
       regularizationForce, physicalPressure, DPDForce;
 
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
-  double totalEnergy, BE, sE, pE, kE, cE, lE, exE, L2ErrorNorm, dArea, dVolume,
+  double L2ErrorNorm, dArea, dVolume,
       time = init_time; // double dRef;
 
   size_t nMollify = size_t(tMollify / tSave), frame = 0;
@@ -105,7 +105,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tolerance,
 
     // measure the error norm and constraint, exit if smaller than tolerance or
     // reach time limit
-    L2ErrorNorm = getL2ErrorNorm(physicalPressure);
+    L2ErrorNorm = f.getL2ErrorNorm(physicalPressure);
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
@@ -117,7 +117,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tolerance,
     }
 
     // compute the free energy of the system
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE) = getFreeEnergy(f);
+    f.getFreeEnergy();
 
     // Save files every tSave period and print some info
     static double lastSave;
@@ -134,7 +134,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tolerance,
       // save variable to netcdf traj file
       if (verbosity > 0) {
         saveNetcdfData(f, frame, time, fd, physicalPressure,
-                       std::tie(totalEnergy, BE, sE, pE, kE, cE, lE, exE),
+                       std::tie(f.E.totalE, f.E.BE, f.E.sE, f.E.pE, f.E.kE, f.E.cE, f.E.lE, f.E.exE),
                        verbosity);
       }
 #endif
@@ -145,7 +145,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tolerance,
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
-                  << "Total energy (exclude V^ext): " << totalEnergy << "\n"
+                  << "Total energy (exclude V^ext): " << f.E.totalE << "\n"
                   << "L2 error norm: " << L2ErrorNorm << "\n"
                   << "COM: "
                   << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)

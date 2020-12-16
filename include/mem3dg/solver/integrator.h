@@ -21,13 +21,7 @@
 
 namespace ddgsolver {
 namespace integration {
-
-DLL_PUBLIC std::tuple<double, double, double, double, double, double, double, double>
-getFreeEnergy(System &f);
-
-DLL_PUBLIC double
-getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
-
+  
 DLL_PUBLIC void stormerVerlet(System &f, double dt, double total_time,
                               double tolerance);
 

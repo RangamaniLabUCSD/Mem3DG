@@ -93,6 +93,25 @@ struct Parameters {
   double lambdaV = 0;
 };
 
+struct Energy {
+  /// total Energy of the system
+  double totalE;
+  /// bending energy of the membrane
+  double BE;
+  /// stretching energy of the membrane
+  double sE;
+  /// work of pressure within membrane
+  double pE;
+  /// kinetic energy of the membrane
+  double kE;
+  /// chemical energy of the membrane protein
+  double cE;
+  /// line tension energy of interface
+  double lE;
+  /// work of external force
+  double exE;
+};
+
 class DLL_PUBLIC System {
 public:
   /// Parameters
@@ -105,6 +124,8 @@ public:
   gcs::VertexPositionGeometry &vpg;
   /// reference embedding geometry
   gcs::VertexPositionGeometry &refVpg;
+  /// Energy
+  Energy E;
 
   /// Cached bending stress
   gcs::VertexData<gc::Vector3> bendingPressure;
@@ -161,7 +182,7 @@ public:
   Eigen::SparseMatrix<double> L;
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
-  
+
   /// surface area
   double surfaceArea;
   /// Volume
@@ -193,10 +214,10 @@ public:
    */
 
   System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-        gcs::VertexPositionGeometry &refVpg_,
-        gcs::RichSurfaceMeshData &richData_, Parameters &p,
-        bool isProtein_ = false, bool isTuftedLaplacian_ = false,
-        double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
+         gcs::VertexPositionGeometry &refVpg_,
+         gcs::RichSurfaceMeshData &richData_, Parameters &p,
+         bool isProtein_ = false, bool isTuftedLaplacian_ = false,
+         double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
         isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
         isCircle(p.r_H0[0] == p.r_H0[1]), mollifyFactor(mollifyFactor_),
@@ -312,6 +333,17 @@ public:
   void getExternalForces();
 
   /**
+   * @brief Get free energy and each components of the system
+   */
+  void getFreeEnergy();
+
+  /**
+   * @brief Get the L2 norm of the force (pressure), which is the residual of the PDE
+   */
+  double
+  getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
+
+  /**
    * @brief Get velocity from the position of the last iteration
    *
    * @param timeStep
@@ -347,9 +379,11 @@ public:
       H0.setZero(mesh.nVertices(), 1);
     } else if (P.H0 != 0) {
       if (isCircle) {
-        tanhDistribution(H0, geodesicDistanceFromPtInd.raw(), P.sharpness, P.r_H0[0]);
+        tanhDistribution(H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
+                         P.r_H0[0]);
       } else {
-        tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(), P.sharpness, P.r_H0);
+        tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
+                         P.r_H0);
       }
       H0 *= P.H0;
       if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <

@@ -56,11 +56,7 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
     f.update_Vertex_positions();
     f.pastPositions = temp;
-    double totalEnergy, bendingEnergy, surfaceEnergy, pressureEnergy,
-        kineticEnergy, chemicalEnergy, lineEnergy, externalEnergy;
-    std::tie(totalEnergy, bendingEnergy, surfaceEnergy, pressureEnergy,
-             kineticEnergy, chemicalEnergy, lineEnergy, externalEnergy) =
-        getFreeEnergy(f);
+    f.getFreeEnergy();
 
     // std::cout << "energy: " << totalEnergy << std::endl;
     // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<
