@@ -21,7 +21,7 @@
 
 namespace ddgsolver {
 namespace integration {
-  
+
 DLL_PUBLIC void stormerVerlet(System &f, double dt, double total_time,
                               double tolerance);
 
@@ -32,22 +32,21 @@ verbosity:
   2: All above + console printing
   3: All above + txt + .ply
 */
-DLL_PUBLIC void
-velocityVerlet(System &f, double dt, double total_time, double tolerance,
-               double closeZone, double increment, double maxKv, double maxKsg,
-               double tSave, double tMollify, size_t verbosity = 2,
-               std::string inputMesh = "./", std::string outputDir = "./",
-               double init_time = 0, double errorJumpLim = 5);
+DLL_PUBLIC void velocityVerlet(System &f, double dt, double init_time,
+                               double total_time, double tSave,
+                               double tolerance, const size_t verbosity,
+                               std::string outputDir);
 
-DLL_PUBLIC void euler(System &f, double dt, double init_time,
-                                  double total_time, double tSave,
-                                  double tolerance, const size_t verbosity,
-                                  std::string outputDir);
+DLL_PUBLIC void euler(System &f, double dt, double init_time, double total_time,
+                      double tSave, double tolerance, const size_t verbosity,
+                      std::string outputDir, const bool isBacktrack,
+                      const double rho, const double c1);
 
 DLL_PUBLIC void conjugateGradient(System &f, double dt, double init_time,
                                   double total_time, double tSave,
                                   double tolerance, const size_t verbosity,
-                                  std::string outputDir);
+                                  std::string outputDir, const bool isBacktrack,
+                                  const double rho, const double c1);
 
 DLL_PUBLIC
 void getParameterLog(System &f, double dt, double total_time, double tolerance,
@@ -67,8 +66,6 @@ void getEnergyLog(double time, double bendingEnergy, double surfaceEnergy,
                   double pressureEnergy, double kineticEnergy,
                   double chemicalEnergy, double totalEnergy,
                   std::string outputDir);
-
-
 
 } // namespace integration
 } // namespace ddgsolver

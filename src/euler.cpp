@@ -41,8 +41,8 @@ void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
-void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
-               const size_t verbosity, const double totalEnergy_pre,
+void backtrack(System &f, const double dt, double rho, double c1, double &time,
+               bool &EXIT, const size_t verbosity, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
 
@@ -58,9 +58,10 @@ void saveNetcdfData(
     const size_t &verbosity);
 #endif
 
-void euler(System &f, double dt, double init_time,
-                       double total_time, double tSave, double tolerance,
-                       const size_t verbosity, std::string outputDir) {
+void euler(System &f, double dt, double init_time, double total_time,
+           double tSave, double tolerance, const size_t verbosity,
+           std::string outputDir, const bool isBacktrack, const double rho,
+           const double c1) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
@@ -164,9 +165,13 @@ void euler(System &f, double dt, double init_time,
     }
 
     // time stepping on vertex position
-    backtrack(f, dt, 0.5, time, EXIT, verbosity, f.E.totalE, vel_e, vel_e);
-    // pos_e += vel_e * dt;
-    // time += dt;
+    if (isBacktrack) {
+      backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.totalE, vel_e,
+                vel_e);
+    } else {
+      pos_e += vel_e * dt;
+      time += dt;
+    }
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }

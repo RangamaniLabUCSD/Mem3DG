@@ -53,17 +53,9 @@ void saveNetcdfData(
     const size_t &verbosity);
 #endif
 
-void velocityVerlet(System &f, double dt, double total_time, double tolerance,
-                    double closeZone, double increment, double maxKv,
-                    double maxKsg, double tSave, double tMollify,
-                    const size_t verbosity, std::string inputMesh,
-                    std::string outputDir, double init_time,
-                    double errorJumpLim) {
-
-  // print out a txt file listing all parameters used
-  if (verbosity > 2) {
-    getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
-  }
+void velocityVerlet(System &f, double dt, double init_time,
+                       double total_time, double tSave, double tolerance,
+                       const size_t verbosity, std::string outputDir) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
@@ -72,7 +64,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tolerance,
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
   double dArea, dVolume, time = init_time; // double dRef;
 
-  size_t nMollify = size_t(tMollify / tSave), frame = 0;
+  size_t frame = 0;
 
   bool EXIT = false;
 

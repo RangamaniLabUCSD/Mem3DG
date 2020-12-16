@@ -96,6 +96,7 @@ void getForces(System &f,
  * @param f, force object
  * @param dt, initial step size
  * @param rho, discount factor
+ * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
  * @param time, simulation time
  * @param EXIT, exit flag for integration loop
  * @param verbosity, verbosity setting
@@ -104,8 +105,8 @@ void getForces(System &f,
  * @param direction, direction, most likely some function of gradient
  * @return
  */
-void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
-               const size_t verbosity, const double totalEnergy_pre,
+void backtrack(System &f, const double dt, double rho, double c1, double &time,
+               bool &EXIT, const size_t verbosity, const double totalEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
@@ -124,7 +125,7 @@ void backtrack(System &f, const double dt, double rho, double &time, bool &EXIT,
   f.getFreeEnergy();
 
   while (f.E.totalE > (totalEnergy_pre -
-                       0 * alpha * (force.array() * direction.array()).sum())) {
+                       c1 * alpha * (force.array() * direction.array()).sum())) {
     // while (f.E.totalE > totalEnergy_pre) {
     if (count > 50) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
@@ -257,7 +258,8 @@ void saveNetcdfData(
 
 void conjugateGradient(System &f, double dt, double init_time,
                        double total_time, double tSave, double tolerance,
-                       const size_t verbosity, std::string outputDir) {
+                       const size_t verbosity, std::string outputDir,
+                       const bool isBacktrack, const double rho, const double c1) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
@@ -379,9 +381,13 @@ void conjugateGradient(System &f, double dt, double init_time,
       pastNormSq = currentNormSq;
       countCG++;
     }
-    // pos_e += direction * dt;
-    // time += dt;
-    backtrack(f, dt, 0.5, time, EXIT, verbosity, f.E.totalE, vel_e, direction);
+    if (isBacktrack) {
+      backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.totalE, vel_e,
+                direction);
+    } else {
+      pos_e += direction * dt;
+      time += dt;
+    }
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
