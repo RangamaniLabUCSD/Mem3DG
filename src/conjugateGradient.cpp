@@ -253,6 +253,7 @@ void saveNetcdfData(
   fd.writeChemEnergy(frame, f.E.cE);
   fd.writeLineEnergy(frame, f.E.lE);
   fd.writeTotalEnergy(frame, f.E.totalE);
+  fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
 }
 #endif
 
@@ -371,7 +372,7 @@ void conjugateGradient(System &f, double dt, double init_time,
 
     // time stepping on vertex position
     size_t countCG = 0;
-    if (countCG % 20 == 0) {
+    if (countCG % (f.mesh.nVertices() + 1) == 0) {
       pastNormSq = vel_e.squaredNorm();
       direction = vel_e;
       countCG = 0;
