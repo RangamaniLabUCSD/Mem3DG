@@ -46,7 +46,13 @@ DLL_PUBLIC void conjugateGradient(System &f, double dt, double init_time,
                                   double total_time, double tSave,
                                   double tolerance, const size_t verbosity,
                                   std::string outputDir, const bool isBacktrack,
-                                  const double rho, const double c1);
+                                  const double rho, const double c1,
+                                  const std::string trajFileName = "/traj.nc");
+
+DLL_PUBLIC void feedForwardSweep(System &f, std::vector<double> H_, double dt,
+                                 double maxTime, double tSave, double tolerance,
+                                 std::string outputDir, const bool isBacktrack,
+                                 const double rho, const double c1);
 
 DLL_PUBLIC
 void getParameterLog(System &f, double dt, double total_time, double tolerance,

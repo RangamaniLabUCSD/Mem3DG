@@ -30,7 +30,8 @@ namespace gcs = ::geometrycentral::surface;
 
 void System::getL2ErrorNorm(
     Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
-  L2ErrorNorm = sqrt((M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
+  L2ErrorNorm =
+      sqrt((M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
 }
 
 void System::getFreeEnergy() {
@@ -41,10 +42,7 @@ void System::getFreeEnergy() {
     double A_difference = surfaceArea - targetSurfaceArea;
     double V_difference = volume - refVolume * P.Vt;
 
-    E.BE = (P.Kb * M *
-            (mask.cast<double>().array() * H_difference.array() *
-             H_difference.array())
-                .matrix())
+    E.BE = (P.Kb * M * (H_difference.array() * H_difference.array()).matrix())
                .sum();
     E.sE = P.Ksg * A_difference;
     E.pE = -P.Kv * V_difference;
@@ -62,8 +60,8 @@ void System::getFreeEnergy() {
         -rowwiseDotProduct(gc::EigenMap<double, 3>(externalPressure),
                            gc::EigenMap<double, 3>(vpg.inputVertexPositions))
              .sum();
-
-    E.totalE = E.BE + E.sE + E.pE + E.kE + E.cE + E.lE + E.exE;
+    E.potE = E.BE + E.sE + E.pE + E.cE + E.lE + E.exE;
+    E.totalE = E.potE + E.kE;
 
   } else {
 
@@ -71,10 +69,7 @@ void System::getFreeEnergy() {
     double A_difference = surfaceArea - targetSurfaceArea;
     double V_difference = volume - refVolume * P.Vt;
 
-    E.BE = (P.Kb * M *
-            (mask.cast<double>().array() * H_difference.array() *
-             H_difference.array())
-                .matrix())
+    E.BE = (P.Kb * M * (H_difference.array() * H_difference.array()).matrix())
                .sum();
     E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 +
            P.lambdaSG * A_difference;
@@ -95,7 +90,8 @@ void System::getFreeEnergy() {
                            gc::EigenMap<double, 3>(vpg.inputVertexPositions))
              .sum();
 
-    E.totalE = E.BE + E.sE + E.pE + E.kE + E.cE + E.lE + E.exE;
+    E.potE = E.BE + E.sE + E.pE + E.cE + E.lE + E.exE;
+    E.totalE = E.potE + E.kE;
   }
 }
 } // namespace ddgsolver

@@ -96,14 +96,16 @@ struct Parameters {
 struct Energy {
   /// total Energy of the system
   double totalE;
+  /// kinetic energy of the membrane
+  double kE;
+  /// potential energy of the membrane 
+  double potE;
   /// bending energy of the membrane
   double BE;
   /// stretching energy of the membrane
   double sE;
   /// work of pressure within membrane
   double pE;
-  /// kinetic energy of the membrane
-  double kE;
   /// chemical energy of the membrane protein
   double cE;
   /// line tension energy of interface

@@ -56,3 +56,14 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
               bool isBacktrack, double rho, double c1);
+
+int driver_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+                 bool isTuftedLaplacian, bool isProtein, double mollifyFactor,
+                 bool isVertexShift, double Kb, std::vector<double> H0,
+                 double sharpness, std::vector<double> r_H0, double Kse,
+                 double Kst, double Ksl, double Ksg, double Kv, double eta,
+                 double epsilon, double Bc, double Vt, double gamma, double kt,
+                 std::vector<double> pt, double Kf, double conc, double height,
+                 double radius, double h, double T, double eps, double tSave,
+                 std::string outputDir, bool isBacktrack, double rho,
+                 double c1);
