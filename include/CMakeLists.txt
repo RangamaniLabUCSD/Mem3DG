@@ -17,7 +17,7 @@ set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/ddgsolver.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/force.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/icosphere.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/typetraits.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/util.h"

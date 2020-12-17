@@ -16,7 +16,7 @@
 #include "solver/ddgsolver.h"
 #include "solver/force.h"
 #include "solver/integrator.h"
-#include "solver/icosphere.h"
+#include "solver/mesh.h"
 #include "solver/trajfile.h"
 #include "solver/typetraits.h"
 #include "solver/util.h"

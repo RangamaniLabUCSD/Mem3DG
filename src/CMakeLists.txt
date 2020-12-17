@@ -13,7 +13,7 @@
 #
 
 set(DDG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/icosphere.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/bending_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/stretching_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/pressure_force.cpp"

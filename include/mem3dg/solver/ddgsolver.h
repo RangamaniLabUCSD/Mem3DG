@@ -34,8 +34,6 @@ int view_animation(std::string &filename, const bool ref_coord = 0,
                    const bool line_pressure = 0, const bool mask = 0,
                    const bool H_H0 = 0);
 
-int genIcosphere(size_t nSub, std::string path, double R);
-
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isTuftedLaplacian,
                bool isProtein, double mollifyFactor, bool isVertexShift,
