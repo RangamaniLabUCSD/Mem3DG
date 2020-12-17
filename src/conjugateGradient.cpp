@@ -13,7 +13,6 @@
 //
 
 #include <Eigen/Core>
-#include <assert.h>
 #include <iostream>
 #include <math.h>
 #include <pcg_random.hpp>
@@ -100,13 +99,13 @@ void getForces(System &f,
  * @param time, simulation time
  * @param EXIT, exit flag for integration loop
  * @param verbosity, verbosity setting
- * @param totalEnergy_pre, previous energy evaluation
+ * @param potentialEnergy_pre, previous energy evaluation
  * @param force, gradient of the energy
  * @param direction, direction, most likely some function of gradient
  * @return
  */
 void backtrack(System &f, const double dt, double rho, double c1, double &time,
-               bool &EXIT, const size_t verbosity, const double totalEnergy_pre,
+               bool &EXIT, const size_t verbosity, const double potentialEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
@@ -124,9 +123,10 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
   f.update_Vertex_positions();
   f.getFreeEnergy();
 
-  while (f.E.totalE > (totalEnergy_pre -
-                       c1 * alpha * (force.array() * direction.array()).sum())) {
-    // while (f.E.totalE > totalEnergy_pre) {
+  while (f.E.potE >
+         (potentialEnergy_pre -
+          c1 * alpha * (force.array() * direction.array()).sum())) {
+    // while (f.E.potE > potentialEnergy_pre) {
     if (count > 50) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
@@ -144,13 +144,12 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
     pos_e = init_position + alpha * direction;
     f.update_Vertex_positions();
     f.getFreeEnergy();
-    // std::cout << "energy pre:" << totalEnergy_pre << std::endl;
-    // std::cout << "energy: " << f.E.totalE << std::endl;
     count++;
   }
 
   if (alpha != dt && verbosity > 1) {
     std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
+    std::cout << "L2 norm: " << f.L2ErrorNorm << std::endl;
   }
   time = init_time + alpha;
 }
@@ -260,7 +259,8 @@ void saveNetcdfData(
 void conjugateGradient(System &f, double dt, double init_time,
                        double total_time, double tSave, double tolerance,
                        const size_t verbosity, std::string outputDir,
-                       const bool isBacktrack, const double rho, const double c1) {
+                       const bool isBacktrack, const double rho,
+                       const double c1, const std::string trajFileName) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
@@ -277,7 +277,7 @@ void conjugateGradient(System &f, double dt, double init_time,
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
+    fd.createNewFile(outputDir + trajFileName, f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
   }
@@ -300,6 +300,7 @@ void conjugateGradient(System &f, double dt, double init_time,
     f.getL2ErrorNorm(physicalPressure);
     if (f.L2ErrorNorm < tolerance) {
       if (dArea < tolerance && dVolume < tolerance) {
+        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else {
         std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
@@ -346,7 +347,7 @@ void conjugateGradient(System &f, double dt, double init_time,
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
-                  << "Total energy (exclude V^ext): " << f.E.totalE << "\n"
+                  << "Potential energy (exclude V^ext): " << f.E.potE << "\n"
                   << "L2 error norm: " << f.L2ErrorNorm << "\n"
                   << "COM: "
                   << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
@@ -383,7 +384,7 @@ void conjugateGradient(System &f, double dt, double init_time,
       countCG++;
     }
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.totalE, vel_e,
+      backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.potE, vel_e,
                 direction);
     } else {
       pos_e += direction * dt;
@@ -402,6 +403,21 @@ void conjugateGradient(System &f, double dt, double init_time,
     f.update_Vertex_positions();
 
   } // integration
+}
+
+void feedForwardSweep(System &f, std::vector<double> H_, double dt,
+                      double maxTime, double tSave, double tolerance,
+                      std::string outputDir, const bool isBacktrack,
+                      const double rho, const double c1) {
+  for (double H : H_) {
+    char buffer[50];
+    sprintf(buffer, "/traj_H_%d.nc", int(H));
+    f.P.H0 = H;
+    std::cout << "\nH0: " << f.P.H0 << std::endl;
+    f.update_Vertex_positions();
+    conjugateGradient(f, dt, 0, maxTime, tSave, tolerance, 2, outputDir,
+                      isBacktrack, rho, c1, buffer);
+  }
 }
 } // namespace integration
 } // namespace ddgsolver

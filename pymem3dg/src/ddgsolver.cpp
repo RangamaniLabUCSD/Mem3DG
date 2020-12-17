@@ -272,6 +272,81 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   return 0;
 }
 
+int driver_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+                 bool isTuftedLaplacian, bool isProtein, double mollifyFactor,
+                 bool isVertexShift, double Kb, std::vector<double> H0,
+                 double sharpness, std::vector<double> r_H0, double Kse,
+                 double Kst, double Ksl, double Ksg, double Kv, double eta,
+                 double epsilon, double Bc, double Vt, double gamma, double kt,
+                 std::vector<double> pt, double Kf, double conc, double height,
+                 double radius, double h, double T, double eps, double tSave,
+                 std::string outputDir, bool isBacktrack, double rho,
+                 double c1) {
+
+  /// Activate signal handling
+  signal(SIGINT, signalHandler);
+
+  /// Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
+  gcs::VertexPositionGeometry *ptrRefVpg;
+
+  /// Load input mesh and geometry
+  std::cout << "Loading input and reference mesh " << inputMesh << " ...";
+  std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::tie(ptrRefMesh_, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
+  std::cout << "Finished!" << std::endl;
+
+  /// Subdivide the mesh and geometry objects
+  if (nSub > 0) {
+    std::cout << "Subdivide input and reference mesh " << nSub
+              << " time(s) ...";
+    ddgsolver::loopSubdivide(ptrMesh, ptrVpg, nSub);
+    ddgsolver::loopSubdivide(ptrRefMesh_, ptrRefVpg_, nSub);
+    std::cout << "Finished!" << std::endl;
+  }
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  ddgsolver::loadRefMesh(
+      ptrMesh, ptrRefVpg,
+      gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
+
+  /// Initializa richData for ply file
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
+
+  /// Initialize parameter struct
+  std::cout << "Initializing the system ...";
+  double sigma = sqrt(2 * gamma * kt / h);
+  if (ptrMesh->hasBoundary() && Vt != 1.0) {
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
+  }
+  ddgsolver::Parameters p{Kb,  H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
+
+  /// Initialize the system
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+  std::cout << "Finished!" << std::endl;
+
+  /// Time integration / optimization
+  std::cout << "Solving the system and saving to " << outputDir << std::endl;
+  if (p.gamma != 0) {
+    throw std::runtime_error("gamma has to be 0 for CG optimization!");
+  }
+  ddgsolver::integration::feedForwardSweep(f, H0, h, T, tSave, eps, outputDir,
+                                           isBacktrack, rho, c1);
+
+  /// Delete non unique pointer
+  delete ptrRefVpg;
+
+  return 0;
+}
+
 #ifdef MEM3DG_WITH_NETCDF
 int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,

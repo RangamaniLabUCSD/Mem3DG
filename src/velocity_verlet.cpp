@@ -101,6 +101,7 @@ void velocityVerlet(System &f, double dt, double init_time,
                   ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                   : 0.0;
     if (f.L2ErrorNorm < tolerance) {
+      std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
       EXIT = true;
     }
 

@@ -91,6 +91,64 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
+  pymem3dg.def("driver_sweep", &driver_sweep,
+               "the driver function for serially sweeping H0",
+               py::arg("inputMesh"), py::arg("refMesh"),
+               py::arg("nSub"), py::arg("isTuftedLaplacian"),
+               py::arg("isProtein"), py::arg("mollifyFactor"),
+               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
+               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+               py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
+               py::arg("conc"), py::arg("height"), py::arg("radius"),
+               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
+               py::arg("outputDir"), 
+               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
+               R"delim(
+                    Run the driver for .ply file input
+
+               Args:
+                   inputMesh (:py:class:`str`): input mesh path
+                   refMesh (:py:class:`str`): reference mesh path
+                   nSub (:py:class:`int`): number of subdivision 
+                   isTuftedLaplacian (:py:class:`bool`): whether adopt tufted laplacian
+                   mollifyFactor (:py:class:`double`): mollify factor for tufted laplacian
+                   isProtein (:py:class:`bool`): whether consider protein binding
+                   isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
+                   Kb (:py:class:`double`): bending modulus of the membrane 
+                   H0 (:py:class:`double`): spontaneous curvature of the membrane
+                   sharpness (:py:class:`double`): sharpness of the interfacial transition of H0
+                   r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
+                   Kse (:py:class:`double`): edge modulus for mesh regularization
+                   Kst (:py:class:`double`): modulus for conformal regularization 
+                   Ksl (:py:class:`double`): local area mesh regularization
+                   Ksg (:py:class:`double`): global stretching modulus of membrane
+                   Kv (:py:class:`double`): pressure modulus 
+                   eta (:py:class:`double`): interfacial linetension
+                   epsilon (:py:class:`double`): adsorption energy per unit of protein 
+                   Bc (:py:class:`double`): binding constant of the protein
+                   Vt (:py:class:`double`): targeted reduced volume of closed membrane 
+                   gamma (:py:class:`double`): dissipation coefficient of DPD force
+                   kt (:py:class:`double`): stochastic coeffcient of DPD force 
+                   pt (:py:class:`list`): 3-D spatial coordinate of a point 
+                   Kf (:py:class:`double`): "spring" constant of external force 
+                   conc (:py:class:`double`): extent of local concentration of external force 
+                   height (:py:class:`double`): targeted height of the external force
+                   radius (:py:class:`double`): radius of integration 
+                   h (:py:class:`double`): (time) step size
+                   T (:py:class:`double`): maximum duration of integration
+                   eps (:py:class:`double`): tolerance of convergence 
+                   tSave (:py:class:`double`): time period for saving data 
+                   outputDir (:py:class:`str`): output directory path
+                   isBacktrack (:py:class:`bool`): whether conduct backtracking 
+                   rho (:py:class:`double`): discount of step size when backtracking
+                   c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
+            
+               Returns:
+                   :py:class:`int`: success.
+            )delim");
+
   pymem3dg.def("viewer", &viewer, " a visualization function",
                py::arg("fileName"), py::arg("mean_curvature"),
                py::arg("spon_curvature"), py::arg("ext_pressure"),
