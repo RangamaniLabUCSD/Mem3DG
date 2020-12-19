@@ -43,16 +43,18 @@ DLL_PUBLIC void euler(System &f, double dt, double init_time, double total_time,
                       const double rho, const double c1);
 
 DLL_PUBLIC void conjugateGradient(System &f, double dt, double init_time,
-                                  double total_time, double tSave,
-                                  double tolerance, const size_t verbosity,
+                                  double total_time, double tSave, double tol,
+                                  double ctol, const size_t verbosity,
                                   std::string outputDir, const bool isBacktrack,
                                   const double rho, const double c1,
-                                  const std::string trajFileName = "/traj.nc");
+                                  const std::string trajFileName);
 
-DLL_PUBLIC void feedForwardSweep(System &f, std::vector<double> H_, double dt,
-                                 double maxTime, double tSave, double tolerance,
-                                 std::string outputDir, const bool isBacktrack,
-                                 const double rho, const double c1);
+DLL_PUBLIC void feedForwardSweep(System &f, std::vector<double> H_,
+                                 std::vector<double> V_, double dt,
+                                 double maxTime, double tSave, double tol,
+                                 double ctol, std::string outputDir,
+                                 const bool isBacktrack, const double rho,
+                                 const double c1);
 
 DLL_PUBLIC
 void getParameterLog(System &f, double dt, double total_time, double tolerance,

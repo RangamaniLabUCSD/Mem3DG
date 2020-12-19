@@ -117,9 +117,12 @@ void euler(System &f, double dt, double init_time, double total_time,
         time == init_time || EXIT) {
       lastSave = time;
 
-      // save variable to richData
-      if (verbosity > 2) {
+      // save variable to richData and save ply file
+      if (verbosity > 3) {
         saveRichData(f, physicalPressure, verbosity);
+        char buffer[50];
+        sprintf(buffer, "/frame%d", (int)frame);
+        f.richData.write(outputDir + buffer + ".ply");
       }
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -130,11 +133,6 @@ void euler(System &f, double dt, double init_time, double total_time,
 #endif
 
       // print in-progress information in the console
-      if (verbosity > 2) {
-        char buffer[50];
-        sprintf(buffer, "/t=%d", int(time * 100));
-        f.richData.write(outputDir + buffer + ".ply");
-      }
       if (verbosity > 1) {
         std::cout << "\n"
                   << "Time: " << time << "\n"
@@ -158,9 +156,12 @@ void euler(System &f, double dt, double init_time, double total_time,
     // break loop if EXIT flag is on
     if (EXIT) {
       if (verbosity > 0) {
-        std::cout << "\n"
-                  << "Simulation finished, and data saved to " + outputDir
+        std::cout << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
+        if (verbosity > 2) {
+          saveRichData(f, physicalPressure, verbosity);
+          f.richData.write(outputDir + "/out.ply");
+        }
       }
       break;
     }

@@ -5,8 +5,8 @@
 
 #include "mem3dg/solver/ddgsolver.h"
 #include "mem3dg/solver/force.h"
-#include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/util.h"
 
@@ -69,8 +69,9 @@ int main() {
   // ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
   //                                        Kv, Ksg, tSave, tMollify,
   //                                        verbosity);
-  ddgsolver::integration::conjugateGradient(
-        f, h, 0, T, tSave, eps, verbosity, "./", true, 0.5, 1e-4);
+  ddgsolver::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.01,
+                                            verbosity, "./", true, 0.5, 1e-4,
+                                            "/traj.nc");
 
   delete ptrRefVpg;
   return 0;

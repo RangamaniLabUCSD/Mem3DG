@@ -98,7 +98,7 @@ struct Energy {
   double totalE;
   /// kinetic energy of the membrane
   double kE;
-  /// potential energy of the membrane 
+  /// potential energy of the membrane
   double potE;
   /// bending energy of the membrane
   double BE;
@@ -231,7 +231,8 @@ public:
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
-        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}), heatSolver(vpg) {
+        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}),
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(vpg) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
