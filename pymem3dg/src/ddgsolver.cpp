@@ -262,8 +262,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
-    ddgsolver::integration::conjugateGradient(f, h, 0, T, tSave, eps, verbosity,
-                                              outputDir, isBacktrack, rho, c1);
+    ddgsolver::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.005,
+                                              verbosity, outputDir, isBacktrack,
+                                              rho, c1, "/traj.nc");
   }
 
   /// Delete non unique pointer
@@ -272,16 +273,17 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   return 0;
 }
 
-int driver_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
-                 bool isTuftedLaplacian, bool isProtein, double mollifyFactor,
-                 bool isVertexShift, double Kb, std::vector<double> H0,
-                 double sharpness, std::vector<double> r_H0, double Kse,
-                 double Kst, double Ksl, double Ksg, double Kv, double eta,
-                 double epsilon, double Bc, double Vt, double gamma, double kt,
-                 std::vector<double> pt, double Kf, double conc, double height,
-                 double radius, double h, double T, double eps, double tSave,
-                 std::string outputDir, bool isBacktrack, double rho,
-                 double c1) {
+int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+                     bool isTuftedLaplacian, bool isProtein,
+                     double mollifyFactor, bool isVertexShift, double Kb,
+                     std::vector<double> H0, double sharpness,
+                     std::vector<double> r_H0, double Kse, double Kst,
+                     double Ksl, double Ksg, double Kv, double eta,
+                     double epsilon, double Bc, std::vector<double> Vt,
+                     double gamma, double kt, std::vector<double> pt, double Kf,
+                     double conc, double height, double radius, double h,
+                     double T, double eps, double tSave, std::string outputDir,
+                     bool isBacktrack, double rho, double c1) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -321,11 +323,11 @@ int driver_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
   /// Initialize parameter struct
   std::cout << "Initializing the system ...";
   double sigma = sqrt(2 * gamma * kt / h);
-  if (ptrMesh->hasBoundary() && Vt != 1.0) {
+  if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
   ddgsolver::Parameters p{Kb,  H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
                           kt,  sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
@@ -338,8 +340,8 @@ int driver_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
   if (p.gamma != 0) {
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
-  ddgsolver::integration::feedForwardSweep(f, H0, h, T, tSave, eps, outputDir,
-                                           isBacktrack, rho, c1);
+  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, 0.005,
+                                           outputDir, isBacktrack, rho, c1);
 
   /// Delete non unique pointer
   delete ptrRefVpg;
@@ -425,9 +427,87 @@ int driver_nc(const size_t verbosity, std::string trajFile,
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
-    ddgsolver::integration::conjugateGradient(
-        f, h, time, T, tSave, eps, verbosity, outputDir, isBacktrack, rho, c1);
+    ddgsolver::integration::conjugateGradient(f, h, time, T, tSave, eps, 0.005,
+                                              verbosity, outputDir, isBacktrack,
+                                              rho, c1, "/traj.nc");
   }
+
+  /// Delete non unique pointer
+  delete ptrRefVpg;
+
+  return 0;
+}
+
+int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
+                    bool isTuftedLaplacian, bool isProtein,
+                    double mollifyFactor, bool isVertexShift, double Kb,
+                    std::vector<double> H0, double sharpness,
+                    std::vector<double> r_H0, double Kse, double Kst,
+                    double Ksl, double Ksg, double Kv, double eta,
+                    double epsilon, double Bc, std::vector<double> Vt,
+                    double gamma, double kt, std::vector<double> pt, double Kf,
+                    double conc, double height, double radius, double h,
+                    double T, double eps, double tSave, std::string outputDir,
+                    bool isBacktrack, double rho, double c1) {
+
+  /// Activate signal handling
+  signal(SIGINT, signalHandler);
+  // pybind11::scoped_interpreter guard{};
+
+  /// alias eigen matrix
+  using EigenVectorX3D =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
+  /// Declare variables
+  double time;
+  EigenVectorX3D coords;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  gcs::VertexPositionGeometry *ptrRefVpg;
+
+  /// Load input mesh and geometry
+  std::cout << "Loading input mesh from trajectory file " << trajFile;
+  ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(trajFile);
+  std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
+  std::tie(ptrMesh, ptrVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
+  std::cout << " and continuing from time t = " << time << " ...";
+  std::cout << "Finished!" << std::endl;
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  std::cout << "Loading reference mesh from trajectory file" << trajFile
+            << " ...";
+  ddgsolver::loadRefMesh(ptrMesh, ptrRefVpg, fd.getRefcoordinate());
+  std::cout << "Finished!" << std::endl;
+
+  /// Initializa richData for ply file
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
+
+  /// Initialize parameter struct
+  std::cout << "Initializing the system ...";
+  double sigma = sqrt(2 * gamma * kt / h);
+  if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
+  }
+  ddgsolver::Parameters p{Kb,  H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
+
+  /// Initialize the system
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+  gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
+  std::cout << "Finished!" << std::endl;
+
+  /// Time integration / optimization
+  std::cout << "Solving the system and saving to " << outputDir << std::endl;
+  if (p.gamma != 0) {
+    throw std::runtime_error("gamma has to be 0 for CG optimization!");
+  }
+  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, 0.005,
+                                           outputDir, isBacktrack, rho, c1);
 
   /// Delete non unique pointer
   delete ptrRefVpg;

@@ -105,7 +105,8 @@ void getForces(System &f,
  * @return
  */
 void backtrack(System &f, const double dt, double rho, double c1, double &time,
-               bool &EXIT, const size_t verbosity, const double potentialEnergy_pre,
+               bool &EXIT, const size_t verbosity,
+               const double potentialEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
@@ -123,9 +124,8 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
   f.update_Vertex_positions();
   f.getFreeEnergy();
 
-  while (f.E.potE >
-         (potentialEnergy_pre -
-          c1 * alpha * (force.array() * direction.array()).sum())) {
+  while (f.E.potE > (potentialEnergy_pre -
+                     c1 * alpha * (force.array() * direction.array()).sum())) {
     // while (f.E.potE > potentialEnergy_pre) {
     if (count > 50) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
@@ -257,7 +257,7 @@ void saveNetcdfData(
 #endif
 
 void conjugateGradient(System &f, double dt, double init_time,
-                       double total_time, double tSave, double tolerance,
+                       double total_time, double tSave, double tol, double ctol,
                        const size_t verbosity, std::string outputDir,
                        const bool isBacktrack, const double rho,
                        const double c1, const std::string trajFileName) {
@@ -298,8 +298,8 @@ void conjugateGradient(System &f, double dt, double init_time,
                   ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                   : 0.0;
     f.getL2ErrorNorm(physicalPressure);
-    if (f.L2ErrorNorm < tolerance) {
-      if (dArea < tolerance && dVolume < tolerance) {
+    if (f.L2ErrorNorm < tol) {
+      if (dArea < ctol && dVolume < ctol) {
         std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else {
@@ -311,6 +311,12 @@ void conjugateGradient(System &f, double dt, double init_time,
             f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
         std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
                   << std::endl;
+        // std::cout << "\n[Kv, Ksg] = [" << f.P.Kv << ", "
+        //           << f.P.Ksg << "]";
+        // f.P.Ksg *= 1.3;
+        // f.P.Kv *= 1.3;;
+        // std::cout << " -> [" << f.P.Kv << ", " << f.P.Ksg << "]"
+        //           << std::endl;
       }
     }
 
@@ -323,9 +329,12 @@ void conjugateGradient(System &f, double dt, double init_time,
         time == init_time || EXIT) {
       lastSave = time;
 
-      // save variable to richData
-      if (verbosity > 2) {
+      // save variable to richData and save ply file
+      if (verbosity > 3) {
         saveRichData(f, physicalPressure, verbosity);
+        char buffer[50];
+        sprintf(buffer, "/frame%d", (int)frame);
+        f.richData.write(outputDir + buffer + ".ply");
       }
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -336,11 +345,6 @@ void conjugateGradient(System &f, double dt, double init_time,
 #endif
 
       // print in-progress information in the console
-      if (verbosity > 2) {
-        char buffer[50];
-        sprintf(buffer, "/t=%d", int(time * 100));
-        f.richData.write(outputDir + buffer + ".ply");
-      }
       if (verbosity > 1) {
         std::cout << "\n"
                   << "Time: " << time << "\n"
@@ -364,9 +368,12 @@ void conjugateGradient(System &f, double dt, double init_time,
     // break loop if EXIT flag is on
     if (EXIT) {
       if (verbosity > 0) {
-        std::cout << "\n"
-                  << "Simulation finished, and data saved to " + outputDir
+        std::cout << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
+        if (verbosity > 2) {
+          saveRichData(f, physicalPressure, verbosity);
+          f.richData.write(outputDir + "/out.ply");
+        }
       }
       break;
     }
@@ -405,18 +412,27 @@ void conjugateGradient(System &f, double dt, double init_time,
   } // integration
 }
 
-void feedForwardSweep(System &f, std::vector<double> H_, double dt,
-                      double maxTime, double tSave, double tolerance,
-                      std::string outputDir, const bool isBacktrack,
-                      const double rho, const double c1) {
+void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
+                      double dt, double maxTime, double tSave, double tol,
+                      double ctol, std::string outputDir,
+                      const bool isBacktrack, const double rho,
+                      const double c1) {
+
   for (double H : H_) {
-    char buffer[50];
-    sprintf(buffer, "/traj_H_%d.nc", int(H));
-    f.P.H0 = H;
-    std::cout << "\nH0: " << f.P.H0 << std::endl;
-    f.update_Vertex_positions();
-    conjugateGradient(f, dt, 0, maxTime, tSave, tolerance, 2, outputDir,
-                      isBacktrack, rho, c1, buffer);
+    for (double V : V_) {
+      f.P.lambdaSG = 0;
+      f.P.lambdaV = 0;
+      char buffer[50];
+      sprintf(buffer, "/traj_H_%d_V_%d.nc", int(H * 100), int(V * 100));
+      f.P.H0 = H;
+      f.P.Vt = V;
+      std::cout << "\nH0: " << f.P.H0 << std::endl;
+      std::cout << "Vt: " << f.P.Vt << std::endl;
+      f.update_Vertex_positions();
+      conjugateGradient(f, dt, 0, maxTime, tSave, tol, ctol, 2, outputDir,
+                        isBacktrack, rho, c1, buffer);
+    }
+    std::reverse(V_.begin(), V_.end());
   }
 }
 } // namespace integration

@@ -42,8 +42,7 @@ void System::getFreeEnergy() {
     double A_difference = surfaceArea - targetSurfaceArea;
     double V_difference = volume - refVolume * P.Vt;
 
-    E.BE = (P.Kb * M * (H_difference.array() * H_difference.array()).matrix())
-               .sum();
+    E.BE = P.Kb * H_difference.transpose() * M * H_difference;
     E.sE = P.Ksg * A_difference;
     E.pE = -P.Kv * V_difference;
 
@@ -69,8 +68,7 @@ void System::getFreeEnergy() {
     double A_difference = surfaceArea - targetSurfaceArea;
     double V_difference = volume - refVolume * P.Vt;
 
-    E.BE = (P.Kb * M * (H_difference.array() * H_difference.array()).matrix())
-               .sum();
+    E.BE = P.Kb * H_difference.transpose() * M * H_difference;
     E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 +
            P.lambdaSG * A_difference;
     E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
