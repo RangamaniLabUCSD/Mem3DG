@@ -299,24 +299,33 @@ void conjugateGradient(System &f, double dt, double init_time,
                   : 0.0;
     f.getL2ErrorNorm(physicalPressure);
     if (f.L2ErrorNorm < tol) {
+      // if (dArea < ctol && dVolume < ctol) {
+      //   std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+      //   EXIT = true;
+      // } else {
+      //   std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
+      //             << f.P.lambdaV << "]";
+      //   f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
+      //                   f.targetSurfaceArea;
+      //   f.P.lambdaV +=
+      //       f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume *
+      //       f.P.Vt);
+      //   std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
+      //             << std::endl;
+      // }
+      if (dArea > ctol) {
+        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
+        f.P.Ksg *= 1.3;
+        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+      }
+      if (dVolume > ctol) {
+        std::cout << "\n[Kv] = [" << f.P.Kv << "]";
+        f.P.Kv *= 1.3;
+        std::cout << " -> [" << f.P.Kv << "]" << std::endl;
+      }
       if (dArea < ctol && dVolume < ctol) {
         std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
         EXIT = true;
-      } else {
-        std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
-                  << f.P.lambdaV << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-                        f.targetSurfaceArea;
-        f.P.lambdaV +=
-            f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
-        std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
-                  << std::endl;
-        // std::cout << "\n[Kv, Ksg] = [" << f.P.Kv << ", "
-        //           << f.P.Ksg << "]";
-        // f.P.Ksg *= 1.3;
-        // f.P.Kv *= 1.3;;
-        // std::cout << " -> [" << f.P.Kv << ", " << f.P.Ksg << "]"
-        //           << std::endl;
       }
     }
 
@@ -417,11 +426,13 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
                       double ctol, std::string outputDir,
                       const bool isBacktrack, const double rho,
                       const double c1) {
-
+  const double KV = f.P.Kv, KSG = f.P.Ksg;
   for (double H : H_) {
     for (double V : V_) {
-      f.P.lambdaSG = 0;
-      f.P.lambdaV = 0;
+      // f.P.lambdaSG = 0;
+      // f.P.lambdaV = 0;
+      f.P.Kv = KV;
+      f.P.Ksg = KSG;
       char buffer[50];
       sprintf(buffer, "/traj_H_%d_V_%d.nc", int(H * 100), int(V * 100));
       f.P.H0 = H;
