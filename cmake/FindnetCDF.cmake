@@ -25,7 +25,8 @@ if (netCDF_FOUND)
       get_target_property(_libs netCDF::netcdf INTERFACE_LINK_LIBRARIES)
       if(_libs)
         list(FILTER _libs EXCLUDE REGEX ".*/x86_64-conda_cos6-linux-gnu/.*")
-        set_target_properties(netCDF::netcdf PROPERTIES INTERFACE_LINK_LIBRARIES "${_libs}")
+        list(FILTER _libs EXCLUDE REGEX ".*/x86_64-conda-linux-gnu/.*")
+	set_target_properties(netCDF::netcdf PROPERTIES INTERFACE_LINK_LIBRARIES "${_libs}")
       endif ()
       
       set_target_properties(NetCDF::NetCDF PROPERTIES
