@@ -83,8 +83,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 #endif
 
   // time integration loop
-  while (time <= total_time) {
-
+  for (;;) {
     // compute summerized forces
     getForces(f, physicalPressure, DPDForce, regularizationForce);
     totalPressure.resize(f.mesh.nVertices(), 3);
@@ -104,14 +103,17 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
       std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
       EXIT = true;
     }
+    if (time > total_time) {
+      std::cout << "\nReached time." << std::endl;
+      EXIT = true;
+    }
 
     // compute the free energy of the system
     f.getFreeEnergy();
 
     // Save files every tSave period and print some info
     static double lastSave;
-    if (time - lastSave >= tSave - 1e-12 || time == total_time ||
-        time == init_time || EXIT) {
+    if (time - lastSave >= tSave - 1e-12 || time == init_time || EXIT) {
       lastSave = time;
 
       // save variable to richData and save ply file

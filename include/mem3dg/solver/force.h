@@ -381,8 +381,13 @@ public:
 
     // initialize/update spontaneous curvature
     if (isProtein) {
-      proteinDensity.raw().setZero();
-      H0.setZero(mesh.nVertices(), 1);
+      // proteinDensity.raw().setZero();
+      // H0.setZero(mesh.nVertices(), 1);
+      Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
+          (proteinDensity.raw().array() * proteinDensity.raw().array())
+              .matrix();
+      H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+               .matrix();
     } else if (P.H0 != 0) {
       if (isCircle) {
         tanhDistribution(H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
