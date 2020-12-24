@@ -36,58 +36,22 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-/**
- * @brief Summerize forces into 3 categories: physcialPressure, DPDForce and
- * regularizationForce. Note that the forces has been removed rigid body mode
- * and masked for integration
- *
- * @param f
- * @param physicalPressure
- * @param DPDForce
- * @param regularizationForce
- * @return
- */
 void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
-  if (f.mesh.hasBoundary()) {
-    f.getPatchForces();
-  } else {
-    f.getVesicleForces();
-  }
-  f.getDPDForces();
-  f.getExternalForces();
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
-  if (f.isProtein) {
-    f.getChemicalPotential();
-  }
+void saveRichData(
+    const System &f,
+    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+    const size_t verbosity);
 
-  physicalPressure =
-      rowwiseScaling(f.mask.cast<double>(),
-                     gc::EigenMap<double, 3>(f.bendingPressure) +
-                         gc::EigenMap<double, 3>(f.capillaryPressure) +
-                         gc::EigenMap<double, 3>(f.insidePressure) +
-                         gc::EigenMap<double, 3>(f.externalPressure) +
-                         gc::EigenMap<double, 3>(f.lineTensionPressure));
-
-  regularizationForce = rowwiseScaling(
-      f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
-
-  DPDForce =
-      rowwiseScaling(f.mask.cast<double>(),
-                     f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-                                gc::EigenMap<double, 3>(f.stochasticForce)));
-
-  if (!f.mesh.hasBoundary()) {
-    removeTranslation(physicalPressure);
-    removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-                   physicalPressure);
-    // removeTranslation(DPDForce);
-    // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-    // DPDForce);
-  }
-}
+#ifdef MEM3DG_WITH_NETCDF
+void saveNetcdfData(
+    const System &f, size_t &frame, const double &time, TrajFile &fd,
+    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+    const size_t &verbosity);
+#endif
 
 /**
  * @brief Backtracking algorithm that dynamically adjust step size based on
@@ -153,108 +117,6 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
   }
   time = init_time + alpha;
 }
-
-/**
- * @brief Save data to richData
- * @param f, force object
- * @param physcialPressure, physical pressre eigen matrix
- * @param verbosity, verbosity setting
- * @return
- */
-void saveRichData(
-    const System &f,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t verbosity) {
-  gcs::VertexData<double> H(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
-      fb(f.mesh), fl(f.mesh), ft(f.mesh);
-
-  H.fromVector(f.H);
-  H0.fromVector(f.H0);
-  fn.fromVector(rowwiseDotProduct(
-      physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  f_ext.fromVector(
-      rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  fb.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  fl.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-                     .array() /
-                 f.H.array() / 2)
-                    .matrix());
-
-  f.richData.addVertexProperty("mean_curvature", H);
-  f.richData.addVertexProperty("spon_curvature", H0);
-  f.richData.addVertexProperty("external_pressure", f_ext);
-  f.richData.addVertexProperty("physical_pressure", fn);
-  f.richData.addVertexProperty("capillary_pressure", ft);
-  f.richData.addVertexProperty("bending_pressure", fb);
-  f.richData.addVertexProperty("line_tension_pressure", fl);
-}
-
-#ifdef MEM3DG_WITH_NETCDF
-/**
- * @brief Save data to netcdf traj file
- * @param f, force object
- * @param frame, frame index of netcdf traj file
- * @param time, simulation time
- * @param fd, netcdf trajFile object
- * @param physcialPressure, physical pressre eigen matrix
- * @param energy, components of energy - totalE, BE, sE, pE, kE, cE, lE,
- * exE
- * @param verbosity, verbosity setting
- * @return
- */
-void saveNetcdfData(
-    const System &f, size_t &frame, const double &time, TrajFile &fd,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t &verbosity) {
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft;
-
-  fn = rowwiseDotProduct(physicalPressure,
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
-  f_ext = rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
-                            gc::EigenMap<double, 3>(f.vpg.vertexNormals));
-  fb = rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
-  fl = rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
-  ft = (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                          gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-            .array() /
-        f.H.array() / 2)
-           .matrix();
-
-  frame = fd.getNextFrameIndex();
-  fd.writeTime(frame, time);
-  fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
-  fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
-  fd.writeAngles(frame, f.vpg.cornerAngles.raw());
-
-  fd.writeMeanCurvature(frame, f.H);
-  fd.writeSponCurvature(frame, f.H0);
-  fd.writeH_H0_diff(frame,
-                    ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
-  fd.writeExternalPressure(frame, f_ext);
-  fd.writePhysicalPressure(frame, fn);
-  fd.writeCapillaryPressure(frame, ft);
-  fd.writeBendingPressure(frame, fb);
-  fd.writeLinePressure(frame, fl);
-  fd.writeBendEnergy(frame, f.E.BE);
-  fd.writeSurfEnergy(frame, f.E.sE);
-  fd.writePressEnergy(frame, f.E.pE);
-  fd.writeKineEnergy(frame, f.E.kE);
-  fd.writeChemEnergy(frame, f.E.cE);
-  fd.writeLineEnergy(frame, f.E.lE);
-  fd.writeTotalEnergy(frame, f.E.totalE);
-  fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
-}
-#endif
 
 void conjugateGradient(System &f, double dt, double init_time,
                        double total_time, double tSave, double tol, double ctol,
@@ -437,10 +299,13 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
   const double KV = f.P.Kv, KSG = f.P.Ksg;
   for (double H : H_) {
     for (double V : V_) {
-      // f.P.lambdaSG = 0;
-      // f.P.lambdaV = 0;
-      f.P.Kv = KV;
-      f.P.Ksg = KSG;
+      if (isAugmentedLagrangian) {
+        f.P.lambdaSG = 0;
+        f.P.lambdaV = 0;
+      } else {
+        f.P.Kv = KV;
+        f.P.Ksg = KSG;
+      }
       char buffer[50];
       sprintf(buffer, "/traj_H_%d_V_%d.nc", int(H * 100), int(V * 100));
       f.P.H0 = H;
