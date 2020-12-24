@@ -184,7 +184,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double height, double radius, double h, double T, double eps,
                double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
-               double c1, bool isAugmentedLagrangian) {
+               double c1, double ctol, bool isAugmentedLagrangian) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
@@ -263,7 +263,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
     ddgsolver::integration::conjugateGradient(
-        f, h, 0, T, tSave, eps, 0.005, verbosity, outputDir, isBacktrack, rho,
+        f, h, 0, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho,
         c1, isAugmentedLagrangian, "/traj.nc");
   }
 
@@ -283,7 +283,7 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
                      double gamma, double kt, std::vector<double> pt, double Kf,
                      double conc, double height, double radius, double h,
                      double T, double eps, double tSave, std::string outputDir,
-                     bool isBacktrack, double rho, double c1,
+                     bool isBacktrack, double rho, double c1, double ctol, 
                      bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -341,7 +341,7 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
   if (p.gamma != 0) {
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
-  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, 0.005,
+  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
                                            outputDir, isBacktrack, rho, c1,
                                            isAugmentedLagrangian);
 
@@ -361,7 +361,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::vector<double> pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1,
+              bool isBacktrack, double rho, double c1, double ctol, 
               bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -433,7 +433,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
     ddgsolver::integration::conjugateGradient(
-        f, h, time, T, tSave, eps, 0.005, verbosity, outputDir, isBacktrack,
+        f, h, time, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack,
         rho, c1, isAugmentedLagrangian, "/traj.nc");
   }
 
@@ -453,7 +453,7 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     double gamma, double kt, std::vector<double> pt, double Kf,
                     double conc, double height, double radius, double h,
                     double T, double eps, double tSave, std::string outputDir,
-                    bool isBacktrack, double rho, double c1,
+                    bool isBacktrack, double rho, double c1, double ctol, 
                     bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -512,7 +512,7 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
   if (p.gamma != 0) {
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
-  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, 0.005,
+  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
                                            outputDir, isBacktrack, rho, c1,
                                            isAugmentedLagrangian);
 

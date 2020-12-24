@@ -297,6 +297,8 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
                       const bool isBacktrack, const double rho, const double c1,
                       const bool isAugmentedLagrangian) {
   const double KV = f.P.Kv, KSG = f.P.Ksg;
+  double init_time = 0;
+  size_t verbosity = 2;
   for (double H : H_) {
     for (double V : V_) {
       if (isAugmentedLagrangian) {
@@ -313,7 +315,7 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
       std::cout << "\nH0: " << f.P.H0 << std::endl;
       std::cout << "Vt: " << f.P.Vt << std::endl;
       f.update_Vertex_positions();
-      conjugateGradient(f, dt, 0, maxTime, tSave, tol, ctol, 2, outputDir,
+      conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity, outputDir,
                         isBacktrack, rho, c1, isAugmentedLagrangian, buffer);
     }
     std::reverse(V_.begin(), V_.end());
