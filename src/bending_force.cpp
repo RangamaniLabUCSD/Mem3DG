@@ -72,8 +72,8 @@ void System::getChemicalPotential() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
       (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
 
-  H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
-           .matrix();
+//   H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+//            .matrix();
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> dH0dphi =
       (2 * P.H0 * proteinDensity.raw().array() /
