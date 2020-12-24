@@ -70,7 +70,7 @@ int main() {
   //                                        Kv, Ksg, tSave, tMollify,
   //                                        verbosity);
   ddgsolver::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.01,
-                                            verbosity, "./", true, 0.5, 1e-4,
+                                            verbosity, "./", true, 0.5, 1e-4, false,
                                             "/traj.nc");
 
   delete ptrRefVpg;
