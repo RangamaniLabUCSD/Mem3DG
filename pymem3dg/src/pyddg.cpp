@@ -44,7 +44,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("conc"), py::arg("height"), py::arg("radius"),
                py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
                py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
+               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), 
+               py::arg("isAugmentedLagrangian"),
                R"delim(
                     Run the driver for .ply file input
 
@@ -86,7 +87,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
-            
+                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
                Returns:
                    :py:class:`int`: success.
             )delim");
@@ -103,7 +104,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
       py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
       py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"),
+      py::arg("c1"), py::arg("isAugmentedLagrangian"),
       R"delim(
                     Run the driver for .ply file input
 
@@ -143,7 +144,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
-            
+                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
                Returns:
                    :py:class:`int`: success.
             )delim");
@@ -174,7 +175,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("conc"), py::arg("height"), py::arg("radius"),
                py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
                py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
+               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), 
+               py::arg("isAugmentedLagrangian"),
                R"delim(
                    Run the driver for netcdf input file (continuation)
 
@@ -215,7 +217,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
-            
+                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
                Returns:
                    :py:class:`int`: success.
             )delim");
@@ -232,7 +234,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
       py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
       py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"),
+      py::arg("c1"), py::arg("isAugmentedLagrangian"),
       R"delim(
                    Run the driver for netcdf input file (continuation)
 
@@ -271,6 +273,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
+                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
             
                Returns:
                    :py:class:`int`: success.

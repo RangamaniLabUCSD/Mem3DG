@@ -260,7 +260,8 @@ void conjugateGradient(System &f, double dt, double init_time,
                        double total_time, double tSave, double tol, double ctol,
                        const size_t verbosity, std::string outputDir,
                        const bool isBacktrack, const double rho,
-                       const double c1, const std::string trajFileName) {
+                       const double c1, const bool isAugmentedLagrangian,
+                       const std::string trajFileName) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
@@ -299,33 +300,37 @@ void conjugateGradient(System &f, double dt, double init_time,
                   : 0.0;
     f.getL2ErrorNorm(physicalPressure);
     if (f.L2ErrorNorm < tol) {
-      // if (dArea < ctol && dVolume < ctol) {
-      //   std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-      //   EXIT = true;
-      // } else {
-      //   std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
-      //             << f.P.lambdaV << "]";
-      //   f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-      //                   f.targetSurfaceArea;
-      //   f.P.lambdaV +=
-      //       f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume *
-      //       f.P.Vt);
-      //   std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
-      //             << std::endl;
-      // }
-      if (dArea > ctol) {
-        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
-        f.P.Ksg *= 1.3;
-        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
-      }
-      if (dVolume > ctol) {
-        std::cout << "\n[Kv] = [" << f.P.Kv << "]";
-        f.P.Kv *= 1.3;
-        std::cout << " -> [" << f.P.Kv << "]" << std::endl;
-      }
-      if (dArea < ctol && dVolume < ctol) {
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
+      if (isAugmentedLagrangian) {
+        // augmented Lagrangian method
+        if (dArea < ctol && dVolume < ctol) {
+          std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+          EXIT = true;
+        } else {
+          std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
+                    << f.P.lambdaV << "]";
+          f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
+                          f.targetSurfaceArea;
+          f.P.lambdaV += f.P.Kv * (f.volume - f.refVolume * f.P.Vt) /
+                         (f.refVolume * f.P.Vt);
+          std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
+                    << std::endl;
+        }
+      } else {
+        // incremental harmonic penalty method
+        if (dArea > ctol) {
+          std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
+          f.P.Ksg *= 1.3;
+          std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+        }
+        if (dVolume > ctol) {
+          std::cout << "\n[Kv] = [" << f.P.Kv << "]";
+          f.P.Kv *= 1.3;
+          std::cout << " -> [" << f.P.Kv << "]" << std::endl;
+        }
+        if (dArea < ctol && dVolume < ctol) {
+          std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+          EXIT = true;
+        }
       }
     }
     if (time > total_time) {
@@ -427,8 +432,8 @@ void conjugateGradient(System &f, double dt, double init_time,
 void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
                       double dt, double maxTime, double tSave, double tol,
                       double ctol, std::string outputDir,
-                      const bool isBacktrack, const double rho,
-                      const double c1) {
+                      const bool isBacktrack, const double rho, const double c1,
+                      const bool isAugmentedLagrangian) {
   const double KV = f.P.Kv, KSG = f.P.Ksg;
   for (double H : H_) {
     for (double V : V_) {
@@ -444,7 +449,7 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
       std::cout << "Vt: " << f.P.Vt << std::endl;
       f.update_Vertex_positions();
       conjugateGradient(f, dt, 0, maxTime, tSave, tol, ctol, 2, outputDir,
-                        isBacktrack, rho, c1, buffer);
+                        isBacktrack, rho, c1, isAugmentedLagrangian, buffer);
     }
     std::reverse(V_.begin(), V_.end());
   }
