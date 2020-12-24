@@ -44,7 +44,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double height, double radius, double h, double T, double eps,
                double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
-               double c1, bool isAugmentedLagrangian);
+               double c1, double ctol, bool isAugmentedLagrangian);
 
 int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
@@ -55,7 +55,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::vector<double> pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, bool isAugmentedLagrangian);
+              bool isBacktrack, double rho, double c1, double ctol,
+              bool isAugmentedLagrangian);
 
 int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
                      bool isTuftedLaplacian, bool isProtein,
@@ -67,7 +68,8 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
                      double gamma, double kt, std::vector<double> pt, double Kf,
                      double conc, double height, double radius, double h,
                      double T, double eps, double tSave, std::string outputDir,
-                     bool isBacktrack, double rho, double c1, bool isAugmentedLagrangian);
+                     bool isBacktrack, double rho, double c1, double ctol,
+                     bool isAugmentedLagrangian);
 
 int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     bool isTuftedLaplacian, bool isProtein,
@@ -79,4 +81,5 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     double gamma, double kt, std::vector<double> pt, double Kf,
                     double conc, double height, double radius, double h,
                     double T, double eps, double tSave, std::string outputDir,
-                    bool isBacktrack, double rho, double c1, bool isAugmentedLagrangian);
+                    bool isBacktrack, double rho, double c1, double ctol,
+                    bool isAugmentedLagrangian);

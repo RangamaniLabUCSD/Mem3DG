@@ -31,22 +31,21 @@ namespace py = pybind11;
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
-  pymem3dg.def("driver_ply", &driver_ply,
-               "the driver function for input .ply mesh file ",
-               py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
-               py::arg("nSub"), py::arg("isTuftedLaplacian"),
-               py::arg("isProtein"), py::arg("mollifyFactor"),
-               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
-               py::arg("conc"), py::arg("height"), py::arg("radius"),
-               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-               py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), 
-               py::arg("isAugmentedLagrangian"),
-               R"delim(
+  pymem3dg.def(
+      "driver_ply", &driver_ply,
+      "the driver function for input .ply mesh file ", py::arg("verbosity"),
+      py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
+      py::arg("isTuftedLaplacian"), py::arg("isProtein"),
+      py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"),
+      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+      py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+      R"delim(
                     Run the driver for .ply file input
 
                Args:
@@ -87,6 +86,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
+                   ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
                Returns:
                    :py:class:`int`: success.
@@ -104,7 +104,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
       py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
       py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"), py::arg("isAugmentedLagrangian"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
       R"delim(
                     Run the driver for .ply file input
 
@@ -144,6 +144,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
+                   ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
                Returns:
                    :py:class:`int`: success.
@@ -162,22 +163,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("nSub"), py::arg("path"), py::arg("R"));
 
 #ifdef MEM3DG_WITH_NETCDF
-  pymem3dg.def("driver_nc", &driver_nc,
-               " a driver function for input .nc trajectory file",
-               py::arg("verbosity"), py::arg("trajFile"),
-               py::arg("startingFrame"), py::arg("isTuftedLaplacian"),
-               py::arg("isProtein"), py::arg("mollifyFactor"),
-               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
-               py::arg("conc"), py::arg("height"), py::arg("radius"),
-               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-               py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), 
-               py::arg("isAugmentedLagrangian"),
-               R"delim(
+  pymem3dg.def(
+      "driver_nc", &driver_nc,
+      " a driver function for input .nc trajectory file", py::arg("verbosity"),
+      py::arg("trajFile"), py::arg("startingFrame"),
+      py::arg("isTuftedLaplacian"), py::arg("isProtein"),
+      py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"),
+      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+      py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+      R"delim(
                    Run the driver for netcdf input file (continuation)
 
                Args:
@@ -217,6 +217,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
+                   ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
                Returns:
                    :py:class:`int`: success.
@@ -234,7 +235,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
       py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
       py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"), py::arg("isAugmentedLagrangian"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
       R"delim(
                    Run the driver for netcdf input file (continuation)
 
@@ -273,6 +274,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isBacktrack (:py:class:`bool`): whether conduct backtracking 
                    rho (:py:class:`double`): discount of step size when backtracking
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
+                   ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
             
                Returns:
