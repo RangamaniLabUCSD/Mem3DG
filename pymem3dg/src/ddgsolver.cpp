@@ -413,6 +413,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                       isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
+  f.proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+  f.update_Vertex_positions();
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
