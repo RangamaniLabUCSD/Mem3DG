@@ -64,6 +64,7 @@ option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" ON)
 option(BUILD_MEM3DG_DOCS "Configure documentation" OFF)
 option(M3DG_GET_OWN_EIGEN "Download own Eigen" ON)
 option(M3DG_GET_OWN_PYBIND11 "Download own pybind11" ON)
+option(WITH_OPENMP "Build with OpenMP?" ON)
 
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS
@@ -87,6 +88,13 @@ if(WITH_NETCDF)
   list(APPEND LINKED_LIBS NetCDF::NetCDF-cxx4)
 endif()
 
+if(WITH_OPENMP)
+  find_package(OpenMP)
+  list(APPEND LINKED_LIBS OpenMP::OpenMP_CXX)
+  # if(OpenMP_CXX_FOUND)
+  #   target_link_libraries( PUBLIC OpenMP::OpenMP_CXX)
+  # endif()
+endif()
 # ##############################################################################
 # DDG SOLVER LIBRARY
 # ##############################################################################

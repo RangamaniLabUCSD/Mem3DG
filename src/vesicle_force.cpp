@@ -29,6 +29,9 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/util.h"
 
+#include <omp.h>
+// #include <time.h>
+
 namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -75,12 +78,15 @@ void System::getVesicleForces() {
                      vertexAngleNormal_e);
 
   /// B. INSIDE EXCESS PRESSURE
-  insidePressure_e = - (P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV) *
-                     vertexAngleNormal_e;
+  insidePressure_e =
+      -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV) *
+      vertexAngleNormal_e;
 
   /// C. CAPILLARY PRESSURE
   capillaryPressure_e = rowwiseScaling(
-      - (P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea + P.lambdaSG) * 2.0 * H,
+      -(P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea +
+        P.lambdaSG) *
+          2.0 * H,
       vertexAngleNormal_e);
 
   /// D. LINE TENSION FORCE
@@ -90,8 +96,10 @@ void System::getVesicleForces() {
   getCrossLengthRatio(mesh, vpg, lcr);
 
   if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
-    for (gcs::Vertex v : mesh.vertices()) {
-
+#pragma omp parallel for
+    // for (gcs::Vertex v : mesh.vertices()) {
+    for (int i = 0; i < mesh.nVertices(); i++) {
+      gcs::Vertex v = mesh.vertex(i);
       // Calculate interfacial tension
       if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
           (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
@@ -152,10 +160,10 @@ void System::getVesicleForces() {
         }
 
         if (P.Ksl != 0) {
-          regularizationForce[v] +=
-              -P.Ksl * localAreaGradient *
-              (vpg.faceAreas[base_he.face()] - targetFaceAreas[base_he.face()]) /
-              targetFaceAreas[base_he.face()];
+          regularizationForce[v] += -P.Ksl * localAreaGradient *
+                                    (vpg.faceAreas[base_he.face()] -
+                                     targetFaceAreas[base_he.face()]) /
+                                    targetFaceAreas[base_he.face()];
         }
 
         if (P.Kse != 0) {
