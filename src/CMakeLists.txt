@@ -13,7 +13,7 @@
 #
 
 set(DDG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/icosphere.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/bending_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/stretching_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/pressure_force.cpp"
@@ -22,7 +22,7 @@ set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/velocity_verlet.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/euler.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/conjugateGradient.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/bending_energy.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/energy.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/vesicle_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/patch_force.cpp"

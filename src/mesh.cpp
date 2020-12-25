@@ -16,21 +16,49 @@
 #include <cmath>
 #include <iostream>
 
-#include "geometrycentral/surface/halfedge_factories.h"
-#include "geometrycentral/surface/surface_mesh_factories.h"
+#include "mem3dg/solver/mesh.h"
+#include <geometrycentral/surface/halfedge_factories.h>
+#include <geometrycentral/surface/halfedge_mesh.h>
+#include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
+#include <geometrycentral/surface/simple_polygon_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
+#include <geometrycentral/surface/surface_mesh_factories.h>
+#include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/icosphere.h"
+#include "igl/loop.h"
 
 namespace ddgsolver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh, std::unique_ptr<gcs::VertexPositionGeometry> &vpg,
+void loadRefMesh(
+    std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
+    gcs::VertexPositionGeometry *&ptrRefVpg,
+    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords) {
+  ptrRefVpg = new gcs::VertexPositionGeometry(*ptrMesh, coords);
+}
+
+void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
+                   std::unique_ptr<gcs::VertexPositionGeometry> &ptrVpg,
+                   std::size_t nSub) {
+  using EigenVectorX3D =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  using EigenTopVec =
+      Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  EigenVectorX3D coords;
+  EigenTopVec faces;
+  igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
+            ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
+  std::tie(ptrMesh, ptrVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
+}
+
+void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
+               std::unique_ptr<gcs::VertexPositionGeometry> &vpg,
                std::size_t nSub) {
   for (std::size_t iter = 0; iter < nSub; ++iter) {
     gcs::VertexData<bool> isOrigVert(*mesh, true);
@@ -75,6 +103,32 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh, std::unique_ptr<
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       gc::EigenMap<double, 3, Eigen::RowMajor>(vpg->inputVertexPositions),
       mesh->getFaceVertexMatrix<size_t>());
+}
+
+int genIcosphere(size_t nSub, std::string path, double R) {
+  std::cout << "Constructing " << nSub << "-subdivided icosphere of radius "
+            << R << " ...";
+
+  /// initialize mesh and vpg
+  std::unique_ptr<gcs::HalfedgeMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+
+  /// initialize icosphere
+  std::vector<gc::Vector3> coords;
+  std::vector<std::vector<std::size_t>> polygons;
+  ddgsolver::icosphere(coords, polygons, nSub, R);
+  gcs::SimplePolygonMesh soup(polygons, coords);
+  soup.mergeIdenticalVertices();
+  std::tie(ptrMesh, ptrVpg) =
+      gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
+  // writeSurfaceMesh(*ptrMesh, *ptrVpg, path);
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
+  richData.write(path);
+
+  std::cout << "Finished!" << std::endl;
+  return 0;
 }
 
 void icosphere(std::vector<gc::Vector3> &coords,

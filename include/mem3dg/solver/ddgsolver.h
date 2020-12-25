@@ -34,28 +34,52 @@ int view_animation(std::string &filename, const bool ref_coord = 0,
                    const bool line_pressure = 0, const bool mask = 0,
                    const bool H_H0 = 0);
 
-int genIcosphere(size_t nSub, std::string path, double R);
-
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isTuftedLaplacian,
                bool isProtein, double mollifyFactor, bool isVertexShift,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
-               double Kse, double Kst, double Ksl, std::vector<double> Ksg,
-               std::vector<double> Kv, double eta, double epsilon, double Bc,
-               double Vt, double gamma, double kt, std::vector<double> pt,
-               double Kf, double conc, double height, double radius, double h,
-               double T, double eps, double closeZone, double increment,
-               double tSave, double tMollify, std::string outputDir,
-               double errorJumpLim, std::string integration);
+               double Kse, double Kst, double Ksl, double Ksg, double Kv,
+               double eta, double epsilon, double Bc, double Vt, double gamma,
+               double kt, std::vector<double> pt, double Kf, double conc,
+               double height, double radius, double h, double T, double eps,
+               double tSave, std::string outputDir,
+               std::string integrationMethod, bool isBacktrack, double rho,
+               double c1, double ctol, bool isAugmentedLagrangian);
 
 int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, std::vector<double> r_H0, double Kse,
-              double Kst, double Ksl, std::vector<double> Ksg,
-              std::vector<double> Kv, double eta, double epsilon, double Bc,
-              double Vt, double gamma, double kt, std::vector<double> pt,
-              double Kf, double conc, double height, double radius, double h,
-              double T, double eps, double closeZone, double increment,
-              double tSave, double tMollify, std::string outputDir,
-              double errorJumpLim, std::string integration);
+              double Kst, double Ksl, double Ksg, double Kv, double eta,
+              double epsilon, double Bc, double Vt, double gamma, double kt,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double tSave,
+              std::string outputDir, std::string integrationMethod,
+              bool isBacktrack, double rho, double c1, double ctol,
+              bool isAugmentedLagrangian);
+
+int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+                     bool isTuftedLaplacian, bool isProtein,
+                     double mollifyFactor, bool isVertexShift, double Kb,
+                     std::vector<double> H0, double sharpness,
+                     std::vector<double> r_H0, double Kse, double Kst,
+                     double Ksl, double Ksg, double Kv, double eta,
+                     double epsilon, double Bc, std::vector<double> Vt,
+                     double gamma, double kt, std::vector<double> pt, double Kf,
+                     double conc, double height, double radius, double h,
+                     double T, double eps, double tSave, std::string outputDir,
+                     bool isBacktrack, double rho, double c1, double ctol,
+                     bool isAugmentedLagrangian);
+
+int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
+                    bool isTuftedLaplacian, bool isProtein,
+                    double mollifyFactor, bool isVertexShift, double Kb,
+                    std::vector<double> H0, double sharpness,
+                    std::vector<double> r_H0, double Kse, double Kst,
+                    double Ksl, double Ksg, double Kv, double eta,
+                    double epsilon, double Bc, std::vector<double> Vt,
+                    double gamma, double kt, std::vector<double> pt, double Kf,
+                    double conc, double height, double radius, double h,
+                    double T, double eps, double tSave, std::string outputDir,
+                    bool isBacktrack, double rho, double c1, double ctol,
+                    bool isAugmentedLagrangian);

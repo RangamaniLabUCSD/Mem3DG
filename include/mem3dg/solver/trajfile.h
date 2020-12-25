@@ -94,6 +94,8 @@ static const std::string REFCOORD_VAR = "refcoordinates";
 static const std::string VEL_VAR = "velocities";
 /// Name of the mean curvature data
 static const std::string MEANCURVE_VAR = "meancurvature";
+/// Name of the protein density data
+static const std::string PROTEINDEN_VAR = "proteindensity";
 /// Name of the spontaneous curvature data
 static const std::string SPONCURVE_VAR = "sponcurvature";
 /// Name of the external pressure data
@@ -120,6 +122,8 @@ static const std::string CHEMENER_VAR = "chemenergy";
 static const std::string LINEENER_VAR = "lineenergy";
 /// Name of the chemical energy data
 static const std::string TOTALENER_VAR = "totalenergy";
+/// Name of the L2 Error Norm data
+static const std::string L2ERRORNORM_VAR = "l2errornorm";
 /// Name of the mask data
 static const std::string MASK_VAR = "mask";
 /// Name of the curvature difference data
@@ -168,14 +172,16 @@ public:
     time_var = fd->getVar(TIME_VAR);
     coord_var = fd->getVar(COORD_VAR);
     vel_var = fd->getVar(VEL_VAR);
-    meancurve_var = fd->getVar(MEANCURVE_VAR);
-    sponcurve_var = fd->getVar(SPONCURVE_VAR);
     externpress_var = fd->getVar(EXTERNPRESS_VAR);
+    meancurve_var = fd->getVar(MEANCURVE_VAR);
+    proteinden_var = fd->getVar(PROTEINDEN_VAR);
+    sponcurve_var = fd->getVar(SPONCURVE_VAR);
     physpress_var = fd->getVar(PHYSPRESS_VAR);
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
     linepress_var = fd->getVar(LINEPRESS_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
+    l2errornorm_var = fd->getVar(L2ERRORNORM_VAR);
     mask_var = fd->getVar(MASK_VAR);
     H_H0_var = fd->getVar(H_H0_VAR);
   }
@@ -235,6 +241,9 @@ public:
     vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
                          {frame_dim, nvertices_dim, spatial_dim});
 
+    proteinden_var = fd->addVar(PROTEINDEN_VAR, netCDF::ncDouble,
+                                {frame_dim, nvertices_dim});
+
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
 
@@ -269,6 +278,9 @@ public:
     lineener_var = fd->addVar(LINEENER_VAR, netCDF::ncDouble, {frame_dim});
 
     totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
+
+    l2errornorm_var =
+        fd->addVar(L2ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
 
     H_H0_var =
         fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -373,6 +385,13 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
   getVelocity(const std::size_t idx) const;
 
+  void
+  writeProteinDensity(const std::size_t idx,
+                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getProteinDensity(const std::size_t idx) const;
+
   void writeMeanCurvature(const std::size_t idx,
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
@@ -453,6 +472,10 @@ public:
 
   double getTotalEnergy(const std::size_t idx) const;
 
+  void writeL2ErrorNorm(const std::size_t idx, const double L2ErrorNorm);
+
+  double getL2ErrorNorm(const std::size_t idx) const;
+
 private:
   /**
    * @brief Private constructor for opening an existing file.
@@ -503,6 +526,7 @@ private:
   nc::NcVar coord_var;
   nc::NcVar angle_var;
   nc::NcVar vel_var;
+  nc::NcVar proteinden_var;
   nc::NcVar meancurve_var;
   nc::NcVar sponcurve_var;
   nc::NcVar externpress_var;
@@ -517,6 +541,7 @@ private:
   nc::NcVar chemener_var;
   nc::NcVar lineener_var;
   nc::NcVar totalener_var;
+  nc::NcVar l2errornorm_var;
   nc::NcVar mask_var;
   nc::NcVar H_H0_var;
 

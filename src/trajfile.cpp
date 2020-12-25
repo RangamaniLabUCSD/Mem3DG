@@ -160,6 +160,28 @@ TrajFile::getVelocity(const std::size_t idx) const {
   return vec;
 }
 
+// protein density
+void TrajFile::writeProteinDensity(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  proteinden_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getProteinDensity(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  proteinden_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
 // mean curvature
 void TrajFile::writeMeanCurvature(
     const std::size_t idx,
@@ -439,6 +461,21 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
   double Energy;
   totalener_var.getVar({idx}, &Energy);
   return Energy;
+}
+
+// L2 error norm
+void TrajFile::writeL2ErrorNorm(const std::size_t idx, const double L2ErronNorm) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l2errornorm_var.putVar({idx}, &L2ErronNorm);
+}
+
+double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double L2ErronNorm;
+  l2errornorm_var.getVar({idx}, &L2ErronNorm);
+  return L2ErronNorm;
 }
 
 } // namespace ddgsolver

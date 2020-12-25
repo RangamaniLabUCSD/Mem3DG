@@ -36,14 +36,14 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getVelocityFromPastPosition(double dt) {
+void System::getVelocityFromPastPosition(double dt) {
   auto vel_e = gc::EigenMap<double, 3>(vel);
   auto pos_e = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
   auto pastpos_e = gc::EigenMap<double, 3>(pastPositions);
   vel_e = (pos_e - pastpos_e) / dt;
 }
 
-void Force::getDPDForces() {
+void System::getDPDForces() {
   // Reset forces to zero
   auto dampingForce_e = gc::EigenMap<double, 3>(dampingForce);
   auto stochasticForce_e = gc::EigenMap<double, 3>(stochasticForce);
@@ -83,7 +83,7 @@ void Force::getDPDForces() {
   }
 }
 
-void Force::pcg_test() {
+void System::pcg_test() {
   // Generate a normal distribution around that mean
   std::normal_distribution<> normal_dist(0, 2);
 

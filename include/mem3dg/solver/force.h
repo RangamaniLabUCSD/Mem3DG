@@ -87,9 +87,34 @@ struct Parameters {
   double height;
   /// domain of integration
   double radius;
+  /// augmented Lagrangian parameter for area
+  double lambdaSG = 0;
+  /// augmented Lagrangian parameter for volume
+  double lambdaV = 0;
 };
 
-class DLL_PUBLIC Force {
+struct Energy {
+  /// total Energy of the system
+  double totalE;
+  /// kinetic energy of the membrane
+  double kE;
+  /// potential energy of the membrane
+  double potE;
+  /// bending energy of the membrane
+  double BE;
+  /// stretching energy of the membrane
+  double sE;
+  /// work of pressure within membrane
+  double pE;
+  /// chemical energy of the membrane protein
+  double cE;
+  /// line tension energy of interface
+  double lE;
+  /// work of external force
+  double exE;
+};
+
+class DLL_PUBLIC System {
 public:
   /// Parameters
   Parameters P;
@@ -101,6 +126,8 @@ public:
   gcs::VertexPositionGeometry &vpg;
   /// reference embedding geometry
   gcs::VertexPositionGeometry &refVpg;
+  /// Energy
+  Energy E;
 
   /// Cached bending stress
   gcs::VertexData<gc::Vector3> bendingPressure;
@@ -136,6 +163,19 @@ public:
   /// Whether circular spon curv domain
   const bool isCircle;
 
+  /// Target area per face
+  gcs::FaceData<double> targetFaceAreas;
+  /// Target total face area
+  double targetSurfaceArea;
+  /// Maximal volume
+  double refVolume;
+  /// Target length per edge
+  gcs::EdgeData<double> targetEdgeLengths;
+  /// Target edge cross length ratio
+  gcs::EdgeData<double> targetLcr;
+  /// Distance solver
+  gcs::HeatMethodDistanceSolver heatSolver;
+
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> M;
   /// Inverted galerkin mass matrix
@@ -143,24 +183,16 @@ public:
   /// Cotangent Laplacian
   Eigen::SparseMatrix<double> L;
   /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistanceFromAppliedForce;
+  gcs::VertexData<double> geodesicDistanceFromPtInd;
 
-  /// Target area per face
-  gcs::FaceData<double> targetFaceAreas;
-  /// Target total face area
-  double targetSurfaceArea;
+  /// L2 error norm
+  double L2ErrorNorm;
   /// surface area
-  double surfaceArea = 0.0;
-  /// Maximal volume
-  double refVolume;
+  double surfaceArea;
   /// Volume
-  double volume = 0.0;
+  double volume;
   /// Interface Area;
   double interArea;
-  /// Target length per edge
-  gcs::EdgeData<double> targetEdgeLengths;
-  /// Target edge cross length ratio
-  gcs::EdgeData<double> targetLcr;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
@@ -172,10 +204,6 @@ public:
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
-  /// Distance solver
-  gcs::HeatMethodDistanceSolver heatSolver;
-  /// magnitude of externally-applied pressure
-  Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
   /// indices for vertices chosen for integration
   Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
   /// "the point" index
@@ -189,21 +217,22 @@ public:
    * @param time_step_    Numerical timestep
    */
 
-  Force(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-        gcs::VertexPositionGeometry &refVpg_,
-        gcs::RichSurfaceMeshData &richData_, Parameters &p,
-        bool isProtein_ = false, bool isTuftedLaplacian_ = false,
-        double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
+  System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+         gcs::VertexPositionGeometry &refVpg_,
+         gcs::RichSurfaceMeshData &richData_, Parameters &p,
+         bool isProtein_ = false, bool isTuftedLaplacian_ = false,
+         double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
         isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
         isCircle(p.r_H0[0] == p.r_H0[1]), mollifyFactor(mollifyFactor_),
         isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
         insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
-        lineTensionPressure(mesh_, {0, 0, 0}),
+        lineTensionPressure(mesh_, {0, 0, 0}), chemicalPotential(mesh_, 0.0),
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
-        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}), heatSolver(vpg) {
+        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}),
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(vpg) {
 
     // Initialize RNG
     pcg_extras::seed_seq_from<std::random_device> seed_source;
@@ -228,49 +257,34 @@ public:
     refVpg.requireFaceAreas();
     refVpg.requireEdgeLengths();
 
+    /// compute constant values during simulation
     // Find the closest point index to P.pt in refVpg
     closestPtIndToPt(mesh, refVpg, P.pt, ptInd);
 
-    // Initialize the geodesic distance from ptInd
-    geodesicDistanceFromAppliedForce =
-        heatSolver.computeDistance(mesh.vertex(ptInd));
-    auto &dist_e = geodesicDistanceFromAppliedForce.raw();
-    // geodesicDistanceFromAppliedForce =
-    //     heatMethodDistance(vpg, mesh.vertex(ptInd));
-    // auto &dist_e = geodesicDistanceFromAppliedForce.raw();
-
-    // Initialize the external pressure magnitude distribution
-    gaussianDistribution(externalPressureMagnitude, dist_e,
-                         dist_e.maxCoeff() / P.conc);
-    externalPressureMagnitude *= P.Kf;
-
-    // Initialize the spontaneous curvature distribution
-    if (isProtein) {
-      proteinDensity.raw().setZero();
-      H0.setZero(mesh.nVertices(), 1);
-    } else if (P.H0 != 0) {
-      if (isCircle) {
-        tanhDistribution(H0, dist_e, P.sharpness, P.r_H0[0]);
-      } else {
-        tanhDistribution(vpg, H0, dist_e, P.sharpness, P.r_H0);
-      }
-      H0 *= P.H0;
-      if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
-           1e-12)) {
-        assert(P.eta == 0);
-      }
-    } else {
-      H0.setZero(mesh.nVertices(), 1);
-      assert(P.eta == 0);
-    }
-
-    // Initialize the mask on choosing integration vertices based on geodesic
-    // distance from the local external force location on the reference geometry
+    // Initialize the constant mask based on distance from the point specified
+    // Or mask boundary element
     mask = (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() <
             P.radius)
                .matrix();
     if (mesh.hasBoundary()) {
       boundaryMask(mesh, mask);
+    }
+
+    // Initialize the constant target face/surface areas
+    targetFaceAreas = refVpg.faceAreas;
+    targetSurfaceArea = targetFaceAreas.raw().sum();
+
+    // Initialize the constant target edge length
+    targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
+
+    // Initialize the target constant cross length ration
+    getCrossLengthRatio(mesh, refVpg, targetLcr);
+
+    // Initialize the constant reference volume
+    if (mesh.hasBoundary()) {
+      refVolume = 0.0;
+    } else {
+      refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
     }
 
     // Regularize the vetex position geometry if needed
@@ -279,55 +293,7 @@ public:
       update_Vertex_positions();
     }
 
-    // // Initialize the mass and conformal Laplacian matrix
-    // if (isTuftedLaplacian) {
-    //   getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
-    // } else {
-    //   M = vpg.vertexLumpedMassMatrix;
-    //   L = vpg.cotanLaplacian;
-    // }
-
-    // Initialize the inverse mass matrix
-    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-    // Alternatively, use the Galerkin mass matrix
-    // M = vpg.vertexGalerkinMassMatrix;
-    // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-    // solver.compute(vpg.vertexGalerkinMassMatrix);
-    // std::size_t n = mesh.nVertices();
-    // Eigen::SparseMatrix<double> I(n, n);
-    // I.setIdentity();
-    // M_inv = solver.solve(I);
-
-    // Initialize target face/surface areas
-    targetFaceAreas = refVpg.faceAreas;
-    targetSurfaceArea = targetFaceAreas.raw().sum();
-
-    // Initialize edge length
-    targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
-
-    // Initialize target cross length ration
-    getCrossLengthRatio(mesh, refVpg, targetLcr);
-    // targetclr.fill(1);
-
-    // Initialize reference volume
-    if (mesh.hasBoundary()) {
-      refVolume = 0.0;
-    } else {
-      refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
-    }
-
-    // // Initialize surface area
-    // surfaceArea = vpg.faceAreas.raw().sum();
-
-    // // Initialize volume
-    // for (gcs::Face f : mesh.faces()) {
-    //   volume += signedVolumeFromFace(
-    //       f, vpg, vpg.inputVertexPositions[mesh.vertex(ptInd)]);
-    // }
-
-    // Initialize the vertex position of the last iteration
-    pastPositions = vpg.inputVertexPositions;
-
+    /// compute nonconstant values during simulation
     update_Vertex_positions();
   }
 
@@ -338,7 +304,7 @@ public:
    * is another pointer to the HalfEdgeMesh and VertexPositionGeometry
    * elsewhere, calculation of dependent quantities should be respected.
    */
-  ~Force() {
+  ~System() {
     vpg.unrequireFaceNormals();
     vpg.unrequireVertexGalerkinMassMatrix();
     vpg.unrequireVertexLumpedMassMatrix();
@@ -372,6 +338,18 @@ public:
   void getExternalForces();
 
   /**
+   * @brief Get free energy and each components of the system
+   */
+  void getFreeEnergy();
+
+  /**
+   * @brief Get the L2 norm of the force (pressure), which is the residual of
+   * the PDE
+   */
+  void
+  getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
+
+  /**
    * @brief Get velocity from the position of the last iteration
    *
    * @param timeStep
@@ -380,55 +358,70 @@ public:
 
   /**
    * @brief Update the vertex position and recompute cached values
+   * (all quantities that characterizes the current energy state)
    *
    */
   void update_Vertex_positions() {
-    // update all quantities that characterizes the current energy state 
     vpg.refreshQuantities();
 
     auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
     auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
 
+    // initialize/update (inverse) mass and Laplacian matrix
     if (isTuftedLaplacian) {
       getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
     } else {
       M = vpg.vertexLumpedMassMatrix;
       L = vpg.cotanLaplacian;
     }
-
-    // update the inverse mass matrix
     M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
-    // update distance and spontaneous curvature
-    geodesicDistanceFromAppliedForce =
-        heatSolver.computeDistance(mesh.vertex(ptInd));
-    if (P.H0 != 0) {
+    // initialize/update distance from the point specified
+    geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh.vertex(ptInd));
+
+    // initialize/update spontaneous curvature
+    if (isProtein) {
+      // proteinDensity.raw().setZero();
+      // H0.setZero(mesh.nVertices(), 1);
+      Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
+          (proteinDensity.raw().array() * proteinDensity.raw().array())
+              .matrix();
+      H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+               .matrix();
+    } else if (P.H0 != 0) {
       if (isCircle) {
-        tanhDistribution(H0, geodesicDistanceFromAppliedForce.raw(),
-                         P.sharpness, P.r_H0[0]);
+        tanhDistribution(H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
+                         P.r_H0[0]);
       } else {
-        tanhDistribution(vpg, H0, geodesicDistanceFromAppliedForce.raw(),
-                         P.sharpness, P.r_H0);
+        tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
+                         P.r_H0);
       }
       H0 *= P.H0;
+      if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
+           1e-12)) {
+        assert(P.eta == 0);
+      }
+    } else {
+      H0.setZero(mesh.nVertices(), 1);
+      assert(P.eta == 0);
     }
 
-    // update mean curvature
+    // initialize/update mean curvature
     Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
         rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
     H = M_inv * H_integrated;
 
-    /// udate excess pressure
+    /// initialize/udate excess pressure
     volume = 0;
     for (gcs::Face f : mesh.faces()) {
       volume += signedVolumeFromFace(
           f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
     }
 
-    // update total surface area
+    // initialize/update total surface area
     surfaceArea = vpg.faceAreas.raw().sum();
 
-    // update intersection area
+    // initialize/update intersection area
     interArea = 0.0;
     for (gcs::Vertex v : mesh.vertices()) {
       if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
@@ -436,8 +429,25 @@ public:
         interArea += vpg.vertexDualAreas[v];
       }
     }
+
+    // initialize/update external force
+    getExternalForces();
+
+    // initialize/update the vertex position of the last iteration
+    pastPositions = vpg.inputVertexPositions;
+
+    // zero all forces
+    gc::EigenMap<double, 3>(bendingPressure).setZero();
+    gc::EigenMap<double, 3>(insidePressure).setZero();
+    gc::EigenMap<double, 3>(capillaryPressure).setZero();
+    gc::EigenMap<double, 3>(lineTensionPressure).setZero();
+    gc::EigenMap<double, 3>(externalPressure).setZero();
+    gc::EigenMap<double, 3>(regularizationForce).setZero();
+    gc::EigenMap<double, 3>(dampingForce).setZero();
+    gc::EigenMap<double, 3>(stochasticForce).setZero();
+    chemicalPotential.raw().setZero();
   }
-  
+
   void pcg_test();
 };
 } // end namespace ddgsolver

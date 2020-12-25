@@ -13,8 +13,8 @@
 //
 
 #include <Eigen/Core>
-#include <assert.h>
 #include <iostream>
+#include <math.h>
 #include <pcg_random.hpp>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
@@ -36,51 +36,41 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-Eigen::Matrix<double, Eigen::Dynamic, 3>
-getForces(Force &f, Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-          Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce_e) {
-  if (f.mesh.hasBoundary()) {
-    f.getPatchForces();
-  } else {
-    f.getVesicleForces();
-  }
-  f.getDPDForces();
-  f.getExternalForces();
+void getForces(System &f,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
-  if (f.isProtein) {
-    f.getChemicalPotential();
-  }
+void saveRichData(
+    const System &f,
+    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+    const size_t verbosity);
 
-  physicalPressure =
-      rowwiseScaling(f.mask.cast<double>(),
-                     gc::EigenMap<double, 3>(f.bendingPressure) +
-                         gc::EigenMap<double, 3>(f.capillaryPressure) +
-                         gc::EigenMap<double, 3>(f.insidePressure) +
-                         gc::EigenMap<double, 3>(f.externalPressure) +
-                         gc::EigenMap<double, 3>(f.lineTensionPressure));
+#ifdef MEM3DG_WITH_NETCDF
+void saveNetcdfData(
+    const System &f, size_t &frame, const double &time, TrajFile &fd,
+    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+    const size_t &verbosity);
+#endif
 
-  regularizationForce_e = rowwiseScaling(
-      f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
-
-  // numericalPressure = f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-  //                                gc::EigenMap<double,
-  //                                3>(f.stochasticForce));
-
-  if (!f.mesh.hasBoundary()) {
-    removeTranslation(physicalPressure);
-    removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-                   physicalPressure);
-
-    // removeTranslation(numericalPressure);
-    // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-    //                numericalPressure);
-  }
-
-  return physicalPressure + regularizationForce_e;
-}
-
-void backtrack(Force &f, const double dt, double rho, double &time,
-               const double totalEnergy_pre,
+/**
+ * @brief Backtracking algorithm that dynamically adjust step size based on
+ * energy evaluation
+ * @param f, force object
+ * @param dt, initial step size
+ * @param rho, discount factor
+ * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+ * @param time, simulation time
+ * @param EXIT, exit flag for integration loop
+ * @param verbosity, verbosity setting
+ * @param potentialEnergy_pre, previous energy evaluation
+ * @param force, gradient of the energy
+ * @param direction, direction, most likely some function of gradient
+ * @return
+ */
+void backtrack(System &f, const double dt, double rho, double c1, double &time,
+               bool &EXIT, const size_t verbosity,
+               const double potentialEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
@@ -90,215 +80,158 @@ void backtrack(Force &f, const double dt, double rho, double &time,
   double init_time = time;
 
   // declare variables used in backtracking iterations
-  double alpha = dt, totalEnergy, BE, sE, pE, kE, cE, lE;
+  double alpha = dt;
   size_t count = 0;
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   pos_e += alpha * direction;
   f.update_Vertex_positions();
-  std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+  f.getFreeEnergy();
 
-  // while (totalEnergy >
-  //        (totalEnergy_pre -
-  //         0.05 * alpha * (force.array() * direction.array()).sum())) {
-  while (totalEnergy > totalEnergy_pre) {
-    if (count > 500) {
-      throw std::runtime_error("line search failure!");
+  while (f.E.potE > (potentialEnergy_pre -
+                     c1 * alpha * (force.array() * direction.array()).sum())) {
+    // while (f.E.potE > potentialEnergy_pre) {
+    if (count > 50) {
+      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
+      EXIT = true;
+
+      // restore entry configuration
+      alpha = dt;
+      pos_e = init_position;
+      f.update_Vertex_positions();
+      f.getFreeEnergy();
+      time = init_time - alpha;
+
+      break;
     }
-    alpha = rho * alpha;
+    alpha *= rho;
     pos_e = init_position + alpha * direction;
     f.update_Vertex_positions();
-    std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+    f.getFreeEnergy();
     count++;
   }
 
+  if (alpha != dt && verbosity > 1) {
+    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
+    std::cout << "L2 norm: " << f.L2ErrorNorm << std::endl;
+  }
   time = init_time + alpha;
 }
 
-void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
-                       double closeZone, double increment, double maxKv,
-                       double maxKsg, double tSave, double tMollify,
-                       const size_t verbosity, std::string inputMesh,
-                       std::string outputDir, double init_time,
-                       double errorJumpLim) {
+void conjugateGradient(System &f, double dt, double init_time,
+                       double total_time, double tSave, double tol, double ctol,
+                       const size_t verbosity, std::string outputDir,
+                       const bool isBacktrack, const double rho,
+                       const double c1, const bool isAugmentedLagrangian,
+                       const std::string trajFileName) {
 
-  // print out a .txt file listing all parameters used
-  if (verbosity > 2) {
-    getParameterLog(f, dt, total_time, tolerance, tSave, inputMesh, outputDir);
-  }
+  // initialize variables used in time integration
+  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
+      physicalPressure, DPDForce, direction;
+  double dArea, dVolume, currentNormSq, pastNormSq, time = init_time;
+  size_t frame = 0;
+  bool EXIT = false;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce_e;
-  regularizationForce_e.resize(f.mesh.nVertices(), 3);
-  regularizationForce_e.setZero();
-
-  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure, direction;
-
+  // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
-  bool exitFlag = false;
-
-  double totalEnergy, sE, pE, kE, cE, lE,
-      oldL2ErrorNorm = 1e6, L2ErrorNorm = 1e6, dL2ErrorNorm, oldBE = 0.0, BE,
-      dBE, dArea, dVolume, dFace, currentNorm2, pastNorm2, time = init_time;
-  // double dRef;
-
-  size_t nMollify = size_t(tMollify / tSave), frame = 0,
-         nSave = size_t(tSave / dt);
-
+  // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
+    fd.createNewFile(outputDir + trajFileName, f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
   }
 #endif
 
-  for (int i = 0; i <= (total_time - init_time) / dt; i++) {
+  // time integration loop
+  for (;;) {
 
-    vel_e = getForces(f, physicalPressure, regularizationForce_e);
-    L2ErrorNorm = getL2ErrorNorm(
-        f.M, rowwiseScaling(f.mask.cast<double>(), physicalPressure));
+    // compute summerized forces
+    getForces(f, physicalPressure, DPDForce, regularizationForce);
+    vel_e = physicalPressure + DPDForce + regularizationForce;
 
-    if (verbosity > 0) {
-      if ((i == int((total_time - init_time) / dt)) || (L2ErrorNorm < 1e-4)) {
-        std::cout << "\n"
-                  << "Simulation finished, and data saved to " + outputDir
-                  << std::endl;
-        getStatusLog(outputDir + "/final_report.txt", f, dt, i * dt, frame,
-                     dArea, dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE,
-                     totalEnergy, L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                     f.isVertexShift, inputMesh);
-        break;
+    // measure the error norm and constraints, exit if smaller than tolerance
+    dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
+                ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
+                : 0.0;
+    dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+                  ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+                  : 0.0;
+    f.getL2ErrorNorm(physicalPressure);
+    if (f.L2ErrorNorm < tol) {
+      if (isAugmentedLagrangian) {
+        // augmented Lagrangian method
+        if (dArea < ctol && dVolume < ctol) {
+          std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+          EXIT = true;
+        } else {
+          std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
+                    << f.P.lambdaV << "]";
+          f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
+                          f.targetSurfaceArea;
+          f.P.lambdaV += f.P.Kv * (f.volume - f.refVolume * f.P.Vt) /
+                         (f.refVolume * f.P.Vt);
+          std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
+                    << std::endl;
+        }
+      } else {
+        // incremental harmonic penalty method
+        if (dArea > ctol) {
+          std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
+          f.P.Ksg *= 1.3;
+          std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+        }
+        if (dVolume > ctol) {
+          std::cout << "\n[Kv] = [" << f.P.Kv << "]";
+          f.P.Kv *= 1.3;
+          std::cout << " -> [" << f.P.Kv << "]" << std::endl;
+        }
+        if (dArea < ctol && dVolume < ctol) {
+          std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+          EXIT = true;
+        }
       }
     }
+    if (time > total_time) {
+      std::cout << "\nReached time." << std::endl;
+      EXIT = true;
+    }
 
-    // 1. save
-    // periodically save the geometric files, print some info
-    if ((i % nSave == 0) || (i == int((total_time - init_time) / dt))) {
+    // compute the free energy of the system
+    f.getFreeEnergy();
 
-      gcs::VertexData<double> H(f.mesh);
-      H.fromVector(f.H);
-      gcs::VertexData<double> H0(f.mesh);
-      H0.fromVector(f.H0);
-      gcs::VertexData<double> f_ext(f.mesh);
-      f_ext.fromVector(f.externalPressureMagnitude);
-      gcs::VertexData<double> fn(f.mesh);
-      fn.fromVector(rowwiseDotProduct(
-          physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> ft(f.mesh);
-      ft.fromVector(
-          (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                             gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-               .array() /
-           f.H.array() / 2)
-              .matrix());
-      gcs::VertexData<double> fb(f.mesh);
-      fb.fromVector(
-          rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-      gcs::VertexData<double> fl(f.mesh);
-      fl.fromVector(
-          rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                            gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+    // Save files every tSave period and print some info
+    static double lastSave;
+    if (time - lastSave >= tSave - 1e-12 || time == init_time || EXIT) {
+      lastSave = time;
 
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
-
-      // 1.1 save to .ply file
-      if (verbosity > 2) {
-        f.richData.addVertexProperty("mean_curvature", H);
-        f.richData.addVertexProperty("spon_curvature", H0);
-        f.richData.addVertexProperty("external_pressure", f_ext);
-        f.richData.addVertexProperty("physical_pressure", fn);
-        f.richData.addVertexProperty("capillary_pressure", ft);
-        f.richData.addVertexProperty("bending_pressure", fb);
-        f.richData.addVertexProperty("line_tension_pressure", fl);
+      // save variable to richData and save ply file
+      if (verbosity > 3) {
+        saveRichData(f, physicalPressure, verbosity);
+        char buffer[50];
+        sprintf(buffer, "/frame%d", (int)frame);
+        f.richData.write(outputDir + buffer + ".ply");
       }
 
-      // 1.2 save to .nc file
 #ifdef MEM3DG_WITH_NETCDF
+      // save variable to netcdf traj file
       if (verbosity > 0) {
-        frame = fd.getNextFrameIndex();
-        fd.writeTime(frame, time);
-        fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
-        fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
-        fd.writeAngles(frame, f.vpg.cornerAngles.raw());
-
-        fd.writeMeanCurvature(frame, H.raw());
-        fd.writeSponCurvature(frame, H0.raw());
-        fd.writeH_H0_diff(
-            frame, ((H.raw() - H0.raw()).array() * (H.raw() - H0.raw()).array())
-                       .matrix());
-        fd.writeExternalPressure(frame, f_ext.raw());
-        fd.writePhysicalPressure(frame, fn.raw());
-        fd.writeCapillaryPressure(frame, ft.raw());
-        fd.writeBendingPressure(frame, fb.raw());
-        fd.writeLinePressure(frame, fl.raw());
-        fd.writeBendEnergy(frame, BE);
-        fd.writeSurfEnergy(frame, sE);
-        fd.writePressEnergy(frame, pE);
-        fd.writeKineEnergy(frame, kE);
-        fd.writeChemEnergy(frame, cE);
-        fd.writeLineEnergy(frame, lE);
-        fd.writeTotalEnergy(frame, totalEnergy);
+        saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
       }
 #endif
 
-      if (verbosity > 2) {
-        char buffer[50];
-        sprintf(buffer, "/t=%d", int(i * dt * 100));
-        f.richData.write(outputDir + buffer + ".ply");
-        getStatusLog(outputDir + buffer + ".txt", f, dt, i * dt, frame, dArea,
-                     dVolume, dBE, dFace, BE, sE, pE, kE, cE, lE, totalEnergy,
-                     L2ErrorNorm, f.isTuftedLaplacian, f.isProtein,
-                     f.isVertexShift, inputMesh);
-        // getEnergyLog(i * dt, BE, sE, pE, kE, cE, totalEnergy, outputDir);
-      }
-
-      // 2. print
+      // print in-progress information in the console
       if (verbosity > 1) {
-        dL2ErrorNorm = (L2ErrorNorm - oldL2ErrorNorm) / oldL2ErrorNorm;
-
-        if (f.P.Kb != 0) {
-          dBE = abs(BE - oldBE) / (BE);
-        } else {
-          dBE = 0.0;
-        }
-
-        if (f.P.Ksg != 0 && !f.mesh.hasBoundary()) {
-          dArea = abs(f.surfaceArea / f.targetSurfaceArea - 1);
-        } else {
-          dArea = 0.0;
-        }
-
-        if (f.P.Kv != 0 && !f.mesh.hasBoundary()) {
-          dVolume = abs(f.volume / f.refVolume / f.P.Vt - 1);
-        } else {
-          dVolume = 0.0;
-        }
-
-        if (f.P.Ksl != 0 && !f.mesh.hasBoundary()) {
-          dFace = ((f.vpg.faceAreas.raw() - f.targetFaceAreas.raw()).array() /
-                   f.targetFaceAreas.raw().array())
-                      .abs()
-                      .sum() /
-                  f.mesh.nFaces();
-        } else {
-          dFace = 0.0;
-        }
-
         std::cout << "\n"
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
                   << "dVolume:  " << dVolume << "\n"
-                  << "dBE: " << dBE << "\n"
-                  << "dL2ErrorNorm:   " << dL2ErrorNorm << "\n"
-                  << "Bending energy: " << BE << "\n"
-                  << "Line energy: " << lE << "\n"
-                  << "Total energy (exclude V^ext): " << totalEnergy << "\n"
-                  << "L2 error norm: " << L2ErrorNorm << "\n"
+                  << "Potential energy (exclude V^ext): " << f.E.potE << "\n"
+                  << "L2 error norm: " << f.L2ErrorNorm << "\n"
                   << "COM: "
                   << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
                              .colwise()
@@ -307,49 +240,86 @@ void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
                   << "\n"
                   << "Height: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n"
-                  << "Increase force spring constant Kf to " << f.P.Kf << "\n";
+                  << "\n";
       }
-
-      // // 3.3 fail and exit
-      // if (abs(dL2ErrorNorm) > errorJumpLim) {
-      //   if (verbosity > 0) {
-      //     std::cout << "Error Norm changes rapidly. Save data and quit."
-      //               << std::endl;
-      //   }
-      //   break;
-      // }
-
-      oldL2ErrorNorm = L2ErrorNorm;
-      oldBE = BE;
     }
 
-    if (i % 5 == 0) {
-      pos_e += vel_e * dt;
-      pastNorm2 = vel_e.squaredNorm();
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      if (verbosity > 0) {
+        std::cout << "Simulation finished, and data saved to " + outputDir
+                  << std::endl;
+        if (verbosity > 2) {
+          saveRichData(f, physicalPressure, verbosity);
+          f.richData.write(outputDir + "/out.ply");
+        }
+      }
+      break;
+    }
+
+    // time stepping on vertex position
+    size_t countCG = 0;
+    if (countCG % (f.mesh.nVertices() + 1) == 0) {
+      pastNormSq = vel_e.squaredNorm();
       direction = vel_e;
-      time += dt;
+      countCG = 0;
     } else {
-      currentNorm2 = vel_e.squaredNorm();
-      direction = currentNorm2 / pastNorm2 * direction + vel_e;
-      pastNorm2 = currentNorm2;
-      // pos_e += direction * dt;
-      backtrack(f, dt, 0.5, time, totalEnergy, vel_e, direction);
-      std::tie(totalEnergy, BE, sE, pE, kE, cE, lE) = getFreeEnergy(f);
+      currentNormSq = vel_e.squaredNorm();
+      direction = currentNormSq / pastNormSq * direction + vel_e;
+      pastNormSq = currentNormSq;
+      countCG++;
     }
-
-    if (f.isProtein) {
-      f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+    if (isBacktrack) {
+      backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.potE, vel_e,
+                direction);
+    } else {
+      pos_e += direction * dt;
+      time += dt;
     }
-
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
 
+    // time stepping on protein density
+    if (f.isProtein) {
+      f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+    }
+
     // recompute cached values
     f.update_Vertex_positions();
-  } // periodic save, print and adjust
+
+  } // integration
 }
 
+void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
+                      double dt, double maxTime, double tSave, double tol,
+                      double ctol, std::string outputDir,
+                      const bool isBacktrack, const double rho, const double c1,
+                      const bool isAugmentedLagrangian) {
+  const double KV = f.P.Kv, KSG = f.P.Ksg;
+  double init_time = 0;
+  size_t verbosity = 2;
+  for (double H : H_) {
+    for (double V : V_) {
+      if (isAugmentedLagrangian) {
+        f.P.lambdaSG = 0;
+        f.P.lambdaV = 0;
+      } else {
+        f.P.Kv = KV;
+        f.P.Ksg = KSG;
+      }
+      char buffer[50];
+      sprintf(buffer, "/traj_H_%d_V_%d.nc", int(H * 100), int(V * 100));
+      f.P.H0 = H;
+      f.P.Vt = V;
+      std::cout << "\nH0: " << f.P.H0 << std::endl;
+      std::cout << "Vt: " << f.P.Vt << std::endl;
+      f.update_Vertex_positions();
+      conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity, outputDir,
+                        isBacktrack, rho, c1, isAugmentedLagrangian, buffer);
+    }
+    std::reverse(V_.begin(), V_.end());
+  }
+}
 } // namespace integration
 } // namespace ddgsolver

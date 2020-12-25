@@ -26,35 +26,43 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getExternalForces() {
+void System::getExternalForces() {
 
   auto externalPressure_e = gc::EigenMap<double, 3>(externalPressure);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
 
   if (P.Kf != 0) {
 
-    // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT GEOMETRY
+    // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT
+    // GEOMETRY
 
-    //auto &dist_e = heatMethodDistance(vpg, mesh.vertex(P.ptInd)).raw();
-    //double stdDev = dist_e.maxCoeff() / P.conc;
-    //externalPressureMagnitude =
+    // auto &dist_e = heatMethodDistance(vpg, mesh.vertex(P.ptInd)).raw();
+    // double stdDev = dist_e.maxCoeff() / P.conc;
+    // externalPressureMagnitude =
     //    P.Kf / (stdDev * pow(M_PI * 2, 0.5)) *
     //    (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
 
     // b. APPLY EXTERNAL PRESSURE NORMAL TO THE SURFACE
 
-    //auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-    //externalPressure_e = externalPressureMagnitude * vertexAngleNormal_e.row(P.ptInd);
-    
-    // c. ALTERNATIVELY, PRESSURE BASED ON INITIAL GEOMETRY + ALONG A FIXED DIRECTION, E.G. NEGATIVE Z DIRECTION
+    // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
+    // externalPressure_e = externalPressureMagnitude *
+    // vertexAngleNormal_e.row(P.ptInd);
+
+    // c. ALTERNATIVELY, PRESSURE BASED ON INITIAL GEOMETRY + ALONG A FIXED
+    // DIRECTION, E.G. NEGATIVE Z DIRECTION
+
+    // initialize/update the external pressure magnitude distribution
+    gaussianDistribution(externalPressureMagnitude, geodesicDistanceFromPtInd.raw(),
+                         geodesicDistanceFromPtInd.raw().maxCoeff() / P.conc);
+    externalPressureMagnitude *= P.Kf;
 
     Eigen::Matrix<double, 1, 3> zDir;
     zDir << 0.0, 0.0, -1.0;
     externalPressure_e =
-        - externalPressureMagnitude * zDir * (vpg.inputVertexPositions[mesh.vertex(ptInd)].z - P.height);
+        -externalPressureMagnitude * zDir *
+        (vpg.inputVertexPositions[mesh.vertex(ptInd)].z - P.height);
 
-  } else {
-    externalPressure_e.setZero();
   }
-
+  
 }
 } // namespace ddgsolver

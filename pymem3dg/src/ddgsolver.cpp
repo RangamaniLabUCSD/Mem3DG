@@ -30,8 +30,8 @@
 
 #include "mem3dg/solver/ddgsolver.h"
 #include "mem3dg/solver/force.h"
-#include "mem3dg/solver/icosphere.h"
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/typetraits.h"
 #include "mem3dg/solver/util.h"
@@ -80,6 +80,13 @@ int viewer(std::string fileName, const bool mean_curvature,
 
   signal(SIGINT, signalHandler);
 
+  /// alias eigen matrix
+  using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+  using EigenVectorX3D =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  using EigenTopVec =
+      Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -95,55 +102,49 @@ int viewer(std::string fileName, const bool mean_curvature,
   if (mean_curvature) {
     gcs::VertexData<double> meanCurvature =
         ptrRichData->getVertexProperty<double>("mean_curvature");
-    Eigen::Matrix<double, Eigen::Dynamic, 1> meanCurvature_e =
-        meanCurvature.raw();
+    EigenVectorX1D meanCurvature_e = meanCurvature.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
   }
   if (spon_curvature) {
     gcs::VertexData<double> sponCurvature =
         ptrRichData->getVertexProperty<double>("spon_curvature");
-    Eigen::Matrix<double, Eigen::Dynamic, 1> sponCurvature_e =
-        sponCurvature.raw();
+    EigenVectorX1D sponCurvature_e = sponCurvature.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
   }
   if (ext_pressure) {
     gcs::VertexData<double> extPressure =
         ptrRichData->getVertexProperty<double>("external_pressure");
-    Eigen::Matrix<double, Eigen::Dynamic, 1> extPressure_e = extPressure.raw();
+    EigenVectorX1D extPressure_e = extPressure.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("applied_pressure", extPressure_e);
   }
   if (physical_pressure) {
     gcs::VertexData<double> physicalPressure =
         ptrRichData->getVertexProperty<double>("physical_pressure");
-    Eigen::Matrix<double, Eigen::Dynamic, 1> physicalPressure_e =
-        physicalPressure.raw();
+    EigenVectorX1D physicalPressure_e = physicalPressure.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
   }
   if (capillary_pressure) {
     gcs::VertexData<double> capillaryPressure =
         ptrRichData->getVertexProperty<double>("capillary_pressure");
-    Eigen::Matrix<double, Eigen::Dynamic, 1> capillaryPressure_e =
-        capillaryPressure.raw();
+    EigenVectorX1D capillaryPressure_e = capillaryPressure.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("surface_tension", capillaryPressure_e);
   }
   if (bending_pressure) {
     gcs::VertexData<double> bendingPressure =
         ptrRichData->getVertexProperty<double>("bending_pressure");
-    Eigen::Matrix<double, Eigen::Dynamic, 1> bendingPressure_e =
-        bendingPressure.raw();
+    EigenVectorX1D bendingPressure_e = bendingPressure.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
   }
   if (line_pressure) {
     gcs::VertexData<double> linePressure =
         ptrRichData->getVertexProperty<double>("line_tension_pressure");
-    Eigen::Matrix<double, Eigen::Dynamic, 1> linePressure_e =
-        linePressure.raw();
+    EigenVectorX1D linePressure_e = linePressure.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("line_tension_pressure", linePressure_e);
   }
@@ -154,9 +155,9 @@ int viewer(std::string fileName, const bool mean_curvature,
   ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
   gcs::VertexData<gc::Vector3> tangentialForce =
   ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
-  // Eigen::Matrix<double, Eigen::Dynamic, 3> vertexVelocity_e =
+  // EigenVectorX3D vertexVelocity_e =
   //    ddgsolver::EigenMap<double, 3>(vertexVelocity);
-  /*Eigen::Matrix<double, Eigen::Dynamic, 3> normalForce_e =
+  /*EigenVectorX3D normalForce_e =
   gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
   Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
   3>(tangentialForce);*/
@@ -173,123 +174,180 @@ int viewer(std::string fileName, const bool mean_curvature,
   return 0;
 }
 
-int genIcosphere(size_t nSub, std::string path, double R) {
-  std::cout << "Constructing " << nSub << "-subdivided icosphere of radius "
-            << R << " ...";
-
-  /// initialize mesh and vpg
-  std::unique_ptr<gcs::HalfedgeMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-
-  /// initialize icosphere
-  std::vector<gc::Vector3> coords;
-  std::vector<std::vector<std::size_t>> polygons;
-  ddgsolver::icosphere(coords, polygons, nSub, R);
-  gcs::SimplePolygonMesh soup(polygons, coords);
-  soup.mergeIdenticalVertices();
-  std::tie(ptrMesh, ptrVpg) =
-      gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
-  // writeSurfaceMesh(*ptrMesh, *ptrVpg, path);
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*ptrVpg);
-  richData.write(path);
-
-  std::cout << "Finished!" << std::endl;
-  return 0;
-}
-
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isTuftedLaplacian,
                bool isProtein, double mollifyFactor, bool isVertexShift,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
-               double Kse, double Kst, double Ksl, std::vector<double> Ksg,
-               std::vector<double> Kv, double eta, double epsilon, double Bc,
-               double Vt, double gamma, double kt, std::vector<double> pt,
-               double Kf, double conc, double height, double radius, double h,
-               double T, double eps, double closeZone, double increment,
-               double tSave, double tMollify, std::string outputDir,
-               double errorJumpLim, std::string integrationMethod) {
-
-  signal(SIGINT, signalHandler);
-  // pybind11::scoped_interpreter guard{};
-
-  std::cout << "Loading input mesh " << inputMesh << " ...";
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-
+               double Kse, double Kst, double Ksl, double Ksg, double Kv,
+               double eta, double epsilon, double Bc, double Vt, double gamma,
+               double kt, std::vector<double> pt, double Kf, double conc,
+               double height, double radius, double h, double T, double eps,
+               double tSave, std::string outputDir,
+               std::string integrationMethod, bool isBacktrack, double rho,
+               double c1, double ctol, bool isAugmentedLagrangian) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
   connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
+
+  /// Activate signal handling
+  signal(SIGINT, signalHandler);
+  // pybind11::scoped_interpreter guard{};
+
+  /// Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
+  gcs::VertexPositionGeometry *ptrRefVpg;
+
+  /// Load input mesh and geometry
+  std::cout << "Loading input mesh " << inputMesh << " ...";
   std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  gcs::ManifoldSurfaceMesh &mesh = *ptrMesh;
-  gcs::VertexPositionGeometry &vpg = *ptrVpg;
   std::cout << "Finished!" << std::endl;
 
+  /// Load input reference mesh and geometry
   std::cout << "Loading reference mesh " << refMesh << " ...";
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
-  std::tie(ptrRefMesh, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
+  std::tie(ptrRefMesh_, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
+  std::cout << "Finished!" << std::endl;
+
+  /// Subdivide the mesh and geometry objects
   if (nSub > 0) {
     std::cout << "Subdivide input and reference mesh " << nSub
               << " time(s) ...";
-    Eigen::Matrix<double, Eigen::Dynamic, 3> coords;
-    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> faces;
-
-    Eigen::Matrix<double, Eigen::Dynamic, 3> refcoords;
-    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> reffaces;
     // ddgsolver::subdivide(ptrMesh, ptrVpg, nSub);
     // ddgsolver::subdivide(ptrRefMesh, ptrRefVpg, nSub);
-    igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
-              ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
-    igl::loop(gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions),
-              ptrRefMesh->getFaceVertexMatrix<size_t>(), refcoords, reffaces,
-              nSub);
-    std::tie(ptrMesh, ptrVpg) =
-        gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
-    std::tie(ptrRefMesh, ptrRefVpg_) =
-        gcs::makeManifoldSurfaceMeshAndGeometry(refcoords, reffaces);
+    ddgsolver::loopSubdivide(ptrMesh, ptrVpg, nSub);
+    ddgsolver::loopSubdivide(ptrRefMesh_, ptrRefVpg_, nSub);
     std::cout << "Finished!" << std::endl;
   }
-  gcs::VertexPositionGeometry *ptrRefVpg = new gcs::VertexPositionGeometry(
-      mesh, gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  ddgsolver::loadRefMesh(
+      ptrMesh, ptrRefVpg,
+      gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
+
+  /// Initializa richData for ply file
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();
   richData.addGeometry(*ptrVpg);
 
-  std::cout << "Initiating the system ...";
-  /// physical parameters
+  /// Initialize parameter struct
+  std::cout << "Initializing the system ...";
   double sigma = sqrt(2 * gamma * kt / h);
-  if (ptrMesh->hasBoundary()) {
-    assert(Vt == 1.0);
+  if (ptrMesh->hasBoundary() && Vt != 1.0) {
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
-                          Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
-                          gamma, Vt,     kt,        sigma, pt,      Kf,
-                          conc,  height, radius};
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                     isTuftedLaplacian, mollifyFactor, isVertexShift);
+  ddgsolver::Parameters p{Kb,  H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
+
+  /// Initialize the system
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
-  std::cout << "Solving the system ..." << std::endl;
-
+  /// Time integration / optimization
+  std::cout << "Solving the system and saving to " << outputDir << std::endl;
   if (integrationMethod == "velocity verlet") {
-    ddgsolver::integration::velocityVerlet(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, inputMesh, outputDir, 0, errorJumpLim);
+    ddgsolver::integration::velocityVerlet(f, h, 0, T, tSave, eps, verbosity,
+                                           outputDir);
   } else if (integrationMethod == "euler") {
-    ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
-                                  Ksg[1], tSave, tMollify, verbosity, inputMesh,
-                                  outputDir, 0, errorJumpLim);
+    if (p.gamma != 0) {
+      throw std::runtime_error("gamma has to be 0 for euler integration!");
+    }
+    ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir,
+                                  isBacktrack, rho, c1);
   } else if (integrationMethod == "conjugate gradient") {
+    if (p.gamma != 0) {
+      throw std::runtime_error("gamma has to be 0 for CG optimization!");
+    }
     ddgsolver::integration::conjugateGradient(
-        f, h, T, eps, closeZone, increment, Kv[1],
-                                  Ksg[1], tSave, tMollify, verbosity, inputMesh,
-                                  outputDir, 0, errorJumpLim);
+        f, h, 0, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho,
+        c1, isAugmentedLagrangian, "/traj.nc");
   }
 
+  /// Delete non unique pointer
   delete ptrRefVpg;
+
+  return 0;
+}
+
+int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+                     bool isTuftedLaplacian, bool isProtein,
+                     double mollifyFactor, bool isVertexShift, double Kb,
+                     std::vector<double> H0, double sharpness,
+                     std::vector<double> r_H0, double Kse, double Kst,
+                     double Ksl, double Ksg, double Kv, double eta,
+                     double epsilon, double Bc, std::vector<double> Vt,
+                     double gamma, double kt, std::vector<double> pt, double Kf,
+                     double conc, double height, double radius, double h,
+                     double T, double eps, double tSave, std::string outputDir,
+                     bool isBacktrack, double rho, double c1, double ctol, 
+                     bool isAugmentedLagrangian) {
+
+  /// Activate signal handling
+  signal(SIGINT, signalHandler);
+
+  /// Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
+  gcs::VertexPositionGeometry *ptrRefVpg;
+
+  /// Load input mesh and geometry
+  std::cout << "Loading input and reference mesh " << inputMesh << " ...";
+  std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::tie(ptrRefMesh_, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
+  std::cout << "Finished!" << std::endl;
+
+  /// Subdivide the mesh and geometry objects
+  if (nSub > 0) {
+    std::cout << "Subdivide input and reference mesh " << nSub
+              << " time(s) ...";
+    ddgsolver::loopSubdivide(ptrMesh, ptrVpg, nSub);
+    ddgsolver::loopSubdivide(ptrRefMesh_, ptrRefVpg_, nSub);
+    std::cout << "Finished!" << std::endl;
+  }
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  ddgsolver::loadRefMesh(
+      ptrMesh, ptrRefVpg,
+      gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
+
+  /// Initializa richData for ply file
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
+
+  /// Initialize parameter struct
+  std::cout << "Initializing the system ...";
+  double sigma = sqrt(2 * gamma * kt / h);
+  if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
+  }
+  ddgsolver::Parameters p{Kb,  H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
+
+  /// Initialize the system
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+  std::cout << "Finished!" << std::endl;
+
+  /// Time integration / optimization
+  std::cout << "Solving the system and saving to " << outputDir << std::endl;
+  if (p.gamma != 0) {
+    throw std::runtime_error("gamma has to be 0 for CG optimization!");
+  }
+  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
+                                           outputDir, isBacktrack, rho, c1,
+                                           isAugmentedLagrangian);
+
+  /// Delete non unique pointer
+  delete ptrRefVpg;
+
   return 0;
 }
 
@@ -298,84 +356,167 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, std::vector<double> r_H0, double Kse,
-              double Kst, double Ksl, std::vector<double> Ksg,
-              std::vector<double> Kv, double eta, double epsilon, double Bc,
-              double Vt, double gamma, double kt, std::vector<double> pt,
-              double Kf, double conc, double height, double radius, double h,
-              double T, double eps, double closeZone, double increment,
-              double tSave, double tMollify, std::string outputDir,
-              double errorJumpLim, std::string integrationMethod) {
+              double Kst, double Ksl, double Ksg, double Kv, double eta,
+              double epsilon, double Bc, double Vt, double gamma, double kt,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double tSave,
+              std::string outputDir, std::string integrationMethod,
+              bool isBacktrack, double rho, double c1, double ctol, 
+              bool isAugmentedLagrangian) {
 
+  /// Activate signal handling
   signal(SIGINT, signalHandler);
+  // pybind11::scoped_interpreter guard{};
 
-  using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+  /// alias eigen matrix
   using EigenVectorX3D =
       Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-  using EigenTopVec =
-      Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
-  std::cout << "Loading input mesh from trajectory file " << trajFile << " ...";
-  ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(trajFile);
+  /// Declare variables
   double time;
   EigenVectorX3D coords;
-  std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
-  std::cout << "Continuing from time t=" << time << " ...";
-
-  //   gcs::ManifoldSurfaceMesh *ptrMesh =
-  //       new gcs::ManifoldSurfaceMesh(fd.getTopology());
-  //   gcs::ManifoldSurfaceMesh &mesh = *ptrMesh;
-  //   gcs::VertexPositionGeometry *ptrVpg =
-  //       new gcs::VertexPositionGeometry(mesh, coords);
-  //   gcs::VertexPositionGeometry &vpg = *ptrVpg;
-
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  gcs::VertexPositionGeometry *ptrRefVpg;
+
+  /// Load input mesh and geometry
+  std::cout << "Loading input mesh from trajectory file " << trajFile;
+  ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(trajFile);
+  std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
   std::tie(ptrMesh, ptrVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
-  gcs::ManifoldSurfaceMesh &mesh = *ptrMesh;
-  gcs::VertexPositionGeometry &vpg = *ptrVpg;
-  gcs::RichSurfaceMeshData richData(mesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(vpg);
+  std::cout << " and continuing from time t = " << time << " ...";
   std::cout << "Finished!" << std::endl;
 
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
   std::cout << "Loading reference mesh from trajectory file" << trajFile
             << " ...";
-  gcs::VertexPositionGeometry *ptrRefVpg =
-      new gcs::VertexPositionGeometry(mesh, fd.getRefcoordinate());
+  ddgsolver::loadRefMesh(ptrMesh, ptrRefVpg, fd.getRefcoordinate());
   std::cout << "Finished!" << std::endl;
 
-  std::cout << "Initiating the system ...";
-  /// physical parameters
+  /// Initializa richData for ply file
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
+
+  /// Initialize parameter struct
+  std::cout << "Initializing the system ...";
   double sigma = sqrt(2 * gamma * kt / h);
-  if (mesh.hasBoundary()) {
-    assert(Vt == 1.0);
+  if (ptrMesh->hasBoundary() && Vt != 1.0) {
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,  Ksg[0],  Kst,
-                          Ksl,   Kse,    Kv[0],     eta,   epsilon, Bc,
-                          gamma, Vt,     kt,        sigma, pt,      Kf,
-                          conc,  height, radius};
-  ddgsolver::Force f(mesh, vpg, *ptrRefVpg, richData, p, isProtein,
-                     isTuftedLaplacian, mollifyFactor, isVertexShift);
+  ddgsolver::Parameters p{Kb,  H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
+
+  /// Initialize the system
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+  gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
+  f.proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+  f.update_Vertex_positions();
+  std::cout << "Finished!" << std::endl;
+
+  /// Time integration / optimization
+  std::cout << "Solving the system and saving to " << outputDir << std::endl;
+  if (integrationMethod == "velocity verlet") {
+    ddgsolver::integration::velocityVerlet(f, h, time, T, tSave, eps, verbosity,
+                                           outputDir);
+  } else if (integrationMethod == "euler") {
+    if (p.gamma != 0) {
+      throw std::runtime_error("gamma has to be 0 for euler integration!");
+    }
+    ddgsolver::integration::euler(f, h, time, T, tSave, eps, verbosity,
+                                  outputDir, isBacktrack, rho, c1);
+  } else if (integrationMethod == "conjugate gradient") {
+    if (p.gamma != 0) {
+      throw std::runtime_error("gamma has to be 0 for CG optimization!");
+    }
+    ddgsolver::integration::conjugateGradient(
+        f, h, time, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack,
+        rho, c1, isAugmentedLagrangian, "/traj.nc");
+  }
+
+  /// Delete non unique pointer
+  delete ptrRefVpg;
+
+  return 0;
+}
+
+int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
+                    bool isTuftedLaplacian, bool isProtein,
+                    double mollifyFactor, bool isVertexShift, double Kb,
+                    std::vector<double> H0, double sharpness,
+                    std::vector<double> r_H0, double Kse, double Kst,
+                    double Ksl, double Ksg, double Kv, double eta,
+                    double epsilon, double Bc, std::vector<double> Vt,
+                    double gamma, double kt, std::vector<double> pt, double Kf,
+                    double conc, double height, double radius, double h,
+                    double T, double eps, double tSave, std::string outputDir,
+                    bool isBacktrack, double rho, double c1, double ctol, 
+                    bool isAugmentedLagrangian) {
+
+  /// Activate signal handling
+  signal(SIGINT, signalHandler);
+  // pybind11::scoped_interpreter guard{};
+
+  /// alias eigen matrix
+  using EigenVectorX3D =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
+  /// Declare variables
+  double time;
+  EigenVectorX3D coords;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  gcs::VertexPositionGeometry *ptrRefVpg;
+
+  /// Load input mesh and geometry
+  std::cout << "Loading input mesh from trajectory file " << trajFile;
+  ddgsolver::TrajFile fd = ddgsolver::TrajFile::openReadOnly(trajFile);
+  std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
+  std::tie(ptrMesh, ptrVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
+  std::cout << " and continuing from time t = " << time << " ...";
+  std::cout << "Finished!" << std::endl;
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  std::cout << "Loading reference mesh from trajectory file" << trajFile
+            << " ...";
+  ddgsolver::loadRefMesh(ptrMesh, ptrRefVpg, fd.getRefcoordinate());
+  std::cout << "Finished!" << std::endl;
+
+  /// Initializa richData for ply file
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
+
+  /// Initialize parameter struct
+  std::cout << "Initializing the system ...";
+  double sigma = sqrt(2 * gamma * kt / h);
+  if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
+    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
+  }
+  ddgsolver::Parameters p{Kb,  H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
+                          kt,  sigma, pt,        Kf,      conc, height, radius};
+
+  /// Initialize the system
+  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+                      isTuftedLaplacian, mollifyFactor, isVertexShift);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;
 
-  std::cout << "Solving the system ..." << std::endl;
-
-  if (integrationMethod == "velocity verlet") {
-    ddgsolver::integration::velocityVerlet(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, trajFile, outputDir, time, errorJumpLim);
-  } else if (integrationMethod == "euler") {
-    ddgsolver::integration::euler(f, h, T, eps, closeZone, increment, Kv[1],
-                                  Ksg[1], tSave, tMollify, verbosity, trajFile,
-                                  outputDir, time, errorJumpLim);
-  } else if (integrationMethod == "conjugate gradient") {
-    ddgsolver::integration::conjugateGradient(
-        f, h, T, eps, closeZone, increment, Kv[1], Ksg[1], tSave, tMollify,
-        verbosity, trajFile, outputDir, time, errorJumpLim);
+  /// Time integration / optimization
+  std::cout << "Solving the system and saving to " << outputDir << std::endl;
+  if (p.gamma != 0) {
+    throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
+  ddgsolver::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
+                                           outputDir, isBacktrack, rho, c1,
+                                           isAugmentedLagrangian);
 
+  /// Delete non unique pointer
   delete ptrRefVpg;
 
   return 0;

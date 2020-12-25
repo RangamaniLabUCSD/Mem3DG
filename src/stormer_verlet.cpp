@@ -18,7 +18,7 @@ namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
+void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
   gcs::FaceData<size_t> faceInd = f.vpg.faceIndices;
   gc::Vector3 totalForce;
   for (size_t i = 0; i < total_time / dt; i++) {
@@ -47,7 +47,8 @@ void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
         totalForce = f.bendingPressure[v] + f.capillaryPressure[v] +
                      f.insidePressure[v] + f.externalPressure[v] +
                      ((f.dampingForce[v] + f.stochasticForce[v] +
-                     f.regularizationForce[v])/ f.vpg.vertexDualAreas[v]);
+                       f.regularizationForce[v]) /
+                      f.vpg.vertexDualAreas[v]);
         f.vpg.inputVertexPositions[v] +=
             totalForce * dt * dt - f.pastPositions[v];
       }
@@ -55,14 +56,7 @@ void stormerVerlet(Force &f, double dt, double total_time, double tolerance) {
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
     f.update_Vertex_positions();
     f.pastPositions = temp;
-    double totalEnergy;
-    double bendingEnergy;
-    double surfaceEnergy;
-    double pressureEnergy;
-    double kineticEnergy;
-    double chemicalEnergy;
-    double lineEnergy;
-    std::tie(totalEnergy, bendingEnergy, surfaceEnergy, pressureEnergy, kineticEnergy, chemicalEnergy, lineEnergy) = getFreeEnergy(f);
+    f.getFreeEnergy();
 
     // std::cout << "energy: " << totalEnergy << std::endl;
     // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<

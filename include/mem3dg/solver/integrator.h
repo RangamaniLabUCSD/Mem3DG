@@ -22,14 +22,7 @@
 namespace ddgsolver {
 namespace integration {
 
-DLL_PUBLIC std::tuple<double, double, double, double, double, double, double>
-getFreeEnergy(Force &f);
-
-DLL_PUBLIC double
-getL2ErrorNorm(Eigen::SparseMatrix<double> M,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
-
-DLL_PUBLIC void stormerVerlet(Force &f, double dt, double total_time,
+DLL_PUBLIC void stormerVerlet(System &f, double dt, double total_time,
                               double tolerance);
 
 /*
@@ -39,34 +32,39 @@ verbosity:
   2: All above + console printing
   3: All above + txt + .ply
 */
-DLL_PUBLIC void
-velocityVerlet(Force &f, double dt, double total_time, double tolerance,
-               double closeZone, double increment, double maxKv, double maxKsg,
-               double tSave, double tMollify, size_t verbosity = 2,
-               std::string inputMesh = "./", std::string outputDir = "./",
-               double init_time = 0, double errorJumpLim = 5);
+DLL_PUBLIC void velocityVerlet(System &f, double dt, double init_time,
+                               double total_time, double tSave,
+                               double tolerance, const size_t verbosity,
+                               std::string outputDir);
 
-DLL_PUBLIC void euler(Force &f, double dt, double total_time, double tolerance,
-                      double closeZone, double increment, double maxKv,
-                      double maxKsg, double tSave, double tMollify,
-                      size_t verbosity = 2, std::string inputMesh = "./",
-                      std::string outputDir = "./", double init_time = 0,
-                      double errorJumpLim = 5);
+DLL_PUBLIC void euler(System &f, double dt, double init_time, double total_time,
+                      double tSave, double tolerance, const size_t verbosity,
+                      std::string outputDir, const bool isBacktrack,
+                      const double rho, const double c1);
 
-DLL_PUBLIC void conjugateGradient(Force &f, double dt, double total_time, double tolerance,
-                      double closeZone, double increment, double maxKv,
-                      double maxKsg, double tSave, double tMollify,
-                      size_t verbosity = 2, std::string inputMesh = "./",
-                      std::string outputDir = "./", double init_time = 0,
-                      double errorJumpLim = 5);
+DLL_PUBLIC void conjugateGradient(System &f, double dt, double init_time,
+                                  double total_time, double tSave, double tol,
+                                  double ctol, const size_t verbosity,
+                                  std::string outputDir, const bool isBacktrack,
+                                  const double rho, const double c1,
+                                  const bool isAugmentedLagrangian,
+                                  const std::string trajFileName);
+
+DLL_PUBLIC void feedForwardSweep(System &f, std::vector<double> H_,
+                                 std::vector<double> V_, double dt,
+                                 double maxTime, double tSave, double tol,
+                                 double ctol, std::string outputDir,
+                                 const bool isBacktrack, const double rho,
+                                 const double c1,
+                                 const bool isAugmentedLagrangian);
 
 DLL_PUBLIC
-void getParameterLog(Force &f, double dt, double total_time, double tolerance,
+void getParameterLog(System &f, double dt, double total_time, double tolerance,
                      double tSave, std::string inputMesh,
                      std::string outputDir);
 
 DLL_PUBLIC void
-getStatusLog(std::string nameOfFile, Force &f, double dt, double time,
+getStatusLog(std::string nameOfFile, System &f, double dt, double time,
              std::size_t frame, double areaError, double volumeError,
              double bendingError, double faceError, double bendingEnergy,
              double surfaceEnergy, double pressureEnergy, double kineticEnergy,

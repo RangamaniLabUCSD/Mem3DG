@@ -32,7 +32,7 @@ namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Force::getBendingForces() {
+void System::getBendingForces() {
 
   // map the MeshData to eigen matrix XXX_e
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
@@ -41,19 +41,6 @@ void Force::getBendingForces() {
 
   // Alias
   std::size_t n_vertices = (mesh.nVertices());
-
-  // update the (tufted) mass and conformal Laplacian matrix
-  if (isTuftedLaplacian) {
-    getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
-  } else {
-    M = vpg.vertexLumpedMassMatrix;
-    L = vpg.cotanLaplacian;
-  }
-  // Cache the inverse mass matrix
-  M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-
-  // calculate mean curvature
-  H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
 
   // Gaussian curvature per vertex Area
   Eigen::Matrix<double, Eigen::Dynamic, 1> KG =
@@ -80,13 +67,13 @@ void Force::getBendingForces() {
       rowwiseScaling(-2.0 * P.Kb * (productTerms + lap_H), vertexAngleNormal_e);
 }
 
-void Force::getChemicalPotential() { 
+void System::getChemicalPotential() { 
   
   Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
       (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
 
-  H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
-           .matrix();
+//   H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+//            .matrix();
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> dH0dphi =
       (2 * P.H0 * proteinDensity.raw().array() /
