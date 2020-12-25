@@ -29,9 +29,6 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/util.h"
 
-#include <omp.h>
-#include <time.h>
-
 namespace ddgsolver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -136,15 +133,8 @@ void Force::getVesicleForces() {
   gcs::EdgeData<double> lcr(mesh);
   getCrossLengthRatio(mesh, vpg, lcr);
 
-  clock_t start = clock();
-
   if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
-
-    #pragma omp parallel for 
-    //for (gcs::Vertex v : mesh.vertices()) {
-    for (int i = 0; i < mesh.nVertices(); i++) {
-      gcs::Vertex v = mesh.vertex(i);
-      std::cout << "vertex number: " << v.getIndex() << std::endl; 
+    for (gcs::Vertex v : mesh.vertices()) {
 
       // Calculate interfacial tension
       if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
@@ -221,10 +211,5 @@ void Force::getVesicleForces() {
       }
     }
   }
-
-  clock_t end = clock();
-  double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-  std::cout << cpu_time_used << std::endl;
-
 }
 } // end namespace ddgsolver

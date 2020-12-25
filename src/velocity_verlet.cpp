@@ -25,7 +25,6 @@
 #include "mem3dg/solver/force.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
-#include "time.h"
 
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
@@ -86,14 +85,7 @@ void velocityVerlet(Force &f, double dt, double total_time, double tolerance,
     if (f.mesh.hasBoundary()) {
       f.getPatchForces();
     } else {
-      clock_t start, end;
-      double cpu_time_used;
-
-      start = clock();
       f.getVesicleForces();
-      end = clock();
-      cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-      //std::cout << cpu_time_used << std::endl;
     }
     f.getDPDForces();
     f.getExternalForces();
