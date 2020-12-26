@@ -78,8 +78,7 @@ void System::getVesicleForces() {
 //           -2.0 * P.Kb *
 //           rowwiseScaling(M_inv * (productTerms_integrated + lap_H_integrated),
 //                          vertexAngleNormal_e);
-//     }
-//     if (ID == 1) {
+
 //       /// B. INSIDE EXCESS PRESSURE
 //       insidePressure_e =
 //           -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) +
@@ -93,7 +92,21 @@ void System::getVesicleForces() {
 //               2.0 * H,
 //           vertexAngleNormal_e);
 //     }
-//     if (ID == 2) {
+//     // if (ID == 1) {
+//     //   /// B. INSIDE EXCESS PRESSURE
+//     //   insidePressure_e =
+//     //       -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) +
+//     //         P.lambdaV) *
+//     //       vertexAngleNormal_e;
+
+//     //   /// C. CAPILLARY PRESSURE
+//     //   capillaryPressure_e = rowwiseScaling(
+//     //       -(P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea +
+//     //         P.lambdaSG) *
+//     //           2.0 * H,
+//     //       vertexAngleNormal_e);
+//     // }
+//     if (ID == 1) {
 //       /// E. LOCAL REGULARIZATION
 //       gcs::EdgeData<double> lcr(mesh);
 //       getCrossLengthRatio(mesh, vpg, lcr);
@@ -132,7 +145,17 @@ void System::getVesicleForces() {
 //                                      (cosT * cosT * (K1 - K2) + K2) *
 //                                      P.sharpness;
 //           }
+//         }
+//       }
+//     }
 
+//     if (ID == 2) {
+//       /// E. LOCAL REGULARIZATION
+//       gcs::EdgeData<double> lcr(mesh);
+//       getCrossLengthRatio(mesh, vpg, lcr);
+//       if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
+//         for (int i = 0; i < mesh.nVertices(); i++) {
+//           gcs::Vertex v = mesh.vertex(i);
 //           for (gcs::Halfedge he : v.outgoingHalfedges()) {
 //             gcs::Halfedge base_he = he.next();
 
@@ -229,7 +252,7 @@ void System::getVesicleForces() {
   // struct timeval start, end;
   // gettimeofday(&start, NULL);
   if ((P.Ksl != 0) || (P.Kse != 0) || (P.eta != 0) || (P.Kst != 0)) {
-    // #pragma omp parallel for
+    #pragma omp parallel for collapse(2)
     // for (gcs::Vertex v : mesh.vertices()) {
     for (int i = 0; i < mesh.nVertices(); i++) {
       gcs::Vertex v = mesh.vertex(i);
@@ -314,5 +337,5 @@ void System::getVesicleForces() {
   //     ((end.tv_sec - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec)
   //     / 1.e6;
   // std::cout << "force time: " << delta << std::endl;
-}
+} // namespace ddgsolver
 } // end namespace ddgsolver
