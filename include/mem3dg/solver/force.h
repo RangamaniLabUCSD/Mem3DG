@@ -240,7 +240,7 @@ public:
 
     // GC computed properties
     vpg.requireFaceNormals();
-    vpg.requireVertexGalerkinMassMatrix();
+    // vpg.requireVertexGalerkinMassMatrix();
     vpg.requireVertexLumpedMassMatrix();
     vpg.requireCotanLaplacian();
     vpg.requireFaceAreas();
@@ -306,7 +306,7 @@ public:
    */
   ~System() {
     vpg.unrequireFaceNormals();
-    vpg.unrequireVertexGalerkinMassMatrix();
+    // vpg.unrequireVertexGalerkinMassMatrix();
     vpg.unrequireVertexLumpedMassMatrix();
     vpg.unrequireCotanLaplacian();
     vpg.unrequireFaceAreas();
@@ -321,21 +321,23 @@ public:
     vpg.unrequireVertexTangentBasis();
   }
 
-  void getBendingForces();
+  void getBendingPressure();
 
   void getChemicalPotential();
 
-  void getStretchingForces();
+  void getCapillaryPressure();
 
-  void getPressureForces();
+  void getInsidePressure();
 
-  void getVesicleForces();
+  void getRegularizationForce();
 
-  void getPatchForces();
+  void getLineTensionPressure();
 
   void getDPDForces();
 
-  void getExternalForces();
+  void getExternalPressure();
+
+  void getAllForces();
 
   /**
    * @brief Get free energy and each components of the system
@@ -431,7 +433,7 @@ public:
     }
 
     // initialize/update external force
-    getExternalForces();
+    getExternalPressure();
 
     // initialize/update the vertex position of the last iteration
     pastPositions = vpg.inputVertexPositions;

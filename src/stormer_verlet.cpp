@@ -27,11 +27,11 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
             ptrMesh->getFaceVertexList());*/
     // polyscope::show();
     f.getVelocityFromPastPosition(dt);
-    f.getBendingForces();
-    f.getStretchingForces();
-    f.getPressureForces();
+    f.getBendingPressure();
+    f.getCapillaryPressure();
+    f.getInsidePressure();
     f.getDPDForces();
-    f.getExternalForces();
+    f.getExternalPressure();
 
     gcs::VertexData<gc::Vector3> temp = f.vpg.inputVertexPositions;
     for (gcs::Vertex v : f.mesh.vertices()) {

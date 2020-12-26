@@ -13,19 +13,18 @@
 #
 
 set(DDG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/bending_force.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/stretching_force.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/pressure_force.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/physical_pressure.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/regularization_force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dpd_force.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/all_force.cpp"
+    
     "${CMAKE_CURRENT_SOURCE_DIR}/stormer_verlet.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/velocity_verlet.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/euler.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/conjugateGradient.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/energy.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external_force.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/vesicle_force.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/patch_force.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/log_file.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/trajfile.cpp"
 

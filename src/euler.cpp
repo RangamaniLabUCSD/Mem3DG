@@ -67,12 +67,13 @@ void euler(System &f, double dt, double init_time, double total_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce;
-
+  struct timeval start;
   double dArea, dVolume, time = init_time;
-
   size_t frame = 0;
-
   bool EXIT = false;
+
+  // start the timer
+  gettimeofday(&start, NULL);
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -188,6 +189,14 @@ void euler(System &f, double dt, double init_time, double total_time,
     f.update_Vertex_positions();
 
   } // integration
+
+  // stop the timer and report time spent
+  double duration = getDuration(start);
+  if (verbosity > 0) {
+    std::cout << "\nTotal integration time: " << duration << " seconds"
+              << std::endl;
+  }
+
 }
 } // namespace integration
 } // namespace ddgsolver

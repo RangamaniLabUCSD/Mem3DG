@@ -65,6 +65,18 @@ void System::getDPDForces() {
     gc::Vector3 dVel12 = vel[v1] - vel[v2];
     gc::Vector3 dPos12_n = (pos[v1] - pos[v2]).normalize();
 
+    if (P.gamma != 0) {
+      gc::Vector3 df = P.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
+      dampingForce[v1] -= df;
+      dampingForce[v2] += df;
+    }
+
+    if (P.sigma != 0) {
+      double noise = normal_dist(rng);
+      stochasticForce[v1] += noise * dPos12_n;
+      stochasticForce[v2] -= noise * dPos12_n;
+    }
+
     // gc::Vector3 dVel21 = vel[v2] - vel[v1];
     // gc::Vector3 dPos21_n = (pos[v2] - pos[v1]).normalize();
 
@@ -72,14 +84,7 @@ void System::getDPDForces() {
     //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) * -dPos12_n)
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
-
-    gc::Vector3 df = P.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
-    dampingForce[v1] -= df;
-    dampingForce[v2] += df;
-
-    double noise = normal_dist(rng);
-    stochasticForce[v1] += noise * dPos12_n;
-    stochasticForce[v2] -= noise * dPos12_n;
+    
   }
 }
 

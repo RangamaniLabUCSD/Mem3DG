@@ -21,6 +21,7 @@
 #include <Eigen/Core>
 
 #include <math.h>
+#include <sys/time.h>
 
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/util.h"
@@ -357,6 +358,20 @@ DLL_PUBLIC inline void getCrossLengthRatio(gcs::ManifoldSurfaceMesh &mesh,
     clr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
              vpg.edgeLengths[lj];
   }
+}
+
+/**
+ * @brief get the duration of world time from the start to now
+ *
+ * @param start reference to the starting time value
+ * @return time duration
+ */
+DLL_PUBLIC inline double getDuration(timeval &start) {
+  struct timeval end;
+  gettimeofday(&end, NULL);
+  return ((end.tv_sec - start.tv_sec) * 1000000u + end.tv_usec -
+          start.tv_usec) /
+         1.e6;
 }
 
 /**

@@ -128,9 +128,13 @@ void conjugateGradient(System &f, double dt, double init_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce, direction;
+  struct timeval start;
   double dArea, dVolume, currentNormSq, pastNormSq, time = init_time;
   size_t frame = 0;
   bool EXIT = false;
+
+  // start the timer
+  gettimeofday(&start, NULL);
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -289,6 +293,13 @@ void conjugateGradient(System &f, double dt, double init_time,
     f.update_Vertex_positions();
 
   } // integration
+
+  // stop the timer and report time spent
+  double duration = getDuration(start);
+  if (verbosity > 0) {
+    std::cout << "\nTotal integration time: " << duration << " seconds"
+              << std::endl;
+  }
 }
 
 void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
@@ -297,8 +308,14 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
                       const bool isBacktrack, const double rho, const double c1,
                       const bool isAugmentedLagrangian) {
   const double KV = f.P.Kv, KSG = f.P.Ksg;
+  struct timeval start;
   double init_time = 0;
   size_t verbosity = 2;
+
+  // start the timer
+  gettimeofday(&start, NULL);
+
+  // parameter sweep
   for (double H : H_) {
     for (double V : V_) {
       if (isAugmentedLagrangian) {
@@ -315,11 +332,20 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
       std::cout << "\nH0: " << f.P.H0 << std::endl;
       std::cout << "Vt: " << f.P.Vt << std::endl;
       f.update_Vertex_positions();
-      conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity, outputDir,
-                        isBacktrack, rho, c1, isAugmentedLagrangian, buffer);
+      conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity,
+                        outputDir, isBacktrack, rho, c1, isAugmentedLagrangian,
+                        buffer);
     }
     std::reverse(V_.begin(), V_.end());
   }
+
+  // stop the timer and report time spent
+  double duration = getDuration(start);
+  if (verbosity > 0) {
+    std::cout << "\nTotal parameter sweep time: " << duration << " seconds"
+              << std::endl;
+  }
 }
+
 } // namespace integration
 } // namespace ddgsolver
