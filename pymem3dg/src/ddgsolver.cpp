@@ -14,6 +14,7 @@
 
 #include <csignal>
 #include <iostream>
+#include <time.h>
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -248,6 +249,11 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
+
+  // auto start = std::chrono::high_resolution_clock::now();
+
+  struct timeval start, end;
+  gettimeofday(&start, NULL);
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
   if (integrationMethod == "velocity verlet") {
     ddgsolver::integration::velocityVerlet(f, h, 0, T, tSave, eps, verbosity,
@@ -267,6 +273,18 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
         c1, isAugmentedLagrangian, "/traj.nc");
   }
 
+  // auto stop = std::chrono::high_resolution_clock::now();
+  // auto cpu_time_used =
+  // std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  // std::cout << "simulation time: " << cpu_time_used.count() << "microseconds"
+  //           << std::endl;
+
+  gettimeofday(&end, NULL);
+  double delta =
+      ((end.tv_sec - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec) /
+      1.e6;
+  std::cout << "simulation time: " << delta << std::endl;
+
   /// Delete non unique pointer
   delete ptrRefVpg;
 
@@ -283,7 +301,7 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
                      double gamma, double kt, std::vector<double> pt, double Kf,
                      double conc, double height, double radius, double h,
                      double T, double eps, double tSave, std::string outputDir,
-                     bool isBacktrack, double rho, double c1, double ctol, 
+                     bool isBacktrack, double rho, double c1, double ctol,
                      bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -361,7 +379,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::vector<double> pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, double ctol, 
+              bool isBacktrack, double rho, double c1, double ctol,
               bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -433,8 +451,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
     ddgsolver::integration::conjugateGradient(
-        f, h, time, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack,
-        rho, c1, isAugmentedLagrangian, "/traj.nc");
+        f, h, time, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho,
+        c1, isAugmentedLagrangian, "/traj.nc");
   }
 
   /// Delete non unique pointer
@@ -453,7 +471,7 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     double gamma, double kt, std::vector<double> pt, double Kf,
                     double conc, double height, double radius, double h,
                     double T, double eps, double tSave, std::string outputDir,
-                    bool isBacktrack, double rho, double c1, double ctol, 
+                    bool isBacktrack, double rho, double c1, double ctol,
                     bool isAugmentedLagrangian) {
 
   /// Activate signal handling
