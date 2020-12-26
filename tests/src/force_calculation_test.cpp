@@ -75,7 +75,7 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
 
-  f.getVesicleForces();
+  f.getAllForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =
       gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure1 =
@@ -83,7 +83,7 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure1 =
       gc::EigenMap<double, 3>(f.capillaryPressure);
 
-  f.getVesicleForces();
+  f.getAllForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure2 =
       gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure2 =
@@ -100,7 +100,7 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
 
-  f.getVesicleForces();
+  f.getAllForces();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =
       gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure1 =
@@ -108,7 +108,7 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure1 =
       gc::EigenMap<double, 3>(f.capillaryPressure);
 
-  f.getBendingForces();
+  f.getBendingPressure();
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure2 =
       gc::EigenMap<double, 3>(f.bendingPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure2 =

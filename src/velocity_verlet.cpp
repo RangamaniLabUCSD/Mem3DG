@@ -16,6 +16,7 @@
 #include <iostream>
 #include <math.h>
 #include <pcg_random.hpp>
+#include <sys/time.h>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/meshio.h>
@@ -51,17 +52,7 @@ void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
-  if (f.mesh.hasBoundary()) {
-    f.getPatchForces();
-  } else {
-    f.getVesicleForces();
-  }
-  f.getDPDForces();
-  f.getExternalForces();
-
-  if (f.isProtein) {
-    f.getChemicalPotential();
-  }
+  f.getAllForces();
 
   physicalPressure =
       rowwiseScaling(f.mask.cast<double>(),
@@ -198,13 +189,14 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
       regularizationForce, physicalPressure, DPDForce;
-
+  struct timeval start;
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
   double dArea, dVolume, time = init_time; // double dRef;
-
   size_t frame = 0;
-
   bool EXIT = false;
+
+  // start the timer
+  gettimeofday(&start, NULL);
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -322,6 +314,13 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     f.update_Vertex_positions();
 
   } // integration
+
+  // stop the timer and report time spent
+  double duration = getDuration(start);
+  if (verbosity > 0) {
+    std::cout << "\nTotal integration time: " << duration << " seconds"
+              << std::endl;
+  }
 }
 } // namespace integration
 } // namespace ddgsolver
