@@ -24,7 +24,7 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
 

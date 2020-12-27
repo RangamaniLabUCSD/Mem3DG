@@ -22,7 +22,7 @@
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
-#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/system.h"
 
 namespace ddgsolver {
 namespace py = pybind11;

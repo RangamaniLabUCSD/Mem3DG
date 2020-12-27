@@ -14,7 +14,7 @@
 
 #include "solver/constants.h"
 #include "solver/ddgsolver.h"
-#include "solver/force.h"
+#include "solver/system.h"
 #include "solver/integrator.h"
 #include "solver/mesh.h"
 #include "solver/trajfile.h"
