@@ -17,7 +17,7 @@
 #include <geometrycentral/surface/geometry.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 
-#include "force.h"
+#include "system.h"
 
 namespace ddgsolver {
 namespace integration {

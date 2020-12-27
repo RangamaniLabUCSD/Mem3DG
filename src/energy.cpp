@@ -21,7 +21,7 @@
 
 #include <Eigen/Core>
 
-#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/system.h"
 
 namespace ddgsolver {
 

@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "mem3dg/solver/force.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/integrator.h"
 
 #include <geometrycentral/surface/halfedge_mesh.h>
