@@ -240,7 +240,6 @@ public:
 
     // GC computed properties
     vpg.requireFaceNormals();
-    // vpg.requireVertexGalerkinMassMatrix();
     vpg.requireVertexLumpedMassMatrix();
     vpg.requireCotanLaplacian();
     vpg.requireFaceAreas();
@@ -251,11 +250,8 @@ public:
     vpg.requireVertexNormals();
     vpg.requireVertexDualAreas();
     vpg.requireCornerAngles();
-    vpg.requireVertexPrincipalCurvatureDirections();
-    vpg.requireVertexTangentBasis();
-
-    refVpg.requireFaceAreas();
-    refVpg.requireEdgeLengths();
+    vpg.requireCornerScaledAngles();
+    // vpg.requireVertexTangentBasis();
 
     /// compute constant values during simulation
     // Find the closest point index to P.pt in refVpg
@@ -306,7 +302,6 @@ public:
    */
   ~System() {
     vpg.unrequireFaceNormals();
-    // vpg.unrequireVertexGalerkinMassMatrix();
     vpg.unrequireVertexLumpedMassMatrix();
     vpg.unrequireCotanLaplacian();
     vpg.unrequireFaceAreas();
@@ -317,8 +312,7 @@ public:
     vpg.unrequireVertexNormals();
     vpg.unrequireVertexDualAreas();
     vpg.unrequireCornerAngles();
-    vpg.unrequireVertexPrincipalCurvatureDirections();
-    vpg.unrequireVertexTangentBasis();
+    vpg.unrequireCornerScaledAngles();
   }
 
   void getBendingPressure();
