@@ -21,7 +21,9 @@
 #include <Eigen/Core>
 
 #include <math.h>
+#ifdef __linux__
 #include <sys/time.h>
+#endif
 
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/util.h"
@@ -360,6 +362,7 @@ DLL_PUBLIC inline void getCrossLengthRatio(gcs::ManifoldSurfaceMesh &mesh,
   }
 }
 
+#ifdef __linux__
 /**
  * @brief get the duration of world time from the start to now
  *
@@ -373,6 +376,7 @@ DLL_PUBLIC inline double getDuration(timeval &start) {
           start.tv_usec) /
          1.e6;
 }
+#endif
 
 /**
  * @brief Get the Face Vertex Matrix object
