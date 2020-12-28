@@ -125,6 +125,8 @@ polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd,
   std::tie(time, coords) = fd.getTimeAndCoords(0);
   polyscope::SurfaceMesh *mesh =
       polyscope::registerSurfaceMesh("Mesh", coords, top);
+  mesh->setSmoothShade(true);
+  mesh->setEnabled(true);
 
   if (options.ref_coord) {
     EigenVectorX3D refcoords = fd.getRefcoordinate();
@@ -211,6 +213,7 @@ int view_animation(std::string &filename, const bool ref_coord,
   int prevFrame = 0;
   int currFrame = 0;
   bool play = false;
+  bool record = false;
   int maxFrame = fd.getNextFrameIndex() - 1;
   int maxWaitTime = 500;
   int waitTime = 0;
@@ -221,6 +224,7 @@ int view_animation(std::string &filename, const bool ref_coord,
   polyscope::options::usePrefsFile = false;
   polyscope::options::autocenterStructures = false;
   polyscope::options::autoscaleStructures = false;
+  polyscope::options::groundPlaneEnabled = false;
 
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
   polyscope::view::style = polyscope::view::NavigateStyle::Free;
@@ -245,8 +249,29 @@ int view_animation(std::string &filename, const bool ref_coord,
       play = !play;
     }
 
+    if (ImGui::Button("Screenshot")) {
+      char buff[50];
+      snprintf(buff, 50, "screenshot_frame%03zu.png", currFrame);
+      std::string defaultName(buff);
+      polyscope::screenshot(defaultName, true);
+      // polyscope::screenshot("screenshot.png", true);
+    }
+
+    if (ImGui::Button("Video")) {
+      record = !record;
+    }
+
     if (prevFrame != currFrame) {
       updateSurfaceMesh(mesh, fd, currFrame, options);
+      prevFrame = currFrame;
+    }
+
+    if (record) {
+      char buff[50];
+      snprintf(buff, 50, "video\\screenshot_frame%03zu.png", currFrame);
+      std::string defaultName(buff);
+      polyscope::screenshot(defaultName, true);
+      animate(mesh, fd, currFrame, waitTime, options);
       prevFrame = currFrame;
     }
 

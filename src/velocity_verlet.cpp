@@ -16,7 +16,10 @@
 #include <iostream>
 #include <math.h>
 #include <pcg_random.hpp>
+
+#ifdef __linux__
 #include <sys/time.h>
+#endif
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/meshio.h>
@@ -24,9 +27,9 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/system.h"
 
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
@@ -189,14 +192,16 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
       regularizationForce, physicalPressure, DPDForce;
-  struct timeval start;
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
   double dArea, dVolume, time = init_time; // double dRef;
   size_t frame = 0;
   bool EXIT = false;
 
-  // start the timer
+// start the timer
+#ifdef __linux__
+  struct timeval start;
   gettimeofday(&start, NULL);
+#endif
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -316,11 +321,13 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   } // integration
 
   // stop the timer and report time spent
+#ifdef __linux__
   double duration = getDuration(start);
   if (verbosity > 0) {
     std::cout << "\nTotal integration time: " << duration << " seconds"
               << std::endl;
   }
+#endif
 }
 } // namespace integration
 } // namespace ddgsolver

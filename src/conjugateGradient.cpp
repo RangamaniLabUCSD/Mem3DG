@@ -23,9 +23,9 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/system.h"
 
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
@@ -128,14 +128,15 @@ void conjugateGradient(System &f, double dt, double init_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce, direction;
-  struct timeval start;
   double dArea, dVolume, currentNormSq, pastNormSq, time = init_time;
   size_t frame = 0;
   bool EXIT = false;
 
-  // start the timer
+// start the timer
+#ifdef __linux__
+  struct timeval start;
   gettimeofday(&start, NULL);
-
+#endif
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
@@ -295,11 +296,13 @@ void conjugateGradient(System &f, double dt, double init_time,
   } // integration
 
   // stop the timer and report time spent
+#ifdef __linux__
   double duration = getDuration(start);
   if (verbosity > 0) {
     std::cout << "\nTotal integration time: " << duration << " seconds"
               << std::endl;
   }
+#endif
 }
 
 void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
@@ -308,12 +311,14 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
                       const bool isBacktrack, const double rho, const double c1,
                       const bool isAugmentedLagrangian) {
   const double KV = f.P.Kv, KSG = f.P.Ksg;
-  struct timeval start;
   double init_time = 0;
   size_t verbosity = 2;
 
+#ifdef __linux__
   // start the timer
+  struct timeval start;
   gettimeofday(&start, NULL);
+#endif
 
   // parameter sweep
   for (double H : H_) {
@@ -340,11 +345,13 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
   }
 
   // stop the timer and report time spent
+#ifdef __linux__
   double duration = getDuration(start);
   if (verbosity > 0) {
     std::cout << "\nTotal parameter sweep time: " << duration << " seconds"
               << std::endl;
   }
+#endif
 }
 
 } // namespace integration
