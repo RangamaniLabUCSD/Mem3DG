@@ -29,9 +29,9 @@
 #include "polyscope/surface_mesh.h"
 
 #include "mem3dg/solver/ddgsolver.h"
-#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/mesh.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/typetraits.h"
 #include "mem3dg/solver/util.h"
@@ -244,7 +244,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isVertexShift, isTuftedLaplacian, mollifyFactor);
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
@@ -283,7 +283,7 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
                      double gamma, double kt, std::vector<double> pt, double Kf,
                      double conc, double height, double radius, double h,
                      double T, double eps, double tSave, std::string outputDir,
-                     bool isBacktrack, double rho, double c1, double ctol, 
+                     bool isBacktrack, double rho, double c1, double ctol,
                      bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -333,7 +333,7 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isVertexShift, isTuftedLaplacian, mollifyFactor);
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
@@ -361,7 +361,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               std::vector<double> pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, double ctol, 
+              bool isBacktrack, double rho, double c1, double ctol,
               bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -411,7 +411,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isVertexShift, isTuftedLaplacian, mollifyFactor);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   f.proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   f.update_Vertex_positions();
@@ -433,8 +433,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
     ddgsolver::integration::conjugateGradient(
-        f, h, time, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack,
-        rho, c1, isAugmentedLagrangian, "/traj.nc");
+        f, h, time, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho,
+        c1, isAugmentedLagrangian, "/traj.nc");
   }
 
   /// Delete non unique pointer
@@ -453,7 +453,7 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     double gamma, double kt, std::vector<double> pt, double Kf,
                     double conc, double height, double radius, double h,
                     double T, double eps, double tSave, std::string outputDir,
-                    bool isBacktrack, double rho, double c1, double ctol, 
+                    bool isBacktrack, double rho, double c1, double ctol,
                     bool isAugmentedLagrangian) {
 
   /// Activate signal handling
@@ -503,7 +503,7 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isVertexShift, isTuftedLaplacian, mollifyFactor);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;
 

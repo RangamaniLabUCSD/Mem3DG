@@ -4,9 +4,9 @@
 #endif
 
 #include "mem3dg/solver/ddgsolver.h"
-#include "mem3dg/solver/system.h"
-#include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/mesh.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/util.h"
 
@@ -102,7 +102,7 @@ int main() {
                           gamma, Vt,     kt,        sigma + 1e-18, pt,      Kf,
                           conc,  height, radius};
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isTuftedLaplacian, mollifyFactor, isVertexShift);
+                      isVertexShift, isTuftedLaplacian, mollifyFactor);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
