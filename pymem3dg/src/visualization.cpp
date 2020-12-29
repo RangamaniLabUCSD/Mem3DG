@@ -186,12 +186,13 @@ polyscope::SurfaceMesh *registerSurfaceMesh(ddgsolver::TrajFile &fd,
 }
 
 void animate(polyscope::SurfaceMesh *mesh, ddgsolver::TrajFile &fd, int &idx,
-             int &waitTime, checkBox options) {
+             int &waitTime, checkBox options, bool &toggle) {
 
   updateSurfaceMesh(mesh, fd, idx, options);
   idx++;
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
+    toggle = !toggle;
   }
   wait(waitTime);
 }
@@ -217,6 +218,7 @@ int view_animation(std::string &filename, const bool ref_coord,
   int maxFrame = fd.getNextFrameIndex() - 1;
   int maxWaitTime = 500;
   int waitTime = 0;
+  float transparency = 1;
 
   // Some settings for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -225,6 +227,7 @@ int view_animation(std::string &filename, const bool ref_coord,
   polyscope::options::autocenterStructures = false;
   polyscope::options::autoscaleStructures = false;
   polyscope::options::groundPlaneEnabled = false;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
 
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
   polyscope::view::style = polyscope::view::NavigateStyle::Free;
@@ -242,8 +245,12 @@ int view_animation(std::string &filename, const bool ref_coord,
 
     ImGui::SliderInt("index", &currFrame, 0, maxFrame); // set a float variable
 
+    ImGui::SliderFloat("transparency", &transparency, 0, 1);
+
     ImGui::SliderInt("slow-mo", &waitTime, 0,
                      maxWaitTime); // set a float variable
+
+    mesh->setTransparency(transparency);
 
     if (ImGui::Button("Play/Pause")) {
       play = !play;
@@ -268,15 +275,15 @@ int view_animation(std::string &filename, const bool ref_coord,
 
     if (record) {
       char buff[50];
-      snprintf(buff, 50, "video/screenshot_frame%04zu.png", currFrame);
+      snprintf(buff, 50, "video/frame%04zu.png", currFrame);
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
-      animate(mesh, fd, currFrame, waitTime, options);
+      animate(mesh, fd, currFrame, waitTime, options, record);
       prevFrame = currFrame;
     }
 
     if (play) {
-      animate(mesh, fd, currFrame, waitTime, options);
+      animate(mesh, fd, currFrame, waitTime, options, play);
       prevFrame = currFrame;
     }
     ImGui::PopItemWidth();
