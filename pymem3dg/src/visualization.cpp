@@ -227,7 +227,7 @@ int view_animation(std::string &filename, const bool ref_coord,
   polyscope::options::autocenterStructures = false;
   polyscope::options::autoscaleStructures = false;
   polyscope::options::groundPlaneEnabled = false;
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
 
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
   polyscope::view::style = polyscope::view::NavigateStyle::Free;
