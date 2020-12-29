@@ -11,9 +11,11 @@
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
+#pragma once
 
 namespace ddgsolver {
 namespace constants {
-const double kBoltzmann = 1.380649e-23; // Joules/Kelvin
+const double kBoltzmann = 1.380649e-8; // nanonewton * micrometer / Kelvin
+const double PI = 3.14159265358979323846; 
 }
 } // namespace ddgsolver

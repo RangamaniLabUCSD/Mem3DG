@@ -40,7 +40,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
       py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
       py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-      py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
       py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
       py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
       py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
@@ -100,7 +100,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("Kb"), py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
       py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
       py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-      py::arg("Vt"), py::arg("gamma"), py::arg("kt"), py::arg("pt"),
+      py::arg("Vt"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
       py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
       py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
       py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
@@ -130,7 +130,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
-                   kt (:py:class:`double`): stochastic coeffcient of DPD force 
+                   temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
                    Kf (:py:class:`double`): "spring" constant of external force 
                    conc (:py:class:`double`): extent of local concentration of external force 
@@ -172,7 +172,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
       py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
       py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-      py::arg("gamma"), py::arg("kt"), py::arg("pt"), py::arg("Kf"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
       py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
       py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
       py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
@@ -202,7 +202,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
-                   kt (:py:class:`double`): stochastic coeffcient of DPD force 
+                   temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
                    Kf (:py:class:`double`): "spring" constant of external force 
                    conc (:py:class:`double`): extent of local concentration of external force 
@@ -231,7 +231,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("Kb"), py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
       py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
       py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-      py::arg("Vt"), py::arg("gamma"), py::arg("kt"), py::arg("pt"),
+      py::arg("Vt"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
       py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
       py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
       py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
@@ -260,7 +260,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
-                   kt (:py:class:`double`): stochastic coeffcient of DPD force 
+                   temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
                    Kf (:py:class:`double`): "spring" constant of external force 
                    conc (:py:class:`double`): extent of local concentration of external force 

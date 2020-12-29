@@ -29,13 +29,11 @@
 #include <random>
 
 #include <math.h>
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/util.h"
+#include "mem3dg/solver/constants.h"
 
 #include <vector>
 
@@ -74,7 +72,7 @@ struct Parameters {
   /// Reduced volume
   double Vt;
   /// Boltzmann constant*Temperature
-  double kt;
+  double temp;
   /// Noise
   double sigma;
   /// index of node with applied external force
@@ -280,7 +278,7 @@ public:
     if (mesh.hasBoundary()) {
       refVolume = 0.0;
     } else {
-      refVolume = std::pow(targetSurfaceArea / M_PI / 4, 1.5) * (4 * M_PI / 3);
+      refVolume = std::pow(targetSurfaceArea / constants::PI / 4, 1.5) * (4 * constants::PI / 3);
     }
 
     // Regularize the vetex position geometry if needed
