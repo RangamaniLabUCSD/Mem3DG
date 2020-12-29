@@ -27,6 +27,7 @@
 
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/util.h"
+#include "mem3dg/solver/constants.h"
 
 namespace ddgsolver {
 
@@ -254,7 +255,7 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
                      double stdDev) {
   distribution =
       (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
-      (stdDev * pow(M_PI * 2, 0.5));
+      (stdDev * pow(constants::PI * 2, 0.5));
 }
 
 /**

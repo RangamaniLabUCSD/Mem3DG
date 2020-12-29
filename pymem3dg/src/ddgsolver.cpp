@@ -180,7 +180,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
                double Kse, double Kst, double Ksl, double Ksg, double Kv,
                double eta, double epsilon, double Bc, double Vt, double gamma,
-               double kt, std::vector<double> pt, double Kf, double conc,
+               double temp, std::vector<double> pt, double Kf, double conc,
                double height, double radius, double h, double T, double eps,
                double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
@@ -234,13 +234,13 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 
   /// Initialize parameter struct
   std::cout << "Initializing the system ...";
-  double sigma = sqrt(2 * gamma * kt / h);
+  double sigma = sqrt(2 * gamma * ddgsolver::constants::kBoltzmann * temp / h);
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  ddgsolver::Parameters p{Kb,  H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
-                          kt,  sigma, pt,        Kf,      conc, height, radius};
+  ddgsolver::Parameters p{Kb, H0,  sharpness, r_H0,   Ksg,   Kst, Ksl,  Kse,
+                          Kv, eta, epsilon,   Bc,     gamma, Vt,  temp, sigma,
+                          pt, Kf,  conc,      height, radius};
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
@@ -280,11 +280,11 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
                      std::vector<double> r_H0, double Kse, double Kst,
                      double Ksl, double Ksg, double Kv, double eta,
                      double epsilon, double Bc, std::vector<double> Vt,
-                     double gamma, double kt, std::vector<double> pt, double Kf,
-                     double conc, double height, double radius, double h,
-                     double T, double eps, double tSave, std::string outputDir,
-                     bool isBacktrack, double rho, double c1, double ctol,
-                     bool isAugmentedLagrangian) {
+                     double gamma, double temp, std::vector<double> pt,
+                     double Kf, double conc, double height, double radius,
+                     double h, double T, double eps, double tSave,
+                     std::string outputDir, bool isBacktrack, double rho,
+                     double c1, double ctol, bool isAugmentedLagrangian) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -323,13 +323,13 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
 
   /// Initialize parameter struct
   std::cout << "Initializing the system ...";
-  double sigma = sqrt(2 * gamma * kt / h);
+  double sigma = sqrt(2 * gamma * ddgsolver::constants::kBoltzmann * temp / h);
   if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  ddgsolver::Parameters p{Kb,  H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
-                          kt,  sigma, pt,        Kf,      conc, height, radius};
+  ddgsolver::Parameters p{
+      Kb, H0[0], sharpness, r_H0, Ksg,   Kst, Ksl, Kse,  Kv,     eta,   epsilon,
+      Bc, gamma, Vt[0],     temp, sigma, pt,  Kf,  conc, height, radius};
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
@@ -357,7 +357,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, std::vector<double> r_H0, double Kse,
               double Kst, double Ksl, double Ksg, double Kv, double eta,
-              double epsilon, double Bc, double Vt, double gamma, double kt,
+              double epsilon, double Bc, double Vt, double gamma, double temp,
               std::vector<double> pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
@@ -401,13 +401,13 @@ int driver_nc(const size_t verbosity, std::string trajFile,
 
   /// Initialize parameter struct
   std::cout << "Initializing the system ...";
-  double sigma = sqrt(2 * gamma * kt / h);
+  double sigma = sqrt(2 * gamma * ddgsolver::constants::kBoltzmann * temp / h);
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  ddgsolver::Parameters p{Kb,  H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                          Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt,
-                          kt,  sigma, pt,        Kf,      conc, height, radius};
+  ddgsolver::Parameters p{Kb, H0,  sharpness, r_H0,   Ksg,   Kst, Ksl,  Kse,
+                          Kv, eta, epsilon,   Bc,     gamma, Vt,  temp, sigma,
+                          pt, Kf,  conc,      height, radius};
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
@@ -450,11 +450,11 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     std::vector<double> r_H0, double Kse, double Kst,
                     double Ksl, double Ksg, double Kv, double eta,
                     double epsilon, double Bc, std::vector<double> Vt,
-                    double gamma, double kt, std::vector<double> pt, double Kf,
-                    double conc, double height, double radius, double h,
-                    double T, double eps, double tSave, std::string outputDir,
-                    bool isBacktrack, double rho, double c1, double ctol,
-                    bool isAugmentedLagrangian) {
+                    double gamma, double temp, std::vector<double> pt,
+                    double Kf, double conc, double height, double radius,
+                    double h, double T, double eps, double tSave,
+                    std::string outputDir, bool isBacktrack, double rho,
+                    double c1, double ctol, bool isAugmentedLagrangian) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -493,13 +493,13 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
 
   /// Initialize parameter struct
   std::cout << "Initializing the system ...";
-  double sigma = sqrt(2 * gamma * kt / h);
+  double sigma = sqrt(2 * gamma * ddgsolver::constants::kBoltzmann * temp / h);
   if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
   ddgsolver::Parameters p{Kb,  H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
                           Kse, Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
-                          kt,  sigma, pt,        Kf,      conc, height, radius};
+                          temp,  sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
   ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
