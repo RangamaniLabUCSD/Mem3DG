@@ -219,9 +219,9 @@ public:
 
   System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
          gcs::VertexPositionGeometry &refVpg_,
-         gcs::RichSurfaceMeshData &richData_, Parameters &p,
-         bool isProtein_ = false, bool isTuftedLaplacian_ = false,
-         double mollifyFactor_ = 1e-6, bool isVertexShift_ = false)
+         gcs::RichSurfaceMeshData &richData_, Parameters &p, bool isProtein_,
+         bool isVertexShift_, bool isTuftedLaplacian_,
+         double mollifyFactor_ = 1e-6)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
         isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
         isCircle(p.r_H0[0] == p.r_H0[1]), mollifyFactor(mollifyFactor_),
