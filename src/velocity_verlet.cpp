@@ -35,7 +35,7 @@
 #include "mem3dg/solver/trajfile.h"
 #endif
 
-namespace ddgsolver {
+namespace mem3dg {
 namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -330,4 +330,4 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 #endif
 }
 } // namespace integration
-} // namespace ddgsolver
+} // namespace mem3dg

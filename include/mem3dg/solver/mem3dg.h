@@ -18,22 +18,19 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-int viewPly(std::string fileName);
-
+/**
+ * @brief Visualize .ply file in polysope with options of additional quantities
+ *
+ */
 int viewer(std::string fileName, const bool mean_curvature = 0,
            const bool spon_curvature = 0, const bool ext_pressure = 0,
            const bool physical_pressure = 0, const bool capillary_pressure = 0,
            const bool bending_pressure = 0, const bool line_pressure = 0);
 
-int view_animation(std::string &filename, const bool ref_coord = 0,
-                   const bool velocity = 0, const bool mean_curvature = 0,
-                   const bool spon_curvature = 0, const bool ext_pressure = 0,
-                   const bool physical_pressure = 0,
-                   const bool capillary_pressure = 0,
-                   const bool bending_pressure = 0,
-                   const bool line_pressure = 0, const bool mask = 0,
-                   const bool H_H0 = 0);
-
+/**
+ * @brief Run single simulation starting with .ply files
+ *
+ */
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isTuftedLaplacian,
                bool isProtein, double mollifyFactor, bool isVertexShift,
@@ -46,6 +43,42 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string integrationMethod, bool isBacktrack, double rho,
                double c1, double ctol, bool isAugmentedLagrangian);
 
+/**
+ * @brief Run forward sweep simulation starting with .ply
+ * files
+ *
+ */
+int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+                     bool isTuftedLaplacian, bool isProtein,
+                     double mollifyFactor, bool isVertexShift, double Kb,
+                     std::vector<double> H0, double sharpness,
+                     std::vector<double> r_H0, double Kse, double Kst,
+                     double Ksl, double Ksg, double Kv, double eta,
+                     double epsilon, double Bc, std::vector<double> Vt,
+                     double gamma, double temp, std::vector<double> pt,
+                     double Kf, double conc, double height, double radius,
+                     double h, double T, double eps, double tSave,
+                     std::string outputDir, bool isBacktrack, double rho,
+                     double c1, double ctol, bool isAugmentedLagrangian);
+
+#ifdef MEM3DG_WITH_NETCDF
+/**
+ * @brief Animate netcdf file with options of additional quantities
+ *
+ */
+int view_animation(std::string &filename, const bool ref_coord = 0,
+                   const bool velocity = 0, const bool mean_curvature = 0,
+                   const bool spon_curvature = 0, const bool ext_pressure = 0,
+                   const bool physical_pressure = 0,
+                   const bool capillary_pressure = 0,
+                   const bool bending_pressure = 0,
+                   const bool line_pressure = 0, const bool mask = 0,
+                   const bool H_H0 = 0);
+                   
+/**
+ * @brief Run single simulation starting with netcdf files
+ *
+ */
 int driver_nc(const size_t verbosity, std::string trajFile,
               std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
@@ -58,19 +91,11 @@ int driver_nc(const size_t verbosity, std::string trajFile,
               bool isBacktrack, double rho, double c1, double ctol,
               bool isAugmentedLagrangian);
 
-int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
-                     bool isTuftedLaplacian, bool isProtein,
-                     double mollifyFactor, bool isVertexShift, double Kb,
-                     std::vector<double> H0, double sharpness,
-                     std::vector<double> r_H0, double Kse, double Kst,
-                     double Ksl, double Ksg, double Kv, double eta,
-                     double epsilon, double Bc, std::vector<double> Vt,
-                     double gamma, double temp, std::vector<double> pt, double Kf,
-                     double conc, double height, double radius, double h,
-                     double T, double eps, double tSave, std::string outputDir,
-                     bool isBacktrack, double rho, double c1, double ctol,
-                     bool isAugmentedLagrangian);
-
+/**
+ * @brief Run forward sweep simulation starting with netcdf
+ * files
+ *
+ */
 int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     bool isTuftedLaplacian, bool isProtein,
                     double mollifyFactor, bool isVertexShift, double Kb,
@@ -78,8 +103,10 @@ int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
                     std::vector<double> r_H0, double Kse, double Kst,
                     double Ksl, double Ksg, double Kv, double eta,
                     double epsilon, double Bc, std::vector<double> Vt,
-                    double gamma, double temp, std::vector<double> pt, double Kf,
-                    double conc, double height, double radius, double h,
-                    double T, double eps, double tSave, std::string outputDir,
-                    bool isBacktrack, double rho, double c1, double ctol,
-                    bool isAugmentedLagrangian);
+                    double gamma, double temp, std::vector<double> pt,
+                    double Kf, double conc, double height, double radius,
+                    double h, double T, double eps, double tSave,
+                    std::string outputDir, bool isBacktrack, double rho,
+                    double c1, double ctol, bool isAugmentedLagrangian);
+
+#endif

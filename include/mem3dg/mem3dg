@@ -13,7 +13,7 @@
 // 
 
 #include "solver/constants.h"
-#include "solver/ddgsolver.h"
+#include "solver/mem3dg.h"
 #include "solver/system.h"
 #include "solver/integrator.h"
 #include "solver/mesh.h"

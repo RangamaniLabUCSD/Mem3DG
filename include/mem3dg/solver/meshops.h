@@ -29,7 +29,7 @@
 #include "mem3dg/solver/util.h"
 #include "mem3dg/solver/constants.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
