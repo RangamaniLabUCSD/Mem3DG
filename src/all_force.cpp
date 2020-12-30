@@ -25,11 +25,11 @@
 
 #include <Eigen/Core>
 
-#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/util.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
@@ -49,14 +49,14 @@ void System::getAllForces() {
   if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
     getRegularizationForce();
   }
-  if ((P.gamma != 0) || (P.sigma != 0)){
+  if ((P.gamma != 0) || (P.sigma != 0)) {
     getDPDForces();
   }
-  if (isProtein){
+  if (isProtein) {
     getChemicalPotential();
   }
-  if (P.Kf != 0){
+  if (P.Kf != 0) {
     getExternalPressure();
   }
-} // namespace ddgsolver
-} // end namespace ddgsolver
+}
+} // namespace mem3dg

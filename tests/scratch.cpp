@@ -3,7 +3,7 @@
 #include <netcdf>
 #endif
 
-#include "mem3dg/solver/ddgsolver.h"
+#include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
@@ -24,7 +24,7 @@ namespace gcs = ::geometrycentral::surface;
 int main() {
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
-  ddgsolver::icosphere(coords, polygons, 1, 1);
+  mem3dg::icosphere(coords, polygons, 1, 1);
   gcs::SimplePolygonMesh soup(polygons, coords);
   soup.mergeIdenticalVertices();
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
@@ -47,18 +47,18 @@ int main() {
 
   bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false;
 
-  double sigma = sqrt(2 * gamma * ddgsolver::constants::kBoltzmann * temp / h);
+  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
   if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
     Vt = 1.0;
     std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
   }
 
   std::cout << "Initiating the system ...";
-  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,          Ksg,     Kst,
+  mem3dg::Parameters p{Kb,    H0,     sharpness, r_H0,          Ksg,     Kst,
                           Ksl,   Kse,    Kv,        eta,           epsilon, Bc,
                           gamma, Vt,     temp,        sigma, pt,      Kf,
                           conc,  height, radius};
-  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
                       isVertexShift, isTuftedLaplacian, mollifyFactor);
   std::cout << "Finished!" << std::endl;
 
@@ -66,10 +66,10 @@ int main() {
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100;
   size_t verbosity = 0;
-  // ddgsolver::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
+  // mem3dg::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
   //                                        Kv, Ksg, tSave, tMollify,
   //                                        verbosity);
-  ddgsolver::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.01,
+  mem3dg::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.01,
                                             verbosity, "./", true, 0.5, 1e-4,
                                             false, "/traj.nc");
 

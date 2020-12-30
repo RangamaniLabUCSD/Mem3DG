@@ -16,7 +16,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "mem3dg/solver/ddgsolver.h"
+#include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
@@ -24,16 +24,27 @@
 
 #include "mem3dg/solver/system.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 namespace py = pybind11;
 
 // Initialize the `pymem3dg` module
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
+  pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
+               py::arg("nSub"), py::arg("path"), py::arg("R"));
+
+  pymem3dg.def(
+      "viewer", &viewer,
+      " Visualize .ply file in polysope with options of additional quantities",
+      py::arg("fileName"), py::arg("mean_curvature"), py::arg("spon_curvature"),
+      py::arg("ext_pressure"), py::arg("physical_pressure"),
+      py::arg("capillary_pressure"), py::arg("bending_pressure"),
+      py::arg("line_pressure"));
+
   pymem3dg.def(
       "driver_ply", &driver_ply,
-      "the driver function for input .ply mesh file ", py::arg("verbosity"),
+      "Run single simulation starting with .ply files", py::arg("verbosity"),
       py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
       py::arg("isTuftedLaplacian"), py::arg("isProtein"),
       py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"),
@@ -46,8 +57,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
       py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
       R"delim(
-                    Run the driver for .ply file input
-
+                    Run single simulation starting with .ply files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
                    inputMesh (:py:class:`str`): input mesh path
@@ -92,22 +102,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def(
-      "driver_ply_sweep", &driver_ply_sweep,
-      "the driver function for serially sweeping H0", py::arg("inputMesh"),
-      py::arg("refMesh"), py::arg("nSub"), py::arg("isTuftedLaplacian"),
-      py::arg("isProtein"), py::arg("mollifyFactor"), py::arg("isVertexShift"),
-      py::arg("Kb"), py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
-      py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-      py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-      py::arg("Vt"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-      py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
-      py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-      py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-      R"delim(
-                    Run the driver for .ply file input
-
+  pymem3dg.def("driver_ply_sweep", &driver_ply_sweep,
+               "Run forward sweep simulation starting with .ply files",
+               py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
+               py::arg("isTuftedLaplacian"), py::arg("isProtein"),
+               py::arg("mollifyFactor"), py::arg("isVertexShift"),
+               py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
+               py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"),
+               py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+               py::arg("conc"), py::arg("height"), py::arg("radius"),
+               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
+               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
+               py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+               R"delim(
+                    Run forward sweep simulation starting with .ply files
                Args:
                    inputMesh (:py:class:`str`): input mesh path
                    refMesh (:py:class:`str`): reference mesh path
@@ -150,22 +160,18 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def("viewer", &viewer, " a visualization function",
-               py::arg("fileName"), py::arg("mean_curvature"),
-               py::arg("spon_curvature"), py::arg("ext_pressure"),
-               py::arg("physical_pressure"), py::arg("capillary_pressure"),
-               py::arg("bending_pressure"), py::arg("line_pressure"));
-
-  pymem3dg.def("viewer", &viewPly, " a visualization function",
-               py::arg("fileName"));
-
-  pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
-               py::arg("nSub"), py::arg("path"), py::arg("R"));
-
 #ifdef MEM3DG_WITH_NETCDF
+  pymem3dg.def("view_animation", &view_animation,
+               "Animate netcdf file with options of additional quantities",
+               py::arg("fileName"), py::arg("ref_coord"), py::arg("velocity"),
+               py::arg("mean_curvature"), py::arg("spon_curvature"),
+               py::arg("ext_pressure"), py::arg("physical_pressure"),
+               py::arg("capillary_pressure"), py::arg("bending_pressure"),
+               py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
+
   pymem3dg.def(
       "driver_nc", &driver_nc,
-      " a driver function for input .nc trajectory file", py::arg("verbosity"),
+      "Run single simulation starting with netcdf files", py::arg("verbosity"),
       py::arg("trajFile"), py::arg("startingFrame"),
       py::arg("isTuftedLaplacian"), py::arg("isProtein"),
       py::arg("mollifyFactor"), py::arg("isVertexShift"), py::arg("Kb"),
@@ -178,8 +184,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
       py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
       R"delim(
-                   Run the driver for netcdf input file (continuation)
-
+                   Run single simulation starting with netcdf files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
                    trajFile (:py:class:`str`): input trajectory file path
@@ -225,7 +230,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   pymem3dg.def(
       "driver_nc_sweep", &driver_nc_sweep,
-      " a driver function for input .nc trajectory file", py::arg("trajFile"),
+      "Run forward sweep simulation starting with netcdf files", py::arg("trajFile"),
       py::arg("startingFrame"), py::arg("isTuftedLaplacian"),
       py::arg("isProtein"), py::arg("mollifyFactor"), py::arg("isVertexShift"),
       py::arg("Kb"), py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
@@ -237,8 +242,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
       py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
       R"delim(
-                   Run the driver for netcdf input file (continuation)
-
+                   Run forward sweep simulation starting with netcdf files
                Args:
                    trajFile (:py:class:`str`): input trajectory file path
                    startingFrame (:py:class:`int`): starting frame of continuation
@@ -276,17 +280,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
                    ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
-            
                Returns:
                    :py:class:`int`: success.
             )delim");
-
-  pymem3dg.def("view_animation", &view_animation, " a visualization function",
-               py::arg("fileName"), py::arg("ref_coord"), py::arg("velocity"),
-               py::arg("mean_curvature"), py::arg("spon_curvature"),
-               py::arg("ext_pressure"), py::arg("physical_pressure"),
-               py::arg("capillary_pressure"), py::arg("bending_pressure"),
-               py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
 #endif
 };
 } // namespace ddgsolver
