@@ -258,7 +258,7 @@ int view_animation(std::string &filename, const bool ref_coord,
 
     if (ImGui::Button("Screenshot")) {
       char buff[50];
-      snprintf(buff, 50, "screenshot_frame%04zu.png", currFrame);
+      snprintf(buff, 50, "screenshot_frame%06d.png", currFrame);
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
       // polyscope::screenshot("screenshot.png", true);
@@ -275,7 +275,7 @@ int view_animation(std::string &filename, const bool ref_coord,
 
     if (record) {
       char buff[50];
-      snprintf(buff, 50, "video/frame%04zu.png", currFrame);
+      snprintf(buff, 50, "video/frame%06d.png", currFrame);
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
       animate(mesh, fd, currFrame, waitTime, options, record);
