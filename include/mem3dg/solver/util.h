@@ -24,7 +24,7 @@
 
 #include <geometrycentral/surface/surface_mesh.h>
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;

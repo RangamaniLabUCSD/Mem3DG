@@ -30,7 +30,7 @@
 
 #include "igl/loop.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -116,7 +116,7 @@ int genIcosphere(size_t nSub, std::string path, double R) {
   /// initialize icosphere
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
-  ddgsolver::icosphere(coords, polygons, nSub, R);
+  mem3dg::icosphere(coords, polygons, nSub, R);
   gcs::SimplePolygonMesh soup(polygons, coords);
   soup.mergeIdenticalVertices();
   std::tie(ptrMesh, ptrVpg) =
@@ -228,4 +228,4 @@ void tetrahedron(std::vector<gc::Vector3> &coords,
   polygons.emplace_back(std::vector<std::size_t>{3, 0, 2});
   polygons.emplace_back(std::vector<std::size_t>{3, 2, 1});
 }
-} // end namespace ddgsolver
+} // namespace mem3dg

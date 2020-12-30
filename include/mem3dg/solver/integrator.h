@@ -19,7 +19,7 @@
 
 #include "system.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 namespace integration {
 
 DLL_PUBLIC void stormerVerlet(System &f, double dt, double total_time,

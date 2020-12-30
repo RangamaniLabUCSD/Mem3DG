@@ -29,7 +29,7 @@
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/util.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -95,8 +95,8 @@ protected:
 
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
 
   f.getAllForces();
   EigenVectorX3D bendingPressure1 = gc::EigenMap<double, 3>(f.bendingPressure),
@@ -135,8 +135,8 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
 
   f.getAllForces();
 
@@ -183,8 +183,8 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
 
 TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
   //   Energy E_pre{f.E.totalE, f.E.kE, f.E.potE, f.E.BE, f.E.sE,
@@ -247,4 +247,4 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   }
 
 }; // namespace ddgsolver
-} // namespace ddgsolver
+} // namespace mem3dg

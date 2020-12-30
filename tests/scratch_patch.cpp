@@ -3,13 +3,13 @@
 #include <netcdf>
 #endif
 
-#include "mem3dg/solver/ddgsolver.h"
+#include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/util.h"
-#include "mem3dg/solver/constants.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -63,8 +63,8 @@ int main() {
 
   //   Eigen::Matrix<double, Eigen::Dynamic, 3> refcoords;
   //   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> reffaces;
-  //   // ddgsolver::subdivide(ptrMesh, ptrVpg, nSub);
-  //   // ddgsolver::subdivide(ptrRefMesh, ptrRefVpg, nSub);
+  //   // mem3dg::subdivide(ptrMesh, ptrVpg, nSub);
+  //   // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
   //   igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
   //             ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
   //   igl::loop(gc::EigenMap<double, 3>(ptrRefVpg->inputVertexPositions),
@@ -91,19 +91,19 @@ int main() {
   std::vector<double> pt = {0, 0, 0};
   std::vector<double> r_H0 = {0.15, 0.15};
   bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false;
-  double sigma = sqrt(2 * gamma * ddgsolver::constants::kBoltzmann * temp / h);
+  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
   if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
     Vt = 1.0;
     std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
   }
 
-  ddgsolver::Parameters p{Kb,    H0,     sharpness, r_H0,          Ksg,     Kst,
-                          Ksl,   Kse,    Kv,        eta,           epsilon, Bc,
-                          gamma, Vt,     temp,        sigma + 1e-18, pt,      Kf,
-                          conc,  height, radius};
-  ddgsolver::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::Parameters p{Kb,    H0,     sharpness, r_H0,          Ksg,     Kst,
+                       Ksl,   Kse,    Kv,        eta,           epsilon, Bc,
+                       gamma, Vt,     temp,      sigma + 1e-18, pt,      Kf,
+                       conc,  height, radius};
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
@@ -111,8 +111,8 @@ int main() {
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
-  ddgsolver::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir,
-                                true, 0.5, 1e-4);
+  mem3dg::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir, true,
+                             0.5, 1e-4);
 
   delete ptrRefVpg;
   return 0;

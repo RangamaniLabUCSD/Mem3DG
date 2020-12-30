@@ -27,7 +27,7 @@
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/util.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -35,7 +35,7 @@ namespace gcs = ::geometrycentral::surface;
 void System::getRegularizationForce() {
   gcs::EdgeData<double> lcr(mesh);
   getCrossLengthRatio(mesh, vpg, lcr);
-  
+
   for (gcs::Vertex v : mesh.vertices()) {
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
       gcs::Halfedge base_he = he.next();
@@ -94,4 +94,4 @@ void System::getRegularizationForce() {
   }
 }
 
-} // end namespace ddgsolver
+} // namespace mem3dg

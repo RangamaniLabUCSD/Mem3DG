@@ -12,8 +12,8 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/version.h"
 
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
@@ -22,7 +22,7 @@
 #include <iostream>
 using namespace std;
 
-namespace ddgsolver {
+namespace mem3dg {
 namespace integration {
 
 void getParameterLog(System &f, double dt, double finalTime, double tolerance,
@@ -162,4 +162,4 @@ void getEnergyLog(double time, double bendingEnergy, double surfaceEnergy,
 }
 
 } // namespace integration
-} // namespace ddgsolver
+} // namespace mem3dg
