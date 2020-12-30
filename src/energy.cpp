@@ -23,7 +23,7 @@
 
 #include "mem3dg/solver/system.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -92,4 +92,4 @@ void System::getFreeEnergy() {
     E.totalE = E.potE + E.kE;
   }
 }
-} // namespace ddgsolver
+} // namespace mem3dg

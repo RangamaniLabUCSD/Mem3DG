@@ -31,7 +31,7 @@
 #include "mem3dg/solver/trajfile.h"
 #endif
 
-namespace ddgsolver {
+namespace mem3dg {
 namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -355,4 +355,4 @@ void feedForwardSweep(System &f, std::vector<double> H_, std::vector<double> V_,
 }
 
 } // namespace integration
-} // namespace ddgsolver
+} // namespace mem3dg

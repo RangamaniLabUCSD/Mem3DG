@@ -28,7 +28,7 @@
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/trajfile.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace nc = ::netCDF;
 using NcException = nc::exceptions::NcException;
@@ -464,7 +464,8 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
 }
 
 // L2 error norm
-void TrajFile::writeL2ErrorNorm(const std::size_t idx, const double L2ErronNorm) {
+void TrajFile::writeL2ErrorNorm(const std::size_t idx,
+                                const double L2ErronNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   l2errornorm_var.putVar({idx}, &L2ErronNorm);
@@ -478,6 +479,6 @@ double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
   return L2ErronNorm;
 }
 
-} // namespace ddgsolver
+} // namespace mem3dg
 
 #endif

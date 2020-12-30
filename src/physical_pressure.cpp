@@ -23,11 +23,11 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/system.h"
 #include <Eigen/Core>
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -216,7 +216,6 @@ void System::getLineTensionPressure() {
         double angle = halfedgeVectorsInVertex[he].arg();
         gc::Vector3 eVecX = eVec.rotateAround(vpg.vertexNormals[v], -angle);
         basisXSum += eVecX;
-
       }
 
       // post-process gradient and vertex principal direction
@@ -244,8 +243,8 @@ void System::getLineTensionPressure() {
     }
   }
 
-  // /// If requireVertexPrincipalCurvatureDirections and requireVertexTangentBasis
-  // for (gcs::Vertex v : mesh.vertices()) {
+  // /// If requireVertexPrincipalCurvatureDirections and
+  // requireVertexTangentBasis for (gcs::Vertex v : mesh.vertices()) {
   //   // Calculate interfacial tension
   //   if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
   //       (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
@@ -254,8 +253,8 @@ void System::getLineTensionPressure() {
   //     for (gcs::Halfedge he : v.outgoingHalfedges()) {
   //       gradient +=
   //           vecFromHalfedge(he, vpg).normalize() *
-  //           (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()]) /
-  //           vpg.edgeLengths[he.edge()];
+  //           (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()])
+  //           / vpg.edgeLengths[he.edge()];
   //     }
   //     gradient.normalize();
   //     // Find angle between tangent & principal direction
@@ -276,7 +275,6 @@ void System::getLineTensionPressure() {
   //                              (cosT * cosT * (K1 - K2) + K2) * P.sharpness;
   //   }
   // }
-
 }
 
 void System::getExternalPressure() {
@@ -332,4 +330,4 @@ void System::getChemicalPotential() {
       (P.epsilon - (2 * P.Kb * (H - H0)).array() * dH0dphi.array()).matrix();
 }
 
-} // namespace ddgsolver
+} // namespace mem3dg

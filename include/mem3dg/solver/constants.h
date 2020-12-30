@@ -13,7 +13,7 @@
 //
 #pragma once
 
-namespace ddgsolver {
+namespace mem3dg {
 namespace constants {
 const double kBoltzmann = 1.380649e-8; // nanonewton * micrometer / Kelvin
 const double PI = 3.14159265358979323846; 

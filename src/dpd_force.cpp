@@ -22,8 +22,8 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
 
@@ -31,7 +31,7 @@
 
 #include "mem3dg/solver/system.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -84,7 +84,6 @@ void System::getDPDForces() {
     //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) * -dPos12_n)
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
-    
   }
 }
 
@@ -110,4 +109,4 @@ void System::pcg_test() {
   std::cout << "Required " << (rng - rng_checkpoint) << " random numbers.\n";
 }
 
-} // end namespace ddgsolver
+} // namespace mem3dg

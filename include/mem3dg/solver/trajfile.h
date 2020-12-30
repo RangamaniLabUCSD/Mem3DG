@@ -38,7 +38,7 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/typetraits.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -550,5 +550,5 @@ private:
   /// Writeable status
   bool writeable;
 };
-} // namespace ddgsolver
+} // namespace mem3dg
 #endif
