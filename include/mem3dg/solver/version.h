@@ -19,4 +19,4 @@
 namespace mem3dg {
 extern const std::string MEM3DG_VERSION;
 extern const std::string MEM3DG_VERSION_SHORT;
-} // end namespace ddgsolver
+} // end namespace mem3dg
