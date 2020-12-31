@@ -456,13 +456,15 @@ int animation_nc(std::string &filename, const bool ref_coord,
   return 0;
 }
 
-int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
-                std::string screenshotName, const bool ref_coord,
+int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
+                bool isSave, std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
                 const bool physical_pressure, const bool capillary_pressure,
                 const bool bending_pressure, const bool line_pressure,
                 const bool mask, const bool H_H0) {
+
+  static int ENTRY = 0;
 
   // Activate signal handling
   signal(SIGINT, signalHandler);
@@ -479,7 +481,6 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,
                     bending_pressure, line_pressure, mask, H_H0});
-  glm::mat4x4 VIEWMAT;
 
   // Set preference for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -496,12 +497,6 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
   // Initialize polyscope
   if (!polyscope::state::initialized) {
     polyscope::init();
-    // glm::vec3 frameLookDir, frameUpDir, frameRightDir;
-    glm::vec3 frameRightDir = glm::vec3(1., 0, 0.);
-    // polyscope::view::getCameraFrame(frameLookDir, frameUpDir, frameRightDir);
-    float angle = 45;
-    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), angle, frameRightDir);
-    VIEWMAT = polyscope::view::viewMat * phiCamR;
   }
 
   // Initialize surface mesh and switch to specific frame
@@ -556,8 +551,6 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
     mesh->addVertexScalarQuantity("curvature_diff", h_h0)->setEnabled(true);
   }
 
-  polyscope::view::viewMat = VIEWMAT;
-
   // Callback function for interactive GUI
   auto myCallback = [&]() {
     // Since options::openImGuiWindowForUserCallback == true by default,
@@ -582,19 +575,31 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
 
     ImGui::PopItemWidth();
   };
+
   // For some reasons we have to run screenshot twice for fov (field of view)
   // setting to work, not ideal
   if (isSave) {
     polyscope::screenshot(screenshotName, true);
   }
   polyscope::state::userCallback = myCallback;
+
   polyscope::view::fov = 50;
+  if (ENTRY == 0) {
+    // glm::vec3 frameLookDir, frameUpDir, frameRightDir;
+    // polyscope::view::getCameraFrame(frameLookDir, frameUpDir, frameRightDir);
+    glm::vec3 frameRightDir = glm::vec3(1., 0, 0.);
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), angle, frameRightDir);
+    polyscope::view::viewMat = polyscope::view::viewMat * phiCamR;
+  }
+
   if (isSave) {
     polyscope::screenshot(screenshotName, true);
   }
   if (isShow) {
     polyscope::show();
   }
+
+  ENTRY++;
   return 0;
 }
 #endif
