@@ -22,7 +22,7 @@ namespace gcs = ::geometrycentral::surface;
  * @brief Visualize .ply file in polysope with options of additional quantities
  *
  */
-int viewer(std::string fileName, const bool mean_curvature = 0,
+int viewer_ply(std::string fileName, const bool mean_curvature = 0,
            const bool spon_curvature = 0, const bool ext_pressure = 0,
            const bool physical_pressure = 0, const bool capillary_pressure = 0,
            const bool bending_pressure = 0, const bool line_pressure = 0);
@@ -48,7 +48,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
  * files
  *
  */
-int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                      bool isTuftedLaplacian, bool isProtein,
                      double mollifyFactor, bool isVertexShift, double Kb,
                      std::vector<double> H0, double sharpness,
@@ -78,7 +78,7 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
  * @brief Animate netcdf file with options of additional quantities
  *
  */
-int view_animation(std::string &filename, const bool ref_coord = 0,
+int animation_nc(std::string &filename, const bool ref_coord = 0,
                    const bool velocity = 0, const bool mean_curvature = 0,
                    const bool spon_curvature = 0, const bool ext_pressure = 0,
                    const bool physical_pressure = 0,
@@ -108,7 +108,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
  * files
  *
  */
-int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
+int forwardsweep_nc(std::string trajFile, std::size_t startingFrame,
                     bool isTuftedLaplacian, bool isProtein,
                     double mollifyFactor, bool isVertexShift, double Kb,
                     std::vector<double> H0, double sharpness,
