@@ -492,7 +492,9 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
   // polyscope::view::fov = 50;
 
   // Initialize polyscope
-  polyscope::init();
+  if (!polyscope::state::initialized) {
+    polyscope::init();
+  }
 
   // Initialize surface mesh and switch to specific frame
   auto mesh = registerSurfaceMesh(fd, options);
