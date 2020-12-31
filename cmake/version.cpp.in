@@ -14,7 +14,7 @@
 
 #include "mem3dg/solver/version.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 const std::string MEM3DG_VERSION = "@VERSION@";
 const std::string MEM3DG_VERSION_SHORT = "@VERSION_SHORT@";
-} // end namespace ddgsolver
+} // end namespace mem3dg
