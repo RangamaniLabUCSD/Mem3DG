@@ -18,6 +18,7 @@
 
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/view.h"
 
 #include <geometrycentral/surface/meshio.h>
 
@@ -83,7 +84,7 @@ int viewer_ply(std::string fileName, const bool mean_curvature,
   polyscope::options::groundPlaneEnabled = false;
   polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Free;
+  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
 
   /// Initiate in polyscope
   polyscope::init();
@@ -390,7 +391,7 @@ int animation_nc(std::string &filename, const bool ref_coord,
   polyscope::options::groundPlaneEnabled = false;
   polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Free;
+  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
 
   // Initialize polyscope
   polyscope::init();
@@ -478,6 +479,7 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,
                     bending_pressure, line_pressure, mask, H_H0});
+  glm::mat4x4 VIEWMAT;
 
   // Set preference for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -488,12 +490,18 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
   polyscope::options::groundPlaneEnabled = false;
   polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Free;
+  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
   // polyscope::view::fov = 50;
 
   // Initialize polyscope
   if (!polyscope::state::initialized) {
     polyscope::init();
+    // glm::vec3 frameLookDir, frameUpDir, frameRightDir;
+    glm::vec3 frameRightDir = glm::vec3(1., 0, 0.);
+    // polyscope::view::getCameraFrame(frameLookDir, frameUpDir, frameRightDir);
+    float angle = 45;
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), angle, frameRightDir);
+    VIEWMAT = polyscope::view::viewMat * phiCamR;
   }
 
   // Initialize surface mesh and switch to specific frame
@@ -548,6 +556,8 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
     mesh->addVertexScalarQuantity("curvature_diff", h_h0)->setEnabled(true);
   }
 
+  polyscope::view::viewMat = VIEWMAT;
+
   // Callback function for interactive GUI
   auto myCallback = [&]() {
     // Since options::openImGuiWindowForUserCallback == true by default,
@@ -572,7 +582,6 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
 
     ImGui::PopItemWidth();
   };
-
   // For some reasons we have to run screenshot twice for fov (field of view)
   // setting to work, not ideal
   if (isSave) {
