@@ -155,7 +155,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   return 0;
 }
 
-int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
+int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                      bool isTuftedLaplacian, bool isProtein,
                      double mollifyFactor, bool isVertexShift, double Kb,
                      std::vector<double> H0, double sharpness,
@@ -325,7 +325,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   return 0;
 }
 
-int driver_nc_sweep(std::string trajFile, std::size_t startingFrame,
+int forwardsweep_nc(std::string trajFile, std::size_t startingFrame,
                     bool isTuftedLaplacian, bool isProtein,
                     double mollifyFactor, bool isVertexShift, double Kb,
                     std::vector<double> H0, double sharpness,

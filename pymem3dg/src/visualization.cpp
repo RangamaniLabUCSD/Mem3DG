@@ -12,7 +12,6 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#ifdef MEM3DG_WITH_NETCDF
 #include <csignal>
 #include <iostream>
 #include <time.h>
@@ -42,6 +41,160 @@ using EigenTopVec =
 
 void signalHandler(int signum);
 
+int viewer_ply(std::string fileName, const bool mean_curvature,
+               const bool spon_curvature, const bool ext_pressure,
+               const bool physical_pressure, const bool capillary_pressure,
+               const bool bending_pressure, const bool line_pressure) {
+
+  signal(SIGINT, signalHandler);
+
+  /// alias eigen matrix
+  using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+  using EigenVectorX3D =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  using EigenTopVec =
+      Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
+  /// Declare pointers to mesh, geometry and richdata objects
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
+
+  /// Load input mesh
+  if (!mean_curvature && !spon_curvature && !ext_pressure &&
+      !physical_pressure && !capillary_pressure && !bending_pressure &&
+      !line_pressure) {
+    std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(fileName);
+  } else {
+    std::tie(ptrMesh, ptrRichData) =
+        gcs::RichSurfaceMeshData::readMeshAndData(fileName);
+    ptrVpg = ptrRichData->getGeometry();
+  }
+
+  // Initialize visualization variables
+  float transparency = 1;
+
+  // Set preference for polyscope
+  polyscope::options::programName = "Mem3DG Visualization";
+  polyscope::options::verbosity = 0;
+  polyscope::options::usePrefsFile = false;
+  polyscope::options::autocenterStructures = false;
+  polyscope::options::autoscaleStructures = false;
+  polyscope::options::groundPlaneEnabled = false;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
+  polyscope::view::style = polyscope::view::NavigateStyle::Free;
+
+  /// Initiate in polyscope
+  polyscope::init();
+  polyscope::SurfaceMesh *mesh = polyscope::registerSurfaceMesh(
+      "Vesicle surface", ptrVpg->inputVertexPositions,
+      ptrMesh->getFaceVertexList());
+  mesh->setSmoothShade(true);
+  mesh->setEnabled(true);
+  mesh->setEdgeWidth(1);
+
+  /// Read element data
+  if (mean_curvature) {
+    gcs::VertexData<double> meanCurvature =
+        ptrRichData->getVertexProperty<double>("mean_curvature");
+    EigenVectorX1D meanCurvature_e = meanCurvature.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
+  }
+  if (spon_curvature) {
+    gcs::VertexData<double> sponCurvature =
+        ptrRichData->getVertexProperty<double>("spon_curvature");
+    EigenVectorX1D sponCurvature_e = sponCurvature.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
+  }
+  if (ext_pressure) {
+    gcs::VertexData<double> extPressure =
+        ptrRichData->getVertexProperty<double>("external_pressure");
+    EigenVectorX1D extPressure_e = extPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("applied_pressure", extPressure_e);
+  }
+  if (physical_pressure) {
+    gcs::VertexData<double> physicalPressure =
+        ptrRichData->getVertexProperty<double>("physical_pressure");
+    EigenVectorX1D physicalPressure_e = physicalPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
+  }
+  if (capillary_pressure) {
+    gcs::VertexData<double> capillaryPressure =
+        ptrRichData->getVertexProperty<double>("capillary_pressure");
+    EigenVectorX1D capillaryPressure_e = capillaryPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("surface_tension", capillaryPressure_e);
+  }
+  if (bending_pressure) {
+    gcs::VertexData<double> bendingPressure =
+        ptrRichData->getVertexProperty<double>("bending_pressure");
+    EigenVectorX1D bendingPressure_e = bendingPressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
+  }
+  if (line_pressure) {
+    gcs::VertexData<double> linePressure =
+        ptrRichData->getVertexProperty<double>("line_tension_pressure");
+    EigenVectorX1D linePressure_e = linePressure.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("line_tension_pressure", linePressure_e);
+  }
+
+  /*gcs::VertexData<gc::Vector3> vertexVelocity =
+      ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
+  /*gcs::VertexData<gc::Vector3> normalForce =
+  ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
+  gcs::VertexData<gc::Vector3> tangentialForce =
+  ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
+  // EigenVectorX3D vertexVelocity_e =
+  //    mem3dg::EigenMap<double, 3>(vertexVelocity);
+  /*EigenVectorX3D normalForce_e =
+  gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
+  Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
+  3>(tangentialForce);*/
+  /*polyscope::getSurfaceMesh("Vesicle surface")
+      ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
+  /*polyscope::getSurfaceMesh("Vesicle
+  surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
+  polyscope::getSurfaceMesh("Vesicle
+  surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
+
+  // Callback function for interactive GUI
+  auto myCallback = [&]() {
+    // Since options::openImGuiWindowForUserCallback == true by default,
+    // we can immediately start using ImGui commands to build a UI
+    ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
+                               // instead of full width. Must have
+                               // matching PopItemWidth() below.
+
+    // Initialize sliders
+    ImGui::SliderFloat("transparency", &transparency, 0, 1);
+
+    // Execute transparency slider
+    mesh->setTransparency(transparency);
+
+    // Define buttons
+    if (ImGui::Button("Screenshot")) {
+      // char buff[50];
+      // snprintf(buff, 50, "screenshot_frame%06d.png", frame);
+      // std::string defaultName(buff);
+      polyscope::screenshot("screenshot.png", true);
+    }
+
+    ImGui::PopItemWidth();
+  };
+  polyscope::state::userCallback = myCallback;
+  polyscope::show();
+
+  return 0;
+}
+
+#ifdef MEM3DG_WITH_NETCDF
 void wait(unsigned timeout) {
   timeout += std::clock();
   while (std::clock() < timeout)
@@ -202,12 +355,12 @@ void animate(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd, int &idx,
   wait(waitTime);
 }
 
-int view_animation(std::string &filename, const bool ref_coord,
-                   const bool velocity, const bool mean_curvature,
-                   const bool spon_curvature, const bool ext_pressure,
-                   const bool physical_pressure, const bool capillary_pressure,
-                   const bool bending_pressure, const bool line_pressure,
-                   const bool mask, const bool H_H0) {
+int animation_nc(std::string &filename, const bool ref_coord,
+                 const bool velocity, const bool mean_curvature,
+                 const bool spon_curvature, const bool ext_pressure,
+                 const bool physical_pressure, const bool capillary_pressure,
+                 const bool bending_pressure, const bool line_pressure,
+                 const bool mask, const bool H_H0) {
 
   // Activate signal handling
   signal(SIGINT, signalHandler);
@@ -418,8 +571,8 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
     ImGui::PopItemWidth();
   };
 
-  // For some reasons we have to run screenshot twice for fov setting to work,
-  // not ideal
+  // For some reasons we have to run screenshot twice for fov (field of view)
+  // setting to work, not ideal
   if (isSave) {
     polyscope::screenshot(screenshotName, true);
   }
@@ -434,156 +587,3 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
   return 0;
 }
 #endif
-
-int viewer(std::string fileName, const bool mean_curvature,
-           const bool spon_curvature, const bool ext_pressure,
-           const bool physical_pressure, const bool capillary_pressure,
-           const bool bending_pressure, const bool line_pressure) {
-
-  signal(SIGINT, signalHandler);
-
-  /// alias eigen matrix
-  using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-  using EigenVectorX3D =
-      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-  using EigenTopVec =
-      Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
-
-  /// Declare pointers to mesh, geometry and richdata objects
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
-
-  /// Load input mesh
-  if (!mean_curvature && !spon_curvature && !ext_pressure &&
-      !physical_pressure && !capillary_pressure && !bending_pressure &&
-      !line_pressure) {
-    std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(fileName);
-  } else {
-    std::tie(ptrMesh, ptrRichData) =
-        gcs::RichSurfaceMeshData::readMeshAndData(fileName);
-    ptrVpg = ptrRichData->getGeometry();
-  }
-
-  // Initialize visualization variables
-  float transparency = 1;
-
-  // Set preference for polyscope
-  polyscope::options::programName = "Mem3DG Visualization";
-  polyscope::options::verbosity = 0;
-  polyscope::options::usePrefsFile = false;
-  polyscope::options::autocenterStructures = false;
-  polyscope::options::autoscaleStructures = false;
-  polyscope::options::groundPlaneEnabled = false;
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
-  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Free;
-
-  /// Initiate in polyscope
-  polyscope::init();
-  polyscope::SurfaceMesh *mesh = polyscope::registerSurfaceMesh(
-      "Vesicle surface", ptrVpg->inputVertexPositions,
-      ptrMesh->getFaceVertexList());
-  mesh->setSmoothShade(true);
-  mesh->setEnabled(true);
-  mesh->setEdgeWidth(1);
-
-  /// Read element data
-  if (mean_curvature) {
-    gcs::VertexData<double> meanCurvature =
-        ptrRichData->getVertexProperty<double>("mean_curvature");
-    EigenVectorX1D meanCurvature_e = meanCurvature.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
-  }
-  if (spon_curvature) {
-    gcs::VertexData<double> sponCurvature =
-        ptrRichData->getVertexProperty<double>("spon_curvature");
-    EigenVectorX1D sponCurvature_e = sponCurvature.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
-  }
-  if (ext_pressure) {
-    gcs::VertexData<double> extPressure =
-        ptrRichData->getVertexProperty<double>("external_pressure");
-    EigenVectorX1D extPressure_e = extPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("applied_pressure", extPressure_e);
-  }
-  if (physical_pressure) {
-    gcs::VertexData<double> physicalPressure =
-        ptrRichData->getVertexProperty<double>("physical_pressure");
-    EigenVectorX1D physicalPressure_e = physicalPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
-  }
-  if (capillary_pressure) {
-    gcs::VertexData<double> capillaryPressure =
-        ptrRichData->getVertexProperty<double>("capillary_pressure");
-    EigenVectorX1D capillaryPressure_e = capillaryPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("surface_tension", capillaryPressure_e);
-  }
-  if (bending_pressure) {
-    gcs::VertexData<double> bendingPressure =
-        ptrRichData->getVertexProperty<double>("bending_pressure");
-    EigenVectorX1D bendingPressure_e = bendingPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
-  }
-  if (line_pressure) {
-    gcs::VertexData<double> linePressure =
-        ptrRichData->getVertexProperty<double>("line_tension_pressure");
-    EigenVectorX1D linePressure_e = linePressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("line_tension_pressure", linePressure_e);
-  }
-
-  /*gcs::VertexData<gc::Vector3> vertexVelocity =
-      ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
-  /*gcs::VertexData<gc::Vector3> normalForce =
-  ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
-  gcs::VertexData<gc::Vector3> tangentialForce =
-  ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
-  // EigenVectorX3D vertexVelocity_e =
-  //    mem3dg::EigenMap<double, 3>(vertexVelocity);
-  /*EigenVectorX3D normalForce_e =
-  gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
-  Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
-  3>(tangentialForce);*/
-  /*polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
-  /*polyscope::getSurfaceMesh("Vesicle
-  surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
-  polyscope::getSurfaceMesh("Vesicle
-  surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
-
-  // Callback function for interactive GUI
-  auto myCallback = [&]() {
-    // Since options::openImGuiWindowForUserCallback == true by default,
-    // we can immediately start using ImGui commands to build a UI
-    ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
-                               // instead of full width. Must have
-                               // matching PopItemWidth() below.
-
-    // Initialize sliders
-    ImGui::SliderFloat("transparency", &transparency, 0, 1);
-
-    // Execute transparency slider
-    mesh->setTransparency(transparency);
-
-    // Define buttons
-    if (ImGui::Button("Screenshot")) {
-      // char buff[50];
-      // snprintf(buff, 50, "screenshot_frame%06d.png", frame);
-      // std::string defaultName(buff);
-      polyscope::screenshot("screenshot.png", true);
-    }
-
-    ImGui::PopItemWidth();
-  };
-  polyscope::state::userCallback = myCallback;
-  polyscope::show();
-
-  return 0;
-}

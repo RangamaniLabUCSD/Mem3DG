@@ -35,7 +35,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("nSub"), py::arg("path"), py::arg("R"));
 
   pymem3dg.def(
-      "viewer", &viewer,
+      "viewer_ply", &viewer_ply,
       " Visualize .ply file in polysope with options of additional quantities",
       py::arg("fileName"), py::arg("mean_curvature"), py::arg("spon_curvature"),
       py::arg("ext_pressure"), py::arg("physical_pressure"),
@@ -102,7 +102,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def("driver_ply_sweep", &driver_ply_sweep,
+  pymem3dg.def("forwardsweep_ply", &forwardsweep_ply,
                "Run forward sweep simulation starting with .ply files",
                py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
                py::arg("isTuftedLaplacian"), py::arg("isProtein"),
@@ -171,7 +171,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("capillary_pressure"), py::arg("bending_pressure"),
       py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
 
-  pymem3dg.def("view_animation", &view_animation,
+  pymem3dg.def("animation_nc", &animation_nc,
                "Animate netcdf file with options of additional quantities",
                py::arg("fileName"), py::arg("ref_coord"), py::arg("velocity"),
                py::arg("mean_curvature"), py::arg("spon_curvature"),
@@ -238,7 +238,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def("driver_nc_sweep", &driver_nc_sweep,
+  pymem3dg.def("forwardsweep_nc", &forwardsweep_nc,
                "Run forward sweep simulation starting with netcdf files",
                py::arg("trajFile"), py::arg("startingFrame"),
                py::arg("isTuftedLaplacian"), py::arg("isProtein"),
