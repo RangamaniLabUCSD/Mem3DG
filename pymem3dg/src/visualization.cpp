@@ -345,7 +345,6 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
   auto mesh = registerSurfaceMesh(fd, options);
   updateSurfaceMesh(mesh, fd, frame, options);
   mesh->setEdgeWidth(1);
-  // polyscope::view::fov = 50;
 
   if (options.ref_coord) {
     EigenVectorX3D refcoords = fd.getRefcoordinate();
@@ -419,10 +418,16 @@ int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
     ImGui::PopItemWidth();
   };
 
+  // For some reasons we have to run screenshot twice for fov setting to work,
+  // not ideal
   if (isSave) {
     polyscope::screenshot(screenshotName, true);
   }
   polyscope::state::userCallback = myCallback;
+  polyscope::view::fov = 50;
+  if (isSave) {
+    polyscope::screenshot(screenshotName, true);
+  }
   if (isShow) {
     polyscope::show();
   }
@@ -460,11 +465,28 @@ int viewer(std::string fileName, const bool mean_curvature,
     ptrVpg = ptrRichData->getGeometry();
   }
 
+  // Initialize visualization variables
+  float transparency = 1;
+
+  // Set preference for polyscope
+  polyscope::options::programName = "Mem3DG Visualization";
+  polyscope::options::verbosity = 0;
+  polyscope::options::usePrefsFile = false;
+  polyscope::options::autocenterStructures = false;
+  polyscope::options::autoscaleStructures = false;
+  polyscope::options::groundPlaneEnabled = false;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
+  polyscope::view::style = polyscope::view::NavigateStyle::Free;
+
   /// Initiate in polyscope
   polyscope::init();
-  polyscope::registerSurfaceMesh("Vesicle surface",
-                                 ptrVpg->inputVertexPositions,
-                                 ptrMesh->getFaceVertexList());
+  polyscope::SurfaceMesh *mesh = polyscope::registerSurfaceMesh(
+      "Vesicle surface", ptrVpg->inputVertexPositions,
+      ptrMesh->getFaceVertexList());
+  mesh->setSmoothShade(true);
+  mesh->setEnabled(true);
+  mesh->setEdgeWidth(1);
 
   /// Read element data
   if (mean_curvature) {
@@ -536,7 +558,31 @@ int viewer(std::string fileName, const bool mean_curvature,
   polyscope::getSurfaceMesh("Vesicle
   surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
 
-  std::cout << "Finished!" << std::endl;
+  // Callback function for interactive GUI
+  auto myCallback = [&]() {
+    // Since options::openImGuiWindowForUserCallback == true by default,
+    // we can immediately start using ImGui commands to build a UI
+    ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
+                               // instead of full width. Must have
+                               // matching PopItemWidth() below.
+
+    // Initialize sliders
+    ImGui::SliderFloat("transparency", &transparency, 0, 1);
+
+    // Execute transparency slider
+    mesh->setTransparency(transparency);
+
+    // Define buttons
+    if (ImGui::Button("Screenshot")) {
+      // char buff[50];
+      // snprintf(buff, 50, "screenshot_frame%06d.png", frame);
+      // std::string defaultName(buff);
+      polyscope::screenshot("screenshot.png", true);
+    }
+
+    ImGui::PopItemWidth();
+  };
+  polyscope::state::userCallback = myCallback;
   polyscope::show();
 
   return 0;
