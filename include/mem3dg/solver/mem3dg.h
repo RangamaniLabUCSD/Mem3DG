@@ -63,6 +63,18 @@ int driver_ply_sweep(std::string inputMesh, std::string refMesh, size_t nSub,
 
 #ifdef MEM3DG_WITH_NETCDF
 /**
+ * @brief Visualize netcdf file in single frame
+ *
+ */
+int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
+                std::string screenshotName, const bool ref_coord,
+                const bool velocity, const bool mean_curvature,
+                const bool spon_curvature, const bool ext_pressure,
+                const bool physical_pressure, const bool capillary_pressure,
+                const bool bending_pressure, const bool line_pressure,
+                const bool mask, const bool H_H0);
+
+/**
  * @brief Animate netcdf file with options of additional quantities
  *
  */
@@ -74,7 +86,7 @@ int view_animation(std::string &filename, const bool ref_coord = 0,
                    const bool bending_pressure = 0,
                    const bool line_pressure = 0, const bool mask = 0,
                    const bool H_H0 = 0);
-                   
+
 /**
  * @brief Run single simulation starting with netcdf files
  *

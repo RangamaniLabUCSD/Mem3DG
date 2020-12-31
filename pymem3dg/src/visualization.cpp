@@ -208,14 +208,14 @@ int view_animation(std::string &filename, const bool ref_coord,
                    const bool physical_pressure, const bool capillary_pressure,
                    const bool bending_pressure, const bool line_pressure,
                    const bool mask, const bool H_H0) {
+
+  // Activate signal handling
   signal(SIGINT, signalHandler);
+
+  // Read netcdf trajectory file
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
 
-  checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
-                    ext_pressure, physical_pressure, capillary_pressure,
-                    bending_pressure, line_pressure, mask, H_H0});
-
-  // Visualization state variables
+  // Initialize visualization variables
   int prevFrame = 0;
   int currFrame = 0;
   bool play = false;
@@ -224,8 +224,11 @@ int view_animation(std::string &filename, const bool ref_coord,
   int maxWaitTime = 500;
   int waitTime = 0;
   float transparency = 1;
+  checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
+                    ext_pressure, physical_pressure, capillary_pressure,
+                    bending_pressure, line_pressure, mask, H_H0});
 
-  // Some settings for polyscope
+  // Set preference for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
   polyscope::options::verbosity = 0;
   polyscope::options::usePrefsFile = false;
@@ -233,14 +236,16 @@ int view_animation(std::string &filename, const bool ref_coord,
   polyscope::options::autoscaleStructures = false;
   polyscope::options::groundPlaneEnabled = false;
   polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
-
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
   polyscope::view::style = polyscope::view::NavigateStyle::Free;
 
+  // Initialize polyscope
   polyscope::init();
 
+  // Initialize surface mesh
   auto mesh = registerSurfaceMesh(fd, options);
 
+  // Callback function for interactive GUI
   auto myCallback = [&]() {
     // Since options::openImGuiWindowForUserCallback == true by default,
     // we can immediately start using ImGui commands to build a UI
@@ -248,19 +253,19 @@ int view_animation(std::string &filename, const bool ref_coord,
                                // instead of full width. Must have
                                // matching PopItemWidth() below.
 
+    // Initialize sliders
     ImGui::SliderInt("index", &currFrame, 0, maxFrame); // set a float variable
-
     ImGui::SliderFloat("transparency", &transparency, 0, 1);
-
     ImGui::SliderInt("slow-mo", &waitTime, 0,
                      maxWaitTime); // set a float variable
 
+    // Execute transparency slider
     mesh->setTransparency(transparency);
 
+    // Define buttons
     if (ImGui::Button("Play/Pause")) {
       play = !play;
     }
-
     if (ImGui::Button("Screenshot")) {
       char buff[50];
       snprintf(buff, 50, "screenshot_frame%06d.png", currFrame);
@@ -268,16 +273,13 @@ int view_animation(std::string &filename, const bool ref_coord,
       polyscope::screenshot(defaultName, true);
       // polyscope::screenshot("screenshot.png", true);
     }
-
     if (ImGui::Button("Record")) {
       record = !record;
     }
-
     if (prevFrame != currFrame) {
       updateSurfaceMesh(mesh, fd, currFrame, options);
       prevFrame = currFrame;
     }
-
     if (record) {
       char buff[50];
       snprintf(buff, 50, "video/frame%06d.png", currFrame);
@@ -286,18 +288,144 @@ int view_animation(std::string &filename, const bool ref_coord,
       animate(mesh, fd, currFrame, waitTime, options, record);
       prevFrame = currFrame;
     }
-
     if (play) {
       animate(mesh, fd, currFrame, waitTime, options, play);
       prevFrame = currFrame;
     }
+
     ImGui::PopItemWidth();
   };
 
   polyscope::state::userCallback = myCallback;
-
   polyscope::show();
 
+  return 0;
+}
+
+int snapshot_nc(std::string &filename, int frame, bool isShow, bool isSave,
+                std::string screenshotName, const bool ref_coord,
+                const bool velocity, const bool mean_curvature,
+                const bool spon_curvature, const bool ext_pressure,
+                const bool physical_pressure, const bool capillary_pressure,
+                const bool bending_pressure, const bool line_pressure,
+                const bool mask, const bool H_H0) {
+
+  // Activate signal handling
+  signal(SIGINT, signalHandler);
+
+  // Read netcdf trajectory file
+  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
+
+  // Initialize visualization variables
+  int maxFrame = fd.getNextFrameIndex() - 1;
+  if (frame > maxFrame) {
+    throw std::runtime_error("Snapshot frame exceed maximum frame index!");
+  }
+  float transparency = 1;
+  checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
+                    ext_pressure, physical_pressure, capillary_pressure,
+                    bending_pressure, line_pressure, mask, H_H0});
+
+  // Set preference for polyscope
+  polyscope::options::programName = "Mem3DG Visualization";
+  polyscope::options::verbosity = 0;
+  polyscope::options::usePrefsFile = false;
+  polyscope::options::autocenterStructures = false;
+  polyscope::options::autoscaleStructures = false;
+  polyscope::options::groundPlaneEnabled = false;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
+  polyscope::view::style = polyscope::view::NavigateStyle::Free;
+  // polyscope::view::fov = 50;
+
+  // Initialize polyscope
+  polyscope::init();
+
+  // Initialize surface mesh and switch to specific frame
+  auto mesh = registerSurfaceMesh(fd, options);
+  updateSurfaceMesh(mesh, fd, frame, options);
+  mesh->setEdgeWidth(1);
+  // polyscope::view::fov = 50;
+
+  if (options.ref_coord) {
+    EigenVectorX3D refcoords = fd.getRefcoordinate();
+    mesh->addVertexVectorQuantity("ref_coordinate", refcoords)
+        ->setEnabled(true);
+  }
+  if (options.velocity) {
+    EigenVectorX3D vel = fd.getVelocity(frame);
+    mesh->addVertexVectorQuantity("velocity", vel)->setEnabled(true);
+  }
+  if (options.mean_curvature) {
+    EigenVectorX1D H = fd.getMeanCurvature(frame);
+    mesh->addVertexScalarQuantity("mean_curvature", H)->setEnabled(true);
+  }
+  if (options.spon_curvature) {
+    EigenVectorX1D H0 = fd.getSponCurvature(frame);
+    mesh->addVertexScalarQuantity("spon_curvature", H0)->setEnabled(true);
+  }
+  if (options.ext_pressure) {
+    EigenVectorX1D f_ext = fd.getExternalPressure(frame);
+    mesh->addVertexScalarQuantity("external_pressure", f_ext)->setEnabled(true);
+  }
+  if (options.physical_pressure) {
+    EigenVectorX1D fn = fd.getPhysicalPressure(frame);
+    mesh->addVertexScalarQuantity("physical_pressure", fn)->setEnabled(true);
+  }
+  if (options.capillary_pressure) {
+    EigenVectorX1D ft = fd.getCapillaryPressure(frame);
+    mesh->addVertexScalarQuantity("capillary_pressure", ft)->setEnabled(true);
+  }
+  if (options.bending_pressure) {
+    EigenVectorX1D fb = fd.getBendingPressure(frame);
+    mesh->addVertexScalarQuantity("bending_pressure", fb)->setEnabled(true);
+  }
+  if (options.line_pressure) {
+    EigenVectorX1D fl = fd.getLinePressure(frame);
+    mesh->addVertexScalarQuantity("line_tension_pressure", fl)
+        ->setEnabled(true);
+  }
+  if (options.mask) {
+    EigenVectorX1D_i msk = fd.getMask();
+    mesh->addVertexScalarQuantity("mask", msk)->setEnabled(true);
+  }
+  if (options.H_H0) {
+    EigenVectorX1D h_h0 = fd.getH_H0_diff(frame);
+    mesh->addVertexScalarQuantity("curvature_diff", h_h0)->setEnabled(true);
+  }
+
+  // Callback function for interactive GUI
+  auto myCallback = [&]() {
+    // Since options::openImGuiWindowForUserCallback == true by default,
+    // we can immediately start using ImGui commands to build a UI
+    ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
+                               // instead of full width. Must have
+                               // matching PopItemWidth() below.
+
+    // Initialize sliders
+    ImGui::SliderFloat("transparency", &transparency, 0, 1);
+
+    // Execute transparency slider
+    mesh->setTransparency(transparency);
+
+    // Define buttons
+    if (ImGui::Button("Screenshot")) {
+      // char buff[50];
+      // snprintf(buff, 50, "screenshot_frame%06d.png", frame);
+      // std::string defaultName(buff);
+      polyscope::screenshot(screenshotName, true);
+    }
+
+    ImGui::PopItemWidth();
+  };
+
+  if (isSave) {
+    polyscope::screenshot(screenshotName, true);
+  }
+  polyscope::state::userCallback = myCallback;
+  if (isShow) {
+    polyscope::show();
+  }
   return 0;
 }
 #endif
