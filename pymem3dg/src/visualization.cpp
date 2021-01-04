@@ -196,6 +196,8 @@ int viewer_ply(std::string fileName, const bool mean_curvature,
 }
 
 #ifdef MEM3DG_WITH_NETCDF
+void getNcFrame(mem3dg::TrajFile &fd, int &frame);
+
 void wait(unsigned timeout) {
   timeout += std::clock();
   while (std::clock() < timeout)
@@ -471,12 +473,9 @@ int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
 
   // Read netcdf trajectory file
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
+  getNcFrame(fd, frame);
 
   // Initialize visualization variables
-  int maxFrame = fd.getNextFrameIndex() - 1;
-  if (frame > maxFrame) {
-    throw std::runtime_error("Snapshot frame exceed maximum frame index!");
-  }
   float transparency = 1;
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,

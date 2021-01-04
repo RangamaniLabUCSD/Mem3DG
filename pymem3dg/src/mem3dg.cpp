@@ -15,11 +15,11 @@
 #include <csignal>
 #include <iostream>
 
-#include <geometrycentral/surface/meshio.h>
-#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/halfedge_factories.h>
+#include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/simple_polygon_mesh.h>
+#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
@@ -28,8 +28,8 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 
-#include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
@@ -120,26 +120,26 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{Kb, H0,  sharpness, r_H0,   Ksg,   Kst, Ksl,  Kse,
-                          Kv, eta, epsilon,   Bc,     gamma, Vt,  temp, sigma,
-                          pt, Kf,  conc,      height, radius};
+  mem3dg::Parameters p{Kb,   H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                       temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
   if (integrationMethod == "velocity verlet") {
     mem3dg::integration::velocityVerlet(f, h, 0, T, tSave, eps, verbosity,
-                                           outputDir);
+                                        outputDir);
   } else if (integrationMethod == "euler") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
     mem3dg::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir,
-                                  isBacktrack, rho, c1);
+                               isBacktrack, rho, c1);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
@@ -209,13 +209,13 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
   if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{
-      Kb, H0[0], sharpness, r_H0, Ksg,   Kst, Ksl, Kse,  Kv,     eta,   epsilon,
-      Bc, gamma, Vt[0],     temp, sigma, pt,  Kf,  conc, height, radius};
+  mem3dg::Parameters p{Kb,   H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
+                       temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
@@ -224,8 +224,8 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
   mem3dg::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
-                                           outputDir, isBacktrack, rho, c1,
-                                           isAugmentedLagrangian);
+                                        outputDir, isBacktrack, rho, c1,
+                                        isAugmentedLagrangian);
 
   /// Delete non unique pointer
   delete ptrRefVpg;
@@ -234,8 +234,25 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
 }
 
 #ifdef MEM3DG_WITH_NETCDF
+
+/**
+ * @brief netcdf file frame reader
+ *
+ * @param fd reference to netcdf trajectory file
+ * @param frame reference to the frame index
+ *
+ */
+void getNcFrame(mem3dg::TrajFile &fd, int &frame) {
+  int maxFrame = fd.getNextFrameIndex() - 1;
+  if (frame > maxFrame || frame < -(maxFrame + 1)) {
+    throw std::runtime_error("Snapshot frame exceed limiting frame index!");
+  } else if (frame < 0) {
+    frame = frame + maxFrame + 1;
+  }
+}
+
 int driver_nc(const size_t verbosity, std::string trajFile,
-              std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
+              int startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, std::vector<double> r_H0, double Kse,
               double Kst, double Ksl, double Ksg, double Kv, double eta,
@@ -264,6 +281,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   /// Load input mesh and geometry
   std::cout << "Loading input mesh from trajectory file " << trajFile;
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  getNcFrame(fd, startingFrame);
   std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
   std::tie(ptrMesh, ptrVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
@@ -287,13 +305,13 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{Kb, H0,  sharpness, r_H0,   Ksg,   Kst, Ksl,  Kse,
-                          Kv, eta, epsilon,   Bc,     gamma, Vt,  temp, sigma,
-                          pt, Kf,  conc,      height, radius};
+  mem3dg::Parameters p{Kb,   H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                       temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   f.proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   f.update_Vertex_positions();
@@ -303,13 +321,13 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
   if (integrationMethod == "velocity verlet") {
     mem3dg::integration::velocityVerlet(f, h, time, T, tSave, eps, verbosity,
-                                           outputDir);
+                                        outputDir);
   } else if (integrationMethod == "euler") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for euler integration!");
     }
-    mem3dg::integration::euler(f, h, time, T, tSave, eps, verbosity,
-                                  outputDir, isBacktrack, rho, c1);
+    mem3dg::integration::euler(f, h, time, T, tSave, eps, verbosity, outputDir,
+                               isBacktrack, rho, c1);
   } else if (integrationMethod == "conjugate gradient") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
@@ -325,7 +343,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
   return 0;
 }
 
-int forwardsweep_nc(std::string trajFile, std::size_t startingFrame,
+int forwardsweep_nc(std::string trajFile, int startingFrame,
                     bool isTuftedLaplacian, bool isProtein,
                     double mollifyFactor, bool isVertexShift, double Kb,
                     std::vector<double> H0, double sharpness,
@@ -356,6 +374,7 @@ int forwardsweep_nc(std::string trajFile, std::size_t startingFrame,
   /// Load input mesh and geometry
   std::cout << "Loading input mesh from trajectory file " << trajFile;
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  getNcFrame(fd, startingFrame);
   std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
   std::tie(ptrMesh, ptrVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
@@ -379,13 +398,13 @@ int forwardsweep_nc(std::string trajFile, std::size_t startingFrame,
   if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{
-      Kb, H0[0], sharpness, r_H0, Ksg,   Kst, Ksl, Kse,  Kv,     eta,   epsilon,
-      Bc, gamma, Vt[0],     temp, sigma, pt,  Kf,  conc, height, radius};
+  mem3dg::Parameters p{Kb,   H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
+                       temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+                   isVertexShift, isTuftedLaplacian, mollifyFactor);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;
 
@@ -395,8 +414,8 @@ int forwardsweep_nc(std::string trajFile, std::size_t startingFrame,
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
   mem3dg::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
-                                           outputDir, isBacktrack, rho, c1,
-                                           isAugmentedLagrangian);
+                                        outputDir, isBacktrack, rho, c1,
+                                        isAugmentedLagrangian);
 
   /// Delete non unique pointer
   delete ptrRefVpg;

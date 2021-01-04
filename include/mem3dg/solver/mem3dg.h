@@ -92,7 +92,7 @@ int animation_nc(std::string &filename, const bool ref_coord = 0,
  *
  */
 int driver_nc(const size_t verbosity, std::string trajFile,
-              std::size_t startingFrame, bool isTuftedLaplacian, bool isProtein,
+              int startingFrame, bool isTuftedLaplacian, bool isProtein,
               double mollifyFactor, bool isVertexShift, double Kb, double H0,
               double sharpness, std::vector<double> r_H0, double Kse,
               double Kst, double Ksl, double Ksg, double Kv, double eta,
@@ -108,7 +108,7 @@ int driver_nc(const size_t verbosity, std::string trajFile,
  * files
  *
  */
-int forwardsweep_nc(std::string trajFile, std::size_t startingFrame,
+int forwardsweep_nc(std::string trajFile, int startingFrame,
                     bool isTuftedLaplacian, bool isProtein,
                     double mollifyFactor, bool isVertexShift, double Kb,
                     std::vector<double> H0, double sharpness,
