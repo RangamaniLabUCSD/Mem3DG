@@ -484,7 +484,7 @@ void TrajFile::writeVolume(const std::size_t idx,
                                 const double volume) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
-  l2errornorm_var.putVar({idx}, &volume);
+  volume_var.putVar({idx}, &volume);
 }
 
 double TrajFile::getVolume(const std::size_t idx) const {
