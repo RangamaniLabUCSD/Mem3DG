@@ -25,9 +25,9 @@
 #include <sys/time.h>
 #endif
 
+#include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/util.h"
-#include "mem3dg/solver/constants.h"
 
 namespace mem3dg {
 
@@ -411,4 +411,4 @@ getFaceVertexMatrix(gcs::SurfaceMesh &mesh) {
   return result;
 }
 
-} // namespace ddgsolver
+} // namespace mem3dg
