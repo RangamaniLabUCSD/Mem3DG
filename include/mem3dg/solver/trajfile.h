@@ -75,9 +75,11 @@ static const std::string CONVENTIONS_VERSION_VALUE = "0.0.1";
 /// Name of the units labels
 static const std::string UNITS = "units";
 /// Value for length units
-static const std::string LEN_UNITS = "micrometers";
+static const std::string LEN_UNITS = " micrometers ";
 /// Value for time units
-static const std::string TIME_UNITS = "picoseconds";
+static const std::string TIME_UNITS = " seconds ";
+/// Value for force units
+static const std::string FORCE_UNITS = " nanonewtons ";
 
 // Data/Variable block names
 /// Name of time data
@@ -226,6 +228,7 @@ public:
     // Initialize reference coordinate data block
     refcoord = fd->addVar(REFCOORD_VAR, netCDF::ncDouble,
                           {nvertices_dim, spatial_dim});
+    refcoord.putAtt(UNITS, LEN_UNITS);
 
     // Populate reference coordinate data
     double *refcoorddata;
@@ -246,54 +249,74 @@ public:
 
     vel_var = fd->addVar(VEL_VAR, netCDF::ncDouble,
                          {frame_dim, nvertices_dim, spatial_dim});
+    vel_var.putAtt(UNITS, LEN_UNITS + TIME_UNITS + "^(-1)");
 
     proteinden_var = fd->addVar(PROTEINDEN_VAR, netCDF::ncDouble,
                                 {frame_dim, nvertices_dim});
+    proteinden_var.putAtt(UNITS, LEN_UNITS + "^(-2)");
 
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    meancurve_var.putAtt(UNITS, LEN_UNITS + "^(-1)");
 
     sponcurve_var =
         fd->addVar(SPONCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    sponcurve_var.putAtt(UNITS, LEN_UNITS + "^(-1)");
 
     externpress_var = fd->addVar(EXTERNPRESS_VAR, netCDF::ncDouble,
                                  {frame_dim, nvertices_dim});
+    externpress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     physpress_var =
         fd->addVar(PHYSPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    physpress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     cappress_var =
         fd->addVar(CAPPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    cappress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     bendpress_var =
         fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    bendpress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     linepress_var =
         fd->addVar(LINEPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    linepress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     bendener_var = fd->addVar(BENDENER_VAR, netCDF::ncDouble, {frame_dim});
+    bendener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     surfener_var = fd->addVar(SURFENER_VAR, netCDF::ncDouble, {frame_dim});
+    surfener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     pressener_var = fd->addVar(PRESSENER_VAR, netCDF::ncDouble, {frame_dim});
+    pressener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     kineener_var = fd->addVar(KINEENER_VAR, netCDF::ncDouble, {frame_dim});
+    kineener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     chemener_var = fd->addVar(CHEMENER_VAR, netCDF::ncDouble, {frame_dim});
+    chemener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     lineener_var = fd->addVar(LINEENER_VAR, netCDF::ncDouble, {frame_dim});
+    lineener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
+    totalener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     l2errornorm_var =
         fd->addVar(L2ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
+    l2errornorm_var.putAtt(UNITS, FORCE_UNITS);
 
     volume_var = fd->addVar(VOLUME_VAR, netCDF::ncDouble, {frame_dim});
+    volume_var.putAtt(UNITS, LEN_UNITS + "^3");
 
     surfarea_var = fd->addVar(SURFAREA_VAR, netCDF::ncDouble, {frame_dim});
+    surfarea_var.putAtt(UNITS, LEN_UNITS + "^2");
 
     H_H0_var =
         fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    H_H0_var.putAtt(UNITS, LEN_UNITS + "^(-1)");
   }
 
   TrajFile(TrajFile &&rhs) = default;
