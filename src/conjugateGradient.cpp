@@ -91,7 +91,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
   while (f.E.potE > (potentialEnergy_pre -
                      c1 * alpha * (force.array() * direction.array()).sum())) {
     // while (f.E.potE > potentialEnergy_pre) {
-    if (count > 50) {
+    if (alpha < 1e-12) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
 
@@ -111,7 +111,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
     count++;
   }
 
-  if (alpha != dt && verbosity > 1) {
+  if (alpha != dt && verbosity > 3) {
     std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
     std::cout << "L2 norm: " << f.L2ErrorNorm << std::endl;
   }

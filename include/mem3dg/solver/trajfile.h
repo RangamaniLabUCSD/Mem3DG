@@ -124,6 +124,10 @@ static const std::string LINEENER_VAR = "lineenergy";
 static const std::string TOTALENER_VAR = "totalenergy";
 /// Name of the L2 Error Norm data
 static const std::string L2ERRORNORM_VAR = "l2errornorm";
+/// Name of the volume data
+static const std::string VOLUME_VAR = "volume";
+/// Name of the surface area data
+static const std::string SURFAREA_VAR = "surfacearea";
 /// Name of the mask data
 static const std::string MASK_VAR = "mask";
 /// Name of the curvature difference data
@@ -182,6 +186,8 @@ public:
     linepress_var = fd->getVar(LINEPRESS_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
     l2errornorm_var = fd->getVar(L2ERRORNORM_VAR);
+    volume_var = fd->getVar(VOLUME_VAR);
+    surfarea_var = fd->getVar(SURFAREA_VAR);
     mask_var = fd->getVar(MASK_VAR);
     H_H0_var = fd->getVar(H_H0_VAR);
   }
@@ -281,6 +287,10 @@ public:
 
     l2errornorm_var =
         fd->addVar(L2ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
+
+    volume_var = fd->addVar(VOLUME_VAR, netCDF::ncDouble, {frame_dim});
+
+    surfarea_var = fd->addVar(SURFAREA_VAR, netCDF::ncDouble, {frame_dim});
 
     H_H0_var =
         fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -476,6 +486,14 @@ public:
 
   double getL2ErrorNorm(const std::size_t idx) const;
 
+  void writeVolume(const std::size_t idx, const double volume);
+
+  double getVolume(const std::size_t idx) const;
+
+  void writeSurfArea(const std::size_t idx, const double surfArea);
+
+  double getSurfArea(const std::size_t idx) const;
+
 private:
   /**
    * @brief Private constructor for opening an existing file.
@@ -542,6 +560,8 @@ private:
   nc::NcVar lineener_var;
   nc::NcVar totalener_var;
   nc::NcVar l2errornorm_var;
+  nc::NcVar volume_var;
+  nc::NcVar surfarea_var;
   nc::NcVar mask_var;
   nc::NcVar H_H0_var;
 

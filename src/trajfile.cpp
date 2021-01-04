@@ -479,6 +479,38 @@ double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
   return L2ErronNorm;
 }
 
+// volume
+void TrajFile::writeVolume(const std::size_t idx,
+                                const double volume) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l2errornorm_var.putVar({idx}, &volume);
+}
+
+double TrajFile::getVolume(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double volume;
+  volume_var.getVar({idx}, &volume);
+  return volume;
+}
+
+// surface area 
+void TrajFile::writeSurfArea(const std::size_t idx,
+                                const double surfArea) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  surfarea_var.putVar({idx}, &surfArea);
+}
+
+double TrajFile::getSurfArea(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double surfArea;
+  surfarea_var.getVar({idx}, &surfArea);
+  return surfArea;
+}
+
 } // namespace mem3dg
 
 #endif
