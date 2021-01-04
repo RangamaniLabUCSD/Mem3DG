@@ -182,6 +182,8 @@ void saveNetcdfData(
   fd.writeLineEnergy(frame, f.E.lE);
   fd.writeTotalEnergy(frame, f.E.totalE);
   fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
+  fd.writeVolume(frame, f.volume);
+  fd.writeSurfArea(frame, f.surfaceArea);
 }
 #endif
 
