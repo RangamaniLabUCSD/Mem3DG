@@ -47,9 +47,11 @@ void System::getPressureEnergy() {
   double V_difference = volume - refVolume * P.Vt;
   if (mesh.hasBoundary()) {
     E.pE = -P.Kv * V_difference;
-  } else {
+  } else if (isReducedVolume) {
     E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
            P.lambdaV * V_difference;
+  } else {
+    E.pE = P.Kv * abs(log(P.Kv / volume / P.Pam));
   }
 }
 
@@ -97,7 +99,7 @@ void System::getFreeEnergy() {
   }
   getKineticEnergy();
   getPotentialEnergy();
-  getFreeEnergy();
+  E.totalE = E.kE + E.potE;
 }
 
 void System::getL2ErrorNorm(

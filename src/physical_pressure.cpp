@@ -135,11 +135,13 @@ void System::getInsidePressure() {
   if (mesh.hasBoundary()) {
     /// Inside excess pressure of patch
     insidePressure_e = P.Kv * vertexAngleNormal_e;
-  } else {
+  } else if (isReducedVolume) {
     /// Inside excess pressure of vesicle
     insidePressure_e =
         -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV) *
         vertexAngleNormal_e;
+  } else {
+    insidePressure_e = (P.Kv / volume - P.Pam) * vertexAngleNormal_e;
   }
 
   // /// Nongeometric implementation
