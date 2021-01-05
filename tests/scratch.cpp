@@ -3,8 +3,8 @@
 #include <netcdf>
 #endif
 
-#include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
@@ -41,11 +41,12 @@ int main() {
   double Kb = 8.22e-5, H0 = 0, sharpness = 10, Kst = 10, Ksl = 0, Kse = 0,
          epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Kf = 0, conc = 25,
          height = 0, radius = 0.9, temp = 0, h = 5e-4, Kv = 5e-2, eta = 0,
-         Ksg = 0.1, mollifyFactor = 1e-3;
+         Ksg = 0.1;
   std::vector<double> pt = {1, 1, 1};
   std::vector<double> r_H0 = {100, 100};
 
-  bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false;
+  bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false,
+       isReducedVolume = true;
 
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
   if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
@@ -54,12 +55,11 @@ int main() {
   }
 
   std::cout << "Initiating the system ...";
-  mem3dg::Parameters p{Kb,    H0,     sharpness, r_H0,          Ksg,     Kst,
-                          Ksl,   Kse,    Kv,        eta,           epsilon, Bc,
-                          gamma, Vt,     temp,        sigma, pt,      Kf,
-                          conc,  height, radius};
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                      isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::Parameters p{Kb,   H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
+                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt,
+                       temp, sigma, pt,        Kf,      conc, height, radius};
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
@@ -70,8 +70,8 @@ int main() {
   //                                        Kv, Ksg, tSave, tMollify,
   //                                        verbosity);
   mem3dg::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.01,
-                                            verbosity, "./", true, 0.5, 1e-4,
-                                            false, "/traj.nc");
+                                         verbosity, "./", true, 0.5, 1e-4,
+                                         false, "/traj.nc");
 
   delete ptrRefVpg;
   return 0;

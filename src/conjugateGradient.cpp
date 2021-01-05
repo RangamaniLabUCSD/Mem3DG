@@ -173,14 +173,19 @@ void conjugateGradient(System &f, double dt, double init_time,
           std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
           EXIT = true;
         } else {
-          std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
-                    << f.P.lambdaV << "]";
+          std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
+                    << "]";
           f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
                           f.targetSurfaceArea;
-          f.P.lambdaV += f.P.Kv * (f.volume - f.refVolume * f.P.Vt) /
-                         (f.refVolume * f.P.Vt);
-          std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
-                    << std::endl;
+          std::cout << " -> [" << f.P.lambdaSG << "]" << std::endl;
+          // std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
+          //           << f.P.lambdaV << "]";
+          // f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
+          //                 f.targetSurfaceArea;
+          // f.P.lambdaV += f.P.Kv * (f.volume - f.refVolume * f.P.Vt) /
+          //                (f.refVolume * f.P.Vt);
+          // std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
+          //           << std::endl;
         }
       } else {
         // incremental harmonic penalty method
@@ -189,15 +194,19 @@ void conjugateGradient(System &f, double dt, double init_time,
           f.P.Ksg *= 1.3;
           std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
         }
-        if (dVolume > ctol) {
-          std::cout << "\n[Kv] = [" << f.P.Kv << "]";
-          f.P.Kv *= 1.3;
-          std::cout << " -> [" << f.P.Kv << "]" << std::endl;
-        }
-        if (dArea < ctol && dVolume < ctol) {
+        if (dArea < ctol) {
           std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
           EXIT = true;
         }
+        // if (dVolume > ctol) {
+        //   std::cout << "\n[Kv] = [" << f.P.Kv << "]";
+        //   f.P.Kv *= 1.3;
+        //   std::cout << " -> [" << f.P.Kv << "]" << std::endl;
+        // }
+        // if (dArea < ctol && dVolume < ctol) {
+        //   std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        //   EXIT = true;
+        // }
       }
     }
     if (time > total_time) {

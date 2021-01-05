@@ -30,10 +30,10 @@
 
 #include <math.h>
 
+#include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/util.h"
-#include "mem3dg/solver/constants.h"
 
 #include <vector>
 
@@ -152,14 +152,12 @@ public:
 
   /// Whether or not use tufted laplacian matrix
   const bool isTuftedLaplacian;
-  /// Mollify Factor in constructing tufted laplacian matrix
-  const double mollifyFactor;
   /// Whether or not do vertex shift
   const bool isVertexShift;
   /// Whether or not consider protein binding
   const bool isProtein;
-  /// Whether circular spon curv domain
-  const bool isCircle;
+  /// Whether adopt reduced volume parametrization
+  const bool isReducedVolume;
 
   /// Target area per face
   gcs::FaceData<double> targetFaceAreas;
@@ -217,12 +215,12 @@ public:
 
   System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
          gcs::VertexPositionGeometry &refVpg_,
-         gcs::RichSurfaceMeshData &richData_, Parameters &p, bool isProtein_,
-         bool isVertexShift_, bool isTuftedLaplacian_,
-         double mollifyFactor_ = 1e-6)
+         gcs::RichSurfaceMeshData &richData_, Parameters &p,
+         bool isReducedVolume_, bool isProtein_, bool isVertexShift_,
+         bool isTuftedLaplacian_)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
-        isTuftedLaplacian(isTuftedLaplacian_), isProtein(isProtein_),
-        isCircle(p.r_H0[0] == p.r_H0[1]), mollifyFactor(mollifyFactor_),
+        isTuftedLaplacian(isTuftedLaplacian_),
+        isReducedVolume(isReducedVolume_), isProtein(isProtein_),
         isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
         insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
         lineTensionPressure(mesh_, {0, 0, 0}), chemicalPotential(mesh_, 0.0),
@@ -278,7 +276,8 @@ public:
     if (mesh.hasBoundary()) {
       refVolume = 0.0;
     } else {
-      refVolume = std::pow(targetSurfaceArea / constants::PI / 4, 1.5) * (4 * constants::PI / 3);
+      refVolume = std::pow(targetSurfaceArea / constants::PI / 4, 1.5) *
+                  (4 * constants::PI / 3);
     }
 
     // Regularize the vetex position geometry if needed
@@ -313,26 +312,124 @@ public:
     vpg.unrequireCornerScaledAngles();
   }
 
+
+  // ==========================================================
+  // ================        Update          ==================
+  // ==========================================================
+  /**
+   * @brief Update the vertex position and recompute cached values
+   * (all quantities that characterizes the current energy state)
+   *
+   */
+  void update_Vertex_positions();
+
+
+  // ==========================================================
+  // ================        Pressure        ==================
+  // ==========================================================
+  /**
+   * @brief Get bending pressure component of the system
+   */
   void getBendingPressure();
 
+  /**
+   * @brief Get chemical potential of the system
+   */
   void getChemicalPotential();
 
+  /**
+   * @brief Get capillary pressure component of the system
+   */
   void getCapillaryPressure();
 
+  /**
+   * @brief Get inside pressure component of the system
+   */
   void getInsidePressure();
 
+  /**
+   * @brief Get regularization pressure component of the system
+   */
   void getRegularizationForce();
 
+  /**
+   * @brief Get line tension pressure component of the system
+   */
   void getLineTensionPressure();
 
+  /**
+   * @brief Get DPD forces of the system
+   */
   void getDPDForces();
 
-  void getExternalPressure();
-
-  void getAllForces();
+  /**
+   * @brief testing of random number generator pcg
+   *
+   */
+  void pcg_test();
 
   /**
-   * @brief Get free energy and each components of the system
+   * @brief Get velocity from the position of the last iteration
+   *
+   * @param dt timestep
+   */
+  void getVelocityFromPastPosition(double dt);
+
+  /**
+   * @brief Get external pressure component of the system
+   */
+  void getExternalPressure();
+
+  /**
+   * @brief Get all forces of the system
+   */
+  void getAllForces();
+
+  // ==========================================================
+  // ================        Energy          ==================
+  // ==========================================================
+  /**
+   * @brief Get bending energy
+   */
+  void getBendingEnergy();
+
+  /**
+   * @brief Get surface energy
+   */
+  void getSurfaceEnergy();
+
+  /**
+   * @brief Get pressure work
+   */
+  void getPressureEnergy();
+
+  /**
+   * @brief Get chemical energy
+   */
+  void getChemicalEnergy();
+
+  /**
+   * @brief Get line tension energy
+   */
+  void getLineTensionEnergy();
+
+  /**
+   * @brief Get external force energy
+   */
+  void getExternalForceEnergy();
+
+  /**
+   * @brief Get kinetic energy
+   */
+  void getKineticEnergy();
+
+  /**
+   * @brief Get potential energy
+   */
+  void getPotentialEnergy();
+
+  /**
+   * @brief Get all components of energy (free energy)
    */
   void getFreeEnergy();
 
@@ -342,106 +439,5 @@ public:
    */
   void
   getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
-
-  /**
-   * @brief Get velocity from the position of the last iteration
-   *
-   * @param timeStep
-   */
-  void getVelocityFromPastPosition(double dt);
-
-  /**
-   * @brief Update the vertex position and recompute cached values
-   * (all quantities that characterizes the current energy state)
-   *
-   */
-  void update_Vertex_positions() {
-    vpg.refreshQuantities();
-
-    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-    auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
-
-    // initialize/update (inverse) mass and Laplacian matrix
-    if (isTuftedLaplacian) {
-      getTuftedLaplacianAndMass(M, L, mesh, vpg, mollifyFactor);
-    } else {
-      M = vpg.vertexLumpedMassMatrix;
-      L = vpg.cotanLaplacian;
-    }
-    M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-
-    // initialize/update distance from the point specified
-    geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh.vertex(ptInd));
-
-    // initialize/update spontaneous curvature
-    if (isProtein) {
-      // proteinDensity.raw().setZero();
-      // H0.setZero(mesh.nVertices(), 1);
-      Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
-          (proteinDensity.raw().array() * proteinDensity.raw().array())
-              .matrix();
-      H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
-               .matrix();
-    } else if (P.H0 != 0) {
-      if (isCircle) {
-        tanhDistribution(H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
-                         P.r_H0[0]);
-      } else {
-        tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
-                         P.r_H0);
-      }
-      H0 *= P.H0;
-      if (((H0.array() - (H0.sum() / mesh.nVertices())).matrix().norm() <
-           1e-12)) {
-        assert(P.eta == 0);
-      }
-    } else {
-      H0.setZero(mesh.nVertices(), 1);
-      assert(P.eta == 0);
-    }
-
-    // initialize/update mean curvature
-    Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated =
-        rowwiseDotProduct(L * positions / 2.0, vertexAngleNormal_e);
-    H = M_inv * H_integrated;
-
-    /// initialize/udate excess pressure
-    volume = 0;
-    for (gcs::Face f : mesh.faces()) {
-      volume += signedVolumeFromFace(
-          f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
-    }
-
-    // initialize/update total surface area
-    surfaceArea = vpg.faceAreas.raw().sum();
-
-    // initialize/update intersection area
-    interArea = 0.0;
-    for (gcs::Vertex v : mesh.vertices()) {
-      if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
-          (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
-        interArea += vpg.vertexDualAreas[v];
-      }
-    }
-
-    // initialize/update external force
-    getExternalPressure();
-
-    // initialize/update the vertex position of the last iteration
-    pastPositions = vpg.inputVertexPositions;
-
-    // zero all forces
-    gc::EigenMap<double, 3>(bendingPressure).setZero();
-    gc::EigenMap<double, 3>(insidePressure).setZero();
-    gc::EigenMap<double, 3>(capillaryPressure).setZero();
-    gc::EigenMap<double, 3>(lineTensionPressure).setZero();
-    gc::EigenMap<double, 3>(externalPressure).setZero();
-    gc::EigenMap<double, 3>(regularizationForce).setZero();
-    gc::EigenMap<double, 3>(dampingForce).setZero();
-    gc::EigenMap<double, 3>(stochasticForce).setZero();
-    chemicalPotential.raw().setZero();
-  }
-
-  void pcg_test();
 };
-} // end namespace ddgsolver
+} // namespace mem3dg

@@ -45,10 +45,8 @@ protected:
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   Parameters p;
   double h = 0.0002;
-  bool isProtein = false;
-  bool isTuftedLaplacian = false;
-  double mollifyFactor = 1e-6;
-  bool isVertexShift = false;
+  bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false,
+       isReducedVolume = true;
 
   ForceCalculationTest() {
     /// physical parameters
@@ -95,8 +93,8 @@ protected:
 
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
-                   isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume, isProtein,
+                   isVertexShift, isTuftedLaplacian);
 
   f.getAllForces();
   EigenVectorX3D bendingPressure1 = gc::EigenMap<double, 3>(f.bendingPressure),
@@ -135,8 +133,8 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
-                   isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume, isProtein,
+                   isVertexShift, isTuftedLaplacian);
 
   f.getAllForces();
 
@@ -183,8 +181,8 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
 
 TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isProtein,
-                   isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume, isProtein,
+                   isVertexShift, isTuftedLaplacian);
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
   //   Energy E_pre{f.E.totalE, f.E.kE, f.E.potE, f.E.BE, f.E.sE,

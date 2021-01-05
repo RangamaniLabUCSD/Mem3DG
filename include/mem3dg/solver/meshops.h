@@ -143,12 +143,10 @@ rowwiseScaling(Eigen::Matrix<double, Eigen::Dynamic, 1> a,
  * @param Laplacian matrix L
  * @param surfaceMesh mesh
  * @param vertexPositionGeometry vpg
- * @param double mollifyFactor
  */
 DLL_PUBLIC inline void getTuftedLaplacianAndMass(
     Eigen::SparseMatrix<double> &M, Eigen::SparseMatrix<double> &L,
-    gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-    double mollifyFactor) {
+    gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg) {
 
   std::vector<gc::Vector3> vecPosition(
       vpg.inputVertexPositions.raw().data(),
@@ -160,8 +158,7 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
 
   std::tie(generalMesh, generalVpg) = gcs::makeGeneralHalfedgeAndGeometry(
       mesh.getFaceVertexList(), vecPosition);
-  std::tie(L, M) =
-      gcs::buildTuftedLaplacian(*generalMesh, *generalVpg, mollifyFactor);
+  std::tie(L, M) = gcs::buildTuftedLaplacian(*generalMesh, *generalVpg, 1e-6);
 }
 
 /**
@@ -300,26 +297,6 @@ findVertexLineTension(gcs::VertexPositionGeometry &vpg, double eta,
  * @param (double) sharpness of transition
  * @param (double) radius of height = 1
  * @param (Eigen vector) distance vector
- *
- */
-DLL_PUBLIC inline void
-tanhDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                 Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
-                 double sharpness, double radius) {
-  distribution.resize(distance.rows(), 1);
-  Eigen::MatrixXd radius_vec =
-      Eigen::MatrixXd::Constant(distance.rows(), 1, radius);
-  distribution =
-      0.5 *
-      (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
-}
-
-/**
- * @brief height = 1 tanh step function with radius r
- *
- * @param (double) sharpness of transition
- * @param (double) radius of height = 1
- * @param (Eigen vector) distance vector
  * @param (vertexPositionGeometry) vpg
  *
  */
@@ -329,15 +306,23 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
                  Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
                  double sharpness, std::vector<double> axes) {
   distribution.resize(distance.rows(), 1);
-  double x, y, cos_t, radius;
-  for (size_t i = 0; i < distance.rows(); i++) {
-    x = vpg.inputVertexPositions[i].x;
-    y = vpg.inputVertexPositions[i].y;
-    cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
-    radius = axes[0] * axes[1] /
-             sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
-                  axes[1] * axes[1]);
-    distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
+  if (axes[0] == axes[1]) {
+    Eigen::MatrixXd radius_vec =
+        Eigen::MatrixXd::Constant(distance.rows(), 1, axes[0]);
+    distribution =
+        0.5 *
+        (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
+  } else {
+    double x, y, cos_t, radius;
+    for (size_t i = 0; i < distance.rows(); i++) {
+      x = vpg.inputVertexPositions[i].x;
+      y = vpg.inputVertexPositions[i].y;
+      cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
+      radius = axes[0] * axes[1] /
+               sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
+                    axes[1] * axes[1]);
+      distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
+    }
   }
 }
 
