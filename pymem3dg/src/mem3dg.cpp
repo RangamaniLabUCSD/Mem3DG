@@ -58,7 +58,7 @@ void signalHandler(int signum) {
 
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isTuftedLaplacian,
-               bool isProtein, double mollifyFactor, bool isVertexShift,
+               bool isReducedVolume, bool isProtein, bool isVertexShift,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
                double Kse, double Kst, double Ksl, double Ksg, double Kv,
                double eta, double epsilon, double Bc, double Vt, double gamma,
@@ -125,8 +125,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                        temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                   isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
@@ -156,8 +156,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 }
 
 int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
-                     bool isTuftedLaplacian, bool isProtein,
-                     double mollifyFactor, bool isVertexShift, double Kb,
+                     bool isTuftedLaplacian, bool isReducedVolume,
+                     bool isProtein, bool isVertexShift, double Kb,
                      std::vector<double> H0, double sharpness,
                      std::vector<double> r_H0, double Kse, double Kst,
                      double Ksl, double Ksg, double Kv, double eta,
@@ -214,8 +214,8 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                        temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                   isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
@@ -251,17 +251,16 @@ void getNcFrame(mem3dg::TrajFile &fd, int &frame) {
   }
 }
 
-int driver_nc(const size_t verbosity, std::string trajFile,
-              int startingFrame, bool isTuftedLaplacian, bool isProtein,
-              double mollifyFactor, bool isVertexShift, double Kb, double H0,
-              double sharpness, std::vector<double> r_H0, double Kse,
-              double Kst, double Ksl, double Ksg, double Kv, double eta,
-              double epsilon, double Bc, double Vt, double gamma, double temp,
-              std::vector<double> pt, double Kf, double conc, double height,
-              double radius, double h, double T, double eps, double tSave,
-              std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian) {
+int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
+              bool isTuftedLaplacian, bool isReducedVolume, bool isProtein,
+              bool isVertexShift, double Kb, double H0, double sharpness,
+              std::vector<double> r_H0, double Kse, double Kst, double Ksl,
+              double Ksg, double Kv, double eta, double epsilon, double Bc,
+              double Vt, double gamma, double temp, std::vector<double> pt,
+              double Kf, double conc, double height, double radius, double h,
+              double T, double eps, double tSave, std::string outputDir,
+              std::string integrationMethod, bool isBacktrack, double rho,
+              double c1, double ctol, bool isAugmentedLagrangian) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -310,8 +309,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
                        temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                   isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   f.proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   f.update_Vertex_positions();
@@ -344,8 +343,8 @@ int driver_nc(const size_t verbosity, std::string trajFile,
 }
 
 int forwardsweep_nc(std::string trajFile, int startingFrame,
-                    bool isTuftedLaplacian, bool isProtein,
-                    double mollifyFactor, bool isVertexShift, double Kb,
+                    bool isTuftedLaplacian, bool isReducedVolume,
+                    bool isProtein, bool isVertexShift, double Kb,
                     std::vector<double> H0, double sharpness,
                     std::vector<double> r_H0, double Kse, double Kst,
                     double Ksl, double Ksg, double Kv, double eta,
@@ -403,8 +402,8 @@ int forwardsweep_nc(std::string trajFile, int startingFrame,
                        temp, sigma, pt,        Kf,      conc, height, radius};
 
   /// Initialize the system
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isProtein,
-                   isVertexShift, isTuftedLaplacian, mollifyFactor);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
   gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
   std::cout << "Finished!" << std::endl;
 
