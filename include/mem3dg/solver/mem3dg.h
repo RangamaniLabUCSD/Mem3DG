@@ -37,10 +37,10 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                bool isReducedVolume, bool isProtein, bool isVertexShift,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
                double Kse, double Kst, double Ksl, double Ksg, double Kv,
-               double eta, double epsilon, double Bc, double Vt, double gamma,
-               double temp, std::vector<double> pt, double Kf, double conc,
-               double height, double radius, double h, double T, double eps,
-               double tSave, std::string outputDir,
+               double eta, double epsilon, double Bc, double Vt, double Pam,
+               double gamma, double temp, std::vector<double> pt, double Kf,
+               double conc, double height, double radius, double h, double T,
+               double eps, double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
                double c1, double ctol, bool isAugmentedLagrangian);
 
@@ -49,18 +49,16 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
  * files
  *
  */
-int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
-                     bool isTuftedLaplacian, bool isReducedVolume,
-                     bool isProtein, bool isVertexShift, double Kb,
-                     std::vector<double> H0, double sharpness,
-                     std::vector<double> r_H0, double Kse, double Kst,
-                     double Ksl, double Ksg, double Kv, double eta,
-                     double epsilon, double Bc, std::vector<double> Vt,
-                     double gamma, double temp, std::vector<double> pt,
-                     double Kf, double conc, double height, double radius,
-                     double h, double T, double eps, double tSave,
-                     std::string outputDir, bool isBacktrack, double rho,
-                     double c1, double ctol, bool isAugmentedLagrangian);
+int forwardsweep_ply(
+    std::string inputMesh, std::string refMesh, size_t nSub,
+    bool isTuftedLaplacian, bool isReducedVolume, bool isProtein,
+    bool isVertexShift, double Kb, std::vector<double> H0, double sharpness,
+    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
+    double Kv, double eta, double epsilon, double Bc, std::vector<double> Vt,
+    std::vector<double> Pam, double gamma, double temp, std::vector<double> pt,
+    double Kf, double conc, double height, double radius, double h, double T,
+    double eps, double tSave, std::string outputDir, bool isBacktrack,
+    double rho, double c1, double ctol, bool isAugmentedLagrangian);
 
 #ifdef MEM3DG_WITH_NETCDF
 /**
@@ -96,28 +94,27 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               bool isVertexShift, double Kb, double H0, double sharpness,
               std::vector<double> r_H0, double Kse, double Kst, double Ksl,
               double Ksg, double Kv, double eta, double epsilon, double Bc,
-              double Vt, double gamma, double temp, std::vector<double> pt,
-              double Kf, double conc, double height, double radius, double h,
-              double T, double eps, double tSave, std::string outputDir,
-              std::string integrationMethod, bool isBacktrack, double rho,
-              double c1, double ctol, bool isAugmentedLagrangian);
+              double Vt, double Pam, double gamma, double temp,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double tSave,
+              std::string outputDir, std::string integrationMethod,
+              bool isBacktrack, double rho, double c1, double ctol,
+              bool isAugmentedLagrangian);
 
 /**
  * @brief Run forward sweep simulation starting with netcdf
  * files
  *
  */
-int forwardsweep_nc(std::string trajFile, int startingFrame,
-                    bool isTuftedLaplacian, bool isReducedVolume,
-                    bool isProtein, bool isVertexShift, double Kb,
-                    std::vector<double> H0, double sharpness,
-                    std::vector<double> r_H0, double Kse, double Kst,
-                    double Ksl, double Ksg, double Kv, double eta,
-                    double epsilon, double Bc, std::vector<double> Vt,
-                    double gamma, double temp, std::vector<double> pt,
-                    double Kf, double conc, double height, double radius,
-                    double h, double T, double eps, double tSave,
-                    std::string outputDir, bool isBacktrack, double rho,
-                    double c1, double ctol, bool isAugmentedLagrangian);
+int forwardsweep_nc(
+    std::string trajFile, int startingFrame, bool isTuftedLaplacian,
+    bool isReducedVolume, bool isProtein, bool isVertexShift, double Kb,
+    std::vector<double> H0, double sharpness, std::vector<double> r_H0,
+    double Kse, double Kst, double Ksl, double Ksg, double Kv, double eta,
+    double epsilon, double Bc, std::vector<double> Vt, std::vector<double> Pam,
+    double gamma, double temp, std::vector<double> pt, double Kf, double conc,
+    double height, double radius, double h, double T, double eps, double tSave,
+    std::string outputDir, bool isBacktrack, double rho, double c1, double ctol,
+    bool isAugmentedLagrangian);
 
 #endif

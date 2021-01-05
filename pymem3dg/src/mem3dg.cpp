@@ -61,10 +61,10 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                bool isReducedVolume, bool isProtein, bool isVertexShift,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
                double Kse, double Kst, double Ksl, double Ksg, double Kv,
-               double eta, double epsilon, double Bc, double Vt, double gamma,
-               double temp, std::vector<double> pt, double Kf, double conc,
-               double height, double radius, double h, double T, double eps,
-               double tSave, std::string outputDir,
+               double eta, double epsilon, double Bc, double Vt, double Pam,
+               double gamma, double temp, std::vector<double> pt, double Kf,
+               double conc, double height, double radius, double h, double T,
+               double eps, double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
                double c1, double ctol, bool isAugmentedLagrangian) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -120,9 +120,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{Kb,   H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt,
-                       temp, sigma, pt,        Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
+                       sigma, pt,  Kf,        conc, height, radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
@@ -155,18 +155,16 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   return 0;
 }
 
-int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
-                     bool isTuftedLaplacian, bool isReducedVolume,
-                     bool isProtein, bool isVertexShift, double Kb,
-                     std::vector<double> H0, double sharpness,
-                     std::vector<double> r_H0, double Kse, double Kst,
-                     double Ksl, double Ksg, double Kv, double eta,
-                     double epsilon, double Bc, std::vector<double> Vt,
-                     double gamma, double temp, std::vector<double> pt,
-                     double Kf, double conc, double height, double radius,
-                     double h, double T, double eps, double tSave,
-                     std::string outputDir, bool isBacktrack, double rho,
-                     double c1, double ctol, bool isAugmentedLagrangian) {
+int forwardsweep_ply(
+    std::string inputMesh, std::string refMesh, size_t nSub,
+    bool isTuftedLaplacian, bool isReducedVolume, bool isProtein,
+    bool isVertexShift, double Kb, std::vector<double> H0, double sharpness,
+    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
+    double Kv, double eta, double epsilon, double Bc, std::vector<double> Vt,
+    std::vector<double> Pam, double gamma, double temp, std::vector<double> pt,
+    double Kf, double conc, double height, double radius, double h, double T,
+    double eps, double tSave, std::string outputDir, bool isBacktrack,
+    double rho, double c1, double ctol, bool isAugmentedLagrangian) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -209,9 +207,10 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
   if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{Kb,   H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
-                       temp, sigma, pt,        Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
+                       Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
+                       gamma, Vt[0], Pam[0],    temp,  sigma,   pt,
+                       Kf,    conc,  height,    radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
@@ -223,9 +222,9 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
   if (p.gamma != 0) {
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
-  mem3dg::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
-                                        outputDir, isBacktrack, rho, c1,
-                                        isAugmentedLagrangian);
+  mem3dg::integration::feedForwardSweep(
+      f, H0, (isReducedVolume) ? Vt : Pam, h, T, tSave, eps, ctol, outputDir,
+      isBacktrack, rho, c1, isAugmentedLagrangian);
 
   /// Delete non unique pointer
   delete ptrRefVpg;
@@ -256,11 +255,12 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               bool isVertexShift, double Kb, double H0, double sharpness,
               std::vector<double> r_H0, double Kse, double Kst, double Ksl,
               double Ksg, double Kv, double eta, double epsilon, double Bc,
-              double Vt, double gamma, double temp, std::vector<double> pt,
-              double Kf, double conc, double height, double radius, double h,
-              double T, double eps, double tSave, std::string outputDir,
-              std::string integrationMethod, bool isBacktrack, double rho,
-              double c1, double ctol, bool isAugmentedLagrangian) {
+              double Vt, double Pam, double gamma, double temp,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double tSave,
+              std::string outputDir, std::string integrationMethod,
+              bool isBacktrack, double rho, double c1, double ctol,
+              bool isAugmentedLagrangian) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -304,9 +304,9 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
   if (ptrMesh->hasBoundary() && Vt != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{Kb,   H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt,
-                       temp, sigma, pt,        Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
+                       sigma, pt,  Kf,        conc, height, radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
@@ -342,18 +342,16 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
   return 0;
 }
 
-int forwardsweep_nc(std::string trajFile, int startingFrame,
-                    bool isTuftedLaplacian, bool isReducedVolume,
-                    bool isProtein, bool isVertexShift, double Kb,
-                    std::vector<double> H0, double sharpness,
-                    std::vector<double> r_H0, double Kse, double Kst,
-                    double Ksl, double Ksg, double Kv, double eta,
-                    double epsilon, double Bc, std::vector<double> Vt,
-                    double gamma, double temp, std::vector<double> pt,
-                    double Kf, double conc, double height, double radius,
-                    double h, double T, double eps, double tSave,
-                    std::string outputDir, bool isBacktrack, double rho,
-                    double c1, double ctol, bool isAugmentedLagrangian) {
+int forwardsweep_nc(
+    std::string trajFile, int startingFrame, bool isTuftedLaplacian,
+    bool isReducedVolume, bool isProtein, bool isVertexShift, double Kb,
+    std::vector<double> H0, double sharpness, std::vector<double> r_H0,
+    double Kse, double Kst, double Ksl, double Ksg, double Kv, double eta,
+    double epsilon, double Bc, std::vector<double> Vt, std::vector<double> Pam,
+    double gamma, double temp, std::vector<double> pt, double Kf, double conc,
+    double height, double radius, double h, double T, double eps, double tSave,
+    std::string outputDir, bool isBacktrack, double rho, double c1, double ctol,
+    bool isAugmentedLagrangian) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -397,9 +395,10 @@ int forwardsweep_nc(std::string trajFile, int startingFrame,
   if (ptrMesh->hasBoundary() && Vt[0] != 1.0) {
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
-  mem3dg::Parameters p{Kb,   H0[0], sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt[0],
-                       temp, sigma, pt,        Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
+                       Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
+                       gamma, Vt[0], Pam[0],    temp,  sigma,   pt,
+                       Kf,    conc,  height,    radius};
 
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
@@ -412,9 +411,9 @@ int forwardsweep_nc(std::string trajFile, int startingFrame,
   if (p.gamma != 0) {
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
-  mem3dg::integration::feedForwardSweep(f, H0, Vt, h, T, tSave, eps, ctol,
-                                        outputDir, isBacktrack, rho, c1,
-                                        isAugmentedLagrangian);
+  mem3dg::integration::feedForwardSweep(
+      f, H0, (isReducedVolume) ? Vt : Pam, h, T, tSave, eps, ctol, outputDir,
+      isBacktrack, rho, c1, isAugmentedLagrangian);
 
   /// Delete non unique pointer
   delete ptrRefVpg;

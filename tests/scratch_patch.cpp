@@ -84,7 +84,7 @@ int main() {
   std::cout << "Initiating the system ...";
   /// physical parameters
   double Kb = 8.22e-5, H0 = 40, sharpness = 50, Kst = 0, Ksl = 0, Kse = 0,
-         epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Kf = 0, conc = 25,
+         epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Pam = 0, Kf = 0, conc = 25,
          height = 0, radius = 100, temp = 0, h = 1e-5, Kv = 0, eta = 0,
          Ksg = 0.05;
 
@@ -99,10 +99,10 @@ int main() {
     std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
   }
 
-  mem3dg::Parameters p{Kb,    H0,     sharpness, r_H0,          Ksg,     Kst,
-                       Ksl,   Kse,    Kv,        eta,           epsilon, Bc,
-                       gamma, Vt,     temp,      sigma + 1e-18, pt,      Kf,
-                       conc,  height, radius};
+  mem3dg::Parameters p{Kb,    H0,   sharpness, r_H0,  Ksg,           Kst,
+                       Ksl,   Kse,  Kv,        eta,   epsilon,       Bc,
+                       gamma, Vt,   Pam,         temp,  sigma + 1e-18, pt,
+                       Kf,    conc, height,    radius};
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
                    isProtein, isVertexShift, isTuftedLaplacian);
   std::cout << "Finished!" << std::endl;

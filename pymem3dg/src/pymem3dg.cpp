@@ -42,21 +42,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("capillary_pressure"), py::arg("bending_pressure"),
       py::arg("line_pressure"));
 
-  pymem3dg.def(
-      "driver_ply", &driver_ply,
-      "Run single simulation starting with .ply files", py::arg("verbosity"),
-      py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
-      py::arg("isTuftedLaplacian"), py::arg("isReducedVolume"),
-      py::arg("isProtein"), py::arg("isVertexShift"), py::arg("Kb"),
-      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
-      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
-      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-      R"delim(
+  pymem3dg.def("driver_ply", &driver_ply,
+               "Run single simulation starting with .ply files",
+               py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
+               py::arg("nSub"), py::arg("isTuftedLaplacian"),
+               py::arg("isReducedVolume"), py::arg("isProtein"),
+               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
+               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+               py::arg("Pam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
+               py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
+               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
+               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
+               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+               R"delim(
                     Run single simulation starting with .ply files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
@@ -80,6 +81,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
+                   Pam (:py:class:`double`): ambient pressure outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    kt (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
@@ -110,8 +112,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
                py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
                py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("Vt"), py::arg("Pam"), py::arg("gamma"), py::arg("temp"),
+               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
                py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
                py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
                py::arg("rho"), py::arg("c1"), py::arg("ctol"),
@@ -139,6 +141,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
+                   Pam (:py:class:`double`): ambient pressure outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
@@ -180,21 +183,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("capillary_pressure"), py::arg("bending_pressure"),
                py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
 
-  pymem3dg.def(
-      "driver_nc", &driver_nc,
-      "Run single simulation starting with netcdf files", py::arg("verbosity"),
-      py::arg("trajFile"), py::arg("startingFrame"),
-      py::arg("isTuftedLaplacian"), py::arg("isReducedVolume"),
-      py::arg("isProtein"), py::arg("isVertexShift"), py::arg("Kb"),
-      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
-      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
-      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-      R"delim(
+  pymem3dg.def("driver_nc", &driver_nc,
+               "Run single simulation starting with netcdf files",
+               py::arg("verbosity"), py::arg("trajFile"),
+               py::arg("startingFrame"), py::arg("isTuftedLaplacian"),
+               py::arg("isReducedVolume"), py::arg("isProtein"),
+               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
+               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+               py::arg("Pam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
+               py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
+               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
+               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
+               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+               R"delim(
                    Run single simulation starting with netcdf files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
@@ -217,6 +221,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
+                   Pam (:py:class:`double`): ambient pressure outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
@@ -247,8 +252,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
                py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
                py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("Vt"), py::arg("Pam"), py::arg("gamma"), py::arg("temp"),
+               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
                py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
                py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
                py::arg("rho"), py::arg("c1"), py::arg("ctol"),
@@ -275,6 +280,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
+                   Pam (:py:class:`double`): ambient pressure outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 

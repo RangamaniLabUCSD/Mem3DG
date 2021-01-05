@@ -39,7 +39,7 @@ int main() {
   richData.addGeometry(*ptrVpg);
 
   double Kb = 8.22e-5, H0 = 0, sharpness = 10, Kst = 10, Ksl = 0, Kse = 0,
-         epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Kf = 0, conc = 25,
+         epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Pam = 0, Kf = 0, conc = 25,
          height = 0, radius = 0.9, temp = 0, h = 5e-4, Kv = 5e-2, eta = 0,
          Ksg = 0.1;
   std::vector<double> pt = {1, 1, 1};
@@ -55,9 +55,9 @@ int main() {
   }
 
   std::cout << "Initiating the system ...";
-  mem3dg::Parameters p{Kb,   H0,    sharpness, r_H0,    Ksg,  Kst,    Ksl,
-                       Kse,  Kv,    eta,       epsilon, Bc,   gamma,  Vt,
-                       temp, sigma, pt,        Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam,   temp,
+                       sigma, pt,  Kf,        conc, height, radius};
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
                    isProtein, isVertexShift, isTuftedLaplacian);
   std::cout << "Finished!" << std::endl;
