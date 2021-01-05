@@ -55,6 +55,7 @@ protected:
     p.r_H0 = {0.5, 0.5};
 
     p.Vt = 0.6;
+    p.Pam = 0;
 
     p.pt = {1, 1, 1};
     p.Kf = 0;
@@ -93,8 +94,8 @@ protected:
 
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume, isProtein,
-                   isVertexShift, isTuftedLaplacian);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
 
   f.getAllForces();
   EigenVectorX3D bendingPressure1 = gc::EigenMap<double, 3>(f.bendingPressure),
@@ -133,8 +134,8 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume, isProtein,
-                   isVertexShift, isTuftedLaplacian);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
 
   f.getAllForces();
 
@@ -181,8 +182,8 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
 
 TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume, isProtein,
-                   isVertexShift, isTuftedLaplacian);
+  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume,
+                   isProtein, isVertexShift, isTuftedLaplacian);
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
   //   Energy E_pre{f.E.totalE, f.E.kE, f.E.potE, f.E.BE, f.E.sE,
