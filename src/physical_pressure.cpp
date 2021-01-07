@@ -141,7 +141,7 @@ void System::getInsidePressure() {
         -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV) *
         vertexAngleNormal_e;
   } else {
-    insidePressure_e = (P.Kv / volume - P.Pam) * vertexAngleNormal_e;
+    insidePressure_e = P.Kv * (1.0 / volume - P.cam) * vertexAngleNormal_e;
   }
 
   // /// Nongeometric implementation

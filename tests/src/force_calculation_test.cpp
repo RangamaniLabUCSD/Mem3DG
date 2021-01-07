@@ -55,7 +55,7 @@ protected:
     p.r_H0 = {0.5, 0.5};
 
     p.Vt = 0.6;
-    p.Pam = 0;
+    p.cam = 0;
 
     p.pt = {1, 1, 1};
     p.Kf = 0;

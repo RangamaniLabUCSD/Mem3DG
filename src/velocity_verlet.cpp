@@ -195,7 +195,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
       regularizationForce, physicalPressure, DPDForce;
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
-  double dArea, dVolume, time = init_time; // double dRef;
+  double dArea, dVP, time = init_time; // double dRef;
   size_t frame = 0;
   bool EXIT = false;
 
@@ -227,19 +227,32 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     totalPressure.setZero();
     newTotalPressure = physicalPressure + DPDForce;
 
-    // measure the error norm and constraint, exit if smaller than tolerance or
-    // reach time limit
+    // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);
+
+    // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
-    dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
-                  ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-                  : 0.0;
+
+    if (f.isReducedVolume) {
+      // compute volume constraint error
+      dVP = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+                ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+                : 0.0;
+    } else {
+      // compute pressure constraint error
+      dVP =
+          (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+    }
+
+    // exit if under error tolerance
     if (f.L2ErrorNorm < tolerance) {
       std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
       EXIT = true;
     }
+
+    // exit if reached time
     if (time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
@@ -274,7 +287,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
-                  << "dVolume:  " << dVolume << "\n"
+                  << "dVP:  " << dVP << "\n"
                   << "Total energy (exclude V^ext): " << f.E.totalE << "\n"
                   << "L2 error norm: " << f.L2ErrorNorm << "\n"
                   << "COM: "
@@ -308,6 +321,8 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     vel_e += (totalPressure + newTotalPressure) * hdt;
     totalPressure = newTotalPressure;
     time += dt;
+
+    // vertex shift for regularization
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }

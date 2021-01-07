@@ -135,27 +135,25 @@ void pressureConstraintThreshold(System &f, bool &EXIT,
                                  const double dArea, const double ctol,
                                  const double tol, double increment) {
   if (f.L2ErrorNorm < tol) {
-    if (isAugmentedLagrangian) {
-      // augmented Lagrangian method
-      if (dArea < ctol) {
+    if (isAugmentedLagrangian) { // augmented Lagrangian method
+      if (dArea < ctol) {        // exit if fulfilled all constraints
         std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
         EXIT = true;
-      } else {
+      } else { // iterate if not
         std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
                   << "]";
         f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
                         f.targetSurfaceArea;
         std::cout << " -> [" << f.P.lambdaSG << "]" << std::endl;
       }
-    } else {
-      // incremental harmonic penalty method
-      if (dArea < ctol) {
+    } else {              // incremental harmonic penalty method
+      if (dArea < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
         std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
         f.P.Ksg *= increment;
         std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
-      } else {
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
       }
     }
   }
@@ -180,12 +178,11 @@ void reducedVolumeThreshold(System &f, bool &EXIT,
                             const double ctol, const double tol,
                             double increment) {
   if (f.L2ErrorNorm < tol) {
-    if (isAugmentedLagrangian) {
-      // augmented Lagrangian method
-      if (dArea < ctol && dVolume < ctol) {
+    if (isAugmentedLagrangian) {            // augmented Lagrangian method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
         std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
         EXIT = true;
-      } else {
+      } else { // iterate if not
         std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
                   << f.P.lambdaV << "]";
         f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
@@ -195,16 +192,22 @@ void reducedVolumeThreshold(System &f, bool &EXIT,
         std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
                   << std::endl;
       }
-    } else {
-      // incremental harmonic penalty method
+    } else { // incremental harmonic penalty method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      }
+
+      // iterate if not
+      if (dArea > ctol) {
+        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
+        f.P.Ksg *= 1.3;
+        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+      }
       if (dVolume > ctol) {
         std::cout << "\n[Kv] = [" << f.P.Kv << "]";
         f.P.Kv *= 1.3;
         std::cout << " -> [" << f.P.Kv << "]" << std::endl;
-      }
-      if (dArea < ctol && dVolume < ctol) {
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
       }
     }
   }
@@ -216,6 +219,11 @@ void conjugateGradient(System &f, double dt, double init_time,
                        const bool isBacktrack, const double rho,
                        const double c1, const bool isAugmentedLagrangian,
                        const std::string trajFileName) {
+#ifdef __linux__
+  // start the timer
+  struct timeval start;
+  gettimeofday(&start, NULL);
+#endif
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
@@ -224,11 +232,6 @@ void conjugateGradient(System &f, double dt, double init_time,
   size_t frame = 0;
   bool EXIT = false;
 
-// start the timer
-#ifdef __linux__
-  struct timeval start;
-  gettimeofday(&start, NULL);
-#endif
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
@@ -250,24 +253,32 @@ void conjugateGradient(System &f, double dt, double init_time,
     getForces(f, physicalPressure, DPDForce, regularizationForce);
     vel_e = physicalPressure + DPDForce + regularizationForce;
 
-    // measure the error norm and constraints, exit if smaller than tolerance
+    // compute the L2 error norm
+    f.getL2ErrorNorm(physicalPressure);
+
+    // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
+
     if (f.isReducedVolume) {
+      // compute volume constraint error
       dVP = (f.P.Kv != 0 && !f.mesh.hasBoundary())
                 ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                 : 0.0;
-      f.getL2ErrorNorm(physicalPressure);
+      // thresholding, exit if fulfilled and iterate if not
       reducedVolumeThreshold(f, EXIT, isAugmentedLagrangian, dArea, dVP, ctol,
                              tol, 1.3);
     } else {
+      // compute pressure constraint error
       dVP =
-          (!f.mesh.hasBoundary()) ? abs(f.P.Kv / f.volume / f.P.Pam - 1) : 1.0;
-      f.getL2ErrorNorm(physicalPressure);
+          (!f.mesh.hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
+      // thresholding, exit if fulfilled and iterate if not
       pressureConstraintThreshold(f, EXIT, isAugmentedLagrangian, dArea, ctol,
                                   tol, 1.3);
     }
+
+    // exit if reached time
     if (time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
@@ -330,7 +341,7 @@ void conjugateGradient(System &f, double dt, double init_time,
       break;
     }
 
-    // time stepping on vertex position
+    // determine conjugate gradient direction, restart after nVertices() cycles
     size_t countCG = 0;
     if (countCG % (f.mesh.nVertices() + 1) == 0) {
       pastNormSq = vel_e.squaredNorm();
@@ -342,6 +353,8 @@ void conjugateGradient(System &f, double dt, double init_time,
       pastNormSq = currentNormSq;
       countCG++;
     }
+
+    // time stepping on vertex position
     if (isBacktrack) {
       backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.potE, vel_e,
                 direction);
@@ -349,6 +362,8 @@ void conjugateGradient(System &f, double dt, double init_time,
       pos_e += direction * dt;
       time += dt;
     }
+
+    // vertex shift for regularization
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }
@@ -360,8 +375,7 @@ void conjugateGradient(System &f, double dt, double init_time,
 
     // recompute cached values
     f.update_Vertex_positions();
-
-  } // integration
+  }
 
   // stop the timer and report time spent
 #ifdef __linux__
@@ -379,19 +393,20 @@ void feedForwardSweep(System &f, std::vector<double> H_,
                       std::string outputDir, const bool isBacktrack,
                       const double rho, const double c1,
                       const bool isAugmentedLagrangian) {
-  const double KV = f.P.Kv, KSG = f.P.Ksg;
-  double init_time = 0;
-  size_t verbosity = 2;
-
 #ifdef __linux__
   // start the timer
   struct timeval start;
   gettimeofday(&start, NULL);
 #endif
 
+  // initialize variables
+  const double KV = f.P.Kv, KSG = f.P.Ksg, init_time = 0.0;
+  const size_t verbosity = 2;
+
   // parameter sweep
   for (double H : H_) {
     for (double VP : VP_) {
+      // reset parameters
       if (isAugmentedLagrangian) {
         f.P.lambdaSG = 0;
         f.P.lambdaV = 0;
@@ -399,28 +414,31 @@ void feedForwardSweep(System &f, std::vector<double> H_,
         f.P.Kv = KV;
         f.P.Ksg = KSG;
       }
+
+      // initialize trajectory file name
       char buffer[50];
+      sprintf(buffer, "/traj_H_%d_VP_%d.nc", int(H * 100), int(VP * 100));
+
+      // update sweeping paraemters
       f.P.H0 = H;
+      (f.isReducedVolume ? f.P.Vt : f.P.cam) = VP;
       std::cout << "\nH0: " << f.P.H0 << std::endl;
-      if (f.isReducedVolume) {
-        sprintf(buffer, "/traj_H_%d_V_%d.nc", int(H * 100), int(VP * 100));
-        f.P.Vt = VP;
-        std::cout << "Vt: " << f.P.Vt << std::endl;
-      } else {
-        sprintf(buffer, "/traj_H_%d_P_%d.nc", int(H * 100), int(VP * 100));
-        f.P.Pam = VP;
-        std::cout << "Pam: " << f.P.Pam << std::endl;
-      }
+      std::cout << "VP: " << VP << std::endl;
+
+      // recalculate cached values
       f.update_Vertex_positions();
+
+      // rerun CG optimization
       conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity,
                         outputDir, isBacktrack, rho, c1, isAugmentedLagrangian,
                         buffer);
     }
+    // reverse the order of inner loop to ensure phase space closeness
     std::reverse(VP_.begin(), VP_.end());
   }
 
-  // stop the timer and report time spent
 #ifdef __linux__
+  // stop the timer and report time spent
   double duration = getDuration(start);
   if (verbosity > 0) {
     std::cout << "\nTotal parameter sweep time: " << duration << " seconds"
