@@ -67,7 +67,7 @@ void euler(System &f, double dt, double init_time, double total_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDForce;
-  double dArea, dVolume, time = init_time;
+  double dArea, dVP, time = init_time;
   size_t frame = 0;
   bool EXIT = false;
 
@@ -97,18 +97,32 @@ void euler(System &f, double dt, double init_time, double total_time,
     getForces(f, physicalPressure, DPDForce, regularizationForce);
     vel_e = physicalPressure + DPDForce + regularizationForce;
 
-    // measure the error norm and constraint, exit if smaller than tolerance
+    // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);
+
+    // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
-    dVolume = (f.P.Kv != 0 && !f.mesh.hasBoundary())
-                  ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-                  : 0.0;
+
+    if (f.isReducedVolume) {
+      // compute volume constraint error
+      dVP = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+                ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+                : 0.0;
+    } else {
+      // compute pressure constraint error
+      dVP =
+          (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+    }
+
+    // exit if under error tolerance
     if (f.L2ErrorNorm < tolerance) {
       std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
       EXIT = true;
     }
+
+    // exit if reached time
     if (time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
@@ -143,7 +157,7 @@ void euler(System &f, double dt, double init_time, double total_time,
                   << "Time: " << time << "\n"
                   << "Frame: " << frame << "\n"
                   << "dArea: " << dArea << "\n"
-                  << "dVolume:  " << dVolume << "\n"
+                  << "dVP:  " << dVP << "\n"
                   << "Potential energy (exclude V^ext): " << f.E.potE << "\n"
                   << "L2 error norm: " << f.L2ErrorNorm << "\n"
                   << "COM: "
@@ -178,6 +192,8 @@ void euler(System &f, double dt, double init_time, double total_time,
       pos_e += vel_e * dt;
       time += dt;
     }
+
+    // vertex shift for regularization
     if (f.isVertexShift) {
       vertexShift(f.mesh, f.vpg, f.mask);
     }

@@ -51,7 +51,7 @@ void System::getPressureEnergy() {
     E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
            P.lambdaV * V_difference;
   } else {
-    E.pE = P.Kv * abs(log(P.Kv / volume / P.Pam));
+    E.pE = P.Kv * abs(log(1.0 / volume / P.cam));
   }
 }
 
@@ -70,15 +70,14 @@ void System::getExternalForceEnergy() {
 }
 
 void System::getKineticEnergy() {
-  auto velocity = gc::EigenMap<double, 3>(vel);
+  // auto velocity = gc::EigenMap<double, 3>(vel);
+  auto velocity =
+      rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
+                        gc::EigenMap<double, 3>(vpg.inputVertexPositions));
   E.kE = 0.5 * (M * (velocity.array() * velocity.array()).matrix()).sum();
 }
 
 void System::getPotentialEnergy() {
-  E.potE = E.BE + E.sE + E.pE + E.cE + E.lE + E.exE;
-}
-
-void System::getFreeEnergy() {
   if (P.Kb != 0) {
     getBendingEnergy();
   }
@@ -97,6 +96,10 @@ void System::getFreeEnergy() {
   if (P.Kf != 0) {
     getExternalForceEnergy();
   }
+  E.potE = E.BE + E.sE + E.pE + E.cE + E.lE + E.exE;
+}
+
+void System::getFreeEnergy() {
   getKineticEnergy();
   getPotentialEnergy();
   E.totalE = E.kE + E.potE;

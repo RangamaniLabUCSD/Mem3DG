@@ -51,7 +51,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
                py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
                py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("Pam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
+               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
                py::arg("Kf"), py::arg("conc"), py::arg("height"),
                py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
                py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
@@ -81,7 +81,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   Pam (:py:class:`double`): ambient pressure outside closed membrane
+                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    kt (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
@@ -112,7 +112,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
                py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
                py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("Pam"), py::arg("gamma"), py::arg("temp"),
+               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
                py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
                py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
                py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
@@ -141,7 +141,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   Pam (:py:class:`double`): ambient pressure outside closed membrane
+                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
@@ -192,7 +192,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
                py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
                py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("Pam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
+               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
                py::arg("Kf"), py::arg("conc"), py::arg("height"),
                py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
                py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
@@ -221,7 +221,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   Pam (:py:class:`double`): ambient pressure outside closed membrane
+                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 
@@ -252,7 +252,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
                py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
                py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("Pam"), py::arg("gamma"), py::arg("temp"),
+               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
                py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
                py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
                py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
@@ -280,7 +280,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    epsilon (:py:class:`double`): adsorption energy per unit of protein 
                    Bc (:py:class:`double`): binding constant of the protein
                    Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   Pam (:py:class:`double`): ambient pressure outside closed membrane
+                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
                    gamma (:py:class:`double`): dissipation coefficient of DPD force
                    temp (:py:class:`double`): stochastic coeffcient of DPD force 
                    pt (:py:class:`list`): 3-D spatial coordinate of a point 

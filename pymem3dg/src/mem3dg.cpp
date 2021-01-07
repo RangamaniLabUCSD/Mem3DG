@@ -61,7 +61,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                bool isReducedVolume, bool isProtein, bool isVertexShift,
                double Kb, double H0, double sharpness, std::vector<double> r_H0,
                double Kse, double Kst, double Ksl, double Ksg, double Kv,
-               double eta, double epsilon, double Bc, double Vt, double Pam,
+               double eta, double epsilon, double Bc, double Vt, double cam,
                double gamma, double temp, std::vector<double> pt, double Kf,
                double conc, double height, double radius, double h, double T,
                double eps, double tSave, std::string outputDir,
@@ -121,7 +121,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
   mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
                        sigma, pt,  Kf,        conc, height, radius};
 
   /// Initialize the system
@@ -161,7 +161,7 @@ int forwardsweep_ply(
     bool isVertexShift, double Kb, std::vector<double> H0, double sharpness,
     std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
     double Kv, double eta, double epsilon, double Bc, std::vector<double> Vt,
-    std::vector<double> Pam, double gamma, double temp, std::vector<double> pt,
+    std::vector<double> cam, double gamma, double temp, std::vector<double> pt,
     double Kf, double conc, double height, double radius, double h, double T,
     double eps, double tSave, std::string outputDir, bool isBacktrack,
     double rho, double c1, double ctol, bool isAugmentedLagrangian) {
@@ -209,7 +209,7 @@ int forwardsweep_ply(
   }
   mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
                        Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
-                       gamma, Vt[0], Pam[0],    temp,  sigma,   pt,
+                       gamma, Vt[0], cam[0],    temp,  sigma,   pt,
                        Kf,    conc,  height,    radius};
 
   /// Initialize the system
@@ -223,7 +223,7 @@ int forwardsweep_ply(
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
   mem3dg::integration::feedForwardSweep(
-      f, H0, (isReducedVolume) ? Vt : Pam, h, T, tSave, eps, ctol, outputDir,
+      f, H0, (isReducedVolume) ? Vt : cam, h, T, tSave, eps, ctol, outputDir,
       isBacktrack, rho, c1, isAugmentedLagrangian);
 
   /// Delete non unique pointer
@@ -255,7 +255,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               bool isVertexShift, double Kb, double H0, double sharpness,
               std::vector<double> r_H0, double Kse, double Kst, double Ksl,
               double Ksg, double Kv, double eta, double epsilon, double Bc,
-              double Vt, double Pam, double gamma, double temp,
+              double Vt, double cam, double gamma, double temp,
               std::vector<double> pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
@@ -305,7 +305,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
     throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
   }
   mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
                        sigma, pt,  Kf,        conc, height, radius};
 
   /// Initialize the system
@@ -347,7 +347,7 @@ int forwardsweep_nc(
     bool isReducedVolume, bool isProtein, bool isVertexShift, double Kb,
     std::vector<double> H0, double sharpness, std::vector<double> r_H0,
     double Kse, double Kst, double Ksl, double Ksg, double Kv, double eta,
-    double epsilon, double Bc, std::vector<double> Vt, std::vector<double> Pam,
+    double epsilon, double Bc, std::vector<double> Vt, std::vector<double> cam,
     double gamma, double temp, std::vector<double> pt, double Kf, double conc,
     double height, double radius, double h, double T, double eps, double tSave,
     std::string outputDir, bool isBacktrack, double rho, double c1, double ctol,
@@ -397,7 +397,7 @@ int forwardsweep_nc(
   }
   mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
                        Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
-                       gamma, Vt[0], Pam[0],    temp,  sigma,   pt,
+                       gamma, Vt[0], cam[0],    temp,  sigma,   pt,
                        Kf,    conc,  height,    radius};
 
   /// Initialize the system
@@ -412,7 +412,7 @@ int forwardsweep_nc(
     throw std::runtime_error("gamma has to be 0 for CG optimization!");
   }
   mem3dg::integration::feedForwardSweep(
-      f, H0, (isReducedVolume) ? Vt : Pam, h, T, tSave, eps, ctol, outputDir,
+      f, H0, (isReducedVolume) ? Vt : cam, h, T, tSave, eps, ctol, outputDir,
       isBacktrack, rho, c1, isAugmentedLagrangian);
 
   /// Delete non unique pointer

@@ -72,7 +72,7 @@ struct Parameters {
   /// Reduced volume
   double Vt;
   /// Ambient Pressure
-  double Pam;
+  double cam;
   /// Boltzmann constant*Temperature
   double temp;
   /// Noise
