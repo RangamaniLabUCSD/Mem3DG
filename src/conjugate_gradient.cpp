@@ -85,7 +85,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
 
   pos_e += alpha * direction;
-  f.update_Vertex_positions();
+  f.updateVertexPositions();
   f.getFreeEnergy();
 
   while (f.E.potE > (potentialEnergy_pre -
@@ -98,7 +98,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
       // restore entry configuration
       alpha = dt;
       pos_e = init_position;
-      f.update_Vertex_positions();
+      f.updateVertexPositions();
       f.getFreeEnergy();
       time = init_time - alpha;
 
@@ -106,7 +106,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
     }
     alpha *= rho;
     pos_e = init_position + alpha * direction;
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
     f.getFreeEnergy();
     count++;
   }
@@ -271,8 +271,7 @@ void conjugateGradient(System &f, double dt, double init_time,
                              tol, 1.3);
     } else {
       // compute pressure constraint error
-      dVP =
-          (!f.mesh.hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
+      dVP = (!f.mesh.hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
       // thresholding, exit if fulfilled and iterate if not
       pressureConstraintThreshold(f, EXIT, isAugmentedLagrangian, dArea, ctol,
                                   tol, 1.3);
@@ -374,7 +373,7 @@ void conjugateGradient(System &f, double dt, double init_time,
     }
 
     // recompute cached values
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
   }
 
   // stop the timer and report time spent
@@ -426,7 +425,7 @@ void feedForwardSweep(System &f, std::vector<double> H_,
       std::cout << "VP: " << VP << std::endl;
 
       // recalculate cached values
-      f.update_Vertex_positions();
+      f.updateVertexPositions();
 
       // rerun CG optimization
       conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity,

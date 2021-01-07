@@ -45,7 +45,7 @@ protected:
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   Parameters p;
   double h = 0.0002;
-  bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false,
+  bool isProtein = false, isLocalCurvature = false, isVertexShift = false,
        isReducedVolume = true;
 
   ForceCalculationTest() {
@@ -95,7 +95,7 @@ protected:
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume,
-                   isProtein, isVertexShift, isTuftedLaplacian);
+                   isProtein, isLocalCurvature, isVertexShift);
 
   f.getAllForces();
   EigenVectorX3D bendingPressure1 = gc::EigenMap<double, 3>(f.bendingPressure),
@@ -135,7 +135,7 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume,
-                   isProtein, isVertexShift, isTuftedLaplacian);
+                   isProtein, isLocalCurvature, isVertexShift);
 
   f.getAllForces();
 
@@ -183,7 +183,7 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
 TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p, isReducedVolume,
-                   isProtein, isVertexShift, isTuftedLaplacian);
+                   isProtein, isLocalCurvature, isVertexShift);
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
   //   Energy E_pre{f.E.totalE, f.E.kE, f.E.potE, f.E.BE, f.E.sE,
@@ -199,7 +199,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     vel_e = rowwiseScaling(f.mask.cast<double>(),
                            gc::EigenMap<double, 3>(f.bendingPressure));
     pos_e += vel_e * h;
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
     f.getFreeEnergy();
     E_aft = f.E;
     ASSERT_TRUE(E_aft.BE <= E_pre.BE);
@@ -209,7 +209,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     vel_e = rowwiseScaling(f.mask.cast<double>(),
                            gc::EigenMap<double, 3>(f.capillaryPressure));
     pos_e += vel_e * h;
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
     f.getFreeEnergy();
     E_aft = f.E;
     ASSERT_TRUE(E_aft.sE <= E_pre.sE);
@@ -219,7 +219,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     vel_e = rowwiseScaling(f.mask.cast<double>(),
                            gc::EigenMap<double, 3>(f.insidePressure));
     pos_e += vel_e * h;
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
     f.getFreeEnergy();
     E_aft = f.E;
     ASSERT_TRUE(E_aft.pE <= E_pre.pE);
@@ -229,7 +229,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     vel_e = rowwiseScaling(f.mask.cast<double>(),
                            gc::EigenMap<double, 3>(f.externalPressure));
     pos_e += vel_e * h;
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
     f.getFreeEnergy();
     E_aft = f.E;
     ASSERT_TRUE(E_aft.exE <= E_pre.exE);
@@ -239,7 +239,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     vel_e = rowwiseScaling(f.mask.cast<double>(),
                            gc::EigenMap<double, 3>(f.externalPressure));
     pos_e += vel_e * h;
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
     f.getFreeEnergy();
     E_aft = f.E;
     E_pre = E_aft;

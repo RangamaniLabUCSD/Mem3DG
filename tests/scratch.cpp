@@ -39,14 +39,14 @@ int main() {
   richData.addGeometry(*ptrVpg);
 
   double Kb = 8.22e-5, H0 = 0, sharpness = 10, Kst = 10, Ksl = 0, Kse = 0,
-         epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Pam = 0, Kf = 0, conc = 25,
-         height = 0, radius = 0.9, temp = 0, h = 5e-4, Kv = 5e-2, eta = 0,
-         Ksg = 0.1;
+         epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Pam = 0, Kf = 0,
+         conc = 25, height = 0, radius = 0.9, temp = 0, h = 5e-4, Kv = 5e-2,
+         eta = 0, Ksg = 0.1;
   std::vector<double> pt = {1, 1, 1};
   std::vector<double> r_H0 = {100, 100};
 
-  bool isProtein = false, isTuftedLaplacian = false, isVertexShift = false,
-       isReducedVolume = true;
+  bool isProtein = false, isVertexShift = false, isReducedVolume = true,
+       isLocalCurvature = false;
 
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
   if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
@@ -56,10 +56,10 @@ int main() {
 
   std::cout << "Initiating the system ...";
   mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam,   temp,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
                        sigma, pt,  Kf,        conc, height, radius};
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
-                   isProtein, isVertexShift, isTuftedLaplacian);
+                   isProtein, isLocalCurvature, isVertexShift);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;

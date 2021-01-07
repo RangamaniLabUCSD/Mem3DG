@@ -73,7 +73,7 @@ struct Parameters {
   double Vt;
   /// Ambient Pressure
   double cam;
-  /// Boltzmann constant*Temperature
+  /// Temperature
   double temp;
   /// Noise
   double sigma;
@@ -152,14 +152,14 @@ public:
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
-  /// Whether or not use tufted laplacian matrix
-  const bool isTuftedLaplacian;
   /// Whether or not do vertex shift
   const bool isVertexShift;
   /// Whether or not consider protein binding
   const bool isProtein;
   /// Whether adopt reduced volume parametrization
   const bool isReducedVolume;
+  /// Whether calculate geodesic distance
+  const bool isLocalCurvature;
 
   /// Target area per face
   gcs::FaceData<double> targetFaceAreas;
@@ -175,11 +175,11 @@ public:
   gcs::HeatMethodDistanceSolver heatSolver;
 
   /// Cached galerkin mass matrix
-  Eigen::SparseMatrix<double> M;
+  Eigen::SparseMatrix<double> &M;
   /// Inverted galerkin mass matrix
   Eigen::SparseMatrix<double> M_inv;
   /// Cotangent Laplacian
-  Eigen::SparseMatrix<double> L;
+  Eigen::SparseMatrix<double> &L;
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
 
@@ -191,6 +191,8 @@ public:
   double volume;
   /// Interface Area;
   double interArea;
+  /// Surface tension
+  double surfaceTension;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
@@ -218,13 +220,14 @@ public:
   System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
          gcs::VertexPositionGeometry &refVpg_,
          gcs::RichSurfaceMeshData &richData_, Parameters &p,
-         bool isReducedVolume_, bool isProtein_, bool isVertexShift_,
-         bool isTuftedLaplacian_)
+         bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
+         bool isVertexShift_)
       : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
-        isTuftedLaplacian(isTuftedLaplacian_),
         isReducedVolume(isReducedVolume_), isProtein(isProtein_),
-        isVertexShift(isVertexShift_), bendingPressure(mesh_, {0, 0, 0}),
-        insidePressure(mesh_, {0, 0, 0}), capillaryPressure(mesh_, {0, 0, 0}),
+        isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
+        M(vpg.vertexLumpedMassMatrix), L(vpg.cotanLaplacian),
+        bendingPressure(mesh_, {0, 0, 0}), insidePressure(mesh_, {0, 0, 0}),
+        capillaryPressure(mesh_, {0, 0, 0}),
         lineTensionPressure(mesh_, {0, 0, 0}), chemicalPotential(mesh_, 0.0),
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
@@ -232,9 +235,14 @@ public:
         proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(vpg) {
 
-    // Initialize RNG
-    pcg_extras::seed_seq_from<std::random_device> seed_source;
-    rng = pcg32(seed_source);
+    // Check confliciting parameters and options
+    checkParameters();
+
+    // Regularize the vetex position geometry if needed
+    if (isVertexShift) {
+      vertexShift(mesh, vpg, mask);
+      updateVertexPositions();
+    }
 
     // GC computed properties
     vpg.requireFaceNormals();
@@ -251,45 +259,11 @@ public:
     vpg.requireCornerScaledAngles();
     // vpg.requireVertexTangentBasis();
 
-    /// compute constant values during simulation
-    // Find the closest point index to P.pt in refVpg
-    closestPtIndToPt(mesh, refVpg, P.pt, ptInd);
-
-    // Initialize the constant mask based on distance from the point specified
-    // Or mask boundary element
-    mask = (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() <
-            P.radius)
-               .matrix();
-    if (mesh.hasBoundary()) {
-      boundaryMask(mesh, mask);
-    }
-
-    // Initialize the constant target face/surface areas
-    targetFaceAreas = refVpg.faceAreas;
-    targetSurfaceArea = targetFaceAreas.raw().sum();
-
-    // Initialize the constant target edge length
-    targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
-
-    // Initialize the target constant cross length ration
-    getCrossLengthRatio(mesh, refVpg, targetLcr);
-
-    // Initialize the constant reference volume
-    if (mesh.hasBoundary()) {
-      refVolume = 0.0;
-    } else {
-      refVolume = std::pow(targetSurfaceArea / constants::PI / 4, 1.5) *
-                  (4 * constants::PI / 3);
-    }
-
-    // Regularize the vetex position geometry if needed
-    if (isVertexShift) {
-      vertexShift(mesh, vpg, mask);
-      update_Vertex_positions();
-    }
+    // Initialize constant values
+    initConstants();
 
     /// compute nonconstant values during simulation
-    update_Vertex_positions();
+    updateVertexPositions();
   }
 
   /**
@@ -314,17 +288,27 @@ public:
     vpg.unrequireCornerScaledAngles();
   }
 
-
   // ==========================================================
   // ================        Update          ==================
   // ==========================================================
+  /**
+   * @brief Check all conflicting parameters and options
+   *
+   */
+  void checkParameters();
+
+  /**
+   * @brief Initialize all constant values needed for computation
+   *
+   */
+  void initConstants();
+
   /**
    * @brief Update the vertex position and recompute cached values
    * (all quantities that characterizes the current energy state)
    *
    */
-  void update_Vertex_positions();
-
+  void updateVertexPositions();
 
   // ==========================================================
   // ================        Pressure        ==================

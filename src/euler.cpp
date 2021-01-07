@@ -204,7 +204,7 @@ void euler(System &f, double dt, double init_time, double total_time,
     }
 
     // recompute cached values
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
 
   } // integration
 
