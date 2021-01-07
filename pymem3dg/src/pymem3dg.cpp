@@ -45,8 +45,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def("driver_ply", &driver_ply,
                "Run single simulation starting with .ply files",
                py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
-               py::arg("nSub"), py::arg("isTuftedLaplacian"),
-               py::arg("isReducedVolume"), py::arg("isProtein"),
+               py::arg("nSub"), py::arg("isReducedVolume"),
+               py::arg("isProtein"), py::arg("isLocalCurvature"),
                py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
                py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
                py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
@@ -64,9 +64,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    inputMesh (:py:class:`str`): input mesh path
                    refMesh (:py:class:`str`): reference mesh path
                    nSub (:py:class:`int`): number of subdivision 
-                   isTuftedLaplacian (:py:class:`bool`): whether adopt tufted laplacian
                    isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
                    isProtein (:py:class:`bool`): whether consider protein binding
+                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
@@ -107,26 +107,26 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def("forwardsweep_ply", &forwardsweep_ply,
                "Run forward sweep simulation starting with .ply files",
                py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
-               py::arg("isTuftedLaplacian"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isVertexShift"), py::arg("Kb"),
-               py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
-               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
-               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
-               py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-               py::arg("isAugmentedLagrangian"),
+               py::arg("isReducedVolume"), py::arg("isProtein"),
+               py::arg("isLocalCurvature"), py::arg("isVertexShift"),
+               py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
+               py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"),
+               py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+               py::arg("conc"), py::arg("height"), py::arg("radius"),
+               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
+               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
+               py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
                R"delim(
                     Run forward sweep simulation starting with .ply files
                Args:
                    inputMesh (:py:class:`str`): input mesh path
                    refMesh (:py:class:`str`): reference mesh path
                    nSub (:py:class:`int`): number of subdivision 
-                   isTuftedLaplacian (:py:class:`bool`): whether adopt tufted laplacian
                    isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
                    isProtein (:py:class:`bool`): whether consider protein binding
+                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
@@ -183,30 +183,29 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("capillary_pressure"), py::arg("bending_pressure"),
                py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
 
-  pymem3dg.def("driver_nc", &driver_nc,
-               "Run single simulation starting with netcdf files",
-               py::arg("verbosity"), py::arg("trajFile"),
-               py::arg("startingFrame"), py::arg("isTuftedLaplacian"),
-               py::arg("isReducedVolume"), py::arg("isProtein"),
-               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
-               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               R"delim(
+  pymem3dg.def(
+      "driver_nc", &driver_nc,
+      "Run single simulation starting with netcdf files", py::arg("verbosity"),
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("isReducedVolume"),
+      py::arg("isProtein"), py::arg("isLocalCurvature"),
+      py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
+      py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
+      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+      R"delim(
                    Run single simulation starting with netcdf files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
                    trajFile (:py:class:`str`): input trajectory file path
                    startingFrame (:py:class:`int`): starting frame of continuation
-                   isTuftedLaplacian (:py:class:`bool`): whether adopt tufted laplacian
                    isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
                    isProtein (:py:class:`bool`): whether consider protein binding
+                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
@@ -247,25 +246,25 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def("forwardsweep_nc", &forwardsweep_nc,
                "Run forward sweep simulation starting with netcdf files",
                py::arg("trajFile"), py::arg("startingFrame"),
-               py::arg("isTuftedLaplacian"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isVertexShift"), py::arg("Kb"),
-               py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"),
-               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
-               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
-               py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-               py::arg("isAugmentedLagrangian"),
+               py::arg("isReducedVolume"), py::arg("isProtein"),
+               py::arg("isLocalCurvature"), py::arg("isVertexShift"),
+               py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
+               py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"),
+               py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+               py::arg("conc"), py::arg("height"), py::arg("radius"),
+               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
+               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
+               py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
                R"delim(
                    Run forward sweep simulation starting with netcdf files
                Args:
                    trajFile (:py:class:`str`): input trajectory file path
                    startingFrame (:py:class:`int`): starting frame of continuation
-                   isTuftedLaplacian (:py:class:`bool`): whether adopt tufted laplacian
                    isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
                    isProtein (:py:class:`bool`): whether consider protein binding
+                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
