@@ -57,13 +57,13 @@ void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
   f.getAllForces();
 
-  physicalPressure =
-      rowwiseScaling(f.mask.cast<double>(),
-                     gc::EigenMap<double, 3>(f.bendingPressure) +
-                         gc::EigenMap<double, 3>(f.capillaryPressure) +
-                         gc::EigenMap<double, 3>(f.insidePressure) +
-                         gc::EigenMap<double, 3>(f.externalPressure) +
-                         gc::EigenMap<double, 3>(f.lineTensionPressure));
+  physicalPressure = rowwiseScaling(
+      f.mask.cast<double>(),
+      gc::EigenMap<double, 3>(f.bendingPressure) +
+          gc::EigenMap<double, 3>(f.capillaryPressure) +
+          f.insidePressure * gc::EigenMap<double, 3>(f.vpg.vertexNormals) +
+          gc::EigenMap<double, 3>(f.externalPressure) +
+          gc::EigenMap<double, 3>(f.lineTensionPressure));
 
   regularizationForce = rowwiseScaling(
       f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
@@ -143,10 +143,8 @@ void saveNetcdfData(
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t &verbosity) {
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft, fp;
 
-  fn = rowwiseDotProduct(physicalPressure,
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
   f_ext = rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
                             gc::EigenMap<double, 3>(f.vpg.vertexNormals));
   fb = rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
@@ -154,26 +152,36 @@ void saveNetcdfData(
   fl = rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                          gc::EigenMap<double, 3>(f.vpg.vertexNormals));
   ft = (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                          gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-            .array() /
-        f.H.array() / 2)
-           .matrix();
+                          gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+  fp.setConstant(f.mesh.nVertices(), 1, f.insidePressure);
+  fn = rowwiseDotProduct(physicalPressure,
+                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
 
   frame = fd.getNextFrameIndex();
+
   fd.writeTime(frame, time);
+
   fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
-  fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
-  fd.writeAngles(frame, f.vpg.cornerAngles.raw());
-  fd.writeProteinDensity(frame, f.proteinDensity.raw());
+  fd.writeVolume(frame, f.volume);
+  fd.writeSurfArea(frame, f.surfaceArea);
   fd.writeMeanCurvature(frame, f.H);
   fd.writeSponCurvature(frame, f.H0);
-  fd.writeH_H0_diff(frame,
-                    ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
+  // fd.writeAngles(frame, f.vpg.cornerAngles.raw());
+  // fd.writeH_H0_diff(frame,
+  //                   ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
+
+  fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
+  if (f.isProtein) {
+    fd.writeProteinDensity(frame, f.proteinDensity.raw());
+  }
+
+  fd.writeBendingPressure(frame, fb);
+  fd.writeCapillaryPressure(frame, ft);
+  fd.writeLinePressure(frame, fl);
+  fd.writeInsidePressure(frame, fp);
   fd.writeExternalPressure(frame, f_ext);
   fd.writePhysicalPressure(frame, fn);
-  fd.writeCapillaryPressure(frame, ft);
-  fd.writeBendingPressure(frame, fb);
-  fd.writeLinePressure(frame, fl);
+
   fd.writeBendEnergy(frame, f.E.BE);
   fd.writeSurfEnergy(frame, f.E.sE);
   fd.writePressEnergy(frame, f.E.pE);
@@ -182,8 +190,6 @@ void saveNetcdfData(
   fd.writeLineEnergy(frame, f.E.lE);
   fd.writeTotalEnergy(frame, f.E.totalE);
   fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
-  fd.writeVolume(frame, f.volume);
-  fd.writeSurfArea(frame, f.surfaceArea);
 }
 #endif
 
@@ -242,8 +248,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
                 : 0.0;
     } else {
       // compute pressure constraint error
-      dVP =
-          (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+      dVP = (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
     }
 
     // exit if under error tolerance
@@ -333,7 +338,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     }
 
     // recompute cached values
-    f.update_Vertex_positions();
+    f.updateVertexPositions();
 
   } // integration
 

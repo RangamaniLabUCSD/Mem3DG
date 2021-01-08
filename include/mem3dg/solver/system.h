@@ -135,10 +135,10 @@ public:
   gcs::VertexData<gc::Vector3> capillaryPressure;
   /// Cached interfacial line tension
   gcs::VertexData<gc::Vector3> lineTensionPressure;
-  /// Cached relative inside pressure
-  gcs::VertexData<gc::Vector3> insidePressure;
   /// Cached externally-applied pressure
   gcs::VertexData<gc::Vector3> externalPressure;
+  /// Cached relative inside pressure
+  double insidePressure;
 
   /// Cached local stretching forces (in-plane regularization)
   gcs::VertexData<gc::Vector3> regularizationForce;
@@ -187,12 +187,12 @@ public:
   double L2ErrorNorm;
   /// surface area
   double surfaceArea;
+  /// Surface tension
+  double surfaceTension;
   /// Volume
   double volume;
   /// Interface Area;
   double interArea;
-  /// Surface tension
-  double surfaceTension;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
@@ -226,7 +226,7 @@ public:
         isReducedVolume(isReducedVolume_), isProtein(isProtein_),
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
         M(vpg.vertexLumpedMassMatrix), L(vpg.cotanLaplacian),
-        bendingPressure(mesh_, {0, 0, 0}), insidePressure(mesh_, {0, 0, 0}),
+        bendingPressure(mesh_, {0, 0, 0}), insidePressure(0),
         capillaryPressure(mesh_, {0, 0, 0}),
         lineTensionPressure(mesh_, {0, 0, 0}), chemicalPotential(mesh_, 0.0),
         externalPressure(mesh_, {0, 0, 0}),
@@ -289,13 +289,19 @@ public:
   }
 
   // ==========================================================
-  // ================        Update          ==================
+  // ================     Initialization     ==================
   // ==========================================================
   /**
    * @brief Check all conflicting parameters and options
    *
    */
   void checkParameters();
+
+  /**
+   * @brief testing of random number generator pcg
+   *
+   */
+  void pcg_test();
 
   /**
    * @brief Initialize all constant values needed for computation
@@ -347,19 +353,6 @@ public:
    * @brief Get DPD forces of the system
    */
   void getDPDForces();
-
-  /**
-   * @brief testing of random number generator pcg
-   *
-   */
-  void pcg_test();
-
-  /**
-   * @brief Get velocity from the position of the last iteration
-   *
-   * @param dt timestep
-   */
-  void getVelocityFromPastPosition(double dt);
 
   /**
    * @brief Get external pressure component of the system
@@ -424,6 +417,6 @@ public:
    * the PDE
    */
   void
-  getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure);
+  getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure);
 };
 } // namespace mem3dg

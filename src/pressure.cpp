@@ -26,6 +26,7 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 #include <Eigen/Core>
+#include <pcg_random.hpp>
 
 namespace mem3dg {
 
@@ -97,17 +98,15 @@ void System::getCapillaryPressure() {
   auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
 
   /// Geometric implementation
-  if (mesh.hasBoundary()) {
-    /// CAPILLARY PRESSURE OF PATCH
-    capillaryPressure_e = rowwiseScaling(-P.Ksg * 2.0 * H, vertexAngleNormal_e);
-  } else {
-    /// CAPILLARY PRESSURE OF VESICLE
-    capillaryPressure_e = rowwiseScaling(
+  if (mesh.hasBoundary()) { // surface tension of patch
+    surfaceTension = -P.Ksg;
+  } else { // surface tension of vesicle
+    surfaceTension =
         -(P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea +
-          P.lambdaSG) *
-            2.0 * H,
-        vertexAngleNormal_e);
+          P.lambdaSG);
   }
+  capillaryPressure_e =
+      rowwiseScaling(surfaceTension * 2 * H, vertexAngleNormal_e);
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh.vertices()) {
@@ -128,20 +127,16 @@ void System::getCapillaryPressure() {
 }
 
 void System::getInsidePressure() {
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-  auto insidePressure_e = gc::EigenMap<double, 3>(insidePressure);
-
   /// Geometric implementation
   if (mesh.hasBoundary()) {
     /// Inside excess pressure of patch
-    insidePressure_e = P.Kv * vertexAngleNormal_e;
+    insidePressure = P.Kv;
   } else if (isReducedVolume) {
     /// Inside excess pressure of vesicle
-    insidePressure_e =
-        -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV) *
-        vertexAngleNormal_e;
+    insidePressure =
+        -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV);
   } else {
-    insidePressure_e = P.Kv * (1.0 / volume - P.cam) * vertexAngleNormal_e;
+    insidePressure = P.Kv * (1.0 / volume - P.cam);
   }
 
   // /// Nongeometric implementation
@@ -330,6 +325,151 @@ void System::getChemicalPotential() {
 
   chemicalPotential.raw() =
       (P.epsilon - (2 * P.Kb * (H - H0)).array() * dH0dphi.array()).matrix();
+}
+
+void System::getDPDForces() {
+  // Reset forces to zero
+  auto dampingForce_e = gc::EigenMap<double, 3>(dampingForce);
+  auto stochasticForce_e = gc::EigenMap<double, 3>(stochasticForce);
+  dampingForce_e.setZero();
+  stochasticForce_e.setZero();
+
+  // alias positions
+  const auto &pos = vpg.inputVertexPositions;
+
+  // std::default_random_engine random_generator;
+  // gcs::EdgeData<double> random_var(mesh);
+  std::normal_distribution<double> normal_dist(0, P.sigma);
+
+  for (gcs::Edge e : mesh.edges()) {
+    gcs::Halfedge he = e.halfedge();
+    gcs::Vertex v1 = he.vertex();
+    gcs::Vertex v2 = he.next().vertex();
+
+    gc::Vector3 dVel12 = vel[v1] - vel[v2];
+    gc::Vector3 dPos12_n = (pos[v1] - pos[v2]).normalize();
+
+    if (P.gamma != 0) {
+      gc::Vector3 df = P.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
+      dampingForce[v1] -= df;
+      dampingForce[v2] += df;
+    }
+
+    if (P.sigma != 0) {
+      double noise = normal_dist(rng);
+      stochasticForce[v1] += noise * dPos12_n;
+      stochasticForce[v2] -= noise * dPos12_n;
+    }
+
+    // gc::Vector3 dVel21 = vel[v2] - vel[v1];
+    // gc::Vector3 dPos21_n = (pos[v2] - pos[v1]).normalize();
+
+    // std::cout << -gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n)
+    //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) * -dPos12_n)
+    //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
+    //           << std::endl;
+  }
+}
+
+void System::getRegularizationForce() {
+  gcs::EdgeData<double> lcr(mesh);
+  getCrossLengthRatio(mesh, vpg, lcr);
+
+  for (gcs::Vertex v : mesh.vertices()) {
+    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+      gcs::Halfedge base_he = he.next();
+
+      // Stretching forces
+      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
+      gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
+      gc::Vector3 localAreaGradient =
+          -gc::cross(base_vec, vpg.faceNormals[he.face()]);
+      assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
+
+      // Conformal regularization
+      if (P.Kst != 0) {
+        gcs::Halfedge jl = he.next();
+        gcs::Halfedge li = jl.next();
+        gcs::Halfedge ik = he.twin().next();
+        gcs::Halfedge kj = ik.next();
+
+        gc::Vector3 grad_li = vecFromHalfedge(li, vpg).normalize();
+        gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), vpg).normalize();
+        regularizationForce[v] +=
+            -P.Kst * (lcr[he.edge()] - targetLcr[he.edge()]) /
+            targetLcr[he.edge()] *
+            (vpg.edgeLengths[kj.edge()] / vpg.edgeLengths[jl.edge()]) *
+            (grad_li * vpg.edgeLengths[ik.edge()] -
+             grad_ik * vpg.edgeLengths[li.edge()]) /
+            vpg.edgeLengths[ik.edge()] / vpg.edgeLengths[ik.edge()];
+        // regularizationForce[v] += -P.Kst * localAreaGradient;
+      }
+
+      if (P.Ksl != 0) {
+        regularizationForce[v] +=
+            -P.Ksl * localAreaGradient *
+            (vpg.faceAreas[base_he.face()] - targetFaceAreas[base_he.face()]) /
+            targetFaceAreas[base_he.face()];
+      }
+
+      if (P.Kse != 0) {
+        regularizationForce[v] +=
+            -P.Kse * edgeGradient *
+            (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
+            targetEdgeLengths[he.edge()];
+      }
+
+      /// Patch regularization
+      // // the cubic penalty is for regularizing the mesh,
+      // // need better physical interpretation or alternative method
+      // if (P.Kse != 0) {
+      //   double strain =
+      //       (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
+      //       targetEdgeLengths[he.edge()];
+      //   regularizationForce[v] +=
+      //       -P.Kse * edgeGradient * strain * strain * strain;
+      // }
+    }
+  }
+}
+
+void System::getAllForces() {
+
+  // zero all forces
+  gc::EigenMap<double, 3>(bendingPressure).setZero();
+  gc::EigenMap<double, 3>(capillaryPressure).setZero();
+  gc::EigenMap<double, 3>(lineTensionPressure).setZero();
+  gc::EigenMap<double, 3>(externalPressure).setZero();
+  gc::EigenMap<double, 3>(regularizationForce).setZero();
+  gc::EigenMap<double, 3>(dampingForce).setZero();
+  gc::EigenMap<double, 3>(stochasticForce).setZero();
+  chemicalPotential.raw().setZero();
+  insidePressure = 0;
+
+  if (P.Kb != 0) {
+    getBendingPressure();
+  }
+  if (P.Kv != 0) {
+    getInsidePressure();
+  }
+  if (P.Ksg != 0) {
+    getCapillaryPressure();
+  }
+  if (P.eta != 0) {
+    getLineTensionPressure();
+  }
+  if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
+    getRegularizationForce();
+  }
+  if ((P.gamma != 0) || (P.sigma != 0)) {
+    getDPDForces();
+  }
+  if (isProtein) {
+    getChemicalPotential();
+  }
+  if (P.Kf != 0) {
+    getExternalPressure();
+  }
 }
 
 } // namespace mem3dg
