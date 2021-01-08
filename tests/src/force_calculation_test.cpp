@@ -99,7 +99,8 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 
   f.getAllForces();
   EigenVectorX3D bendingPressure1 = gc::EigenMap<double, 3>(f.bendingPressure),
-                 insidePressure1 = gc::EigenMap<double, 3>(f.insidePressure),
+                 insidePressure1 = f.insidePressure *
+                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals),
                  capillaryPressure1 =
                      gc::EigenMap<double, 3>(f.capillaryPressure),
                  regularizationForce1 =
@@ -112,7 +113,8 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 
   f.getAllForces();
   EigenVectorX3D bendingPressure2 = gc::EigenMap<double, 3>(f.bendingPressure),
-                 insidePressure2 = gc::EigenMap<double, 3>(f.insidePressure),
+                 insidePressure2 = f.insidePressure *
+                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals),
                  capillaryPressure2 =
                      gc::EigenMap<double, 3>(f.capillaryPressure),
                  regularizationForce2 =
@@ -140,7 +142,8 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   f.getAllForces();
 
   EigenVectorX3D bendingPressure1 = gc::EigenMap<double, 3>(f.bendingPressure),
-                 insidePressure1 = gc::EigenMap<double, 3>(f.insidePressure),
+                 insidePressure1 = f.insidePressure *
+                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals),
                  capillaryPressure1 =
                      gc::EigenMap<double, 3>(f.capillaryPressure),
                  regularizationForce1 =
@@ -160,7 +163,8 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   f.getExternalPressure();
 
   EigenVectorX3D bendingPressure2 = gc::EigenMap<double, 3>(f.bendingPressure),
-                 insidePressure2 = gc::EigenMap<double, 3>(f.insidePressure),
+                 insidePressure2 = f.insidePressure *
+                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals),
                  capillaryPressure2 =
                      gc::EigenMap<double, 3>(f.capillaryPressure),
                  regularizationForce2 =
@@ -217,7 +221,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
     f.getInsidePressure();
     vel_e = rowwiseScaling(f.mask.cast<double>(),
-                           gc::EigenMap<double, 3>(f.insidePressure));
+                           f.insidePressure *
+                               gc::EigenMap<double, 3>(f.vpg.vertexNormals));
     pos_e += vel_e * h;
     f.updateVertexPositions();
     f.getFreeEnergy();
