@@ -189,6 +189,8 @@ public:
   double L2ErrorNorm;
   /// surface area
   double surfaceArea;
+  /// Surface tension
+  double surfaceTension;
   /// Volume
   double volume;
   /// Interface Area;
