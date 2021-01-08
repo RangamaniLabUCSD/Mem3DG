@@ -10,6 +10,7 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <iostream>
 
@@ -26,7 +27,10 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
             ptrVpg->inputVertexPositions,
             ptrMesh->getFaceVertexList());*/
     // polyscope::show();
-    f.getVelocityFromPastPosition(dt);
+    gc::EigenMap<double, 3>(f.vel) =
+        (gc::EigenMap<double, 3>(f.vpg.inputVertexPositions) -
+         gc::EigenMap<double, 3>(f.pastPositions)) /
+        dt;
     f.getBendingPressure();
     f.getCapillaryPressure();
     f.getInsidePressure();
@@ -45,7 +49,8 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
       if (flag == true) {
         f.vpg.inputVertexPositions[v] *= 2;
         totalForce = f.bendingPressure[v] + f.capillaryPressure[v] +
-                     f.insidePressure[v] + f.externalPressure[v] +
+                     f.insidePressure * f.vpg.vertexNormals[v] +
+                     f.externalPressure[v] +
                      ((f.dampingForce[v] + f.stochasticForce[v] +
                        f.regularizationForce[v]) /
                       f.vpg.vertexDualAreas[v]);
