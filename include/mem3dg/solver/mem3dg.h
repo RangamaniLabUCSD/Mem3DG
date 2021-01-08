@@ -13,6 +13,7 @@
 //
 
 #pragma once
+#include "mem3dg/solver/system.h"
 #include <geometrycentral/surface/surface_mesh.h>
 
 namespace gc = ::geometrycentral;
@@ -27,6 +28,22 @@ int viewer_ply(std::string fileName, const bool mean_curvature = 0,
                const bool physical_pressure = 0,
                const bool capillary_pressure = 0,
                const bool bending_pressure = 0, const bool line_pressure = 0);
+
+/**
+ * @brief Run single simulation starting with .ply files
+ *
+ */
+
+mem3dg::System system_ply(
+    const size_t verbosity, std::string inputMesh, std::string refMesh,
+    size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
+    bool isVertexShift, double Kb, double H0, double sharpness,
+    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
+    double Kv, double eta, double epsilon, double Bc, double Vt, double cam,
+    double gamma, double temp, std::vector<double> pt, double Kf, double conc,
+    double height, double radius, double h, double T, double eps, double tSave,
+    std::string outputDir, std::string integrationMethod, bool isBacktrack,
+    double rho, double c1, double ctol, bool isAugmentedLagrangian);
 
 /**
  * @brief Run single simulation starting with .ply files

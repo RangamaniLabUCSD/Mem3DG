@@ -174,7 +174,7 @@ public:
   /// Target edge cross length ratio
   gcs::EdgeData<double> targetLcr;
   /// Distance solver
-  gcs::HeatMethodDistanceSolver heatSolver;
+  // gcs::HeatMethodDistanceSolver heatSolver;
 
   /// Cached galerkin mass matrix
   Eigen::SparseMatrix<double> &M;
@@ -233,7 +233,27 @@ public:
         regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
         proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(vpg) {
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}) {
+
+          
+    // mesh = &ptrmesh;
+    // vpg = &ptrvpg;
+    // richData = &richData;
+    // refVpg = &ptrrefVpg;
+
+    // M = vpg.vertexLumpedMassMatrix;
+    // L = vpg.cotanLaplacian;
+    // bendingPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    // capillaryPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    // lineTensionPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    // chemicalPotential = gcs::VertexData<double>(mesh, 0.0);
+    // externalPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    // regularizationForce = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    // targetLcr = gcs::EdgeData<double>(mesh);
+    // stochasticForce = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    // dampingForce = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    // proteinDensity = gcs::VertexData<double>(mesh, 0);
+    // vel = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
 
     // GC computed properties
     vpg.requireFaceNormals();
@@ -273,18 +293,18 @@ public:
    * elsewhere, calculation of dependent quantities should be respected.
    */
   ~System() {
-    vpg.unrequireFaceNormals();
-    vpg.unrequireVertexLumpedMassMatrix();
-    vpg.unrequireCotanLaplacian();
-    vpg.unrequireFaceAreas();
-    vpg.unrequireVertexIndices();
-    vpg.unrequireVertexGaussianCurvatures();
-    vpg.unrequireFaceIndices();
-    vpg.unrequireEdgeLengths();
-    vpg.unrequireVertexNormals();
-    vpg.unrequireVertexDualAreas();
-    vpg.unrequireCornerAngles();
-    vpg.unrequireCornerScaledAngles();
+    // vpg.unrequireFaceNormals();
+    // vpg.unrequireVertexLumpedMassMatrix();
+    // vpg.unrequireCotanLaplacian();
+    // vpg.unrequireFaceAreas();
+    // vpg.unrequireVertexIndices();
+    // vpg.unrequireVertexGaussianCurvatures();
+    // vpg.unrequireFaceIndices();
+    // vpg.unrequireEdgeLengths();
+    // vpg.unrequireVertexNormals();
+    // vpg.unrequireVertexDualAreas();
+    // vpg.unrequireCornerAngles();
+    // vpg.unrequireCornerScaledAngles();
   }
 
   // ==========================================================

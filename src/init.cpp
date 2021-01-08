@@ -133,9 +133,9 @@ void System::updateVertexPositions() {
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // initialize/update distance from the point specified
-  if (isLocalCurvature) {
-    geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh.vertex(ptInd));
-  }
+  // if (isLocalCurvature) {
+  //   geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh.vertex(ptInd));
+  // }
 
   // initialize/update spontaneous curvature (protein binding)
   if (isProtein) {
