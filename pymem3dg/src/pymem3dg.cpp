@@ -31,6 +31,41 @@ namespace py = pybind11;
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
+  py::class_<System> system(pymem3dg, "System",
+                            R"delim(
+        The system
+    )delim");
+  system.def(py::init<gcs::ManifoldSurfaceMesh &, gcs::VertexPositionGeometry &,
+                      gcs::VertexPositionGeometry &, gcs::RichSurfaceMeshData &,
+                      Parameters &, bool, bool, bool, bool>());
+  system.def("getBindingForces", &System::getBendingPressure,
+             R"delim(
+        get the bending pressures
+    )delim");
+
+  system.def_readwrite("insidePressure", &System::insidePressure,
+             R"delim(
+        get the bending pressures
+    )delim");
+
+  pymem3dg.def("system_ply", &system_ply, 
+               "Run single simulation starting with .ply files",
+               py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
+               py::arg("nSub"), py::arg("isReducedVolume"),
+               py::arg("isProtein"), py::arg("isLocalCurvature"),
+               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
+               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
+               py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
+               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
+               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
+               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+               R"delim(
+        )delim");
+
   pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
                py::arg("nSub"), py::arg("path"), py::arg("R"));
 

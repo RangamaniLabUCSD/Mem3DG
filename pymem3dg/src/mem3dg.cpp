@@ -56,6 +56,111 @@ void signalHandler(int signum) {
   exit(signum);
 }
 
+mem3dg::System system_ply(
+    const size_t verbosity, std::string inputMesh, std::string refMesh,
+    size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
+    bool isVertexShift, double Kb, double H0, double sharpness,
+    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
+    double Kv, double eta, double epsilon, double Bc, double Vt, double cam,
+    double gamma, double temp, std::vector<double> pt, double Kf, double conc,
+    double height, double radius, double h, double T, double eps, double tSave,
+    std::string outputDir, std::string integrationMethod, bool isBacktrack,
+    double rho, double c1, double ctol, bool isAugmentedLagrangian) {
+  /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
+  std::tie(ptrMesh, ptrRichData) =
+  gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
+  connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
+
+  /// Activate signal handling
+  signal(SIGINT, signalHandler);
+  // pybind11::scoped_interpreter guard{};
+
+  /// Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
+  gcs::VertexPositionGeometry *ptrRefVpg;
+
+  /// Load input mesh and geometry
+  std::cout << "Loading input mesh " << inputMesh << " ...";
+  std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::cout << "Finished!" << std::endl;
+
+  /// Load input reference mesh and geometry
+  std::cout << "Loading reference mesh " << refMesh << " ...";
+  std::tie(ptrRefMesh_, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
+  std::cout << "Finished!" << std::endl;
+
+
+
+  /// Subdivide the mesh and geometry objects
+  if (nSub > 0) {
+    std::cout << "Subdivide input and reference mesh " << nSub
+              << " time(s) ...";
+    // mem3dg::subdivide(ptrMesh, ptrVpg, nSub);
+    // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
+    mem3dg::loopSubdivide(ptrMesh, ptrVpg, nSub);
+    mem3dg::loopSubdivide(ptrRefMesh_, ptrRefVpg_, nSub);
+    std::cout << "Finished!" << std::endl;
+  }
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  mem3dg::loadRefMesh(
+      ptrMesh, ptrRefVpg,
+      gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
+
+  /// Initializa richData for ply file
+  gcs::RichSurfaceMeshData richData(*ptrMesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*ptrVpg);
+
+  /// Initialize parameter struct
+  std::cout << "Initializing the system ...";
+  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
+  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
+                       sigma, pt,  Kf,        conc, height, radius};
+
+
+  gcs::ManifoldSurfaceMesh* pptrMesh = ptrMesh.release();
+  gcs::VertexPositionGeometry* pptrVpg = ptrVpg.release();
+
+  /// Initialize the system
+  mem3dg::System f(*pptrMesh, *pptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
+                   isProtein, isLocalCurvature, isVertexShift);
+
+  f.getBendingPressure();
+  std::cout << "Finished!" << std::endl;
+
+  //free(pptrMesh);
+  //free(pptrVpg);
+
+  // /// Time integration / optimization
+  // std::cout << "Solving the system and saving to " << outputDir << std::endl;
+  // if (integrationMethod == "velocity verlet") {
+  //   mem3dg::integration::velocityVerlet(f, h, 0, T, tSave, eps, verbosity,
+  //                                       outputDir);
+  // } else if (integrationMethod == "euler") {
+  //   if (p.gamma != 0) {
+  //     throw std::runtime_error("gamma has to be 0 for euler integration!");
+  //   }
+  //   mem3dg::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir,
+  //                              isBacktrack, rho, c1);
+  // } else if (integrationMethod == "conjugate gradient") {
+  //   if (p.gamma != 0) {
+  //     throw std::runtime_error("gamma has to be 0 for CG optimization!");
+  //   }
+  //   mem3dg::integration::conjugateGradient(
+  //       f, h, 0, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho,
+  //       c1, isAugmentedLagrangian, "/traj.nc");
+  // }
+
+  /// Delete non unique pointer
+  // delete ptrRefVpg;
+  return f;
+}
+
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
@@ -108,15 +213,14 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   mem3dg::loadRefMesh(
       ptrMesh, ptrRefVpg,
       gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
-
   /// Initializa richData for ply file
   gcs::RichSurfaceMeshData richData(*ptrMesh);
   richData.addMeshConnectivity();
   richData.addGeometry(*ptrVpg);
-
   /// Initialize parameter struct
   std::cout << "Initializing the system ...";
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
+
   mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
                        Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
                        sigma, pt,  Kf,        conc, height, radius};
