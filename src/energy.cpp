@@ -100,14 +100,15 @@ void System::getPotentialEnergy() {
 }
 
 void System::getFreeEnergy() {
+  // zero all energy
+  E = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+
   getKineticEnergy();
   getPotentialEnergy();
   E.totalE = E.kE + E.potE;
 }
 
-void System::getL2ErrorNorm(
-    Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure) {
-  L2ErrorNorm =
-      sqrt((M * rowwiseDotProduct(physicalPressure, physicalPressure)).sum());
+void System::getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) {
+  L2ErrorNorm = sqrt((M * rowwiseDotProduct(pressure, pressure)).sum());
 }
 } // namespace mem3dg

@@ -108,6 +108,8 @@ static const std::string PHYSPRESS_VAR = "physpressure";
 static const std::string CAPPRESS_VAR = "cappressure";
 /// Name of the bending pressure data
 static const std::string BENDPRESS_VAR = "bendpressure";
+/// Name of the inside pressure data
+static const std::string INSIDEPRESS_VAR = "insidepressure";
 /// Name of the line tension pressure data
 static const std::string LINEPRESS_VAR = "linepressure";
 /// Name of the bending energy data
@@ -185,6 +187,7 @@ public:
     physpress_var = fd->getVar(PHYSPRESS_VAR);
     cappress_var = fd->getVar(CAPPRESS_VAR);
     bendpress_var = fd->getVar(BENDPRESS_VAR);
+    insidepress_var = fd->getVar(INSIDEPRESS_VAR);
     linepress_var = fd->getVar(LINEPRESS_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
     l2errornorm_var = fd->getVar(L2ERRORNORM_VAR);
@@ -278,6 +281,10 @@ public:
     bendpress_var =
         fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
     bendpress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+
+    insidepress_var = fd->addVar(INSIDEPRESS_VAR, netCDF::ncDouble,
+                                 {frame_dim, nvertices_dim});
+    insidepress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     linepress_var =
         fd->addVar(LINEPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -465,6 +472,13 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getBendingPressure(const std::size_t idx) const;
 
+  void
+  writeInsidePressure(const std::size_t idx,
+                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getInsidePressure(const std::size_t idx) const;
+
   void writeLinePressure(const std::size_t idx,
                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
@@ -574,6 +588,7 @@ private:
   nc::NcVar physpress_var;
   nc::NcVar cappress_var;
   nc::NcVar bendpress_var;
+  nc::NcVar insidepress_var;
   nc::NcVar linepress_var;
   nc::NcVar bendener_var;
   nc::NcVar surfener_var;
