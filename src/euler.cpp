@@ -88,6 +88,8 @@ void euler(System &f, double dt, double init_time, double total_time,
     fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
+    fd.writeRefVolume(f.refVolume);
+    fd.writeRefSurfArea(f.targetSurfaceArea);
   }
 #endif
 
@@ -112,8 +114,7 @@ void euler(System &f, double dt, double init_time, double total_time,
                 : 0.0;
     } else {
       // compute pressure constraint error
-      dVP =
-          (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+      dVP = (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
     }
 
     // exit if under error tolerance

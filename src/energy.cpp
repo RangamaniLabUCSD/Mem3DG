@@ -51,7 +51,7 @@ void System::getPressureEnergy() {
     E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
            P.lambdaV * V_difference;
   } else {
-    E.pE = P.Kv * abs(log(1.0 / volume / P.cam));
+    E.pE = P.Kv * (P.cam * volume - log(P.cam * volume) - 1);
   }
 }
 

@@ -70,8 +70,8 @@ int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
                 const bool physical_pressure, const bool capillary_pressure,
-                const bool bending_pressure, const bool line_pressure,
-                const bool mask, const bool H_H0);
+                const bool inside_pressure, const bool bending_pressure,
+                const bool line_pressure, const bool mask, const bool H_H0);
 
 /**
  * @brief Animate netcdf file with options of additional quantities
@@ -82,6 +82,7 @@ int animation_nc(std::string &filename, const bool ref_coord = 0,
                  const bool spon_curvature = 0, const bool ext_pressure = 0,
                  const bool physical_pressure = 0,
                  const bool capillary_pressure = 0,
+                 const bool inside_pressure = 0,
                  const bool bending_pressure = 0, const bool line_pressure = 0,
                  const bool mask = 0, const bool H_H0 = 0);
 

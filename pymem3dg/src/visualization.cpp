@@ -212,6 +212,7 @@ struct checkBox {
   const bool ext_pressure;
   const bool physical_pressure;
   const bool capillary_pressure;
+  const bool inside_pressure;
   const bool bending_pressure;
   const bool line_pressure;
   const bool mask;
@@ -234,11 +235,6 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
     EigenVectorX3D refcoords = fd.getRefcoordinate();
     mesh->addVertexVectorQuantity("ref_coordinate", refcoords);
   }
-
-  if (options.velocity) {
-    EigenVectorX3D vel = fd.getVelocity(idx);
-    mesh->addVertexVectorQuantity("velocity", vel);
-  }
   if (options.mean_curvature) {
     EigenVectorX1D H = fd.getMeanCurvature(idx);
     mesh->addVertexScalarQuantity("mean_curvature", H);
@@ -247,26 +243,6 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
     EigenVectorX1D H0 = fd.getSponCurvature(idx);
     mesh->addVertexScalarQuantity("spon_curvature", H0);
   }
-  if (options.ext_pressure) {
-    EigenVectorX1D f_ext = fd.getExternalPressure(idx);
-    mesh->addVertexScalarQuantity("external_pressure", f_ext);
-  }
-  if (options.physical_pressure) {
-    EigenVectorX1D fn = fd.getPhysicalPressure(idx);
-    mesh->addVertexScalarQuantity("physical_pressure", fn);
-  }
-  if (options.capillary_pressure) {
-    EigenVectorX1D ft = fd.getCapillaryPressure(idx);
-    mesh->addVertexScalarQuantity("capillary_pressure", ft);
-  }
-  if (options.bending_pressure) {
-    EigenVectorX1D fb = fd.getBendingPressure(idx);
-    mesh->addVertexScalarQuantity("bending_pressure", fb);
-  }
-  if (options.line_pressure) {
-    EigenVectorX1D fl = fd.getLinePressure(idx);
-    mesh->addVertexScalarQuantity("line_tension_pressure", fl);
-  }
   if (options.mask) {
     EigenVectorX1D_i msk = fd.getMask();
     mesh->addVertexScalarQuantity("mask", msk);
@@ -274,6 +250,36 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
   if (options.H_H0) {
     EigenVectorX1D h_h0 = fd.getH_H0_diff(idx);
     mesh->addVertexScalarQuantity("curvature_diff", h_h0);
+  }
+
+  if (options.velocity) {
+    EigenVectorX3D vel = fd.getVelocity(idx);
+    mesh->addVertexVectorQuantity("velocity", vel);
+  }
+
+  if (options.bending_pressure) {
+    EigenVectorX1D fb = fd.getBendingPressure(idx);
+    mesh->addVertexScalarQuantity("bending_pressure", fb);
+  }
+  if (options.capillary_pressure) {
+    EigenVectorX1D ft = fd.getCapillaryPressure(idx);
+    mesh->addVertexScalarQuantity("capillary_pressure", ft);
+  }
+  if (options.inside_pressure) {
+    EigenVectorX1D ft = fd.getInsidePressure(idx);
+    mesh->addVertexScalarQuantity("inside_pressure", ft);
+  }
+  if (options.ext_pressure) {
+    EigenVectorX1D f_ext = fd.getExternalPressure(idx);
+    mesh->addVertexScalarQuantity("external_pressure", f_ext);
+  }
+  if (options.line_pressure) {
+    EigenVectorX1D fl = fd.getLinePressure(idx);
+    mesh->addVertexScalarQuantity("line_tension_pressure", fl);
+  }
+  if (options.physical_pressure) {
+    EigenVectorX1D fn = fd.getPhysicalPressure(idx);
+    mesh->addVertexScalarQuantity("physical_pressure", fn);
   }
   // polyscope::registerSurfaceMesh("Mesh", coords, top);
 }
@@ -324,6 +330,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd,
     polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
         "capillary_pressure", ft);
   }
+  if (options.inside_pressure) {
+    EigenVectorX1D ft = fd.getInsidePressure(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
+        "inside_pressure", ft);
+  }
   if (options.bending_pressure) {
     EigenVectorX1D fb = fd.getBendingPressure(0);
     polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
@@ -362,8 +373,8 @@ int animation_nc(std::string &filename, const bool ref_coord,
                  const bool velocity, const bool mean_curvature,
                  const bool spon_curvature, const bool ext_pressure,
                  const bool physical_pressure, const bool capillary_pressure,
-                 const bool bending_pressure, const bool line_pressure,
-                 const bool mask, const bool H_H0) {
+                 const bool inside_pressure, const bool bending_pressure,
+                 const bool line_pressure, const bool mask, const bool H_H0) {
 
   // Activate signal handling
   signal(SIGINT, signalHandler);
@@ -382,7 +393,8 @@ int animation_nc(std::string &filename, const bool ref_coord,
   float transparency = 1;
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,
-                    bending_pressure, line_pressure, mask, H_H0});
+                    inside_pressure, bending_pressure, line_pressure, mask,
+                    H_H0});
 
   // Set preference for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -463,8 +475,8 @@ int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
                 const bool physical_pressure, const bool capillary_pressure,
-                const bool bending_pressure, const bool line_pressure,
-                const bool mask, const bool H_H0) {
+                const bool inside_pressure, const bool bending_pressure,
+                const bool line_pressure, const bool mask, const bool H_H0) {
 
   static int ENTRY = 0;
 
@@ -479,7 +491,8 @@ int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
   float transparency = 1;
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,
-                    bending_pressure, line_pressure, mask, H_H0});
+                    inside_pressure, bending_pressure, line_pressure, mask,
+                    H_H0});
 
   // Set preference for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -531,6 +544,10 @@ int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
   if (options.capillary_pressure) {
     EigenVectorX1D ft = fd.getCapillaryPressure(frame);
     mesh->addVertexScalarQuantity("capillary_pressure", ft)->setEnabled(true);
+  }
+  if (options.inside_pressure) {
+    EigenVectorX1D ft = fd.getInsidePressure(frame);
+    mesh->addVertexScalarQuantity("inside_pressure", ft)->setEnabled(true);
   }
   if (options.bending_pressure) {
     EigenVectorX1D fb = fd.getBendingPressure(frame);
