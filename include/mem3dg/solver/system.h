@@ -118,13 +118,17 @@ class DLL_PUBLIC System {
 public:
   /// Parameters
   Parameters P;
+
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh;
   /// Cached mesh of interest
   gcs::ManifoldSurfaceMesh &mesh;
   /// Cached mesh data
-  gcs::RichSurfaceMeshData &richData;
+  gcs::RichSurfaceMeshData richData;
   /// Embedding and other geometric details
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg;
   gcs::VertexPositionGeometry &vpg;
   /// reference embedding geometry
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg;
   gcs::VertexPositionGeometry &refVpg;
   /// Energy
   Energy E;
@@ -209,6 +213,101 @@ public:
   /// "the point" index
   size_t ptInd;
 
+  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
+         bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
+         bool isVertexShift_) {
+
+    ptrmesh = std::move(ptrmesh_);
+    ptrvpg = std::move(ptrvpg_);
+    ptrrefVpg = std::move(ptrrefVpg_);
+    // ptrrichData = std::move(ptrrichData_);
+
+    /// Initialize richData for ply file
+    richData = gcs::RichSurfaceMeshData(*ptrMesh);
+    richData.addMeshConnectivity();
+    richData.addGeometry(*ptrVpg);
+
+    mesh = &ptrmesh;
+    vpg = &ptrvpg;
+    richData = &richData;
+    refVpg = &ptrrefVpg;
+    isReducedVolume = isReducedVolume_;
+    isProtein = isProtein_;
+    isLocalCurvature = isLocalCurvature_;
+    isVertexShift = isVertexShift_;
+
+    M = vpg.vertexLumpedMassMatrix;
+    L = vpg.cotanLaplacian;
+    bendingPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    capillaryPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    lineTensionPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    chemicalPotential = gcs::VertexData<double>(mesh, 0.0);
+    externalPressure = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    regularizationForce = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    targetLcr = gcs::EdgeData<double>(mesh);
+    stochasticForce = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    dampingForce = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    proteinDensity = gcs::VertexData<double>(mesh, 0);
+    vel = gcs::VertexData<gc::Vector3>(mesh, {0, 0, 0});
+    E = Energy{0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    // GC computed properties
+    vpg.requireFaceNormals();
+    vpg.requireVertexLumpedMassMatrix();
+    vpg.requireCotanLaplacian();
+    vpg.requireFaceAreas();
+    vpg.requireVertexIndices();
+    vpg.requireVertexGaussianCurvatures();
+    vpg.requireFaceIndices();
+    vpg.requireEdgeLengths();
+    vpg.requireVertexNormals();
+    vpg.requireVertexDualAreas();
+    vpg.requireCornerAngles();
+    vpg.requireCornerScaledAngles();
+    // vpg.requireVertexTangentBasis();
+
+    // Check confliciting parameters and options
+    checkParameters();
+
+    // Initialize reference values
+    initConstants();
+
+    // Regularize the vetex position geometry if needed
+    if (isVertexShift) {
+      vertexShift(mesh, vpg, mask);
+    }
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  }
+
+
+  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                  std::unique_ptr<gcs::VertexPositionGeometry>,
+                  std::unique_ptr<gcs::VertexPositionGeometry>> readMeshes(std::string inputMesh, std::string refMesh) {
+
+
+                    return std::tie();
+                  }
+
+  System(std::string inputMesh, std::string refMesh, Parameters &p,
+         bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
+         bool isVertexShift_)
+      : System(readMeshes(inputMesh, refmesh), p, isReducedVolume_, isProtein_,
+               isLocalCurvature_, isVertexShift_);
+
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                  std::unique_ptr<gcs::VertexPositionGeometry>,
+                  std::unique_ptr<gcs::VertexPositionGeometry>>
+             tuple,
+         Parameters &p, bool isReducedVolume_, bool isProtein_,
+         bool isLocalCurvature_, bool isVertexShift_) : 
+         
+         System(std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), p, isReducedVolume_, isProtein_,
+               isLocalCurvature_, isVertexShift_);
+
   /*
    * @brief Construct a new Force object
    *
@@ -216,7 +315,6 @@ public:
    * @param vpg_          Embedding and geometry information
    * @param time_step_    Numerical timestep
    */
-
   System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
          gcs::VertexPositionGeometry &refVpg_,
          gcs::RichSurfaceMeshData &richData_, Parameters &p,
@@ -235,7 +333,6 @@ public:
         proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}) {
 
-          
     // mesh = &ptrmesh;
     // vpg = &ptrvpg;
     // richData = &richData;
