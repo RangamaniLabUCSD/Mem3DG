@@ -132,6 +132,10 @@ static const std::string L2ERRORNORM_VAR = "l2errornorm";
 static const std::string VOLUME_VAR = "volume";
 /// Name of the surface area data
 static const std::string SURFAREA_VAR = "surfacearea";
+/// Name of the reference volume data
+static const std::string REFVOLUME_VAR = "refvolume";
+/// Name of the reference surface area data
+static const std::string REFSURFAREA_VAR = "refsurfarea";
 /// Name of the mask data
 static const std::string MASK_VAR = "mask";
 /// Name of the curvature difference data
@@ -193,6 +197,8 @@ public:
     l2errornorm_var = fd->getVar(L2ERRORNORM_VAR);
     volume_var = fd->getVar(VOLUME_VAR);
     surfarea_var = fd->getVar(SURFAREA_VAR);
+    refvolume = fd->getVar(REFVOLUME_VAR);
+    refsurfarea = fd->getVar(REFSURFAREA_VAR);
     mask_var = fd->getVar(MASK_VAR);
     H_H0_var = fd->getVar(H_H0_VAR);
   }
@@ -320,6 +326,12 @@ public:
 
     surfarea_var = fd->addVar(SURFAREA_VAR, netCDF::ncDouble, {frame_dim});
     surfarea_var.putAtt(UNITS, LEN_UNITS + "^2");
+
+    refvolume = fd->addVar(REFVOLUME_VAR, netCDF::ncDouble);
+    refvolume.putAtt(UNITS, LEN_UNITS + "^(3)");
+
+    refsurfarea = fd->addVar(REFSURFAREA_VAR, netCDF::ncDouble);
+    refsurfarea.putAtt(UNITS, LEN_UNITS + "^(2)");
 
     H_H0_var =
         fd->addVar(H_H0_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -531,6 +543,14 @@ public:
 
   double getSurfArea(const std::size_t idx) const;
 
+  void writeRefVolume(const double data);
+
+  double getRefVolume() const;
+
+  void writeRefSurfArea(const double data);
+
+  double getRefSurfArea() const;
+
 private:
   /**
    * @brief Private constructor for opening an existing file.
@@ -600,6 +620,8 @@ private:
   nc::NcVar l2errornorm_var;
   nc::NcVar volume_var;
   nc::NcVar surfarea_var;
+  nc::NcVar refvolume;
+  nc::NcVar refsurfarea;
   nc::NcVar mask_var;
   nc::NcVar H_H0_var;
 

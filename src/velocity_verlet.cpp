@@ -159,8 +159,10 @@ void saveNetcdfData(
 
   frame = fd.getNextFrameIndex();
 
+  // write time 
   fd.writeTime(frame, time);
 
+  // write geometry 
   fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
@@ -170,11 +172,13 @@ void saveNetcdfData(
   // fd.writeH_H0_diff(frame,
   //                   ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
 
+  // write velocity 
   fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
   if (f.isProtein) {
     fd.writeProteinDensity(frame, f.proteinDensity.raw());
   }
 
+  // write pressures 
   fd.writeBendingPressure(frame, fb);
   fd.writeCapillaryPressure(frame, ft);
   fd.writeLinePressure(frame, fl);
@@ -182,6 +186,7 @@ void saveNetcdfData(
   fd.writeExternalPressure(frame, f_ext);
   fd.writePhysicalPressure(frame, fn);
 
+  // write energies 
   fd.writeBendEnergy(frame, f.E.BE);
   fd.writeSurfEnergy(frame, f.E.sE);
   fd.writePressEnergy(frame, f.E.pE);
@@ -222,6 +227,8 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
+    fd.writeRefVolume(f.refVolume);
+    fd.writeRefSurfArea(f.targetSurfaceArea);
   }
 #endif
 

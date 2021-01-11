@@ -136,7 +136,7 @@ void System::getInsidePressure() {
     insidePressure =
         -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV);
   } else {
-    insidePressure = P.Kv * (1.0 / volume - P.cam);
+    insidePressure = P.Kv / volume - P.Kv * P.cam;
   }
 
   // /// Nongeometric implementation

@@ -243,6 +243,8 @@ void conjugateGradient(System &f, double dt, double init_time,
     fd.createNewFile(outputDir + trajFileName, f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
+    fd.writeRefVolume(f.refVolume);
+    fd.writeRefSurfArea(f.targetSurfaceArea);
   }
 #endif
 
