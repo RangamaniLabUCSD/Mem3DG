@@ -62,7 +62,7 @@ void saveNetcdfData(
 void euler(System &f, double dt, double init_time, double total_time,
            double tSave, double tolerance, const size_t verbosity,
            std::string outputDir, const bool isBacktrack, const double rho,
-           const double c1) {
+           const double c1, const bool isAdaptiveStep) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
@@ -70,6 +70,13 @@ void euler(System &f, double dt, double init_time, double total_time,
   double dArea, dVP, time = init_time;
   size_t frame = 0;
   bool EXIT = false;
+
+  // initialize variables used if adopting adaptive time step based on mesh size
+  double dt_size2_ratio;
+  if (isAdaptiveStep) {
+    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
+                     f.vpg.edgeLengths.raw().minCoeff();
+  }
 
 // start the timer
 #ifdef __linux__
@@ -184,6 +191,12 @@ void euler(System &f, double dt, double init_time, double total_time,
         }
       }
       break;
+    }
+
+    // adjust time step if adopt adaptive time step based on mesh size
+    if (isAdaptiveStep) {
+      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      dt = dt_size2_ratio * minMeshLength * minMeshLength;
     }
 
     // time stepping on vertex position
