@@ -38,7 +38,7 @@ namespace gcs = ::geometrycentral::surface;
 
 void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
 void saveRichData(
@@ -218,6 +218,7 @@ void conjugateGradient(System &f, double dt, double init_time,
                        const size_t verbosity, std::string outputDir,
                        const bool isBacktrack, const double rho,
                        const double c1, const bool isAugmentedLagrangian,
+                       const bool isAdaptiveStep,
                        const std::string trajFileName) {
 #ifdef __linux__
   // start the timer
@@ -227,10 +228,14 @@ void conjugateGradient(System &f, double dt, double init_time,
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
-      physicalPressure, DPDForce, direction;
+      physicalPressure, DPDPressure, direction;
   double dArea, dVP, currentNormSq, pastNormSq, time = init_time;
   size_t frame = 0;
   bool EXIT = false;
+
+  // initialize variables used if adopting adaptive time step based on mesh size
+  double dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
+                          f.vpg.edgeLengths.raw().minCoeff();
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -252,8 +257,8 @@ void conjugateGradient(System &f, double dt, double init_time,
   for (;;) {
 
     // compute summerized forces
-    getForces(f, physicalPressure, DPDForce, regularizationForce);
-    vel_e = physicalPressure + DPDForce + regularizationForce;
+    getForces(f, physicalPressure, DPDPressure, regularizationForce);
+    vel_e = physicalPressure + DPDPressure + regularizationForce;
 
     // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);
@@ -355,6 +360,12 @@ void conjugateGradient(System &f, double dt, double init_time,
       countCG++;
     }
 
+    // adjust time step if adopt adaptive time step based on mesh size
+    if (isAdaptiveStep) {
+      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      dt = dt_size2_ratio * minMeshLength * minMeshLength;
+    }
+
     // time stepping on vertex position
     if (isBacktrack) {
       backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.potE, vel_e,
@@ -393,7 +404,8 @@ void feedForwardSweep(System &f, std::vector<double> H_,
                       double tSave, double tol, double ctol,
                       std::string outputDir, const bool isBacktrack,
                       const double rho, const double c1,
-                      const bool isAugmentedLagrangian) {
+                      const bool isAugmentedLagrangian,
+                      const bool isAdaptiveStep) {
 #ifdef __linux__
   // start the timer
   struct timeval start;
@@ -403,6 +415,13 @@ void feedForwardSweep(System &f, std::vector<double> H_,
   // initialize variables
   const double KV = f.P.Kv, KSG = f.P.Ksg, init_time = 0.0;
   const size_t verbosity = 2;
+
+  // initialize variables used if adopting adaptive time step based on mesh size
+  double dt_size2_ratio;
+  if (isAdaptiveStep) {
+    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
+                     f.vpg.edgeLengths.raw().minCoeff();
+  }
 
   // parameter sweep
   for (double H : H_) {
@@ -414,6 +433,12 @@ void feedForwardSweep(System &f, std::vector<double> H_,
       } else {
         f.P.Kv = KV;
         f.P.Ksg = KSG;
+      }
+
+      // adjust time step if adopt adaptive time step based on mesh size
+      if (isAdaptiveStep) {
+        double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+        dt = dt_size2_ratio * minMeshLength * minMeshLength;
       }
 
       // initialize trajectory file name
@@ -432,7 +457,7 @@ void feedForwardSweep(System &f, std::vector<double> H_,
       // rerun CG optimization
       conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity,
                         outputDir, isBacktrack, rho, c1, isAugmentedLagrangian,
-                        buffer);
+                        isAdaptiveStep, buffer);
     }
     // reverse the order of inner loop to ensure phase space closeness
     std::reverse(VP_.begin(), VP_.end());
