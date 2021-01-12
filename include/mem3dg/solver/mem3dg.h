@@ -42,23 +42,27 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double conc, double height, double radius, double h, double T,
                double eps, double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
-               double c1, double ctol, bool isAugmentedLagrangian);
+               double c1, double ctol, bool isAugmentedLagrangian,
+               bool isAdaptiveStep);
 
 /**
  * @brief Run forward sweep simulation starting with .ply
  * files
  *
  */
-int forwardsweep_ply(
-    std::string inputMesh, std::string refMesh, size_t nSub,
-    bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, double Kb, std::vector<double> H0, double sharpness,
-    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
-    double Kv, double eta, double epsilon, double Bc, std::vector<double> Vt,
-    std::vector<double> cam, double gamma, double temp, std::vector<double> pt,
-    double Kf, double conc, double height, double radius, double h, double T,
-    double eps, double tSave, std::string outputDir, bool isBacktrack,
-    double rho, double c1, double ctol, bool isAugmentedLagrangian);
+int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
+                     bool isReducedVolume, bool isProtein,
+                     bool isLocalCurvature, bool isVertexShift, double Kb,
+                     std::vector<double> H0, double sharpness,
+                     std::vector<double> r_H0, double Kse, double Kst,
+                     double Ksl, double Ksg, double Kv, double eta,
+                     double epsilon, double Bc, std::vector<double> Vt,
+                     std::vector<double> cam, double gamma, double temp,
+                     std::vector<double> pt, double Kf, double conc,
+                     double height, double radius, double h, double T,
+                     double eps, double tSave, std::string outputDir,
+                     bool isBacktrack, double rho, double c1, double ctol,
+                     bool isAugmentedLagrangian, bool isAdaptiveStep);
 
 #ifdef MEM3DG_WITH_NETCDF
 /**
@@ -100,7 +104,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
               bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian);
+              bool isAugmentedLagrangian, bool isAdaptiveStep);
 
 /**
  * @brief Run forward sweep simulation starting with netcdf
@@ -118,6 +122,6 @@ int forwardsweep_nc(std::string trajFile, int startingFrame,
                     double height, double radius, double h, double T,
                     double eps, double tSave, std::string outputDir,
                     bool isBacktrack, double rho, double c1, double ctol,
-                    bool isAugmentedLagrangian);
+                    bool isAugmentedLagrangian, bool isAdaptiveStep);
 
 #endif
