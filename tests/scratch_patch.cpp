@@ -113,7 +113,7 @@ int main() {
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
   mem3dg::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir, true,
-                             0.5, 1e-4);
+                             0.5, 1e-4, true);
 
   delete ptrRefVpg;
   return 0;

@@ -159,10 +159,10 @@ void saveNetcdfData(
 
   frame = fd.getNextFrameIndex();
 
-  // write time 
+  // write time
   fd.writeTime(frame, time);
 
-  // write geometry 
+  // write geometry
   fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
@@ -172,13 +172,13 @@ void saveNetcdfData(
   // fd.writeH_H0_diff(frame,
   //                   ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
 
-  // write velocity 
+  // write velocity
   fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
   if (f.isProtein) {
     fd.writeProteinDensity(frame, f.proteinDensity.raw());
   }
 
-  // write pressures 
+  // write pressures
   fd.writeBendingPressure(frame, fb);
   fd.writeCapillaryPressure(frame, ft);
   fd.writeLinePressure(frame, fl);
@@ -186,7 +186,7 @@ void saveNetcdfData(
   fd.writeExternalPressure(frame, f_ext);
   fd.writePhysicalPressure(frame, fn);
 
-  // write energies 
+  // write energies
   fd.writeBendEnergy(frame, f.E.BE);
   fd.writeSurfEnergy(frame, f.E.sE);
   fd.writePressEnergy(frame, f.E.pE);
@@ -200,7 +200,7 @@ void saveNetcdfData(
 
 void velocityVerlet(System &f, double dt, double init_time, double total_time,
                     double tSave, double tolerance, const size_t verbosity,
-                    std::string outputDir) {
+                    const bool isAdaptiveStep, std::string outputDir) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
@@ -209,6 +209,13 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   double dArea, dVP, time = init_time; // double dRef;
   size_t frame = 0;
   bool EXIT = false;
+
+  // initialize variables used if adopting adaptive time step based on mesh size
+  double dt_size2_ratio;
+  if (isAdaptiveStep) {
+    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
+                     f.vpg.edgeLengths.raw().minCoeff();
+  }
 
 // start the timer
 #ifdef __linux__
@@ -325,6 +332,12 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
         }
       }
       break;
+    }
+
+    // adjust time step if adopt adaptive time step based on mesh size
+    if (isAdaptiveStep) {
+      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      dt = dt_size2_ratio * minMeshLength * minMeshLength;
     }
 
     // time stepping on vertex position
