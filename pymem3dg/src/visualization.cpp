@@ -470,7 +470,7 @@ int animation_nc(std::string &filename, const bool ref_coord,
   return 0;
 }
 
-int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
+int snapshot_nc(std::string &filename, int frame, float angle, float fov, bool isShow,
                 bool isSave, std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
@@ -599,7 +599,7 @@ int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
   }
   polyscope::state::userCallback = myCallback;
 
-  polyscope::view::fov = 50;
+  polyscope::view::fov = fov;
   if (ENTRY == 0) {
     // glm::vec3 frameLookDir, frameUpDir, frameRightDir;
     // polyscope::view::getCameraFrame(frameLookDir, frameUpDir, frameRightDir);

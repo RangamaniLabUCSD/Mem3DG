@@ -167,7 +167,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   pymem3dg.def(
       "snapshot_nc", &snapshot_nc, "Visualize netcdf file in single frame",
-      py::arg("fileName"), py::arg("frame"), py::arg("angle"),
+      py::arg("fileName"), py::arg("frame"), py::arg("angle"), py::arg("fov"),
       py::arg("isShow"), py::arg("isSave"), py::arg("screenshotName"),
       py::arg("ref_coord"), py::arg("velocity"), py::arg("mean_curvature"),
       py::arg("spon_curvature"), py::arg("ext_pressure"),

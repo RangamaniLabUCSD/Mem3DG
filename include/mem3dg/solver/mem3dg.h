@@ -65,7 +65,7 @@ int forwardsweep_ply(
  * @brief Visualize netcdf file in single frame
  *
  */
-int snapshot_nc(std::string &filename, int frame, float angle, bool isShow,
+int snapshot_nc(std::string &filename, int frame, float angle, float fov, bool isShow,
                 bool isSave, std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
