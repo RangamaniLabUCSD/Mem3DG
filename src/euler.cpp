@@ -38,7 +38,7 @@ namespace gcs = ::geometrycentral::surface;
 
 void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
 void backtrack(System &f, const double dt, double rho, double c1, double &time,
@@ -66,7 +66,7 @@ void euler(System &f, double dt, double init_time, double total_time,
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
-      physicalPressure, DPDForce;
+      physicalPressure, DPDPressure;
   double dArea, dVP, time = init_time;
   size_t frame = 0;
   bool EXIT = false;
@@ -103,8 +103,8 @@ void euler(System &f, double dt, double init_time, double total_time,
   // time integration loop
   for (;;) {
     // compute summerized forces
-    getForces(f, physicalPressure, DPDForce, regularizationForce);
-    vel_e = physicalPressure + DPDForce + regularizationForce;
+    getForces(f, physicalPressure, DPDPressure, regularizationForce);
+    vel_e = physicalPressure + DPDPressure + regularizationForce;
 
     // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);
