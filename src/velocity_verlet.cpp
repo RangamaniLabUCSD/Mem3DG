@@ -41,19 +41,19 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 /**
- * @brief Summerize forces into 3 categories: physcialPressure, DPDForce and
+ * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure and
  * regularizationForce. Note that the forces has been removed rigid body mode
  * and masked for integration
  *
  * @param f
  * @param physicalPressure
- * @param DPDForce
+ * @param DPDPressure
  * @param regularizationForce
  * @return
  */
 void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
   f.getAllForces();
 
@@ -68,7 +68,7 @@ void getForces(System &f,
   regularizationForce = rowwiseScaling(
       f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
 
-  DPDForce =
+  DPDPressure =
       rowwiseScaling(f.mask.cast<double>(),
                      f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                                 gc::EigenMap<double, 3>(f.stochasticForce)));
@@ -77,9 +77,9 @@ void getForces(System &f,
     removeTranslation(physicalPressure);
     removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
                    physicalPressure);
-    // removeTranslation(DPDForce);
+    // removeTranslation(DPDPressure);
     // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-    // DPDForce);
+    // DPDPressure);
   }
 }
 
@@ -204,7 +204,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
-      regularizationForce, physicalPressure, DPDForce;
+      regularizationForce, physicalPressure, DPDPressure;
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
   double dArea, dVP, time = init_time; // double dRef;
   size_t frame = 0;
@@ -235,10 +235,10 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   // time integration loop
   for (;;) {
     // compute summerized forces
-    getForces(f, physicalPressure, DPDForce, regularizationForce);
+    getForces(f, physicalPressure, DPDPressure, regularizationForce);
     totalPressure.resize(f.mesh.nVertices(), 3);
     totalPressure.setZero();
-    newTotalPressure = physicalPressure + DPDForce;
+    newTotalPressure = physicalPressure + DPDPressure;
 
     // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);
