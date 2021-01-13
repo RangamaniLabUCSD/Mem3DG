@@ -38,12 +38,12 @@ DLL_PUBLIC void velocityVerlet(System &f, double dt, double init_time,
                                const bool isAdaptiveStep,
                                std::string outputDir);
 
-DLL_PUBLIC void euler(System &f, double dt, double init_time, double total_time,
+DLL_PUBLIC bool euler(System &f, double dt, double init_time, double total_time,
                       double tSave, double tolerance, const size_t verbosity,
                       std::string outputDir, const bool isBacktrack,
                       const double rho, const double c1, const bool isAdaptiveStep);
 
-DLL_PUBLIC void conjugateGradient(System &f, double dt, double init_time,
+DLL_PUBLIC bool conjugateGradient(System &f, double dt, double init_time,
                                   double total_time, double tSave, double tol,
                                   double ctol, const size_t verbosity,
                                   std::string outputDir, const bool isBacktrack,
