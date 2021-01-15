@@ -62,6 +62,7 @@ void saveNetcdfData(
  * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
  * @param time, simulation time
  * @param EXIT, exit flag for integration loop
+ * @param SUCCESS, test flag on simulation sucess
  * @param verbosity, verbosity setting
  * @param potentialEnergy_pre, previous energy evaluation
  * @param force, gradient of the energy
@@ -69,7 +70,7 @@ void saveNetcdfData(
  * @return
  */
 void backtrack(System &f, const double dt, double rho, double c1, double &time,
-               bool &EXIT, const size_t verbosity,
+               bool &EXIT, bool &SUCCESS, const size_t verbosity,
                const double potentialEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
@@ -94,6 +95,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
     if (alpha < 1e-12) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
+      SUCCESS = false;
 
       // restore entry configuration
       alpha = dt;
@@ -213,7 +215,7 @@ void reducedVolumeThreshold(System &f, bool &EXIT,
   }
 }
 
-void conjugateGradient(System &f, double dt, double init_time,
+bool conjugateGradient(System &f, double dt, double init_time,
                        double total_time, double tSave, double tol, double ctol,
                        const size_t verbosity, std::string outputDir,
                        const bool isBacktrack, const double rho,
@@ -231,7 +233,7 @@ void conjugateGradient(System &f, double dt, double init_time,
       physicalPressure, DPDPressure, direction;
   double dArea, dVP, currentNormSq, pastNormSq, time = init_time;
   size_t frame = 0;
-  bool EXIT = false;
+  bool EXIT = false, SUCCESS = true;
 
   // initialize variables used if adopting adaptive time step based on mesh size
   double dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
@@ -288,6 +290,7 @@ void conjugateGradient(System &f, double dt, double init_time,
     if (time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
+      SUCCESS = false;
     }
 
     // compute the free energy of the system
@@ -337,8 +340,8 @@ void conjugateGradient(System &f, double dt, double init_time,
     // break loop if EXIT flag is on
     if (EXIT) {
       if (verbosity > 0) {
-        std::cout << "Simulation finished, and data saved to " + outputDir
-                  << std::endl;
+        std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
+                  << ", and data saved to " + outputDir << std::endl;
         if (verbosity > 2) {
           saveRichData(f, physicalPressure, verbosity);
           f.richData.write(outputDir + "/out.ply");
@@ -368,7 +371,7 @@ void conjugateGradient(System &f, double dt, double init_time,
 
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.potE, vel_e,
+      backtrack(f, dt, rho, c1, time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
                 direction);
     } else {
       pos_e += direction * dt;
@@ -397,6 +400,9 @@ void conjugateGradient(System &f, double dt, double init_time,
               << std::endl;
   }
 #endif
+
+  // return if optimization is sucessful
+  return SUCCESS;
 }
 
 void feedForwardSweep(System &f, std::vector<double> H_,
@@ -455,9 +461,15 @@ void feedForwardSweep(System &f, std::vector<double> H_,
       f.updateVertexPositions();
 
       // rerun CG optimization
-      conjugateGradient(f, dt, init_time, maxTime, tSave, tol, ctol, verbosity,
-                        outputDir, isBacktrack, rho, c1, isAugmentedLagrangian,
-                        isAdaptiveStep, buffer);
+      bool success = conjugateGradient(
+          f, dt, init_time, maxTime, tSave, tol, ctol, verbosity, outputDir,
+          isBacktrack, rho, c1, isAugmentedLagrangian, isAdaptiveStep, buffer);
+
+      // mark "failed" is CG returns false 
+      if (!success) {
+        markFileName(outputDir, buffer, "_failed");
+      }
+      
     }
     // reverse the order of inner loop to ensure phase space closeness
     std::reverse(VP_.begin(), VP_.end());

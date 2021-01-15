@@ -130,8 +130,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   /// Time integration / optimization
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
   if (integrationMethod == "velocity verlet") {
-    mem3dg::integration::velocityVerlet(f, h, 0, T, tSave, eps, verbosity, isAdaptiveStep,
-                                        outputDir);
+    mem3dg::integration::velocityVerlet(f, h, 0, T, tSave, eps, verbosity,
+                                        isAdaptiveStep, outputDir);
   } else if (integrationMethod == "euler") {
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for euler integration!");
@@ -142,9 +142,14 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
-    mem3dg::integration::conjugateGradient(
+    bool success = mem3dg::integration::conjugateGradient(
         f, h, 0, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho,
         c1, isAugmentedLagrangian, isAdaptiveStep, "/traj.nc");
+        
+    // mark "failed" is CG returns false
+    if (!success) {
+      mem3dg::markFileName(outputDir, "/traj.nc", "_failed");
+    }
   }
 
   /// Delete non unique pointer
@@ -153,16 +158,19 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   return 0;
 }
 
-int forwardsweep_ply(
-    std::string inputMesh, std::string refMesh, size_t nSub,
-    bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, double Kb, std::vector<double> H0, double sharpness,
-    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
-    double Kv, double eta, double epsilon, double Bc, std::vector<double> Vt,
-    std::vector<double> cam, double gamma, double temp, std::vector<double> pt,
-    double Kf, double conc, double height, double radius, double h, double T,
-    double eps, double tSave, std::string outputDir, bool isBacktrack,
-    double rho, double c1, double ctol, bool isAugmentedLagrangian, bool isAdaptiveStep) {
+int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
+                     bool isReducedVolume, bool isProtein,
+                     bool isLocalCurvature, bool isVertexShift, double Kb,
+                     std::vector<double> H0, double sharpness,
+                     std::vector<double> r_H0, double Kse, double Kst,
+                     double Ksl, double Ksg, double Kv, double eta,
+                     double epsilon, double Bc, std::vector<double> Vt,
+                     std::vector<double> cam, double gamma, double temp,
+                     std::vector<double> pt, double Kf, double conc,
+                     double height, double radius, double h, double T,
+                     double eps, double tSave, std::string outputDir,
+                     bool isBacktrack, double rho, double c1, double ctol,
+                     bool isAugmentedLagrangian, bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -323,9 +331,14 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
     if (p.gamma != 0) {
       throw std::runtime_error("gamma has to be 0 for CG optimization!");
     }
-    mem3dg::integration::conjugateGradient(
+    bool success = mem3dg::integration::conjugateGradient(
         f, h, time, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho,
         c1, isAugmentedLagrangian, isAdaptiveStep, "/traj.nc");
+
+    // mark "failed" is CG returns false
+    if (!success) {
+      mem3dg::markFileName(outputDir, "/traj.nc", "_failed");
+    }
   }
 
   /// Delete non unique pointer
