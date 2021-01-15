@@ -168,13 +168,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   pymem3dg.def(
       "snapshot_nc", &snapshot_nc, "Visualize netcdf file in single frame",
-      py::arg("fileName"), py::arg("frame"), py::arg("angle"), py::arg("fov"),
-      py::arg("isShow"), py::arg("isSave"), py::arg("screenshotName"),
-      py::arg("ref_coord"), py::arg("velocity"), py::arg("mean_curvature"),
-      py::arg("spon_curvature"), py::arg("ext_pressure"),
-      py::arg("physical_pressure"), py::arg("capillary_pressure"),
-      py::arg("inside_pressure"), py::arg("bending_pressure"),
-      py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
+      py::arg("fileName"), py::arg("frame"), py::arg("transparency"),
+      py::arg("angle"), py::arg("fov"), py::arg("edgeWidth"), py::arg("isShow"),
+      py::arg("isSave"), py::arg("screenshotName"), py::arg("ref_coord"),
+      py::arg("velocity"), py::arg("mean_curvature"), py::arg("spon_curvature"),
+      py::arg("ext_pressure"), py::arg("physical_pressure"),
+      py::arg("capillary_pressure"), py::arg("inside_pressure"),
+      py::arg("bending_pressure"), py::arg("line_pressure"), py::arg("mask"),
+      py::arg("H_H0"));
 
   pymem3dg.def("animation_nc", &animation_nc,
                "Animate netcdf file with options of additional quantities",

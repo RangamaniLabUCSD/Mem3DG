@@ -470,8 +470,9 @@ int animation_nc(std::string &filename, const bool ref_coord,
   return 0;
 }
 
-int snapshot_nc(std::string &filename, int frame, float angle, float fov, bool isShow,
-                bool isSave, std::string screenshotName, const bool ref_coord,
+int snapshot_nc(std::string &filename, int frame, float transparency,
+                float angle, float fov, float edgeWidth, bool isShow, bool isSave,
+                std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
                 const bool physical_pressure, const bool capillary_pressure,
@@ -488,7 +489,6 @@ int snapshot_nc(std::string &filename, int frame, float angle, float fov, bool i
   getNcFrame(fd, frame);
 
   // Initialize visualization variables
-  float transparency = 1;
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,
                     inside_pressure, bending_pressure, line_pressure, mask,
@@ -514,7 +514,8 @@ int snapshot_nc(std::string &filename, int frame, float angle, float fov, bool i
   // Initialize surface mesh and switch to specific frame
   auto mesh = registerSurfaceMesh(fd, options);
   updateSurfaceMesh(mesh, fd, frame, options);
-  mesh->setEdgeWidth(1);
+  mesh->setEdgeWidth(edgeWidth);
+  mesh->setTransparency(transparency);
 
   if (options.ref_coord) {
     EigenVectorX3D refcoords = fd.getRefcoordinate();

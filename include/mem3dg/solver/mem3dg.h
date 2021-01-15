@@ -69,8 +69,9 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
  * @brief Visualize netcdf file in single frame
  *
  */
-int snapshot_nc(std::string &filename, int frame, float angle, float fov, bool isShow,
-                bool isSave, std::string screenshotName, const bool ref_coord,
+int snapshot_nc(std::string &filename, int frame, float transparency,
+                float angle, float fov, float edgeWidth, bool isShow, bool isSave,
+                std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
                 const bool physical_pressure, const bool capillary_pressure,
