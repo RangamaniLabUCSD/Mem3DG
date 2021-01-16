@@ -77,22 +77,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("capillary_pressure"), py::arg("bending_pressure"),
       py::arg("line_pressure"));
 
-  pymem3dg.def("driver_ply", &driver_ply,
-               "Run single simulation starting with .ply files",
-               py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
-               py::arg("nSub"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isLocalCurvature"),
-               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
-               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               R"delim(
+  pymem3dg.def(
+      "driver_ply", &driver_ply,
+      "Run single simulation starting with .ply files", py::arg("verbosity"),
+      py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
+      py::arg("isReducedVolume"), py::arg("isProtein"),
+      py::arg("isLocalCurvature"), py::arg("isVertexShift"), py::arg("Kb"),
+      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+      py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
+      py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
+      py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
+      py::arg("outputDir"), py::arg("integration"), py::arg("isBacktrack"),
+      py::arg("rho"), py::arg("c1"), py::arg("ctol"),
+      py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
+      R"delim(
                     Run single simulation starting with .ply files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
@@ -153,6 +153,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
                py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
                py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+               py::arg("isAdaptiveStep"),
                R"delim(
                     Run forward sweep simulation starting with .ply files
                Args:
@@ -200,23 +201,25 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
 #ifdef MEM3DG_WITH_NETCDF
 
-  pymem3dg.def("snapshot_nc", &snapshot_nc,
-               "Visualize netcdf file in single frame", py::arg("fileName"),
-               py::arg("frame"), py::arg("angle"), py::arg("isShow"),
-               py::arg("isSave"), py::arg("screenshotName"),
-               py::arg("ref_coord"), py::arg("velocity"),
-               py::arg("mean_curvature"), py::arg("spon_curvature"),
-               py::arg("ext_pressure"), py::arg("physical_pressure"),
-               py::arg("capillary_pressure"), py::arg("bending_pressure"),
-               py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
+  pymem3dg.def(
+      "snapshot_nc", &snapshot_nc, "Visualize netcdf file in single frame",
+      py::arg("fileName"), py::arg("frame"), py::arg("transparency"),
+      py::arg("angle"), py::arg("fov"), py::arg("edgeWidth"), py::arg("isShow"),
+      py::arg("isSave"), py::arg("screenshotName"), py::arg("ref_coord"),
+      py::arg("velocity"), py::arg("mean_curvature"), py::arg("spon_curvature"),
+      py::arg("ext_pressure"), py::arg("physical_pressure"),
+      py::arg("capillary_pressure"), py::arg("inside_pressure"),
+      py::arg("bending_pressure"), py::arg("line_pressure"), py::arg("mask"),
+      py::arg("H_H0"));
 
   pymem3dg.def("animation_nc", &animation_nc,
                "Animate netcdf file with options of additional quantities",
                py::arg("fileName"), py::arg("ref_coord"), py::arg("velocity"),
                py::arg("mean_curvature"), py::arg("spon_curvature"),
                py::arg("ext_pressure"), py::arg("physical_pressure"),
-               py::arg("capillary_pressure"), py::arg("bending_pressure"),
-               py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
+               py::arg("capillary_pressure"), py::arg("inside_pressure"),
+               py::arg("bending_pressure"), py::arg("line_pressure"),
+               py::arg("mask"), py::arg("H_H0"));
 
   pymem3dg.def(
       "driver_nc", &driver_nc,
@@ -232,6 +235,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
       py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
       py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+      py::arg("isAdaptiveStep"),
       R"delim(
                    Run single simulation starting with netcdf files
                Args:
@@ -278,21 +282,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def("forwardsweep_nc", &forwardsweep_nc,
-               "Run forward sweep simulation starting with netcdf files",
-               py::arg("trajFile"), py::arg("startingFrame"),
-               py::arg("isReducedVolume"), py::arg("isProtein"),
-               py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-               py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
-               py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"),
-               py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
-               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-               py::arg("conc"), py::arg("height"), py::arg("radius"),
-               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-               py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               R"delim(
+  pymem3dg.def(
+      "forwardsweep_nc", &forwardsweep_nc,
+      "Run forward sweep simulation starting with netcdf files",
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("isReducedVolume"),
+      py::arg("isProtein"), py::arg("isLocalCurvature"),
+      py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
+      py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
+      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), py::arg("ctol"),
+      py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
+      R"delim(
                    Run forward sweep simulation starting with netcdf files
                Args:
                    trajFile (:py:class:`str`): input trajectory file path

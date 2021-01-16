@@ -502,8 +502,7 @@ double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
 }
 
 // volume
-void TrajFile::writeVolume(const std::size_t idx,
-                                const double volume) {
+void TrajFile::writeVolume(const std::size_t idx, const double volume) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   volume_var.putVar({idx}, &volume);
@@ -517,9 +516,8 @@ double TrajFile::getVolume(const std::size_t idx) const {
   return volume;
 }
 
-// surface area 
-void TrajFile::writeSurfArea(const std::size_t idx,
-                                const double surfArea) {
+// surface area
+void TrajFile::writeSurfArea(const std::size_t idx, const double surfArea) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   surfarea_var.putVar({idx}, &surfArea);
@@ -531,6 +529,32 @@ double TrajFile::getSurfArea(const std::size_t idx) const {
   double surfArea;
   surfarea_var.getVar({idx}, &surfArea);
   return surfArea;
+}
+
+// reference volume
+void TrajFile::writeRefVolume(const double data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  refvolume.putVar({0}, &data);
+}
+
+double TrajFile::getRefVolume() const {
+  double value;
+  refvolume.getVar({0}, &value);
+  return value;
+}
+
+// reference surface area
+void TrajFile::writeRefSurfArea(const double data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  refsurfarea.putVar({0}, &data);
+}
+
+double TrajFile::getRefSurfArea() const {
+  double value;
+  refsurfarea.getVar({0}, &value);
+  return value;
 }
 
 } // namespace mem3dg
