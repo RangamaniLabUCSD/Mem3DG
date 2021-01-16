@@ -66,12 +66,9 @@ int main() {
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100;
   size_t verbosity = 0;
-  // mem3dg::integration::velocityVerlet(f, h, T, eps, closeZone, increment,
-  //                                        Kv, Ksg, tSave, tMollify,
-  //                                        verbosity);
   mem3dg::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.01,
                                          verbosity, "./", true, 0.5, 1e-4,
-                                         false, "/traj.nc");
+                                         false, true, "/traj.nc");
 
   delete ptrRefVpg;
   return 0;

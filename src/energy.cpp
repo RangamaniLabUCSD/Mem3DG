@@ -51,7 +51,7 @@ void System::getPressureEnergy() {
     E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
            P.lambdaV * V_difference;
   } else {
-    E.pE = P.Kv * abs(log(1.0 / volume / P.cam));
+    E.pE = P.Kv * (P.cam * volume - log(P.cam * volume) - 1);
   }
 }
 
@@ -109,6 +109,6 @@ void System::getFreeEnergy() {
 }
 
 void System::getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) {
-  L2ErrorNorm = sqrt((M * rowwiseDotProduct(pressure, pressure)).sum());
+  L2ErrorNorm = sqrt((M * rowwiseDotProduct(pressure, pressure)).sum() / surfaceArea);
 }
 } // namespace mem3dg

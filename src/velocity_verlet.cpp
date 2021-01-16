@@ -41,19 +41,19 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 /**
- * @brief Summerize forces into 3 categories: physcialPressure, DPDForce and
+ * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure and
  * regularizationForce. Note that the forces has been removed rigid body mode
  * and masked for integration
  *
  * @param f
  * @param physicalPressure
- * @param DPDForce
+ * @param DPDPressure
  * @param regularizationForce
  * @return
  */
 void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
   f.getAllForces();
 
@@ -68,7 +68,7 @@ void getForces(System &f,
   regularizationForce = rowwiseScaling(
       f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
 
-  DPDForce =
+  DPDPressure =
       rowwiseScaling(f.mask.cast<double>(),
                      f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                                 gc::EigenMap<double, 3>(f.stochasticForce)));
@@ -77,9 +77,9 @@ void getForces(System &f,
     removeTranslation(physicalPressure);
     removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
                    physicalPressure);
-    // removeTranslation(DPDForce);
+    // removeTranslation(DPDPressure);
     // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
-    // DPDForce);
+    // DPDPressure);
   }
 }
 
@@ -159,8 +159,10 @@ void saveNetcdfData(
 
   frame = fd.getNextFrameIndex();
 
+  // write time
   fd.writeTime(frame, time);
 
+  // write geometry
   fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
@@ -170,11 +172,13 @@ void saveNetcdfData(
   // fd.writeH_H0_diff(frame,
   //                   ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
 
+  // write velocity
   fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
   if (f.isProtein) {
     fd.writeProteinDensity(frame, f.proteinDensity.raw());
   }
 
+  // write pressures
   fd.writeBendingPressure(frame, fb);
   fd.writeCapillaryPressure(frame, ft);
   fd.writeLinePressure(frame, fl);
@@ -182,6 +186,7 @@ void saveNetcdfData(
   fd.writeExternalPressure(frame, f_ext);
   fd.writePhysicalPressure(frame, fn);
 
+  // write energies
   fd.writeBendEnergy(frame, f.E.BE);
   fd.writeSurfEnergy(frame, f.E.sE);
   fd.writePressEnergy(frame, f.E.pE);
@@ -195,15 +200,22 @@ void saveNetcdfData(
 
 void velocityVerlet(System &f, double dt, double init_time, double total_time,
                     double tSave, double tolerance, const size_t verbosity,
-                    std::string outputDir) {
+                    const bool isAdaptiveStep, std::string outputDir) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
-      regularizationForce, physicalPressure, DPDForce;
+      regularizationForce, physicalPressure, DPDPressure;
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
   double dArea, dVP, time = init_time; // double dRef;
   size_t frame = 0;
   bool EXIT = false;
+
+  // initialize variables used if adopting adaptive time step based on mesh size
+  double dt_size2_ratio;
+  if (isAdaptiveStep) {
+    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
+                     f.vpg.edgeLengths.raw().minCoeff();
+  }
 
 // start the timer
 #ifdef __linux__
@@ -222,16 +234,18 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
+    fd.writeRefVolume(f.refVolume);
+    fd.writeRefSurfArea(f.targetSurfaceArea);
   }
 #endif
 
   // time integration loop
   for (;;) {
     // compute summerized forces
-    getForces(f, physicalPressure, DPDForce, regularizationForce);
+    getForces(f, physicalPressure, DPDPressure, regularizationForce);
     totalPressure.resize(f.mesh.nVertices(), 3);
     totalPressure.setZero();
-    newTotalPressure = physicalPressure + DPDForce;
+    newTotalPressure = physicalPressure + DPDPressure;
 
     // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);
@@ -318,6 +332,12 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
         }
       }
       break;
+    }
+
+    // adjust time step if adopt adaptive time step based on mesh size
+    if (isAdaptiveStep) {
+      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      dt = dt_size2_ratio * minMeshLength * minMeshLength;
     }
 
     // time stepping on vertex position

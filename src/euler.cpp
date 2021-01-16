@@ -38,11 +38,11 @@ namespace gcs = ::geometrycentral::surface;
 
 void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDForce,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
 void backtrack(System &f, const double dt, double rho, double c1, double &time,
-               bool &EXIT, const size_t verbosity,
+               bool &EXIT, bool &SUCCESS, const size_t verbosity,
                const double potentialEnergy_pre,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
@@ -59,17 +59,24 @@ void saveNetcdfData(
     const size_t &verbosity);
 #endif
 
-void euler(System &f, double dt, double init_time, double total_time,
+bool euler(System &f, double dt, double init_time, double total_time,
            double tSave, double tolerance, const size_t verbosity,
            std::string outputDir, const bool isBacktrack, const double rho,
-           const double c1) {
+           const double c1, const bool isAdaptiveStep) {
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
-      physicalPressure, DPDForce;
+      physicalPressure, DPDPressure;
   double dArea, dVP, time = init_time;
   size_t frame = 0;
-  bool EXIT = false;
+  bool EXIT = false, SUCCESS = true;
+
+  // initialize variables used if adopting adaptive time step based on mesh size
+  double dt_size2_ratio;
+  if (isAdaptiveStep) {
+    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
+                     f.vpg.edgeLengths.raw().minCoeff();
+  }
 
 // start the timer
 #ifdef __linux__
@@ -88,14 +95,16 @@ void euler(System &f, double dt, double init_time, double total_time,
     fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
+    fd.writeRefVolume(f.refVolume);
+    fd.writeRefSurfArea(f.targetSurfaceArea);
   }
 #endif
 
   // time integration loop
   for (;;) {
     // compute summerized forces
-    getForces(f, physicalPressure, DPDForce, regularizationForce);
-    vel_e = physicalPressure + DPDForce + regularizationForce;
+    getForces(f, physicalPressure, DPDPressure, regularizationForce);
+    vel_e = physicalPressure + DPDPressure + regularizationForce;
 
     // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);
@@ -112,8 +121,7 @@ void euler(System &f, double dt, double init_time, double total_time,
                 : 0.0;
     } else {
       // compute pressure constraint error
-      dVP =
-          (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+      dVP = (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
     }
 
     // exit if under error tolerance
@@ -126,6 +134,7 @@ void euler(System &f, double dt, double init_time, double total_time,
     if (time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
+      SUCCESS = false;
     }
 
     // compute the free energy of the system
@@ -175,8 +184,8 @@ void euler(System &f, double dt, double init_time, double total_time,
     // break loop if EXIT flag is on
     if (EXIT) {
       if (verbosity > 0) {
-        std::cout << "Simulation finished, and data saved to " + outputDir
-                  << std::endl;
+        std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
+                  << ", and data saved to " + outputDir << std::endl;
         if (verbosity > 2) {
           saveRichData(f, physicalPressure, verbosity);
           f.richData.write(outputDir + "/out.ply");
@@ -185,9 +194,16 @@ void euler(System &f, double dt, double init_time, double total_time,
       break;
     }
 
+    // adjust time step if adopt adaptive time step based on mesh size
+    if (isAdaptiveStep) {
+      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      dt = dt_size2_ratio * minMeshLength * minMeshLength;
+    }
+
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, time, EXIT, verbosity, f.E.potE, vel_e, vel_e);
+      backtrack(f, dt, rho, c1, time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
+                vel_e);
     } else {
       pos_e += vel_e * dt;
       time += dt;
@@ -216,6 +232,9 @@ void euler(System &f, double dt, double init_time, double total_time,
               << std::endl;
   }
 #endif
+
+  // return if optimization is sucessful
+  return SUCCESS;
 }
 } // namespace integration
 } // namespace mem3dg

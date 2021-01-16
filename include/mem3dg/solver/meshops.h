@@ -35,6 +35,37 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 /**
+ * @brief Mark the file name
+ *
+ * @param dirPath path of the directory
+ * @param file name of the file, for example in the form of "/traj.nc"
+ * @param marker marker used to mark the file, such as marker = "_failed" results in new file name of "/traj_failed.nc"
+ */
+DLL_PUBLIC inline void markFileName(std::string dirPath, char *file,
+                                    char *marker) {
+  char fileMarked[50] = "", dirPath_[dirPath.length() + 50] = "",
+       oldNC[dirPath.length() + 50] = "", newNC[dirPath.length() + 50] = "";
+
+  // sprintf(fileMarked, "/traj_H_%d_VP_%d_failed.nc", int(H * 100),
+  //         int(VP * 100));
+
+  char *ext;
+  ext = strchr(file, '.');
+  strncpy(fileMarked, file, ext - file);
+  strcat(fileMarked, marker);
+  strcat(fileMarked, ext);
+
+  strcpy(dirPath_, dirPath.c_str());
+  strcpy(oldNC, dirPath.c_str());
+  strcpy(newNC, dirPath.c_str());
+
+  strcat(oldNC, file);
+  strcat(newNC, fileMarked);
+
+  rename(oldNC, newNC);
+}
+
+/**
  * @brief Get volume from a face
  *
  * @param f
