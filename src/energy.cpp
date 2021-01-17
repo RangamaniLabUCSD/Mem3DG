@@ -31,6 +31,9 @@ namespace gcs = ::geometrycentral::surface;
 void System::getBendingEnergy() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = H - H0;
   E.BE = P.Kb * H_difference.transpose() * M * H_difference;
+
+  // when considering topological changes, additional term of gauss curvature
+  // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M * vpg.vertexGaussianCurvatures.raw()).sum();
 }
 
 void System::getSurfaceEnergy() {
@@ -109,6 +112,7 @@ void System::getFreeEnergy() {
 }
 
 void System::getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) {
-  L2ErrorNorm = sqrt((M * rowwiseDotProduct(pressure, pressure)).sum() / surfaceArea);
+  L2ErrorNorm =
+      sqrt((M * rowwiseDotProduct(pressure, pressure)).sum() / surfaceArea);
 }
 } // namespace mem3dg
