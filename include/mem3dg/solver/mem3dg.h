@@ -70,8 +70,8 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
  *
  */
 int snapshot_nc(std::string &filename, int frame, float transparency,
-                float angle, float fov, float edgeWidth, bool isShow, bool isSave,
-                std::string screenshotName, const bool ref_coord,
+                float angle, float fov, float edgeWidth, bool isShow,
+                bool isSave, std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
                 const bool physical_pressure, const bool capillary_pressure,
@@ -82,7 +82,8 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
  * @brief Animate netcdf file with options of additional quantities
  *
  */
-int animation_nc(std::string &filename, const bool ref_coord = 0,
+int animation_nc(std::string &filename, float transparency = 1, float angle = 0,
+                 float fov = 50, float edgeWidth = 1, const bool ref_coord = 0,
                  const bool velocity = 0, const bool mean_curvature = 0,
                  const bool spon_curvature = 0, const bool ext_pressure = 0,
                  const bool physical_pressure = 0,
