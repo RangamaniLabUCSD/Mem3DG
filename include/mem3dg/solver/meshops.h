@@ -43,9 +43,8 @@ namespace gcs = ::geometrycentral::surface;
  * results in new file name of "/traj_failed.nc"
  */
 DLL_PUBLIC inline void markFileName(std::string dirPath, char *file,
-                                    char *marker, size_t charLength = 50) {
-  char fileMarked[charLength], oldNC[charLength],
-       newNC[charLength];
+                                    char *marker) {
+  char fileMarked[50], oldNC[150], newNC[150];
 
   // sprintf(fileMarked, "/traj_H_%d_VP_%d_failed.nc", int(H * 100),
   //         int(VP * 100));
@@ -61,7 +60,7 @@ DLL_PUBLIC inline void markFileName(std::string dirPath, char *file,
   strcat(fileMarked, marker);
   strcat(fileMarked, ext);
 
-  // append the directory path and copy to oldNC and newNC 
+  // append the directory path and copy to oldNC and newNC
   strcpy(oldNC, dirPath.c_str());
   strcpy(newNC, dirPath.c_str());
   strcat(oldNC, file);

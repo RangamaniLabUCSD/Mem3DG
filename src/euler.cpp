@@ -134,7 +134,6 @@ bool euler(System &f, double dt, double init_time, double total_time,
     if (time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
-      SUCCESS = false;
     }
 
     // compute the free energy of the system
