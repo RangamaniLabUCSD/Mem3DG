@@ -63,7 +63,7 @@ void System::getBendingPressure() {
 
   // calculate bendingForce
   bendingPressure_e =
-      -2.0 * P.Kb * rowwiseScaling(productTerms + lap_H, vertexAngleNormal_e);
+      -P.Kb * rowwiseScaling(productTerms + lap_H, vertexAngleNormal_e);
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H

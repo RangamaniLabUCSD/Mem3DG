@@ -39,29 +39,34 @@ namespace gcs = ::geometrycentral::surface;
  *
  * @param dirPath path of the directory
  * @param file name of the file, for example in the form of "/traj.nc"
- * @param marker marker used to mark the file, such as marker = "_failed" results in new file name of "/traj_failed.nc"
+ * @param marker marker used to mark the file, such as marker = "_failed"
+ * results in new file name of "/traj_failed.nc"
  */
 DLL_PUBLIC inline void markFileName(std::string dirPath, char *file,
                                     char *marker) {
-  char fileMarked[50] = "", dirPath_[dirPath.length() + 50] = "",
-       oldNC[dirPath.length() + 50] = "", newNC[dirPath.length() + 50] = "";
+  char fileMarked[50], oldNC[150], newNC[150];
 
   // sprintf(fileMarked, "/traj_H_%d_VP_%d_failed.nc", int(H * 100),
   //         int(VP * 100));
 
+  // split the extension and file name
   char *ext;
   ext = strchr(file, '.');
+
+  // name fileMarked to be the file name
   strncpy(fileMarked, file, ext - file);
+
+  // name fileMarked to be file name + the marker + extension
   strcat(fileMarked, marker);
   strcat(fileMarked, ext);
 
-  strcpy(dirPath_, dirPath.c_str());
+  // append the directory path and copy to oldNC and newNC
   strcpy(oldNC, dirPath.c_str());
   strcpy(newNC, dirPath.c_str());
-
   strcat(oldNC, file);
   strcat(newNC, fileMarked);
 
+  // rename file
   rename(oldNC, newNC);
 }
 

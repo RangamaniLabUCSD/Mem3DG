@@ -12,51 +12,65 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include <iomanip>
 #include "mem3dg/solver/system.h"
+#include <iomanip>
 
 namespace mem3dg {
 
 void System::checkParameters() {
   // check validity of parameters / options
-  if (mesh.hasBoundary() && P.Vt != 1.0) {
-    throw std::runtime_error("Vt has to be 1 for open boundary simulation!");
+  if (mesh.hasBoundary()) {
+    if (isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
+      throw std::logic_error(
+          "For open boundary simulation, isReducedVolume has to be false, Vt "
+          "has to be -1, and cam has to be 0 ");
+    }
   }
+
   if (!isLocalCurvature) {
     if (P.eta != 0) {
-      throw std::runtime_error(
+      throw std::logic_error(
           "line tension eta has to be 0 for nonlocal curvature!");
     }
     if (P.r_H0 != std::vector<double>({-1, -1})) {
-      throw std::runtime_error(
-          "r_H0 has to be {-1, -1} for nonlocal curvature!");
+      throw std::logic_error("r_H0 has to be {-1, -1} for nonlocal curvature!");
     }
     if (P.sharpness != 0) {
-      throw std::runtime_error(
+      throw std::logic_error(
           "sharpness of transition has to be 0 for nonlocal curvature!");
     }
   }
+
   if (isReducedVolume) {
     if (P.cam != -1) {
-      throw std::runtime_error("ambient concentration cam has to be -1 for "
-                               "reduced volume parametrized simulation!");
+      throw std::logic_error("ambient concentration cam has to be -1 for "
+                             "reduced volume parametrized simulation!");
     }
   } else {
     if (P.Vt != -1) {
-      throw std::runtime_error("reduced volume Vt has to be -1 for "
-                               "ambient pressure parametrized simulation!");
+      throw std::logic_error("reduced volume Vt has to be -1 for "
+                             "ambient pressure parametrized simulation!");
     }
   }
+
   if (!isProtein) {
     if (P.epsilon != -1 || P.Bc != -1) {
-      throw std::runtime_error("Binding constant Bc and binding energy "
-                               "epsilon has to be both -1 for "
-                               "protein binding disabled simulation!");
+      throw std::logic_error("Binding constant Bc and binding energy "
+                             "epsilon has to be both -1 for "
+                             "protein binding disabled simulation!");
     }
   } else {
     if (isLocalCurvature) {
-      throw std::runtime_error("Local curvature should be deactivated with "
-                               "protein binding activated");
+      throw std::logic_error("Local curvature should be deactivated with "
+                             "protein binding activated!");
+    }
+  }
+
+  if (P.Kf == 0) {
+    if (P.conc != -1 || P.height != 0) {
+      throw std::logic_error(
+          "With no external force, its concentration should be disabled (=-1) "
+          "and prescribed height should be set to 0!");
     }
   }
 }

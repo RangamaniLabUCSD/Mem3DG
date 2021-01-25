@@ -369,7 +369,8 @@ void animate(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd, int &idx,
   wait(waitTime);
 }
 
-int animation_nc(std::string &filename, const bool ref_coord,
+int animation_nc(std::string &filename, float transparency, float angle,
+                 float fov, float edgeWidth, const bool ref_coord,
                  const bool velocity, const bool mean_curvature,
                  const bool spon_curvature, const bool ext_pressure,
                  const bool physical_pressure, const bool capillary_pressure,
@@ -390,7 +391,6 @@ int animation_nc(std::string &filename, const bool ref_coord,
   int maxFrame = fd.getNextFrameIndex() - 1;
   int maxWaitTime = 500;
   int waitTime = 0;
-  float transparency = 1;
   checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
                     ext_pressure, physical_pressure, capillary_pressure,
                     inside_pressure, bending_pressure, line_pressure, mask,
@@ -406,12 +406,15 @@ int animation_nc(std::string &filename, const bool ref_coord,
   polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
   polyscope::view::upDir = polyscope::view::UpDir::ZUp;
   polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+  polyscope::view::fov = fov;
 
   // Initialize polyscope
   polyscope::init();
 
   // Initialize surface mesh
   auto mesh = registerSurfaceMesh(fd, options);
+  mesh->setEdgeWidth(edgeWidth);
+  mesh->setTransparency(transparency);
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -471,8 +474,8 @@ int animation_nc(std::string &filename, const bool ref_coord,
 }
 
 int snapshot_nc(std::string &filename, int frame, float transparency,
-                float angle, float fov, float edgeWidth, bool isShow, bool isSave,
-                std::string screenshotName, const bool ref_coord,
+                float angle, float fov, float edgeWidth, bool isShow,
+                bool isSave, std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
                 const bool spon_curvature, const bool ext_pressure,
                 const bool physical_pressure, const bool capillary_pressure,
