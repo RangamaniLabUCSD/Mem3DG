@@ -194,7 +194,12 @@ void saveNetcdfData(
   fd.writeChemEnergy(frame, f.E.cE);
   fd.writeLineEnergy(frame, f.E.lE);
   fd.writeTotalEnergy(frame, f.E.totalE);
+
+  // write Norms
   fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
+  fd.writeL2BendNorm(frame, f.getL2Norm(f.bendingPressure));
+  fd.writeL2SurfNorm(frame, f.getL2Norm(f.capillaryPressure));
+  fd.writeL2PressNorm(frame, f.insidePressure);
 }
 #endif
 

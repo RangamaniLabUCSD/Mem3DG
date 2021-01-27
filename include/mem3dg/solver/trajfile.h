@@ -128,6 +128,12 @@ static const std::string LINEENER_VAR = "lineenergy";
 static const std::string TOTALENER_VAR = "totalenergy";
 /// Name of the L2 Error Norm data
 static const std::string L2ERRORNORM_VAR = "l2errornorm";
+/// Name of the L2 Error Norm data
+static const std::string L2BENDNORM_VAR = "l2bendnorm";
+/// Name of the L2 Error Norm data
+static const std::string L2SURFNORM_VAR = "l2surfnorm";
+/// Name of the L2 Error Norm data
+static const std::string L2PRESSNORM_VAR = "l2pressnorm";
 /// Name of the volume data
 static const std::string VOLUME_VAR = "volume";
 /// Name of the surface area data
@@ -195,6 +201,9 @@ public:
     linepress_var = fd->getVar(LINEPRESS_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
     l2errornorm_var = fd->getVar(L2ERRORNORM_VAR);
+    l2bendnorm_var = fd->getVar(L2BENDNORM_VAR);
+    l2surfnorm_var = fd->getVar(L2SURFNORM_VAR);
+    l2pressnorm_var = fd->getVar(L2PRESSNORM_VAR);
     volume_var = fd->getVar(VOLUME_VAR);
     surfarea_var = fd->getVar(SURFAREA_VAR);
     refvolume = fd->getVar(REFVOLUME_VAR);
@@ -320,6 +329,18 @@ public:
     l2errornorm_var =
         fd->addVar(L2ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     l2errornorm_var.putAtt(UNITS, FORCE_UNITS);
+
+    l2bendnorm_var =
+        fd->addVar(L2BENDNORM_VAR, netCDF::ncDouble, {frame_dim});
+    l2bendnorm_var.putAtt(UNITS, FORCE_UNITS);
+
+    l2surfnorm_var =
+        fd->addVar(L2SURFNORM_VAR, netCDF::ncDouble, {frame_dim});
+    l2surfnorm_var.putAtt(UNITS, FORCE_UNITS);
+
+    l2pressnorm_var =
+        fd->addVar(L2PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
+    l2pressnorm_var.putAtt(UNITS, FORCE_UNITS);
 
     volume_var = fd->addVar(VOLUME_VAR, netCDF::ncDouble, {frame_dim});
     volume_var.putAtt(UNITS, LEN_UNITS + "^3");
@@ -535,6 +556,18 @@ public:
 
   double getL2ErrorNorm(const std::size_t idx) const;
 
+  void writeL2BendNorm(const std::size_t idx, const double L2BendNorm);
+
+  double getL2BendNorm(const std::size_t idx) const;
+
+  void writeL2SurfNorm(const std::size_t idx, const double L2SurfNorm);
+
+  double getL2SurfNorm(const std::size_t idx) const;
+
+  void writeL2PressNorm(const std::size_t idx, const double L2PressNorm);
+
+  double getL2PressNorm(const std::size_t idx) const;
+
   void writeVolume(const std::size_t idx, const double volume);
 
   double getVolume(const std::size_t idx) const;
@@ -618,6 +651,9 @@ private:
   nc::NcVar lineener_var;
   nc::NcVar totalener_var;
   nc::NcVar l2errornorm_var;
+  nc::NcVar l2bendnorm_var;
+  nc::NcVar l2surfnorm_var;
+  nc::NcVar l2pressnorm_var;
   nc::NcVar volume_var;
   nc::NcVar surfarea_var;
   nc::NcVar refvolume;
