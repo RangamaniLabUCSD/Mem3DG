@@ -258,16 +258,17 @@ void getNcFrame(mem3dg::TrajFile &fd, int &frame) {
 }
 
 int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
-              bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-              bool isVertexShift, double Kb, double H0, double sharpness,
-              std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-              double Ksg, double Kv, double eta, double epsilon, double Bc,
-              double Vt, double cam, double gamma, double temp,
-              std::vector<double> pt, double Kf, double conc, double height,
-              double radius, double h, double T, double eps, double tSave,
-              std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian, bool isAdaptiveStep) {
+              int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
+              bool isLocalCurvature, bool isVertexShift, double Kb, double H0,
+              double sharpness, std::vector<double> r_H0, double Kse,
+              double Kst, double Ksl, double Ksg, double Kv, double eta,
+              double epsilon, double Bc, double Vt, double cam, double gamma,
+              double temp, std::vector<double> pt, double Kf, double conc,
+              double height, double radius, double h, double T, double eps,
+              double tSave, std::string outputDir,
+              std::string integrationMethod, bool isBacktrack, double rho,
+              double c1, double ctol, bool isAugmentedLagrangian,
+              bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, signalHandler);
@@ -282,6 +283,8 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
   EigenVectorX3D coords;
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
   gcs::VertexPositionGeometry *ptrRefVpg;
 
   /// Load input mesh and geometry
@@ -291,14 +294,37 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
   std::tie(time, coords) = fd.getTimeAndCoords(startingFrame);
   std::tie(ptrMesh, ptrVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
-  std::cout << " and continuing from time t = " << time << " ...";
+  if (isContinue) {
+    std::cout << " and continuing from time t = " << time << " ...";
+  } else {
+    time = 0;
+  }
   std::cout << "Finished!" << std::endl;
 
   /// Load reference geometry ptrRefVpg onto ptrMesh object
   std::cout << "Loading reference mesh from trajectory file" << trajFile
             << " ...";
-  mem3dg::loadRefMesh(ptrMesh, ptrRefVpg, fd.getRefcoordinate());
+  std::tie(ptrRefMesh_, ptrRefVpg_) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      fd.getRefcoordinate(), fd.getTopology());
+  // mem3dg::loadRefMesh(ptrMesh, ptrRefVpg, fd.getRefcoordinate());
   std::cout << "Finished!" << std::endl;
+
+  /// Subdivide the mesh and geometry objects
+  if (nSub > 0 && isContinue){
+    throw std::runtime_error("Cannot map continuation parameters if nSub > 0");
+  }
+  if (nSub > 0) {
+    std::cout << "Subdivide input and reference mesh " << nSub
+              << " time(s) ...";
+    mem3dg::loopSubdivide(ptrMesh, ptrVpg, nSub);
+    mem3dg::loopSubdivide(ptrRefMesh_, ptrRefVpg_, nSub);
+    std::cout << "Finished!" << std::endl;
+  }
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  mem3dg::loadRefMesh(
+      ptrMesh, ptrRefVpg,
+      gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
 
   /// Initializa richData for ply file
   gcs::RichSurfaceMeshData richData(*ptrMesh);
@@ -315,9 +341,12 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
   /// Initialize the system
   mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
                    isProtein, isLocalCurvature, isVertexShift);
-  gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
-  f.proteinDensity.raw() = fd.getProteinDensity(startingFrame);
-  f.updateVertexPositions();
+
+  if (isContinue) {
+    gc::EigenMap<double, 3>(f.vel) = fd.getVelocity(startingFrame);
+    f.proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+    f.updateVertexPositions();
+  }
   std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization

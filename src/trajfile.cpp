@@ -487,18 +487,66 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
 
 // L2 error norm
 void TrajFile::writeL2ErrorNorm(const std::size_t idx,
-                                const double L2ErronNorm) {
+                                const double L2ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
-  l2errornorm_var.putVar({idx}, &L2ErronNorm);
+  l2errornorm_var.putVar({idx}, &L2ErrorNorm);
 }
 
 double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
-  double L2ErronNorm;
-  l2errornorm_var.getVar({idx}, &L2ErronNorm);
-  return L2ErronNorm;
+  double L2ErrorNorm;
+  l2errornorm_var.getVar({idx}, &L2ErrorNorm);
+  return L2ErrorNorm;
+}
+
+// L2 bending pressure norm
+void TrajFile::writeL2BendNorm(const std::size_t idx,
+                                const double L2BendNorm) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l2bendnorm_var.putVar({idx}, &L2BendNorm);
+}
+
+double TrajFile::getL2BendNorm(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double L2BendNorm;
+  l2bendnorm_var.getVar({idx}, &L2BendNorm);
+  return L2BendNorm;
+}
+
+// L2 capillary pressure norm
+void TrajFile::writeL2SurfNorm(const std::size_t idx,
+                                const double L2ErrorNorm) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l2surfnorm_var.putVar({idx}, &L2ErrorNorm);
+}
+
+double TrajFile::getL2SurfNorm(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double L2ErrorNorm;
+  l2surfnorm_var.getVar({idx}, &L2ErrorNorm);
+  return L2ErrorNorm;
+}
+
+// L2 inside pressure norm
+void TrajFile::writeL2PressNorm(const std::size_t idx,
+                                const double L2ErrorNorm) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l2pressnorm_var.putVar({idx}, &L2ErrorNorm);
+}
+
+double TrajFile::getL2PressNorm(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double L2ErrorNorm;
+  l2pressnorm_var.getVar({idx}, &L2ErrorNorm);
+  return L2ErrorNorm;
 }
 
 // volume

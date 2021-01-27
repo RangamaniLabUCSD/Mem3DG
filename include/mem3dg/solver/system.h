@@ -412,9 +412,13 @@ public:
   void getFreeEnergy();
 
   /**
-   * @brief Get the L2 norm of the force (pressure), which is the residual of
-   * the PDE
+   * @brief Get the L2 Error norm of the PDE
    */
   void getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure);
+
+  /**
+   * @brief Get the L2 norm of the pressure
+   */
+  double getL2Norm(gcs::VertexData<gc::Vector3> pressure) const;
 };
 } // namespace mem3dg

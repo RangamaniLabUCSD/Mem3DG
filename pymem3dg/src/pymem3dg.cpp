@@ -190,24 +190,26 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def(
       "driver_nc", &driver_nc,
       "Run single simulation starting with netcdf files", py::arg("verbosity"),
-      py::arg("trajFile"), py::arg("startingFrame"), py::arg("isReducedVolume"),
-      py::arg("isProtein"), py::arg("isLocalCurvature"),
-      py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-      py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
-      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
-      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
-      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
-      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
-      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-      py::arg("isAdaptiveStep"),
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
+      py::arg("isContinue"), py::arg("isReducedVolume"), py::arg("isProtein"),
+      py::arg("isLocalCurvature"), py::arg("isVertexShift"), py::arg("Kb"),
+      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
+      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
+      py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
+      py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
+      py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
+      py::arg("outputDir"), py::arg("integration"), py::arg("isBacktrack"),
+      py::arg("rho"), py::arg("c1"), py::arg("ctol"),
+      py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
       R"delim(
                    Run single simulation starting with netcdf files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
                    trajFile (:py:class:`str`): input trajectory file path
                    startingFrame (:py:class:`int`): starting frame of continuation
+                   nSub (:py:class:`int`): number of loop subdivision
+                   isContinue (:py:class:`bool`): whether continue the simulation from trajectory
                    isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
                    isProtein (:py:class:`bool`): whether consider protein binding
                    isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile

@@ -97,16 +97,17 @@ int animation_nc(std::string &filename, float transparency = 1, float angle = 0,
  *
  */
 int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
-              bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-              bool isVertexShift, double Kb, double H0, double sharpness,
-              std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-              double Ksg, double Kv, double eta, double epsilon, double Bc,
-              double Vt, double cam, double gamma, double temp,
-              std::vector<double> pt, double Kf, double conc, double height,
-              double radius, double h, double T, double eps, double tSave,
-              std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian, bool isAdaptiveStep);
+              int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
+              bool isLocalCurvature, bool isVertexShift, double Kb, double H0,
+              double sharpness, std::vector<double> r_H0, double Kse,
+              double Kst, double Ksl, double Ksg, double Kv, double eta,
+              double epsilon, double Bc, double Vt, double cam, double gamma,
+              double temp, std::vector<double> pt, double Kf, double conc,
+              double height, double radius, double h, double T, double eps,
+              double tSave, std::string outputDir,
+              std::string integrationMethod, bool isBacktrack, double rho,
+              double c1, double ctol, bool isAugmentedLagrangian,
+              bool isAdaptiveStep);
 
 /**
  * @brief Run forward sweep simulation starting with netcdf
