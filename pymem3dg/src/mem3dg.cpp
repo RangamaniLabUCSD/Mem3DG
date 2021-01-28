@@ -310,7 +310,11 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
   std::cout << "Finished!" << std::endl;
 
   /// Subdivide the mesh and geometry objects
+<<<<<<< HEAD
   if (nSub > 0 && isContinue) {
+=======
+  if (nSub > 0 && isContinue){
+>>>>>>> 061c48a4520315c1570889a67218b088c007054b
     throw std::runtime_error("Cannot map continuation parameters if nSub > 0");
   }
   if (nSub > 0) {
