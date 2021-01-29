@@ -104,7 +104,7 @@ bool euler(System &f, double dt, double init_time, double total_time,
   for (;;) {
     // compute summerized forces
     getForces(f, physicalPressure, DPDPressure, regularizationForce);
-    vel_e = physicalPressure + DPDPressure + regularizationForce;
+    vel_e = f.M * (physicalPressure + DPDPressure + regularizationForce);
 
     // compute the L2 error norm
     f.getL2ErrorNorm(physicalPressure);

@@ -114,12 +114,12 @@ void System::getFreeEnergy() {
 
 void System::getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) {
   L2ErrorNorm =
-      sqrt((M * rowwiseDotProduct(pressure, pressure)).sum() / surfaceArea);
+      sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
 }
 
 double System::getL2Norm(gcs::VertexData<gc::Vector3> pressure_data) const {
   auto pressure = gc::EigenMap<double, 3>(pressure_data);
-  return sqrt((M * rowwiseDotProduct(pressure, pressure)).sum() / surfaceArea);
+  return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
 }
 
 } // namespace mem3dg
