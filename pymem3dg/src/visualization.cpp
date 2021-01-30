@@ -43,9 +43,10 @@ using EigenTopVec =
 void signalHandler(int signum);
 
 int viewer_ply(std::string fileName, const bool mean_curvature,
-               const bool spon_curvature, const bool ext_pressure,
-               const bool physical_pressure, const bool capillary_pressure,
-               const bool bending_pressure, const bool line_pressure) {
+               const bool gauss_curvature, const bool spon_curvature,
+               const bool ext_pressure, const bool physical_pressure,
+               const bool capillary_pressure, const bool bending_pressure,
+               const bool line_pressure) {
 
   signal(SIGINT, signalHandler);
 
@@ -62,7 +63,7 @@ int viewer_ply(std::string fileName, const bool mean_curvature,
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
 
   /// Load input mesh
-  if (!mean_curvature && !spon_curvature && !ext_pressure &&
+  if (!mean_curvature && !gauss_curvature && !spon_curvature && !ext_pressure &&
       !physical_pressure && !capillary_pressure && !bending_pressure &&
       !line_pressure) {
     std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(fileName);
@@ -102,6 +103,13 @@ int viewer_ply(std::string fileName, const bool mean_curvature,
     EigenVectorX1D meanCurvature_e = meanCurvature.raw();
     polyscope::getSurfaceMesh("Vesicle surface")
         ->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
+  }
+  if (gauss_curvature) {
+    gcs::VertexData<double> gaussCurvature =
+        ptrRichData->getVertexProperty<double>("gauss_curvature");
+    EigenVectorX1D gaussCurvature_e = gaussCurvature.raw();
+    polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexScalarQuantity("gauss_curvature", gaussCurvature_e);
   }
   if (spon_curvature) {
     gcs::VertexData<double> sponCurvature =
@@ -208,6 +216,7 @@ struct checkBox {
   const bool ref_coord;
   const bool velocity;
   const bool mean_curvature;
+  const bool gauss_curvature;
   const bool spon_curvature;
   const bool ext_pressure;
   const bool physical_pressure;
@@ -238,6 +247,10 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
   if (options.mean_curvature) {
     EigenVectorX1D H = fd.getMeanCurvature(idx);
     mesh->addVertexScalarQuantity("mean_curvature", H);
+  }
+  if (options.gauss_curvature) {
+    EigenVectorX1D K = fd.getGaussCurvature(idx);
+    mesh->addVertexScalarQuantity("gauss_curvature", K);
   }
   if (options.spon_curvature) {
     EigenVectorX1D H0 = fd.getSponCurvature(idx);
@@ -310,6 +323,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd,
     polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
                                                                H);
   }
+  if (options.gauss_curvature) {
+    EigenVectorX1D K = fd.getGaussCurvature(0);
+    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
+        "gauss_curvature", K);
+  }
   if (options.spon_curvature) {
     EigenVectorX1D H0 = fd.getSponCurvature(0);
     polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("spon_curvature",
@@ -372,10 +390,11 @@ void animate(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd, int &idx,
 int animation_nc(std::string &filename, float transparency, float angle,
                  float fov, float edgeWidth, const bool ref_coord,
                  const bool velocity, const bool mean_curvature,
-                 const bool spon_curvature, const bool ext_pressure,
-                 const bool physical_pressure, const bool capillary_pressure,
-                 const bool inside_pressure, const bool bending_pressure,
-                 const bool line_pressure, const bool mask, const bool H_H0) {
+                 const bool gauss_curvature, const bool spon_curvature,
+                 const bool ext_pressure, const bool physical_pressure,
+                 const bool capillary_pressure, const bool inside_pressure,
+                 const bool bending_pressure, const bool line_pressure,
+                 const bool mask, const bool H_H0) {
 
   // Activate signal handling
   signal(SIGINT, signalHandler);
@@ -391,10 +410,10 @@ int animation_nc(std::string &filename, float transparency, float angle,
   int maxFrame = fd.getNextFrameIndex() - 1;
   int maxWaitTime = 500;
   int waitTime = 0;
-  checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
-                    ext_pressure, physical_pressure, capillary_pressure,
-                    inside_pressure, bending_pressure, line_pressure, mask,
-                    H_H0});
+  checkBox options({ref_coord, velocity, mean_curvature, gauss_curvature,
+                    spon_curvature, ext_pressure, physical_pressure,
+                    capillary_pressure, inside_pressure, bending_pressure,
+                    line_pressure, mask, H_H0});
 
   // Set preference for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -425,7 +444,8 @@ int animation_nc(std::string &filename, float transparency, float angle,
                                // matching PopItemWidth() below.
 
     // Initialize sliders
-    ImGui::SliderInt("index", &currFrame, 0, maxFrame); // set a float variable
+    ImGui::SliderInt("index", &currFrame, 0,
+                     maxFrame); // set a float variable
     ImGui::SliderFloat("transparency", &transparency, 0, 1);
     ImGui::SliderInt("slow-mo", &waitTime, 0,
                      maxWaitTime); // set a float variable
@@ -477,10 +497,11 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
                 float angle, float fov, float edgeWidth, bool isShow,
                 bool isSave, std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
-                const bool spon_curvature, const bool ext_pressure,
-                const bool physical_pressure, const bool capillary_pressure,
-                const bool inside_pressure, const bool bending_pressure,
-                const bool line_pressure, const bool mask, const bool H_H0) {
+                const bool gauss_curvature, const bool spon_curvature,
+                const bool ext_pressure, const bool physical_pressure,
+                const bool capillary_pressure, const bool inside_pressure,
+                const bool bending_pressure, const bool line_pressure,
+                const bool mask, const bool H_H0) {
 
   static int ENTRY = 0;
 
@@ -492,10 +513,10 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
   getNcFrame(fd, frame);
 
   // Initialize visualization variables
-  checkBox options({ref_coord, velocity, mean_curvature, spon_curvature,
-                    ext_pressure, physical_pressure, capillary_pressure,
-                    inside_pressure, bending_pressure, line_pressure, mask,
-                    H_H0});
+  checkBox options({ref_coord, velocity, mean_curvature, gauss_curvature,
+                    spon_curvature, ext_pressure, physical_pressure,
+                    capillary_pressure, inside_pressure, bending_pressure,
+                    line_pressure, mask, H_H0});
 
   // Set preference for polyscope
   polyscope::options::programName = "Mem3DG Visualization";
@@ -532,6 +553,10 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
   if (options.mean_curvature) {
     EigenVectorX1D H = fd.getMeanCurvature(frame);
     mesh->addVertexScalarQuantity("mean_curvature", H)->setEnabled(true);
+  }
+  if (options.gauss_curvature) {
+    EigenVectorX1D K = fd.getGaussCurvature(frame);
+    mesh->addVertexScalarQuantity("gauss_curvature", K)->setEnabled(true);
   }
   if (options.spon_curvature) {
     EigenVectorX1D H0 = fd.getSponCurvature(frame);
@@ -606,7 +631,8 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
   polyscope::view::fov = fov;
   if (ENTRY == 0) {
     // glm::vec3 frameLookDir, frameUpDir, frameRightDir;
-    // polyscope::view::getCameraFrame(frameLookDir, frameUpDir, frameRightDir);
+    // polyscope::view::getCameraFrame(frameLookDir, frameUpDir,
+    // frameRightDir);
     glm::vec3 frameRightDir = glm::vec3(1., 0, 0.);
     glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), angle, frameRightDir);
     polyscope::view::viewMat = polyscope::view::viewMat * phiCamR;
