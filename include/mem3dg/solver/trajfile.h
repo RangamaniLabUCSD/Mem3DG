@@ -96,6 +96,8 @@ static const std::string REFCOORD_VAR = "refcoordinates";
 static const std::string VEL_VAR = "velocities";
 /// Name of the mean curvature data
 static const std::string MEANCURVE_VAR = "meancurvature";
+/// Name of the Gaussian curvature data
+static const std::string GAUSSCURVE_VAR = "gausscurvature";
 /// Name of the protein density data
 static const std::string PROTEINDEN_VAR = "proteindensity";
 /// Name of the spontaneous curvature data
@@ -136,6 +138,8 @@ static const std::string L2SURFNORM_VAR = "l2surfnorm";
 static const std::string L2PRESSNORM_VAR = "l2pressnorm";
 /// Name of the volume data
 static const std::string VOLUME_VAR = "volume";
+/// Name of the height data
+static const std::string HEIGHT_VAR = "height";
 /// Name of the surface area data
 static const std::string SURFAREA_VAR = "surfacearea";
 /// Name of the reference volume data
@@ -192,6 +196,7 @@ public:
     vel_var = fd->getVar(VEL_VAR);
     externpress_var = fd->getVar(EXTERNPRESS_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
+    gausscurve_var = fd->getVar(GAUSSCURVE_VAR);
     proteinden_var = fd->getVar(PROTEINDEN_VAR);
     sponcurve_var = fd->getVar(SPONCURVE_VAR);
     physpress_var = fd->getVar(PHYSPRESS_VAR);
@@ -205,6 +210,7 @@ public:
     l2surfnorm_var = fd->getVar(L2SURFNORM_VAR);
     l2pressnorm_var = fd->getVar(L2PRESSNORM_VAR);
     volume_var = fd->getVar(VOLUME_VAR);
+    height_var = fd->getVar(HEIGHT_VAR);
     surfarea_var = fd->getVar(SURFAREA_VAR);
     refvolume = fd->getVar(REFVOLUME_VAR);
     refsurfarea = fd->getVar(REFSURFAREA_VAR);
@@ -277,6 +283,10 @@ public:
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
     meancurve_var.putAtt(UNITS, LEN_UNITS + "^(-1)");
 
+    gausscurve_var = fd->addVar(GAUSSCURVE_VAR, netCDF::ncDouble,
+                                {frame_dim, nvertices_dim});
+    gausscurve_var.putAtt(UNITS, LEN_UNITS + "^(-2)");
+
     sponcurve_var =
         fd->addVar(SPONCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
     sponcurve_var.putAtt(UNITS, LEN_UNITS + "^(-1)");
@@ -330,12 +340,10 @@ public:
         fd->addVar(L2ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     l2errornorm_var.putAtt(UNITS, FORCE_UNITS);
 
-    l2bendnorm_var =
-        fd->addVar(L2BENDNORM_VAR, netCDF::ncDouble, {frame_dim});
+    l2bendnorm_var = fd->addVar(L2BENDNORM_VAR, netCDF::ncDouble, {frame_dim});
     l2bendnorm_var.putAtt(UNITS, FORCE_UNITS);
 
-    l2surfnorm_var =
-        fd->addVar(L2SURFNORM_VAR, netCDF::ncDouble, {frame_dim});
+    l2surfnorm_var = fd->addVar(L2SURFNORM_VAR, netCDF::ncDouble, {frame_dim});
     l2surfnorm_var.putAtt(UNITS, FORCE_UNITS);
 
     l2pressnorm_var =
@@ -344,6 +352,9 @@ public:
 
     volume_var = fd->addVar(VOLUME_VAR, netCDF::ncDouble, {frame_dim});
     volume_var.putAtt(UNITS, LEN_UNITS + "^3");
+
+    height_var = fd->addVar(HEIGHT_VAR, netCDF::ncDouble, {frame_dim});
+    height_var.putAtt(UNITS, LEN_UNITS);
 
     surfarea_var = fd->addVar(SURFAREA_VAR, netCDF::ncDouble, {frame_dim});
     surfarea_var.putAtt(UNITS, LEN_UNITS + "^2");
@@ -471,6 +482,12 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getMeanCurvature(const std::size_t idx) const;
 
+  void writeGaussCurvature(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getGaussCurvature(const std::size_t idx) const;
+
   void writeSponCurvature(const std::size_t idx,
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
@@ -572,6 +589,10 @@ public:
 
   double getVolume(const std::size_t idx) const;
 
+  void writeHeight(const std::size_t idx, const double volume);
+
+  double getHeight(const std::size_t idx) const;
+
   void writeSurfArea(const std::size_t idx, const double surfArea);
 
   double getSurfArea(const std::size_t idx) const;
@@ -636,6 +657,7 @@ private:
   nc::NcVar vel_var;
   nc::NcVar proteinden_var;
   nc::NcVar meancurve_var;
+  nc::NcVar gausscurve_var;
   nc::NcVar sponcurve_var;
   nc::NcVar externpress_var;
   nc::NcVar physpress_var;
@@ -655,6 +677,7 @@ private:
   nc::NcVar l2surfnorm_var;
   nc::NcVar l2pressnorm_var;
   nc::NcVar volume_var;
+  nc::NcVar height_var;
   nc::NcVar surfarea_var;
   nc::NcVar refvolume;
   nc::NcVar refsurfarea;

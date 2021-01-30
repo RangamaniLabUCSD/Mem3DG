@@ -204,6 +204,28 @@ TrajFile::getMeanCurvature(const std::size_t idx) const {
   return vec;
 }
 
+// Gaussian curvature
+void TrajFile::writeGaussCurvature(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  gausscurve_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getGaussCurvature(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  gausscurve_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
 // spontaneous curvature
 void TrajFile::writeSponCurvature(
     const std::size_t idx,
@@ -562,6 +584,21 @@ double TrajFile::getVolume(const std::size_t idx) const {
   double volume;
   volume_var.getVar({idx}, &volume);
   return volume;
+}
+
+// height
+void TrajFile::writeHeight(const std::size_t idx, const double height) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  height_var.putVar({idx}, &height);
+}
+
+double TrajFile::getHeight(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double height;
+  height_var.getVar({idx}, &height);
+  return height;
 }
 
 // surface area
