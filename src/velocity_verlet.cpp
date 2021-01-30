@@ -94,10 +94,11 @@ void saveRichData(
     const System &f,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity) {
-  gcs::VertexData<double> H(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
+  gcs::VertexData<double> H(f.mesh), K(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
       fb(f.mesh), fl(f.mesh), ft(f.mesh);
 
   H.fromVector(f.H);
+  K.fromVector(f.M * f.vpg.vertexGaussianCurvatures.raw());
   H0.fromVector(f.H0);
   fn.fromVector(rowwiseDotProduct(
       physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
@@ -117,6 +118,7 @@ void saveRichData(
                     .matrix());
 
   f.richData.addVertexProperty("mean_curvature", H);
+  f.richData.addVertexProperty("gauss_curvature", K);
   f.richData.addVertexProperty("spon_curvature", H0);
   f.richData.addVertexProperty("external_pressure", f_ext);
   f.richData.addVertexProperty("physical_pressure", fn);
