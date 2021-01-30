@@ -167,10 +167,14 @@ void saveNetcdfData(
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
   fd.writeMeanCurvature(frame, f.H);
+  fd.writeGaussCurvature(frame, f.M_inv * f.vpg.vertexGaussianCurvatures.raw());
   fd.writeSponCurvature(frame, f.H0);
+  fd.writeHeight(frame,
+                 abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z));
   // fd.writeAngles(frame, f.vpg.cornerAngles.raw());
   // fd.writeH_H0_diff(frame,
-  //                   ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
+  //                   ((f.H - f.H0).array() * (f.H -
+  //                   f.H0).array()).matrix());
 
   // write velocity
   fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
