@@ -94,10 +94,11 @@ void saveRichData(
     const System &f,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity) {
-  gcs::VertexData<double> H(f.mesh), H0(f.mesh), fn(f.mesh), f_ext(f.mesh),
-      fb(f.mesh), fl(f.mesh), ft(f.mesh);
+  gcs::VertexData<double> H(f.mesh), K(f.mesh), H0(f.mesh), fn(f.mesh),
+      f_ext(f.mesh), fb(f.mesh), fl(f.mesh), ft(f.mesh);
 
   H.fromVector(f.H);
+  K.fromVector(f.K);
   H0.fromVector(f.H0);
   fn.fromVector(rowwiseDotProduct(
       physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
@@ -117,6 +118,7 @@ void saveRichData(
                     .matrix());
 
   f.richData.addVertexProperty("mean_curvature", H);
+  f.richData.addVertexProperty("gauss_curvature", K);
   f.richData.addVertexProperty("spon_curvature", H0);
   f.richData.addVertexProperty("external_pressure", f_ext);
   f.richData.addVertexProperty("physical_pressure", fn);
@@ -167,10 +169,14 @@ void saveNetcdfData(
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
   fd.writeMeanCurvature(frame, f.H);
+  fd.writeGaussCurvature(frame, f.K);
   fd.writeSponCurvature(frame, f.H0);
+  fd.writeHeight(frame,
+                 abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z));
   // fd.writeAngles(frame, f.vpg.cornerAngles.raw());
   // fd.writeH_H0_diff(frame,
-  //                   ((f.H - f.H0).array() * (f.H - f.H0).array()).matrix());
+  //                   ((f.H - f.H0).array() * (f.H -
+  //                   f.H0).array()).matrix());
 
   // write velocity
   fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
@@ -194,7 +200,16 @@ void saveNetcdfData(
   fd.writeChemEnergy(frame, f.E.cE);
   fd.writeLineEnergy(frame, f.E.lE);
   fd.writeTotalEnergy(frame, f.E.totalE);
+
+  // write Norms
   fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
+  fd.writeL2BendNorm(frame,
+                     f.getL2Norm(EigenMap<double, 3>(f.bendingPressure)));
+  fd.writeL2SurfNorm(frame,
+                     f.getL2Norm(EigenMap<double, 3>(f.capillaryPressure)));
+  fd.writeL2PressNorm(
+      frame, f.getL2Norm(f.insidePressure *
+                         gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
 }
 #endif
 
@@ -303,21 +318,24 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
       // print in-progress information in the console
       if (verbosity > 1) {
         std::cout << "\n"
-                  << "Time: " << time << "\n"
-                  << "Frame: " << frame << "\n"
-                  << "dArea: " << dArea << "\n"
-                  << "dVP:  " << dVP << "\n"
-                  << "Total energy (exclude V^ext): " << f.E.totalE << "\n"
-                  << "L2 error norm: " << f.L2ErrorNorm << "\n"
-                  << "COM: "
-                  << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
-                             .colwise()
-                             .sum() /
-                         f.vpg.inputVertexPositions.raw().rows()
-                  << "\n"
-                  << "Height: "
+                  << "t: " << time << ", "
+                  << "n: " << frame << "\n"
+                  << "dA: " << dArea << ", "
+                  << "dVP: " << dVP << ", "
+                  << "h: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n";
+                  << "\n"
+                  << "E_total: " << f.E.totalE << "\n"
+                  << "|e|L2: " << f.L2ErrorNorm << "\n"
+                  << "H: [" << f.H.minCoeff() << "," << f.H.maxCoeff() << "]"
+                  << "\n"
+                  << "K: [" << f.K.minCoeff() << "," << f.K.maxCoeff() << "]"
+                  << std::endl;
+        // << "COM: "
+        // << gc::EigenMap<double,
+        // 3>(f.vpg.inputVertexPositions).colwise().sum() /
+        //         f.vpg.inputVertexPositions.raw().rows()
+        // << "\n"
       }
     }
 

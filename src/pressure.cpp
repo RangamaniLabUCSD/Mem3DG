@@ -49,8 +49,7 @@ void System::getBendingPressure() {
 
   // initialize and calculate intermediary result scalerTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-      rowwiseProduct(H, H) + rowwiseProduct(H, H0) -
-      M_inv * vpg.vertexGaussianCurvatures.raw();
+      rowwiseProduct(H, H) + rowwiseProduct(H, H0) - K;
   // Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
   // zeroMatrix.resize(n_vertices, 1);
   // zeroMatrix.setZero();

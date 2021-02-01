@@ -169,6 +169,9 @@ void System::updateVertexPositions() {
   // initialize/update mean curvature
   H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
 
+  // initialize/update Gaussian curvature
+  K = M_inv * vpg.vertexGaussianCurvatures.raw();
+
   /// initialize/update enclosed volume
   volume = 0;
   for (gcs::Face f : mesh.faces()) {

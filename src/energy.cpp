@@ -33,7 +33,8 @@ void System::getBendingEnergy() {
   E.BE = P.Kb * H_difference.transpose() * M * H_difference;
 
   // when considering topological changes, additional term of gauss curvature
-  // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M * vpg.vertexGaussianCurvatures.raw()).sum();
+  // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
+  // K).sum();
 }
 
 void System::getSurfaceEnergy() {
@@ -63,7 +64,9 @@ void System::getChemicalEnergy() {
 }
 
 void System::getLineTensionEnergy() {
-  E.lE = (P.eta * interArea * P.sharpness);
+  E.lE = 0;
+  // TODO: 
+  // E.lE = (P.eta * interArea * P.sharpness);
 }
 
 void System::getExternalForceEnergy() {
@@ -105,7 +108,7 @@ void System::getPotentialEnergy() {
 void System::getFreeEnergy() {
   // zero all energy
   E = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+  
   getKineticEnergy();
   getPotentialEnergy();
   E.totalE = E.kE + E.potE;
@@ -113,6 +116,11 @@ void System::getFreeEnergy() {
 
 void System::getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) {
   L2ErrorNorm =
-      sqrt((M * rowwiseDotProduct(pressure, pressure)).sum() / surfaceArea);
+      sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
 }
+
+double System::getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const {
+  return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
+}
+
 } // namespace mem3dg

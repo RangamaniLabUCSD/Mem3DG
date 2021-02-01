@@ -24,8 +24,8 @@ namespace gcs = ::geometrycentral::surface;
  *
  */
 int viewer_ply(std::string fileName, const bool mean_curvature = 0,
-               const bool spon_curvature = 0, const bool ext_pressure = 0,
-               const bool physical_pressure = 0,
+               const bool gauss_curvature = 0, const bool spon_curvature = 0,
+               const bool ext_pressure = 0, const bool physical_pressure = 0,
                const bool capillary_pressure = 0,
                const bool bending_pressure = 0, const bool line_pressure = 0);
 
@@ -90,10 +90,11 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
                 float angle, float fov, float edgeWidth, bool isShow,
                 bool isSave, std::string screenshotName, const bool ref_coord,
                 const bool velocity, const bool mean_curvature,
-                const bool spon_curvature, const bool ext_pressure,
-                const bool physical_pressure, const bool capillary_pressure,
-                const bool inside_pressure, const bool bending_pressure,
-                const bool line_pressure, const bool mask, const bool H_H0);
+                const bool gauss_curvature, const bool spon_curvature,
+                const bool ext_pressure, const bool physical_pressure,
+                const bool capillary_pressure, const bool inside_pressure,
+                const bool bending_pressure, const bool line_pressure,
+                const bool mask, const bool H_H0);
 
 /**
  * @brief Animate netcdf file with options of additional quantities
@@ -102,8 +103,8 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
 int animation_nc(std::string &filename, float transparency = 1, float angle = 0,
                  float fov = 50, float edgeWidth = 1, const bool ref_coord = 0,
                  const bool velocity = 0, const bool mean_curvature = 0,
-                 const bool spon_curvature = 0, const bool ext_pressure = 0,
-                 const bool physical_pressure = 0,
+                 const bool gauss_curvature = 0, const bool spon_curvature = 0,
+                 const bool ext_pressure = 0, const bool physical_pressure = 0,
                  const bool capillary_pressure = 0,
                  const bool inside_pressure = 0,
                  const bool bending_pressure = 0, const bool line_pressure = 0,
@@ -114,27 +115,29 @@ int animation_nc(std::string &filename, float transparency = 1, float angle = 0,
  *
  */
 int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
-              bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-              bool isVertexShift, double Kb, double H0, double sharpness,
-              std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-              double Ksg, double Kv, double eta, double epsilon, double Bc,
-              double Vt, double cam, double gamma, double temp,
-              std::vector<double> pt, double Kf, double conc, double height,
-              double radius, double h, double T, double eps, double tSave,
-              std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian, bool isAdaptiveStep);
+              int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
+              bool isLocalCurvature, bool isVertexShift, double Kb, double H0,
+              double sharpness, std::vector<double> r_H0, double Kse,
+              double Kst, double Ksl, double Ksg, double Kv, double eta,
+              double epsilon, double Bc, double Vt, double cam, double gamma,
+              double temp, std::vector<double> pt, double Kf, double conc,
+              double height, double radius, double h, double T, double eps,
+              double tSave, std::string outputDir,
+              std::string integrationMethod, bool isBacktrack, double rho,
+              double c1, double ctol, bool isAugmentedLagrangian,
+              bool isAdaptiveStep);
 
 /**
  * @brief Run forward sweep simulation starting with netcdf
  * files
  *
  */
-int forwardsweep_nc(std::string trajFile, int startingFrame,
-                    bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-                    bool isVertexShift, double Kb, std::vector<double> H0,
-                    double sharpness, std::vector<double> r_H0, double Kse,
-                    double Kst, double Ksl, double Ksg, double Kv, double eta,
+int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
+                    bool isContinue, bool isReducedVolume, bool isProtein,
+                    bool isLocalCurvature, bool isVertexShift, double Kb,
+                    std::vector<double> H0, double sharpness,
+                    std::vector<double> r_H0, double Kse, double Kst,
+                    double Ksl, double Ksg, double Kv, double eta,
                     double epsilon, double Bc, std::vector<double> Vt,
                     std::vector<double> cam, double gamma, double temp,
                     std::vector<double> pt, double Kf, double conc,
