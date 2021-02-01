@@ -162,21 +162,24 @@ bool euler(System &f, double dt, double init_time, double total_time,
       // print in-progress information in the console
       if (verbosity > 1) {
         std::cout << "\n"
-                  << "Time: " << time << "\n"
-                  << "Frame: " << frame << "\n"
-                  << "dArea: " << dArea << "\n"
-                  << "dVP:  " << dVP << "\n"
-                  << "Potential energy (exclude V^ext): " << f.E.potE << "\n"
-                  << "L2 error norm: " << f.L2ErrorNorm << "\n"
-                  << "COM: "
-                  << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
-                             .colwise()
-                             .sum() /
-                         f.vpg.inputVertexPositions.raw().rows()
-                  << "\n"
-                  << "Height: "
+                  << "t: " << time << ", "
+                  << "n: " << frame << "\n"
+                  << "dA: " << dArea << ", "
+                  << "dVP: " << dVP << ", "
+                  << "h: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n";
+                  << "\n"
+                  << "E_total: " << f.E.totalE << "\n"
+                  << "|e|L2: " << f.L2ErrorNorm << "\n"
+                  << "H: [" << f.H.minCoeff() << "," << f.H.maxCoeff() << "]"
+                  << "\n"
+                  << "K: [" << f.K.minCoeff() << "," << f.K.maxCoeff() << "]"
+                  << std::endl;
+        // << "COM: "
+        // << gc::EigenMap<double,
+        // 3>(f.vpg.inputVertexPositions).colwise().sum() /
+        //         f.vpg.inputVertexPositions.raw().rows()
+        // << "\n"
       }
     }
 

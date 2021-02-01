@@ -199,6 +199,8 @@ public:
   gcs::VertexData<gc::Vector3> vel;
   // Mean curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 1> H;
+  // Gaussian curvature of the mesh
+  Eigen::Matrix<double, Eigen::Dynamic, 1> K;
   // Spontaneous curvature of the mesh
   Eigen::Matrix<double, Eigen::Dynamic, 1> H0;
   /// Random number engine
@@ -419,6 +421,6 @@ public:
   /**
    * @brief Get the L2 norm of the pressure
    */
-  double getL2Norm(gcs::VertexData<gc::Vector3> pressure) const;
+  double getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const;
 };
 } // namespace mem3dg

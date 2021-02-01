@@ -34,7 +34,7 @@ void System::getBendingEnergy() {
 
   // when considering topological changes, additional term of gauss curvature
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
-  // vpg.vertexGaussianCurvatures.raw()).sum();
+  // K).sum();
 }
 
 void System::getSurfaceEnergy() {
@@ -64,7 +64,9 @@ void System::getChemicalEnergy() {
 }
 
 void System::getLineTensionEnergy() {
-  E.lE = (P.eta * interArea * P.sharpness);
+  E.lE = 0;
+  // TODO: 
+  // E.lE = (P.eta * interArea * P.sharpness);
 }
 
 void System::getExternalForceEnergy() {
@@ -117,8 +119,7 @@ void System::getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) {
       sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
 }
 
-double System::getL2Norm(gcs::VertexData<gc::Vector3> pressure_data) const {
-  auto pressure = gc::EigenMap<double, 3>(pressure_data);
+double System::getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const {
   return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
 }
 
