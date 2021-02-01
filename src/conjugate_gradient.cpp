@@ -319,21 +319,24 @@ bool conjugateGradient(System &f, double dt, double init_time,
       // print in-progress information in the console
       if (verbosity > 1) {
         std::cout << "\n"
-                  << "Time: " << time << "\n"
-                  << "Frame: " << frame << "\n"
-                  << "dArea: " << dArea << "\n"
-                  << "dVP:  " << dVP << "\n"
-                  << "Potential energy (exclude V^ext): " << f.E.potE << "\n"
-                  << "L2 error norm: " << f.L2ErrorNorm << "\n"
-                  << "COM: "
-                  << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions)
-                             .colwise()
-                             .sum() /
-                         f.vpg.inputVertexPositions.raw().rows()
-                  << "\n"
-                  << "Height: "
+                  << "t: " << time << ", "
+                  << "n: " << frame << "\n"
+                  << "dA: " << dArea << ", "
+                  << "dVP: " << dVP << ", "
+                  << "h: "
                   << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
-                  << "\n";
+                  << "\n"
+                  << "E_total: " << f.E.totalE << "\n"
+                  << "|e|L2: " << f.L2ErrorNorm << "\n"
+                  << "H: [" << f.H.minCoeff() << "," << f.H.maxCoeff() << "]"
+                  << "\n"
+                  << "K: [" << f.K.minCoeff() << "," << f.K.maxCoeff() << "]"
+                  << std::endl;
+        // << "COM: "
+        // << gc::EigenMap<double,
+        // 3>(f.vpg.inputVertexPositions).colwise().sum() /
+        //         f.vpg.inputVertexPositions.raw().rows()
+        // << "\n"
       }
     }
 
@@ -465,11 +468,10 @@ void feedForwardSweep(System &f, std::vector<double> H_,
           f, dt, init_time, maxTime, tSave, tol, ctol, verbosity, outputDir,
           isBacktrack, rho, c1, isAugmentedLagrangian, isAdaptiveStep, buffer);
 
-      // mark "failed" is CG returns false 
+      // mark "failed" is CG returns false
       if (!success) {
         markFileName(outputDir, buffer, "_failed");
       }
-      
     }
     // reverse the order of inner loop to ensure phase space closeness
     std::reverse(VP_.begin(), VP_.end());
