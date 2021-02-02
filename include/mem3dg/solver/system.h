@@ -197,20 +197,26 @@ public:
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
   gcs::VertexData<gc::Vector3> vel;
-  // Mean curvature of the mesh
-  Eigen::Matrix<double, Eigen::Dynamic, 1> H;
-  // Gaussian curvature of the mesh
-  Eigen::Matrix<double, Eigen::Dynamic, 1> K;
-  // Spontaneous curvature of the mesh
-  Eigen::Matrix<double, Eigen::Dynamic, 1> H0;
+  /// Mean curvature of the mesh
+  gcs::VertexData<double> H;
+  /// Gaussian curvature of the mesh
+  gcs::VertexData<double> K;
+  /// Spontaneous curvature of the mesh
+  gcs::VertexData<double> H0;
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
-  /// indices for vertices chosen for integration
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
-  /// "the point" index
-  size_t ptInd;
+  /// Indices for vertices chosen for integration
+  gcs::VertexData<bool> mask;
+  /// "the vertex"
+  gcs::Vertex theVertex;
 
+  /// If flipping the edge
+  gcs::EdgeData<bool> isFlip;
+  /// If splitting the edge
+  gcs::EdgeData<bool> isSplit;
+  /// If collapsing the edge
+  gcs::EdgeData<bool> isCollapse;
   /*
    * @brief Construct a new Force object
    *
@@ -234,7 +240,8 @@ public:
         externalPressure(mesh_, {0, 0, 0}),
         regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
         stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
-        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}),
+        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}), isFlip(mesh, false),
+        isSplit(mesh, false), isCollapse(mesh, false),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(vpg) {
 
     // GC computed properties
@@ -260,7 +267,7 @@ public:
 
     // Regularize the vetex position geometry if needed
     if (isVertexShift) {
-      vertexShift(mesh, vpg, mask);
+      vertexShift();
     }
 
     /// compute nonconstant values during simulation
@@ -341,11 +348,6 @@ public:
   void getInsidePressure();
 
   /**
-   * @brief Get regularization pressure component of the system
-   */
-  void getRegularizationForce();
-
-  /**
    * @brief Get line tension pressure component of the system
    */
   void getLineTensionPressure();
@@ -414,13 +416,37 @@ public:
   void getFreeEnergy();
 
   /**
-   * @brief Get the L2 Error norm of the PDE
-   */
-  void getL2ErrorNorm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure);
-
-  /**
    * @brief Get the L2 norm of the pressure
    */
   double getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const;
+
+  // ==========================================================
+  // =============        Regularization        ===============
+  // ==========================================================
+  /**
+   * @brief Apply vertex shift by moving the vertices chosen for integration to
+   * the Barycenter of the it neighbors
+   */
+  void vertexShift();
+
+  /**
+   * @brief Get regularization pressure component of the system
+   */
+  void getRegularizationForce();
+
+  /**
+   * @brief Edge flip if not Delaunay
+   */
+  void edgeFlip();
+
+  /**
+   * @brief Get regularization pressure component of the system
+   */
+  void growMesh();
+
+  /**
+   * @brief Get length cross ratio of the mesh
+   */
+  gcs::EdgeData<double> getLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const;
 };
 } // namespace mem3dg
