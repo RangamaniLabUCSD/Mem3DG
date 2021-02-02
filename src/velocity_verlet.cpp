@@ -58,18 +58,19 @@ void getForces(System &f,
   f.getAllForces();
 
   physicalPressure = rowwiseScaling(
-      f.mask.cast<double>(),
+      f.mask.raw().cast<double>(),
       gc::EigenMap<double, 3>(f.bendingPressure) +
           gc::EigenMap<double, 3>(f.capillaryPressure) +
           f.insidePressure * gc::EigenMap<double, 3>(f.vpg.vertexNormals) +
           gc::EigenMap<double, 3>(f.externalPressure) +
           gc::EigenMap<double, 3>(f.lineTensionPressure));
 
-  regularizationForce = rowwiseScaling(
-      f.mask.cast<double>(), gc::EigenMap<double, 3>(f.regularizationForce));
+  regularizationForce =
+      rowwiseScaling(f.mask.raw().cast<double>(),
+                     gc::EigenMap<double, 3>(f.regularizationForce));
 
   DPDPressure =
-      rowwiseScaling(f.mask.cast<double>(),
+      rowwiseScaling(f.mask.raw().cast<double>(),
                      f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                                 gc::EigenMap<double, 3>(f.stochasticForce)));
 
@@ -94,12 +95,9 @@ void saveRichData(
     const System &f,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity) {
-  gcs::VertexData<double> H(f.mesh), K(f.mesh), H0(f.mesh), fn(f.mesh),
-      f_ext(f.mesh), fb(f.mesh), fl(f.mesh), ft(f.mesh);
+  gcs::VertexData<double> fn(f.mesh), f_ext(f.mesh), fb(f.mesh), fl(f.mesh),
+      ft(f.mesh);
 
-  H.fromVector(f.H);
-  K.fromVector(f.K);
-  H0.fromVector(f.H0);
   fn.fromVector(rowwiseDotProduct(
       physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
   f_ext.fromVector(
@@ -114,12 +112,12 @@ void saveRichData(
   ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
                                    gc::EigenMap<double, 3>(f.vpg.vertexNormals))
                      .array() /
-                 f.H.array() / 2)
+                 f.H.raw().array() / 2)
                     .matrix());
 
-  f.richData.addVertexProperty("mean_curvature", H);
-  f.richData.addVertexProperty("gauss_curvature", K);
-  f.richData.addVertexProperty("spon_curvature", H0);
+  f.richData.addVertexProperty("mean_curvature", f.H);
+  f.richData.addVertexProperty("gauss_curvature", f.K);
+  f.richData.addVertexProperty("spon_curvature", f.H0);
   f.richData.addVertexProperty("external_pressure", f_ext);
   f.richData.addVertexProperty("physical_pressure", fn);
   f.richData.addVertexProperty("capillary_pressure", ft);
@@ -168,11 +166,10 @@ void saveNetcdfData(
   fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
-  fd.writeMeanCurvature(frame, f.H);
-  fd.writeGaussCurvature(frame, f.K);
-  fd.writeSponCurvature(frame, f.H0);
-  fd.writeHeight(frame,
-                 abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z));
+  fd.writeMeanCurvature(frame, f.H.raw());
+  fd.writeGaussCurvature(frame, f.K.raw());
+  fd.writeSponCurvature(frame, f.H0.raw());
+  fd.writeHeight(frame, abs(f.vpg.inputVertexPositions[f.theVertex].z));
   // fd.writeAngles(frame, f.vpg.cornerAngles.raw());
   // fd.writeH_H0_diff(frame,
   //                   ((f.H - f.H0).array() * (f.H -
@@ -248,7 +245,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   if (verbosity > 0) {
     fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
-    fd.writeMask(f.mask.cast<int>());
+    fd.writeMask(f.mask.raw().cast<int>());
     fd.writeRefVolume(f.refVolume);
     fd.writeRefSurfArea(f.targetSurfaceArea);
   }
@@ -263,7 +260,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     newTotalPressure = physicalPressure + DPDPressure;
 
     // compute the L2 error norm
-    f.getL2ErrorNorm(physicalPressure);
+    f.L2ErrorNorm = f.getL2Norm(physicalPressure);
 
     // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
@@ -310,7 +307,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
       // save variable to netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-      if (verbosity > 0) {
+          if (verbosity > 0) {
         saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
       }
 #endif
@@ -322,15 +319,15 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
                   << "n: " << frame << "\n"
                   << "dA: " << dArea << ", "
                   << "dVP: " << dVP << ", "
-                  << "h: "
-                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
+                  << "h: " << abs(f.vpg.inputVertexPositions[f.theVertex].z)
                   << "\n"
                   << "E_total: " << f.E.totalE << "\n"
                   << "|e|L2: " << f.L2ErrorNorm << "\n"
-                  << "H: [" << f.H.minCoeff() << "," << f.H.maxCoeff() << "]"
+                  << "H: [" << f.H.raw().minCoeff() << ","
+                  << f.H.raw().maxCoeff() << "]"
                   << "\n"
-                  << "K: [" << f.K.minCoeff() << "," << f.K.maxCoeff() << "]"
-                  << std::endl;
+                  << "K: [" << f.K.raw().minCoeff() << ","
+                  << f.K.raw().maxCoeff() << "]" << std::endl;
         // << "COM: "
         // << gc::EigenMap<double,
         // 3>(f.vpg.inputVertexPositions).colwise().sum() /
@@ -367,8 +364,15 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
     // vertex shift for regularization
     if (f.isVertexShift) {
-      vertexShift(f.mesh, f.vpg, f.mask);
+      f.vertexShift();
     }
+
+    // f.growMesh();
+    // f.edgeFlip();
+    // f.mesh.compress();
+    // f.richData.addMeshConnectivity();
+    // f.richData.addGeometry(f.vpg);
+    // f.richData.write(outputDir + "/changedTopology.ply");
 
     // time stepping on protein density
     if (f.isProtein) {
@@ -377,7 +381,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
     // recompute cached values
     f.updateVertexPositions();
-
+    
   } // integration
 
   // stop the timer and report time spent

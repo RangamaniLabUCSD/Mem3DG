@@ -45,7 +45,7 @@ void getParameterLog(System &f, double dt, double finalTime, double tolerance,
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
            << "sigma:  " << f.P.sigma << "\n"
-           << "ptInd:  " << f.ptInd << "\n"
+           << "ptInd:  " << f.theVertex.getIndex() << "\n"
            << "Kf:     " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n"
            << "height: " << f.P.height << "\n";
@@ -58,7 +58,7 @@ void getParameterLog(System &f, double dt, double finalTime, double tolerance,
            << "eps:		   " << tolerance << "\n"
            << "tSave:    " << tSave << "\n"
            << "no. non-integrated: "
-           << f.mask.rows() - f.mask.cast<size_t>().sum() << "\n";
+           << f.mask.raw().rows() - f.mask.raw().cast<size_t>().sum() << "\n";
     myfile.close();
 
   } else
@@ -89,7 +89,7 @@ void getStatusLog(std::string nameOfFile, System &f, double dt, double time,
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
            << "sigma:  " << f.P.sigma << "\n"
-           << "ptInd:  " << f.ptInd << "\n"
+           << "ptInd:  " << f.theVertex.getIndex() << "\n"
            << "Kf:   " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n";
 

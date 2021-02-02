@@ -200,7 +200,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   //          f.E.cE, lE_pre = f.E.lE, exE = f.E.exE;
   for (size_t i = 0; i < 50; i++) {
     f.getBendingPressure();
-    vel_e = rowwiseScaling(f.mask.cast<double>(),
+    vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
                            gc::EigenMap<double, 3>(f.bendingPressure));
     pos_e += vel_e * h;
     f.updateVertexPositions();
@@ -210,7 +210,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.getCapillaryPressure();
-    vel_e = rowwiseScaling(f.mask.cast<double>(),
+    vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
                            gc::EigenMap<double, 3>(f.capillaryPressure));
     pos_e += vel_e * h;
     f.updateVertexPositions();
@@ -220,7 +220,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.getInsidePressure();
-    vel_e = rowwiseScaling(f.mask.cast<double>(),
+    vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
                            f.insidePressure *
                                gc::EigenMap<double, 3>(f.vpg.vertexNormals));
     pos_e += vel_e * h;
@@ -231,7 +231,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.getExternalPressure();
-    vel_e = rowwiseScaling(f.mask.cast<double>(),
+    vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
                            gc::EigenMap<double, 3>(f.externalPressure));
     pos_e += vel_e * h;
     f.updateVertexPositions();
@@ -241,7 +241,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.getRegularizationForce();
-    vel_e = rowwiseScaling(f.mask.cast<double>(),
+    vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
                            gc::EigenMap<double, 3>(f.externalPressure));
     pos_e += vel_e * h;
     f.updateVertexPositions();

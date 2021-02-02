@@ -45,11 +45,11 @@ void System::getBendingPressure() {
 
   /// A. non-optimized version
   // calculate the Laplacian of mean curvature H
-  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * (H - H0);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H = M_inv * L * (H.raw() - H0.raw());
 
   // initialize and calculate intermediary result scalerTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-      rowwiseProduct(H, H) + rowwiseProduct(H, H0) - K;
+      rowwiseProduct(H.raw(), H.raw()) + rowwiseProduct(H.raw(), H0.raw()) - K.raw();
   // Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
   // zeroMatrix.resize(n_vertices, 1);
   // zeroMatrix.setZero();
@@ -58,7 +58,7 @@ void System::getBendingPressure() {
   // initialize and calculate intermediary result productTerms
   Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms;
   productTerms.resize(n_vertices, 1);
-  productTerms = 2.0 * rowwiseProduct(scalerTerms, H - H0);
+  productTerms = 2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
 
   // calculate bendingForce
   bendingPressure_e =
@@ -105,7 +105,7 @@ void System::getCapillaryPressure() {
           P.lambdaSG);
   }
   capillaryPressure_e =
-      rowwiseScaling(surfaceTension * 2 * H, vertexAngleNormal_e);
+      rowwiseScaling(surfaceTension * 2 * H.raw(), vertexAngleNormal_e);
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh.vertices()) {
@@ -156,8 +156,8 @@ void System::getLineTensionPressure() {
 
   for (gcs::Vertex v : mesh.vertices()) {
     // Calculate interfacial tension
-    if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
-        (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
+    if ((H0[v] > (0.1 * P.H0)) &&
+        (H0[v] < (0.9 * P.H0)) && (H[v] != 0)) {
 
       // Calculate halfedgeVectorsInVertex
       double coordSum = 0.0;
@@ -202,7 +202,7 @@ void System::getLineTensionPressure() {
         // calculate gradient
         gradient +=
             vecFromHalfedge(he, vpg).normalize() *
-            (H0[he.next().vertex().getIndex()] - H0[he.vertex().getIndex()]) /
+            (H0[he.next().vertex()] - H0[he.vertex()]) /
             vpg.edgeLengths[he.edge()];
 
         // calculate tangent basis
@@ -231,9 +231,9 @@ void System::getLineTensionPressure() {
 
       // Deduce normal curvature
       double K1 =
-          (2 * H[v.getIndex()] + sqrt(principalDirection1.norm())) * 0.5;
+          (2 * H[v] + sqrt(principalDirection1.norm())) * 0.5;
       double K2 =
-          (2 * H[v.getIndex()] - sqrt(principalDirection1.norm())) * 0.5;
+          (2 * H[v] - sqrt(principalDirection1.norm())) * 0.5;
       lineTensionPressure[v] = -P.eta * vpg.vertexNormals[v] *
                                (cosT * cosT * (K1 - K2) + K2) * P.sharpness;
     }
@@ -308,7 +308,7 @@ void System::getExternalPressure() {
     zDir << 0.0, 0.0, -1.0;
     externalPressure_e =
         -externalPressureMagnitude * zDir *
-        (vpg.inputVertexPositions[mesh.vertex(ptInd)].z - P.height);
+        (vpg.inputVertexPositions[theVertex].z - P.height);
   }
 }
 
@@ -323,7 +323,7 @@ void System::getChemicalPotential() {
           .matrix();
 
   chemicalPotential.raw() =
-      (P.epsilon - (2 * P.Kb * (H - H0)).array() * dH0dphi.array()).matrix();
+      (P.epsilon - (2 * P.Kb * (H.raw() - H0.raw())).array() * dH0dphi.array()).matrix();
 }
 
 void System::getDPDForces() {
@@ -367,68 +367,6 @@ void System::getDPDForces() {
     //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) * -dPos12_n)
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
-  }
-}
-
-void System::getRegularizationForce() {
-  gcs::EdgeData<double> lcr(mesh);
-  getCrossLengthRatio(mesh, vpg, lcr);
-
-  for (gcs::Vertex v : mesh.vertices()) {
-    for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      gcs::Halfedge base_he = he.next();
-
-      // Stretching forces
-      gc::Vector3 edgeGradient = -vecFromHalfedge(he, vpg).normalize();
-      gc::Vector3 base_vec = vecFromHalfedge(base_he, vpg);
-      gc::Vector3 localAreaGradient =
-          -gc::cross(base_vec, vpg.faceNormals[he.face()]);
-      assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
-
-      // Conformal regularization
-      if (P.Kst != 0) {
-        gcs::Halfedge jl = he.next();
-        gcs::Halfedge li = jl.next();
-        gcs::Halfedge ik = he.twin().next();
-        gcs::Halfedge kj = ik.next();
-
-        gc::Vector3 grad_li = vecFromHalfedge(li, vpg).normalize();
-        gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), vpg).normalize();
-        regularizationForce[v] +=
-            -P.Kst * (lcr[he.edge()] - targetLcr[he.edge()]) /
-            targetLcr[he.edge()] *
-            (vpg.edgeLengths[kj.edge()] / vpg.edgeLengths[jl.edge()]) *
-            (grad_li * vpg.edgeLengths[ik.edge()] -
-             grad_ik * vpg.edgeLengths[li.edge()]) /
-            vpg.edgeLengths[ik.edge()] / vpg.edgeLengths[ik.edge()];
-        // regularizationForce[v] += -P.Kst * localAreaGradient;
-      }
-
-      if (P.Ksl != 0) {
-        regularizationForce[v] +=
-            -P.Ksl * localAreaGradient *
-            (vpg.faceAreas[base_he.face()] - targetFaceAreas[base_he.face()]) /
-            targetFaceAreas[base_he.face()];
-      }
-
-      if (P.Kse != 0) {
-        regularizationForce[v] +=
-            -P.Kse * edgeGradient *
-            (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
-            targetEdgeLengths[he.edge()];
-      }
-
-      /// Patch regularization
-      // // the cubic penalty is for regularizing the mesh,
-      // // need better physical interpretation or alternative method
-      // if (P.Kse != 0) {
-      //   double strain =
-      //       (vpg.edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
-      //       targetEdgeLengths[he.edge()];
-      //   regularizationForce[v] +=
-      //       -P.Kse * edgeGradient * strain * strain * strain;
-      // }
-    }
   }
 }
 

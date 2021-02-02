@@ -104,15 +104,14 @@ void System::initConstants() {
 
   /// compute constant values during simulation
   // Find the closest point index to P.pt in refVpg
-  closestPtIndToPt(mesh, refVpg, P.pt, ptInd);
+  closestPtIndToPt(mesh, refVpg, P.pt, theVertex);
 
   // Initialize the constant mask based on distance from the point specified
-  mask =
-      (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() < P.radius)
-          .matrix();
+  mask.raw() =
+      (heatMethodDistance(refVpg, theVertex).raw().array() < P.radius).matrix();
   // Mask boundary element
   if (mesh.hasBoundary()) {
-    boundaryMask(mesh, mask);
+    boundaryMask(mesh, mask.raw());
   }
 
   // Initialize the constant target face/surface areas
@@ -120,10 +119,10 @@ void System::initConstants() {
   targetSurfaceArea = targetFaceAreas.raw().sum();
 
   // Initialize the constant target edge length
-  targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
+  targetEdgeLengths = refVpg.edgeLengths;
 
   // Initialize the target constant cross length ration
-  getCrossLengthRatio(mesh, refVpg, targetLcr);
+  targetLcr = getLengthCrossRatio(refVpg);
 
   // Initialize the constant reference volume
   if (mesh.hasBoundary()) {
@@ -134,7 +133,7 @@ void System::initConstants() {
   }
 
   // Initialize the constant spontaneous curvature
-  H0.setConstant(mesh.nVertices(), 1, P.H0);
+  H0.raw().setConstant(mesh.nVertices(), 1, P.H0);
 }
 
 void System::updateVertexPositions() {
@@ -148,35 +147,36 @@ void System::updateVertexPositions() {
 
   // initialize/update distance from the point specified
   if (isLocalCurvature) {
-    geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh.vertex(ptInd));
+    geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
   }
 
   // initialize/update spontaneous curvature (protein binding)
   if (isProtein) {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
-    H0 = (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
-             .matrix();
+    H0.raw() =
+        (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+            .matrix();
   }
 
   // initialize/update spontaneous curvature (local spontaneous curvature)
   if (isLocalCurvature) {
-    tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
-                     P.r_H0);
-    H0 *= P.H0;
+    tanhDistribution(vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+                     P.sharpness, P.r_H0);
+    H0.raw() *= P.H0;
   }
 
   // initialize/update mean curvature
-  H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
+  H.raw() = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
 
   // initialize/update Gaussian curvature
-  K = M_inv * vpg.vertexGaussianCurvatures.raw();
+  K.raw() = M_inv * vpg.vertexGaussianCurvatures.raw();
 
   /// initialize/update enclosed volume
   volume = 0;
   for (gcs::Face f : mesh.faces()) {
-    volume += signedVolumeFromFace(
-        f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
+    volume +=
+        signedVolumeFromFace(f, vpg, refVpg.inputVertexPositions[theVertex]);
   }
 
   // initialize/update total surface area
@@ -185,15 +185,14 @@ void System::updateVertexPositions() {
   // initialize/update intersection area
   interArea = 0.0;
   for (gcs::Vertex v : mesh.vertices()) {
-    if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
-        (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
+    if ((H0[v] > (0.1 * P.H0)) && (H0[v] < (0.9 * P.H0)) && (H[v] != 0)) {
       interArea += vpg.vertexDualAreas[v];
     }
   }
 
   // initialize/update external force
   getExternalPressure();
-
+  
   // initialize/update the vertex position of the last iteration
   pastPositions = vpg.inputVertexPositions;
 }

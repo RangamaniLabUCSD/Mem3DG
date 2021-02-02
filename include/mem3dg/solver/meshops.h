@@ -198,40 +198,6 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
 }
 
 /**
- * @brief Apply vertex shift by moving the vertices chosen for integration to
- * the Barycenter of the it neighbors
- *
- * @param surfaceMesh mesh
- * @param vertexPositionGeometry vpg
- * @param Eigen boolean vector mask
- */
-DLL_PUBLIC inline void
-vertexShift(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-            Eigen::Matrix<bool, Eigen::Dynamic, 1> mask) {
-
-  for (gcs::Vertex v : mesh.vertices()) {
-
-    if (mask(vpg.vertexIndices[v])) {
-
-      gc::Vector3 baryCenter{0.0, 0.0, 0.0};
-      double n_vAdj = 0.0;
-      for (gcs::Vertex vAdj : v.adjacentVertices()) {
-        baryCenter += vpg.inputVertexPositions[vAdj];
-        n_vAdj += 1.0;
-      }
-      baryCenter /= n_vAdj;
-      for (gcs::Halfedge he : v.outgoingHalfedges()) {
-        gcs::Halfedge base_he = he.next();
-        vpg.inputVertexPositions[v] =
-            baryCenter - gc::dot(vpg.vertexNormals[v],
-                                 baryCenter - vpg.inputVertexPositions[v]) *
-                             vpg.vertexNormals[v];
-      }
-    }
-  }
-}
-
-/**
  * @brief Apply boundary condition mask
  *
  * @param mesh
@@ -300,15 +266,14 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
 DLL_PUBLIC inline void closestPtIndToPt(gcs::SurfaceMesh &mesh,
                                         gcs::VertexPositionGeometry &vpg,
                                         std::vector<double> position,
-                                        size_t &ptInd) {
-  ptInd = 0;
+                                        gcs::Vertex &theVertex) {
   double shorestDistance = 1e18;
   gc::Vector3 position_vec{position[0], position[1], position[2]};
   for (gcs::Vertex v : mesh.vertices()) {
     double distance = (vpg.inputVertexPositions[v] - position_vec).norm();
     if (distance < shorestDistance) {
       shorestDistance = distance;
-      ptInd = v.getIndex();
+      theVertex = v;
     }
   }
 }
@@ -359,28 +324,6 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
                     axes[1] * axes[1]);
       distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
     }
-  }
-}
-
-/**
- * @brief compute the cross length ratio of the geometry
- *
- * @param manifold mesh
- * @param vertex position geometry
- * @param edgedata cross length ratio
- */
-DLL_PUBLIC inline void getCrossLengthRatio(gcs::ManifoldSurfaceMesh &mesh,
-                                           gcs::VertexPositionGeometry &vpg,
-                                           gcs::EdgeData<double> &clr) {
-  for (gcs::Edge e : mesh.edges()) {
-    gcs::Edge lj = e.halfedge().next().edge();
-    gcs::Edge ki = e.halfedge().twin().next().edge();
-    gcs::Edge il = e.halfedge().next().next().edge();
-    gcs::Edge jk = e.halfedge().twin().next().next().edge();
-    // clr[e] = edgeLength[il] * edgeLength[jk] / edgeLength[ki] /
-    //          edgeLength[lj];
-    clr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-             vpg.edgeLengths[lj];
   }
 }
 

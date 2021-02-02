@@ -249,7 +249,7 @@ bool conjugateGradient(System &f, double dt, double init_time,
   if (verbosity > 0) {
     fd.createNewFile(outputDir + trajFileName, f.mesh, f.refVpg,
                      TrajFile::NcFile::replace);
-    fd.writeMask(f.mask.cast<int>());
+    fd.writeMask(f.mask.raw().cast<int>());
     fd.writeRefVolume(f.refVolume);
     fd.writeRefSurfArea(f.targetSurfaceArea);
   }
@@ -263,7 +263,7 @@ bool conjugateGradient(System &f, double dt, double init_time,
     vel_e = f.M * (physicalPressure + DPDPressure + regularizationForce);
 
     // compute the L2 error norm
-    f.getL2ErrorNorm(physicalPressure);
+    f.L2ErrorNorm = f.getL2Norm(physicalPressure);
 
     // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
@@ -323,14 +323,14 @@ bool conjugateGradient(System &f, double dt, double init_time,
                   << "n: " << frame << "\n"
                   << "dA: " << dArea << ", "
                   << "dVP: " << dVP << ", "
-                  << "h: "
-                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
+                  << "h: " << abs(f.vpg.inputVertexPositions[f.theVertex].z)
                   << "\n"
                   << "E_total: " << f.E.totalE << "\n"
                   << "|e|L2: " << f.L2ErrorNorm << "\n"
-                  << "H: [" << f.H.minCoeff() << "," << f.H.maxCoeff() << "]"
+                  << "H: [" << f.H.raw().minCoeff() << ","
+                  << f.H.raw().maxCoeff() << "]"
                   << "\n"
-                  << "K: [" << f.K.minCoeff() << "," << f.K.maxCoeff() << "]"
+                  << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff() << "]"
                   << std::endl;
         // << "COM: "
         // << gc::EigenMap<double,
@@ -383,7 +383,7 @@ bool conjugateGradient(System &f, double dt, double init_time,
 
     // vertex shift for regularization
     if (f.isVertexShift) {
-      vertexShift(f.mesh, f.vpg, f.mask);
+      f.vertexShift();
     }
 
     // time stepping on protein density

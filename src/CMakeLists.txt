@@ -15,6 +15,7 @@
 set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/pressure.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/energy.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/regularization.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/init.cpp"
     
     "${CMAKE_CURRENT_SOURCE_DIR}/stormer_verlet.cpp"
