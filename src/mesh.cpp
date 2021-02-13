@@ -53,6 +53,7 @@ void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
   EigenTopVec faces;
   igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
             ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
+
   std::tie(ptrMesh, ptrVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
 }
