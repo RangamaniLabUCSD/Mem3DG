@@ -260,10 +260,10 @@ bool conjugateGradient(System &f, double dt, double init_time,
 
     // compute summerized forces
     getForces(f, physicalPressure, DPDPressure, regularizationForce);
-    vel_e = f.M * (physicalPressure + DPDPressure + regularizationForce);
+    vel_e = f.M * (physicalPressure + DPDPressure)  + regularizationForce;
 
     // compute the L2 error norm
-    f.L2ErrorNorm = f.getL2Norm(physicalPressure);
+    f.L2ErrorNorm = f.getL2Norm(vel_e);
 
     // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())

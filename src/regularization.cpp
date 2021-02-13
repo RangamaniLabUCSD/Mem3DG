@@ -119,52 +119,10 @@ void System::vertexShift() {
 }
 
 void System::edgeFlip() {
-  for (gcs::Edge e : mesh.edges()) {
-    if (!e.isBoundary()) {
-      gcs::Halfedge he = e.halfedge();
-      double sum = vpg.cornerAngles[he.next().next().corner()] +
-                   vpg.cornerAngles[he.twin().next().next().corner()];
-      isFlip[e] = (sum > constants::PI);
-    }
-  }
-  for (gcs::Edge e : mesh.edges()) {
-    if (isFlip[e]) {
-      mesh.flip(e);
-    }
-  }
 }
 
 void System::growMesh() {
-  double A_ = surfaceArea / (mesh.nFaces());
-  for (gcs::Edge e : mesh.edges()) {
-    // if (!e.isBoundary()) {
-    //   gcs::Halfedge he = e.halfedge();
-    //   double sum = vpg.faceAreas[he.face()] +
-    //   vpg.faceAreas[he.twin().face()]; isSplit[e] = (sum > 2 * A_);
-    //   isCollapse[e] = (sum < 2 * A_);
-    // }
-    if (e.getIndex() == 7) {
-      isSplit[e] = true;
-    }
-  }
-  for (gcs::Edge e : mesh.edges()) {
-    if (isSplit[e]) {
-      gc::Vector3 location =
-          (vpg.inputVertexPositions[(e.halfedge().vertex())] +
-           vpg.inputVertexPositions[(e.halfedge().next().vertex())]) /
-          2;
-      gcs::Vertex v = mesh.splitEdgeTriangular(e).vertex();
-      vpg.inputVertexPositions[v] = location;
-    }
-    if (isCollapse[e]) {
-      gc::Vector3 location =
-          (vpg.inputVertexPositions[(e.halfedge().vertex())] +
-           vpg.inputVertexPositions[(e.halfedge().next().vertex())]) /
-          2;
-      gcs::Vertex v = mesh.collapseEdgeTriangular(e);
-      vpg.inputVertexPositions[v] = location;
-    }
-  }
+
 }
 
 } // namespace mem3dg

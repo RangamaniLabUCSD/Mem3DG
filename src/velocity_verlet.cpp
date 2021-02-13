@@ -260,7 +260,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     newTotalPressure = physicalPressure + DPDPressure;
 
     // compute the L2 error norm
-    f.L2ErrorNorm = f.getL2Norm(physicalPressure);
+    f.L2ErrorNorm = f.getL2Norm(f.M * physicalPressure + regularizationForce);
 
     // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
@@ -307,7 +307,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
       // save variable to netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-          if (verbosity > 0) {
+      if (verbosity > 0) {
         saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
       }
 #endif
@@ -367,13 +367,6 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
       f.vertexShift();
     }
 
-    // f.growMesh();
-    // f.edgeFlip();
-    // f.mesh.compress();
-    // f.richData.addMeshConnectivity();
-    // f.richData.addGeometry(f.vpg);
-    // f.richData.write(outputDir + "/changedTopology.ply");
-
     // time stepping on protein density
     if (f.isProtein) {
       f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
@@ -381,7 +374,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
     // recompute cached values
     f.updateVertexPositions();
-    
+
   } // integration
 
   // stop the timer and report time spent
