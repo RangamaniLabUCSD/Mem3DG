@@ -192,7 +192,7 @@ public:
   /// Volume
   double volume;
   /// Interface Area;
-  double interArea;
+  double interfacialArea;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position

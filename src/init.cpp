@@ -183,10 +183,10 @@ void System::updateVertexPositions() {
   surfaceArea = vpg.faceAreas.raw().sum();
 
   // initialize/update intersection area
-  interArea = 0.0;
+  interfacialArea = 0.0;
   for (gcs::Vertex v : mesh.vertices()) {
     if ((H0[v] > (0.1 * P.H0)) && (H0[v] < (0.9 * P.H0)) && (H[v] != 0)) {
-      interArea += vpg.vertexDualAreas[v];
+      interfacialArea += vpg.vertexDualAreas[v];
     }
   }
 

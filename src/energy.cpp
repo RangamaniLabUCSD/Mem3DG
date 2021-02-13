@@ -66,7 +66,7 @@ void System::getChemicalEnergy() {
 void System::getLineTensionEnergy() {
   E.lE = 0;
   // TODO: 
-  // E.lE = (P.eta * interArea * P.sharpness);
+  // E.lE = (P.eta * interfacialArea * P.sharpness);
 }
 
 void System::getExternalForceEnergy() {
@@ -114,8 +114,13 @@ void System::getFreeEnergy() {
   E.totalE = E.kE + E.potE;
 }
 
-double System::getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const {
-  return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
+double System::getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
+  // return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
+ 
+  return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
+
+  // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
+  // return (M * rowwiseDotProduct(pressure, vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
 }
 
 } // namespace mem3dg
