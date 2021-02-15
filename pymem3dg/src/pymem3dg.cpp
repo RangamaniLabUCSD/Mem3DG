@@ -35,20 +35,39 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                             R"delim(
         The system
     )delim");
-  system.def(py::init<gcs::ManifoldSurfaceMesh &, gcs::VertexPositionGeometry &,
-                      gcs::VertexPositionGeometry &, gcs::RichSurfaceMeshData &,
-                      Parameters &, bool, bool, bool, bool>());
-  system.def("getBindingForces", &System::getBendingPressure,
+  system.def(py::init<std::string, std::string, size_t, Parameters &, bool,
+                      bool, bool, bool>());
+
+//   system.def(py::init<gcs::ManifoldSurfaceMesh &,
+//                       gcs::VertexPositionGeometry &,
+//                       gcs::VertexPositionGeometry &,
+//                       Parameters &, bool, bool, bool, bool>());
+
+  system.def("getBendingPressure", &System::getBendingPressure,
              R"delim(
-        get the bending pressures
-    )delim");
+          get the bending pressures
+      )delim");
+
+  system.def("getInsidePressure", &System::getInsidePressure,
+             R"delim(
+          get the inside pressures
+      )delim");
 
   system.def_readwrite("insidePressure", &System::insidePressure,
-             R"delim(
-        get the bending pressures
-    )delim");
+                       R"delim(
+          get the bending pressures
+      )delim");
 
-  pymem3dg.def("system_ply", &system_ply, 
+  py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
+        The parameters
+    )delim");
+  parameters.def(
+      py::init<double, double, double, std::vector<double>, double, double,
+               double, double, double, double, double, double, double, double,
+               double, double, double, std::vector<double>, double, double,
+               double, double, double, double>());
+
+  pymem3dg.def("system_ply", &system_ply,
                "Run single simulation starting with .ply files",
                py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
                py::arg("nSub"), py::arg("isReducedVolume"),
@@ -65,9 +84,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("ctol"), py::arg("isAugmentedLagrangian"),
                R"delim(
         )delim");
-
-  pymem3dg.def("genIcosphere", &genIcosphere, "Generate a icosphere .ply file",
-               py::arg("nSub"), py::arg("path"), py::arg("R"));
 
   pymem3dg.def(
       "viewer_ply", &viewer_ply,

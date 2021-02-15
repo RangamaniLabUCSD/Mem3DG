@@ -12,14 +12,122 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#ifdef MEM3DG_WITH_NETCDF
+#include "mem3dg/solver/trajfile.h"
+#endif
 #include "mem3dg/solver/system.h"
 #include <iomanip>
 
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
+
 namespace mem3dg {
+
+#ifdef MEM3DG_WITH_NETCDF
+
+void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
+  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  fd.getNcFrame(startingFrame);
+  gc::EigenMap<double, 3>(vel) = fd.getVelocity(startingFrame);
+  time = fd.getTime(startingFrame);
+  proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+  updateVertexPositions();
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub,
+                     bool isContinue) {
+
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+
+  std::cout << "Loading input mesh from trajectory file " << trajFile;
+  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  fd.getNcFrame(startingFrame);
+  std::cout << "of frame " << startingFrame << " ...";
+  coords = fd.getCoords(startingFrame);
+  std::tie(mesh, vpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
+  std::cout << "Finished!" << std::endl;
+
+  /// Load reference geometry ptrRefVpg onto ptrMesh object
+  std::cout << "Loading reference mesh from trajectory file" << trajFile
+            << " ...";
+  std::tie(referenceMesh, referenceVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(fd.getRefcoordinate(),
+                                              fd.getTopology());
+  std::cout << "Finished!" << std::endl;
+
+  /// Subdivide the mesh and geometry objects
+  if (nSub > 0 && isContinue) {
+    throw std::runtime_error("Cannot map continuation parameters if nSub > 0");
+  }
+  if (nSub > 0) {
+    std::cout << "Subdivide input and reference mesh " << nSub
+              << " time(s) ...";
+    mem3dg::loopSubdivide(mesh, vpg, nSub);
+    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
+    std::cout << "Finished!" << std::endl;
+  }
+
+  // reinterpret referenceVpg to mesh instead of referenceMesh
+  refVpg = referenceVpg->reinterpretTo(*mesh);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+}
+#endif
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
+
+  // assumes that the input and reference
+  // coordinates are using the same mesh
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+
+  // Load input mesh and geometry
+  std::cout << "Loading input mesh " << inputMesh << " ...";
+  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::cout << "Finished!" << std::endl;
+
+  // Load input reference mesh and geometry
+  std::cout << "Loading reference mesh " << refMesh << " ...";
+  std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
+  std::cout << "Finished!" << std::endl;
+
+  // Subdivide the mesh and geometry objects
+  if (nSub > 0) {
+    std::cout << "Subdivide input and reference mesh " << nSub
+              << " time(s) ...";
+    // mem3dg::subdivide(mesh, vpg, nSub);
+    // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
+    mem3dg::loopSubdivide(mesh, vpg, nSub);
+    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
+    std::cout << "Finished!" << std::endl;
+  }
+
+  // reinterpret referenceVpg to mesh instead of referenceMesh
+  refVpg = referenceVpg->reinterpretTo(*mesh);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+}
 
 void System::checkParameters() {
   // check validity of parameters / options
-  if (mesh.hasBoundary()) {
+  if (mesh->hasBoundary()) {
     if (isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
       throw std::logic_error(
           "For open boundary simulation, isReducedVolume has to be false, Vt "
@@ -102,31 +210,34 @@ void System::initConstants() {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
-  /// compute constant values during simulation
+  // Initialize RichData
+  richData.addMeshConnectivity();
+  richData.addGeometry(*vpg);
+
+  // compute constant values during simulation
   // Find the closest point index to P.pt in refVpg
-  closestPtIndToPt(mesh, refVpg, P.pt, ptInd);
+  closestPtIndToPt(*mesh, *refVpg, P.pt, ptInd);
 
   // Initialize the constant mask based on distance from the point specified
-  mask =
-      (heatMethodDistance(refVpg, mesh.vertex(ptInd)).raw().array() < P.radius)
-          .matrix();
+  heatMethodDistance(*vpg, mesh->vertex(ptInd));
+  mask = (heatMethodDistance(*refVpg, mesh->vertex(ptInd)).raw().array() <
+          P.radius)
+             .matrix();
+
   // Mask boundary element
-  if (mesh.hasBoundary()) {
-    boundaryMask(mesh, mask);
+  if (mesh->hasBoundary()) {
+    boundaryMask(*mesh, mask);
   }
 
   // Initialize the constant target face/surface areas
-  targetFaceAreas = refVpg.faceAreas;
+  targetFaceAreas = refVpg->faceAreas;
   targetSurfaceArea = targetFaceAreas.raw().sum();
 
-  // Initialize the constant target edge length
-  targetEdgeLengths = refVpg.edgeLengths.reinterpretTo(mesh);
-
   // Initialize the target constant cross length ration
-  getCrossLengthRatio(mesh, refVpg, targetLcr);
+  getCrossLengthRatio(*mesh, *refVpg, targetLcr);
 
   // Initialize the constant reference volume
-  if (mesh.hasBoundary()) {
+  if (mesh->hasBoundary()) {
     refVolume = 0.0;
   } else {
     refVolume = std::pow(targetSurfaceArea / constants::PI / 4, 1.5) *
@@ -134,22 +245,22 @@ void System::initConstants() {
   }
 
   // Initialize the constant spontaneous curvature
-  H0.setConstant(mesh.nVertices(), 1, P.H0);
+  H0.setConstant(mesh->nVertices(), 1, P.H0);
 }
 
 void System::updateVertexPositions() {
-  vpg.refreshQuantities();
+  vpg->refreshQuantities();
 
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-  auto positions = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
+  auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
 
   // initialize/update Laplacian matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // initialize/update distance from the point specified
-  // if (isLocalCurvature) {
-  //   geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh.vertex(ptInd));
-  // }
+  if (isLocalCurvature) {
+    geodesicDistanceFromPtInd = heatSolver.computeDistance(mesh->vertex(ptInd));
+  }
 
   // initialize/update spontaneous curvature (protein binding)
   if (isProtein) {
@@ -161,7 +272,7 @@ void System::updateVertexPositions() {
 
   // initialize/update spontaneous curvature (local spontaneous curvature)
   if (isLocalCurvature) {
-    tanhDistribution(vpg, H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
+    tanhDistribution(*vpg, H0, geodesicDistanceFromPtInd.raw(), P.sharpness,
                      P.r_H0);
     H0 *= P.H0;
   }
@@ -170,24 +281,24 @@ void System::updateVertexPositions() {
   H = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
 
   // initialize/update Gaussian curvature
-  K = M_inv * vpg.vertexGaussianCurvatures.raw();
+  K = M_inv * vpg->vertexGaussianCurvatures.raw();
 
   /// initialize/update enclosed volume
   volume = 0;
-  for (gcs::Face f : mesh.faces()) {
+  for (gcs::Face f : mesh->faces()) {
     volume += signedVolumeFromFace(
-        f, vpg, refVpg.inputVertexPositions[mesh.vertex(ptInd)]);
+        f, *vpg, refVpg->inputVertexPositions[mesh->vertex(ptInd)]);
   }
 
   // initialize/update total surface area
-  surfaceArea = vpg.faceAreas.raw().sum();
+  surfaceArea = vpg->faceAreas.raw().sum();
 
   // initialize/update intersection area
   interArea = 0.0;
-  for (gcs::Vertex v : mesh.vertices()) {
+  for (gcs::Vertex v : mesh->vertices()) {
     if ((H0[v.getIndex()] > (0.1 * P.H0)) &&
         (H0[v.getIndex()] < (0.9 * P.H0)) && (H[v.getIndex()] != 0)) {
-      interArea += vpg.vertexDualAreas[v];
+      interArea += vpg->vertexDualAreas[v];
     }
   }
 
@@ -195,6 +306,6 @@ void System::updateVertexPositions() {
   getExternalPressure();
 
   // initialize/update the vertex position of the last iteration
-  pastPositions = vpg.inputVertexPositions;
+  pastPositions = vpg->inputVertexPositions;
 }
 } // namespace mem3dg

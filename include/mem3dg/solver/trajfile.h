@@ -422,6 +422,21 @@ public:
   };
 
   /**
+   * @brief Netcdf file frame reader
+   *
+   * @param frame reference to the frame index
+   *
+   */
+  void getNcFrame(int &frame) const {
+    int maxFrame = getNextFrameIndex() - 1;
+    if (frame > maxFrame || frame < -(maxFrame + 1)) {
+      throw std::runtime_error("Snapshot frame exceed limiting frame index!");
+    } else if (frame < 0) {
+      frame = frame + maxFrame + 1;
+    }
+  }
+
+  /**
    * @brief Destructor frees the bound NcFile
    */
   ~TrajFile() { delete fd; };
@@ -446,7 +461,9 @@ public:
 
   void writeCoords(const std::size_t idx, const EigenVector &data);
 
-  std::tuple<double, EigenVector> getTimeAndCoords(const std::size_t idx) const;
+  double getTime(const std::size_t idx) const;
+
+  EigenVector getCoords(const std::size_t idx) const;
 
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
   getTopology() const;
@@ -482,8 +499,9 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getMeanCurvature(const std::size_t idx) const;
 
-  void writeGaussCurvature(const std::size_t idx,
-                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+  void
+  writeGaussCurvature(const std::size_t idx,
+                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getGaussCurvature(const std::size_t idx) const;

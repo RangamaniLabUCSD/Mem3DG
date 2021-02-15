@@ -42,8 +42,7 @@ void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
 
 void saveRichData(
-    const System &f,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+    System &f, const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity);
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -77,13 +76,13 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
 
   // calculate initial energy as reference level
   Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
-      gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   double init_time = time;
 
   // declare variables used in backtracking iterations
   double alpha = dt;
   size_t count = 0;
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
   pos_e += alpha * direction;
   f.updateVertexPositions();
@@ -215,11 +214,11 @@ void reducedVolumeThreshold(System &f, bool &EXIT,
   }
 }
 
-bool conjugateGradient(System &f, double dt, double init_time,
-                       double total_time, double tSave, double tol, double ctol,
-                       const size_t verbosity, std::string outputDir,
-                       const bool isBacktrack, const double rho,
-                       const double c1, const bool isAugmentedLagrangian,
+bool conjugateGradient(System &f, double dt, double total_time, double tSave,
+                       double tol, double ctol, const size_t verbosity,
+                       std::string outputDir, const bool isBacktrack,
+                       const double rho, const double c1,
+                       const bool isAugmentedLagrangian,
                        const bool isAdaptiveStep,
                        const std::string trajFileName) {
 #ifdef __linux__
@@ -231,23 +230,23 @@ bool conjugateGradient(System &f, double dt, double init_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDPressure, direction;
-  double dArea, dVP, currentNormSq, pastNormSq, time = init_time;
+  double dArea, dVP, currentNormSq, pastNormSq, init_time = f.time;
   size_t frame = 0;
   bool EXIT = false, SUCCESS = true;
 
   // initialize variables used if adopting adaptive time step based on mesh size
-  double dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
-                          f.vpg.edgeLengths.raw().minCoeff();
+  double dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
+                          f.vpg->edgeLengths.raw().minCoeff();
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + trajFileName, f.mesh, f.refVpg,
+    fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
     fd.writeRefVolume(f.refVolume);
@@ -266,13 +265,13 @@ bool conjugateGradient(System &f, double dt, double init_time,
     f.getL2ErrorNorm(physicalPressure);
 
     // compute the area contraint error
-    dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
+    dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
 
     if (f.isReducedVolume) {
       // compute volume constraint error
-      dVP = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+      dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
                 ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                 : 0.0;
       // thresholding, exit if fulfilled and iterate if not
@@ -280,14 +279,14 @@ bool conjugateGradient(System &f, double dt, double init_time,
                              tol, 1.3);
     } else {
       // compute pressure constraint error
-      dVP = (!f.mesh.hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
+      dVP = (!f.mesh->hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
       // thresholding, exit if fulfilled and iterate if not
       pressureConstraintThreshold(f, EXIT, isAugmentedLagrangian, dArea, ctol,
                                   tol, 1.3);
     }
 
     // exit if reached time
-    if (time > total_time) {
+    if (f.time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
       SUCCESS = false;
@@ -298,8 +297,8 @@ bool conjugateGradient(System &f, double dt, double init_time,
 
     // Save files every tSave period and print some info
     static double lastSave;
-    if (time - lastSave >= tSave - 1e-12 || time == init_time || EXIT) {
-      lastSave = time;
+    if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
+      lastSave = f.time;
 
       // save variable to richData and save ply file
       if (verbosity > 3) {
@@ -312,19 +311,19 @@ bool conjugateGradient(System &f, double dt, double init_time,
 #ifdef MEM3DG_WITH_NETCDF
       // save variable to netcdf traj file
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
+        saveNetcdfData(f, frame, f.time, fd, physicalPressure, verbosity);
       }
 #endif
 
       // print in-progress information in the console
       if (verbosity > 1) {
         std::cout << "\n"
-                  << "t: " << time << ", "
+                  << "t: " << f.time << ", "
                   << "n: " << frame << "\n"
                   << "dA: " << dArea << ", "
                   << "dVP: " << dVP << ", "
                   << "h: "
-                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
+                  << abs(f.vpg->inputVertexPositions[f.mesh->vertex(f.ptInd)].z)
                   << "\n"
                   << "E_total: " << f.E.totalE << "\n"
                   << "|e|L2: " << f.L2ErrorNorm << "\n"
@@ -334,8 +333,8 @@ bool conjugateGradient(System &f, double dt, double init_time,
                   << std::endl;
         // << "COM: "
         // << gc::EigenMap<double,
-        // 3>(f.vpg.inputVertexPositions).colwise().sum() /
-        //         f.vpg.inputVertexPositions.raw().rows()
+        // 3>(f.vpg->inputVertexPositions).colwise().sum() /
+        //         f.vpg->inputVertexPositions.raw().rows()
         // << "\n"
       }
     }
@@ -355,7 +354,7 @@ bool conjugateGradient(System &f, double dt, double init_time,
 
     // determine conjugate gradient direction, restart after nVertices() cycles
     size_t countCG = 0;
-    if (countCG % (f.mesh.nVertices() + 1) == 0) {
+    if (countCG % (f.mesh->nVertices() + 1) == 0) {
       pastNormSq = vel_e.squaredNorm();
       direction = vel_e;
       countCG = 0;
@@ -368,22 +367,22 @@ bool conjugateGradient(System &f, double dt, double init_time,
 
     // adjust time step if adopt adaptive time step based on mesh size
     if (isAdaptiveStep) {
-      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
       dt = dt_size2_ratio * minMeshLength * minMeshLength;
     }
 
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
+      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
                 direction);
     } else {
       pos_e += direction * dt;
-      time += dt;
+      f.time += dt;
     }
 
     // vertex shift for regularization
     if (f.isVertexShift) {
-      vertexShift(f.mesh, f.vpg, f.mask);
+      vertexShift(*f.mesh, *f.vpg, f.mask);
     }
 
     // time stepping on protein density
@@ -428,8 +427,8 @@ void feedForwardSweep(System &f, std::vector<double> H_,
   // initialize variables used if adopting adaptive time step based on mesh size
   double dt_size2_ratio;
   if (isAdaptiveStep) {
-    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
-                     f.vpg.edgeLengths.raw().minCoeff();
+    dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
+                     f.vpg->edgeLengths.raw().minCoeff();
   }
 
   // parameter sweep
@@ -446,7 +445,7 @@ void feedForwardSweep(System &f, std::vector<double> H_,
 
       // adjust time step if adopt adaptive time step based on mesh size
       if (isAdaptiveStep) {
-        double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+        double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
         dt = dt_size2_ratio * minMeshLength * minMeshLength;
       }
 
@@ -465,7 +464,7 @@ void feedForwardSweep(System &f, std::vector<double> H_,
 
       // rerun CG optimization
       bool success = conjugateGradient(
-          f, dt, init_time, maxTime, tSave, tol, ctol, verbosity, outputDir,
+          f, dt, maxTime, tSave, tol, ctol, verbosity, outputDir,
           isBacktrack, rho, c1, isAugmentedLagrangian, isAdaptiveStep, buffer);
 
       // mark "failed" is CG returns false

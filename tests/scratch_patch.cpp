@@ -27,61 +27,10 @@ int main() {
   std::string inputMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
                           "examples//patch_bud//input-"
                           "file//patch.ply";
-  std::cout << "Loading input mesh " << inputMesh << " ...";
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-
-  /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
-  std::tie(ptrMesh, ptrRichData) =
-  gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
-  connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
-  std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  gcs::ManifoldSurfaceMesh &mesh = *ptrMesh;
-  gcs::VertexPositionGeometry &vpg = *ptrVpg;
-  std::cout << "Finished!" << std::endl;
-
-  // To ensure that refVpg maps to mesh, take detour
-  // by first read and then construct
   std::string refMesh =
       "C://Users//Kieran//Dev//2020-Mem3DG-"
       "Applications//examples//patch_bud//input-file//patch.ply";
-  std::cout << "Loading reference mesh " << refMesh << " ...";
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrRefMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg_;
-  std::tie(ptrRefMesh, ptrRefVpg_) = gcs::readManifoldSurfaceMesh(refMesh);
-  gcs::VertexPositionGeometry *ptrRefVpg = new gcs::VertexPositionGeometry(
-      mesh, gc::EigenMap<double, 3>(ptrRefVpg_->inputVertexPositions));
 
-  std::cout << "Finished!" << std::endl;
-
-  // size_t nSub = 0;
-  // if (nSub > 0) {
-  //   std::cout << "Subdivide input and reference mesh " << nSub
-  //             << " time(s) ...";
-  //   Eigen::Matrix<double, Eigen::Dynamic, 3> coords;
-  //   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> faces;
-
-  //   Eigen::Matrix<double, Eigen::Dynamic, 3> refcoords;
-  //   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> reffaces;
-  //   // mem3dg::subdivide(ptrMesh, ptrVpg, nSub);
-  //   // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
-  //   igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
-  //             ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
-  //   igl::loop(gc::EigenMap<double, 3>(ptrRefVpg->inputVertexPositions),
-  //             ptrRefMesh->getFaceVertexMatrix<size_t>(), refcoords, reffaces,
-  //             nSub);
-  //   std::tie(ptrMesh, ptrVpg) =
-  //       gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
-  //   std::tie(ptrRefMesh, ptrRefVpg) =
-  //       gcs::makeManifoldSurfaceMeshAndGeometry(refcoords, reffaces);
-  //   std::cout << "Finished!" << std::endl;
-  // }
-
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*ptrVpg);
-
-  std::cout << "Initiating the system ...";
   /// physical parameters
   double Kb = 8.22e-5, H0 = 40, sharpness = 50, Kst = 0, Ksl = 0, Kse = 0,
          epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Pam = 0, Kf = 0,
@@ -94,27 +43,19 @@ int main() {
        isLocalCurvature = false;
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
-  if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
-    Vt = 1.0;
-    std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
-  }
+  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
+                       sigma, pt,  Kf,        conc, height, radius};
 
-  mem3dg::Parameters p{Kb,    H0,   sharpness, r_H0,  Ksg,           Kst,
-                       Ksl,   Kse,  Kv,        eta,   epsilon,       Bc,
-                       gamma, Vt,   Pam,       temp,  sigma + 1e-18, pt,
-                       Kf,    conc, height,    radius};
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
-                   isProtein, isLocalCurvature, isVertexShift);
-  std::cout << "Finished!" << std::endl;
+  mem3dg::System f(inputMesh, refMesh, 0, p, isReducedVolume, isProtein,
+                   isLocalCurvature, isVertexShift);
 
-  std::cout << "Solving the system ..." << std::endl;
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
-  mem3dg::integration::euler(f, h, 0, T, tSave, eps, verbosity, outputDir, true,
+  mem3dg::integration::euler(f, h, T, tSave, eps, verbosity, outputDir, true,
                              0.5, 1e-4, true);
 
-  delete ptrRefVpg;
   return 0;
 }

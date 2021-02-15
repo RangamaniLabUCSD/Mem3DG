@@ -20,7 +20,7 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
-  gcs::FaceData<size_t> faceInd = f.vpg.faceIndices;
+  gcs::FaceData<size_t> faceInd = f.vpg->faceIndices;
   gc::Vector3 totalForce;
   for (size_t i = 0; i < total_time / dt; i++) {
     /*polyscope::registerSurfaceMesh("myMesh",
@@ -28,7 +28,7 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
             ptrMesh->getFaceVertexList());*/
     // polyscope::show();
     gc::EigenMap<double, 3>(f.vel) =
-        (gc::EigenMap<double, 3>(f.vpg.inputVertexPositions) -
+        (gc::EigenMap<double, 3>(f.vpg->inputVertexPositions) -
          gc::EigenMap<double, 3>(f.pastPositions)) /
         dt;
     f.getBendingPressure();
@@ -37,8 +37,8 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
     f.getDPDForces();
     f.getExternalPressure();
 
-    gcs::VertexData<gc::Vector3> temp = f.vpg.inputVertexPositions;
-    for (gcs::Vertex v : f.mesh.vertices()) {
+    gcs::VertexData<gc::Vector3> temp = f.vpg->inputVertexPositions;
+    for (gcs::Vertex v : f.mesh->vertices()) {
       bool flag = true;
       for (gcs::Face f : v.adjacentFaces()) {
         if (faceInd[f] == 0) {
@@ -47,14 +47,14 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
         }
       }
       if (flag == true) {
-        f.vpg.inputVertexPositions[v] *= 2;
+        f.vpg->inputVertexPositions[v] *= 2;
         totalForce = f.bendingPressure[v] + f.capillaryPressure[v] +
-                     f.insidePressure * f.vpg.vertexNormals[v] +
+                     f.insidePressure * f.vpg->vertexNormals[v] +
                      f.externalPressure[v] +
                      ((f.dampingForce[v] + f.stochasticForce[v] +
                        f.regularizationForce[v]) /
-                      f.vpg.vertexDualAreas[v]);
-        f.vpg.inputVertexPositions[v] +=
+                      f.vpg->vertexDualAreas[v]);
+        f.vpg->inputVertexPositions[v] +=
             totalForce * dt * dt - f.pastPositions[v];
       }
     }

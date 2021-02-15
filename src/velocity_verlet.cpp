@@ -61,7 +61,7 @@ void getForces(System &f,
       f.mask.cast<double>(),
       gc::EigenMap<double, 3>(f.bendingPressure) +
           gc::EigenMap<double, 3>(f.capillaryPressure) +
-          f.insidePressure * gc::EigenMap<double, 3>(f.vpg.vertexNormals) +
+          f.insidePressure * gc::EigenMap<double, 3>(f.vpg->vertexNormals) +
           gc::EigenMap<double, 3>(f.externalPressure) +
           gc::EigenMap<double, 3>(f.lineTensionPressure));
 
@@ -73,12 +73,12 @@ void getForces(System &f,
                      f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
                                 gc::EigenMap<double, 3>(f.stochasticForce)));
 
-  if (!f.mesh.hasBoundary()) {
+  if (!f.mesh->hasBoundary()) {
     removeTranslation(physicalPressure);
-    removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+    removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
                    physicalPressure);
     // removeTranslation(DPDPressure);
-    // removeRotation(EigenMap<double, 3>(f.vpg.inputVertexPositions),
+    // removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
     // DPDPressure);
   }
 }
@@ -91,31 +91,31 @@ void getForces(System &f,
  * @return
  */
 void saveRichData(
-    const System &f,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+    System &f, const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity) {
-  gcs::VertexData<double> H(f.mesh), K(f.mesh), H0(f.mesh), fn(f.mesh),
-      f_ext(f.mesh), fb(f.mesh), fl(f.mesh), ft(f.mesh);
+  gcs::VertexData<double> H(*f.mesh), K(*f.mesh), H0(*f.mesh), fn(*f.mesh),
+      f_ext(*f.mesh), fb(*f.mesh), fl(*f.mesh), ft(*f.mesh);
 
   H.fromVector(f.H);
   K.fromVector(f.K);
   H0.fromVector(f.H0);
   fn.fromVector(rowwiseDotProduct(
-      physicalPressure, gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+      physicalPressure, gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
   f_ext.fromVector(
       rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+                        gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
   fb.fromVector(
       rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+                        gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
   fl.fromVector(
       rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                        gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                                   gc::EigenMap<double, 3>(f.vpg.vertexNormals))
-                     .array() /
-                 f.H.array() / 2)
-                    .matrix());
+                        gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
+  ft.fromVector(
+      (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
+                         gc::EigenMap<double, 3>(f.vpg->vertexNormals))
+           .array() /
+       f.H.array() / 2)
+          .matrix());
 
   f.richData.addVertexProperty("mean_curvature", H);
   f.richData.addVertexProperty("gauss_curvature", K);
@@ -148,16 +148,16 @@ void saveNetcdfData(
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft, fp;
 
   f_ext = rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
-                            gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+                            gc::EigenMap<double, 3>(f.vpg->vertexNormals));
   fb = rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
   fl = rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
   ft = (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                          gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
-  fp.setConstant(f.mesh.nVertices(), 1, f.insidePressure);
+                          gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
+  fp.setConstant(f.mesh->nVertices(), 1, f.insidePressure);
   fn = rowwiseDotProduct(physicalPressure,
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals));
+                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
 
   frame = fd.getNextFrameIndex();
 
@@ -165,15 +165,15 @@ void saveNetcdfData(
   fd.writeTime(frame, time);
 
   // write geometry
-  fd.writeCoords(frame, EigenMap<double, 3>(f.vpg.inputVertexPositions));
+  fd.writeCoords(frame, EigenMap<double, 3>(f.vpg->inputVertexPositions));
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
   fd.writeMeanCurvature(frame, f.H);
   fd.writeGaussCurvature(frame, f.K);
   fd.writeSponCurvature(frame, f.H0);
   fd.writeHeight(frame,
-                 abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z));
-  // fd.writeAngles(frame, f.vpg.cornerAngles.raw());
+                 abs(f.vpg->inputVertexPositions[f.mesh->vertex(f.ptInd)].z));
+  // fd.writeAngles(frame, f.vpg->cornerAngles.raw());
   // fd.writeH_H0_diff(frame,
   //                   ((f.H - f.H0).array() * (f.H -
   //                   f.H0).array()).matrix());
@@ -209,11 +209,11 @@ void saveNetcdfData(
                      f.getL2Norm(EigenMap<double, 3>(f.capillaryPressure)));
   fd.writeL2PressNorm(
       frame, f.getL2Norm(f.insidePressure *
-                         gc::EigenMap<double, 3>(f.vpg.vertexNormals)));
+                         gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
 }
 #endif
 
-void velocityVerlet(System &f, double dt, double init_time, double total_time,
+void velocityVerlet(System &f, double dt, double total_time,
                     double tSave, double tolerance, const size_t verbosity,
                     const bool isAdaptiveStep, std::string outputDir) {
 
@@ -221,15 +221,15 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
       regularizationForce, physicalPressure, DPDPressure;
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
-  double dArea, dVP, time = init_time; // double dRef;
+  double dArea, dVP, init_time = f.time; // double dRef;
   size_t frame = 0;
   bool EXIT = false;
 
   // initialize variables used if adopting adaptive time step based on mesh size
   double dt_size2_ratio;
   if (isAdaptiveStep) {
-    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
-                     f.vpg.edgeLengths.raw().minCoeff();
+    dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
+                     f.vpg->edgeLengths.raw().minCoeff();
   }
 
 // start the timer
@@ -240,13 +240,13 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
 // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
+    fd.createNewFile(outputDir + "/traj.nc", *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
     fd.writeRefVolume(f.refVolume);
@@ -258,7 +258,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
   for (;;) {
     // compute summerized forces
     getForces(f, physicalPressure, DPDPressure, regularizationForce);
-    totalPressure.resize(f.mesh.nVertices(), 3);
+    totalPressure.resize(f.mesh->nVertices(), 3);
     totalPressure.setZero();
     newTotalPressure = physicalPressure + DPDPressure;
 
@@ -266,18 +266,18 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     f.getL2ErrorNorm(physicalPressure);
 
     // compute the area contraint error
-    dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
+    dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
 
     if (f.isReducedVolume) {
       // compute volume constraint error
-      dVP = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+      dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
                 ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                 : 0.0;
     } else {
       // compute pressure constraint error
-      dVP = (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+      dVP = (!f.mesh->hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
     }
 
     // exit if under error tolerance
@@ -287,7 +287,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     }
 
     // exit if reached time
-    if (time > total_time) {
+    if (f.time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
     }
@@ -297,8 +297,8 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
     // Save files every tSave period and print some info
     static double lastSave;
-    if (time - lastSave >= tSave - 1e-12 || time == init_time || EXIT) {
-      lastSave = time;
+    if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
+      lastSave = f.time;
 
       // save variable to richData and save ply file
       if (verbosity > 3) {
@@ -311,19 +311,19 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
       // save variable to netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
+        saveNetcdfData(f, frame, f.time, fd, physicalPressure, verbosity);
       }
 #endif
 
       // print in-progress information in the console
       if (verbosity > 1) {
         std::cout << "\n"
-                  << "t: " << time << ", "
+                  << "t: " << f.time << ", "
                   << "n: " << frame << "\n"
                   << "dA: " << dArea << ", "
                   << "dVP: " << dVP << ", "
                   << "h: "
-                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
+                  << abs(f.vpg->inputVertexPositions[f.mesh->vertex(f.ptInd)].z)
                   << "\n"
                   << "E_total: " << f.E.totalE << "\n"
                   << "|e|L2: " << f.L2ErrorNorm << "\n"
@@ -333,8 +333,8 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
                   << std::endl;
         // << "COM: "
         // << gc::EigenMap<double,
-        // 3>(f.vpg.inputVertexPositions).colwise().sum() /
-        //         f.vpg.inputVertexPositions.raw().rows()
+        // 3>(f.vpg->inputVertexPositions).colwise().sum() /
+        //         f.vpg->inputVertexPositions.raw().rows()
         // << "\n"
       }
     }
@@ -354,7 +354,7 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
 
     // adjust time step if adopt adaptive time step based on mesh size
     if (isAdaptiveStep) {
-      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
       dt = dt_size2_ratio * minMeshLength * minMeshLength;
     }
 
@@ -363,11 +363,11 @@ void velocityVerlet(System &f, double dt, double init_time, double total_time,
     pos_e += regularizationForce * dt;
     vel_e += (totalPressure + newTotalPressure) * hdt;
     totalPressure = newTotalPressure;
-    time += dt;
+    f.time += dt;
 
     // vertex shift for regularization
     if (f.isVertexShift) {
-      vertexShift(f.mesh, f.vpg, f.mask);
+      vertexShift(*f.mesh, *f.vpg, f.mask);
     }
 
     // time stepping on protein density

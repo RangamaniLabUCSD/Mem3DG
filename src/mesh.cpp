@@ -35,13 +35,6 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void loadRefMesh(
-    std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
-    gcs::VertexPositionGeometry *&ptrRefVpg,
-    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords) {
-  ptrRefVpg = new gcs::VertexPositionGeometry(*ptrMesh, coords);
-}
-
 void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
                    std::unique_ptr<gcs::VertexPositionGeometry> &ptrVpg,
                    std::size_t nSub) {
@@ -106,35 +99,13 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
       mesh->getFaceVertexMatrix<size_t>());
 }
 
-int genIcosphere(size_t nSub, std::string path, double R) {
-  std::cout << "Constructing " << nSub << "-subdivided icosphere of radius "
-            << R << " ...";
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+icosphere(int n, double R) {
 
-  /// initialize mesh and vpg
-  std::unique_ptr<gcs::HalfedgeMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-
-  /// initialize icosphere
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
-  mem3dg::icosphere(coords, polygons, nSub, R);
-  gcs::SimplePolygonMesh soup(polygons, coords);
-  soup.mergeIdenticalVertices();
-  std::tie(ptrMesh, ptrVpg) =
-      gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
-  // writeSurfaceMesh(*ptrMesh, *ptrVpg, path);
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*ptrVpg);
-  richData.write(path);
 
-  std::cout << "Finished!" << std::endl;
-  return 0;
-}
-
-void icosphere(std::vector<gc::Vector3> &coords,
-               std::vector<std::vector<std::size_t>> &polygons, int n,
-               double R) {
   // Initialize vertex coordinates
   static const double t = (1.0 + sqrt(5.0)) / 2.0;
   auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
@@ -210,6 +181,11 @@ void icosphere(std::vector<gc::Vector3> &coords,
       coords[iter] *= R;
     }
   }
+
+  gcs::SimplePolygonMesh soup(polygons, coords);
+  soup.mergeIdenticalVertices();
+  return gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons,
+                                                 soup.vertexCoordinates);
 }
 
 void tetrahedron(std::vector<gc::Vector3> &coords,

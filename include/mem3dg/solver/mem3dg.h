@@ -34,7 +34,7 @@ int viewer_ply(std::string fileName, const bool mean_curvature = 0,
  *
  */
 
-mem3dg::System system_ply(
+std::unique_ptr<mem3dg::System> system_ply(
     const size_t verbosity, std::string inputMesh, std::string refMesh,
     size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
     bool isVertexShift, double Kb, double H0, double sharpness,
