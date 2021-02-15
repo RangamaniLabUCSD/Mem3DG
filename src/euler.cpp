@@ -48,8 +48,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
                const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
 
 void saveRichData(
-    const System &f,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
+    System &f, const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
     const size_t verbosity);
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -59,7 +58,7 @@ void saveNetcdfData(
     const size_t &verbosity);
 #endif
 
-bool euler(System &f, double dt, double init_time, double total_time,
+bool euler(System &f, double dt, double total_time,
            double tSave, double tolerance, const size_t verbosity,
            std::string outputDir, const bool isBacktrack, const double rho,
            const double c1, const bool isAdaptiveStep) {
@@ -67,15 +66,15 @@ bool euler(System &f, double dt, double init_time, double total_time,
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
       physicalPressure, DPDPressure;
-  double dArea, dVP, time = init_time;
+  double dArea, dVP, init_time = f.time;
   size_t frame = 0;
   bool EXIT = false, SUCCESS = true;
 
   // initialize variables used if adopting adaptive time step based on mesh size
   double dt_size2_ratio;
   if (isAdaptiveStep) {
-    dt_size2_ratio = dt / f.vpg.edgeLengths.raw().minCoeff() /
-                     f.vpg.edgeLengths.raw().minCoeff();
+    dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
+                     f.vpg->edgeLengths.raw().minCoeff();
   }
 
 // start the timer
@@ -86,13 +85,13 @@ bool euler(System &f, double dt, double init_time, double total_time,
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg.inputVertexPositions);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + "/traj.nc", f.mesh, f.refVpg,
+    fd.createNewFile(outputDir + "/traj.nc", *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.cast<int>());
     fd.writeRefVolume(f.refVolume);
@@ -110,18 +109,18 @@ bool euler(System &f, double dt, double init_time, double total_time,
     f.getL2ErrorNorm(physicalPressure);
 
     // compute the area contraint error
-    dArea = (f.P.Ksg != 0 && !f.mesh.hasBoundary())
+    dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
                 ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
                 : 0.0;
 
     if (f.isReducedVolume) {
       // compute volume constraint error
-      dVP = (f.P.Kv != 0 && !f.mesh.hasBoundary())
+      dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
                 ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                 : 0.0;
     } else {
       // compute pressure constraint error
-      dVP = (!f.mesh.hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+      dVP = (!f.mesh->hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
     }
 
     // exit if under error tolerance
@@ -131,7 +130,7 @@ bool euler(System &f, double dt, double init_time, double total_time,
     }
 
     // exit if reached time
-    if (time > total_time) {
+    if (f.time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
     }
@@ -141,8 +140,8 @@ bool euler(System &f, double dt, double init_time, double total_time,
 
     // Save files every tSave period and print some info
     static double lastSave;
-    if (time - lastSave >= tSave - 1e-12 || time == init_time || EXIT) {
-      lastSave = time;
+    if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
+      lastSave = f.time;
 
       // save variable to richData and save ply file
       if (verbosity > 3) {
@@ -155,19 +154,19 @@ bool euler(System &f, double dt, double init_time, double total_time,
 #ifdef MEM3DG_WITH_NETCDF
       // save variable to netcdf traj file
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, time, fd, physicalPressure, verbosity);
+        saveNetcdfData(f, frame, f.time, fd, physicalPressure, verbosity);
       }
 #endif
 
       // print in-progress information in the console
       if (verbosity > 1) {
         std::cout << "\n"
-                  << "t: " << time << ", "
+                  << "t: " << f.time << ", "
                   << "n: " << frame << "\n"
                   << "dA: " << dArea << ", "
                   << "dVP: " << dVP << ", "
                   << "h: "
-                  << abs(f.vpg.inputVertexPositions[f.mesh.vertex(f.ptInd)].z)
+                  << abs(f.vpg->inputVertexPositions[f.mesh->vertex(f.ptInd)].z)
                   << "\n"
                   << "E_total: " << f.E.totalE << "\n"
                   << "|e|L2: " << f.L2ErrorNorm << "\n"
@@ -177,8 +176,8 @@ bool euler(System &f, double dt, double init_time, double total_time,
                   << std::endl;
         // << "COM: "
         // << gc::EigenMap<double,
-        // 3>(f.vpg.inputVertexPositions).colwise().sum() /
-        //         f.vpg.inputVertexPositions.raw().rows()
+        // 3>(f.vpg->inputVertexPositions).colwise().sum() /
+        //         f.vpg->inputVertexPositions.raw().rows()
         // << "\n"
       }
     }
@@ -198,22 +197,22 @@ bool euler(System &f, double dt, double init_time, double total_time,
 
     // adjust time step if adopt adaptive time step based on mesh size
     if (isAdaptiveStep) {
-      double minMeshLength = f.vpg.edgeLengths.raw().minCoeff();
+      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
       dt = dt_size2_ratio * minMeshLength * minMeshLength;
     }
 
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
+      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
                 vel_e);
     } else {
       pos_e += vel_e * dt;
-      time += dt;
+      f.time += dt;
     }
 
     // vertex shift for regularization
     if (f.isVertexShift) {
-      vertexShift(f.mesh, f.vpg, f.mask);
+      vertexShift(*f.mesh, *f.vpg, f.mask);
     }
 
     // time stepping on protein density

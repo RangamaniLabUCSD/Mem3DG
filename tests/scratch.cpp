@@ -22,54 +22,40 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 int main() {
-  std::vector<gc::Vector3> coords;
-  std::vector<std::vector<std::size_t>> polygons;
-  mem3dg::icosphere(coords, polygons, 1, 1);
-  gcs::SimplePolygonMesh soup(polygons, coords);
-  soup.mergeIdenticalVertices();
+  // Initialize unique ptr to mesh and geometry object
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  std::tie(ptrMesh, ptrVpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      soup.polygons, soup.vertexCoordinates);
-  gcs::VertexPositionGeometry *ptrRefVpg =
-      new gcs::VertexPositionGeometry(*ptrMesh, ptrVpg->inputVertexPositions);
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg;
+  std::tie(ptrMesh, ptrVpg) = mem3dg::icosphere(1, 1);
+  ptrRefVpg = ptrVpg->reinterpretTo(*ptrMesh);
 
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*ptrVpg);
-
+  // List parameters
   double Kb = 8.22e-5, H0 = 0, sharpness = 10, Kst = 10, Ksl = 0, Kse = 0,
          epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Pam = 0, Kf = 0,
          conc = 25, height = 0, radius = 0.9, temp = 0, h = 5e-4, Kv = 5e-2,
          eta = 0, Ksg = 0.1;
   std::vector<double> pt = {1, 1, 1};
   std::vector<double> r_H0 = {100, 100};
-
   bool isProtein = false, isVertexShift = false, isReducedVolume = true,
        isLocalCurvature = false;
-
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  if (ptrMesh->hasBoundary() && (Vt != 1.0)) {
-    Vt = 1.0;
-    std::cout << "Geometry is a patch, so change Vt to 1.0!" << std::endl;
-  }
 
   std::cout << "Initiating the system ...";
   mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
                        Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
                        sigma, pt,  Kf,        conc, height, radius};
-  mem3dg::System f(*ptrMesh, *ptrVpg, *ptrRefVpg, richData, p, isReducedVolume,
-                   isProtein, isLocalCurvature, isVertexShift);
+  mem3dg::System f(std::move(ptrMesh), std::move(ptrVpg), std::move(ptrRefVpg),
+                   p, isReducedVolume, isProtein, isLocalCurvature,
+                   isVertexShift);
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100;
   size_t verbosity = 0;
-  mem3dg::integration::conjugateGradient(f, h, 0, T, tSave, eps, 0.01,
-                                         verbosity, "./", true, 0.5, 1e-4,
-                                         false, true, "/traj.nc");
+  mem3dg::integration::conjugateGradient(f, h, T, tSave, eps, 0.01, verbosity,
+                                         "./", true, 0.5, 1e-4, false, true,
+                                         "/traj.nc");
 
-  delete ptrRefVpg;
   return 0;
 }

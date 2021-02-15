@@ -119,8 +119,8 @@ void getStatusLog(std::string nameOfFile, System &f, double dt, double time,
         << f.surfaceArea / f.targetSurfaceArea << " target surface area"
         << "\n"
         << "COM (x, y, z):		 "
-        << gc::EigenMap<double, 3>(f.vpg.inputVertexPositions).colwise().sum() /
-               f.vpg.inputVertexPositions.raw().rows()
+        << gc::EigenMap<double, 3>(f.vpg->inputVertexPositions).colwise().sum() /
+               f.vpg->inputVertexPositions.raw().rows()
         << "\n";
 
     myfile << "\n";
