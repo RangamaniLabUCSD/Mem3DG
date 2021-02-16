@@ -33,7 +33,7 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void System::getBendingPressure() {
+EigenVectorX3D System::getBendingPressure() {
 
   // map the MeshData to eigen matrix XXX_e
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
@@ -66,6 +66,8 @@ void System::getBendingPressure() {
   bendingPressure_e =
       -P.Kb * rowwiseScaling(productTerms + lap_H, vertexAngleNormal_e);
 
+  return bendingPressure_e;
+
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
   // Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
@@ -93,7 +95,7 @@ void System::getBendingPressure() {
   //                    vertexAngleNormal_e);
 }
 
-void System::getCapillaryPressure() {
+EigenVectorX3D System::getCapillaryPressure() {
 
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
   auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
@@ -108,6 +110,8 @@ void System::getCapillaryPressure() {
   }
   capillaryPressure_e =
       rowwiseScaling(surfaceTension * 2 * H.raw(), vertexAngleNormal_e);
+
+  return capillaryPressure_e;
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -127,7 +131,7 @@ void System::getCapillaryPressure() {
   // }
 }
 
-void System::getInsidePressure() {
+double System::getInsidePressure() {
   /// Geometric implementation
   if (mesh->hasBoundary()) {
     /// Inside excess pressure of patch
@@ -139,6 +143,8 @@ void System::getInsidePressure() {
   } else {
     insidePressure = P.Kv / volume - P.Kv * P.cam;
   }
+
+  return insidePressure;
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -152,7 +158,7 @@ void System::getInsidePressure() {
   // }
 }
 
-void System::getLineTensionPressure() {
+EigenVectorX3D System::getLineTensionPressure() {
   gcs::HalfedgeData<gc::Vector2> halfedgeVectorsInVertex(*mesh);
   gcs::VertexData<std::array<gc::Vector3, 2>> vertexTangentBasis(*mesh);
 
@@ -231,13 +237,12 @@ void System::getLineTensionPressure() {
 
       // Deduce normal curvature
       double K1 = (2 * H[v] + sqrt(principalDirection1.norm())) * 0.5;
-      double K2 =
-          (2 * H[v] - sqrt(principalDirection1.norm())) * 0.5;
+      double K2 = (2 * H[v] - sqrt(principalDirection1.norm())) * 0.5;
       lineTensionPressure[v] = -P.eta * vpg->vertexNormals[v] *
                                (cosT * cosT * (K1 - K2) + K2) * P.sharpness;
     }
   }
-
+  return gc::EigenMap<double, 3>(lineTensionPressure);
   // /// If requireVertexPrincipalCurvatureDirections and
   // requireVertexTangentBasis for (gcs::Vertex v : mesh->vertices()) {
   //   // Calculate interfacial tension
@@ -272,7 +277,7 @@ void System::getLineTensionPressure() {
   // }
 }
 
-void System::getExternalPressure() {
+EigenVectorX3D System::getExternalPressure() {
 
   auto externalPressure_e = gc::EigenMap<double, 3>(externalPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
@@ -308,9 +313,10 @@ void System::getExternalPressure() {
     externalPressure_e = -externalPressureMagnitude * zDir *
                          (vpg->inputVertexPositions[theVertex].z - P.height);
   }
+  return externalPressure_e;
 }
 
-void System::getChemicalPotential() {
+EigenVectorX1D System::getChemicalPotential() {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
       (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
@@ -323,9 +329,11 @@ void System::getChemicalPotential() {
   chemicalPotential.raw() =
       (P.epsilon - (2 * P.Kb * (H.raw() - H0.raw())).array() * dH0dphi.array())
           .matrix();
+
+  return chemicalPotential.raw();
 }
 
-void System::getDPDForces() {
+std::tuple<EigenVectorX3D, EigenVectorX3D> System::getDPDForces() {
   // Reset forces to zero
   auto dampingForce_e = gc::EigenMap<double, 3>(dampingForce);
   auto stochasticForce_e = gc::EigenMap<double, 3>(stochasticForce);
@@ -367,6 +375,8 @@ void System::getDPDForces() {
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
   }
+
+  return std::tie(dampingForce_e, stochasticForce_e);
 }
 
 void System::getAllForces() {

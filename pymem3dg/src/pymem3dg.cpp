@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -22,8 +23,10 @@
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
+#include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/system.h"
 
+namespace gc = ::geometrycentral;
 namespace mem3dg {
 namespace py = pybind11;
 
@@ -58,9 +61,33 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           get the bending pressures
       )delim");
+  system.def("getChemicalPotential", &System::getChemicalPotential,
+             R"delim(
+          get the chemical potential
+      )delim");
+  system.def("getCapillaryPressure", &System::getCapillaryPressure,
+             R"delim(
+          get the capillary Pressure
+      )delim");
   system.def("getInsidePressure", &System::getInsidePressure,
              R"delim(
-          get the inside pressures
+          get the getInsidePressure
+      )delim");
+  system.def("getLineTensionPressure", &System::getLineTensionPressure,
+             R"delim(
+          get the getLineTensionPressure
+      )delim");
+  system.def("getDPDForces", &System::getDPDForces,
+             R"delim(
+          get the getDPDForces
+      )delim");
+  system.def("getExternalPressure", &System::getExternalPressure,
+             R"delim(
+          get the getExternalPressure
+      )delim");
+  system.def("getAllForces", &System::getAllForces,
+             R"delim(
+          get all forces
       )delim");
   system.def("getFreeEnergy", &System::getFreeEnergy,
              R"delim(
@@ -215,6 +242,36 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                        R"delim(
           get work of external force  
       )delim");
+
+  /// Velocity Verlet
+  pymem3dg.def("velocityVerlet", &mem3dg::integration::velocityVerlet,
+               "Run velocity verlet time integration", py::arg("f"),
+               py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+               py::arg("tolerance"), py::arg("verbosity"),
+               py::arg("isAdaptiveStep"), py::arg("outputDir"),
+               R"delim(
+        )delim");
+
+  /// Euler integration
+  pymem3dg.def("euler", &mem3dg::integration::euler,
+               "Run forward euler time integration", py::arg("f"),
+               py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+               py::arg("tolerance"), py::arg("verbosity"), py::arg("outputDir"),
+               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
+               py::arg("isAdaptiveStep"),
+               R"delim(
+        )delim");
+
+  /// CG integration
+  pymem3dg.def("conjugateGradient", &mem3dg::integration::conjugateGradient,
+               "Run conjugate gradient time integration", py::arg("f"),
+               py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+               py::arg("tol"), py::arg("ctol"), py::arg("verbosity"),
+               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
+               py::arg("c1"), py::arg("isAugmentedLagrangian"),
+               py::arg("isAdaptiveStep"), py::arg("trajFileName"),
+               R"delim(
+        )delim");
 
   /// Driver function for system generation
   pymem3dg.def("system_ply", &system_ply,

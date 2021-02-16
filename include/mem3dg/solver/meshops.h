@@ -71,6 +71,14 @@ DLL_PUBLIC inline void markFileName(std::string dirPath, char *file,
 }
 
 /**
+ * @brief Signal handler for pybind
+ */
+DLL_PUBLIC inline void signalHandler(int signum) {
+  std::cout << "Interrupt signal (" << signum << ") received.\n";
+  exit(signum);
+}
+
+/**
  * @brief Get volume from a face
  *
  * @param f
