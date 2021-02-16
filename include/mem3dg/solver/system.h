@@ -231,7 +231,7 @@ public:
    * @param isVertexShift Option of whether conducting vertex shift
    * regularization
    */
-  System(std::string inputMesh, std::string refMesh, size_t nSub, Parameters &p,
+  System(std::string inputMesh, std::string refMesh, size_t nSub, Parameters p,
          bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
          bool isVertexShift_)
       : System(readMeshes(inputMesh, refMesh, nSub), p, isReducedVolume_,
@@ -252,9 +252,9 @@ public:
    * regularization
    */
   System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
-         Parameters &p, bool isReducedVolume_, bool isProtein_,
+         Parameters p, bool isReducedVolume_, bool isProtein_,
          bool isLocalCurvature_, bool isVertexShift_)
-      : System(readTrajFile(trajFile, startingFrame, nSub, isContinue), p,
+      : System(readTrajFile(trajFile, startingFrame, nSub), p,
                isReducedVolume_, isProtein_, isLocalCurvature_,
                isVertexShift_) {
     if (isContinue) {
@@ -280,7 +280,7 @@ public:
                     std::unique_ptr<gcs::VertexPositionGeometry>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
-         Parameters &p, bool isReducedVolume_, bool isProtein_,
+         Parameters p, bool isReducedVolume_, bool isProtein_,
          bool isLocalCurvature_, bool isVertexShift_)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)),
@@ -327,7 +327,7 @@ public:
    */
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters p,
          bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
          bool isVertexShift_)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
@@ -417,8 +417,7 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readTrajFile(std::string trajFile, int startingFrame, size_t nSub,
-               bool isContinue);
+  readTrajFile(std::string trajFile, int startingFrame, size_t nSub);
   /**
    * @brief Map the continuation variables
    *
