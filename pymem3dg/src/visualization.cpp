@@ -204,7 +204,6 @@ int viewer_ply(std::string fileName, const bool mean_curvature,
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-void getNcFrame(mem3dg::TrajFile &fd, int &frame);
 
 void wait(unsigned timeout) {
   timeout += std::clock();
@@ -235,9 +234,8 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
     idx = 0;
   }
 
-  double time;
   EigenVectorX3D coords;
-  std::tie(time, coords) = fd.getTimeAndCoords(idx);
+  coords = fd.getCoords(idx);
   mesh->updateVertexPositions(coords);
 
   if (options.ref_coord) {
@@ -299,10 +297,9 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
 
 polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd,
                                             checkBox options) {
-  double time;
   EigenVectorX3D coords;
   EigenTopVec top = fd.getTopology();
-  std::tie(time, coords) = fd.getTimeAndCoords(0);
+  coords = fd.getCoords(0);
   polyscope::SurfaceMesh *mesh =
       polyscope::registerSurfaceMesh("Mesh", coords, top);
   mesh->setSmoothShade(true);
@@ -510,7 +507,7 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
 
   // Read netcdf trajectory file
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
-  getNcFrame(fd, frame);
+  fd.getNcFrame(frame);
 
   // Initialize visualization variables
   checkBox options({ref_coord, velocity, mean_curvature, gauss_curvature,

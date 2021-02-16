@@ -19,6 +19,9 @@
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/heat_method_distance.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
+#include <geometrycentral/surface/meshio.h>
+#include <geometrycentral/surface/rich_surface_mesh_data.h>
+#include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
@@ -32,9 +35,9 @@
 
 #include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/macros.h"
+#include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/util.h"
-
 #include <vector>
 
 namespace mem3dg {
@@ -118,16 +121,19 @@ class DLL_PUBLIC System {
 public:
   /// Parameters
   Parameters P;
+
   /// Cached mesh of interest
-  gcs::ManifoldSurfaceMesh &mesh;
-  /// Cached mesh data
-  gcs::RichSurfaceMeshData &richData;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   /// Embedding and other geometric details
-  gcs::VertexPositionGeometry &vpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
   /// reference embedding geometry
-  gcs::VertexPositionGeometry &refVpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+  /// Cached mesh data
+  gcs::RichSurfaceMeshData richData;
   /// Energy
   Energy E;
+  /// Time
+  double time;
 
   /// Cached bending stress
   gcs::VertexData<gc::Vector3> bendingPressure;
@@ -220,44 +226,145 @@ public:
   /*
    * @brief Construct a new Force object
    *
-   * @param mesh_         Mesh connectivity
-   * @param vpg_          Embedding and geometry information
-   * @param time_step_    Numerical timestep
+   * @param inputMesh     Input Mesh
+   * @param refMesh       Reference Mesh
+   * @param nSub          Number of subdivision
+   * @param p             Parameter of simulation
+   * @param isReducedVolume Option of whether adopting reduced volume
+   * parametrization
+   * @param isProtein     Option of considering protein adsorption
+   * @param isLocalCurvature Option of whether membrane has local curvature
+   * @param isVertexShift Option of whether conducting vertex shift
+   * regularization
    */
-
-  System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-         gcs::VertexPositionGeometry &refVpg_,
-         gcs::RichSurfaceMeshData &richData_, Parameters &p,
+  System(std::string inputMesh, std::string refMesh, size_t nSub, Parameters p,
          bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
          bool isVertexShift_)
-      : mesh(mesh_), vpg(vpg_), richData(richData_), refVpg(refVpg_), P(p),
+      : System(readMeshes(inputMesh, refMesh, nSub), p, isReducedVolume_,
+               isProtein_, isLocalCurvature_, isVertexShift_){};
+
+  /**
+   * @brief Construct a new System object by reading netcdf trajectory file path
+   *
+   * @param trajFile      Netcdf trajectory file
+   * @param startingFrame Starting frame for the input mesh
+   * @param nSub          Number of subdivision
+   * @param p             Parameter of simulation
+   * @param isReducedVolume Option of whether adopting reduced volume
+   * parametrization
+   * @param isProtein     Option of considering protein adsorption
+   * @param isLocalCurvature Option of whether membrane has local curvature
+   * @param isVertexShift Option of whether conducting vertex shift
+   * regularization
+   */
+  System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
+         Parameters p, bool isReducedVolume_, bool isProtein_,
+         bool isLocalCurvature_, bool isVertexShift_)
+      : System(readTrajFile(trajFile, startingFrame, nSub), p,
+               isReducedVolume_, isProtein_, isLocalCurvature_,
+               isVertexShift_) {
+    if (isContinue) {
+      mapContinuationVariables(trajFile, startingFrame);
+    }
+  };
+
+  /**
+   * @brief Construct a new System object by reading tuple of unique_ptrs
+   *
+   * @param tuple        Mesh connectivity, Embedding and geometry
+   * information, Mesh rich data
+   * @param p             Parameter of simulation
+   * @param isReducedVolume Option of whether adopting reduced volume
+   * parametrization
+   * @param isProtein     Option of considering protein adsorption
+   * @param isLocalCurvature Option of whether membrane has local
+   * curvature
+   * @param isVertexShift Option of whether conducting vertex shift
+   * regularization
+   */
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>>
+             meshVpgTuple,
+         Parameters p, bool isReducedVolume_, bool isProtein_,
+         bool isLocalCurvature_, bool isVertexShift_)
+      : System(std::move(std::get<0>(meshVpgTuple)),
+               std::move(std::get<1>(meshVpgTuple)),
+               std::move(std::get<2>(meshVpgTuple)), p, isReducedVolume_,
+               isProtein_, isLocalCurvature_, isVertexShift_){};
+
+  // /**
+  //  * @brief Construct a new System object by reading mesh and
+  //  * geometry objects
+  //  * @param mesh_         Mesh connectivity
+  //  * @param vpg_          Embedding and geometry information
+  //  * @param refvpg_       Embedding and geometry information
+  //  * @param p             Parameter of simulation
+  //  * @param isReducedVolume Option of whether adopting reduced volume
+  //  * parametrization
+  //  * @param isProtein     Option of considering protein adsorption
+  //  * @param isLocalCurvature Option of whether membrane has local curvature
+  //  * @param isVertexShift Option of whether conducting vertex shift
+  //  * regularization
+  //  */
+  // System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
+  //        gcs::VertexPositionGeometry &refVpg_, Parameters &p,
+  //        bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
+  //        bool isVertexShift_)
+  //     : System(std::make_unique<gcs::ManifoldSurfaceMesh>(&mesh_),
+  //              std::make_unique<gcs::VertexPositionGeometry>(&vpg_),
+  //              std::make_unique<gcs::VertexPositionGeometry>(&refVpg_), p,
+  //              isReducedVolume_, isProtein_, isLocalCurvature_,
+  //              isVertexShift_){};
+
+  /**
+   * @brief Construct a new System object by reading unique_ptrs to mesh and
+   * geometry objects
+   * @param ptrmesh_         Mesh connectivity
+   * @param ptrvpg_          Embedding and geometry information
+   * @param ptrRefvpg_       Embedding and geometry information
+   * @param p             Parameter of simulation
+   * @param isReducedVolume Option of whether adopting reduced volume
+   * parametrization
+   * @param isProtein     Option of considering protein adsorption
+   * @param isLocalCurvature Option of whether membrane has local curvature
+   * @param isVertexShift Option of whether conducting vertex shift
+   * regularization
+   */
+  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters p,
+         bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
+         bool isVertexShift_)
+      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
+        refVpg(std::move(ptrrefVpg_)), richData(*mesh), P(p), time(0),
         isReducedVolume(isReducedVolume_), isProtein(isProtein_),
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
-        M(vpg.vertexLumpedMassMatrix), L(vpg.cotanLaplacian),
-        bendingPressure(mesh_, {0, 0, 0}), insidePressure(0),
-        capillaryPressure(mesh_, {0, 0, 0}),
-        lineTensionPressure(mesh_, {0, 0, 0}), chemicalPotential(mesh_, 0.0),
-        externalPressure(mesh_, {0, 0, 0}),
-        regularizationForce(mesh_, {0, 0, 0}), targetLcr(mesh_),
-        stochasticForce(mesh_, {0, 0, 0}), dampingForce(mesh_, {0, 0, 0}),
-        proteinDensity(mesh_, 0), vel(mesh_, {0, 0, 0}), isFlip(mesh, false),
-        isSplit(mesh, false), isCollapse(mesh, false),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(vpg) {
+        M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
+        bendingPressure(*mesh, {0, 0, 0}), insidePressure(0),
+        capillaryPressure(*mesh, {0, 0, 0}),
+        lineTensionPressure(*mesh, {0, 0, 0}), chemicalPotential(*mesh, 0),
+        externalPressure(*mesh, {0, 0, 0}),
+        regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),
+        stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
+        proteinDensity(*mesh, 0), vel(*mesh, {0, 0, 0}), isFlip(*mesh, false),
+        isSplit(*mesh, false), isCollapse(*mesh, false),
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(*vpg) {
 
     // GC computed properties
-    vpg.requireFaceNormals();
-    vpg.requireVertexLumpedMassMatrix();
-    vpg.requireCotanLaplacian();
-    vpg.requireFaceAreas();
-    vpg.requireVertexIndices();
-    vpg.requireVertexGaussianCurvatures();
-    vpg.requireFaceIndices();
-    vpg.requireEdgeLengths();
-    vpg.requireVertexNormals();
-    vpg.requireVertexDualAreas();
-    vpg.requireCornerAngles();
-    vpg.requireCornerScaledAngles();
-    // vpg.requireVertexTangentBasis();
+    vpg->requireFaceNormals();
+    vpg->requireVertexLumpedMassMatrix();
+    vpg->requireCotanLaplacian();
+    vpg->requireFaceAreas();
+    vpg->requireVertexIndices();
+    vpg->requireVertexGaussianCurvatures();
+    vpg->requireFaceIndices();
+    vpg->requireEdgeLengths();
+    vpg->requireVertexNormals();
+    vpg->requireVertexDualAreas();
+    vpg->requireCornerAngles();
+    vpg->requireCornerScaledAngles();
+    // vpg->requireVertexTangentBasis();
 
     // Check confliciting parameters and options
     checkParameters();
@@ -282,23 +389,48 @@ public:
    * elsewhere, calculation of dependent quantities should be respected.
    */
   ~System() {
-    vpg.unrequireFaceNormals();
-    vpg.unrequireVertexLumpedMassMatrix();
-    vpg.unrequireCotanLaplacian();
-    vpg.unrequireFaceAreas();
-    vpg.unrequireVertexIndices();
-    vpg.unrequireVertexGaussianCurvatures();
-    vpg.unrequireFaceIndices();
-    vpg.unrequireEdgeLengths();
-    vpg.unrequireVertexNormals();
-    vpg.unrequireVertexDualAreas();
-    vpg.unrequireCornerAngles();
-    vpg.unrequireCornerScaledAngles();
+    vpg->unrequireFaceNormals();
+    vpg->unrequireVertexLumpedMassMatrix();
+    vpg->unrequireCotanLaplacian();
+    vpg->unrequireFaceAreas();
+    vpg->unrequireVertexIndices();
+    vpg->unrequireVertexGaussianCurvatures();
+    vpg->unrequireFaceIndices();
+    vpg->unrequireEdgeLengths();
+    vpg->unrequireVertexNormals();
+    vpg->unrequireVertexDualAreas();
+    vpg->unrequireCornerAngles();
+    vpg->unrequireCornerScaledAngles();
   }
 
   // ==========================================================
   // ================     Initialization     ==================
   // ==========================================================
+
+  /**
+   * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
+   *
+   */
+  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+             std::unique_ptr<gcs::VertexPositionGeometry>,
+             std::unique_ptr<gcs::VertexPositionGeometry>>
+  readMeshes(std::string inputMesh, std::string refMesh, size_t nSub);
+
+#ifdef MEM3DG_WITH_NETCDF
+  /**
+   * @brief Construct a tuple of unique_ptrs from netcdf path
+   *
+   */
+  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+             std::unique_ptr<gcs::VertexPositionGeometry>,
+             std::unique_ptr<gcs::VertexPositionGeometry>>
+  readTrajFile(std::string trajFile, int startingFrame, size_t nSub);
+  /**
+   * @brief Map the continuation variables
+   *
+   */
+  void mapContinuationVariables(std::string trajFile, int startingFrame);
+#endif
   /**
    * @brief Check all conflicting parameters and options
    *
