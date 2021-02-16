@@ -51,11 +51,6 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void signalHandler(int signum) {
-  std::cout << "Interrupt signal (" << signum << ") received.\n";
-  exit(signum);
-}
-
 std::unique_ptr<mem3dg::System> system_ply(
     const size_t verbosity, std::string inputMesh, std::string refMesh,
     size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
@@ -72,7 +67,7 @@ std::unique_ptr<mem3dg::System> system_ply(
   connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
 
   /// Activate signal handling
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
   // pybind11::scoped_interpreter guard{};
 
   /// Initialize parameter struct
@@ -107,7 +102,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
 
   /// Activate signal handling
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
   // pybind11::scoped_interpreter guard{};
 
   /// Initialize parameter struct
@@ -168,7 +163,7 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                      bool isAugmentedLagrangian, bool isAdaptiveStep) {
 
   /// Activate signal handling
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
 
   /// Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
@@ -208,7 +203,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               bool isAdaptiveStep) {
 
   // Activate signal handling
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
   // pybind11::scoped_interpreter guard{};
 
   // Initialize parameter struct
@@ -268,7 +263,7 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
                     bool isAugmentedLagrangian, bool isAdaptiveStep) {
 
   /// Activate signal handling
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
   // pybind11::scoped_interpreter guard{};
 
   /// Initialize parameter struct

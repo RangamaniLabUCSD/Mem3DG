@@ -58,10 +58,12 @@ void saveNetcdfData(
     const size_t &verbosity);
 #endif
 
-bool euler(System &f, double dt, double total_time,
-           double tSave, double tolerance, const size_t verbosity,
-           std::string outputDir, const bool isBacktrack, const double rho,
-           const double c1, const bool isAdaptiveStep) {
+bool euler(System &f, double dt, double total_time, double tSave,
+           double tolerance, const size_t verbosity, std::string outputDir,
+           const bool isBacktrack, const double rho, const double c1,
+           const bool isAdaptiveStep) {
+
+  signal(SIGINT, signalHandler);
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
@@ -165,15 +167,15 @@ bool euler(System &f, double dt, double total_time,
                   << "n: " << frame << "\n"
                   << "dA: " << dArea << ", "
                   << "dVP: " << dVP << ", "
-                  << "h: "
-                  << abs(f.vpg->inputVertexPositions[f.theVertex].z)
+                  << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
                   << "\n"
                   << "E_total: " << f.E.totalE << "\n"
                   << "|e|L2: " << f.L2ErrorNorm << "\n"
-                  << "H: [" << f.H.raw().minCoeff() << "," << f.H.raw().maxCoeff() << "]"
+                  << "H: [" << f.H.raw().minCoeff() << ","
+                  << f.H.raw().maxCoeff() << "]"
                   << "\n"
-                  << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff() << "]"
-                  << std::endl;
+                  << "K: [" << f.K.raw().minCoeff() << ","
+                  << f.K.raw().maxCoeff() << "]" << std::endl;
         // << "COM: "
         // << gc::EigenMap<double,
         // 3>(f.vpg->inputVertexPositions).colwise().sum() /
@@ -203,8 +205,8 @@ bool euler(System &f, double dt, double total_time,
 
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
-                vel_e);
+      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE,
+                vel_e, vel_e);
     } else {
       pos_e += vel_e * dt;
       f.time += dt;

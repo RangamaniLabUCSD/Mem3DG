@@ -17,6 +17,8 @@
 #include <geometrycentral/surface/geometry.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 
+#include "mem3dg/solver/meshops.h"
+#include <csignal>
 #include "system.h"
 
 namespace mem3dg {

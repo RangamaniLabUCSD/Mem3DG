@@ -40,15 +40,13 @@ using EigenVectorX3D =
 using EigenTopVec =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
-void signalHandler(int signum);
-
 int viewer_ply(std::string fileName, const bool mean_curvature,
                const bool gauss_curvature, const bool spon_curvature,
                const bool ext_pressure, const bool physical_pressure,
                const bool capillary_pressure, const bool bending_pressure,
                const bool line_pressure) {
 
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
 
   /// alias eigen matrix
   using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
@@ -394,7 +392,7 @@ int animation_nc(std::string &filename, float transparency, float angle,
                  const bool mask, const bool H_H0) {
 
   // Activate signal handling
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
@@ -503,7 +501,7 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
   static int ENTRY = 0;
 
   // Activate signal handling
-  signal(SIGINT, signalHandler);
+  signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);

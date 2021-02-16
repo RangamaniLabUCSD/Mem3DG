@@ -108,11 +108,12 @@ void saveRichData(
   fl.fromVector(
       rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
                         gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
-  ft.fromVector((rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                                   gc::EigenMap<double, 3>(f.vpg->vertexNormals))
-                     .array() /
-                 f.H.raw().array() / 2)
-                    .matrix());
+  ft.fromVector(
+      (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
+                         gc::EigenMap<double, 3>(f.vpg->vertexNormals))
+           .array() /
+       f.H.raw().array() / 2)
+          .matrix());
 
   f.richData.addVertexProperty("mean_curvature", f.H);
   f.richData.addVertexProperty("gauss_curvature", f.K);
@@ -209,9 +210,10 @@ void saveNetcdfData(
 }
 #endif
 
-void velocityVerlet(System &f, double dt, double total_time,
-                    double tSave, double tolerance, const size_t verbosity,
+void velocityVerlet(System &f, double dt, double total_time, double tSave,
+                    double tolerance, const size_t verbosity,
                     const bool isAdaptiveStep, std::string outputDir) {
+  signal(SIGINT, signalHandler);
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,

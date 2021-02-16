@@ -40,10 +40,17 @@
 #include "mem3dg/solver/util.h"
 #include <vector>
 
-namespace mem3dg {
+using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3D =
+    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenTopVec =
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
+
+namespace mem3dg {
 
 struct Parameters {
   /// Bending modulus
@@ -260,9 +267,8 @@ public:
   System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
          Parameters p, bool isReducedVolume_, bool isProtein_,
          bool isLocalCurvature_, bool isVertexShift_)
-      : System(readTrajFile(trajFile, startingFrame, nSub), p,
-               isReducedVolume_, isProtein_, isLocalCurvature_,
-               isVertexShift_) {
+      : System(readTrajFile(trajFile, startingFrame, nSub), p, isReducedVolume_,
+               isProtein_, isLocalCurvature_, isVertexShift_) {
     if (isContinue) {
       mapContinuationVariables(trajFile, startingFrame);
     }
@@ -462,37 +468,37 @@ public:
   /**
    * @brief Get bending pressure component of the system
    */
-  void getBendingPressure();
+  EigenVectorX3D getBendingPressure();
 
   /**
    * @brief Get chemical potential of the system
    */
-  void getChemicalPotential();
+  EigenVectorX1D getChemicalPotential();
 
   /**
    * @brief Get capillary pressure component of the system
    */
-  void getCapillaryPressure();
+  EigenVectorX3D getCapillaryPressure();
 
   /**
    * @brief Get inside pressure component of the system
    */
-  void getInsidePressure();
+  double getInsidePressure();
 
   /**
    * @brief Get line tension pressure component of the system
    */
-  void getLineTensionPressure();
+  EigenVectorX3D getLineTensionPressure();
 
   /**
    * @brief Get DPD forces of the system
    */
-  void getDPDForces();
+  std::tuple<EigenVectorX3D, EigenVectorX3D> getDPDForces();
 
   /**
    * @brief Get external pressure component of the system
    */
-  void getExternalPressure();
+  EigenVectorX3D getExternalPressure();
 
   /**
    * @brief Get all forces of the system
@@ -579,6 +585,7 @@ public:
   /**
    * @brief Get length cross ratio of the mesh
    */
-  gcs::EdgeData<double> getLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const;
+  gcs::EdgeData<double>
+  getLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const;
 };
 } // namespace mem3dg

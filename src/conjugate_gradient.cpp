@@ -221,6 +221,8 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
                        const bool isAugmentedLagrangian,
                        const bool isAdaptiveStep,
                        const std::string trajFileName) {
+                         
+signal(SIGINT, signalHandler);
 #ifdef __linux__
   // start the timer
   struct timeval start;
@@ -259,7 +261,7 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
 
     // compute summerized forces
     getForces(f, physicalPressure, DPDPressure, regularizationForce);
-    vel_e = f.M * (physicalPressure + DPDPressure)  + regularizationForce;
+    vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
     // compute the L2 error norm
     f.L2ErrorNorm = f.getL2Norm(vel_e);
@@ -329,8 +331,8 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
                   << "H: [" << f.H.raw().minCoeff() << ","
                   << f.H.raw().maxCoeff() << "]"
                   << "\n"
-                  << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff() << "]"
-                  << std::endl;
+                  << "K: [" << f.K.raw().minCoeff() << ","
+                  << f.K.raw().maxCoeff() << "]" << std::endl;
         // << "COM: "
         // << gc::EigenMap<double,
         // 3>(f.vpg->inputVertexPositions).colwise().sum() /
@@ -373,8 +375,8 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
 
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE, vel_e,
-                direction);
+      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE,
+                vel_e, direction);
     } else {
       pos_e += direction * dt;
       f.time += dt;
@@ -464,8 +466,8 @@ void feedForwardSweep(System &f, std::vector<double> H_,
 
       // rerun CG optimization
       bool success = conjugateGradient(
-          f, dt, maxTime, tSave, tol, ctol, verbosity, outputDir,
-          isBacktrack, rho, c1, isAugmentedLagrangian, isAdaptiveStep, buffer);
+          f, dt, maxTime, tSave, tol, ctol, verbosity, outputDir, isBacktrack,
+          rho, c1, isAugmentedLagrangian, isAdaptiveStep, buffer);
 
       // mark "failed" is CG returns false
       if (!success) {
