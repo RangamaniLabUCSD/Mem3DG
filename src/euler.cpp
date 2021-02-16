@@ -27,36 +27,10 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 
-#ifdef MEM3DG_WITH_NETCDF
-#include "mem3dg/solver/trajfile.h"
-#endif
-
 namespace mem3dg {
 namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
-
-void getForces(System &f,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
-
-void backtrack(System &f, const double dt, double rho, double c1, double &time,
-               bool &EXIT, bool &SUCCESS, const size_t verbosity,
-               const double potentialEnergy_pre,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
-
-void saveRichData(
-    System &f, const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t verbosity);
-
-#ifdef MEM3DG_WITH_NETCDF
-void saveNetcdfData(
-    const System &f, size_t &frame, const double &time, TrajFile &fd,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t &verbosity);
-#endif
 
 bool euler(System &f, double dt, double total_time, double tSave,
            double tolerance, const size_t verbosity, std::string outputDir,
@@ -64,6 +38,9 @@ bool euler(System &f, double dt, double total_time, double tSave,
            const bool isAdaptiveStep) {
 
   signal(SIGINT, signalHandler);
+
+  // check the validity of parameter
+  checkParameters("euler", f, dt);
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,

@@ -27,192 +27,10 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 
-#ifdef MEM3DG_WITH_NETCDF
-#include "mem3dg/solver/trajfile.h"
-#endif
-
 namespace mem3dg {
 namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
-
-void getForces(System &f,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce);
-
-void saveRichData(
-    System &f, const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t verbosity);
-
-#ifdef MEM3DG_WITH_NETCDF
-void saveNetcdfData(
-    const System &f, size_t &frame, const double &time, TrajFile &fd,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t &verbosity);
-#endif
-
-/**
- * @brief Backtracking algorithm that dynamically adjust step size based on
- * energy evaluation
- * @param f, force object
- * @param dt, initial step size
- * @param rho, discount factor
- * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
- * @param time, simulation time
- * @param EXIT, exit flag for integration loop
- * @param SUCCESS, test flag on simulation sucess
- * @param verbosity, verbosity setting
- * @param potentialEnergy_pre, previous energy evaluation
- * @param force, gradient of the energy
- * @param direction, direction, most likely some function of gradient
- * @return
- */
-void backtrack(System &f, const double dt, double rho, double c1, double &time,
-               bool &EXIT, bool &SUCCESS, const size_t verbosity,
-               const double potentialEnergy_pre,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
-
-  // calculate initial energy as reference level
-  Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
-      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  double init_time = time;
-
-  // declare variables used in backtracking iterations
-  double alpha = dt;
-  size_t count = 0;
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-
-  pos_e += alpha * direction;
-  f.updateVertexPositions();
-  f.computeFreeEnergy();
-
-  while (f.E.potE > (potentialEnergy_pre -
-                     c1 * alpha * (force.array() * direction.array()).sum())) {
-    // while (f.E.potE > potentialEnergy_pre) {
-    if (alpha < 1e-12) {
-      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
-      EXIT = true;
-      SUCCESS = false;
-
-      // restore entry configuration
-      alpha = dt;
-      pos_e = init_position;
-      f.updateVertexPositions();
-      f.computeFreeEnergy();
-      time = init_time - alpha;
-
-      break;
-    }
-    alpha *= rho;
-    pos_e = init_position + alpha * direction;
-    f.updateVertexPositions();
-    f.computeFreeEnergy();
-    count++;
-  }
-
-  if (alpha != dt && verbosity > 3) {
-    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
-    std::cout << "L2 norm: " << f.L2ErrorNorm << std::endl;
-  }
-  time = init_time + alpha;
-}
-
-/**
- * @brief Thresholding when adopting ambient pressure constraint
- * @param f, reference to the system object
- * @param EXIT, reference to the exit flag
- * @param isAugmentedLagrangian, whether using augmented lagrangian method
- * @param dArea, normalized area difference
- * @param ctol, exit criterion for constraint
- * @param tol, exit criterion for gradient
- * @param increment, increment coefficient of penalty when using incremental
- * penalty method
- * @return
- */
-void pressureConstraintThreshold(System &f, bool &EXIT,
-                                 const bool isAugmentedLagrangian,
-                                 const double dArea, const double ctol,
-                                 const double tol, double increment) {
-  if (f.L2ErrorNorm < tol) {
-    if (isAugmentedLagrangian) { // augmented Lagrangian method
-      if (dArea < ctol) {        // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
-                  << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-                        f.targetSurfaceArea;
-        std::cout << " -> [" << f.P.lambdaSG << "]" << std::endl;
-      }
-    } else {              // incremental harmonic penalty method
-      if (dArea < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
-        f.P.Ksg *= increment;
-        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
-      }
-    }
-  }
-}
-
-/**
- * @brief Thresholding when adopting reduced volume parametrization
- * @param f, reference to the system object
- * @param EXIT, reference to the exit flag
- * @param isAugmentedLagrangian, whether using augmented lagrangian method
- * @param dArea, normalized area difference
- * @param dVolume, normalized volume difference
- * @param ctol, exit criterion for constraint
- * @param tol, exit criterion for gradient
- * @param increment, increment coefficient of penalty when using incremental
- * penalty method
- * @return
- */
-void reducedVolumeThreshold(System &f, bool &EXIT,
-                            const bool isAugmentedLagrangian,
-                            const double dArea, const double dVolume,
-                            const double ctol, const double tol,
-                            double increment) {
-  if (f.L2ErrorNorm < tol) {
-    if (isAugmentedLagrangian) {            // augmented Lagrangian method
-      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
-                  << f.P.lambdaV << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-                        f.targetSurfaceArea;
-        f.P.lambdaV +=
-            f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
-        std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
-                  << std::endl;
-      }
-    } else { // incremental harmonic penalty method
-      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      }
-
-      // iterate if not
-      if (dArea > ctol) {
-        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
-        f.P.Ksg *= 1.3;
-        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
-      }
-      if (dVolume > ctol) {
-        std::cout << "\n[Kv] = [" << f.P.Kv << "]";
-        f.P.Kv *= 1.3;
-        std::cout << " -> [" << f.P.Kv << "]" << std::endl;
-      }
-    }
-  }
-}
 
 bool conjugateGradient(System &f, double dt, double total_time, double tSave,
                        double tol, double ctol, const size_t verbosity,
@@ -221,8 +39,12 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
                        const bool isAugmentedLagrangian,
                        const bool isAdaptiveStep,
                        const std::string trajFileName) {
-                         
-signal(SIGINT, signalHandler);
+
+  signal(SIGINT, signalHandler);
+
+  // check the validity of parameter
+  checkParameters("conjugate gradient", f, dt);
+
 #ifdef __linux__
   // start the timer
   struct timeval start;
@@ -486,6 +308,127 @@ void feedForwardSweep(System &f, std::vector<double> H_,
               << std::endl;
   }
 #endif
+}
+
+void backtrack(System &f, const double dt, double rho, double c1, double &time,
+               bool &EXIT, bool &SUCCESS, const size_t verbosity,
+               const double potentialEnergy_pre,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+
+  // calculate initial energy as reference level
+  Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
+      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  double init_time = time;
+
+  // declare variables used in backtracking iterations
+  double alpha = dt;
+  size_t count = 0;
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+
+  pos_e += alpha * direction;
+  f.updateVertexPositions();
+  f.computeFreeEnergy();
+
+  while (f.E.potE > (potentialEnergy_pre -
+                     c1 * alpha * (force.array() * direction.array()).sum())) {
+    // while (f.E.potE > potentialEnergy_pre) {
+    if (alpha < 1e-12) {
+      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
+      EXIT = true;
+      SUCCESS = false;
+
+      // restore entry configuration
+      alpha = dt;
+      pos_e = init_position;
+      f.updateVertexPositions();
+      f.computeFreeEnergy();
+      time = init_time - alpha;
+
+      break;
+    }
+    alpha *= rho;
+    pos_e = init_position + alpha * direction;
+    f.updateVertexPositions();
+    f.computeFreeEnergy();
+    count++;
+  }
+
+  if (alpha != dt && verbosity > 3) {
+    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
+    std::cout << "L2 norm: " << f.L2ErrorNorm << std::endl;
+  }
+  time = init_time + alpha;
+}
+
+void pressureConstraintThreshold(System &f, bool &EXIT,
+                                 const bool isAugmentedLagrangian,
+                                 const double dArea, const double ctol,
+                                 const double tol, double increment) {
+  if (f.L2ErrorNorm < tol) {
+    if (isAugmentedLagrangian) { // augmented Lagrangian method
+      if (dArea < ctol) {        // exit if fulfilled all constraints
+        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
+                  << "]";
+        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
+                        f.targetSurfaceArea;
+        std::cout << " -> [" << f.P.lambdaSG << "]" << std::endl;
+      }
+    } else {              // incremental harmonic penalty method
+      if (dArea < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
+        f.P.Ksg *= increment;
+        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+      }
+    }
+  }
+}
+
+void reducedVolumeThreshold(System &f, bool &EXIT,
+                            const bool isAugmentedLagrangian,
+                            const double dArea, const double dVolume,
+                            const double ctol, const double tol,
+                            double increment) {
+  if (f.L2ErrorNorm < tol) {
+    if (isAugmentedLagrangian) {            // augmented Lagrangian method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
+                  << f.P.lambdaV << "]";
+        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
+                        f.targetSurfaceArea;
+        f.P.lambdaV +=
+            f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
+        std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
+                  << std::endl;
+      }
+    } else { // incremental harmonic penalty method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      }
+
+      // iterate if not
+      if (dArea > ctol) {
+        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
+        f.P.Ksg *= 1.3;
+        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+      }
+      if (dVolume > ctol) {
+        std::cout << "\n[Kv] = [" << f.P.Kv << "]";
+        f.P.Kv *= 1.3;
+        std::cout << " -> [" << f.P.Kv << "]" << std::endl;
+      }
+    }
+  }
 }
 
 } // namespace integration
