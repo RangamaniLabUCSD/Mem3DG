@@ -26,48 +26,55 @@ namespace mem3dg {
 #ifdef MEM3DG_WITH_NETCDF
 
 void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
+
+  // Open netcdf file
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
-  gc::EigenMap<double, 3>(vel) = fd.getVelocity(startingFrame);
+
+  // Check consistent topology for continuation
+  if (!(mesh->nFaces() == fd.getTopology().rows() &&
+        mesh->nVertices() == fd.getCoords(startingFrame).rows())) {
+    throw std::logic_error(
+        "Topology for continuation parameters mapping is not consistent!");
+  }
+
+  // Map continuation variables
   time = fd.getTime(startingFrame);
   proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+  gc::EigenMap<double, 3>(vel) = fd.getVelocity(startingFrame);
+
+  // Recompute cached variables
   updateVertexPositions();
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub,
-                     bool isContinue) {
+System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
+  // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
   std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
-  std::cout << "Loading input mesh from trajectory file " << trajFile;
+  std::cout << "Loading input mesh from " << trajFile;
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
-  std::cout << "of frame " << startingFrame << " ...";
-  coords = fd.getCoords(startingFrame);
-  std::tie(mesh, vpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(coords, fd.getTopology());
+  std::cout << " of frame " << startingFrame << " ...";
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      fd.getCoords(startingFrame), fd.getTopology());
   std::cout << "Finished!" << std::endl;
 
   /// Load reference geometry ptrRefVpg onto ptrMesh object
-  std::cout << "Loading reference mesh from trajectory file" << trajFile
-            << " ...";
+  std::cout << "Loading reference mesh ...";
   std::tie(referenceMesh, referenceVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(fd.getRefcoordinate(),
                                               fd.getTopology());
   std::cout << "Finished!" << std::endl;
 
   /// Subdivide the mesh and geometry objects
-  if (nSub > 0 && isContinue) {
-    throw std::runtime_error("Cannot map continuation parameters if nSub > 0");
-  }
   if (nSub > 0) {
     std::cout << "Subdivide input and reference mesh " << nSub
               << " time(s) ...";
@@ -88,9 +95,6 @@ std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
 System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 
-  // assumes that the input and reference
-  // coordinates are using the same mesh
-
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
@@ -108,6 +112,14 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
   std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
   std::cout << "Finished!" << std::endl;
 
+  // Check consistent topology
+  if (!(mesh->nVertices() == referenceMesh->nVertices() &&
+        mesh->nEdges() == referenceMesh->nEdges() &&
+        mesh->nFaces() == referenceMesh->nFaces())) {
+    throw std::logic_error(
+        "Topology of input mesh and reference mesh is not consistent!");
+  }
+
   // Subdivide the mesh and geometry objects
   if (nSub > 0) {
     std::cout << "Subdivide input and reference mesh " << nSub
@@ -119,7 +131,7 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
     std::cout << "Finished!" << std::endl;
   }
 
-  // reinterpret referenceVpg to mesh instead of referenceMesh
+  // reinterpret referenceVpg to mesh instead of referenceMesh.
   refVpg = referenceVpg->reinterpretTo(*mesh);
 
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
@@ -206,7 +218,7 @@ void System::pcg_test() {
 }
 
 void System::initConstants() {
-  // Initialize RNG
+  // Initialize random number generator
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 

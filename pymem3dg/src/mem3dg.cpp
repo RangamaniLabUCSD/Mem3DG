@@ -116,6 +116,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
                        Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
                        sigma, pt,  Kf,        conc, height, radius};
+
   /// Initialize the system
   mem3dg::System f(inputMesh, refMesh, nSub, p, isReducedVolume, isProtein,
                    isLocalCurvature, isVertexShift);
@@ -170,7 +171,6 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
   signal(SIGINT, signalHandler);
 
   /// Initialize parameter struct
-  std::cout << "Initializing the system ...";
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
   mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
                        Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
@@ -180,7 +180,6 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
   /// Initialize the system
   mem3dg::System f(inputMesh, refMesh, nSub, p, isReducedVolume, isProtein,
                    isLocalCurvature, isVertexShift);
-  std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
@@ -219,10 +218,8 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
                        sigma, pt,  Kf,        conc, height, radius};
 
   // Initialize the system
-  std::cout << "Initializing the system ...";
   mem3dg::System f(trajFile, startingFrame, nSub, isContinue, p,
                    isReducedVolume, isProtein, isLocalCurvature, isVertexShift);
-  std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
@@ -275,7 +272,6 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
   // pybind11::scoped_interpreter guard{};
 
   /// Initialize parameter struct
-  std::cout << "Initializing the system ...";
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
   mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
                        Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
@@ -283,10 +279,8 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
                        Kf,    conc,  height,    radius};
 
   /// Initialize the system
-  std::cout << "Initializing the system ...";
   mem3dg::System f(trajFile, startingFrame, nSub, isContinue, p,
                    isReducedVolume, isProtein, isLocalCurvature, isVertexShift);
-  std::cout << "Finished!" << std::endl;
 
   /// Time integration / optimization
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
