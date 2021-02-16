@@ -32,22 +32,23 @@ verbosity:
   2: All above + console printing
   3: All above + txt + .ply
 */
-DLL_PUBLIC void velocityVerlet(System &f, double dt, double init_time,
-                               double total_time, double tSave,
-                               double tolerance, const size_t verbosity,
+DLL_PUBLIC void velocityVerlet(System &f, double dt, double total_time,
+                               double tSave, double tolerance,
+                               const size_t verbosity,
                                const bool isAdaptiveStep,
                                std::string outputDir);
 
-DLL_PUBLIC bool euler(System &f, double dt, double init_time, double total_time,
-                      double tSave, double tolerance, const size_t verbosity,
+DLL_PUBLIC bool euler(System &f, double dt, double total_time, double tSave,
+                      double tolerance, const size_t verbosity,
                       std::string outputDir, const bool isBacktrack,
-                      const double rho, const double c1, const bool isAdaptiveStep);
+                      const double rho, const double c1,
+                      const bool isAdaptiveStep);
 
-DLL_PUBLIC bool conjugateGradient(System &f, double dt, double init_time,
-                                  double total_time, double tSave, double tol,
-                                  double ctol, const size_t verbosity,
-                                  std::string outputDir, const bool isBacktrack,
-                                  const double rho, const double c1,
+DLL_PUBLIC bool conjugateGradient(System &f, double dt, double total_time,
+                                  double tSave, double tol, double ctol,
+                                  const size_t verbosity, std::string outputDir,
+                                  const bool isBacktrack, const double rho,
+                                  const double c1,
                                   const bool isAugmentedLagrangian,
                                   const bool isAdaptiveStep,
                                   const std::string trajFileName);

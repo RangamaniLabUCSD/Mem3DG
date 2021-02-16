@@ -71,17 +71,22 @@ void TrajFile::writeCoords(
                    data.data());
 }
 
-std::tuple<double, TrajFile::EigenVector>
-TrajFile::getTimeAndCoords(const std::size_t idx) const {
+double TrajFile::getTime(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   double time;
   time_var.getVar({idx}, &time);
 
+  return time;
+}
+
+TrajFile::EigenVector TrajFile::getCoords(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
   EigenVector vec(nvertices_dim.getSize(), SPATIAL_DIMS);
   coord_var.getVar({idx, 0, 0}, {1, nvertices_dim.getSize(), SPATIAL_DIMS},
                    vec.data());
-  return std::tie(time, vec);
+  return vec;
 }
 
 // topology
@@ -524,8 +529,7 @@ double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
 }
 
 // L2 bending pressure norm
-void TrajFile::writeL2BendNorm(const std::size_t idx,
-                                const double L2BendNorm) {
+void TrajFile::writeL2BendNorm(const std::size_t idx, const double L2BendNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   l2bendnorm_var.putVar({idx}, &L2BendNorm);
@@ -541,7 +545,7 @@ double TrajFile::getL2BendNorm(const std::size_t idx) const {
 
 // L2 capillary pressure norm
 void TrajFile::writeL2SurfNorm(const std::size_t idx,
-                                const double L2ErrorNorm) {
+                               const double L2ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   l2surfnorm_var.putVar({idx}, &L2ErrorNorm);

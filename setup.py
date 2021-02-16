@@ -22,85 +22,104 @@ import sys
 import subprocess
 import re
 
-# Return the git revision as a string
+
 def git_version():
+    """Get the version from git describe
+
+    Returns:
+        string: version string or None if invalid
+    """
     def _minimal_ext_cmd(cmd):
         # construct minimal environment
         env = {}
-        for k in ['SYSTEMROOT', 'PATH', 'HOME']:
+        for k in ["SYSTEMROOT", "PATH", "HOME"]:
             v = os.environ.get(k)
             if v is not None:
                 env[k] = v
         # LANGUAGE is used on win32
-        env['LANGUAGE'] = 'C'
-        env['LANG'] = 'C'
-        env['LC_ALL'] = 'C'
+        env["LANGUAGE"] = "C"
+        env["LANG"] = "C"
+        env["LC_ALL"] = "C"
         out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env)
         return out
 
     try:
-        out = _minimal_ext_cmd(['git', 'describe', '--tags', '--dirty', '--always'])
-        GIT_REVISION = out.strip().decode('ascii')
+        out = _minimal_ext_cmd(["git", "describe", "--tags", "--dirty", "--always"])
+        GIT_REVISION = out.strip().decode("ascii")
     except (subprocess.SubprocessError, OSError):
-        GIT_REVISION = "Unknown"
+        GIT_REVISION = None
 
     return GIT_REVISION
 
-VERSION_PATTERN = r"""
-    v?
-    (?:
-        (?:(?P<epoch>[0-9]+)!)?                           # epoch
-        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-        (?P<pre>                                          # pre-release
-            [-_\.]?
-            (?P<pre_l>(alpha|beta|a|b|c|rc))
-            (?P<pre_n>[0-9]+)?
-        )?
-        (?P<meta>
-            [-_\.]?
-            (?P<commits_since>[0-9]+)?
-            [-_\.]?
-            (?P<sha>[a-z0-9]*)?
-            [-_\.]? 
-            (?P<dirty>dirty)?
-        )?
-    )
-"""
+def standardize_version(version_string):
+    """Standardize the version string
+    
+    Args:
+        version_string (str): input version string 
+    Returns:
+        str: standardized version
+    """
+    VERSION_PATTERN = r"""
+        v?
+        (?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
+                [-_\.]?
+                (?P<pre_l>(alpha|beta|a|b|c|rc))
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<dev>                                          # dev release
+                [-_\.]?
+                (?P<dev_l>dev)
+                [-_\.]?
+                (?P<dev_n>[0-9]+)?
+            )?
+            (?P<meta>
+                [-_\.]?
+                (?P<commits_since>[0-9]+)?
+                [-_\.]?
+                (?P<sha>[a-z0-9]*)?
+                [-_\.]? 
+                (?P<dirty>dirty)?
+            )?
+        )
+    """
 
-_regex = re.compile(
-    r"^\s*" + VERSION_PATTERN + r"\s*$",
-    re.VERBOSE | re.IGNORECASE,
-)
+    _regex = re.compile(
+        r"^\s*" + VERSION_PATTERN + r"\s*$",
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    match = _regex.match(version_string)
+    if match:
+        if match.group("release"):
+            version = match.group("release")
+            if match.group("pre_l"):
+                version += match.group("pre_l")
+                if match.group("pre_n"):
+                    version += match.group("pre_n")
+                else:
+                    version += "0"
+            if match.group("dev"):
+                version += "dev"
+                if match.group("dev_n"):
+                    version += match.group("dev_n")
+                else:
+                    version += "0"
+    else:
+        version = "0.0.0"
+    return version
 
 version = git_version()
-if not version == "Unknown":
-    match = _regex.match(version)
-    if match:
-        if match.group('release'):
-            version = match.group('release') 
-            if match.group('pre_l'):
-                version += match.group('pre_l')
-            if match.group('pre_n'):
-                version += match.group('pre_n')
-            else:
-                version += '0'
-    else:
-        version = "0.0.0"
+if version is None:
+    # Git describe failed... read version from file
+    with open("VERSION", "r") as f:
+        version = f.readline()
+    version = standardize_version(version)
 else:
-    with open('VERSION', 'r') as f:
-       version = f.readline()
-    match = _regex.match(version)
-    if match:
-        if match.group('release'):
-            version = match.group('release') 
-            if match.group('pre_l'):
-                version += match.group('pre_l')
-            if match.group('pre_n'):
-                version += match.group('pre_n')
-            else:
-                version += '0'
-    else:
-        version = "0.0.0"
+    version = standardize_version(version)
+
 
 cmake_args=['-DBUILD_PYMEM3DG=ON', '-DSUITESPARSE=OFF']
 

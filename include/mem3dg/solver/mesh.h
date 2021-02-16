@@ -32,21 +32,9 @@ namespace gcs = ::geometrycentral::surface;
  * @param polygons  Polygons of the mesh
  * @param n         Iterations of quadrisections to perform
  */
-DLL_PUBLIC void icosphere(std::vector<gc::Vector3> &coords,
-                          std::vector<std::vector<std::size_t>> &polygons,
-                          int n, double R = 1);
-
-/**
- * @brief Load a reference geometry object on existing mesh object
- *
- * @param ptrMesh    Reference to the unique pointer to the mesh object
- * @param ptrRefVpg  Pointer to the reference geometry object     
- * @param coords     Coordinates Eigen matrix V x 3     
- */
-DLL_PUBLIC void
-loadRefMesh(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
-            gcs::VertexPositionGeometry *&ptrRefVpg,
-            Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords);
+DLL_PUBLIC std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                      std::unique_ptr<gcs::VertexPositionGeometry>>
+icosphere(int n, double R);
 
 /**
  * @brief Hard code a tetrahedron in PolygonSoup form
@@ -81,13 +69,4 @@ loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
               std::unique_ptr<gcs::VertexPositionGeometry> &ptrVpg,
               std::size_t nSub);
 
-/**
- * @brief generate a icosphere in .ply format to path
- *
- * @param nSub Iterations of quadrisections to perform
- * @param path String of output path
- * @param R    Radius of the sphere
- */
-DLL_PUBLIC int genIcosphere(size_t nSub, std::string path, double R);
-
-} // end namespace ddgsolver
+} // namespace mem3dg

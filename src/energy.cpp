@@ -39,7 +39,7 @@ void System::getBendingEnergy() {
 
 void System::getSurfaceEnergy() {
   double A_difference = surfaceArea - targetSurfaceArea;
-  if (mesh.hasBoundary()) {
+  if (mesh->hasBoundary()) {
     E.sE = P.Ksg * A_difference;
   } else {
     E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 +
@@ -49,7 +49,7 @@ void System::getSurfaceEnergy() {
 
 void System::getPressureEnergy() {
   double V_difference = volume - refVolume * P.Vt;
-  if (mesh.hasBoundary()) {
+  if (mesh->hasBoundary()) {
     E.pE = -P.Kv * V_difference;
   } else if (isReducedVolume) {
     E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
@@ -71,7 +71,7 @@ void System::getLineTensionEnergy() {
 
 void System::getExternalForceEnergy() {
   E.exE = -rowwiseDotProduct(gc::EigenMap<double, 3>(externalPressure),
-                             gc::EigenMap<double, 3>(vpg.inputVertexPositions))
+                             gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();
 }
 
@@ -79,7 +79,7 @@ void System::getKineticEnergy() {
   // auto velocity = gc::EigenMap<double, 3>(vel);
   auto velocity =
       rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
-                        gc::EigenMap<double, 3>(vpg.inputVertexPositions));
+                        gc::EigenMap<double, 3>(vpg->inputVertexPositions));
   E.kE = 0.5 * (M * (velocity.array() * velocity.array()).matrix()).sum();
 }
 
