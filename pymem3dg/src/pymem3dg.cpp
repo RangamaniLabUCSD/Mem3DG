@@ -41,14 +41,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   system.def(py::init<std::string, std::string, size_t, Parameters, bool, bool,
                       bool, bool>());
-  system.def_readwrite("proteinDensity", &System::proteinDensity,
-                       R"delim(
-          get the protein Density
-      )delim");
-  system.def_readwrite("insidePressure", &System::insidePressure,
-                       R"delim(
-          get the inside pressures
-      )delim");
   system.def_readwrite("E", &System::E,
                        R"delim(
           get the Energy components struct
@@ -57,41 +49,166 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                        R"delim(
           get the Parameters struct
       )delim");
-  system.def("getBendingPressure", &System::getBendingPressure,
-             R"delim(
-          get the bending pressures
+  system.def_readwrite("time", &System::time,
+                       R"delim(
+          get the time
       )delim");
-  system.def("getChemicalPotential", &System::getChemicalPotential,
-             R"delim(
-          get the chemical potential
+  system.def_readwrite("surfaceArea", &System::surfaceArea,
+                       R"delim(
+          get the surface area of the mesh
       )delim");
-  system.def("getCapillaryPressure", &System::getCapillaryPressure,
-             R"delim(
-          get the capillary Pressure
+  system.def_readwrite("volume", &System::volume,
+                       R"delim(
+          get the enclosed volume of the mesh
       )delim");
-  system.def("getInsidePressure", &System::getInsidePressure,
-             R"delim(
-          get the getInsidePressure
+
+  system.def(
+      "getVertexPositionMatrix",
+      [](System &s) {
+        return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
+      },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the vertex position matrix
       )delim");
-  system.def("getLineTensionPressure", &System::getLineTensionPressure,
-             R"delim(
-          get the getLineTensionPressure
+  system.def(
+      "getFaceVertexMatrix",
+      [](System &s) { return s.mesh->getFaceVertexMatrix<size_t>(); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the face vertex matrix
       )delim");
-  system.def("getDPDForces", &System::getDPDForces,
-             R"delim(
-          get the getDPDForces
+  system.def(
+      "getBendingPressure",
+      [](System &s) { return gc::EigenMap<double, 3>(s.bendingPressure); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the bending Pressure
       )delim");
-  system.def("getExternalPressure", &System::getExternalPressure,
-             R"delim(
-          get the getExternalPressure
+  system.def(
+      "getCapillaryPressure",
+      [](System &s) { return gc::EigenMap<double, 3>(s.capillaryPressure); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the tension-induced capillary pressure
       )delim");
-  system.def("getAllForces", &System::getAllForces,
-             R"delim(
-          get all forces
+  system.def(
+      "getLineTensionPressure",
+      [](System &s) { return gc::EigenMap<double, 3>(s.lineTensionPressure); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the interfacial line tension
       )delim");
-  system.def("getFreeEnergy", &System::getFreeEnergy,
+  system.def(
+      "getExternalPressure",
+      [](System &s) { return gc::EigenMap<double, 3>(s.externalPressure); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the externally-applied pressure
+      )delim");
+  system.def(
+      "getInsidePressure", [](System &s) { return s.insidePressure; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the relative inside pressure
+      )delim");
+  system.def(
+      "getSurfaceTension", [](System &s) { return s.surfaceTension; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the Surface tension
+      )delim");
+  system.def(
+      "getProteinDensity", [](System &s) { return s.proteinDensity.raw(); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the protein Density
+      )delim");
+  system.def(
+      "getMeanCurvature", [](System &s) { return s.H.raw(); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the mean curvature
+      )delim");
+  system.def(
+      "getGaussianCurvature", [](System &s) { return s.K.raw(); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the Gaussian Curvature
+      )delim");
+  system.def(
+      "getSpontaneousCurvature", [](System &s) { return s.H0.raw(); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the spontaneous curvature
+      )delim");
+  system.def(
+      "getSurfaceArea", [](System &s) { return s.surfaceArea; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the surface area
+      )delim");
+  system.def(
+      "getVolume", [](System &s) { return s.volume; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the enclosed volume
+      )delim");
+  system.def(
+      "getLumpedMassMatrix", [](System &s) { return s.M; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the lumped mass matrix of the mesh
+      )delim");
+  system.def(
+      "getCotanLaplacian", [](System &s) { return s.L; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the Cotan Laplacian matrix of the mesh
+      )delim");
+
+  system.def("computeBendingPressure", &System::computeBendingPressure,
+             py::return_value_policy::reference_internal,
              R"delim(
-          get the free energy of the system
+          compute the bending pressures
+      )delim");
+  system.def("computeChemicalPotential", &System::computeChemicalPotential,
+             py::return_value_policy::reference_internal,
+             R"delim(
+          compute the chemical potential
+      )delim");
+  system.def("computeCapillaryPressure", &System::computeCapillaryPressure,
+             py::return_value_policy::reference_internal,
+             R"delim(
+          compute the capillary Pressure
+      )delim");
+  system.def("computeInsidePressure", &System::computeInsidePressure,
+             py::return_value_policy::reference_internal,
+             R"delim(
+          compute the InsidePressure
+      )delim");
+  system.def("computeLineTensionPressure", &System::computeLineTensionPressure,
+             py::return_value_policy::reference_internal,
+             R"delim(
+          compute the LineTensionPressure
+      )delim");
+  system.def("computeDPDForces", &System::computeDPDForces,
+             py::return_value_policy::reference_internal,
+             R"delim(
+          compute the DPDForces
+      )delim");
+  system.def("computeExternalPressure", &System::computeExternalPressure,
+             py::return_value_policy::reference_internal,
+             R"delim(
+          compute the ExternalPressure
+      )delim");
+  system.def("computeAllForces", &System::computeAllForces,
+             R"delim(
+          compute all the forces
+      )delim");
+  system.def("computeFreeEnergy", &System::computeFreeEnergy,
+             R"delim(
+          compute the free energy of the system
       )delim");
 
   /// Parameter struct

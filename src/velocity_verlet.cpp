@@ -55,7 +55,7 @@ void getForces(System &f,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
-  f.getAllForces();
+  f.computeAllForces();
 
   physicalPressure = rowwiseScaling(
       f.mask.raw().cast<double>(),
@@ -201,11 +201,11 @@ void saveNetcdfData(
   // write Norms
   fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
   fd.writeL2BendNorm(frame,
-                     f.getL2Norm(EigenMap<double, 3>(f.bendingPressure)));
+                     f.computeL2Norm(EigenMap<double, 3>(f.bendingPressure)));
   fd.writeL2SurfNorm(frame,
-                     f.getL2Norm(EigenMap<double, 3>(f.capillaryPressure)));
+                     f.computeL2Norm(EigenMap<double, 3>(f.capillaryPressure)));
   fd.writeL2PressNorm(
-      frame, f.getL2Norm(f.insidePressure *
+      frame, f.computeL2Norm(f.insidePressure *
                          gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
 }
 #endif
@@ -261,7 +261,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
     newTotalPressure = physicalPressure + DPDPressure;
 
     // compute the L2 error norm
-    f.L2ErrorNorm = f.getL2Norm(f.M * physicalPressure + regularizationForce);
+    f.L2ErrorNorm = f.computeL2Norm(f.M * physicalPressure + regularizationForce);
 
     // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -291,7 +291,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
     }
 
     // compute the free energy of the system
-    f.getFreeEnergy();
+    f.computeFreeEnergy();
 
     // Save files every tSave period and print some info
     static double lastSave;

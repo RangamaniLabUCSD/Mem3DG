@@ -33,7 +33,7 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-EigenVectorX3D System::getBendingPressure() {
+EigenVectorX3D System::computeBendingPressure() {
 
   // map the MeshData to eigen matrix XXX_e
   auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
@@ -95,7 +95,7 @@ EigenVectorX3D System::getBendingPressure() {
   //                    vertexAngleNormal_e);
 }
 
-EigenVectorX3D System::getCapillaryPressure() {
+EigenVectorX3D System::computeCapillaryPressure() {
 
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
   auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
@@ -131,7 +131,7 @@ EigenVectorX3D System::getCapillaryPressure() {
   // }
 }
 
-double System::getInsidePressure() {
+double System::computeInsidePressure() {
   /// Geometric implementation
   if (mesh->hasBoundary()) {
     /// Inside excess pressure of patch
@@ -158,7 +158,7 @@ double System::getInsidePressure() {
   // }
 }
 
-EigenVectorX3D System::getLineTensionPressure() {
+EigenVectorX3D System::computeLineTensionPressure() {
   gcs::HalfedgeData<gc::Vector2> halfedgeVectorsInVertex(*mesh);
   gcs::VertexData<std::array<gc::Vector3, 2>> vertexTangentBasis(*mesh);
 
@@ -277,7 +277,7 @@ EigenVectorX3D System::getLineTensionPressure() {
   // }
 }
 
-EigenVectorX3D System::getExternalPressure() {
+EigenVectorX3D System::computeExternalPressure() {
 
   auto externalPressure_e = gc::EigenMap<double, 3>(externalPressure);
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
@@ -316,7 +316,7 @@ EigenVectorX3D System::getExternalPressure() {
   return externalPressure_e;
 }
 
-EigenVectorX1D System::getChemicalPotential() {
+EigenVectorX1D System::computeChemicalPotential() {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
       (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
@@ -333,7 +333,7 @@ EigenVectorX1D System::getChemicalPotential() {
   return chemicalPotential.raw();
 }
 
-std::tuple<EigenVectorX3D, EigenVectorX3D> System::getDPDForces() {
+std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces() {
   // Reset forces to zero
   auto dampingForce_e = gc::EigenMap<double, 3>(dampingForce);
   auto stochasticForce_e = gc::EigenMap<double, 3>(stochasticForce);
@@ -379,7 +379,7 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::getDPDForces() {
   return std::tie(dampingForce_e, stochasticForce_e);
 }
 
-void System::getAllForces() {
+void System::computeAllForces() {
 
   // zero all forces
   gc::EigenMap<double, 3>(bendingPressure).setZero();
@@ -393,28 +393,28 @@ void System::getAllForces() {
   insidePressure = 0;
 
   if (P.Kb != 0) {
-    getBendingPressure();
+    computeBendingPressure();
   }
   if (P.Kv != 0) {
-    getInsidePressure();
+    computeInsidePressure();
   }
   if (P.Ksg != 0) {
-    getCapillaryPressure();
+    computeCapillaryPressure();
   }
   if (P.eta != 0) {
-    getLineTensionPressure();
+    computeLineTensionPressure();
   }
   if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
     getRegularizationForce();
   }
   if ((P.gamma != 0) || (P.sigma != 0)) {
-    getDPDForces();
+    computeDPDForces();
   }
   if (isProtein) {
-    getChemicalPotential();
+    computeChemicalPotential();
   }
   if (P.Kf != 0) {
-    getExternalPressure();
+    computeExternalPressure();
   }
 }
 

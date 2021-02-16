@@ -246,7 +246,7 @@ void System::initConstants() {
   targetEdgeLengths = refVpg->edgeLengths;
 
   // Initialize the target constant cross length ration
-  targetLcr = getLengthCrossRatio(*refVpg);
+  targetLcr = computeLengthCrossRatio(*refVpg);
 
   // Initialize the constant reference volume
   if (mesh->hasBoundary()) {
@@ -315,7 +315,7 @@ void System::updateVertexPositions() {
   }
 
   // initialize/update external force
-  getExternalPressure();
+  computeExternalPressure();
   
   // initialize/update the vertex position of the last iteration
   pastPositions = vpg->inputVertexPositions;

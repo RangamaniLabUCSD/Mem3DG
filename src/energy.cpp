@@ -28,7 +28,7 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void System::getBendingEnergy() {
+void System::computeBendingEnergy() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = H.raw() - H0.raw();
   E.BE = P.Kb * H_difference.transpose() * M * H_difference;
 
@@ -37,7 +37,7 @@ void System::getBendingEnergy() {
   // K).sum();
 }
 
-void System::getSurfaceEnergy() {
+void System::computeSurfaceEnergy() {
   double A_difference = surfaceArea - targetSurfaceArea;
   if (mesh->hasBoundary()) {
     E.sE = P.Ksg * A_difference;
@@ -47,7 +47,7 @@ void System::getSurfaceEnergy() {
   }
 }
 
-void System::getPressureEnergy() {
+void System::computePressureEnergy() {
   double V_difference = volume - refVolume * P.Vt;
   if (mesh->hasBoundary()) {
     E.pE = -P.Kv * V_difference;
@@ -59,23 +59,23 @@ void System::getPressureEnergy() {
   }
 }
 
-void System::getChemicalEnergy() {
+void System::computeChemicalEnergy() {
   E.cE = (M * P.epsilon * proteinDensity.raw()).sum();
 }
 
-void System::getLineTensionEnergy() {
+void System::computeLineTensionEnergy() {
   E.lE = 0;
   // TODO: 
   // E.lE = (P.eta * interfacialArea * P.sharpness);
 }
 
-void System::getExternalForceEnergy() {
+void System::computeExternalForceEnergy() {
   E.exE = -rowwiseDotProduct(gc::EigenMap<double, 3>(externalPressure),
                              gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();
 }
 
-void System::getKineticEnergy() {
+void System::computeKineticEnergy() {
   // auto velocity = gc::EigenMap<double, 3>(vel);
   auto velocity =
       rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
@@ -83,38 +83,38 @@ void System::getKineticEnergy() {
   E.kE = 0.5 * (M * (velocity.array() * velocity.array()).matrix()).sum();
 }
 
-void System::getPotentialEnergy() {
+void System::computePotentialEnergy() {
   if (P.Kb != 0) {
-    getBendingEnergy();
+    computeBendingEnergy();
   }
   if (P.Ksg != 0) {
-    getSurfaceEnergy();
+    computeSurfaceEnergy();
   }
   if (P.Kv != 0) {
-    getPressureEnergy();
+    computePressureEnergy();
   }
   if (isProtein) {
-    getChemicalEnergy();
+    computeChemicalEnergy();
   }
   if (P.eta != 0) {
-    getLineTensionEnergy();
+    computeLineTensionEnergy();
   }
   if (P.Kf != 0) {
-    getExternalForceEnergy();
+    computeExternalForceEnergy();
   }
   E.potE = E.BE + E.sE + E.pE + E.cE + E.lE + E.exE;
 }
 
-void System::getFreeEnergy() {
+void System::computeFreeEnergy() {
   // zero all energy
   E = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   
-  getKineticEnergy();
-  getPotentialEnergy();
+  computeKineticEnergy();
+  computePotentialEnergy();
   E.totalE = E.kE + E.potE;
 }
 
-double System::getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
+double System::computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
   // return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
  
   return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;

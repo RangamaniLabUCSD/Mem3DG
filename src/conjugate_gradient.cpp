@@ -86,7 +86,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
 
   pos_e += alpha * direction;
   f.updateVertexPositions();
-  f.getFreeEnergy();
+  f.computeFreeEnergy();
 
   while (f.E.potE > (potentialEnergy_pre -
                      c1 * alpha * (force.array() * direction.array()).sum())) {
@@ -100,7 +100,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
       alpha = dt;
       pos_e = init_position;
       f.updateVertexPositions();
-      f.getFreeEnergy();
+      f.computeFreeEnergy();
       time = init_time - alpha;
 
       break;
@@ -108,7 +108,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
     alpha *= rho;
     pos_e = init_position + alpha * direction;
     f.updateVertexPositions();
-    f.getFreeEnergy();
+    f.computeFreeEnergy();
     count++;
   }
 
@@ -264,7 +264,7 @@ signal(SIGINT, signalHandler);
     vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
     // compute the L2 error norm
-    f.L2ErrorNorm = f.getL2Norm(vel_e);
+    f.L2ErrorNorm = f.computeL2Norm(vel_e);
 
     // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -295,7 +295,7 @@ signal(SIGINT, signalHandler);
     }
 
     // compute the free energy of the system
-    f.getFreeEnergy();
+    f.computeFreeEnergy();
 
     // Save files every tSave period and print some info
     static double lastSave;

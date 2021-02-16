@@ -31,11 +31,11 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
         (gc::EigenMap<double, 3>(f.vpg->inputVertexPositions) -
          gc::EigenMap<double, 3>(f.pastPositions)) /
         dt;
-    f.getBendingPressure();
-    f.getCapillaryPressure();
-    f.getInsidePressure();
-    f.getDPDForces();
-    f.getExternalPressure();
+    f.computeBendingPressure();
+    f.computeCapillaryPressure();
+    f.computeInsidePressure();
+    f.computeDPDForces();
+    f.computeExternalPressure();
 
     gcs::VertexData<gc::Vector3> temp = f.vpg->inputVertexPositions;
     for (gcs::Vertex v : f.mesh->vertices()) {
@@ -61,7 +61,7 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
     f.updateVertexPositions();
     f.pastPositions = temp;
-    f.getFreeEnergy();
+    f.computeFreeEnergy();
 
     // std::cout << "energy: " << totalEnergy << std::endl;
     // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<

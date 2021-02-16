@@ -108,7 +108,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
     vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
     // compute the L2 error norm
-    f.L2ErrorNorm = f.getL2Norm(vel_e);
+    f.L2ErrorNorm = f.computeL2Norm(vel_e);
 
     // compute the area contraint error
     dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -138,7 +138,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
     }
 
     // compute the free energy of the system
-    f.getFreeEnergy();
+    f.computeFreeEnergy();
 
     // Save files every tSave period and print some info
     static double lastSave;
