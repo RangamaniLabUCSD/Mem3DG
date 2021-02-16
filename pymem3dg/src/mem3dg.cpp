@@ -122,9 +122,6 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     mem3dg::integration::velocityVerlet(f, h, T, tSave, eps, verbosity,
                                         isAdaptiveStep, outputDir);
   } else if (integrationMethod == "euler") {
-    if (p.gamma != 0) {
-      throw std::runtime_error("gamma has to be 0 for euler integration!");
-    }
     bool success =
         mem3dg::integration::euler(f, h, T, tSave, eps, verbosity, outputDir,
                                    isBacktrack, rho, c1, isAdaptiveStep);
@@ -132,13 +129,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
       mem3dg::markFileName(outputDir, "/traj.nc", "_failed");
     }
   } else if (integrationMethod == "conjugate gradient") {
-    if (p.gamma != 0) {
-      throw std::runtime_error("gamma has to be 0 for CG optimization!");
-    }
     bool success = mem3dg::integration::conjugateGradient(
         f, h, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho, c1,
         isAugmentedLagrangian, isAdaptiveStep, "/traj.nc");
-
     // mark "failed" is CG returns false
     if (!success) {
       mem3dg::markFileName(outputDir, "/traj.nc", "_failed");
@@ -178,9 +171,6 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
 
   /// Time integration / optimization
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
-  if (p.gamma != 0) {
-    throw std::runtime_error("gamma has to be 0 for CG optimization!");
-  }
   mem3dg::integration::feedForwardSweep(
       f, H0, (isReducedVolume) ? Vt : cam, h, T, tSave, eps, ctol, outputDir,
       isBacktrack, rho, c1, isAugmentedLagrangian, isAdaptiveStep);
@@ -222,9 +212,6 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
     mem3dg::integration::velocityVerlet(f, h, T, tSave, eps, verbosity,
                                         isAdaptiveStep, outputDir);
   } else if (integrationMethod == "euler") {
-    if (p.gamma != 0) {
-      throw std::runtime_error("gamma has to be 0 for euler integration!");
-    }
     bool success =
         mem3dg::integration::euler(f, h, T, tSave, eps, verbosity, outputDir,
                                    isBacktrack, rho, c1, isAdaptiveStep);
@@ -232,9 +219,6 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
       mem3dg::markFileName(outputDir, "/traj.nc", "_failed");
     }
   } else if (integrationMethod == "conjugate gradient") {
-    if (p.gamma != 0) {
-      throw std::runtime_error("gamma has to be 0 for CG optimization!");
-    }
     bool success = mem3dg::integration::conjugateGradient(
         f, h, T, tSave, eps, ctol, verbosity, outputDir, isBacktrack, rho, c1,
         isAugmentedLagrangian, isAdaptiveStep, "/traj.nc");
@@ -279,9 +263,6 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
 
   /// Time integration / optimization
   std::cout << "Solving the system and saving to " << outputDir << std::endl;
-  if (p.gamma != 0) {
-    throw std::runtime_error("gamma has to be 0 for CG optimization!");
-  }
   mem3dg::integration::feedForwardSweep(
       f, H0, (isReducedVolume) ? Vt : cam, h, T, tSave, eps, ctol, outputDir,
       isBacktrack, rho, c1, isAugmentedLagrangian, isAdaptiveStep);
