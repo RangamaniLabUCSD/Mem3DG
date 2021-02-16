@@ -299,30 +299,6 @@ public:
                std::move(std::get<2>(meshVpgTuple)), p, isReducedVolume_,
                isProtein_, isLocalCurvature_, isVertexShift_){};
 
-  // /**
-  //  * @brief Construct a new System object by reading mesh and
-  //  * geometry objects
-  //  * @param mesh_         Mesh connectivity
-  //  * @param vpg_          Embedding and geometry information
-  //  * @param refvpg_       Embedding and geometry information
-  //  * @param p             Parameter of simulation
-  //  * @param isReducedVolume Option of whether adopting reduced volume
-  //  * parametrization
-  //  * @param isProtein     Option of considering protein adsorption
-  //  * @param isLocalCurvature Option of whether membrane has local curvature
-  //  * @param isVertexShift Option of whether conducting vertex shift
-  //  * regularization
-  //  */
-  // System(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_,
-  //        gcs::VertexPositionGeometry &refVpg_, Parameters &p,
-  //        bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
-  //        bool isVertexShift_)
-  //     : System(std::make_unique<gcs::ManifoldSurfaceMesh>(&mesh_),
-  //              std::make_unique<gcs::VertexPositionGeometry>(&vpg_),
-  //              std::make_unique<gcs::VertexPositionGeometry>(&refVpg_), p,
-  //              isReducedVolume_, isProtein_, isLocalCurvature_,
-  //              isVertexShift_){};
-
   /**
    * @brief Construct a new System object by reading unique_ptrs to mesh and
    * geometry objects
@@ -466,97 +442,97 @@ public:
   // ================        Pressure        ==================
   // ==========================================================
   /**
-   * @brief Get bending pressure component of the system
+   * @brief Compute bending pressure component of the system
    */
-  EigenVectorX3D getBendingPressure();
+  EigenVectorX3D computeBendingPressure();
 
   /**
-   * @brief Get chemical potential of the system
+   * @brief Compute chemical potential of the system
    */
-  EigenVectorX1D getChemicalPotential();
+  EigenVectorX1D computeChemicalPotential();
 
   /**
-   * @brief Get capillary pressure component of the system
+   * @brief Compute capillary pressure component of the system
    */
-  EigenVectorX3D getCapillaryPressure();
+  EigenVectorX3D computeCapillaryPressure();
 
   /**
-   * @brief Get inside pressure component of the system
+   * @brief Compute inside pressure component of the system
    */
-  double getInsidePressure();
+  double computeInsidePressure();
 
   /**
-   * @brief Get line tension pressure component of the system
+   * @brief Compute line tension pressure component of the system
    */
-  EigenVectorX3D getLineTensionPressure();
+  EigenVectorX3D computeLineTensionPressure();
 
   /**
-   * @brief Get DPD forces of the system
+   * @brief Compute DPD forces of the system
    */
-  std::tuple<EigenVectorX3D, EigenVectorX3D> getDPDForces();
+  std::tuple<EigenVectorX3D, EigenVectorX3D> computeDPDForces();
 
   /**
-   * @brief Get external pressure component of the system
+   * @brief Compute external pressure component of the system
    */
-  EigenVectorX3D getExternalPressure();
+  EigenVectorX3D computeExternalPressure();
 
   /**
-   * @brief Get all forces of the system
+   * @brief Compute all forces of the system
    */
-  void getAllForces();
+  void computeAllForces();
 
   // ==========================================================
   // ================        Energy          ==================
   // ==========================================================
   /**
-   * @brief Get bending energy
+   * @brief Compute bending energy
    */
-  void getBendingEnergy();
+  void computeBendingEnergy();
 
   /**
-   * @brief Get surface energy
+   * @brief Compute surface energy
    */
-  void getSurfaceEnergy();
+  void computeSurfaceEnergy();
 
   /**
-   * @brief Get pressure work
+   * @brief Compute pressure work
    */
-  void getPressureEnergy();
+  void computePressureEnergy();
 
   /**
-   * @brief Get chemical energy
+   * @brief Compute chemical energy
    */
-  void getChemicalEnergy();
+  void computeChemicalEnergy();
 
   /**
-   * @brief Get line tension energy
+   * @brief Compute line tension energy
    */
-  void getLineTensionEnergy();
+  void computeLineTensionEnergy();
 
   /**
-   * @brief Get external force energy
+   * @brief Compute external force energy
    */
-  void getExternalForceEnergy();
+  void computeExternalForceEnergy();
 
   /**
-   * @brief Get kinetic energy
+   * @brief Compute kinetic energy
    */
-  void getKineticEnergy();
+  void computeKineticEnergy();
 
   /**
-   * @brief Get potential energy
+   * @brief Compute potential energy
    */
-  void getPotentialEnergy();
+  void computePotentialEnergy();
 
   /**
-   * @brief Get all components of energy (free energy)
+   * @brief Compute all components of energy (free energy)
    */
-  void getFreeEnergy();
+  void computeFreeEnergy();
 
   /**
-   * @brief Get the L2 norm of the pressure
+   * @brief Compute the L2 norm of the pressure
    */
-  double getL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const;
+  double computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const;
 
   // ==========================================================
   // =============        Regularization        ===============
@@ -568,7 +544,7 @@ public:
   void vertexShift();
 
   /**
-   * @brief Get regularization pressure component of the system
+   * @brief Compute regularization pressure component of the system
    */
   void getRegularizationForce();
 
@@ -586,6 +562,6 @@ public:
    * @brief Get length cross ratio of the mesh
    */
   gcs::EdgeData<double>
-  getLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const;
+  computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const;
 };
 } // namespace mem3dg
