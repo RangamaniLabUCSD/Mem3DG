@@ -54,8 +54,9 @@ int main() {
          tMollify = 100;
   size_t verbosity = 0;
 
-  mem3dg::Integrator inte(f, h, true, T, tSave, eps, "./", "/traj.nc",verbosity);
-  inte.conjugateGradient(0.01, true, 0.5, 1e-4, false);
+  mem3dg::ConjugateGradient integrator(f, h, true, T, tSave, eps, "./", "/traj.nc",
+                           verbosity, true, 0.5, 1e-4, 0.01, false);
+  integrator.integrate();
 
   return 0;
 }

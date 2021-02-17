@@ -18,10 +18,6 @@
 #include <math.h>
 #include <pcg_random.hpp>
 
-#ifdef __linux__
-#include <sys/time.h>
-#endif
-
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
@@ -32,26 +28,11 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 
-#ifdef MEM3DG_WITH_NETCDF
-#include "mem3dg/solver/trajfile.h"
-#endif
-
 namespace mem3dg {
 namespace gc = ::geometrycentral;
 
-void Integrator::velocityVerlet() {
+void VelocityVerlet::integrate() {
   signal(SIGINT, signalHandler);
-
-  if (verbosity > 1) {
-    std::cout << "Running Velocity Verlet integrator ..." << std::endl;
-  }
-
-  // check the validity of parameter
-  checkParameters("velocity verlet");
-
-  // initialize variables used in time integration
-  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure;
-  // double dRef;
 
 #ifdef __linux__
   // start the timer
@@ -61,15 +42,15 @@ void Integrator::velocityVerlet() {
 
   // time integration loop
   for (;;) {
-
-    // Evaluate status data
-    velocityVerletStatus(totalPressure, newTotalPressure);
+    
+    // Evaluate and threhold status data
+    status();
 
     // Save files every tSave period and print some info
     static double lastSave;
     if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
       lastSave = f.time;
-      saveData(lastSave);
+      saveData();
     }
 
     // break loop if EXIT flag is on
@@ -78,9 +59,8 @@ void Integrator::velocityVerlet() {
     }
 
     // step forward
-    velocityVerletStep(totalPressure, newTotalPressure);
-
-  } // integration
+    step();
+  } 
 
   // stop the timer and report time spent
 #ifdef __linux__
@@ -92,9 +72,7 @@ void Integrator::velocityVerlet() {
 #endif
 }
 
-void Integrator::velocityVerletStatus(
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &totalPressure,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &newTotalPressure) {
+void VelocityVerlet::status() {
 
   // recompute cached values
   f.updateVertexPositions();
@@ -141,9 +119,7 @@ void Integrator::velocityVerletStatus(
   f.computeFreeEnergy();
 }
 
-void Integrator::velocityVerletStep(
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &totalPressure,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &newTotalPressure) {
+void VelocityVerlet::step() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);

@@ -30,18 +30,9 @@
 namespace mem3dg {
 namespace gc = ::geometrycentral;
 
-bool Integrator::euler(const bool isBacktrack, const double rho,
-                       const double c1) {
+bool Euler::integrate() {
 
   signal(SIGINT, signalHandler);
-
-  if (verbosity > 1) {
-    std::cout << "Running Forward Euler (steepest descent) propagator ..."
-              << std::endl;
-  }
-
-  // check the validity of parameter
-  checkParameters("euler");
 
 #ifdef __linux__
   // start the timer
@@ -53,13 +44,13 @@ bool Integrator::euler(const bool isBacktrack, const double rho,
   for (;;) {
 
     // Evaluate and threhold status data
-    eulerStatus();
+    status();
 
     // Save files every tSave period and print some info
     static double lastSave;
     if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
       lastSave = f.time;
-      saveData(lastSave);
+      saveData();
     }
 
     // break loop if EXIT flag is on
@@ -68,9 +59,8 @@ bool Integrator::euler(const bool isBacktrack, const double rho,
     }
 
     // step forward
-    eulerStep(isBacktrack, rho, c1);
-
-  } // integration
+    step();
+  }
 
   // stop the timer and report time spent
 #ifdef __linux__
@@ -88,7 +78,7 @@ bool Integrator::euler(const bool isBacktrack, const double rho,
   return SUCCESS;
 }
 
-void Integrator::eulerStatus() {
+void Euler::status() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
@@ -137,8 +127,7 @@ void Integrator::eulerStatus() {
   f.computeFreeEnergy();
 }
 
-void Integrator::eulerStep(const bool &isBacktrack, const double &rho,
-                           const double &c1) {
+void Euler::step() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
