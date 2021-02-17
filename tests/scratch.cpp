@@ -53,9 +53,9 @@ int main() {
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100;
   size_t verbosity = 0;
-  mem3dg::integration::conjugateGradient(f, h, T, tSave, eps, 0.01, verbosity,
-                                         "./", true, 0.5, 1e-4, false, true,
-                                         "/traj.nc");
+
+  mem3dg::Integrator inte(f, h, true, T, tSave, eps, "./", "/traj.nc",verbosity);
+  inte.conjugateGradient(0.01, true, 0.5, 1e-4, false);
 
   return 0;
 }

@@ -37,21 +37,20 @@
 #endif
 
 namespace mem3dg {
-namespace integration {
 namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
 
-void velocityVerlet(System &f, double dt, double total_time, double tSave,
-                    double tolerance, const size_t verbosity,
-                    const bool isAdaptiveStep, std::string outputDir) {
+void Integrator::velocityVerlet() {
   signal(SIGINT, signalHandler);
 
+  if (verbosity > 1) {
+    std::cout << "Running Velocity Verlet integrator ..." << std::endl;
+  }
+
   // check the validity of parameter
-  checkParameters("velocity verlet", f, dt);
+  checkParameters("velocity verlet");
 
   // initialize variables used in time integration
-  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure,
-      regularizationForce, physicalPressure, DPDPressure;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure, newTotalPressure;
   const double hdt = 0.5 * dt, hdt2 = hdt * dt;
   double dArea, dVP, init_time = f.time; // double dRef;
   size_t frame = 0;
@@ -78,7 +77,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + "/traj.nc", *f.mesh, *f.refVpg,
+    fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.raw().cast<int>());
     fd.writeRefVolume(f.refVolume);
@@ -89,7 +88,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
   // time integration loop
   for (;;) {
     // compute summerized forces
-    getForces(f, physicalPressure, DPDPressure, regularizationForce);
+    getForces();
     totalPressure.resize(f.mesh->nVertices(), 3);
     totalPressure.setZero();
     newTotalPressure = physicalPressure + DPDPressure;
@@ -113,9 +112,9 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
       dVP = (!f.mesh->hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
     }
 
-    // exit if under error tolerance
-    if (f.L2ErrorNorm < tolerance) {
-      std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+    // exit if under error tol
+    if (f.L2ErrorNorm < tol) {
+      std::cout << "\nL2 error norm smaller than tol." << std::endl;
       EXIT = true;
     }
 
@@ -135,7 +134,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
 
       // save variable to richData and save ply file
       if (verbosity > 3) {
-        saveRichData(f, physicalPressure, verbosity);
+        saveRichData();
         char buffer[50];
         sprintf(buffer, "/frame%d", (int)frame);
         f.richData.write(outputDir + buffer + ".ply");
@@ -144,7 +143,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
       // save variable to netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, f.time, fd, physicalPressure, verbosity);
+        saveNetcdfData(frame, fd);
       }
 #endif
 
@@ -178,7 +177,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
         std::cout << "Simulation finished, and data saved to " + outputDir
                   << std::endl;
         if (verbosity > 2) {
-          saveRichData(f, physicalPressure, verbosity);
+          saveRichData();
           f.richData.write(outputDir + "/out.ply");
         }
       }
@@ -223,10 +222,7 @@ void velocityVerlet(System &f, double dt, double total_time, double tSave,
 #endif
 }
 
-void getForces(System &f,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &DPDPressure,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &regularizationForce) {
+void Integrator::getForces() {
   f.computeAllForces();
 
   physicalPressure = rowwiseScaling(
@@ -256,5 +252,4 @@ void getForces(System &f,
   }
 }
 
-} // namespace integration
 } // namespace mem3dg

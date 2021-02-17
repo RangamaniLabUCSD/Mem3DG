@@ -23,13 +23,13 @@
 using namespace std;
 
 namespace mem3dg {
-namespace integration {
 
-void checkParameters(std::string integrator, System &f, double h) {
+void Integrator::checkParameters(std::string integrator) {
   if (integrator == "velocity verlet") {
-    if (abs(f.P.sigma -
-         sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / h)) /
-            sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / h) >
+    if (abs(f.P.sigma - sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann *
+                             f.P.temp / dt)) /
+            sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp /
+                 dt) >
         1e-6) {
       throw std::runtime_error(
           "sigma for DPD is not consistent, probably not initialized!");
@@ -47,9 +47,7 @@ void checkParameters(std::string integrator, System &f, double h) {
   }
 }
 
-void saveRichData(
-    System &f, const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t verbosity) {
+void Integrator::saveRichData() {
   gcs::VertexData<double> fn(*f.mesh), f_ext(*f.mesh), fb(*f.mesh), fl(*f.mesh),
       ft(*f.mesh);
 
@@ -82,10 +80,7 @@ void saveRichData(
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-void saveNetcdfData(
-    const System &f, size_t &frame, const double &time, TrajFile &fd,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &physicalPressure,
-    const size_t &verbosity) {
+void Integrator::saveNetcdfData(size_t &frame, TrajFile &fd) {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft, fp;
 
@@ -104,7 +99,7 @@ void saveNetcdfData(
   frame = fd.getNextFrameIndex();
 
   // write time
-  fd.writeTime(frame, time);
+  fd.writeTime(frame, f.time);
 
   // write geometry
   fd.writeCoords(frame, EigenMap<double, 3>(f.vpg->inputVertexPositions));
@@ -154,9 +149,7 @@ void saveNetcdfData(
 }
 #endif
 
-void getParameterLog(System &f, double dt, double finalTime, double tolerance,
-                     double tSave, std::string inputMesh,
-                     std::string outputDir) {
+void Integrator::getParameterLog(std::string inputMesh) {
   ofstream myfile(outputDir + "/parameter.txt");
   if (myfile.is_open()) {
     myfile << "Mem3DG Version: " << MEM3DG_VERSION << "\n";
@@ -183,8 +176,8 @@ void getParameterLog(System &f, double dt, double finalTime, double tolerance,
     myfile << "Integration parameters used: \n";
     myfile << "\n";
     myfile << "dt:       " << dt << "\n"
-           << "T:        " << finalTime << "\n"
-           << "eps:		   " << tolerance << "\n"
+           << "T:        " << total_time << "\n"
+           << "eps:		   " << tol << "\n"
            << "tSave:    " << tSave << "\n"
            << "no. non-integrated: "
            << f.mask.raw().rows() - f.mask.raw().cast<size_t>().sum() << "\n";
@@ -194,14 +187,10 @@ void getParameterLog(System &f, double dt, double finalTime, double tolerance,
     cout << "Unable to open file";
 }
 
-void getStatusLog(std::string nameOfFile, System &f, double dt, double time,
-                  std::size_t frame, double areaError, double volumeError,
-                  double bendingError, double faceError, double bendingEnergy,
-                  double surfaceEnergy, double pressureEnergy,
-                  double kineticEnergy, double chemicalEnergy,
-                  double lineEnergy, double totalEnergy, double L2ErrorNorm,
-                  bool isTuftedLaplacian, bool isProtein, bool isVertexShift,
-                  std::string inputMesh) {
+void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
+                              double areaError, double volumeError,
+                              double bendingError, double faceError,
+                              std::string inputMesh) {
   ofstream myfile(nameOfFile);
   if (myfile.is_open()) {
     myfile << "Input Mesh: " << inputMesh << "\n";
@@ -226,20 +215,20 @@ void getStatusLog(std::string nameOfFile, System &f, double dt, double time,
     myfile << "Integration: \n";
     myfile << "\n";
     myfile << "dt:    " << dt << "\n"
-           << "T:     " << time << "\n"
+           << "T:     " << f.time << "\n"
            << "Frame: " << frame << "\n";
 
     myfile << "\n";
     myfile << "States: \n";
     myfile << "\n";
-    myfile << "Bending Energy:   " << bendingEnergy << "\n"
-           << "Surface Energy:   " << surfaceEnergy << "\n"
-           << "Pressure Work:    " << pressureEnergy << "\n"
-           << "Kinetic Work:    " << kineticEnergy << "\n"
-           << "Chemical Energy:  " << chemicalEnergy << "\n"
-           << "Line tension Energy:  " << lineEnergy << "\n"
-           << "Total Energy:     " << totalEnergy << "\n"
-           << "L2 error norm:    " << L2ErrorNorm << "\n"
+    myfile << "Bending Energy:   " << f.E.BE << "\n"
+           << "Surface Energy:   " << f.E.sE << "\n"
+           << "Pressure Work:    " << f.E.pE << "\n"
+           << "Kinetic Work:    " << f.E.kE << "\n"
+           << "Chemical Energy:  " << f.E.cE << "\n"
+           << "Line tension Energy:  " << f.E.lE << "\n"
+           << "Total Energy:     " << f.E.totalE << "\n"
+           << "L2 error norm:    " << f.L2ErrorNorm << "\n"
            << "Volume:           " << f.volume << " = "
            << f.volume / f.refVolume << " reduced volume"
            << "\n"
@@ -268,28 +257,12 @@ void getStatusLog(std::string nameOfFile, System &f, double dt, double time,
     myfile << "\n";
     myfile << "Options: \n";
     myfile << "\n";
-    myfile << "Is tufted laplacian:    " << isTuftedLaplacian << "\n"
-           << "Is considering protein: " << isProtein << "\n"
-           << "Is vertex shift: " << isVertexShift << "\n";
+    myfile << "Is considering protein: " << f.isProtein << "\n"
+           << "Is vertex shift: " << f.isVertexShift << "\n";
 
     myfile.close();
   } else
     cout << "Unable to open file";
 }
 
-void getEnergyLog(double time, double bendingEnergy, double surfaceEnergy,
-                  double pressureEnergy, double kineticEnergy,
-                  double chemicalEnergy, double totalEnergy,
-                  std::string outputDir) {
-  ofstream myfile(outputDir + "energy.txt", std::ios::app);
-  if (myfile.is_open()) {
-    myfile << time << "," << bendingEnergy << "," << surfaceEnergy << ","
-           << pressureEnergy << "," << kineticEnergy << "," << chemicalEnergy
-           << "," << totalEnergy << "\n";
-    myfile.close();
-  } else
-    cout << "Unable to open file";
-}
-
-} // namespace integration
 } // namespace mem3dg

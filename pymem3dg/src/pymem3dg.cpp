@@ -25,6 +25,7 @@
 
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/system.h"
+#include "pybind11/cast.h"
 
 namespace gc = ::geometrycentral;
 namespace mem3dg {
@@ -33,6 +34,35 @@ namespace py = pybind11;
 // Initialize the `pymem3dg` module
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
+
+  /// Integrator object
+  py::class_<Integrator> integrator(pymem3dg, "Integrator", R"delim(
+        The integrator
+    )delim");
+
+  integrator.def(py::init<System &, double, bool, double, double, double,
+                          std::string, std::string, size_t>());
+
+  /// Velocity Verlet
+  integrator.def("velocityVerlet", &Integrator::velocityVerlet,
+                 R"delim(
+        Velocity Verlet integration
+      )delim");
+
+  /// Euler
+  integrator.def("euler", &Integrator::euler, py::arg("isBacktrack"),
+                 py::arg("rho"), py::arg("c1"),
+                 R"delim(
+        forward euler (gradient descent) integration
+      )delim");
+
+  /// Conjugate Gradient
+  integrator.def("conjugateGradient", &Integrator::conjugateGradient,
+                 py::arg("ctol"), py::arg("isBacktrack"), py::arg("rho"),
+                 py::arg("c1"), py::arg("isAugmentedLagrangian"),
+                 R"delim(
+        conjugate Gradient propagator
+      )delim");
 
   /// System object
   py::class_<System> system(pymem3dg, "System",
@@ -365,36 +395,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                        R"delim(
           get work of external force  
       )delim");
-
-  /// Velocity Verlet
-  pymem3dg.def("velocityVerlet", &mem3dg::integration::velocityVerlet,
-               "Run velocity verlet time integration", py::arg("f"),
-               py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-               py::arg("tolerance"), py::arg("verbosity"),
-               py::arg("isAdaptiveStep"), py::arg("outputDir"),
-               R"delim(
-        )delim");
-
-  /// Euler integration
-  pymem3dg.def("euler", &mem3dg::integration::euler,
-               "Run forward euler time integration", py::arg("f"),
-               py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-               py::arg("tolerance"), py::arg("verbosity"), py::arg("outputDir"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
-               py::arg("isAdaptiveStep"),
-               R"delim(
-        )delim");
-
-  /// CG integration
-  pymem3dg.def("conjugateGradient", &mem3dg::integration::conjugateGradient,
-               "Run conjugate gradient time integration", py::arg("f"),
-               py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-               py::arg("tol"), py::arg("ctol"), py::arg("verbosity"),
-               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-               py::arg("c1"), py::arg("isAugmentedLagrangian"),
-               py::arg("isAdaptiveStep"), py::arg("trajFileName"),
-               R"delim(
-        )delim");
 
   /// Driver function for system generation
   pymem3dg.def("system_ply", &system_ply,

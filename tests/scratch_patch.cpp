@@ -54,8 +54,9 @@ int main() {
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
-  mem3dg::integration::euler(f, h, T, tSave, eps, verbosity, outputDir, true,
-                             0.5, 1e-4, true);
+
+  mem3dg::Integrator inte(f, h, true, T, tSave, eps, outputDir, "/traj.nc",verbosity);
+  inte.euler(true, 0.5, 1e-4);
 
   return 0;
 }
