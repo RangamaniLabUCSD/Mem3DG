@@ -32,13 +32,13 @@
 #include <random>
 
 #include <math.h>
+#include <vector>
 
 #include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/util.h"
-#include <vector>
 
 using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
@@ -230,8 +230,9 @@ public:
   gcs::EdgeData<bool> isSplit;
   /// If collapsing the edge
   gcs::EdgeData<bool> isCollapse;
-  /*
-   * @brief Construct a new Force object
+
+  /**
+   * @brief Construct a new Force object by reading mesh file path
    *
    * @param inputMesh     Input Mesh
    * @param refMesh       Reference Mesh
@@ -244,7 +245,7 @@ public:
    * @param isVertexShift Option of whether conducting vertex shift
    * regularization
    */
-  System(std::string inputMesh, std::string refMesh, size_t nSub, Parameters p,
+  System(std::string inputMesh, std::string refMesh, size_t nSub, Parameters &p,
          bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
          bool isVertexShift_)
       : System(readMeshes(inputMesh, refMesh, nSub), p, isReducedVolume_,
@@ -265,7 +266,7 @@ public:
    * regularization
    */
   System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
-         Parameters p, bool isReducedVolume_, bool isProtein_,
+         Parameters &p, bool isReducedVolume_, bool isProtein_,
          bool isLocalCurvature_, bool isVertexShift_)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, isReducedVolume_,
                isProtein_, isLocalCurvature_, isVertexShift_) {
@@ -292,7 +293,7 @@ public:
                     std::unique_ptr<gcs::VertexPositionGeometry>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
-         Parameters p, bool isReducedVolume_, bool isProtein_,
+         Parameters &p, bool isReducedVolume_, bool isProtein_,
          bool isLocalCurvature_, bool isVertexShift_)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)),
@@ -315,7 +316,7 @@ public:
    */
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters p,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
          bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
          bool isVertexShift_)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
@@ -437,6 +438,12 @@ public:
    *
    */
   void updateVertexPositions();
+
+  /**
+   * @brief Visualization using Polyscope
+   *
+   */
+  void visualize();
 
   // ==========================================================
   // ================        Pressure        ==================

@@ -39,8 +39,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                             R"delim(
         The system
     )delim");
-  system.def(py::init<std::string, std::string, size_t, Parameters, bool, bool,
-                      bool, bool>());
+  system.def(py::init<std::string, std::string, size_t, Parameters &, bool,
+                      bool, bool, bool>());
   system.def_readwrite("E", &System::E,
                        R"delim(
           get the Energy components struct
@@ -211,10 +211,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           compute the free energy of the system
       )delim");
 
+  system.def("visualize", &System::visualize,
+             R"delim(
+          visualization of the system object
+      )delim");
+
   /// Parameter struct
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
         The parameters
     )delim");
+  parameters.def(py::init<>());
   parameters.def(
       py::init<double, double, double, std::vector<double>, double, double,
                double, double, double, double, double, double, double, double,

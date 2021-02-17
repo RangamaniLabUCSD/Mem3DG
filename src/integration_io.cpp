@@ -27,7 +27,7 @@ namespace integration {
 
 void checkParameters(std::string integrator, System &f, double h) {
   if (integrator == "velocity verlet") {
-    if ((f.P.sigma -
+    if (abs(f.P.sigma -
          sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / h)) /
             sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / h) >
         1e-6) {
