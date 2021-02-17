@@ -24,6 +24,71 @@ using namespace std;
 
 namespace mem3dg {
 
+void Integrator::createNetcdfFile() {
+  // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+  if (verbosity > 0) {
+    fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
+                     TrajFile::NcFile::replace);
+    fd.writeMask(f.mask.raw().cast<int>());
+    fd.writeRefVolume(f.refVolume);
+    fd.writeRefSurfArea(f.targetSurfaceArea);
+  }
+#endif
+}
+
+void Integrator::saveData(double &lastSave) {
+    // save variable to richData and save ply file
+    if (verbosity > 3) {
+      saveRichData();
+      char buffer[50];
+      sprintf(buffer, "/frame%d", (int)frame);
+      f.richData.write(outputDir + buffer + ".ply");
+    }
+
+#ifdef MEM3DG_WITH_NETCDF
+    // save variable to netcdf traj file
+    if (verbosity > 0) {
+      saveNetcdfData(frame, fd);
+    }
+#endif
+
+    // print in-progress information in the console
+    if (verbosity > 1) {
+      std::cout << "\n"
+                << "t: " << f.time << ", "
+                << "n: " << frame << "\n"
+                << "dA: " << dArea << ", "
+                << "dVP: " << dVP << ", "
+                << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
+                << "\n"
+                << "E_total: " << f.E.totalE << "\n"
+                << "|e|L2: " << f.L2ErrorNorm << "\n"
+                << "H: [" << f.H.raw().minCoeff() << "," << f.H.raw().maxCoeff()
+                << "]"
+                << "\n"
+                << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff()
+                << "]" << std::endl;
+      // << "COM: "
+      // << gc::EigenMap<double,
+      // 3>(f.vpg->inputVertexPositions).colwise().sum() /
+      //         f.vpg->inputVertexPositions.raw().rows()
+      // << "\n"
+    }
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      if (verbosity > 0) {
+        std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
+                  << ", and data saved to " + outputDir << std::endl;
+        if (verbosity > 2) {
+          saveRichData();
+          f.richData.write(outputDir + "/out.ply");
+        }
+      }
+    }
+    
+}
+
 void Integrator::checkParameters(std::string integrator) {
   if (integrator == "velocity verlet") {
     if (abs(f.P.sigma - sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann *

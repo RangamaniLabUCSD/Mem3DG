@@ -36,22 +36,56 @@
 namespace mem3dg {
 class DLL_PUBLIC Integrator {
 public:
+  /// System object to be integrated
   System &f;
+  /// time step
   double dt;
+  // total simulation time
   double total_time;
+  /// period of saving output data
   double tSave;
+  /// verbosity level of integrator
   size_t verbosity;
+  /// tolerance for termination
   double tol;
+  /// path to the output directory
   std::string outputDir;
+  /// option to scale time step according to mesh size
   bool isAdaptiveStep;
+  /// name of the trajectory file
   std::string trajFileName;
+  /// regularization force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce;
+  /// physical vertex pressure to the system
   Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure;
+  /// numerical dissipative particle dynamics force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 3> DPDPressure;
 
+  /// Starting time of the simulation
+  double init_time;
+  /// Flag of success of the simulation
+  bool SUCCESS;
+  /// Flag for terminating the simulation
+  bool EXIT;
+  /// Frame index of the trajectory output
+  size_t frame;
+  /// Normalized area difference to reference mesh
+  double dArea;
+  /// Normalized volume/osmotic pressure difference
+  double dVP;
+  /// ratio of time step to the squared mesh size
+  double dt_size2_ratio;
+
+#ifdef MEM3DG_WITH_NETCDF
+  TrajFile fd;
+#endif
+
+  // ==========================================================
+  // =============        Constructor            ==============
+  // ==========================================================
   /**
    * @brief Construct a new integrator object
-   * @param f, force object
+   * @param f, System object to be integrated
    * @param dt, time step
    * @param isAdaptiveStep, option to scale time step according to mesh size
    * @param total_time, total simulation time
@@ -68,8 +102,26 @@ public:
       : f(f_), dt(dt_), isAdaptiveStep(isAdaptiveStep_),
         total_time(total_time_), tSave(tSave_), tol(tolerance_),
         verbosity(verbosity_), outputDir(outputDir_),
-        trajFileName(trajFileName_) {
-    std::cout << "Solving the system and saving to " << outputDir << std::endl;
+        trajFileName(trajFileName_), init_time(f.time), SUCCESS(true),
+        EXIT(false), frame(0) {
+
+    // Initialize the timestep-meshsize ratio
+    dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
+                     f.vpg->edgeLengths.raw().minCoeff();
+
+    // Initialize system summarized forces
+    regularizationForce.resize(f.mesh->nVertices(), 3);
+    physicalPressure.resize(f.mesh->nVertices(), 3);
+    DPDPressure.resize(f.mesh->nVertices(), 3);
+
+    // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+    createNetcdfFile();
+#endif
+
+    // print to console
+    std::cout << "Initialized integrator and the output directory is "
+              << outputDir << std::endl;
   }
 
   // ==========================================================
@@ -77,13 +129,11 @@ public:
   // ==========================================================
   /**
    * @brief Stomer Verlet time Integration
-   * @return
    */
   void stormerVerlet();
 
   /**
    * @brief Velocity Verlet time Integration
-   * @return
    */
   void velocityVerlet();
 
@@ -92,7 +142,7 @@ public:
    * @param isBacktrack, option to use backtracking line search algorithm
    * @param rho, backtracking coefficient
    * @param c1, Wolfe condition parameter
-   * @return
+   * @return Success, if simulation is sucessful
    */
   bool euler(const bool isBacktrack, const double rho, const double c1);
 
@@ -103,7 +153,7 @@ public:
    * @param rho, backtracking coefficient
    * @param c1, Wolfe condition parameter
    * @param isAugmentedLagrangian, option to use Augmented Lagrangian method
-   * @return
+   * @return Success, if simulation is sucessful
    */
   bool conjugateGradient(double ctol, const bool isBacktrack, const double rho,
                          const double c1, const bool isAugmentedLagrangian);
@@ -121,12 +171,59 @@ public:
                         double ctol, const bool isBacktrack, const double rho,
                         const double c1, const bool isAugmentedLagrangian);
 
+  /**
+   * @brief Conjugate Gradient stepper
+   */
+  void
+  conjugateGradientStep(const bool &isBacktrack, const double &rho,
+                        const double &c1, double &pastNormSq,
+                        double &currentNormSq,
+                        Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
+  /**
+   * @brief Forward Euler stepper
+   */
+  void eulerStep(const bool &isBacktrack, const double &rho, const double &c1);
+
+  /**
+   * @brief velocity Verlet stepper
+   */
+  void velocityVerletStep(
+      Eigen::Matrix<double, Eigen::Dynamic, 3> &totalPressure,
+      Eigen::Matrix<double, Eigen::Dynamic, 3> &newTotalPressure);
+
+  /**
+   * @brief Conjugate Gradient status computation and thresholding
+   */
+  void conjugateGradientStatus(const bool &isAugmentedLagrangian,
+                               const double &ctol);
+
+  /**
+   * @brief Forward Euler status computation and thresholding
+   */
+  void eulerStatus();
+
+  /**
+   * @brief Velocity Verlet status computation and thresholding
+   */
+  void velocityVerletStatus(
+      Eigen::Matrix<double, Eigen::Dynamic, 3> &totalPressure,
+      Eigen::Matrix<double, Eigen::Dynamic, 3> &newTotalPressure);
+
   // ==========================================================
   // =================     Output Data         ================
   // ==========================================================
   /**
+   * @brief Initialize netcdf traj file
+   */
+  void createNetcdfFile();
+
+  /**
+   * @brief Save trajectory, mesh and print to console
+   */
+  void saveData(double &lastSave);
+
+  /**
    * @brief Save data to richData
-   * @return
    */
   void saveRichData();
 
@@ -135,7 +232,6 @@ public:
    * @brief Save data to netcdf traj file
    * @param frame, frame index of netcdf traj file
    * @param fd, netcdf trajFile object
-   * @return
    */
   void saveNetcdfData(size_t &frame, TrajFile &fd);
 

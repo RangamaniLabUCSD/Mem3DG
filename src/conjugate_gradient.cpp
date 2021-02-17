@@ -51,167 +51,29 @@ bool Integrator::conjugateGradient(double ctol, const bool isBacktrack,
 
   // initialize variables used in time integration
   Eigen::Matrix<double, Eigen::Dynamic, 3> direction;
-  double dArea, dVP, currentNormSq, pastNormSq, init_time = f.time;
-  size_t frame = 0;
-  bool EXIT = false, SUCCESS = true;
-
-  // initialize variables used if adopting adaptive time step based on mesh size
-  double dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
-                          f.vpg->edgeLengths.raw().minCoeff();
-
-  // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-
-  // initialize netcdf traj file
-#ifdef MEM3DG_WITH_NETCDF
-  TrajFile fd;
-  if (verbosity > 0) {
-    fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
-                     TrajFile::NcFile::replace);
-    fd.writeMask(f.mask.raw().cast<int>());
-    fd.writeRefVolume(f.refVolume);
-    fd.writeRefSurfArea(f.targetSurfaceArea);
-  }
-#endif
+  double currentNormSq, pastNormSq;
 
   // time integration loop
   for (;;) {
 
-    // compute summerized forces
-    getForces();
-    vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
-
-    // compute the L2 error norm
-    f.L2ErrorNorm = f.computeL2Norm(vel_e);
-
-    // compute the area contraint error
-    dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
-                ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
-                : 0.0;
-
-    if (f.isReducedVolume) {
-      // compute volume constraint error
-      dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
-                ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-                : 0.0;
-      // thresholding, exit if fulfilled and iterate if not
-      reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol,
-                             1.3);
-    } else {
-      // compute pressure constraint error
-      dVP = (!f.mesh->hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
-      // thresholding, exit if fulfilled and iterate if not
-      pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol,
-                                  1.3);
-    }
-
-    // exit if reached time
-    if (f.time > total_time) {
-      std::cout << "\nReached time." << std::endl;
-      EXIT = true;
-      SUCCESS = false;
-    }
-
-    // compute the free energy of the system
-    f.computeFreeEnergy();
+    // Evaluate and threhold status data
+    conjugateGradientStatus(isAugmentedLagrangian, ctol);
 
     // Save files every tSave period and print some info
     static double lastSave;
     if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
       lastSave = f.time;
-
-      // save variable to richData and save ply file
-      if (verbosity > 3) {
-        saveRichData();
-        char buffer[50];
-        sprintf(buffer, "/frame%d", (int)frame);
-        f.richData.write(outputDir + buffer + ".ply");
-      }
-
-#ifdef MEM3DG_WITH_NETCDF
-      // save variable to netcdf traj file
-      if (verbosity > 0) {
-        saveNetcdfData(frame, fd);
-      }
-#endif
-
-      // print in-progress information in the console
-      if (verbosity > 1) {
-        std::cout << "\n"
-                  << "t: " << f.time << ", "
-                  << "n: " << frame << "\n"
-                  << "dA: " << dArea << ", "
-                  << "dVP: " << dVP << ", "
-                  << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
-                  << "\n"
-                  << "E_total: " << f.E.totalE << "\n"
-                  << "|e|L2: " << f.L2ErrorNorm << "\n"
-                  << "H: [" << f.H.raw().minCoeff() << ","
-                  << f.H.raw().maxCoeff() << "]"
-                  << "\n"
-                  << "K: [" << f.K.raw().minCoeff() << ","
-                  << f.K.raw().maxCoeff() << "]" << std::endl;
-        // << "COM: "
-        // << gc::EigenMap<double,
-        // 3>(f.vpg->inputVertexPositions).colwise().sum() /
-        //         f.vpg->inputVertexPositions.raw().rows()
-        // << "\n"
-      }
+      saveData(lastSave);
     }
 
     // break loop if EXIT flag is on
     if (EXIT) {
-      if (verbosity > 0) {
-        std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
-                  << ", and data saved to " + outputDir << std::endl;
-        if (verbosity > 2) {
-          saveRichData();
-          f.richData.write(outputDir + "/out.ply");
-        }
-      }
       break;
     }
 
-    // determine conjugate gradient direction, restart after nVertices() cycles
-    size_t countCG = 0;
-    if (countCG % (f.mesh->nVertices() + 1) == 0) {
-      pastNormSq = vel_e.squaredNorm();
-      direction = vel_e;
-      countCG = 0;
-    } else {
-      currentNormSq = vel_e.squaredNorm();
-      direction = currentNormSq / pastNormSq * direction + vel_e;
-      pastNormSq = currentNormSq;
-      countCG++;
-    }
-
-    // adjust time step if adopt adaptive time step based on mesh size
-    if (isAdaptiveStep) {
-      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-      dt = dt_size2_ratio * minMeshLength * minMeshLength;
-    }
-
-    // time stepping on vertex position
-    if (isBacktrack) {
-      backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, vel_e, direction);
-    } else {
-      pos_e += direction * dt;
-      f.time += dt;
-    }
-
-    // vertex shift for regularization
-    if (f.isVertexShift) {
-      f.vertexShift();
-    }
-
-    // time stepping on protein density
-    if (f.isProtein) {
-      f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
-    }
-
-    // recompute cached values
-    f.updateVertexPositions();
+    // step forward
+    conjugateGradientStep(isBacktrack, rho, c1, pastNormSq, currentNormSq,
+                          direction);
   }
 
   // stop the timer and report time spent
@@ -228,6 +90,101 @@ bool Integrator::conjugateGradient(double ctol, const bool isBacktrack,
     markFileName("_failed");
   }
   return SUCCESS;
+}
+
+void Integrator::conjugateGradientStatus(const bool &isAugmentedLagrangian,
+                                         const double &ctol) {
+  // map the raw eigen datatype for computation
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+
+  // recompute cached values
+  f.updateVertexPositions();
+
+  // compute summerized forces
+  getForces();
+
+  // compute velocity
+  vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
+
+  // compute the L2 error norm
+  f.L2ErrorNorm = f.computeL2Norm(vel_e);
+
+  // compute the area contraint error
+  dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
+              ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
+              : 0.0;
+
+  if (f.isReducedVolume) {
+    // compute volume constraint error
+    dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
+              ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+              : 0.0;
+    // thresholding, exit if fulfilled and iterate if not
+    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
+  } else {
+    // compute pressure constraint error
+    dVP = (!f.mesh->hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
+    // thresholding, exit if fulfilled and iterate if not
+    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
+  }
+
+  // exit if reached time
+  if (f.time > total_time) {
+    std::cout << "\nReached time." << std::endl;
+    EXIT = true;
+    SUCCESS = false;
+  }
+
+  // compute the free energy of the system
+  f.computeFreeEnergy();
+}
+
+void Integrator::conjugateGradientStep(
+    const bool &isBacktrack, const double &rho, const double &c1,
+    double &pastNormSq, double &currentNormSq,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+
+  // map the raw eigen datatype for computation
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+
+  // determine conjugate gradient direction, restart after nVertices() cycles
+  size_t countCG = 0;
+  if (countCG % (f.mesh->nVertices() + 1) == 0) {
+    pastNormSq = vel_e.squaredNorm();
+    direction = vel_e;
+    countCG = 0;
+  } else {
+    currentNormSq = vel_e.squaredNorm();
+    direction = currentNormSq / pastNormSq * direction + vel_e;
+    pastNormSq = currentNormSq;
+    countCG++;
+  }
+
+  // adjust time step if adopt adaptive time step based on mesh size
+  if (isAdaptiveStep) {
+    double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
+    dt = dt_size2_ratio * minMeshLength * minMeshLength;
+  }
+
+  // time stepping on vertex position
+  if (isBacktrack) {
+    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, vel_e, direction);
+  } else {
+    pos_e += direction * dt;
+    f.time += dt;
+  }
+
+  // vertex shift for regularization
+  if (f.isVertexShift) {
+    f.vertexShift();
+  }
+
+  // time stepping on protein density
+  if (f.isProtein) {
+    f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+  }
 }
 
 void Integrator::feedForwardSweep(std::vector<double> H_,
