@@ -28,22 +28,20 @@
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
-namespace integration {
 namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
 
-bool conjugateGradient(System &f, double dt, double total_time, double tSave,
-                       double tol, double ctol, const size_t verbosity,
-                       std::string outputDir, const bool isBacktrack,
-                       const double rho, const double c1,
-                       const bool isAugmentedLagrangian,
-                       const bool isAdaptiveStep,
-                       const std::string trajFileName) {
+bool Integrator::conjugateGradient(double ctol, const bool isBacktrack,
+                                   const double rho, const double c1,
+                                   const bool isAugmentedLagrangian) {
 
   signal(SIGINT, signalHandler);
 
+  if (verbosity > 1) {
+    std::cout << "Running Conjugate Gradient propagator ..." << std::endl;
+  }
+
   // check the validity of parameter
-  checkParameters("conjugate gradient", f, dt);
+  checkParameters("conjugate gradient");
 
 #ifdef __linux__
   // start the timer
@@ -52,8 +50,7 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
 #endif
 
   // initialize variables used in time integration
-  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
-      physicalPressure, DPDPressure, direction;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> direction;
   double dArea, dVP, currentNormSq, pastNormSq, init_time = f.time;
   size_t frame = 0;
   bool EXIT = false, SUCCESS = true;
@@ -82,7 +79,7 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
   for (;;) {
 
     // compute summerized forces
-    getForces(f, physicalPressure, DPDPressure, regularizationForce);
+    getForces();
     vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
     // compute the L2 error norm
@@ -99,14 +96,14 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
                 ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                 : 0.0;
       // thresholding, exit if fulfilled and iterate if not
-      reducedVolumeThreshold(f, EXIT, isAugmentedLagrangian, dArea, dVP, ctol,
-                             tol, 1.3);
+      reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol,
+                             1.3);
     } else {
       // compute pressure constraint error
       dVP = (!f.mesh->hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
       // thresholding, exit if fulfilled and iterate if not
-      pressureConstraintThreshold(f, EXIT, isAugmentedLagrangian, dArea, ctol,
-                                  tol, 1.3);
+      pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol,
+                                  1.3);
     }
 
     // exit if reached time
@@ -126,7 +123,7 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
 
       // save variable to richData and save ply file
       if (verbosity > 3) {
-        saveRichData(f, physicalPressure, verbosity);
+        saveRichData();
         char buffer[50];
         sprintf(buffer, "/frame%d", (int)frame);
         f.richData.write(outputDir + buffer + ".ply");
@@ -135,7 +132,7 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
 #ifdef MEM3DG_WITH_NETCDF
       // save variable to netcdf traj file
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, f.time, fd, physicalPressure, verbosity);
+        saveNetcdfData(frame, fd);
       }
 #endif
 
@@ -169,7 +166,7 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
         std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
                   << ", and data saved to " + outputDir << std::endl;
         if (verbosity > 2) {
-          saveRichData(f, physicalPressure, verbosity);
+          saveRichData();
           f.richData.write(outputDir + "/out.ply");
         }
       }
@@ -197,8 +194,7 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
 
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE,
-                vel_e, direction);
+      backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, vel_e, direction);
     } else {
       pos_e += direction * dt;
       f.time += dt;
@@ -228,16 +224,17 @@ bool conjugateGradient(System &f, double dt, double total_time, double tSave,
 #endif
 
   // return if optimization is sucessful
+  if (!SUCCESS) {
+    markFileName("_failed");
+  }
   return SUCCESS;
 }
 
-void feedForwardSweep(System &f, std::vector<double> H_,
-                      std::vector<double> VP_, double dt, double maxTime,
-                      double tSave, double tol, double ctol,
-                      std::string outputDir, const bool isBacktrack,
-                      const double rho, const double c1,
-                      const bool isAugmentedLagrangian,
-                      const bool isAdaptiveStep) {
+void Integrator::feedForwardSweep(std::vector<double> H_,
+                                  std::vector<double> VP_, double ctol,
+                                  const bool isBacktrack, const double rho,
+                                  const double c1,
+                                  const bool isAugmentedLagrangian) {
 #ifdef __linux__
   // start the timer
   struct timeval start;
@@ -276,6 +273,7 @@ void feedForwardSweep(System &f, std::vector<double> H_,
       // initialize trajectory file name
       char buffer[50];
       sprintf(buffer, "/traj_H_%d_VP_%d.nc", int(H * 100), int(VP * 100));
+      trajFileName = buffer;
 
       // update sweeping paraemters
       f.P.H0 = H;
@@ -287,13 +285,12 @@ void feedForwardSweep(System &f, std::vector<double> H_,
       f.updateVertexPositions();
 
       // rerun CG optimization
-      bool success = conjugateGradient(
-          f, dt, maxTime, tSave, tol, ctol, verbosity, outputDir, isBacktrack,
-          rho, c1, isAugmentedLagrangian, isAdaptiveStep, buffer);
+      bool success =
+          conjugateGradient(ctol, isBacktrack, rho, c1, isAugmentedLagrangian);
 
       // mark "failed" is CG returns false
       if (!success) {
-        markFileName(outputDir, buffer, "_failed");
+        markFileName("_failed");
       }
     }
     // reverse the order of inner loop to ensure phase space closeness
@@ -310,16 +307,16 @@ void feedForwardSweep(System &f, std::vector<double> H_,
 #endif
 }
 
-void backtrack(System &f, const double dt, double rho, double c1, double &time,
-               bool &EXIT, bool &SUCCESS, const size_t verbosity,
-               const double potentialEnergy_pre,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
-               const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+void Integrator::backtrack(
+    double rho, double c1, bool &EXIT, bool &SUCCESS,
+    const double potentialEnergy_pre,
+    const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+    const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
   // calculate initial energy as reference level
   Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
       gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  double init_time = time;
+  double init_time = f.time;
 
   // declare variables used in backtracking iterations
   double alpha = dt;
@@ -343,7 +340,7 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
       pos_e = init_position;
       f.updateVertexPositions();
       f.computeFreeEnergy();
-      time = init_time - alpha;
+      f.time = init_time - alpha;
 
       break;
     }
@@ -358,13 +355,14 @@ void backtrack(System &f, const double dt, double rho, double c1, double &time,
     std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
     std::cout << "L2 norm: " << f.L2ErrorNorm << std::endl;
   }
-  time = init_time + alpha;
+  f.time = init_time + alpha;
 }
 
-void pressureConstraintThreshold(System &f, bool &EXIT,
-                                 const bool isAugmentedLagrangian,
-                                 const double dArea, const double ctol,
-                                 const double tol, double increment) {
+void Integrator::pressureConstraintThreshold(bool &EXIT,
+                                             const bool isAugmentedLagrangian,
+                                             const double dArea,
+                                             const double ctol,
+                                             double increment) {
   if (f.L2ErrorNorm < tol) {
     if (isAugmentedLagrangian) { // augmented Lagrangian method
       if (dArea < ctol) {        // exit if fulfilled all constraints
@@ -390,11 +388,11 @@ void pressureConstraintThreshold(System &f, bool &EXIT,
   }
 }
 
-void reducedVolumeThreshold(System &f, bool &EXIT,
-                            const bool isAugmentedLagrangian,
-                            const double dArea, const double dVolume,
-                            const double ctol, const double tol,
-                            double increment) {
+void Integrator::reducedVolumeThreshold(bool &EXIT,
+                                        const bool isAugmentedLagrangian,
+                                        const double dArea,
+                                        const double dVolume, const double ctol,
+                                        double increment) {
   if (f.L2ErrorNorm < tol) {
     if (isAugmentedLagrangian) {            // augmented Lagrangian method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
@@ -431,5 +429,4 @@ void reducedVolumeThreshold(System &f, bool &EXIT,
   }
 }
 
-} // namespace integration
 } // namespace mem3dg

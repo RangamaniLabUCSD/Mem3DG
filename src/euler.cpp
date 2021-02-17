@@ -28,23 +28,22 @@
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
-namespace integration {
 namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
 
-bool euler(System &f, double dt, double total_time, double tSave,
-           double tolerance, const size_t verbosity, std::string outputDir,
-           const bool isBacktrack, const double rho, const double c1,
-           const bool isAdaptiveStep) {
+bool Integrator::euler(const bool isBacktrack, const double rho,
+                       const double c1) {
 
   signal(SIGINT, signalHandler);
 
+  if (verbosity > 1) {
+    std::cout << "Running Forward Euler (steepest descent) propagator ..."
+              << std::endl;
+  }
+
   // check the validity of parameter
-  checkParameters("euler", f, dt);
+  checkParameters("euler");
 
   // initialize variables used in time integration
-  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce,
-      physicalPressure, DPDPressure;
   double dArea, dVP, init_time = f.time;
   size_t frame = 0;
   bool EXIT = false, SUCCESS = true;
@@ -70,7 +69,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + "/traj.nc", *f.mesh, *f.refVpg,
+    fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.raw().cast<int>());
     fd.writeRefVolume(f.refVolume);
@@ -81,7 +80,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
   // time integration loop
   for (;;) {
     // compute summerized forces
-    getForces(f, physicalPressure, DPDPressure, regularizationForce);
+    getForces();
     vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
     // compute the L2 error norm
@@ -103,7 +102,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
     }
 
     // exit if under error tolerance
-    if (f.L2ErrorNorm < tolerance) {
+    if (f.L2ErrorNorm < tol) {
       std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
       EXIT = true;
     }
@@ -112,6 +111,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
     if (f.time > total_time) {
       std::cout << "\nReached time." << std::endl;
       EXIT = true;
+      SUCCESS = false;
     }
 
     // compute the free energy of the system
@@ -124,7 +124,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
 
       // save variable to richData and save ply file
       if (verbosity > 3) {
-        saveRichData(f, physicalPressure, verbosity);
+        saveRichData();
         char buffer[50];
         sprintf(buffer, "/frame%d", (int)frame);
         f.richData.write(outputDir + buffer + ".ply");
@@ -133,7 +133,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
 #ifdef MEM3DG_WITH_NETCDF
       // save variable to netcdf traj file
       if (verbosity > 0) {
-        saveNetcdfData(f, frame, f.time, fd, physicalPressure, verbosity);
+        saveNetcdfData(frame, fd);
       }
 #endif
 
@@ -167,7 +167,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
         std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
                   << ", and data saved to " + outputDir << std::endl;
         if (verbosity > 2) {
-          saveRichData(f, physicalPressure, verbosity);
+          saveRichData();
           f.richData.write(outputDir + "/out.ply");
         }
       }
@@ -182,8 +182,7 @@ bool euler(System &f, double dt, double total_time, double tSave,
 
     // time stepping on vertex position
     if (isBacktrack) {
-      backtrack(f, dt, rho, c1, f.time, EXIT, SUCCESS, verbosity, f.E.potE,
-                vel_e, vel_e);
+      backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, vel_e, vel_e);
     } else {
       pos_e += vel_e * dt;
       f.time += dt;
@@ -214,7 +213,9 @@ bool euler(System &f, double dt, double total_time, double tSave,
 #endif
 
   // return if optimization is sucessful
+  if (!SUCCESS) {
+    markFileName("_failed");
+  }
   return SUCCESS;
 }
-} // namespace integration
 } // namespace mem3dg

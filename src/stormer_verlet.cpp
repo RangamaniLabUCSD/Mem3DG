@@ -15,11 +15,10 @@
 #include <iostream>
 
 namespace mem3dg {
-namespace integration {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
+void Integrator::stormerVerlet() {
   gcs::FaceData<size_t> faceInd = f.vpg->faceIndices;
   gc::Vector3 totalForce;
   for (size_t i = 0; i < total_time / dt; i++) {
@@ -68,5 +67,4 @@ void stormerVerlet(System &f, double dt, double total_time, double tolerance) {
     // "%" << std::endl;
   }
 }
-} // namespace integration
 } // namespace mem3dg
