@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include <cstdarg>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
@@ -39,29 +40,86 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   py::class_<Integrator> integrator(pymem3dg, "Integrator", R"delim(
         The integrator
     )delim");
-
   integrator.def(py::init<System &, double, bool, double, double, double,
                           std::string, std::string, size_t>());
-
-  /// Velocity Verlet
-  integrator.def("velocityVerlet", &Integrator::velocityVerlet,
+  integrator.def("saveData", &Integrator::saveData,
                  R"delim(
+          save data to output directory
+      )delim");
+
+  /// Integrator-velocity verlet object
+  py::class_<VelocityVerlet> velocityverlet(pymem3dg, "VelocityVerlet", R"delim(
         Velocity Verlet integration
+    )delim");
+
+  velocityverlet.def(py::init<System &, double, bool, double, double, double,
+                              std::string, std::string, size_t>());
+  velocityverlet.def("integrate", &VelocityVerlet::integrate,
+                     R"delim(
+          integrate 
+      )delim");
+  velocityverlet.def("status", &VelocityVerlet::status,
+                     R"delim(
+          status computation and thresholding
+      )delim");
+  velocityverlet.def("step", &VelocityVerlet::step,
+                     R"delim(
+          stepping forward 
+      )delim");
+  velocityverlet.def("saveData", &VelocityVerlet::saveData,
+                     R"delim(
+          save data to output directory
       )delim");
 
-  /// Euler
-  integrator.def("euler", &Integrator::euler, py::arg("isBacktrack"),
-                 py::arg("rho"), py::arg("c1"),
-                 R"delim(
+  /// Integrator-euler object
+  py::class_<Euler> euler(pymem3dg, "Euler", R"delim(
         forward euler (gradient descent) integration
+    )delim");
+
+  euler.def(py::init<System &, double, bool, double, double, double,
+                     std::string, std::string, size_t, bool, double, double>());
+  euler.def("integrate", &Euler::integrate,
+            R"delim(
+          integrate 
       )delim");
 
-  /// Conjugate Gradient
-  integrator.def("conjugateGradient", &Integrator::conjugateGradient,
-                 py::arg("ctol"), py::arg("isBacktrack"), py::arg("rho"),
-                 py::arg("c1"), py::arg("isAugmentedLagrangian"),
-                 R"delim(
+  euler.def("status", &Euler::status,
+            R"delim(
+          status computation and thresholding
+      )delim");
+  euler.def("step", &Euler::step,
+            R"delim(
+          stepping forward 
+      )delim");
+  euler.def("saveData", &Euler::saveData,
+                        R"delim(
+          save data to output directory
+      )delim");
+
+  /// Integrator-conjugate gradient object
+  py::class_<ConjugateGradient> conjugategradient(pymem3dg, "ConjugateGradient",
+                                                  R"delim(
         conjugate Gradient propagator
+    )delim");
+
+  conjugategradient.def(
+      py::init<System &, double, bool, double, double, double, std::string,
+               std::string, size_t, bool, double, double, double, bool>());
+  conjugategradient.def("integrate", &ConjugateGradient::integrate,
+                        R"delim(
+          integrate 
+      )delim");
+  conjugategradient.def("status", &ConjugateGradient::status,
+                        R"delim(
+          status computation and thresholding
+      )delim");
+  conjugategradient.def("step", &ConjugateGradient::step,
+                        R"delim(
+          stepping forward 
+      )delim");
+  conjugategradient.def("saveData", &ConjugateGradient::saveData,
+                        R"delim(
+          save data to output directory
       )delim");
 
   /// System object

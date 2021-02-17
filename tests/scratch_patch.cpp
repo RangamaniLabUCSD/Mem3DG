@@ -55,8 +55,9 @@ int main() {
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
 
-  mem3dg::Integrator inte(f, h, true, T, tSave, eps, outputDir, "/traj.nc",verbosity);
-  inte.euler(true, 0.5, 1e-4);
+  mem3dg::Euler integrator(f, h, true, T, tSave, eps, outputDir, "/traj.nc",
+                           verbosity, true, 0.5, 1e-4);
+  integrator.integrate();
 
   return 0;
 }

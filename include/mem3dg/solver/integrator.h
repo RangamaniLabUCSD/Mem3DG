@@ -34,6 +34,10 @@
 #endif
 
 namespace mem3dg {
+
+// ==========================================================
+// =============        Integrator             ==============
+// ==========================================================
 class DLL_PUBLIC Integrator {
 public:
   /// System object to be integrated
@@ -98,7 +102,7 @@ public:
    */
   Integrator(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
              double tSave_, double tolerance_, std::string outputDir_,
-             std::string trajFileName_ = "/traj.nc", size_t verbosity_ = 3)
+             std::string trajFileName_, size_t verbosity_)
       : f(f_), dt(dt_), isAdaptiveStep(isAdaptiveStep_),
         total_time(total_time_), tSave(tSave_), tol(tolerance_),
         verbosity(verbosity_), outputDir(outputDir_),
@@ -125,91 +129,6 @@ public:
   }
 
   // ==========================================================
-  // =============      Time Integration         ==============
-  // ==========================================================
-  /**
-   * @brief Stomer Verlet time Integration
-   */
-  void stormerVerlet();
-
-  /**
-   * @brief Velocity Verlet time Integration
-   */
-  void velocityVerlet();
-
-  /**
-   * @brief Euler (gradient descent) time Integration
-   * @param isBacktrack, option to use backtracking line search algorithm
-   * @param rho, backtracking coefficient
-   * @param c1, Wolfe condition parameter
-   * @return Success, if simulation is sucessful
-   */
-  bool euler(const bool isBacktrack, const double rho, const double c1);
-
-  /**
-   * @brief Conjugate Gradient propagator
-   * @param ctol, tolerance for termination (contraints)
-   * @param isBacktrack, option to use backtracking line search algorithm
-   * @param rho, backtracking coefficient
-   * @param c1, Wolfe condition parameter
-   * @param isAugmentedLagrangian, option to use Augmented Lagrangian method
-   * @return Success, if simulation is sucessful
-   */
-  bool conjugateGradient(double ctol, const bool isBacktrack, const double rho,
-                         const double c1, const bool isAugmentedLagrangian);
-
-  /**
-   * @brief Conjugate Gradient based feedforward parameter sweep
-   * @param ctol, tolerance for termination (contraints)
-   * @param isBacktrack, option to use backtracking line search algorithm
-   * @param rho, backtracking coefficient
-   * @param c1, Wolfe condition parameter
-   * @param isAugmentedLagrangian, option to use Augmented Lagrangian method
-   * @return
-   */
-  void feedForwardSweep(std::vector<double> H_, std::vector<double> VP_,
-                        double ctol, const bool isBacktrack, const double rho,
-                        const double c1, const bool isAugmentedLagrangian);
-
-  /**
-   * @brief Conjugate Gradient stepper
-   */
-  void
-  conjugateGradientStep(const bool &isBacktrack, const double &rho,
-                        const double &c1, double &pastNormSq,
-                        double &currentNormSq,
-                        Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
-  /**
-   * @brief Forward Euler stepper
-   */
-  void eulerStep(const bool &isBacktrack, const double &rho, const double &c1);
-
-  /**
-   * @brief velocity Verlet stepper
-   */
-  void velocityVerletStep(
-      Eigen::Matrix<double, Eigen::Dynamic, 3> &totalPressure,
-      Eigen::Matrix<double, Eigen::Dynamic, 3> &newTotalPressure);
-
-  /**
-   * @brief Conjugate Gradient status computation and thresholding
-   */
-  void conjugateGradientStatus(const bool &isAugmentedLagrangian,
-                               const double &ctol);
-
-  /**
-   * @brief Forward Euler status computation and thresholding
-   */
-  void eulerStatus();
-
-  /**
-   * @brief Velocity Verlet status computation and thresholding
-   */
-  void velocityVerletStatus(
-      Eigen::Matrix<double, Eigen::Dynamic, 3> &totalPressure,
-      Eigen::Matrix<double, Eigen::Dynamic, 3> &newTotalPressure);
-
-  // ==========================================================
   // =================     Output Data         ================
   // ==========================================================
   /**
@@ -220,7 +139,7 @@ public:
   /**
    * @brief Save trajectory, mesh and print to console
    */
-  void saveData(double &lastSave);
+  void saveData();
 
   /**
    * @brief Save data to richData
@@ -356,6 +275,182 @@ public:
    * @return
    */
   void checkParameters(std::string integrator);
+};
+
+// ==========================================================
+// =============        Stormer Verlet         ==============
+// ==========================================================
+/**
+ * @brief Stomer Verlet time Integration
+ */
+class DLL_PUBLIC StormerVerlet : public Integrator {
+public:
+  StormerVerlet(System &f_, double dt_, bool isAdaptiveStep_,
+                double total_time_, double tSave_, double tolerance_,
+                std::string outputDir_, std::string trajFileName_,
+                size_t verbosity_)
+      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
+                   outputDir_, trajFileName_, verbosity_) {}
+
+  void integrate();
+};
+
+// ==========================================================
+// =============        Velocity Verlet        +=============
+// ==========================================================
+/**
+ * @brief Velocity Verlet time Integration
+ */
+class DLL_PUBLIC VelocityVerlet : public Integrator {
+public:
+  // initialize variables used in time integration
+  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
+
+  VelocityVerlet(System &f_, double dt_, bool isAdaptiveStep_,
+                 double total_time_, double tSave_, double tolerance_,
+                 std::string outputDir_, std::string trajFileName_,
+                 size_t verbosity_)
+      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
+                   outputDir_, trajFileName_, verbosity_) {
+    if (verbosity > 1) {
+      std::cout << "Running Velocity Verlet integrator ..." << std::endl;
+    }
+    // check the validity of parameter
+    checkParameters("velocity verlet");
+  }
+  void integrate();
+
+  /**
+   * @brief velocity Verlet stepper
+   */
+  void step();
+
+  /**
+   * @brief Velocity Verlet status computation and thresholding
+   */
+  void status();
+};
+
+// ==========================================================
+// =============        Forward Euler          +=============
+// ==========================================================
+/**
+ * @brief Euler (gradient descent) time Integration
+ * @param isBacktrack, option to use backtracking line search algorithm
+ * @param rho, backtracking coefficient
+ * @param c1, Wolfe condition parameter
+ * @return Success, if simulation is sucessful
+ */
+class DLL_PUBLIC Euler : public Integrator {
+public:
+  const bool isBacktrack;
+  const double rho;
+  const double c1;
+  Euler(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
+        double tSave_, double tolerance_, std::string outputDir_,
+        std::string trajFileName_, size_t verbosity_, bool isBacktrack_,
+        double rho_, double c1_)
+      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
+                   outputDir_, trajFileName_, verbosity_),
+        isBacktrack(isBacktrack_), rho(rho_), c1(c1_) {
+    if (verbosity > 1) {
+      std::cout << "Running Forward Euler (steepest descent) propagator ..."
+                << std::endl;
+    }
+    // check the validity of parameter
+    checkParameters("euler");
+  }
+  bool integrate();
+
+  /**
+   * @brief Forward Euler stepper
+   */
+  void step();
+
+  /**
+   * @brief Forward Euler status computation and thresholding
+   */
+  void status();
+};
+
+// ==========================================================
+// =============      Conjugate Gradient        =============
+// ==========================================================
+/**
+ * @brief Conjugate Gradient propagator
+ * @param ctol, tolerance for termination (contraints)
+ * @param isBacktrack, option to use backtracking line search algorithm
+ * @param rho, backtracking coefficient
+ * @param c1, Wolfe condition parameter
+ * @param isAugmentedLagrangian, option to use Augmented Lagrangian method
+ * @return Success, if simulation is sucessful
+ */
+class DLL_PUBLIC ConjugateGradient : public Integrator {
+public:
+  const bool isBacktrack;
+  const double rho;
+  const double c1;
+  double ctol;
+  const bool isAugmentedLagrangian;
+
+  Eigen::Matrix<double, Eigen::Dynamic, 3> direction;
+  double currentNormSq;
+  double pastNormSq;
+
+  ConjugateGradient(System &f_, double dt_, bool isAdaptiveStep_,
+                    double total_time_, double tSave_, double tolerance_,
+                    std::string outputDir_, std::string trajFileName_,
+                    size_t verbosity_, bool isBacktrack_, double rho_,
+                    double c1_, double ctol_, bool isAugmentedLagrangian_)
+      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
+                   outputDir_, trajFileName_, verbosity_),
+        isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
+        isAugmentedLagrangian(isAugmentedLagrangian_) {
+    if (verbosity > 1) {
+      std::cout << "Running Conjugate Gradient propagator ..." << std::endl;
+    }
+    // check the validity of parameter
+    checkParameters("conjugate gradient");
+  }
+  bool integrate();
+
+  /**
+   * @brief Conjugate Gradient stepper
+   */
+  void step();
+
+  /**
+   * @brief Conjugate Gradient status computation and thresholding
+   */
+  void status();
+};
+
+// ==========================================================
+// =============      FeedForward Sweep         =============
+// ==========================================================
+/**
+ * @brief Conjugate Gradient based feedforward parameter sweep
+ * @param H__, vector of sweep parameters (H0)
+ * @param VP__, vector of sweep parameters (V/cam)
+ * @return
+ */
+class DLL_PUBLIC FeedForwardSweep : public ConjugateGradient {
+public:
+  std::vector<double> H_;
+  std::vector<double> VP_;
+  FeedForwardSweep(System &f_, double dt_, bool isAdaptiveStep_,
+                   double total_time_, double tSave_, double tolerance_,
+                   std::string outputDir_, std::string trajFileName_,
+                   size_t verbosity_, bool isBacktrack_, double rho_,
+                   double c1_, double ctol_, bool isAugmentedLagrangian_,
+                   std::vector<double> H__, std::vector<double> VP__)
+      : ConjugateGradient(f_, dt_, isAdaptiveStep_, total_time_, tSave_,
+                          tolerance_, outputDir_, trajFileName_, verbosity_,
+                          isBacktrack_, rho_, c1_, ctol_,
+                          isAugmentedLagrangian_),
+        H_(H__), VP_(VP__) {}
+  void sweep();
 };
 
 } // namespace mem3dg

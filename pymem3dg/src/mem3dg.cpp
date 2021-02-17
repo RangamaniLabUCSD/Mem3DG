@@ -48,9 +48,6 @@
 #include <unistd.h>
 #endif
 
-namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
-
 std::unique_ptr<mem3dg::System> system_ply(
     const size_t verbosity, std::string inputMesh, std::string refMesh,
     size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
@@ -117,15 +114,19 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                    isLocalCurvature, isVertexShift);
 
   /// Time integration / optimization
-  mem3dg::Integrator inte(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
-                          "/traj.nc", verbosity);
   if (integrationMethod == "velocity verlet") {
-    inte.velocityVerlet();
+    mem3dg::VelocityVerlet integrator(f, h, isAdaptiveStep, T, tSave, eps,
+                                      outputDir, "/traj.nc", verbosity);
+    integrator.integrate();
   } else if (integrationMethod == "euler") {
-    inte.euler(isBacktrack, rho, c1);
+    mem3dg::Euler integrator(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
+                             "/traj.nc", verbosity, isBacktrack, rho, c1);
+    integrator.integrate();
   } else if (integrationMethod == "conjugate gradient") {
-    inte.conjugateGradient(ctol, isBacktrack, rho, c1,
-                                          isAugmentedLagrangian);
+    mem3dg::ConjugateGradient integrator(
+        f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", verbosity,
+        isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
+    integrator.integrate();
   }
 
   return 0;
@@ -160,10 +161,11 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                    isLocalCurvature, isVertexShift);
 
   /// Time integration / optimization
-  mem3dg::Integrator inte(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
-                          "/traj.nc");
-  inte.feedForwardSweep(H0, (isReducedVolume) ? Vt : cam, ctol, isBacktrack,
-                        rho, c1, isAugmentedLagrangian);
+  mem3dg::FeedForwardSweep integrator(f, h, isAdaptiveStep, T, tSave, eps,
+                                      outputDir, "/traj.nc", 3, isBacktrack,
+                                      rho, c1, ctol, isAugmentedLagrangian, H0,
+                                      (isReducedVolume) ? Vt : cam);
+  integrator.sweep();
 
   return 0;
 }
@@ -197,15 +199,19 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
                    isReducedVolume, isProtein, isLocalCurvature, isVertexShift);
 
   /// Time integration / optimization
-  mem3dg::Integrator inte(f, h, isAdaptiveStep, T, tSave, eps, outputDir,"/traj.nc",
-                          verbosity);
   if (integrationMethod == "velocity verlet") {
-    inte.velocityVerlet();
+    mem3dg::VelocityVerlet integrator(f, h, isAdaptiveStep, T, tSave, eps,
+                                      outputDir, "/traj.nc", verbosity);
+    integrator.integrate();
   } else if (integrationMethod == "euler") {
-    inte.euler(isBacktrack, rho, c1);
+    mem3dg::Euler integrator(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
+                             "/traj.nc", verbosity, isBacktrack, rho, c1);
+    integrator.integrate();
   } else if (integrationMethod == "conjugate gradient") {
-    inte.conjugateGradient(ctol, isBacktrack, rho, c1,
-                                          isAugmentedLagrangian);
+    mem3dg::ConjugateGradient integrator(
+        f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", verbosity,
+        isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
+    integrator.integrate();
   }
 
   return 0;
@@ -241,9 +247,11 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
                    isReducedVolume, isProtein, isLocalCurvature, isVertexShift);
 
   /// Time integration / optimization
-  mem3dg::Integrator inte(f, h, isAdaptiveStep, T, tSave, eps, outputDir,"/traj.nc");
-  inte.feedForwardSweep(H0, (isReducedVolume) ? Vt : cam, ctol, isBacktrack,
-                        rho, c1, isAugmentedLagrangian);
+  mem3dg::FeedForwardSweep integrator(f, h, isAdaptiveStep, T, tSave, eps,
+                                      outputDir, "/traj.nc", 3, isBacktrack,
+                                      rho, c1, ctol, isAugmentedLagrangian, H0,
+                                      (isReducedVolume) ? Vt : cam);
+  integrator.sweep();
 
   return 0;
 }

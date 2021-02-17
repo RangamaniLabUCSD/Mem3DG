@@ -30,18 +30,9 @@
 namespace mem3dg {
 namespace gc = ::geometrycentral;
 
-bool Integrator::conjugateGradient(double ctol, const bool isBacktrack,
-                                   const double rho, const double c1,
-                                   const bool isAugmentedLagrangian) {
+bool ConjugateGradient::integrate() {
 
   signal(SIGINT, signalHandler);
-
-  if (verbosity > 1) {
-    std::cout << "Running Conjugate Gradient propagator ..." << std::endl;
-  }
-
-  // check the validity of parameter
-  checkParameters("conjugate gradient");
 
 #ifdef __linux__
   // start the timer
@@ -49,21 +40,17 @@ bool Integrator::conjugateGradient(double ctol, const bool isBacktrack,
   gettimeofday(&start, NULL);
 #endif
 
-  // initialize variables used in time integration
-  Eigen::Matrix<double, Eigen::Dynamic, 3> direction;
-  double currentNormSq, pastNormSq;
-
   // time integration loop
   for (;;) {
 
     // Evaluate and threhold status data
-    conjugateGradientStatus(isAugmentedLagrangian, ctol);
+    status();
 
     // Save files every tSave period and print some info
     static double lastSave;
     if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
       lastSave = f.time;
-      saveData(lastSave);
+      saveData();
     }
 
     // break loop if EXIT flag is on
@@ -72,8 +59,7 @@ bool Integrator::conjugateGradient(double ctol, const bool isBacktrack,
     }
 
     // step forward
-    conjugateGradientStep(isBacktrack, rho, c1, pastNormSq, currentNormSq,
-                          direction);
+    step();
   }
 
   // stop the timer and report time spent
@@ -92,8 +78,7 @@ bool Integrator::conjugateGradient(double ctol, const bool isBacktrack,
   return SUCCESS;
 }
 
-void Integrator::conjugateGradientStatus(const bool &isAugmentedLagrangian,
-                                         const double &ctol) {
+void ConjugateGradient::status() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
@@ -140,10 +125,7 @@ void Integrator::conjugateGradientStatus(const bool &isAugmentedLagrangian,
   f.computeFreeEnergy();
 }
 
-void Integrator::conjugateGradientStep(
-    const bool &isBacktrack, const double &rho, const double &c1,
-    double &pastNormSq, double &currentNormSq,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+void ConjugateGradient::step() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -187,11 +169,7 @@ void Integrator::conjugateGradientStep(
   }
 }
 
-void Integrator::feedForwardSweep(std::vector<double> H_,
-                                  std::vector<double> VP_, double ctol,
-                                  const bool isBacktrack, const double rho,
-                                  const double c1,
-                                  const bool isAugmentedLagrangian) {
+void FeedForwardSweep::sweep() {
 #ifdef __linux__
   // start the timer
   struct timeval start;
@@ -242,8 +220,7 @@ void Integrator::feedForwardSweep(std::vector<double> H_,
       f.updateVertexPositions();
 
       // rerun CG optimization
-      bool success =
-          conjugateGradient(ctol, isBacktrack, rho, c1, isAugmentedLagrangian);
+      bool success = integrate();
 
       // mark "failed" is CG returns false
       if (!success) {

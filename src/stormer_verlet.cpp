@@ -9,8 +9,8 @@
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector3.h>
 
 #include <iostream>
 
@@ -18,7 +18,7 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void Integrator::stormerVerlet() {
+void StormerVerlet::integrate() {
   gcs::FaceData<size_t> faceInd = f.vpg->faceIndices;
   gc::Vector3 totalForce;
   for (size_t i = 0; i < total_time / dt; i++) {

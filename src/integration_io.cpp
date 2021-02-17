@@ -37,7 +37,7 @@ void Integrator::createNetcdfFile() {
 #endif
 }
 
-void Integrator::saveData(double &lastSave) {
+void Integrator::saveData() {
     // save variable to richData and save ply file
     if (verbosity > 3) {
       saveRichData();
