@@ -16,6 +16,12 @@
 #include "mem3dg/solver/trajfile.h"
 #endif
 #include "mem3dg/solver/system.h"
+
+#include "polyscope/surface_mesh.h"
+#include "polyscope/view.h"
+#include <polyscope/polyscope.h>
+
+#include <csignal>
 #include <iomanip>
 
 namespace gc = ::geometrycentral;
@@ -231,8 +237,8 @@ void System::initConstants() {
   closestPtIndToPt(*mesh, *refVpg, P.pt, theVertex);
 
   // Initialize the constant mask based on distance from the point specified
-  mask.raw() =
-      (heatMethodDistance(*refVpg, theVertex).raw().array() < P.radius).matrix();
+  mask.raw() = (heatMethodDistance(*refVpg, theVertex).raw().array() < P.radius)
+                   .matrix();
   // Mask boundary element
   if (mesh->hasBoundary()) {
     boundaryMask(*mesh, mask.raw());
@@ -316,8 +322,102 @@ void System::updateVertexPositions() {
 
   // initialize/update external force
   computeExternalPressure();
-  
+
   // initialize/update the vertex position of the last iteration
   pastPositions = vpg->inputVertexPositions;
+}
+
+void System::visualize() {
+  signal(SIGINT, mem3dg::signalHandler);
+
+  /// alias eigen matrix
+  using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+  using EigenVectorX3D =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  using EigenTopVec =
+      Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
+  // Initialize visualization variables
+  float transparency = 1;
+
+  // Set preference for polyscope
+  polyscope::options::programName = "Mem3DG Visualization";
+  polyscope::options::verbosity = 0;
+  polyscope::options::usePrefsFile = false;
+  polyscope::options::autocenterStructures = false;
+  polyscope::options::autoscaleStructures = false;
+  polyscope::options::groundPlaneEnabled = false;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
+  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+
+  /// Initiate in polyscope
+  polyscope::init();
+  polyscope::SurfaceMesh *polyMesh = polyscope::registerSurfaceMesh(
+      "Membrane", vpg->inputVertexPositions, mesh->getFaceVertexList());
+  polyMesh->setSmoothShade(true);
+  polyMesh->setEnabled(true);
+  polyMesh->setEdgeWidth(1);
+
+  // Process attributes
+  Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft, fp;
+
+  f_ext = rowwiseDotProduct(gc::EigenMap<double, 3>(externalPressure),
+                            gc::EigenMap<double, 3>(vpg->vertexNormals));
+  fb = rowwiseDotProduct(EigenMap<double, 3>(bendingPressure),
+                         gc::EigenMap<double, 3>(vpg->vertexNormals));
+  fl = rowwiseDotProduct(EigenMap<double, 3>(lineTensionPressure),
+                         gc::EigenMap<double, 3>(vpg->vertexNormals));
+  ft = (rowwiseDotProduct(EigenMap<double, 3>(capillaryPressure),
+                          gc::EigenMap<double, 3>(vpg->vertexNormals)));
+  fp.setConstant(mesh->nVertices(), 1, insidePressure);
+  fn = fb + ft + fp + f_ext + fl;
+
+  /// Read element data
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("mean_curvature", H.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("gauss_curvature", K.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("spon_curvature", H0.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("external_pressure", f_ext);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("bending_pressure", fb);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("line_tension_pressure", fl);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("capillary_pressure", ft);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("inside_pressure", fp);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("physical_pressure", fn);
+
+  // Callback function for interactive GUI
+  auto myCallback = [&]() {
+    // Since options::openImGuiWindowForUserCallback == true by default,
+    // we can immediately start using ImGui commands to build a UI
+    ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
+                               // instead of full width. Must have
+                               // matching PopItemWidth() below.
+
+    // Initialize sliders
+    ImGui::SliderFloat("transparency", &transparency, 0, 1);
+
+    // Execute transparency slider
+    polyMesh->setTransparency(transparency);
+
+    // Define buttons
+    if (ImGui::Button("Screenshot")) {
+      // char buff[50];
+      // snprintf(buff, 50, "screenshot_frame%06d.png", frame);
+      // std::string defaultName(buff);
+      polyscope::screenshot("screenshot.png", true);
+    }
+
+    ImGui::PopItemWidth();
+  };
+  polyscope::state::userCallback = myCallback;
+  polyscope::show();
 }
 } // namespace mem3dg
