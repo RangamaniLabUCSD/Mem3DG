@@ -231,6 +231,10 @@ public:
   /// If collapsing the edge
   gcs::EdgeData<bool> isCollapse;
 
+  
+  // ==========================================================
+  // =============        Constructors           +=============
+  // ==========================================================
   /**
    * @brief Construct a new Force object by reading mesh file path
    *
