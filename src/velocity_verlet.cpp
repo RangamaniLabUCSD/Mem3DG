@@ -42,7 +42,7 @@ void VelocityVerlet::integrate() {
 
   // time integration loop
   for (;;) {
-    
+
     // Evaluate and threhold status data
     status();
 
@@ -60,7 +60,7 @@ void VelocityVerlet::integrate() {
 
     // step forward
     march();
-  } 
+  }
 
   // stop the timer and report time spent
 #ifdef __linux__
@@ -70,6 +70,16 @@ void VelocityVerlet::integrate() {
               << std::endl;
   }
 #endif
+}
+
+void VelocityVerlet::checkParameters() {
+  if (abs(f.P.sigma -
+          sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt)) /
+          sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt) >
+      1e-6) {
+    throw std::runtime_error(
+        "sigma for DPD is not consistent, probably not initialized!");
+  }
 }
 
 void VelocityVerlet::status() {

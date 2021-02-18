@@ -62,6 +62,11 @@ bool ConjugateGradient::integrate() {
     march();
   }
 
+  // return if optimization is sucessful
+  if (!SUCCESS) {
+    markFileName("_failed");
+  }
+
   // stop the timer and report time spent
 #ifdef __linux__
   double duration = getDuration(start);
@@ -71,11 +76,13 @@ bool ConjugateGradient::integrate() {
   }
 #endif
 
-  // return if optimization is sucessful
-  if (!SUCCESS) {
-    markFileName("_failed");
-  }
   return SUCCESS;
+}
+
+void ConjugateGradient::checkParameters() {
+  if (f.P.gamma != 0) {
+    throw std::runtime_error("gamma has to be 0 for euler integration!");
+  }
 }
 
 void ConjugateGradient::status() {
@@ -220,12 +227,7 @@ void FeedForwardSweep::sweep() {
       f.updateVertexPositions();
 
       // rerun CG optimization
-      bool success = integrate();
-
-      // mark "failed" is CG returns false
-      if (!success) {
-        markFileName("_failed");
-      }
+      integrate();
     }
     // reverse the order of inner loop to ensure phase space closeness
     std::reverse(VP_.begin(), VP_.end());
