@@ -65,28 +65,25 @@ System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
   std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
-  std::cout << "Loading input mesh from " << trajFile;
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
-  std::cout << " of frame " << startingFrame << " ...";
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology());
-  std::cout << "Finished!" << std::endl;
+  std::cout << "Loaded input mesh from " << trajFile << " of frame "
+            << startingFrame << std::endl;
 
   /// Load reference geometry ptrRefVpg onto ptrMesh object
-  std::cout << "Loading reference mesh ...";
   std::tie(referenceMesh, referenceVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(fd.getRefcoordinate(),
                                               fd.getTopology());
-  std::cout << "Finished!" << std::endl;
+  std::cout << "Loaded reference mesh" << std::endl;
 
   /// Subdivide the mesh and geometry objects
   if (nSub > 0) {
-    std::cout << "Subdivide input and reference mesh " << nSub
-              << " time(s) ...";
     mem3dg::loopSubdivide(mesh, vpg, nSub);
     mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
-    std::cout << "Finished!" << std::endl;
+    std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
+              << std::endl;
   }
 
   // reinterpret referenceVpg to mesh instead of referenceMesh
@@ -109,14 +106,12 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
   // Load input mesh and geometry
-  std::cout << "Loading input mesh " << inputMesh << " ...";
   std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  std::cout << "Finished!" << std::endl;
+  std::cout << "Loaded input mesh " << inputMesh << std::endl;
 
   // Load input reference mesh and geometry
-  std::cout << "Loading reference mesh " << refMesh << " ...";
   std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
-  std::cout << "Finished!" << std::endl;
+  std::cout << "Loaded input mesh " << refMesh << std::endl;
 
   // Check consistent topology
   if (!(mesh->nVertices() == referenceMesh->nVertices() &&
@@ -128,13 +123,12 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 
   // Subdivide the mesh and geometry objects
   if (nSub > 0) {
-    std::cout << "Subdivide input and reference mesh " << nSub
-              << " time(s) ...";
     // mem3dg::subdivide(mesh, vpg, nSub);
     // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
     mem3dg::loopSubdivide(mesh, vpg, nSub);
     mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
-    std::cout << "Finished!" << std::endl;
+    std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
+              << std::endl;
   }
 
   // reinterpret referenceVpg to mesh instead of referenceMesh.

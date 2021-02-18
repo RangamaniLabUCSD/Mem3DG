@@ -38,78 +38,90 @@ void Integrator::createNetcdfFile() {
 }
 
 void Integrator::saveData() {
-    // save variable to richData and save ply file
-    if (verbosity > 3) {
-      saveRichData();
-      char buffer[50];
-      sprintf(buffer, "/frame%d", (int)frame);
-      f.richData.write(outputDir + buffer + ".ply");
-    }
+  // save variable to richData and save ply file
+  if (verbosity > 3) {
+    saveRichData();
+    char buffer[50];
+    sprintf(buffer, "/frame%d", (int)frame);
+    f.richData.write(outputDir + buffer + ".ply");
+  }
 
 #ifdef MEM3DG_WITH_NETCDF
-    // save variable to netcdf traj file
-    if (verbosity > 0) {
-      saveNetcdfData(frame, fd);
-    }
+  // save variable to netcdf traj file
+  if (verbosity > 0) {
+    saveNetcdfData(frame, fd);
+  }
 #endif
 
-    // print in-progress information in the console
-    if (verbosity > 1) {
-      std::cout << "\n"
-                << "t: " << f.time << ", "
-                << "n: " << frame << "\n"
-                << "dA: " << dArea << ", "
-                << "dVP: " << dVP << ", "
-                << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
-                << "\n"
-                << "E_total: " << f.E.totalE << "\n"
-                << "|e|L2: " << f.L2ErrorNorm << "\n"
-                << "H: [" << f.H.raw().minCoeff() << "," << f.H.raw().maxCoeff()
-                << "]"
-                << "\n"
-                << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff()
-                << "]" << std::endl;
-      // << "COM: "
-      // << gc::EigenMap<double,
-      // 3>(f.vpg->inputVertexPositions).colwise().sum() /
-      //         f.vpg->inputVertexPositions.raw().rows()
-      // << "\n"
-    }
-    // break loop if EXIT flag is on
-    if (EXIT) {
-      if (verbosity > 0) {
-        std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
-                  << ", and data saved to " + outputDir << std::endl;
-        if (verbosity > 2) {
-          saveRichData();
-          f.richData.write(outputDir + "/out.ply");
-        }
+  // print in-progress information in the console
+  if (verbosity > 1) {
+    std::cout << "\n"
+              << "t: " << f.time << ", "
+              << "n: " << frame << "\n"
+              << "dA: " << dArea << ", "
+              << "dVP: " << dVP << ", "
+              << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
+              << "\n"
+              << "E_total: " << f.E.totalE << "\n"
+              << "|e|L2: " << f.L2ErrorNorm << "\n"
+              << "H: [" << f.H.raw().minCoeff() << "," << f.H.raw().maxCoeff()
+              << "]"
+              << "\n"
+              << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff()
+              << "]" << std::endl;
+    // << "COM: "
+    // << gc::EigenMap<double,
+    // 3>(f.vpg->inputVertexPositions).colwise().sum() /
+    //         f.vpg->inputVertexPositions.raw().rows()
+    // << "\n"
+  }
+  // break loop if EXIT flag is on
+  if (EXIT) {
+    if (verbosity > 0) {
+      std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
+                << ", and data saved to " + outputDir << std::endl;
+      if (verbosity > 2) {
+        saveRichData();
+        f.richData.write(outputDir + "/out.ply");
       }
     }
-    
+  }
 }
 
-void Integrator::checkParameters(std::string integrator) {
-  if (integrator == "velocity verlet") {
-    if (abs(f.P.sigma - sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann *
-                             f.P.temp / dt)) /
-            sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp /
-                 dt) >
-        1e-6) {
-      throw std::runtime_error(
-          "sigma for DPD is not consistent, probably not initialized!");
-    }
-  }
-  if (integrator == "euler") {
-    if (f.P.gamma != 0) {
-      throw std::runtime_error("gamma has to be 0 for euler integration!");
-    }
-  }
-  if (integrator == "conjugate gradient") {
-    if (f.P.gamma != 0) {
-      throw std::runtime_error("gamma has to be 0 for euler integration!");
-    }
-  }
+void Integrator::markFileName(std::string marker_str) {
+  std::string dirPath = outputDir;
+
+  const char *marker = marker_str.c_str();
+
+  char *file = new char[trajFileName.size() + 1];
+  std::copy(trajFileName.begin(), trajFileName.end(), file);
+  file[trajFileName.size()] = '\0';
+
+  char fileMarked[50]{"/"}, oldNC[150]{"/"}, newNC[150]{"/"};
+
+  // sprintf(fileMarked, "/traj_H_%d_VP_%d_failed.nc", int(H * 100),
+  //         int(VP * 100));
+
+  // split the extension and file name
+  const char *ext = strchr(file, '.');
+
+  // name fileMarked to be the file name
+  strncpy(fileMarked, file, ext - file);
+
+  // name fileMarked to be file name + the marker + extension
+  strcat(fileMarked, marker);
+  strcat(fileMarked, ext);
+  fileMarked[ext - file + sizeof(marker) + sizeof(ext)] = '\0';
+
+  // append the directory path and copy to oldNC and newNC
+  strcpy(oldNC, dirPath.c_str());
+  strcpy(newNC, dirPath.c_str());
+  strcat(oldNC, file);
+  strcat(newNC, fileMarked);
+
+  // rename file
+  rename(oldNC, newNC);
+  delete[] file;
 }
 
 void Integrator::saveRichData() {
