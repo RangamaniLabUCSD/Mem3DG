@@ -59,7 +59,7 @@ void VelocityVerlet::integrate() {
     }
 
     // step forward
-    step();
+    march();
   } 
 
   // stop the timer and report time spent
@@ -119,7 +119,7 @@ void VelocityVerlet::status() {
   f.computeFreeEnergy();
 }
 
-void VelocityVerlet::step() {
+void VelocityVerlet::march() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);

@@ -324,12 +324,22 @@ public:
   /**
    * @brief velocity Verlet stepper
    */
-  void step();
+  void march();
 
   /**
    * @brief Velocity Verlet status computation and thresholding
    */
   void status();
+
+  /**
+   * @brief step for n iterations
+   */
+  void step(size_t n) {
+    for (size_t i = 0; i < n; i++) {
+      status();
+      march();
+    }
+  }
 };
 
 // ==========================================================
@@ -366,12 +376,22 @@ public:
   /**
    * @brief Forward Euler stepper
    */
-  void step();
+  void march();
 
   /**
    * @brief Forward Euler status computation and thresholding
    */
   void status();
+
+  /**
+   * @brief step for n iterations
+   */
+  void step(size_t n) {
+    for (size_t i = 0; i < n; i++) {
+      status();
+      march();
+    }
+  }
 };
 
 // ==========================================================
@@ -418,12 +438,22 @@ public:
   /**
    * @brief Conjugate Gradient stepper
    */
-  void step();
+  void march();
 
   /**
    * @brief Conjugate Gradient status computation and thresholding
    */
   void status();
+
+  /**
+   * @brief step for n iterations
+   */
+  void step(size_t n) {
+    for (size_t i = 0; i < n; i++) {
+      status();
+      march();
+    }
+  }
 };
 
 // ==========================================================
