@@ -62,13 +62,17 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                      R"delim(
           status computation and thresholding
       )delim");
-  velocityverlet.def("step", &VelocityVerlet::step,
+  velocityverlet.def("march", &VelocityVerlet::march,
                      R"delim(
           stepping forward 
       )delim");
   velocityverlet.def("saveData", &VelocityVerlet::saveData,
                      R"delim(
           save data to output directory
+      )delim");
+  velocityverlet.def("step", &VelocityVerlet::step, py::arg("n"),
+                     R"delim(
+          step for n iterations
       )delim");
 
   /// Integrator-euler object
@@ -87,13 +91,17 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             R"delim(
           status computation and thresholding
       )delim");
-  euler.def("step", &Euler::step,
+  euler.def("march", &Euler::march,
             R"delim(
           stepping forward 
       )delim");
   euler.def("saveData", &Euler::saveData,
-                        R"delim(
+            R"delim(
           save data to output directory
+      )delim");
+  euler.def("step", &Euler::step, py::arg("n"),
+            R"delim(
+          step for n iterations
       )delim");
 
   /// Integrator-conjugate gradient object
@@ -113,13 +121,17 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           status computation and thresholding
       )delim");
-  conjugategradient.def("step", &ConjugateGradient::step,
+  conjugategradient.def("march", &ConjugateGradient::march,
                         R"delim(
           stepping forward 
       )delim");
   conjugategradient.def("saveData", &ConjugateGradient::saveData,
                         R"delim(
           save data to output directory
+      )delim");
+  conjugategradient.def("step", &ConjugateGradient::step, py::arg("n"),
+                        R"delim(
+          step for n iterations
       )delim");
 
   /// System object

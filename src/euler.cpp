@@ -59,7 +59,7 @@ bool Euler::integrate() {
     }
 
     // step forward
-    step();
+    march();
   }
 
   // stop the timer and report time spent
@@ -127,7 +127,7 @@ void Euler::status() {
   f.computeFreeEnergy();
 }
 
-void Euler::step() {
+void Euler::march() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);

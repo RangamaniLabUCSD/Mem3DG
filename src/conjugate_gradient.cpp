@@ -59,7 +59,7 @@ bool ConjugateGradient::integrate() {
     }
 
     // step forward
-    step();
+    march();
   }
 
   // stop the timer and report time spent
@@ -125,7 +125,7 @@ void ConjugateGradient::status() {
   f.computeFreeEnergy();
 }
 
-void ConjugateGradient::step() {
+void ConjugateGradient::march() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
