@@ -223,6 +223,7 @@ void System::initConstants() {
   rng = pcg32(seed_source);
 
   // Initialize V-E distribution matrix
+  D = vpg->d0.transpose();
   for (int k = 0; k < D.outerSize(); ++k) {
     for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
       it.valueRef() = 0.5;
@@ -312,14 +313,6 @@ void System::updateVertexPositions() {
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum();
-
-  // initialize/update intersection area
-  interfacialArea = 0.0;
-  for (gcs::Vertex v : mesh->vertices()) {
-    if ((H0[v] > (0.1 * P.H0)) && (H0[v] < (0.9 * P.H0)) && (H[v] != 0)) {
-      interfacialArea += vpg->vertexDualAreas[v];
-    }
-  }
 
   // initialize/update external force
   computeExternalPressure();
