@@ -141,6 +141,7 @@ void VelocityVerlet::march() {
     dt = dt_size2_ratio * minMeshLength * minMeshLength;
   }
   double hdt = 0.5 * dt, hdt2 = hdt * dt;
+  f.P.sigma =  sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt);
 
   // time stepping on vertex position
   pos_e += vel_e * dt + hdt2 * totalPressure;

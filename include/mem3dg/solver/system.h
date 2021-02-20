@@ -197,6 +197,8 @@ public:
   Eigen::SparseMatrix<double> &L;
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
+  /// V-E distribution matrix
+  Eigen::SparseMatrix<double> D;
 
   /// L2 error norm
   double L2ErrorNorm;
@@ -231,7 +233,6 @@ public:
   /// If collapsing the edge
   gcs::EdgeData<bool> isCollapse;
 
-  
   // ==========================================================
   // =============        Constructors           +=============
   // ==========================================================
@@ -329,7 +330,7 @@ public:
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
         bendingPressure(*mesh, {0, 0, 0}), insidePressure(0),
-        capillaryPressure(*mesh, {0, 0, 0}),
+        D(vpg->d0.transpose()), capillaryPressure(*mesh, {0, 0, 0}),
         lineTensionPressure(*mesh, {0, 0, 0}), chemicalPotential(*mesh, 0),
         externalPressure(*mesh, {0, 0, 0}),
         regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),
@@ -351,6 +352,8 @@ public:
     vpg->requireVertexDualAreas();
     vpg->requireCornerAngles();
     vpg->requireCornerScaledAngles();
+    vpg->requireDECOperators();
+    vpg->requireEdgeDihedralAngles();
     // vpg->requireVertexTangentBasis();
 
     // Check confliciting parameters and options

@@ -222,6 +222,13 @@ void System::initConstants() {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
+  // Initialize V-E distribution matrix
+  for (int k = 0; k < D.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+      it.valueRef() = 0.5;
+    }
+  }
+  
   // Initialize RichData
   richData.addMeshConnectivity();
   richData.addGeometry(*vpg);
