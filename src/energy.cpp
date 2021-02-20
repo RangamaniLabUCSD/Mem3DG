@@ -64,9 +64,7 @@ void System::computeChemicalEnergy() {
 }
 
 void System::computeLineTensionEnergy() {
-  E.lE = 0;
-  // TODO: 
-  // E.lE = (P.eta * interfacialArea * P.sharpness);
+  E.lE = P.eta * (vpg->hodge1 * vpg->d0 * H0.raw().cwiseAbs()).sum();
 }
 
 void System::computeExternalForceEnergy() {
@@ -108,19 +106,22 @@ void System::computePotentialEnergy() {
 void System::computeFreeEnergy() {
   // zero all energy
   E = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-  
+
   computeKineticEnergy();
   computePotentialEnergy();
   E.totalE = E.kE + E.potE;
 }
 
-double System::computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
-  // return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() / surfaceArea);
- 
+double
+System::computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
+  // return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() /
+  // surfaceArea);
+
   return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
 
   // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-  // return (M * rowwiseDotProduct(pressure, vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
+  // return (M * rowwiseDotProduct(pressure,
+  // vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
 }
 
 } // namespace mem3dg

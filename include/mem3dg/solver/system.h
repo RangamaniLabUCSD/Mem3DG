@@ -206,8 +206,6 @@ public:
   double surfaceArea;
   /// Volume
   double volume;
-  /// Interface Area;
-  double interfacialArea;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity by finite differencing past and current position
@@ -330,7 +328,7 @@ public:
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
         bendingPressure(*mesh, {0, 0, 0}), insidePressure(0),
-        D(vpg->d0.transpose()), capillaryPressure(*mesh, {0, 0, 0}),
+        D(), capillaryPressure(*mesh, {0, 0, 0}),
         lineTensionPressure(*mesh, {0, 0, 0}), chemicalPotential(*mesh, 0),
         externalPressure(*mesh, {0, 0, 0}),
         regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),

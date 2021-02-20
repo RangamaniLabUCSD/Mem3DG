@@ -81,7 +81,7 @@ bool ConjugateGradient::integrate() {
 
 void ConjugateGradient::checkParameters() {
   if (f.P.gamma != 0) {
-    throw std::runtime_error("gamma has to be 0 for euler integration!");
+    throw std::runtime_error("gamma has to be 0 for Conjugate Gradient integration!");
   }
 }
 
