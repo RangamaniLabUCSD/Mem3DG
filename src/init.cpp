@@ -111,7 +111,7 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 
   // Load input reference mesh and geometry
   std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
-  std::cout << "Loaded input mesh " << refMesh << std::endl;
+  std::cout << "Loaded reference mesh " << refMesh << std::endl;
 
   // Check consistent topology
   if (!(mesh->nVertices() == referenceMesh->nVertices() &&
@@ -120,6 +120,47 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
     throw std::logic_error(
         "Topology of input mesh and reference mesh is not consistent!");
   }
+
+  // Subdivide the mesh and geometry objects
+  if (nSub > 0) {
+    // mem3dg::subdivide(mesh, vpg, nSub);
+    // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
+    mem3dg::loopSubdivide(mesh, vpg, nSub);
+    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
+    std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
+              << std::endl;
+  }
+
+  // reinterpret referenceVpg to mesh instead of referenceMesh.
+  refVpg = referenceVpg->reinterpretTo(*mesh);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
+                   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
+                   Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix,
+                   size_t nSub) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(vertexMatrix, topologyMatrix);
+  std::cout << "Loaded input mesh " << std::endl;
+
+  // Load input reference mesh and geometry
+  std::tie(referenceMesh, referenceVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(refVertexMatrix, topologyMatrix);
+  std::cout << "Loaded reference mesh " << std::endl;
 
   // Subdivide the mesh and geometry objects
   if (nSub > 0) {
@@ -188,9 +229,9 @@ void System::checkParameters() {
 
   if (P.Kf == 0) {
     if (P.conc != -1 || P.height != 0) {
-      throw std::logic_error(
-          "With no external force, its concentration should be disabled (=-1) "
-          "and prescribed height should be set to 0!");
+      throw std::logic_error("With no external force, its concentration "
+                             "should be disabled (=-1) "
+                             "and prescribed height should be set to 0!");
     }
   }
 }
@@ -229,7 +270,7 @@ void System::initConstants() {
       it.valueRef() = 0.5;
     }
   }
-  
+
   // Initialize RichData
   richData.addMeshConnectivity();
   richData.addGeometry(*vpg);
@@ -414,4 +455,5 @@ void System::visualize() {
   polyscope::state::userCallback = myCallback;
   polyscope::show();
 }
+
 } // namespace mem3dg

@@ -28,13 +28,22 @@ namespace gcs = ::geometrycentral::surface;
 /**
  * @brief Construct an icosphere mesh in PolygonSoup form
  *
- * @param coords    Reference to vector of vertex coordinates
- * @param polygons  Polygons of the mesh
  * @param n         Iterations of quadrisections to perform
+ * @param R         Radius of the icosphere
  */
 DLL_PUBLIC std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
 icosphere(int n, double R);
+
+/**
+ * @brief Construct an icosphere mesh
+ *
+ * @param n         Iterations of quadrisections to perform
+ * @param R         Radius of the icosphere
+ */
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getIcosphereMatrix(int n, double R);
 
 /**
  * @brief Hard code a tetrahedron in PolygonSoup form

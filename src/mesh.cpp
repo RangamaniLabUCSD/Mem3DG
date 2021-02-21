@@ -188,6 +188,19 @@ icosphere(int n, double R) {
                                                  soup.vertexCoordinates);
 }
 
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getIcosphereMatrix(int n, double R) {
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::tie(mesh, vpg) = icosphere(n, R);
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  meshMatrix = mesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
+}
+
 void tetrahedron(std::vector<gc::Vector3> &coords,
                  std::vector<std::vector<std::size_t>> &polygons) {
   // Initialize vertex coordinates

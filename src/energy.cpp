@@ -114,14 +114,12 @@ void System::computeFreeEnergy() {
 
 double
 System::computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
-  // return sqrt((M * rowwiseDotProduct(M * pressure, M * pressure)).sum() /
-  // surfaceArea);
+  return sqrt((M * rowwiseDotProduct(force, force)).sum() / surfaceArea);
 
-  return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
+  // return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
 
   // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
   // return (M * rowwiseDotProduct(pressure,
   // vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
 }
-
 } // namespace mem3dg
