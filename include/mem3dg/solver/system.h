@@ -235,6 +235,30 @@ public:
   // =============        Constructors           +=============
   // ==========================================================
   /**
+   * @brief Construct a new Force object by reading topology and vertex matrices
+   *
+   * @param topologyMatrix,  topology matrix, F x 3
+   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
+   * @param refVertexMatrix, reference mesh coordinate matrix V x 3
+   * @param nSub          Number of subdivision
+   * @param p             Parameter of simulation
+   * @param isReducedVolume Option of whether adopting reduced volume
+   * parametrization
+   * @param isProtein     Option of considering protein adsorption
+   * @param isLocalCurvature Option of whether membrane has local curvature
+   * @param isVertexShift Option of whether conducting vertex shift
+   * regularization
+   */
+  System(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix, size_t nSub,
+         Parameters &p, bool isReducedVolume_, bool isProtein_,
+         bool isLocalCurvature_, bool isVertexShift_)
+      : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
+               p, isReducedVolume_, isProtein_, isLocalCurvature_,
+               isVertexShift_){};
+
+  /**
    * @brief Construct a new Force object by reading mesh file path
    *
    * @param inputMesh     Input Mesh
@@ -327,8 +351,8 @@ public:
         isReducedVolume(isReducedVolume_), isProtein(isProtein_),
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
-        bendingPressure(*mesh, {0, 0, 0}), insidePressure(0),
-        D(), capillaryPressure(*mesh, {0, 0, 0}),
+        bendingPressure(*mesh, {0, 0, 0}), insidePressure(0), D(),
+        capillaryPressure(*mesh, {0, 0, 0}),
         lineTensionPressure(*mesh, {0, 0, 0}), chemicalPotential(*mesh, 0),
         externalPressure(*mesh, {0, 0, 0}),
         regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),
@@ -394,6 +418,19 @@ public:
   // ==========================================================
   // ================     Initialization     ==================
   // ==========================================================
+
+  /**
+   * @brief Construct a tuple of unique_ptrs from topology matrix and vertex
+   * position matrix
+   *
+   */
+  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+             std::unique_ptr<gcs::VertexPositionGeometry>,
+             std::unique_ptr<gcs::VertexPositionGeometry>>
+  readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> faceVertexMatrix,
+             Eigen::Matrix<double, Eigen::Dynamic, 3> vertexPositionMatrix,
+             Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexPositionMatrix,
+             size_t nSub);
 
   /**
    * @brief Construct a tuple of unique_ptrs from mesh and refMesh path

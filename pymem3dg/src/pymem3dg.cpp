@@ -48,7 +48,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
 
   /// Integrator-velocity verlet object
-  py::class_<VelocityVerlet> velocityverlet(pymem3dg, "VelocityVerlet", R"delim(
+  py::class_<VelocityVerlet> velocityverlet(pymem3dg, "VelocityVerlet",
+                                            R"delim(
         Velocity Verlet integration
     )delim");
 
@@ -141,6 +142,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   system.def(py::init<std::string, std::string, size_t, Parameters &, bool,
                       bool, bool, bool>());
+  system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t,
+                      Parameters &, bool, bool, bool, bool>());
   system.def_readwrite("E", &System::E,
                        R"delim(
           get the Energy components struct
@@ -170,6 +175,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::return_value_policy::reference_internal,
       R"delim(
           get the vertex position matrix
+      )delim");
+  system.def(
+      "getReferenceVertexPositionMatrix",
+      [](System &s) {
+        return gc::EigenMap<double, 3>(s.refVpg->inputVertexPositions);
+      },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the face vertex matrix
       )delim");
   system.def(
       "getFaceVertexMatrix",
@@ -207,7 +221,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the externally-applied pressure
       )delim");
   system.def(
-      "getInsidePressure", [](System &s) { return s.insidePressure; },
+      "getInsidePressure",
+      [](System &s) {
+        return s.insidePressure * gc::EigenMap<double, 3>(s.vpg->vertexNormals);
+      },
       py::return_value_policy::reference_internal,
       R"delim(
           get the relative inside pressure
@@ -314,6 +331,12 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def("visualize", &System::visualize,
              R"delim(
           visualization of the system object
+      )delim");
+  system.def("computeL2Norm", &System::computeL2Norm, py::arg("pressure"),
+             R"delim(
+                 compute error norm
+          Args:   
+                force (:py:class:`list`): mesh vertex force
       )delim");
 
   /// Parameter struct
@@ -615,6 +638,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                Returns:
                    :py:class:`int`: success.
             )delim");
+
+  pymem3dg.def("getIcosphere", &getIcosphereMatrix,
+               "get topology and vertex position matrix of icosphere", py::arg("n"),
+               py::arg("R"));
 
 #ifdef MEM3DG_WITH_NETCDF
 

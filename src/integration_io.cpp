@@ -217,11 +217,11 @@ void Integrator::saveNetcdfData(size_t &frame, TrajFile &fd) {
   // write Norms
   fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
   fd.writeL2BendNorm(frame,
-                     f.computeL2Norm(EigenMap<double, 3>(f.bendingPressure)));
+                     f.computeL2Norm(f.M * EigenMap<double, 3>(f.bendingPressure)));
   fd.writeL2SurfNorm(frame,
-                     f.computeL2Norm(EigenMap<double, 3>(f.capillaryPressure)));
+                     f.computeL2Norm(f.M * EigenMap<double, 3>(f.capillaryPressure)));
   fd.writeL2PressNorm(
-      frame, f.computeL2Norm(f.insidePressure *
+      frame, f.computeL2Norm(f.M * f.insidePressure *
                              gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
 }
 #endif
