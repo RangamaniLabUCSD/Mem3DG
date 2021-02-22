@@ -114,7 +114,7 @@ void System::computeFreeEnergy() {
 
 double
 System::computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
-  return sqrt((M * rowwiseDotProduct(force, force)).sum() / surfaceArea);
+  return sqrt((rowwiseDotProduct(force, force)).sum() / surfaceArea);
 
   // return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
 
