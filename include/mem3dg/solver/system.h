@@ -148,6 +148,7 @@ public:
   gcs::VertexData<gc::Vector3> capillaryPressure;
   /// Cached interfacial line tension
   gcs::VertexData<gc::Vector3> lineTensionPressure;
+  gcs::EdgeData<double> lineTension;
   /// Cached externally-applied pressure
   gcs::VertexData<gc::Vector3> externalPressure;
   /// Cached relative inside pressure
@@ -177,13 +178,13 @@ public:
   const bool isLocalCurvature;
 
   /// Target area per face
-  gcs::FaceData<double> targetFaceAreas;
+  gcs::FaceData<double> &targetFaceAreas;
   /// Target total face area
   double targetSurfaceArea;
   /// Maximal volume
   double refVolume;
   /// Target length per edge
-  gcs::EdgeData<double> targetEdgeLengths;
+  gcs::EdgeData<double> &targetEdgeLengths;
   /// Target edge cross length ratio
   gcs::EdgeData<double> targetLcr;
   /// Distance solver
@@ -352,14 +353,16 @@ public:
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
         bendingPressure(*mesh, {0, 0, 0}), insidePressure(0), D(),
-        capillaryPressure(*mesh, {0, 0, 0}),
+        capillaryPressure(*mesh, {0, 0, 0}), lineTension(*mesh, 0),
         lineTensionPressure(*mesh, {0, 0, 0}), chemicalPotential(*mesh, 0),
         externalPressure(*mesh, {0, 0, 0}),
         regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),
-        stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
-        proteinDensity(*mesh, 0), vel(*mesh, {0, 0, 0}), isFlip(*mesh, false),
-        isSplit(*mesh, false), isCollapse(*mesh, false),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), heatSolver(*vpg) {
+        targetEdgeLengths(refVpg->edgeLengths),
+        targetFaceAreas(refVpg->faceAreas), stochasticForce(*mesh, {0, 0, 0}),
+        dampingForce(*mesh, {0, 0, 0}), proteinDensity(*mesh, 0),
+        vel(*mesh, {0, 0, 0}), isFlip(*mesh, false), isSplit(*mesh, false),
+        isCollapse(*mesh, false), E({0, 0, 0, 0, 0, 0, 0, 0, 0}),
+        heatSolver(*vpg) {
 
     // GC computed properties
     vpg->requireFaceNormals();

@@ -288,11 +288,7 @@ void System::initConstants() {
   }
 
   // Initialize the constant target face/surface areas
-  targetFaceAreas = refVpg->faceAreas;
   targetSurfaceArea = targetFaceAreas.raw().sum();
-
-  // Initialize the constant target edge length
-  targetEdgeLengths = refVpg->edgeLengths;
 
   // Initialize the target constant cross length ration
   targetLcr = computeLengthCrossRatio(*refVpg);
@@ -427,6 +423,8 @@ void System::visualize() {
       ->addVertexScalarQuantity("inside_pressure", fp);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_pressure", fn);
+  // polyscope::getSurfaceMesh("Membrane")
+  //     ->addEdgeScalarQuantity("line_tension", lineTension.raw());
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
