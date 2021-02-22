@@ -177,7 +177,7 @@ icosphere(int n, double R) {
 
   // scale the icosphere
   if (R != 1) {
-    for (std::size_t iter = 0; iter < finalSize; ++iter) {
+    for (std::size_t iter = 0; iter < coords.size(); ++iter) {
       coords[iter] *= R;
     }
   }
