@@ -64,7 +64,11 @@ void System::computeChemicalEnergy() {
 }
 
 void System::computeLineTensionEnergy() {
-  E.lE = P.eta * (vpg->hodge1 * vpg->d0 * H0.raw().cwiseAbs()).sum();
+  // scale the dH0 such that it is integrated over the edge 
+  // this is under the case where the resolution is low, WIP 
+  // auto dH0 = vpg->edgeLengths.raw().array() *  (vpg->d0 * H0.raw().cwiseAbs()).array();
+  auto dH0 = vpg->d0 * H0.raw().cwiseAbs();
+  E.lE = P.eta * (vpg->hodge1 * dH0.matrix()).sum();
 }
 
 void System::computeExternalForceEnergy() {
@@ -114,7 +118,7 @@ void System::computeFreeEnergy() {
 
 double
 System::computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
-  return sqrt((M * rowwiseDotProduct(force, force)).sum() / surfaceArea);
+  return sqrt((rowwiseDotProduct(force, force)).sum() / surfaceArea);
 
   // return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
 
