@@ -148,6 +148,7 @@ public:
   gcs::VertexData<gc::Vector3> capillaryPressure;
   /// Cached interfacial line tension
   gcs::VertexData<gc::Vector3> lineTensionPressure;
+  gcs::EdgeData<double> lineTension;
   /// Cached externally-applied pressure
   gcs::VertexData<gc::Vector3> externalPressure;
   /// Cached relative inside pressure
@@ -352,7 +353,7 @@ public:
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
         bendingPressure(*mesh, {0, 0, 0}), insidePressure(0), D(),
-        capillaryPressure(*mesh, {0, 0, 0}),
+        capillaryPressure(*mesh, {0, 0, 0}), lineTension(*mesh, 0),
         lineTensionPressure(*mesh, {0, 0, 0}), chemicalPotential(*mesh, 0),
         externalPressure(*mesh, {0, 0, 0}),
         regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),
