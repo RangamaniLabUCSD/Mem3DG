@@ -99,8 +99,8 @@ void ConjugateGradient::status() {
   // compute velocity
   vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
-  // compute the L2 error norm
-  f.L2ErrorNorm = f.computeL2Norm(vel_e);
+  // compute the L1 error norm
+  f.L1ErrorNorm = f.computeL1Norm(vel_e);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -289,7 +289,7 @@ void Integrator::backtrack(
 
   if (alpha != dt && verbosity > 3) {
     std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
-    std::cout << "L2 norm: " << f.L2ErrorNorm << std::endl;
+    std::cout << "L1 norm: " << f.L1ErrorNorm << std::endl;
   }
   f.time = init_time + alpha;
 }
@@ -299,10 +299,10 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
                                              const double dArea,
                                              const double ctol,
                                              double increment) {
-  if (f.L2ErrorNorm < tol) {
+  if (f.L1ErrorNorm < tol) {
     if (isAugmentedLagrangian) { // augmented Lagrangian method
       if (dArea < ctol) {        // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
         std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
@@ -313,7 +313,7 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
       }
     } else {              // incremental harmonic penalty method
       if (dArea < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
         std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
@@ -329,10 +329,10 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
                                         const double dArea,
                                         const double dVolume, const double ctol,
                                         double increment) {
-  if (f.L2ErrorNorm < tol) {
+  if (f.L1ErrorNorm < tol) {
     if (isAugmentedLagrangian) {            // augmented Lagrangian method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
         std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
@@ -346,7 +346,7 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
       }
     } else { // incremental harmonic penalty method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
         EXIT = true;
       }
 

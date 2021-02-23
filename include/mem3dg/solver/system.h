@@ -201,8 +201,8 @@ public:
   /// V-E distribution matrix
   Eigen::SparseMatrix<double> D;
 
-  /// L2 error norm
-  double L2ErrorNorm;
+  /// L1 error norm
+  double L1ErrorNorm;
   /// surface area
   double surfaceArea;
   /// Volume
@@ -582,9 +582,9 @@ public:
   void computeFreeEnergy();
 
   /**
-   * @brief Compute the L2 norm of the pressure
+   * @brief Compute the L1 norm of the pressure
    */
-  double computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> pressure) const;
+  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const;
 
   // ==========================================================
   // =============        Regularization        ===============

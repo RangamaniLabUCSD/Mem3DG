@@ -163,12 +163,18 @@ double System::computeInsidePressure() {
 EigenVectorX3D System::computeLineTensionPressure() {
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
   auto lineTensionPressure_e = gc::EigenMap<double, 3>(lineTensionPressure);
-  lineTension.raw() = vpg->hodge1Inverse * P.eta *
-          ((vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs()).array() *
-           vpg->edgeDihedralAngles.raw().array())
-              .matrix();
+  // lineTension.raw() =
+  //     vpg->hodge1Inverse * P.eta *
+  //     ((vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs()).array() *
+  //      vpg->edgeDihedralAngles.raw().array())
+  //             .matrix();
+  // lineTensionPressure_e = -rowwiseScaling(
+  //     M_inv * D * lineTension.raw(),
+  //     vertexAngleNormal_e);
   lineTensionPressure_e = -rowwiseScaling(
-      M_inv * D * lineTension.raw(),
+      M_inv * D * vpg->hodge1Inverse *
+          (lineTension.raw().array() * vpg->edgeDihedralAngles.raw().array())
+              .matrix(),
       vertexAngleNormal_e);
 
   return lineTensionPressure_e;
