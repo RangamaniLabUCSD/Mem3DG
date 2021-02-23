@@ -99,8 +99,8 @@ void Euler::status() {
   // compute velocity
   vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
-  // compute the L2 error norm
-  f.L2ErrorNorm = f.computeL2Norm(vel_e);
+  // compute the L1 error norm
+  f.L1ErrorNorm = f.computeL1Norm(vel_e);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -118,8 +118,8 @@ void Euler::status() {
   }
 
   // exit if under error tolerance
-  if (f.L2ErrorNorm < tol) {
-    std::cout << "\nL2 error norm smaller than tolerance." << std::endl;
+  if (f.L1ErrorNorm < tol) {
+    std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
     EXIT = true;
   }
 

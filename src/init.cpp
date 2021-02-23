@@ -335,6 +335,13 @@ void System::updateVertexPositions() {
     H0.raw() *= P.H0;
   }
 
+  // initialize/update line tension (on dual edge)
+  if (P.eta != 0) {
+    // scale the dH0 such that it is integrated over the edge
+    // this is under the case where the resolution is low, WIP
+    lineTension.raw() = P.eta * vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs();
+  }
+
   // initialize/update mean curvature
   H.raw() = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
 
