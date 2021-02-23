@@ -21,6 +21,7 @@
 
 #include <Eigen/Core>
 
+#include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
@@ -64,11 +65,11 @@ void System::computeChemicalEnergy() {
 }
 
 void System::computeLineTensionEnergy() {
-  // scale the dH0 such that it is integrated over the edge 
-  // this is under the case where the resolution is low, WIP 
-  // auto dH0 = vpg->edgeLengths.raw().array() *  (vpg->d0 * H0.raw().cwiseAbs()).array();
-  auto dH0 = vpg->d0 * H0.raw().cwiseAbs();
-  E.lE = P.eta * (vpg->hodge1 * dH0.matrix()).sum();
+  // scale the dH0 such that it is integrated over the edge
+  // this is under the case where the resolution is low, WIP
+  // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *
+  // H0.raw()).cwiseAbs()).array(); auto dH0 = (vpg->d0 * H0.raw()).cwiseAbs();
+  E.lE = (vpg->edgeLengths.raw().array() * lineTension.raw().array()).sum();
 }
 
 void System::computeExternalForceEnergy() {
@@ -117,13 +118,21 @@ void System::computeFreeEnergy() {
 }
 
 double
-System::computeL2Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
-  return sqrt((rowwiseDotProduct(force, force)).sum() / surfaceArea);
+System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
+  // return sqrt((rowwiseDotProduct(force, force)).sum() / surfaceArea);
 
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
+
+  // L2 Norm
   // return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
 
+  
   // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
   // return (M * rowwiseDotProduct(pressure,
   // vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
+
+  // L1 Norm
+  return rowwiseDotProduct(force, vertexAngleNormal_e).cwiseAbs().sum() /
+         surfaceArea;
 }
 } // namespace mem3dg

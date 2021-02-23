@@ -63,7 +63,7 @@ void Integrator::saveData() {
               << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
               << "\n"
               << "E_total: " << f.E.totalE << "\n"
-              << "|e|L2: " << f.L2ErrorNorm << "\n"
+              << "|e|L1: " << f.L1ErrorNorm << "\n"
               << "H: [" << f.H.raw().minCoeff() << "," << f.H.raw().maxCoeff()
               << "]"
               << "\n"
@@ -215,13 +215,13 @@ void Integrator::saveNetcdfData(size_t &frame, TrajFile &fd) {
   fd.writeTotalEnergy(frame, f.E.totalE);
 
   // write Norms
-  fd.writeL2ErrorNorm(frame, f.L2ErrorNorm);
-  fd.writeL2BendNorm(frame,
-                     f.computeL2Norm(f.M * EigenMap<double, 3>(f.bendingPressure)));
-  fd.writeL2SurfNorm(frame,
-                     f.computeL2Norm(f.M * EigenMap<double, 3>(f.capillaryPressure)));
-  fd.writeL2PressNorm(
-      frame, f.computeL2Norm(f.M * f.insidePressure *
+  fd.writeL1ErrorNorm(frame, f.L1ErrorNorm);
+  fd.writeL1BendNorm(frame,
+                     f.computeL1Norm(f.M * EigenMap<double, 3>(f.bendingPressure)));
+  fd.writeL1SurfNorm(frame,
+                     f.computeL1Norm(f.M * EigenMap<double, 3>(f.capillaryPressure)));
+  fd.writeL1PressNorm(
+      frame, f.computeL1Norm(f.M * f.insidePressure *
                              gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
 }
 #endif
@@ -305,7 +305,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Chemical Energy:  " << f.E.cE << "\n"
            << "Line tension Energy:  " << f.E.lE << "\n"
            << "Total Energy:     " << f.E.totalE << "\n"
-           << "L2 error norm:    " << f.L2ErrorNorm << "\n"
+           << "L1 error norm:    " << f.L1ErrorNorm << "\n"
            << "Volume:           " << f.volume << " = "
            << f.volume / f.refVolume << " reduced volume"
            << "\n"

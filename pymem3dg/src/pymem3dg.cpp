@@ -339,7 +339,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           visualization of the system object
       )delim");
-  system.def("computeL2Norm", &System::computeL2Norm, py::arg("pressure"),
+  system.def("computeL1Norm", &System::computeL1Norm, py::arg("force"),
              R"delim(
                  compute error norm
           Args:   
