@@ -512,67 +512,67 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
   return Energy;
 }
 
-// L2 error norm
-void TrajFile::writeL2ErrorNorm(const std::size_t idx,
-                                const double L2ErrorNorm) {
+// L1 error norm
+void TrajFile::writeL1ErrorNorm(const std::size_t idx,
+                                const double L1ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
-  l2errornorm_var.putVar({idx}, &L2ErrorNorm);
+  l1errornorm_var.putVar({idx}, &L1ErrorNorm);
 }
 
-double TrajFile::getL2ErrorNorm(const std::size_t idx) const {
+double TrajFile::getL1ErrorNorm(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
-  double L2ErrorNorm;
-  l2errornorm_var.getVar({idx}, &L2ErrorNorm);
-  return L2ErrorNorm;
+  double L1ErrorNorm;
+  l1errornorm_var.getVar({idx}, &L1ErrorNorm);
+  return L1ErrorNorm;
 }
 
-// L2 bending pressure norm
-void TrajFile::writeL2BendNorm(const std::size_t idx, const double L2BendNorm) {
+// L1 bending pressure norm
+void TrajFile::writeL1BendNorm(const std::size_t idx, const double L1BendNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
-  l2bendnorm_var.putVar({idx}, &L2BendNorm);
+  l1bendnorm_var.putVar({idx}, &L1BendNorm);
 }
 
-double TrajFile::getL2BendNorm(const std::size_t idx) const {
+double TrajFile::getL1BendNorm(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
-  double L2BendNorm;
-  l2bendnorm_var.getVar({idx}, &L2BendNorm);
-  return L2BendNorm;
+  double L1BendNorm;
+  l1bendnorm_var.getVar({idx}, &L1BendNorm);
+  return L1BendNorm;
 }
 
-// L2 capillary pressure norm
-void TrajFile::writeL2SurfNorm(const std::size_t idx,
-                               const double L2ErrorNorm) {
+// L1 capillary pressure norm
+void TrajFile::writeL1SurfNorm(const std::size_t idx,
+                               const double L1ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
-  l2surfnorm_var.putVar({idx}, &L2ErrorNorm);
+  l1surfnorm_var.putVar({idx}, &L1ErrorNorm);
 }
 
-double TrajFile::getL2SurfNorm(const std::size_t idx) const {
+double TrajFile::getL1SurfNorm(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
-  double L2ErrorNorm;
-  l2surfnorm_var.getVar({idx}, &L2ErrorNorm);
-  return L2ErrorNorm;
+  double L1ErrorNorm;
+  l1surfnorm_var.getVar({idx}, &L1ErrorNorm);
+  return L1ErrorNorm;
 }
 
-// L2 inside pressure norm
-void TrajFile::writeL2PressNorm(const std::size_t idx,
-                                const double L2ErrorNorm) {
+// L1 inside pressure norm
+void TrajFile::writeL1PressNorm(const std::size_t idx,
+                                const double L1ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
-  l2pressnorm_var.putVar({idx}, &L2ErrorNorm);
+  l1pressnorm_var.putVar({idx}, &L1ErrorNorm);
 }
 
-double TrajFile::getL2PressNorm(const std::size_t idx) const {
+double TrajFile::getL1PressNorm(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
-  double L2ErrorNorm;
-  l2pressnorm_var.getVar({idx}, &L2ErrorNorm);
-  return L2ErrorNorm;
+  double L1ErrorNorm;
+  l1pressnorm_var.getVar({idx}, &L1ErrorNorm);
+  return L1ErrorNorm;
 }
 
 // volume
