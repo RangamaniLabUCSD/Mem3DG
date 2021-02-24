@@ -398,18 +398,10 @@ void System::visualize() {
   polyMesh->setEdgeWidth(1);
 
   // Process attributes
-  Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft, fp;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  f_ext = rowwiseDotProduct(gc::EigenMap<double, 3>(externalPressure),
-                            gc::EigenMap<double, 3>(vpg->vertexNormals));
-  fb = rowwiseDotProduct(EigenMap<double, 3>(bendingPressure),
-                         gc::EigenMap<double, 3>(vpg->vertexNormals));
-  fl = rowwiseDotProduct(EigenMap<double, 3>(lineTensionPressure),
-                         gc::EigenMap<double, 3>(vpg->vertexNormals));
-  ft = (rowwiseDotProduct(EigenMap<double, 3>(capillaryPressure),
-                          gc::EigenMap<double, 3>(vpg->vertexNormals)));
-  fp.setConstant(mesh->nVertices(), 1, insidePressure);
-  fn = fb + ft + fp + f_ext + fl;
+  fn = bendingPressure.raw() + capillaryPressure.raw() + insidePressure.raw() +
+       externalPressure.raw() + lineTensionPressure.raw();
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
@@ -419,15 +411,16 @@ void System::visualize() {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", H0.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("external_pressure", f_ext);
+      ->addVertexScalarQuantity("external_pressure", externalPressure.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("bending_pressure", fb);
+      ->addVertexScalarQuantity("bending_pressure", bendingPressure.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("line_tension_pressure", fl);
+      ->addVertexScalarQuantity("line_tension_pressure",
+                                lineTensionPressure.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("capillary_pressure", ft);
+      ->addVertexScalarQuantity("capillary_pressure", capillaryPressure.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("inside_pressure", fp);
+      ->addVertexScalarQuantity("inside_pressure", insidePressure.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_pressure", fn);
   polyscope::getSurfaceMesh("Membrane")

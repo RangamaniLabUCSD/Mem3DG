@@ -143,16 +143,16 @@ public:
   double time;
 
   /// Cached bending stress
-  gcs::VertexData<gc::Vector3> bendingPressure;
+  gcs::VertexData<double> bendingPressure;
   /// Cached tension-induced capillary pressure
-  gcs::VertexData<gc::Vector3> capillaryPressure;
+  gcs::VertexData<double> capillaryPressure;
   /// Cached interfacial line tension
-  gcs::VertexData<gc::Vector3> lineTensionPressure;
+  gcs::VertexData<double> lineTensionPressure;
   gcs::EdgeData<double> lineTension;
   /// Cached externally-applied pressure
-  gcs::VertexData<gc::Vector3> externalPressure;
+  gcs::VertexData<double> externalPressure;
   /// Cached relative inside pressure
-  double insidePressure;
+  gcs::VertexData<double> insidePressure;
   /// Cached Surface tension
   double surfaceTension;
 
@@ -352,10 +352,10 @@ public:
         isReducedVolume(isReducedVolume_), isProtein(isProtein_),
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
-        bendingPressure(*mesh, {0, 0, 0}), insidePressure(0), D(),
-        capillaryPressure(*mesh, {0, 0, 0}), lineTension(*mesh, 0),
-        lineTensionPressure(*mesh, {0, 0, 0}), chemicalPotential(*mesh, 0),
-        externalPressure(*mesh, {0, 0, 0}),
+        bendingPressure(*mesh, 0), insidePressure(*mesh, 0), D(),
+        capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
+        lineTensionPressure(*mesh, 0), chemicalPotential(*mesh, 0),
+        externalPressure(*mesh, 0),
         regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),
         targetEdgeLengths(refVpg->edgeLengths),
         targetFaceAreas(refVpg->faceAreas), stochasticForce(*mesh, {0, 0, 0}),
@@ -496,7 +496,7 @@ public:
   /**
    * @brief Compute bending pressure component of the system
    */
-  EigenVectorX3D computeBendingPressure();
+  EigenVectorX1D computeBendingPressure();
 
   /**
    * @brief Compute chemical potential of the system
@@ -506,17 +506,17 @@ public:
   /**
    * @brief Compute capillary pressure component of the system
    */
-  EigenVectorX3D computeCapillaryPressure();
+  EigenVectorX1D computeCapillaryPressure();
 
   /**
    * @brief Compute inside pressure component of the system
    */
-  double computeInsidePressure();
+  EigenVectorX1D computeInsidePressure();
 
   /**
    * @brief Compute line tension pressure component of the system
    */
-  EigenVectorX3D computeLineTensionPressure();
+  EigenVectorX1D computeLineTensionPressure();
 
   /**
    * @brief Compute DPD forces of the system
@@ -526,7 +526,7 @@ public:
   /**
    * @brief Compute external pressure component of the system
    */
-  EigenVectorX3D computeExternalPressure();
+  EigenVectorX1D computeExternalPressure();
 
   /**
    * @brief Compute all forces of the system
@@ -584,7 +584,7 @@ public:
   /**
    * @brief Compute the L1 norm of the pressure
    */
-  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const;
+  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force);
 
   // ==========================================================
   // =============        Regularization        ===============

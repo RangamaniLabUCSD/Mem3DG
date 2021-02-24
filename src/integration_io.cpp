@@ -125,35 +125,19 @@ void Integrator::markFileName(std::string marker_str) {
 }
 
 void Integrator::saveRichData() {
-  gcs::VertexData<double> fn(*f.mesh), f_ext(*f.mesh), fb(*f.mesh), fl(*f.mesh),
-      ft(*f.mesh);
+  gcs::VertexData<double> fn(*f.mesh);
 
   fn.fromVector(rowwiseDotProduct(
       physicalPressure, gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
-  f_ext.fromVector(
-      rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
-                        gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
-  fb.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                        gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
-  fl.fromVector(
-      rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                        gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
-  ft.fromVector(
-      (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                         gc::EigenMap<double, 3>(f.vpg->vertexNormals))
-           .array() /
-       f.H.raw().array() / 2)
-          .matrix());
 
   f.richData.addVertexProperty("mean_curvature", f.H);
   f.richData.addVertexProperty("gauss_curvature", f.K);
   f.richData.addVertexProperty("spon_curvature", f.H0);
-  f.richData.addVertexProperty("external_pressure", f_ext);
+  f.richData.addVertexProperty("external_pressure", f.externalPressure);
   f.richData.addVertexProperty("physical_pressure", fn);
-  f.richData.addVertexProperty("capillary_pressure", ft);
-  f.richData.addVertexProperty("bending_pressure", fb);
-  f.richData.addVertexProperty("line_tension_pressure", fl);
+  f.richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
+  f.richData.addVertexProperty("bending_pressure", f.bendingPressure);
+  f.richData.addVertexProperty("line_tension_pressure", f.lineTensionPressure);
 }
 
 void Integrator::saveRichData(std::string plyName) {
@@ -164,17 +148,8 @@ void Integrator::saveRichData(std::string plyName) {
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::saveNetcdfData() {
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft, fp;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  f_ext = rowwiseDotProduct(gc::EigenMap<double, 3>(f.externalPressure),
-                            gc::EigenMap<double, 3>(f.vpg->vertexNormals));
-  fb = rowwiseDotProduct(EigenMap<double, 3>(f.bendingPressure),
-                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
-  fl = rowwiseDotProduct(EigenMap<double, 3>(f.lineTensionPressure),
-                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
-  ft = (rowwiseDotProduct(EigenMap<double, 3>(f.capillaryPressure),
-                          gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
-  fp.setConstant(f.mesh->nVertices(), 1, f.insidePressure);
   fn = rowwiseDotProduct(physicalPressure,
                          gc::EigenMap<double, 3>(f.vpg->vertexNormals));
 
@@ -203,11 +178,11 @@ void Integrator::saveNetcdfData() {
   }
 
   // write pressures
-  fd.writeBendingPressure(frame, fb);
-  fd.writeCapillaryPressure(frame, ft);
-  fd.writeLinePressure(frame, fl);
-  fd.writeInsidePressure(frame, fp);
-  fd.writeExternalPressure(frame, f_ext);
+  fd.writeBendingPressure(frame, f.bendingPressure.raw());
+  fd.writeCapillaryPressure(frame, f.capillaryPressure.raw());
+  fd.writeLinePressure(frame, f.lineTensionPressure.raw());
+  fd.writeInsidePressure(frame, f.insidePressure.raw());
+  fd.writeExternalPressure(frame, f.externalPressure.raw());
   fd.writePhysicalPressure(frame, fn);
 
   // write energies
@@ -221,13 +196,9 @@ void Integrator::saveNetcdfData() {
 
   // write Norms
   fd.writeL1ErrorNorm(frame, f.L1ErrorNorm);
-  fd.writeL1BendNorm(frame,
-                     f.computeL1Norm(f.M * EigenMap<double, 3>(f.bendingPressure)));
-  fd.writeL1SurfNorm(frame,
-                     f.computeL1Norm(f.M * EigenMap<double, 3>(f.capillaryPressure)));
-  fd.writeL1PressNorm(
-      frame, f.computeL1Norm(f.M * f.insidePressure *
-                             gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
+  // fd.writeL1BendNorm(frame, f.computeL1Norm(f.M * f.bendingPressure.raw()));
+  // fd.writeL1SurfNorm(frame, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
+  // fd.writeL1PressNorm(frame, f.computeL1Norm(f.M * f.insidePressure.raw()));
 }
 #endif
 

@@ -84,6 +84,8 @@ void VelocityVerlet::checkParameters() {
 
 void VelocityVerlet::status() {
 
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
+
   // recompute cached values
   f.updateVertexPositions();
 
@@ -96,6 +98,8 @@ void VelocityVerlet::status() {
   newTotalPressure = physicalPressure + DPDPressure;
 
   // compute the L1 error norm
+  // f.L1ErrorNorm = f.computeL1Norm(rowwiseDotProduct(
+  //     f.M * physicalPressure + regularizationForce, normal_e));
   f.L1ErrorNorm = f.computeL1Norm(f.M * physicalPressure + regularizationForce);
 
   // compute the area contraint error
@@ -141,7 +145,8 @@ void VelocityVerlet::march() {
     dt = dt_size2_ratio * minMeshLength * minMeshLength;
   }
   double hdt = 0.5 * dt, hdt2 = hdt * dt;
-  f.P.sigma =  sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt);
+  f.P.sigma =
+      sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt);
 
   // time stepping on vertex position
   pos_e += vel_e * dt + hdt2 * totalPressure;
@@ -166,11 +171,10 @@ void Integrator::getForces() {
 
   physicalPressure = rowwiseScaling(
       f.mask.raw().cast<double>(),
-      gc::EigenMap<double, 3>(f.bendingPressure) +
-          gc::EigenMap<double, 3>(f.capillaryPressure) +
-          f.insidePressure * gc::EigenMap<double, 3>(f.vpg->vertexNormals) +
-          gc::EigenMap<double, 3>(f.externalPressure) +
-          gc::EigenMap<double, 3>(f.lineTensionPressure));
+      rowwiseScaling(f.bendingPressure.raw() + f.capillaryPressure.raw() +
+                         f.externalPressure.raw() +
+                         f.lineTensionPressure.raw() + f.insidePressure.raw(),
+                     gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
 
   regularizationForce =
       rowwiseScaling(f.mask.raw().cast<double>(),

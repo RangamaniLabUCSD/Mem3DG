@@ -458,6 +458,20 @@ public:
 };
 
 // ==========================================================
+// =============              BFGS              =============
+// ==========================================================
+/**
+ * @brief BFGS optimizer
+ * @param ctol, tolerance for termination (contraints)
+ * @param isBacktrack, option to use backtracking line search algorithm
+ * @param rho, backtracking coefficient
+ * @param c1, Wolfe condition parameter
+ * @param isAugmentedLagrangian, option to use Augmented Lagrangian method
+ * @return Success, if simulation is sucessful
+ */
+
+
+// ==========================================================
 // =============      FeedForward Sweep         =============
 // ==========================================================
 /**
