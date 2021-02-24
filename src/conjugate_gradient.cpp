@@ -87,10 +87,6 @@ void ConjugateGradient::checkParameters() {
 }
 
 void ConjugateGradient::status() {
-  // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-
   // recompute cached values
   f.updateVertexPositions();
 
@@ -98,10 +94,10 @@ void ConjugateGradient::status() {
   getForces();
 
   // compute velocity
-  vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
+  force = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(vel_e);
+  f.L1ErrorNorm = f.computeL1Norm(force);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -142,12 +138,12 @@ void ConjugateGradient::march() {
   // determine conjugate gradient direction, restart after nVertices() cycles
   size_t countCG = 0;
   if (countCG % (f.mesh->nVertices() + 1) == 0) {
-    pastNormSq = vel_e.squaredNorm();
-    direction = vel_e;
+    pastNormSq = force.squaredNorm();
+    vel_e = force;
     countCG = 0;
   } else {
-    currentNormSq = vel_e.squaredNorm();
-    direction = currentNormSq / pastNormSq * direction + vel_e;
+    currentNormSq = force.squaredNorm();
+    vel_e = currentNormSq / pastNormSq * vel_e + force;
     pastNormSq = currentNormSq;
     countCG++;
   }
@@ -160,9 +156,9 @@ void ConjugateGradient::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, vel_e, direction);
+    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, force, vel_e);
   } else {
-    pos_e += direction * dt;
+    pos_e += vel_e * dt;
     f.time += dt;
   }
 
@@ -242,128 +238,6 @@ void FeedForwardSweep::sweep() {
               << std::endl;
   }
 #endif
-}
-
-void Integrator::backtrack(
-    double rho, double c1, bool &EXIT, bool &SUCCESS,
-    const double potentialEnergy_pre,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
-
-  // calculate initial energy as reference level
-  Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
-      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  double init_time = f.time;
-
-  // declare variables used in backtracking iterations
-  double alpha = dt;
-  size_t count = 0;
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-
-  pos_e += alpha * direction;
-  f.updateVertexPositions();
-  f.computeFreeEnergy();
-
-  while (f.E.potE > (potentialEnergy_pre -
-                     c1 * alpha * (force.array() * direction.array()).sum())) {
-    // while (f.E.potE > potentialEnergy_pre) {
-    if (alpha < 1e-12) {
-      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
-      EXIT = true;
-      SUCCESS = false;
-
-      // restore entry configuration
-      alpha = dt;
-      pos_e = init_position;
-      f.updateVertexPositions();
-      f.computeFreeEnergy();
-      f.time = init_time - alpha;
-
-      break;
-    }
-    alpha *= rho;
-    pos_e = init_position + alpha * direction;
-    f.updateVertexPositions();
-    f.computeFreeEnergy();
-    count++;
-  }
-
-  if (alpha != dt && verbosity > 3) {
-    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
-    std::cout << "L1 norm: " << f.L1ErrorNorm << std::endl;
-  }
-  f.time = init_time + alpha;
-}
-
-void Integrator::pressureConstraintThreshold(bool &EXIT,
-                                             const bool isAugmentedLagrangian,
-                                             const double dArea,
-                                             const double ctol,
-                                             double increment) {
-  if (f.L1ErrorNorm < tol) {
-    if (isAugmentedLagrangian) { // augmented Lagrangian method
-      if (dArea < ctol) {        // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
-                  << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-                        f.targetSurfaceArea;
-        std::cout << " -> [" << f.P.lambdaSG << "]" << std::endl;
-      }
-    } else {              // incremental harmonic penalty method
-      if (dArea < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
-        f.P.Ksg *= increment;
-        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
-      }
-    }
-  }
-}
-
-void Integrator::reducedVolumeThreshold(bool &EXIT,
-                                        const bool isAugmentedLagrangian,
-                                        const double dArea,
-                                        const double dVolume, const double ctol,
-                                        double increment) {
-  if (f.L1ErrorNorm < tol) {
-    if (isAugmentedLagrangian) {            // augmented Lagrangian method
-      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
-                  << f.P.lambdaV << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-                        f.targetSurfaceArea;
-        f.P.lambdaV +=
-            f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
-        std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
-                  << std::endl;
-      }
-    } else { // incremental harmonic penalty method
-      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      }
-
-      // iterate if not
-      if (dArea > ctol) {
-        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
-        f.P.Ksg *= 1.3;
-        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
-      }
-      if (dVolume > ctol) {
-        std::cout << "\n[Kv] = [" << f.P.Kv << "]";
-        f.P.Kv *= 1.3;
-        std::cout << " -> [" << f.P.Kv << "]" << std::endl;
-      }
-    }
-  }
 }
 
 } // namespace mem3dg

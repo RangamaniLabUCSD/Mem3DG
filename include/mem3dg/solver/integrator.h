@@ -23,6 +23,7 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
+#include "Eigen/src/Core/util/Constants.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
@@ -153,12 +154,12 @@ public:
   void saveRichData(std::string plyName);
 
 #ifdef MEM3DG_WITH_NETCDF
-      /**
-       * @brief Save data to netcdf traj file
-       * @param frame, frame index of netcdf traj file
-       * @param fd, netcdf trajFile object
-       */
-      void saveNetcdfData();
+  /**
+   * @brief Save data to netcdf traj file
+   * @param frame, frame index of netcdf traj file
+   * @param fd, netcdf trajFile object
+   */
+  void saveNetcdfData();
 
 #endif
 
@@ -227,12 +228,12 @@ public:
    * @param potentialEnergy_pre, previous energy evaluation
    * @param force, gradient of the energy
    * @param direction, direction, most likely some function of gradient
-   * @return
+   * @return alpha, line search step size
    */
-  void backtrack(double rho, double c1, bool &EXIT, bool &SUCCESS,
-                 const double potentialEnergy_pre,
-                 const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
-                 const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
+  double backtrack(double rho, double c1, bool &EXIT, bool &SUCCESS,
+                   const double potentialEnergy_pre,
+                   const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+                   const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
 
   /**
    * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure
@@ -403,7 +404,7 @@ public:
   double ctol;
   const bool isAugmentedLagrangian;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> direction;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> force;
   double currentNormSq;
   double pastNormSq;
 
@@ -427,7 +428,7 @@ public:
   }
 
   /**
-   * @brief Forward Euler driver function
+   * @brief Conjugate Gradient driver function
    */
   bool integrate();
 
@@ -469,7 +470,81 @@ public:
  * @param isAugmentedLagrangian, option to use Augmented Lagrangian method
  * @return Success, if simulation is sucessful
  */
+class DLL_PUBLIC BFGS : public Integrator {
+public:
+  const bool isBacktrack;
+  const double rho;
+  const double c1;
+  double ctol;
+  const bool isAugmentedLagrangian;
 
+  Eigen::Matrix<double, Eigen::Dynamic, 1> force;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> pastForce;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> y;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> s;
+
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> hess_inv;
+
+  BFGS(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
+       double tSave_, double tolerance_, std::string outputDir_,
+       std::string trajFileName_, size_t verbosity_, bool isBacktrack_,
+       double rho_, double c1_, double ctol_, bool isAugmentedLagrangian_)
+      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
+                   outputDir_, trajFileName_, verbosity_),
+        isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
+        isAugmentedLagrangian(isAugmentedLagrangian_) {
+
+    // print to console
+    if (verbosity > 1) {
+      std::cout << "Running BFGS propagator ..." << std::endl;
+    }
+
+    hess_inv.resize(f.mesh->nVertices(), f.mesh->nVertices());
+    hess_inv.setIdentity();
+    std::cout << "hess constructor:" << hess_inv.norm() << std::endl;
+    force.resize(f.mesh->nVertices(), 1);
+    force.setZero();
+    pastForce.resize(f.mesh->nVertices(), 1);
+    pastForce.setZero();
+    s.resize(f.mesh->nVertices(), 1);
+    s.setZero();
+    y.resize(f.mesh->nVertices(), 1);
+    y.setZero();
+
+    // check the validity of parameter
+    checkParameters();
+  }
+
+  /**
+   * @brief BFGS function
+   */
+  bool integrate();
+
+  /**
+   * @brief BFGS stepper
+   */
+  void march();
+
+  /**
+   * @brief BFGS status computation and thresholding
+   */
+  void status();
+
+  /**
+   * @brief Check parameters for time integration
+   */
+  void checkParameters();
+
+  /**
+   * @brief step for n iterations
+   */
+  void step(size_t n) {
+    for (size_t i = 0; i < n; i++) {
+      status();
+      march();
+    }
+  }
+};
 
 // ==========================================================
 // =============      FeedForward Sweep         =============

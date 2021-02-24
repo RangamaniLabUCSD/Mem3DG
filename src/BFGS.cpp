@@ -13,7 +13,6 @@
 //
 
 #include <Eigen/Core>
-#include <csignal>
 #include <iostream>
 #include <math.h>
 #include <pcg_random.hpp>
@@ -31,7 +30,8 @@
 namespace mem3dg {
 namespace gc = ::geometrycentral;
 
-void VelocityVerlet::integrate() {
+bool BFGS::integrate() {
+
   signal(SIGINT, signalHandler);
 
 #ifdef __linux__
@@ -62,6 +62,11 @@ void VelocityVerlet::integrate() {
     march();
   }
 
+  // return if optimization is sucessful
+  if (!SUCCESS) {
+    markFileName("_failed");
+  }
+
   // stop the timer and report time spent
 #ifdef __linux__
   double duration = getDuration(start);
@@ -70,33 +75,42 @@ void VelocityVerlet::integrate() {
               << std::endl;
   }
 #endif
+
+  return SUCCESS;
 }
 
-void VelocityVerlet::checkParameters() {
-  if (abs(f.P.sigma -
-          sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt)) /
-          sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt) >
-      1e-6) {
-    throw std::runtime_error(
-        "sigma for DPD is not consistent, probably not initialized!");
+void BFGS::checkParameters() {
+  if (f.P.gamma != 0) {
+    throw std::runtime_error("gamma has to be 0 for BFGS integration!");
+  }
+  if (f.P.temp != 0) {
+    throw std::runtime_error("temp has to be 0 for BFGS integration!");
   }
 }
 
-void VelocityVerlet::status() {
-
+void BFGS::status() {
   // recompute cached values
   f.updateVertexPositions();
 
   // compute summerized forces
   getForces();
 
-  // Compute total pressure
-  totalPressure.resize(f.mesh->nVertices(), 3);
-  totalPressure.setZero();
-  newTotalPressure = physicalPressure + DPDPressure;
+  // compute velocity and acceleration
+  force = f.M * physicalPressure.rowwise().norm();
+
+  // update
+  y = pastForce - force;
+  if (f.time != init_time) {
+    hess_inv += (s * s.transpose()) *
+                    (s.transpose() * y + y.transpose() * hess_inv * y) /
+                    (s.transpose() * y) / (s.transpose() * y) -
+                (hess_inv * y * s.transpose() + s * y.transpose() * hess_inv) /
+                    (s.transpose() * y);
+  }
+  pastForce = force;
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(f.M * physicalPressure + regularizationForce);
+  f.L1ErrorNorm = f.computeL1Norm(f.M * physicalPressure);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -108,48 +122,52 @@ void VelocityVerlet::status() {
     dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
               ? abs(f.volume / f.refVolume / f.P.Vt - 1)
               : 0.0;
+    // thresholding, exit if fulfilled and iterate if not
+    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
-  }
-
-  // exit if under error tol
-  if (f.L1ErrorNorm < tol) {
-    std::cout << "\nL1 error norm smaller than tol." << std::endl;
-    EXIT = true;
+    dVP = (!f.mesh->hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
+    // thresholding, exit if fulfilled and iterate if not
+    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
 
   // exit if reached time
   if (f.time > total_time) {
     std::cout << "\nReached time." << std::endl;
     EXIT = true;
+    SUCCESS = false;
   }
 
   // compute the free energy of the system
   f.computeFreeEnergy();
 }
 
-void VelocityVerlet::march() {
+void BFGS::march() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+
+  // determine BFGS direction
+  vel_e = hess_inv * f.M * physicalPressure + regularizationForce;
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
     dt = dt_size2_ratio * minMeshLength * minMeshLength;
   }
-  double hdt = 0.5 * dt, hdt2 = hdt * dt;
-  f.P.sigma =
-      sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt);
 
   // time stepping on vertex position
-  pos_e += vel_e * dt + hdt2 * totalPressure;
-  pos_e += regularizationForce * dt;
-  vel_e += (totalPressure + newTotalPressure) * hdt;
-  totalPressure = newTotalPressure;
-  f.time += dt;
+  if (isBacktrack) {
+    dt = backtrack(rho, c1, EXIT, SUCCESS, f.E.potE,
+                   f.M * physicalPressure + regularizationForce, vel_e);
+  } else {
+    pos_e += vel_e * dt;
+    f.time += dt;
+  }
+
+  // update s
+  s = dt * hess_inv * force;
 
   // vertex shift for regularization
   if (f.isVertexShift) {

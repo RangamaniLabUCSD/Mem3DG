@@ -153,6 +153,35 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           step for n iterations
       )delim");
 
+  /// Integrator-BFGS object
+  py::class_<BFGS> bfgs(pymem3dg, "BFGS",
+                        R"delim(
+        conjugate Gradient propagator
+    )delim");
+
+  bfgs.def(py::init<System &, double, bool, double, double, double, std::string,
+                    std::string, size_t, bool, double, double, double, bool>());
+  bfgs.def("integrate", &BFGS::integrate,
+           R"delim(
+          integrate 
+      )delim");
+  bfgs.def("status", &BFGS::status,
+           R"delim(
+          status computation and thresholding
+      )delim");
+  bfgs.def("march", &BFGS::march,
+           R"delim(
+          stepping forward 
+      )delim");
+  bfgs.def("saveData", &BFGS::saveData,
+           R"delim(
+          save data to output directory
+      )delim");
+  bfgs.def("step", &BFGS::step, py::arg("n"),
+           R"delim(
+          step for n iterations
+      )delim");
+
   /// System object
   py::class_<System> system(pymem3dg, "System",
                             R"delim(
