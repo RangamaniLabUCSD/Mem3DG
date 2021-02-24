@@ -96,7 +96,7 @@ void Euler::status() {
   // compute summerized forces
   getForces();
 
-  // compute velocity
+  // compute force, which is equivalent to velocity
   vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
   // compute the L1 error norm
