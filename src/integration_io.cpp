@@ -13,6 +13,7 @@
 //
 
 #include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/version.h"
 
@@ -150,8 +151,9 @@ void Integrator::saveNetcdfData() {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  fn = rowwiseDotProduct(physicalPressure,
-                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
+  auto normal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
+
+  fn = rowwiseDotProduct(physicalPressure, normal_e);
 
   frame = fd.getNextFrameIndex();
 
@@ -196,9 +198,12 @@ void Integrator::saveNetcdfData() {
 
   // write Norms
   fd.writeL1ErrorNorm(frame, f.L1ErrorNorm);
-  // fd.writeL1BendNorm(frame, f.computeL1Norm(f.M * f.bendingPressure.raw()));
-  // fd.writeL1SurfNorm(frame, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
-  // fd.writeL1PressNorm(frame, f.computeL1Norm(f.M * f.insidePressure.raw()));
+  fd.writeL1BendNorm(frame, f.computeL1Norm(rowwiseScaling(
+                                f.M * f.bendingPressure.raw(), normal_e)));
+  fd.writeL1SurfNorm(frame, f.computeL1Norm(rowwiseScaling(
+                                f.M * f.capillaryPressure.raw(), normal_e)));
+  fd.writeL1PressNorm(frame, f.computeL1Norm(rowwiseScaling(
+                                 f.M * f.insidePressure.raw(), normal_e)));
 }
 #endif
 

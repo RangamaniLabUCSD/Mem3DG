@@ -584,7 +584,7 @@ public:
   /**
    * @brief Compute the L1 norm of the pressure
    */
-  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force);
+  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const;
 
   // ==========================================================
   // =============        Regularization        ===============

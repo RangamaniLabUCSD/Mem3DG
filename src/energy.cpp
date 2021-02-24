@@ -136,15 +136,8 @@ void System::computeFreeEnergy() {
 // }
 
 double
-System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) {
+System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-
-  std::cout << "force*normal inside: "
-            << rowwiseDotProduct(force, vertexAngleNormal_e).norm()
-            << std::endl;
-  std::cout << "force inside: " << force.norm() << std::endl;
-  std::cout << "normal inside: " << vertexAngleNormal_e.norm() << std::endl;
-
   // return sqrt((rowwiseDotProduct(force, force)).sum() /
   // surfaceArea);
 
