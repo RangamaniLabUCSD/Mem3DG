@@ -147,15 +147,21 @@ public:
    */
   void saveRichData();
 
-#ifdef MEM3DG_WITH_NETCDF
   /**
-   * @brief Save data to netcdf traj file
-   * @param frame, frame index of netcdf traj file
-   * @param fd, netcdf trajFile object
+   * @brief Save data to richData and output ply file
    */
-  void saveNetcdfData(size_t &frame, TrajFile &fd);
+  void saveRichData(std::string plyName);
+
+#ifdef MEM3DG_WITH_NETCDF
+      /**
+       * @brief Save data to netcdf traj file
+       * @param frame, frame index of netcdf traj file
+       * @param fd, netcdf trajFile object
+       */
+      void saveNetcdfData();
 
 #endif
+
   /**
    * @brief Mark the file name
    *
