@@ -89,7 +89,6 @@ void Euler::status() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   // recompute cached values
   f.updateVertexPositions();
@@ -101,7 +100,6 @@ void Euler::status() {
   vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
 
   // compute the L1 error norm
-  // f.L1ErrorNorm = f.computeL1Norm(rowwiseDotProduct(vel_e, normal_e));
   f.L1ErrorNorm =
       f.computeL1Norm(vel_e);
 

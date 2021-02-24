@@ -84,8 +84,6 @@ void VelocityVerlet::checkParameters() {
 
 void VelocityVerlet::status() {
 
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
-
   // recompute cached values
   f.updateVertexPositions();
 
@@ -98,8 +96,6 @@ void VelocityVerlet::status() {
   newTotalPressure = physicalPressure + DPDPressure;
 
   // compute the L1 error norm
-  // f.L1ErrorNorm = f.computeL1Norm(rowwiseDotProduct(
-  //     f.M * physicalPressure + regularizationForce, normal_e));
   f.L1ErrorNorm = f.computeL1Norm(f.M * physicalPressure + regularizationForce);
 
   // compute the area contraint error
