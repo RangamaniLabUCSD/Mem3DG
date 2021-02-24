@@ -35,12 +35,9 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-EigenVectorX3D System::computeBendingPressure() {
+EigenVectorX1D System::computeBendingPressure() {
 
   // map the MeshData to eigen matrix XXX_e
-  auto bendingPressure_e = gc::EigenMap<double, 3>(bendingPressure);
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
 
   // Alias
   std::size_t n_vertices = (mesh->nVertices());
@@ -65,10 +62,9 @@ EigenVectorX3D System::computeBendingPressure() {
   productTerms = 2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
 
   // calculate bendingForce
-  bendingPressure_e =
-      -P.Kb * rowwiseScaling(productTerms + lap_H, vertexAngleNormal_e);
+  bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
 
-  return bendingPressure_e;
+  return bendingPressure.raw();
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
@@ -97,10 +93,7 @@ EigenVectorX3D System::computeBendingPressure() {
   //                    vertexAngleNormal_e);
 }
 
-EigenVectorX3D System::computeCapillaryPressure() {
-
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto capillaryPressure_e = gc::EigenMap<double, 3>(capillaryPressure);
+EigenVectorX1D System::computeCapillaryPressure() {
 
   /// Geometric implementation
   if (mesh->hasBoundary()) { // surface tension of patch
@@ -110,10 +103,9 @@ EigenVectorX3D System::computeCapillaryPressure() {
         -(P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea +
           P.lambdaSG);
   }
-  capillaryPressure_e =
-      rowwiseScaling(surfaceTension * 2 * H.raw(), vertexAngleNormal_e);
+  capillaryPressure.raw() = surfaceTension * 2 * H.raw();
 
-  return capillaryPressure_e;
+  return capillaryPressure.raw();
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -133,20 +125,20 @@ EigenVectorX3D System::computeCapillaryPressure() {
   // }
 }
 
-double System::computeInsidePressure() {
+EigenVectorX1D System::computeInsidePressure() {
   /// Geometric implementation
   if (mesh->hasBoundary()) {
     /// Inside excess pressure of patch
-    insidePressure = P.Kv;
+    insidePressure.raw().setConstant(P.Kv);
   } else if (isReducedVolume) {
     /// Inside excess pressure of vesicle
-    insidePressure =
-        -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV);
+    insidePressure.raw().setConstant(
+        -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV));
   } else {
-    insidePressure = P.Kv / volume - P.Kv * P.cam;
+    insidePressure.raw().setConstant(P.Kv / volume - P.Kv * P.cam);
   }
 
-  return insidePressure;
+  return insidePressure.raw();
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -160,9 +152,7 @@ double System::computeInsidePressure() {
   // }
 }
 
-EigenVectorX3D System::computeLineTensionPressure() {
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto lineTensionPressure_e = gc::EigenMap<double, 3>(lineTensionPressure);
+EigenVectorX1D System::computeLineTensionPressure() {
   // lineTension.raw() =
   //     vpg->hodge1Inverse * P.eta *
   //     ((vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs()).array() *
@@ -177,17 +167,14 @@ EigenVectorX3D System::computeLineTensionPressure() {
       (vpg->edgeDihedralAngles.raw().array() /
        (vpg->hodge1 * vpg->edgeLengths.raw()).array())
           .matrix();
-  lineTensionPressure_e = -rowwiseScaling(
-      M_inv * D * vpg->hodge1Inverse *
-          (lineTension.raw().array() * normalCurv.array()).matrix(),
-      vertexAngleNormal_e);
+  lineTensionPressure.raw() =
+      -M_inv * D * vpg->hodge1Inverse *
+      (lineTension.raw().array() * normalCurv.array()).matrix();
 
-  return lineTensionPressure_e;
+  return lineTensionPressure.raw();
 }
 
-EigenVectorX3D System::computeExternalPressure() {
-
-  auto externalPressure_e = gc::EigenMap<double, 3>(externalPressure);
+EigenVectorX1D System::computeExternalPressure() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
 
   if (P.Kf != 0) {
@@ -218,10 +205,11 @@ EigenVectorX3D System::computeExternalPressure() {
 
     Eigen::Matrix<double, 1, 3> zDir;
     zDir << 0.0, 0.0, -1.0;
-    externalPressure_e = -externalPressureMagnitude * zDir *
-                         (vpg->inputVertexPositions[theVertex].z - P.height);
+    // externalPressure_e = -externalPressureMagnitude * zDir *
+    //                      (vpg->inputVertexPositions[theVertex].z - P.height);
+    externalPressure.raw() = externalPressureMagnitude;
   }
-  return externalPressure_e;
+  return externalPressure.raw();
 }
 
 EigenVectorX1D System::computeChemicalPotential() {
@@ -290,15 +278,15 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces() {
 void System::computeAllForces() {
 
   // zero all forces
-  gc::EigenMap<double, 3>(bendingPressure).setZero();
-  gc::EigenMap<double, 3>(capillaryPressure).setZero();
-  gc::EigenMap<double, 3>(lineTensionPressure).setZero();
-  gc::EigenMap<double, 3>(externalPressure).setZero();
+  bendingPressure.raw().setZero();
+  capillaryPressure.raw().setZero();
+  lineTensionPressure.raw().setZero();
+  externalPressure.raw().setZero();
+  insidePressure.raw().setZero();
   gc::EigenMap<double, 3>(regularizationForce).setZero();
   gc::EigenMap<double, 3>(dampingForce).setZero();
   gc::EigenMap<double, 3>(stochasticForce).setZero();
   chemicalPotential.raw().setZero();
-  insidePressure = 0;
 
   if (P.Kb != 0) {
     computeBendingPressure();

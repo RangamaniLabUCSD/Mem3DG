@@ -81,7 +81,8 @@ bool ConjugateGradient::integrate() {
 
 void ConjugateGradient::checkParameters() {
   if (f.P.gamma != 0) {
-    throw std::runtime_error("gamma has to be 0 for Conjugate Gradient integration!");
+    throw std::runtime_error(
+        "gamma has to be 0 for Conjugate Gradient integration!");
   }
 }
 
@@ -89,6 +90,7 @@ void ConjugateGradient::status() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  auto normal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   // recompute cached values
   f.updateVertexPositions();
@@ -98,8 +100,13 @@ void ConjugateGradient::status() {
 
   // compute velocity
   vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
+  std::cout << "force*normal outside: "
+            << rowwiseDotProduct(vel_e, normal_e).norm() << std::endl;
+  std::cout << "force outside: " << vel_e.norm() << std::endl;
+  std::cout << "normal outside: " << normal_e.norm() << std::endl;
 
   // compute the L1 error norm
+  // f.L1ErrorNorm = f.computeL1Norm(rowwiseDotProduct(vel_e, normal_e));
   f.L1ErrorNorm = f.computeL1Norm(vel_e);
 
   // compute the area contraint error

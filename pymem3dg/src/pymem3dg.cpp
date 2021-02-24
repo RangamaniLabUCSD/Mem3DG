@@ -60,11 +60,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       R"delim(
           save data to output directory
       )delim");
-  integrator.def(
-      "saveNetcdfData",
-      &Integrator::saveNetcdfData,
-      "save to netcdf file in output directory",
-      R"delim(
+  integrator.def("saveNetcdfData", &Integrator::saveNetcdfData,
+                 "save to netcdf file in output directory",
+                 R"delim(
           save data to output directory
       )delim");
   /// Integrator-velocity verlet object
@@ -162,8 +160,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   system.def(py::init<std::string, std::string, size_t, Parameters &, bool,
                       bool, bool, bool>());
-  system.def(py::init<std::string, int, size_t, bool, Parameters &, bool,
-                      bool, bool, bool>());
+  system.def(py::init<std::string, int, size_t, bool, Parameters &, bool, bool,
+                      bool, bool>());
   system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t,
@@ -215,22 +213,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the face vertex matrix
       )delim");
   system.def(
-      "getBendingPressure",
-      [](System &s) { return gc::EigenMap<double, 3>(s.bendingPressure); },
+      "getBendingPressure", [](System &s) { return s.bendingPressure.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the bending Pressure
       )delim");
   system.def(
       "getCapillaryPressure",
-      [](System &s) { return gc::EigenMap<double, 3>(s.capillaryPressure); },
+      [](System &s) { return s.capillaryPressure.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the tension-induced capillary pressure
       )delim");
   system.def(
       "getLineTensionPressure",
-      [](System &s) { return gc::EigenMap<double, 3>(s.lineTensionPressure); },
+      [](System &s) { return s.lineTensionPressure.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interfacial line tension
@@ -242,17 +239,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the interfacial line tension
       )delim");
   system.def(
-      "getExternalPressure",
-      [](System &s) { return gc::EigenMap<double, 3>(s.externalPressure); },
+      "getExternalPressure", [](System &s) { return s.externalPressure.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the externally-applied pressure
       )delim");
   system.def(
-      "getInsidePressure",
-      [](System &s) {
-        return s.insidePressure * gc::EigenMap<double, 3>(s.vpg->vertexNormals);
-      },
+      "getInsidePressure", [](System &s) { return s.insidePressure.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the relative inside pressure

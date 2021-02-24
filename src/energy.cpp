@@ -73,8 +73,10 @@ void System::computeLineTensionEnergy() {
 }
 
 void System::computeExternalForceEnergy() {
-  E.exE = -rowwiseDotProduct(gc::EigenMap<double, 3>(externalPressure),
-                             gc::EigenMap<double, 3>(vpg->inputVertexPositions))
+  E.exE = -rowwiseDotProduct(
+               rowwiseScaling(externalPressure.raw(),
+                              gc::EigenMap<double, 3>(vpg->vertexNormals)),
+               gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();
 }
 
@@ -117,22 +119,49 @@ void System::computeFreeEnergy() {
   E.totalE = E.kE + E.potE;
 }
 
-double
-System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
-  // return sqrt((rowwiseDotProduct(force, force)).sum() / surfaceArea);
+// double
+// System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> force) const {
+//   // return sqrt((rowwiseDotProduct(force, force)).sum() / surfaceArea);
 
+//   // L2 Norm
+//   // return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
+
+//   // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
+//   // return (M * rowwiseDotProduct(pressure,
+//   // vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
+
+//   // L1 Norm
+//   std::cout << "in compute error: " << force.cwiseAbs().sum() << std::endl;
+//   return force.cwiseAbs().sum() / surfaceArea;
+// }
+
+double
+System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) {
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
 
-  // L2 Norm
-  // return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
+  std::cout << "force*normal inside: "
+            << rowwiseDotProduct(force, vertexAngleNormal_e).norm()
+            << std::endl;
+  std::cout << "force inside: " << force.norm() << std::endl;
+  std::cout << "normal inside: " << vertexAngleNormal_e.norm() << std::endl;
 
-  
-  // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-  // return (M * rowwiseDotProduct(pressure,
+  // return sqrt((rowwiseDotProduct(force, force)).sum() /
+  // surfaceArea);
+
+  // auto vertexAngleNormal_e = gc::EigenMap<double,
+  // 3>(vpg->vertexNormals);
+
+  // L2 Norm
+  // return sqrt(rowwiseDotProduct(force, force).sum()) /
+  // surfaceArea;
+
+  // auto vertexAngleNormal_e = gc::EigenMap<double,
+  // 3>(vpg.vertexNormals); return (M * rowwiseDotProduct(pressure,
   // vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
 
   // L1 Norm
   return rowwiseDotProduct(force, vertexAngleNormal_e).cwiseAbs().sum() /
          surfaceArea;
 }
+
 } // namespace mem3dg
