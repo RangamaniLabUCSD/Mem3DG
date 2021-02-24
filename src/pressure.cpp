@@ -171,10 +171,15 @@ EigenVectorX3D System::computeLineTensionPressure() {
   // lineTensionPressure_e = -rowwiseScaling(
   //     M_inv * D * lineTension.raw(),
   //     vertexAngleNormal_e);
+
+  // normal curvature of the dual edges
+  Eigen::Matrix<double, Eigen::Dynamic, 1> normalCurv =
+      (vpg->edgeDihedralAngles.raw().array() /
+       (vpg->hodge1 * vpg->edgeLengths.raw()).array())
+          .matrix();
   lineTensionPressure_e = -rowwiseScaling(
       M_inv * D * vpg->hodge1Inverse *
-          (lineTension.raw().array() * vpg->edgeDihedralAngles.raw().array())
-              .matrix(),
+          (lineTension.raw().array() * normalCurv.array()).matrix(),
       vertexAngleNormal_e);
 
   return lineTensionPressure_e;

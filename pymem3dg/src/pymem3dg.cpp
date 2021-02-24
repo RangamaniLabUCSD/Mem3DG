@@ -46,7 +46,27 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                  R"delim(
           save data to output directory
       )delim");
-
+  integrator.def(
+      "saveRichData",
+      static_cast<void (Integrator::*)(void)>(&Integrator::saveRichData),
+      "save to richData",
+      R"delim(
+          save data to output directory
+      )delim");
+  integrator.def(
+      "saveRichData",
+      static_cast<void (Integrator::*)(std::string)>(&Integrator::saveRichData),
+      "save to richData and output .ply file to output directory",
+      R"delim(
+          save data to output directory
+      )delim");
+  integrator.def(
+      "saveNetcdfData",
+      &Integrator::saveNetcdfData,
+      "save to netcdf file in output directory",
+      R"delim(
+          save data to output directory
+      )delim");
   /// Integrator-velocity verlet object
   py::class_<VelocityVerlet> velocityverlet(pymem3dg, "VelocityVerlet",
                                             R"delim(
@@ -142,6 +162,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   system.def(py::init<std::string, std::string, size_t, Parameters &, bool,
                       bool, bool, bool>());
+  system.def(py::init<std::string, int, size_t, bool, Parameters &, bool,
+                      bool, bool, bool>());
   system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t,
@@ -214,8 +236,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the interfacial line tension
       )delim");
   system.def(
-      "getLineTension",
-      [](System &s) { return s.lineTension.raw(); },
+      "getLineTension", [](System &s) { return s.lineTension.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interfacial line tension
@@ -647,8 +668,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             )delim");
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
-               "get topology and vertex position matrix of icosphere", py::arg("n"),
-               py::arg("R"));
+               "get topology and vertex position matrix of icosphere",
+               py::arg("n"), py::arg("R"));
 
 #ifdef MEM3DG_WITH_NETCDF
 

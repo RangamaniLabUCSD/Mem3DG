@@ -49,7 +49,7 @@ void Integrator::saveData() {
 #ifdef MEM3DG_WITH_NETCDF
   // save variable to netcdf traj file
   if (verbosity > 0) {
-    saveNetcdfData(frame, fd);
+    saveNetcdfData();
   }
 #endif
 
@@ -156,8 +156,13 @@ void Integrator::saveRichData() {
   f.richData.addVertexProperty("line_tension_pressure", fl);
 }
 
+void Integrator::saveRichData(std::string plyName) {
+  saveRichData();
+  f.richData.write(outputDir + plyName);
+}
+
 #ifdef MEM3DG_WITH_NETCDF
-void Integrator::saveNetcdfData(size_t &frame, TrajFile &fd) {
+void Integrator::saveNetcdfData() {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn, f_ext, fb, fl, ft, fp;
 
