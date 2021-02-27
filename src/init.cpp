@@ -306,6 +306,13 @@ void System::initConstants() {
 }
 
 void System::updateVertexPositions() {
+
+  // regularization
+  computeRegularizationForce();
+  gc::EigenMap<double, 3>(regularizationForce) = rowwiseScaling(
+      mask.raw().cast<double>(), gc::EigenMap<double, 3>(regularizationForce));
+  vpg->inputVertexPositions.raw() += regularizationForce.raw();
+
   vpg->refreshQuantities();
 
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
@@ -319,7 +326,8 @@ void System::updateVertexPositions() {
     geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
   }
 
-  // initialize/update spontaneous curvature (protein binding)
+  // initialize/update spontaneous curvature (protein
+  // binding)
   if (isProtein) {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
@@ -328,7 +336,8 @@ void System::updateVertexPositions() {
             .matrix();
   }
 
-  // initialize/update spontaneous curvature (local spontaneous curvature)
+  // initialize/update spontaneous curvature (local
+  // spontaneous curvature)
   if (isLocalCurvature) {
     tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
                      P.sharpness, P.r_H0);
@@ -338,7 +347,8 @@ void System::updateVertexPositions() {
   // initialize/update line tension (on dual edge)
   if (P.eta != 0) {
     // scale the dH0 such that it is integrated over the edge
-    // this is under the case where the resolution is low, WIP
+    // this is under the case where the resolution is low,
+    // WIP
     lineTension.raw() = P.eta * vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs();
   }
 
@@ -361,7 +371,8 @@ void System::updateVertexPositions() {
   // initialize/update external force
   computeExternalPressure();
 
-  // initialize/update the vertex position of the last iteration
+  // initialize/update the vertex position of the last
+  // iteration
   pastPositions = vpg->inputVertexPositions;
 }
 

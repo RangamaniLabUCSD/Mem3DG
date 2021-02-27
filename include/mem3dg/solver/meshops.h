@@ -192,26 +192,38 @@ boundaryMask(gcs::SurfaceMesh &mesh,
 /**
  * @brief Remove the rigid body translation
  *
- * @param Eigen pressure matrix
+ * @param Eigen force matrix
  */
 DLL_PUBLIC inline void
-removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
-  pressure =
-      pressure.rowwise() - ((pressure).colwise().sum() / pressure.rows());
+removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
+  force =
+      force.rowwise() - ((force).colwise().sum() / force.rows());
+}
+DLL_PUBLIC inline void
+removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
+  force =
+      force.rowwise() - ((force).colwise().sum() / force.rows());
 }
 
 /**
  * @brief Remove the rigid body Rotation
  *
- * @param Eigen pressure matrix
+ * @param Eigen force matrix
  * @param Eigen position matrix
  */
 DLL_PUBLIC inline void
 removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &pressure) {
-  pressure = pressure.rowwise() -
-             (rowwiseCrossProduct(position, pressure).colwise().sum() /
-              pressure.rows());
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
+  force = force.rowwise() -
+             (rowwiseCrossProduct(position, force).colwise().sum() /
+              force.rows());
+}
+DLL_PUBLIC inline void
+removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
+  force = force.rowwise() -
+             (rowwiseCrossProduct(position, force).colwise().sum() /
+              force.rows());
 }
 
 /**

@@ -50,9 +50,8 @@ void StormerVerlet::integrate() {
         totalForce = (f.bendingPressure[v] + f.capillaryPressure[v] +
                       f.insidePressure[v] + f.externalPressure[v]) *
                          f.vpg->inputVertexPositions[v] +
-                     ((f.dampingForce[v] + f.stochasticForce[v] +
-                       f.regularizationForce[v]) /
-                      f.vpg->vertexDualAreas[v]);
+                     f.dampingForce[v] + f.stochasticForce[v] +
+                     f.regularizationForce[v];
         f.vpg->inputVertexPositions[v] +=
             totalForce * dt * dt - f.pastPositions[v];
       }

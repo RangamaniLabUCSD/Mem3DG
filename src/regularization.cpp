@@ -20,7 +20,8 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-gcs::EdgeData<double> System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const{
+gcs::EdgeData<double>
+System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const {
   gcs::EdgeData<double> LCR(*mesh);
   for (gcs::Edge e : mesh->edges()) {
     gcs::Edge lj = e.halfedge().next().edge();
@@ -35,7 +36,7 @@ gcs::EdgeData<double> System::computeLengthCrossRatio(gcs::VertexPositionGeometr
   return LCR;
 }
 
-void System::getRegularizationForce() {
+void System::computeRegularizationForce() {
   gcs::EdgeData<double> lcr(*mesh);
   lcr = computeLengthCrossRatio(*vpg);
 
@@ -118,11 +119,8 @@ void System::vertexShift() {
   }
 }
 
-void System::edgeFlip() {
-}
+void System::edgeFlip() {}
 
-void System::growMesh() {
-
-}
+void System::growMesh() {}
 
 } // namespace mem3dg

@@ -15,12 +15,14 @@
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
+#include "mem3dg/solver/util.h"
 #include "mem3dg/solver/version.h"
 
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 using namespace std;
 
 namespace mem3dg {
@@ -28,7 +30,7 @@ namespace mem3dg {
 double Integrator::backtrack(
     double rho, double c1, bool &EXIT, bool &SUCCESS,
     const double potentialEnergy_pre,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &physicalForce,
     const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
 
   // calculate initial energy as reference level
@@ -44,22 +46,28 @@ double Integrator::backtrack(
   pos_e += alpha * direction;
   f.updateVertexPositions();
   f.computeFreeEnergy();
+  double projection =
+      (physicalForce.array() *
+       rowwiseDotProduct(direction, EigenMap<double, 3>(f.vpg->vertexNormals))
+           .array())
+          .sum();
 
-  while (f.E.potE > (potentialEnergy_pre -
-                     c1 * alpha * (force.array() * direction.array()).sum())) {
+  while (true) {
+    if (projection < 0) {
+      std::cout << "\nBacktracking line search: on uphill direction! \n"
+                << std::endl;
+      EXIT = true;
+      SUCCESS = false;
+      break;
+    }
     // while (f.E.potE > potentialEnergy_pre) {
+    if (f.E.potE < (potentialEnergy_pre - c1 * alpha * projection)) {
+      break;
+    }
     if (alpha < 1e-12) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
       SUCCESS = false;
-
-      // restore entry configuration
-      alpha = dt;
-      pos_e = init_position;
-      f.updateVertexPositions();
-      f.computeFreeEnergy();
-      f.time = init_time - alpha;
-
       break;
     }
     alpha *= rho;
@@ -79,28 +87,26 @@ double Integrator::backtrack(
 }
 
 void Integrator::getForces() {
-  f.computeAllForces();
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
-  physicalPressure = rowwiseScaling(
-      f.mask.raw().cast<double>(),
-      rowwiseScaling(f.bendingPressure.raw() + f.capillaryPressure.raw() +
-                         f.externalPressure.raw() +
-                         f.lineTensionPressure.raw() + f.insidePressure.raw(),
-                     gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
+  f.computePhysicalForces();
 
-  regularizationForce =
-      rowwiseScaling(f.mask.raw().cast<double>(),
-                     gc::EigenMap<double, 3>(f.regularizationForce));
+  physicalForce = (f.M * f.mask.raw().cast<double>()).array() *
+                  (f.bendingPressure.raw() + f.capillaryPressure.raw() +
+                   f.externalPressure.raw() + f.lineTensionPressure.raw() +
+                   f.insidePressure.raw())
+                      .array();
 
-  DPDPressure =
-      rowwiseScaling(f.mask.raw().cast<double>(),
-                     f.M_inv * (EigenMap<double, 3>(f.dampingForce) +
-                                gc::EigenMap<double, 3>(f.stochasticForce)));
+  DPDForce = f.mask.raw().cast<double>().array() *
+             rowwiseDotProduct((EigenMap<double, 3>(f.dampingForce) +
+                                EigenMap<double, 3>(f.stochasticForce)),
+                               vertexAngleNormal_e)
+                 .array();
 
   if (!f.mesh->hasBoundary()) {
-    removeTranslation(physicalPressure);
+    removeTranslation(rowwiseScaling(physicalForce, vertexAngleNormal_e));
     removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
-                   physicalPressure);
+                   rowwiseScaling(physicalForce, vertexAngleNormal_e));
     // removeTranslation(DPDPressure);
     // removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
     // DPDPressure);
@@ -281,9 +287,7 @@ void Integrator::markFileName(std::string marker_str) {
 
 void Integrator::saveRichData() {
   gcs::VertexData<double> fn(*f.mesh);
-
-  fn.fromVector(rowwiseDotProduct(
-      physicalPressure, gc::EigenMap<double, 3>(f.vpg->vertexNormals)));
+  fn.fromVector(f.M_inv * physicalForce);
 
   f.richData.addVertexProperty("mean_curvature", f.H);
   f.richData.addVertexProperty("gauss_curvature", f.K);
@@ -302,12 +306,6 @@ void Integrator::saveRichData(std::string plyName) {
 
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::saveNetcdfData() {
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
-
-  auto normal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
-
-  fn = rowwiseDotProduct(physicalPressure, normal_e);
 
   frame = fd.getNextFrameIndex();
 
@@ -339,7 +337,7 @@ void Integrator::saveNetcdfData() {
   fd.writeLinePressure(frame, f.lineTensionPressure.raw());
   fd.writeInsidePressure(frame, f.insidePressure.raw());
   fd.writeExternalPressure(frame, f.externalPressure.raw());
-  fd.writePhysicalPressure(frame, fn);
+  fd.writePhysicalPressure(frame, f.M_inv * physicalForce);
 
   // write energies
   fd.writeBendEnergy(frame, f.E.BE);
@@ -352,12 +350,9 @@ void Integrator::saveNetcdfData() {
 
   // write Norms
   fd.writeL1ErrorNorm(frame, f.L1ErrorNorm);
-  fd.writeL1BendNorm(frame, f.computeL1Norm(rowwiseScaling(
-                                f.M * f.bendingPressure.raw(), normal_e)));
-  fd.writeL1SurfNorm(frame, f.computeL1Norm(rowwiseScaling(
-                                f.M * f.capillaryPressure.raw(), normal_e)));
-  fd.writeL1PressNorm(frame, f.computeL1Norm(rowwiseScaling(
-                                 f.M * f.insidePressure.raw(), normal_e)));
+  fd.writeL1BendNorm(frame, f.computeL1Norm(f.M * f.bendingPressure.raw()));
+  fd.writeL1SurfNorm(frame, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
+  fd.writeL1PressNorm(frame, f.computeL1Norm(f.M * f.insidePressure.raw()));
 }
 #endif
 

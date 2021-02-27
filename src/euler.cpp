@@ -80,28 +80,29 @@ bool Euler::integrate() {
 }
 
 void Euler::checkParameters() {
-  if (f.P.gamma != 0) {
-    throw std::runtime_error("gamma has to be 0 for euler integration!");
+  if (f.P.gamma != 0 || f.P.temp != 0) {
+    throw std::runtime_error("DPD has to be turned off for euler integration!");
   }
 }
 
 void Euler::status() {
-  // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
   // recompute cached values
   f.updateVertexPositions();
+
+  // map the raw eigen datatype for computation
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   // compute summerized forces
   getForces();
 
   // compute force, which is equivalent to velocity
-  vel_e = f.M * (physicalPressure + DPDPressure) + regularizationForce;
+  vel_e = rowwiseScaling(physicalForce, vertexAngleNormal_e);
 
   // compute the L1 error norm
-  f.L1ErrorNorm =
-      f.computeL1Norm(vel_e);
+  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -149,20 +150,20 @@ void Euler::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, vel_e, vel_e);
+    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, physicalForce, vel_e);
   } else {
     pos_e += vel_e * dt;
     f.time += dt;
   }
 
-  // vertex shift for regularization
-  if (f.isVertexShift) {
-    f.vertexShift();
-  }
-
   // time stepping on protein density
   if (f.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+  }
+
+  // vertex shift for regularization
+  if (f.isVertexShift) {
+    f.vertexShift();
   }
 }
 } // namespace mem3dg

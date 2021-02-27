@@ -63,9 +63,9 @@ public:
   /// regularization force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce;
   /// physical vertex pressure to the system
-  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalPressure;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> physicalForce;
   /// numerical dissipative particle dynamics force to the system
-  Eigen::Matrix<double, Eigen::Dynamic, 3> DPDPressure;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> DPDForce;
 
   /// Starting time of the simulation
   double init_time;
@@ -117,8 +117,8 @@ public:
 
     // Initialize system summarized forces
     regularizationForce.resize(f.mesh->nVertices(), 3);
-    physicalPressure.resize(f.mesh->nVertices(), 3);
-    DPDPressure.resize(f.mesh->nVertices(), 3);
+    physicalForce.resize(f.mesh->nVertices(), 1);
+    DPDForce.resize(f.mesh->nVertices(), 1);
 
     // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
@@ -232,7 +232,7 @@ public:
    */
   double backtrack(double rho, double c1, bool &EXIT, bool &SUCCESS,
                    const double potentialEnergy_pre,
-                   const Eigen::Matrix<double, Eigen::Dynamic, 3> &force,
+                   const Eigen::Matrix<double, Eigen::Dynamic, 1> &force,
                    const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
 
   /**
@@ -404,7 +404,6 @@ public:
   double ctol;
   const bool isAugmentedLagrangian;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 3> force;
   double currentNormSq;
   double pastNormSq;
 
@@ -477,9 +476,9 @@ public:
   const double c1;
   double ctol;
   const bool isAugmentedLagrangian;
+  double alpha;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> force;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> pastForce;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> pastPhysicalForce;
   Eigen::Matrix<double, Eigen::Dynamic, 1> y;
   Eigen::Matrix<double, Eigen::Dynamic, 1> s;
 
@@ -501,11 +500,8 @@ public:
 
     hess_inv.resize(f.mesh->nVertices(), f.mesh->nVertices());
     hess_inv.setIdentity();
-    std::cout << "hess constructor:" << hess_inv.norm() << std::endl;
-    force.resize(f.mesh->nVertices(), 1);
-    force.setZero();
-    pastForce.resize(f.mesh->nVertices(), 1);
-    pastForce.setZero();
+    pastPhysicalForce.resize(f.mesh->nVertices(), 1);
+    pastPhysicalForce.setZero();
     s.resize(f.mesh->nVertices(), 1);
     s.setZero();
     y.resize(f.mesh->nVertices(), 1);

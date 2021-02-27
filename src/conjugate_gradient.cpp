@@ -23,6 +23,7 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
+#include "Eigen/src/Core/util/Constants.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
@@ -80,9 +81,8 @@ bool ConjugateGradient::integrate() {
 }
 
 void ConjugateGradient::checkParameters() {
-  if (f.P.gamma != 0) {
-    throw std::runtime_error(
-        "gamma has to be 0 for Conjugate Gradient integration!");
+  if (f.P.gamma != 0 || f.P.temp != 0) {
+    throw std::runtime_error("DPD has to be turned off for CG integration!");
   }
 }
 
@@ -93,11 +93,8 @@ void ConjugateGradient::status() {
   // compute summerized forces
   getForces();
 
-  // compute velocity
-  force = f.M * (physicalPressure + DPDPressure) + regularizationForce;
-
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(force);
+  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -134,16 +131,20 @@ void ConjugateGradient::march() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   // determine conjugate gradient direction, restart after nVertices() cycles
   size_t countCG = 0;
   if (countCG % (f.mesh->nVertices() + 1) == 0) {
-    pastNormSq = force.squaredNorm();
-    vel_e = force;
+    pastNormSq = physicalForce.squaredNorm();
+    vel_e = rowwiseScaling(physicalForce,
+                           gc::EigenMap<double, 3>(f.vpg->vertexNormals));
     countCG = 0;
   } else {
-    currentNormSq = force.squaredNorm();
-    vel_e = currentNormSq / pastNormSq * vel_e + force;
+    currentNormSq = physicalForce.squaredNorm();
+    vel_e = currentNormSq / pastNormSq * vel_e +
+            rowwiseScaling(physicalForce,
+                           gc::EigenMap<double, 3>(f.vpg->vertexNormals));
     pastNormSq = currentNormSq;
     countCG++;
   }
@@ -156,20 +157,20 @@ void ConjugateGradient::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, force, vel_e);
+    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, physicalForce, vel_e);
   } else {
     pos_e += vel_e * dt;
     f.time += dt;
   }
 
-  // vertex shift for regularization
-  if (f.isVertexShift) {
-    f.vertexShift();
-  }
-
   // time stepping on protein density
   if (f.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+  }
+
+  // vertex shift for regularization
+  if (f.isVertexShift) {
+    f.vertexShift();
   }
 }
 

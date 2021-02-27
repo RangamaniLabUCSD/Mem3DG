@@ -136,25 +136,15 @@ void System::computeFreeEnergy() {
 // }
 
 double
-System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const {
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  // return sqrt((rowwiseDotProduct(force, force)).sum() /
-  // surfaceArea);
+System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &force) const {
 
-  // auto vertexAngleNormal_e = gc::EigenMap<double,
-  // 3>(vpg->vertexNormals);
+  return force.cwiseAbs().sum() / surfaceArea;
+}
 
-  // L2 Norm
-  // return sqrt(rowwiseDotProduct(force, force).sum()) /
-  // surfaceArea;
-
-  // auto vertexAngleNormal_e = gc::EigenMap<double,
-  // 3>(vpg.vertexNormals); return (M * rowwiseDotProduct(pressure,
-  // vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
-
+double
+System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
   // L1 Norm
-  return rowwiseDotProduct(force, vertexAngleNormal_e).cwiseAbs().sum() /
-         surfaceArea;
+  return force.cwiseAbs().sum() / surfaceArea;
 }
 
 } // namespace mem3dg
