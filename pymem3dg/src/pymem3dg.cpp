@@ -18,6 +18,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "Eigen/src/Core/util/Constants.h"
 #include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 
@@ -369,7 +370,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           compute the ExternalPressure
       )delim");
-  system.def("computeAllForces", &System::computeAllForces,
+  system.def("computePhysicalForces", &System::computePhysicalForces,
              R"delim(
           compute all the forces
       )delim");
@@ -382,12 +383,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           visualization of the system object
       )delim");
-  system.def("computeL1Norm", &System::computeL1Norm, py::arg("force"),
-             R"delim(
-                 compute error norm
-          Args:   
-                force (:py:class:`list`): mesh vertex force
-      )delim");
+//   system.def("computeL1Norm", &System::computeL1Norm,
+//              R"delim(
+//                    compute error norm
+//             Args:
+//                   force (:py:class:`list`): mesh vertex force
+//         )delim");
+
 
   /// Parameter struct
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(

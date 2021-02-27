@@ -80,11 +80,8 @@ bool BFGS::integrate() {
 }
 
 void BFGS::checkParameters() {
-  if (f.P.gamma != 0) {
-    throw std::runtime_error("gamma has to be 0 for BFGS integration!");
-  }
-  if (f.P.temp != 0) {
-    throw std::runtime_error("temp has to be 0 for BFGS integration!");
+  if (f.P.gamma != 0 || f.P.temp != 0) {
+    throw std::runtime_error("DPD has to be turned off for BFGS integration!");
   }
 }
 
@@ -95,11 +92,8 @@ void BFGS::status() {
   // compute summerized forces
   getForces();
 
-  // compute velocity and acceleration
-  force = f.M * physicalPressure.rowwise().norm();
-
   // update
-  y = pastForce - force;
+  y = pastPhysicalForce - physicalForce;
   if (f.time != init_time) {
     hess_inv += (s * s.transpose()) *
                     (s.transpose() * y + y.transpose() * hess_inv * y) /
@@ -107,10 +101,10 @@ void BFGS::status() {
                 (hess_inv * y * s.transpose() + s * y.transpose() * hess_inv) /
                     (s.transpose() * y);
   }
-  pastForce = force;
+  pastPhysicalForce = physicalForce;
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(f.M * physicalPressure);
+  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -147,9 +141,10 @@ void BFGS::march() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
-  // determine BFGS direction
-  vel_e = hess_inv * f.M * physicalPressure + regularizationForce;
+  vel_e = rowwiseScaling(hess_inv * physicalForce,
+                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
@@ -159,24 +154,24 @@ void BFGS::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    dt = backtrack(rho, c1, EXIT, SUCCESS, f.E.potE,
-                   f.M * physicalPressure + regularizationForce, vel_e);
+    alpha = backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, physicalForce, vel_e);
+    s = alpha *
+        rowwiseDotProduct(vel_e, gc::EigenMap<double, 3>(f.vpg->vertexNormals));
+
   } else {
     pos_e += vel_e * dt;
     f.time += dt;
-  }
-
-  // update s
-  s = dt * hess_inv * force;
-
-  // vertex shift for regularization
-  if (f.isVertexShift) {
-    f.vertexShift();
+    s = dt * hess_inv * physicalForce;
   }
 
   // time stepping on protein density
   if (f.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+  }
+
+  // vertex shift for regularization
+  if (f.isVertexShift) {
+    f.vertexShift();
   }
 }
 

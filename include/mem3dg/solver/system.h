@@ -355,9 +355,8 @@ public:
         bendingPressure(*mesh, 0), insidePressure(*mesh, 0), D(),
         capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
         lineTensionPressure(*mesh, 0), chemicalPotential(*mesh, 0),
-        externalPressure(*mesh, 0),
-        regularizationForce(*mesh, {0, 0, 0}), targetLcr(*mesh),
-        targetEdgeLengths(refVpg->edgeLengths),
+        externalPressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
+        targetLcr(*mesh), targetEdgeLengths(refVpg->edgeLengths),
         targetFaceAreas(refVpg->faceAreas), stochasticForce(*mesh, {0, 0, 0}),
         dampingForce(*mesh, {0, 0, 0}), proteinDensity(*mesh, 0),
         vel(*mesh, {0, 0, 0}), isFlip(*mesh, false), isSplit(*mesh, false),
@@ -480,7 +479,7 @@ public:
   /**
    * @brief Update the vertex position and recompute cached values
    * (all quantities that characterizes the current energy state)
-   *
+   * Careful when using eigenMap: memory address may change after update!!
    */
   void updateVertexPositions();
 
@@ -531,7 +530,7 @@ public:
   /**
    * @brief Compute all forces of the system
    */
-  void computeAllForces();
+  void computePhysicalForces();
 
   // ==========================================================
   // ================        Energy          ==================
@@ -584,7 +583,8 @@ public:
   /**
    * @brief Compute the L1 norm of the pressure
    */
-  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 3> force) const;
+  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &force) const;
+  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const;
 
   // ==========================================================
   // =============        Regularization        ===============
@@ -598,7 +598,7 @@ public:
   /**
    * @brief Compute regularization pressure component of the system
    */
-  void getRegularizationForce();
+  void computeRegularizationForce();
 
   /**
    * @brief Edge flip if not Delaunay

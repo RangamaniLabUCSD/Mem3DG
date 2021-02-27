@@ -87,16 +87,20 @@ void VelocityVerlet::status() {
   // recompute cached values
   f.updateVertexPositions();
 
+  // alias vpg quantities, which should follow the update
+  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
+
   // compute summerized forces
   getForces();
 
   // Compute total pressure
   totalPressure.resize(f.mesh->nVertices(), 3);
   totalPressure.setZero();
-  newTotalPressure = physicalPressure + DPDPressure;
+  newTotalPressure =
+      rowwiseScaling(f.M_inv * (physicalForce + DPDForce), vertexAngleNormal_e);
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(f.M * physicalPressure + regularizationForce);
+  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -146,19 +150,18 @@ void VelocityVerlet::march() {
 
   // time stepping on vertex position
   pos_e += vel_e * dt + hdt2 * totalPressure;
-  pos_e += regularizationForce * dt;
   vel_e += (totalPressure + newTotalPressure) * hdt;
   totalPressure = newTotalPressure;
   f.time += dt;
 
-  // vertex shift for regularization
-  if (f.isVertexShift) {
-    f.vertexShift();
-  }
-
   // time stepping on protein density
   if (f.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+  }
+
+  // vertex shift for regularization
+  if (f.isVertexShift) {
+    f.vertexShift();
   }
 }
 

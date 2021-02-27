@@ -27,6 +27,7 @@
 #include "geometrycentral/surface/surface_mesh.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
+#include "mem3dg/solver/util.h"
 #include <Eigen/Core>
 #include <pcg_random.hpp>
 
@@ -230,9 +231,11 @@ EigenVectorX1D System::computeChemicalPotential() {
 }
 
 std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces() {
+
+  auto dampingForce_e = EigenMap<double, 3>(dampingForce);
+  auto stochasticForce_e = EigenMap<double, 3>(stochasticForce);
+
   // Reset forces to zero
-  auto dampingForce_e = gc::EigenMap<double, 3>(dampingForce);
-  auto stochasticForce_e = gc::EigenMap<double, 3>(stochasticForce);
   dampingForce_e.setZero();
   stochasticForce_e.setZero();
 
@@ -275,7 +278,7 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces() {
   return std::tie(dampingForce_e, stochasticForce_e);
 }
 
-void System::computeAllForces() {
+void System::computePhysicalForces() {
 
   // zero all forces
   bendingPressure.raw().setZero();
@@ -283,7 +286,7 @@ void System::computeAllForces() {
   lineTensionPressure.raw().setZero();
   externalPressure.raw().setZero();
   insidePressure.raw().setZero();
-  gc::EigenMap<double, 3>(regularizationForce).setZero();
+  // gc::EigenMap<double, 3>(regularizationForce).setZero();
   gc::EigenMap<double, 3>(dampingForce).setZero();
   gc::EigenMap<double, 3>(stochasticForce).setZero();
   chemicalPotential.raw().setZero();
@@ -300,9 +303,9 @@ void System::computeAllForces() {
   if (P.eta != 0) {
     computeLineTensionPressure();
   }
-  if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
-    getRegularizationForce();
-  }
+  // if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
+  //   getRegularizationForce();
+  // }
   if ((P.gamma != 0) || (P.sigma != 0)) {
     computeDPDForces();
   }
