@@ -51,7 +51,6 @@ protected:
   ForceCalculationTest() {
     // physical parameters
     p.H0 = 10;
-    p.sharpness = 10;
     p.r_H0 = {0.5, 0.5};
 
     p.Vt = 0.6;

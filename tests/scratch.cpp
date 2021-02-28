@@ -30,10 +30,9 @@ int main() {
   ptrRefVpg = ptrVpg->reinterpretTo(*ptrMesh);
 
   // List parameters
-  double Kb = 8.22e-5, H0 = 0, sharpness = 10, Kst = 10, Ksl = 0, Kse = 0,
-         epsilon = 15e-5, Bc = 40, gamma = 0, Vt = 0.7, Pam = 0, Kf = 0,
-         conc = 25, height = 0, radius = 0.9, temp = 0, h = 5e-4, Kv = 5e-2,
-         eta = 0, Ksg = 0.1;
+  double Kb = 8.22e-5, H0 = 0, Kst = 10, Ksl = 0, Kse = 0, epsilon = 15e-5,
+         Bc = 40, gamma = 0, Vt = 0.7, Pam = 0, Kf = 0, conc = 25, height = 0,
+         radius = 0.9, temp = 0, h = 5e-4, Kv = 5e-2, eta = 0, Ksg = 0.1;
   std::vector<double> pt = {1, 1, 1};
   std::vector<double> r_H0 = {100, 100};
   bool isProtein = false, isVertexShift = false, isReducedVolume = true,
@@ -41,9 +40,9 @@ int main() {
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
   std::cout << "Initiating the system ...";
-  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    Pam, temp,
-                       sigma, pt,  Kf,        conc, height, radius};
+  mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
+                       Kv,   eta,   epsilon, Bc,  gamma, Vt,     Pam,
+                       temp, sigma, pt,      Kf,  conc,  height, radius};
   mem3dg::System f(std::move(ptrMesh), std::move(ptrVpg), std::move(ptrRefVpg),
                    p, isReducedVolume, isProtein, isLocalCurvature,
                    isVertexShift);
@@ -54,8 +53,9 @@ int main() {
          tMollify = 100;
   size_t verbosity = 0;
 
-  mem3dg::ConjugateGradient integrator(f, h, true, T, tSave, eps, "./", "/traj.nc",
-                           verbosity, true, 0.5, 1e-4, 0.01, false);
+  mem3dg::ConjugateGradient integrator(f, h, true, T, tSave, eps, "./",
+                                       "/traj.nc", verbosity, true, 0.5, 1e-4,
+                                       0.01, false);
   integrator.integrate();
 
   return 0;

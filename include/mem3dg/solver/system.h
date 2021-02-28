@@ -57,8 +57,6 @@ struct Parameters {
   double Kb;
   /// Spontaneous curvature
   double H0;
-  /// Sharpness of the spontaneous curvature hetergeneity
-  double sharpness;
   /// radius of non-zero spontaneous curvature
   std::vector<double> r_H0;
   /// Global stretching modulus

@@ -51,11 +51,11 @@
 std::unique_ptr<mem3dg::System> system_ply(
     const size_t verbosity, std::string inputMesh, std::string refMesh,
     size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, double Kb, double H0, double sharpness,
-    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
-    double Kv, double eta, double epsilon, double Bc, double Vt, double cam,
-    double gamma, double temp, std::vector<double> pt, double Kf, double conc,
-    double height, double radius, double h, double T, double eps, double tSave,
+    bool isVertexShift, double Kb, double H0, std::vector<double> r_H0,
+    double Kse, double Kst, double Ksl, double Ksg, double Kv, double eta,
+    double epsilon, double Bc, double Vt, double cam, double gamma, double temp,
+    std::vector<double> pt, double Kf, double conc, double height,
+    double radius, double h, double T, double eps, double tSave,
     std::string outputDir, std::string integrationMethod, bool isBacktrack,
     double rho, double c1, double ctol, bool isAugmentedLagrangian) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -71,9 +71,9 @@ std::unique_ptr<mem3dg::System> system_ply(
   std::cout << "Initializing the system ..." << std::endl;
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
-  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
-                       sigma, pt,  Kf,        conc, height, radius};
+  mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
+                       Kv,   eta,   epsilon, Bc,  gamma, Vt,     cam,
+                       temp, sigma, pt,      Kf,  conc,  height, radius};
 
   std::unique_ptr<mem3dg::System> f(
       new mem3dg::System(inputMesh, refMesh, nSub, p, isReducedVolume,
@@ -84,12 +84,12 @@ std::unique_ptr<mem3dg::System> system_ply(
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
-               double Kb, double H0, double sharpness, std::vector<double> r_H0,
-               double Kse, double Kst, double Ksl, double Ksg, double Kv,
-               double eta, double epsilon, double Bc, double Vt, double cam,
-               double gamma, double temp, std::vector<double> pt, double Kf,
-               double conc, double height, double radius, double h, double T,
-               double eps, double tSave, std::string outputDir,
+               double Kb, double H0, std::vector<double> r_H0, double Kse,
+               double Kst, double Ksl, double Ksg, double Kv, double eta,
+               double epsilon, double Bc, double Vt, double cam, double gamma,
+               double temp, std::vector<double> pt, double Kf, double conc,
+               double height, double radius, double h, double T, double eps,
+               double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
                double c1, double ctol, bool isAugmentedLagrangian,
                bool isAdaptiveStep) {
@@ -105,9 +105,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   /// Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
-  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
-                       sigma, pt,  Kf,        conc, height, radius};
+  mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
+                       Kv,   eta,   epsilon, Bc,  gamma, Vt,     cam,
+                       temp, sigma, pt,      Kf,  conc,  height, radius};
 
   /// Initialize the system
   mem3dg::System f(inputMesh, refMesh, nSub, p, isReducedVolume, isProtein,
@@ -127,6 +127,11 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
         f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", verbosity,
         isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
     integrator.integrate();
+  } else if (integrationMethod == "BFGS") {
+    mem3dg::BFGS integrator(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
+                            "/traj.nc", verbosity, isBacktrack, rho, c1, ctol,
+                            isAugmentedLagrangian);
+    integrator.integrate();
   }
 
   return 0;
@@ -135,26 +140,25 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                      bool isReducedVolume, bool isProtein,
                      bool isLocalCurvature, bool isVertexShift, double Kb,
-                     std::vector<double> H0, double sharpness,
-                     std::vector<double> r_H0, double Kse, double Kst,
-                     double Ksl, double Ksg, double Kv, double eta,
-                     double epsilon, double Bc, std::vector<double> Vt,
-                     std::vector<double> cam, double gamma, double temp,
-                     std::vector<double> pt, double Kf, double conc,
-                     double height, double radius, double h, double T,
-                     double eps, double tSave, std::string outputDir,
-                     bool isBacktrack, double rho, double c1, double ctol,
-                     bool isAugmentedLagrangian, bool isAdaptiveStep) {
+                     std::vector<double> H0, std::vector<double> r_H0,
+                     double Kse, double Kst, double Ksl, double Ksg, double Kv,
+                     double eta, double epsilon, double Bc,
+                     std::vector<double> Vt, std::vector<double> cam,
+                     double gamma, double temp, std::vector<double> pt,
+                     double Kf, double conc, double height, double radius,
+                     double h, double T, double eps, double tSave,
+                     std::string outputDir, bool isBacktrack, double rho,
+                     double c1, double ctol, bool isAugmentedLagrangian,
+                     bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
 
   /// Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
-                       Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
-                       gamma, Vt[0], cam[0],    temp,  sigma,   pt,
-                       Kf,    conc,  height,    radius};
+  mem3dg::Parameters p{Kb,   H0[0], r_H0,    Ksg, Kst,   Ksl,    Kse,
+                       Kv,   eta,   epsilon, Bc,  gamma, Vt[0],  cam[0],
+                       temp, sigma, pt,      Kf,  conc,  height, radius};
 
   /// Initialize the system
   mem3dg::System f(inputMesh, refMesh, nSub, p, isReducedVolume, isProtein,
@@ -174,15 +178,14 @@ int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
 int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
               bool isLocalCurvature, bool isVertexShift, double Kb, double H0,
-              double sharpness, std::vector<double> r_H0, double Kse,
-              double Kst, double Ksl, double Ksg, double Kv, double eta,
-              double epsilon, double Bc, double Vt, double cam, double gamma,
-              double temp, std::vector<double> pt, double Kf, double conc,
-              double height, double radius, double h, double T, double eps,
-              double tSave, std::string outputDir,
-              std::string integrationMethod, bool isBacktrack, double rho,
-              double c1, double ctol, bool isAugmentedLagrangian,
-              bool isAdaptiveStep) {
+              std::vector<double> r_H0, double Kse, double Kst, double Ksl,
+              double Ksg, double Kv, double eta, double epsilon, double Bc,
+              double Vt, double cam, double gamma, double temp,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double tSave,
+              std::string outputDir, std::string integrationMethod,
+              bool isBacktrack, double rho, double c1, double ctol,
+              bool isAugmentedLagrangian, bool isAdaptiveStep) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -190,9 +193,9 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
 
   // Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,    H0,  sharpness, r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon,   Bc,   gamma,  Vt,    cam, temp,
-                       sigma, pt,  Kf,        conc, height, radius};
+  mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
+                       Kv,   eta,   epsilon, Bc,  gamma, Vt,     cam,
+                       temp, sigma, pt,      Kf,  conc,  height, radius};
 
   // Initialize the system
   mem3dg::System f(trajFile, startingFrame, nSub, isContinue, p,
@@ -212,6 +215,11 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
         f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", verbosity,
         isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
     integrator.integrate();
+  } else if (integrationMethod == "BFGS") {
+    mem3dg::BFGS integrator(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
+                            "/traj.nc", verbosity, isBacktrack, rho, c1, ctol,
+                            isAugmentedLagrangian);
+    integrator.integrate();
   }
 
   return 0;
@@ -220,16 +228,16 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
 int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
                     bool isContinue, bool isReducedVolume, bool isProtein,
                     bool isLocalCurvature, bool isVertexShift, double Kb,
-                    std::vector<double> H0, double sharpness,
-                    std::vector<double> r_H0, double Kse, double Kst,
-                    double Ksl, double Ksg, double Kv, double eta,
-                    double epsilon, double Bc, std::vector<double> Vt,
-                    std::vector<double> cam, double gamma, double temp,
-                    std::vector<double> pt, double Kf, double conc,
-                    double height, double radius, double h, double T,
-                    double eps, double tSave, std::string outputDir,
-                    bool isBacktrack, double rho, double c1, double ctol,
-                    bool isAugmentedLagrangian, bool isAdaptiveStep) {
+                    std::vector<double> H0, std::vector<double> r_H0,
+                    double Kse, double Kst, double Ksl, double Ksg, double Kv,
+                    double eta, double epsilon, double Bc,
+                    std::vector<double> Vt, std::vector<double> cam,
+                    double gamma, double temp, std::vector<double> pt,
+                    double Kf, double conc, double height, double radius,
+                    double h, double T, double eps, double tSave,
+                    std::string outputDir, bool isBacktrack, double rho,
+                    double c1, double ctol, bool isAugmentedLagrangian,
+                    bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -237,10 +245,9 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
 
   /// Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,    H0[0], sharpness, r_H0,  Ksg,     Kst,
-                       Ksl,   Kse,   Kv,        eta,   epsilon, Bc,
-                       gamma, Vt[0], cam[0],    temp,  sigma,   pt,
-                       Kf,    conc,  height,    radius};
+  mem3dg::Parameters p{Kb,   H0[0], r_H0,    Ksg, Kst,   Ksl,    Kse,
+                       Kv,   eta,   epsilon, Bc,  gamma, Vt[0],  cam[0],
+                       temp, sigma, pt,      Kf,  conc,  height, radius};
 
   /// Initialize the system
   mem3dg::System f(trajFile, startingFrame, nSub, isContinue, p,

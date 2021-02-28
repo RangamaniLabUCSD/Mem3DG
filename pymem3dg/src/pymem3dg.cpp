@@ -383,13 +383,12 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           visualization of the system object
       )delim");
-//   system.def("computeL1Norm", &System::computeL1Norm,
-//              R"delim(
-//                    compute error norm
-//             Args:
-//                   force (:py:class:`list`): mesh vertex force
-//         )delim");
-
+  //   system.def("computeL1Norm", &System::computeL1Norm,
+  //              R"delim(
+  //                    compute error norm
+  //             Args:
+  //                   force (:py:class:`list`): mesh vertex force
+  //         )delim");
 
   /// Parameter struct
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
@@ -397,10 +396,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   parameters.def(py::init<>());
   parameters.def(
-      py::init<double, double, double, std::vector<double>, double, double,
+      py::init<double, double, std::vector<double>, double, double, double,
                double, double, double, double, double, double, double, double,
-               double, double, double, std::vector<double>, double, double,
-               double, double, double, double>());
+               double, double, std::vector<double>, double, double, double,
+               double, double, double>());
   parameters.def_readwrite("Kb", &Parameters::Kb,
                            R"delim(
           get Bending modulus 
@@ -408,10 +407,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("H0", &Parameters::H0,
                            R"delim(
           get Spontaneous curvature 
-      )delim");
-  parameters.def_readwrite("sharpness", &Parameters::sharpness,
-                           R"delim(
-          get Sharpness of the spontaneous curvature hetergeneity 
       )delim");
   parameters.def_readwrite("r_H0", &Parameters::r_H0,
                            R"delim(
@@ -548,7 +543,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("nSub"), py::arg("isReducedVolume"),
                py::arg("isProtein"), py::arg("isLocalCurvature"),
                py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+                py::arg("r_H0"), py::arg("Kse"),
                py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
                py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
                py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
@@ -575,7 +570,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
       py::arg("isReducedVolume"), py::arg("isProtein"),
       py::arg("isLocalCurvature"), py::arg("isVertexShift"), py::arg("Kb"),
-      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+      py::arg("H0"),  py::arg("r_H0"), py::arg("Kse"),
       py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
       py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
       py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
@@ -597,7 +592,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   sharpness (:py:class:`double`): sharpness of the interfacial transition of H0
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
                    Kse (:py:class:`double`): edge modulus for mesh regularization
                    Kst (:py:class:`double`): modulus for conformal regularization 
@@ -636,7 +630,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
                py::arg("isReducedVolume"), py::arg("isProtein"),
                py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-               py::arg("Kb"), py::arg("H0"), py::arg("sharpness"),
+               py::arg("Kb"), py::arg("H0"), 
                py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"),
                py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
                py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
@@ -658,7 +652,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   sharpness (:py:class:`double`): sharpness of the interfacial transition of H0
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
                    Kse (:py:class:`double`): edge modulus for mesh regularization
                    Kst (:py:class:`double`): modulus for conformal regularization 
@@ -726,7 +719,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
       py::arg("isContinue"), py::arg("isReducedVolume"), py::arg("isProtein"),
       py::arg("isLocalCurvature"), py::arg("isVertexShift"), py::arg("Kb"),
-      py::arg("H0"), py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+      py::arg("H0"),  py::arg("r_H0"), py::arg("Kse"),
       py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
       py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
       py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
@@ -749,7 +742,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   sharpness (:py:class:`double`): sharpness of the interfacial transition of H0
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
                    Kse (:py:class:`double`): edge modulus for mesh regularization
                    Kst (:py:class:`double`): modulus for conformal regularization 
@@ -789,7 +781,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("isContinue"), py::arg("isReducedVolume"),
                py::arg("isProtein"), py::arg("isLocalCurvature"),
                py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-               py::arg("sharpness"), py::arg("r_H0"), py::arg("Kse"),
+               py::arg("r_H0"), py::arg("Kse"),
                py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
                py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
                py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
@@ -811,7 +803,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   sharpness (:py:class:`double`): sharpness of the interfacial transition of H0
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
                    Kse (:py:class:`double`): edge modulus for mesh regularization
                    Kst (:py:class:`double`): modulus for conformal regularization 

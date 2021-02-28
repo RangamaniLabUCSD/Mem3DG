@@ -41,59 +41,34 @@ namespace gcs = ::geometrycentral::surface;
 EigenVectorX1D System::computeBendingPressure() {
   /// A. non-optimized version
   if (isLocalCurvature) {
-    EigenVectorX1D H0_temp;
-    H0_temp.resize(mesh->nVertices(), 1);
-    H0_temp.setConstant(P.H0);
-    // compute the coated domain
-    // calculate the Laplacian of mean curvature H
-    Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H =
-        M_inv * L * (H.raw() - H0_temp);
-
-    // initialize and calculate intermediary result scalerTerms
-    Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-        rowwiseProduct(H.raw(), H.raw()) + rowwiseProduct(H.raw(), H0_temp) -
-        K.raw();
-
-    // initialize and calculate intermediary result productTerms
-    Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms =
-        2.0 * rowwiseProduct(scalerTerms, H.raw() - H0_temp);
-
-    // calculate bendingForce
-    bendingPressure.raw() = (H0.raw().array() != 0).cast<double>().array() *
-                            (-P.Kb * (productTerms + lap_H)).array();
-
-    // compute the noncoated domain
-    H0_temp.setConstant(0);
-
-    // calculate the Laplacian of mean curvature H
-    lap_H = M_inv * L * (H.raw() - H0_temp);
-
-    // initialize and calculate intermediary result scalerTerms
-    scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
-                  rowwiseProduct(H.raw(), H0_temp) - K.raw();
-
-    // initialize and calculate intermediary result productTerms
-    productTerms = 2.0 * rowwiseProduct(scalerTerms, H.raw() - H0_temp);
-    bendingPressure.raw().array() +=
-        (H0.raw().array() == 0).cast<double>().array() *
-        (-P.Kb * (productTerms + lap_H)).array();
+    auto subdomain = [&](double H0_temp) {
+      EigenVectorX1D lap_H = M_inv * L * (H.raw().array() - H0_temp).matrix();
+      EigenVectorX1D scalerTerms =
+          rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
+      EigenVectorX1D productTerms =
+          2.0 *
+          rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
+      bendingPressure.raw().array() +=
+          (H0.raw().array() == H0_temp).cast<double>().array() *
+          (-P.Kb * (productTerms + lap_H)).array();
+    };
+    subdomain(P.H0);
+    subdomain(0);
   } else {
     // compute the coated domain
     // calculate the Laplacian of mean curvature H
-    Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H =
-        M_inv * L * (H.raw() - H0.raw());
+    EigenVectorX1D lap_H = M_inv * L * (H.raw() - H0.raw());
 
     // initialize and calculate intermediary result scalerTerms
-    Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-        rowwiseProduct(H.raw(), H.raw()) + rowwiseProduct(H.raw(), H0.raw()) -
-        K.raw();
-    // Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+    EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
+                                 rowwiseProduct(H.raw(), H0.raw()) - K.raw();
+    // EigenVectorX1D zeroMatrix;
     // zeroMatrix.resize(n_vertices, 1);
     // zeroMatrix.setZero();
     // scalerTerms = scalerTerms.array().max(zeroMatrix.array());
 
     // initialize and calculate intermediary result productTerms
-    Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms =
+    EigenVectorX1D productTerms =
         2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
 
     // calculate bendingForce
@@ -104,21 +79,21 @@ EigenVectorX1D System::computeBendingPressure() {
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H_integrated = L * (H - H0);
+  // EigenVectorX1D lap_H_integrated = L * (H - H0);
 
   // // initialize and calculate intermediary result scalarTerms_integrated
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> H_integrated = M * H;
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> scalarTerms_integrated =
+  // EigenVectorX1D H_integrated = M * H;
+  // EigenVectorX1D scalarTerms_integrated =
   //     M * rowwiseProduct(M_inv * H_integrated, M_inv * H_integrated) +
   //     rowwiseProduct(H_integrated, H0) - vpg->vertexGaussianCurvatures.raw();
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+  // EigenVectorX1D zeroMatrix;
   // zeroMatrix.resize(n_vertices, 1);
   // zeroMatrix.setZero();
   // scalarTerms_integrated =
   //     scalarTerms_integrated.array().max(zeroMatrix.array());
 
   // // initialize and calculate intermediary result productTerms_integrated
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms_integrated;
+  // EigenVectorX1D productTerms_integrated;
   // productTerms_integrated.resize(n_vertices, 1);
   // productTerms_integrated =
   //     2.0 * rowwiseProduct(scalarTerms_integrated, H - H0);
@@ -191,7 +166,7 @@ EigenVectorX1D System::computeInsidePressure() {
 EigenVectorX1D System::computeLineCapillaryForce() {
   // Instructional version:
   // // normal curvature of the dual edges
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> normalCurv =
+  // EigenVectorX1D normalCurv =
   //     (vpg->edgeDihedralAngles.raw().array() /
   //      (vpg->hodge1 * vpg->edgeLengths.raw()).array())
   //         .matrix();
@@ -200,9 +175,10 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   //                             lineTension.raw().array() * normalCurv.array())
   //                                .matrix();
 
-  // optimized version:
-  // normal curvature of the dual edges
-  Eigen::Matrix<double, Eigen::Dynamic, 1> normalCurv_integrated =
+  // optimized version (this version is a bit confusing, Instructional version
+  // on the top is preferred for understanding):
+  // normal curvature of the dual edges, t
+  EigenVectorX1D normalCurv_integrated =
       vpg->hodge1Inverse * vpg->edgeDihedralAngles.raw();
   lineCapillaryForce.raw() =
       -D * vpg->hodge1Inverse *
@@ -212,7 +188,7 @@ EigenVectorX1D System::computeLineCapillaryForce() {
 }
 
 EigenVectorX1D System::computeExternalPressure() {
-  Eigen::Matrix<double, Eigen::Dynamic, 1> externalPressureMagnitude;
+  EigenVectorX1D externalPressureMagnitude;
 
   if (P.Kf != 0) {
 
@@ -251,10 +227,10 @@ EigenVectorX1D System::computeExternalPressure() {
 
 EigenVectorX1D System::computeChemicalPotential() {
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
+  EigenVectorX1D proteinDensitySq =
       (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> dH0dphi =
+  EigenVectorX1D dH0dphi =
       (2 * P.H0 * proteinDensity.raw().array() /
        ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
           .matrix();
