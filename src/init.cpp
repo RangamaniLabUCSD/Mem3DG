@@ -438,6 +438,8 @@ void System::visualize() {
       ->addVertexScalarQuantity("physical_pressure", fn);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("line_tension", lineTension.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity("edge_dihedral", vpg->edgeDihedralAngles.raw());
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {

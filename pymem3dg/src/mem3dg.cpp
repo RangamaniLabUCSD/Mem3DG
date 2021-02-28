@@ -127,6 +127,11 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
         f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", verbosity,
         isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
     integrator.integrate();
+  } else if (integrationMethod == "BFGS") {
+    mem3dg::BFGS integrator(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
+                            "/traj.nc", verbosity, isBacktrack, rho, c1, ctol,
+                            isAugmentedLagrangian);
+    integrator.integrate();
   }
 
   return 0;
@@ -209,6 +214,11 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
     integrator.integrate();
   } else if (integrationMethod == "conjugate gradient") {
     mem3dg::ConjugateGradient integrator(
+        f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", verbosity,
+        isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
+    integrator.integrate();
+  } else if (integrationMethod == "BFGS") {
+    mem3dg::BFGS integrator(
         f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", verbosity,
         isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
     integrator.integrate();

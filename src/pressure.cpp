@@ -200,8 +200,9 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   //                             lineTension.raw().array() * normalCurv.array())
   //                                .matrix();
 
-  // optimized version:
-  // normal curvature of the dual edges
+  // optimized version (this version is a bit confusing, Instructional version
+  // on the top is preferred for understanding):
+  // normal curvature of the dual edges, t
   Eigen::Matrix<double, Eigen::Dynamic, 1> normalCurv_integrated =
       vpg->hodge1Inverse * vpg->edgeDihedralAngles.raw();
   lineCapillaryForce.raw() =
