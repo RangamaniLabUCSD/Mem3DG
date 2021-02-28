@@ -196,13 +196,11 @@ boundaryMask(gcs::SurfaceMesh &mesh,
  */
 DLL_PUBLIC inline void
 removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
-  force =
-      force.rowwise() - ((force).colwise().sum() / force.rows());
+  force = force.rowwise() - ((force).colwise().sum() / force.rows());
 }
 DLL_PUBLIC inline void
 removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
-  force =
-      force.rowwise() - ((force).colwise().sum() / force.rows());
+  force = force.rowwise() - ((force).colwise().sum() / force.rows());
 }
 
 /**
@@ -215,15 +213,13 @@ DLL_PUBLIC inline void
 removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
   force = force.rowwise() -
-             (rowwiseCrossProduct(position, force).colwise().sum() /
-              force.rows());
+          (rowwiseCrossProduct(position, force).colwise().sum() / force.rows());
 }
 DLL_PUBLIC inline void
 removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
                Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
   force = force.rowwise() -
-             (rowwiseCrossProduct(position, force).colwise().sum() /
-              force.rows());
+          (rowwiseCrossProduct(position, force).colwise().sum() / force.rows());
 }
 
 /**
@@ -288,8 +284,8 @@ findVertexLineTension(gcs::VertexPositionGeometry &vpg, double eta,
 DLL_PUBLIC inline void
 tanhDistribution(gcs::VertexPositionGeometry &vpg,
                  Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                 Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
-                 double sharpness, std::vector<double> axes) {
+                 Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
+                 double sharpness, std::vector<double> &axes) {
   distribution.resize(distance.rows(), 1);
   if (axes[0] == axes[1]) {
     Eigen::MatrixXd radius_vec =
@@ -307,6 +303,37 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
                sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
                     axes[1] * axes[1]);
       distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
+    }
+  }
+}
+
+/**
+ * @brief height = 1 for elliptical domain
+ *
+ * @param (double) sharpness of transition
+ * @param (double) radius of height = 1
+ * @param (Eigen vector) distance vector
+ * @param (vertexPositionGeometry) vpg
+ *
+ */
+DLL_PUBLIC inline void
+ellipticDistribution(gcs::VertexPositionGeometry &vpg,
+               Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
+               Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
+               std::vector<double> &axes) {
+  distribution.resize(distance.rows(), 1);
+  if (axes[0] == axes[1]) {
+    distribution = (distance.array() < axes[0]).cast<double>();
+  } else {
+    double x, y, cos_t, radius;
+    for (size_t i = 0; i < distance.rows(); i++) {
+      x = vpg.inputVertexPositions[i].x;
+      y = vpg.inputVertexPositions[i].y;
+      cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
+      radius = axes[0] * axes[1] /
+               sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
+                    axes[1] * axes[1]);
+      distribution[i] = (bool)distance[i] < radius;
     }
   }
 }

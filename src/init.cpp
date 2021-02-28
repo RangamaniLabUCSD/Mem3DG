@@ -196,10 +196,6 @@ void System::checkParameters() {
     if (P.r_H0 != std::vector<double>({-1, -1})) {
       throw std::logic_error("r_H0 has to be {-1, -1} for nonlocal curvature!");
     }
-    if (P.sharpness != 0) {
-      throw std::logic_error(
-          "sharpness of transition has to be 0 for nonlocal curvature!");
-    }
   }
 
   if (isReducedVolume) {
@@ -339,8 +335,7 @@ void System::updateVertexPositions() {
   // initialize/update spontaneous curvature (local
   // spontaneous curvature)
   if (isLocalCurvature) {
-    tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-                     P.sharpness, P.r_H0);
+    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(), P.r_H0);
     H0.raw() *= P.H0;
   }
 
@@ -438,6 +433,8 @@ void System::visualize() {
       ->addVertexScalarQuantity("physical_pressure", fn);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("line_tension", lineTension.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity("edge_dihedral", vpg->edgeDihedralAngles.raw());
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
