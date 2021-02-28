@@ -136,6 +136,8 @@ static const std::string L1BENDNORM_VAR = "l1bendnorm";
 static const std::string L1SURFNORM_VAR = "l1surfnorm";
 /// Name of the L1 Error Norm data
 static const std::string L1PRESSNORM_VAR = "l1pressnorm";
+/// Name of the L1 Error Norm data
+static const std::string L1LINENORM_VAR = "l1linenorm";
 /// Name of the volume data
 static const std::string VOLUME_VAR = "volume";
 /// Name of the height data
@@ -209,6 +211,7 @@ public:
     l1bendnorm_var = fd->getVar(L1BENDNORM_VAR);
     l1surfnorm_var = fd->getVar(L1SURFNORM_VAR);
     l1pressnorm_var = fd->getVar(L1PRESSNORM_VAR);
+    l1linenorm_var = fd->getVar(L1LINENORM_VAR);
     volume_var = fd->getVar(VOLUME_VAR);
     height_var = fd->getVar(HEIGHT_VAR);
     surfarea_var = fd->getVar(SURFAREA_VAR);
@@ -338,17 +341,21 @@ public:
 
     l1errornorm_var =
         fd->addVar(L1ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
-    l1errornorm_var.putAtt(UNITS, FORCE_UNITS);
+    l1errornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     l1bendnorm_var = fd->addVar(L1BENDNORM_VAR, netCDF::ncDouble, {frame_dim});
-    l1bendnorm_var.putAtt(UNITS, FORCE_UNITS);
+    l1bendnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     l1surfnorm_var = fd->addVar(L1SURFNORM_VAR, netCDF::ncDouble, {frame_dim});
-    l1surfnorm_var.putAtt(UNITS, FORCE_UNITS);
+    l1surfnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     l1pressnorm_var =
         fd->addVar(L1PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
-    l1pressnorm_var.putAtt(UNITS, FORCE_UNITS);
+    l1pressnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+
+    l1linenorm_var =
+        fd->addVar(L1LINENORM_VAR, netCDF::ncDouble, {frame_dim});
+    l1linenorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     volume_var = fd->addVar(VOLUME_VAR, netCDF::ncDouble, {frame_dim});
     volume_var.putAtt(UNITS, LEN_UNITS + "^3");
@@ -603,6 +610,10 @@ public:
 
   double getL1PressNorm(const std::size_t idx) const;
 
+  void writeL1LineNorm(const std::size_t idx, const double L1LineNorm);
+
+  double getL1LineNorm(const std::size_t idx) const;
+
   void writeVolume(const std::size_t idx, const double volume);
 
   double getVolume(const std::size_t idx) const;
@@ -694,6 +705,7 @@ private:
   nc::NcVar l1bendnorm_var;
   nc::NcVar l1surfnorm_var;
   nc::NcVar l1pressnorm_var;
+  nc::NcVar l1linenorm_var;
   nc::NcVar volume_var;
   nc::NcVar height_var;
   nc::NcVar surfarea_var;

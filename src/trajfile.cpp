@@ -575,6 +575,22 @@ double TrajFile::getL1PressNorm(const std::size_t idx) const {
   return L1ErrorNorm;
 }
 
+// L1 line capillary pressure norm
+void TrajFile::writeL1LineNorm(const std::size_t idx,
+                                const double L1ErrorNorm) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l1linenorm_var.putVar({idx}, &L1ErrorNorm);
+}
+
+double TrajFile::getL1LineNorm(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double L1ErrorNorm;
+  l1linenorm_var.getVar({idx}, &L1ErrorNorm);
+  return L1ErrorNorm;
+}
+
 // volume
 void TrajFile::writeVolume(const std::size_t idx, const double volume) {
   if (!writeable)
