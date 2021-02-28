@@ -256,7 +256,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the tension-induced capillary pressure
       )delim");
   system.def(
-      "getLineTensionPressure",
+      "getLineCapillaryForce",
       [](System &s) { return s.lineCapillaryForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
