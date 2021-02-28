@@ -257,7 +257,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   system.def(
       "getLineTensionPressure",
-      [](System &s) { return s.lineTensionPressure.raw(); },
+      [](System &s) { return s.lineCapillaryForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interfacial line tension
@@ -355,7 +355,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           compute the InsidePressure
       )delim");
-  system.def("computeLineTensionPressure", &System::computeLineTensionPressure,
+  system.def("computeLineCapillaryForce", &System::computeLineCapillaryForce,
              py::return_value_policy::reference_internal,
              R"delim(
           compute the LineTensionPressure

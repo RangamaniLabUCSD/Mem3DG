@@ -146,8 +146,8 @@ public:
   gcs::VertexData<double> bendingPressure;
   /// Cached tension-induced capillary pressure
   gcs::VertexData<double> capillaryPressure;
-  /// Cached interfacial line tension
-  gcs::VertexData<double> lineTensionPressure;
+  /// Cached interfacial line tension force
+  gcs::VertexData<double> lineCapillaryForce;
   gcs::EdgeData<double> lineTension;
   /// Cached externally-applied pressure
   gcs::VertexData<double> externalPressure;
@@ -354,7 +354,7 @@ public:
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
         bendingPressure(*mesh, 0), insidePressure(*mesh, 0), D(),
         capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
-        lineTensionPressure(*mesh, 0), chemicalPotential(*mesh, 0),
+        lineCapillaryForce(*mesh, 0), chemicalPotential(*mesh, 0),
         externalPressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
         targetLcr(*mesh), targetEdgeLengths(refVpg->edgeLengths),
         targetFaceAreas(refVpg->faceAreas), stochasticForce(*mesh, {0, 0, 0}),
@@ -515,7 +515,7 @@ public:
   /**
    * @brief Compute line tension pressure component of the system
    */
-  EigenVectorX1D computeLineTensionPressure();
+  EigenVectorX1D computeLineCapillaryForce();
 
   /**
    * @brief Compute DPD forces of the system
