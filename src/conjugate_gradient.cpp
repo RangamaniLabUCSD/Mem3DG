@@ -24,6 +24,7 @@
 #include <geometrycentral/utilities/vector3.h>
 
 #include "Eigen/src/Core/util/Constants.h"
+#include "geometrycentral/surface/surface_mesh.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
@@ -132,6 +133,8 @@ void ConjugateGradient::march() {
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
+  // typedef gc::EigenVectorMap_T<double, 3, Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>);
+  // EigenMap3 Map3 = gc::EigenMap<double, 3>;
 
   // determine conjugate gradient direction, restart after nVertices() cycles
   size_t countCG = 0;
