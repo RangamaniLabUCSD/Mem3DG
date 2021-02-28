@@ -40,8 +40,9 @@ EigenVectorX1D System::computeBendingPressure() {
 
   // map the MeshData to eigen matrix XXX_e
 
-  // Alias
-  std::size_t n_vertices = (mesh->nVertices());
+  auto protein = (H0.raw().array() == P.H0);
+
+  H0.raw().setConstant(P.H0);
 
   /// A. non-optimized version
   // calculate the Laplacian of mean curvature H
@@ -58,12 +59,26 @@ EigenVectorX1D System::computeBendingPressure() {
   // scalerTerms = scalerTerms.array().max(zeroMatrix.array());
 
   // initialize and calculate intermediary result productTerms
-  Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms;
-  productTerms.resize(n_vertices, 1);
-  productTerms = 2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+  Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms =
+      2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
 
   // calculate bendingForce
   bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
+  bendingPressure.raw().array() *= protein.cast<double>().array();
+
+  H0.raw().setConstant(0);
+
+  /// A. non-optimized version
+  // calculate the Laplacian of mean curvature H
+  lap_H = M_inv * L * (H.raw() - H0.raw());
+
+  // initialize and calculate intermediary result scalerTerms
+  scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
+                rowwiseProduct(H.raw(), H0.raw()) - K.raw();
+
+  // initialize and calculate intermediary result productTerms
+  productTerms = 2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+  bendingPressure.raw().array() += (!protein).cast<double>().array() * (-P.Kb * (productTerms + lap_H)).array();
 
   return bendingPressure.raw();
 
