@@ -349,6 +349,8 @@ void System::updateVertexPositions() {
     // scale the dH0 such that it is integrated over the edge
     // this is under the case where the resolution is low,
     // WIP
+
+    // The unit of line tension is in force (e.g. XXNewton)
     lineTension.raw() = P.eta * vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs();
   }
 
@@ -412,7 +414,7 @@ void System::visualize() {
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
   fn = bendingPressure.raw() + capillaryPressure.raw() + insidePressure.raw() +
-       externalPressure.raw() + lineTensionPressure.raw();
+       externalPressure.raw() + M_inv * lineCapillaryForce.raw();
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
@@ -427,7 +429,7 @@ void System::visualize() {
       ->addVertexScalarQuantity("bending_pressure", bendingPressure.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
-                                lineTensionPressure.raw());
+                                M_inv * lineCapillaryForce.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("capillary_pressure", capillaryPressure.raw());
   polyscope::getSurfaceMesh("Membrane")

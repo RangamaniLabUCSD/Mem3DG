@@ -153,26 +153,27 @@ EigenVectorX1D System::computeInsidePressure() {
   // }
 }
 
-EigenVectorX1D System::computeLineTensionPressure() {
-  // lineTension.raw() =
-  //     vpg->hodge1Inverse * P.eta *
-  //     ((vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs()).array() *
-  //      vpg->edgeDihedralAngles.raw().array())
-  //             .matrix();
-  // lineTensionPressure_e = -rowwiseScaling(
-  //     M_inv * D * lineTension.raw(),
-  //     vertexAngleNormal_e);
+EigenVectorX1D System::computeLineCapillaryForce() {
+  // Instructional version:
+  // // normal curvature of the dual edges
+  // Eigen::Matrix<double, Eigen::Dynamic, 1> normalCurv =
+  //     (vpg->edgeDihedralAngles.raw().array() /
+  //      (vpg->hodge1 * vpg->edgeLengths.raw()).array())
+  //         .matrix();
+  // lineCapillaryForce.raw() = -D * vpg->hodge1Inverse *
+  //                            (vpg->edgeLengths.raw().array() *
+  //                             lineTension.raw().array() * normalCurv.array())
+  //                                .matrix();
 
+  // optimized version:
   // normal curvature of the dual edges
-  Eigen::Matrix<double, Eigen::Dynamic, 1> normalCurv =
-      (vpg->edgeDihedralAngles.raw().array() /
-       (vpg->hodge1 * vpg->edgeLengths.raw()).array())
-          .matrix();
-  lineTensionPressure.raw() =
-      -M_inv * D * vpg->hodge1Inverse *
-      (lineTension.raw().array() * normalCurv.array()).matrix();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> normalCurv_integrated =
+      vpg->hodge1Inverse * vpg->edgeDihedralAngles.raw();
+  lineCapillaryForce.raw() =
+      -D * vpg->hodge1Inverse *
+      (lineTension.raw().array() * normalCurv_integrated.array()).matrix();
 
-  return lineTensionPressure.raw();
+  return lineCapillaryForce.raw();
 }
 
 EigenVectorX1D System::computeExternalPressure() {
@@ -283,7 +284,7 @@ void System::computePhysicalForces() {
   // zero all forces
   bendingPressure.raw().setZero();
   capillaryPressure.raw().setZero();
-  lineTensionPressure.raw().setZero();
+  lineCapillaryForce.raw().setZero();
   externalPressure.raw().setZero();
   insidePressure.raw().setZero();
   // gc::EigenMap<double, 3>(regularizationForce).setZero();
@@ -301,7 +302,7 @@ void System::computePhysicalForces() {
     computeCapillaryPressure();
   }
   if (P.eta != 0) {
-    computeLineTensionPressure();
+    computeLineCapillaryForce();
   }
   // if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
   //   getRegularizationForce();

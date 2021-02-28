@@ -91,10 +91,10 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
-  physicalForce = (f.M * f.mask.raw().cast<double>()).array() *
-                  (f.bendingPressure.raw() + f.capillaryPressure.raw() +
-                   f.externalPressure.raw() + f.lineTensionPressure.raw() +
-                   f.insidePressure.raw())
+  physicalForce = (f.mask.raw().cast<double>()).array() *
+                  (f.M * (f.bendingPressure.raw() + f.capillaryPressure.raw() +
+                          f.externalPressure.raw() + f.insidePressure.raw()) +
+                   f.lineCapillaryForce.raw())
                       .array();
 
   DPDForce = f.mask.raw().cast<double>().array() *
@@ -288,6 +288,8 @@ void Integrator::markFileName(std::string marker_str) {
 void Integrator::saveRichData() {
   gcs::VertexData<double> fn(*f.mesh);
   fn.fromVector(f.M_inv * physicalForce);
+  gcs::VertexData<double> fl(*f.mesh);
+  fl.fromVector(f.M_inv * f.lineCapillaryForce.raw());
 
   f.richData.addVertexProperty("mean_curvature", f.H);
   f.richData.addVertexProperty("gauss_curvature", f.K);
@@ -296,7 +298,7 @@ void Integrator::saveRichData() {
   f.richData.addVertexProperty("physical_pressure", fn);
   f.richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
   f.richData.addVertexProperty("bending_pressure", f.bendingPressure);
-  f.richData.addVertexProperty("line_tension_pressure", f.lineTensionPressure);
+  f.richData.addVertexProperty("line_tension_pressure", fl);
 }
 
 void Integrator::saveRichData(std::string plyName) {
@@ -334,7 +336,7 @@ void Integrator::saveNetcdfData() {
   // write pressures
   fd.writeBendingPressure(frame, f.bendingPressure.raw());
   fd.writeCapillaryPressure(frame, f.capillaryPressure.raw());
-  fd.writeLinePressure(frame, f.lineTensionPressure.raw());
+  fd.writeLinePressure(frame, f.M_inv * f.lineCapillaryForce.raw());
   fd.writeInsidePressure(frame, f.insidePressure.raw());
   fd.writeExternalPressure(frame, f.externalPressure.raw());
   fd.writePhysicalPressure(frame, f.M_inv * physicalForce);
