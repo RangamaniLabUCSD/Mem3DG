@@ -355,6 +355,7 @@ void Integrator::saveNetcdfData() {
   fd.writeL1BendNorm(frame, f.computeL1Norm(f.M * f.bendingPressure.raw()));
   fd.writeL1SurfNorm(frame, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
   fd.writeL1PressNorm(frame, f.computeL1Norm(f.M * f.insidePressure.raw()));
+  fd.writeL1LineNorm(frame, f.computeL1Norm(f.lineCapillaryForce.raw()));
 }
 #endif
 
