@@ -23,6 +23,8 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
+#include "Eigen/src/Core/Matrix.h"
+#include "Eigen/src/Core/util/Constants.h"
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "mem3dg/solver/meshops.h"
@@ -37,48 +39,66 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 EigenVectorX1D System::computeBendingPressure() {
-
-  // map the MeshData to eigen matrix XXX_e
-
-  auto protein = (H0.raw().array() == P.H0);
-
-  H0.raw().setConstant(P.H0);
-
   /// A. non-optimized version
-  // calculate the Laplacian of mean curvature H
-  Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H =
-      M_inv * L * (H.raw() - H0.raw());
+  if (isLocalCurvature) {
+    EigenVectorX1D H0_temp;
+    H0_temp.resize(mesh->nVertices(), 1);
+    H0_temp.setConstant(P.H0);
+    // compute the coated domain
+    // calculate the Laplacian of mean curvature H
+    Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H =
+        M_inv * L * (H.raw() - H0_temp);
 
-  // initialize and calculate intermediary result scalerTerms
-  Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
-      rowwiseProduct(H.raw(), H.raw()) + rowwiseProduct(H.raw(), H0.raw()) -
-      K.raw();
-  // Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
-  // zeroMatrix.resize(n_vertices, 1);
-  // zeroMatrix.setZero();
-  // scalerTerms = scalerTerms.array().max(zeroMatrix.array());
+    // initialize and calculate intermediary result scalerTerms
+    Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
+        rowwiseProduct(H.raw(), H.raw()) + rowwiseProduct(H.raw(), H0_temp) -
+        K.raw();
 
-  // initialize and calculate intermediary result productTerms
-  Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms =
-      2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+    // initialize and calculate intermediary result productTerms
+    Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms =
+        2.0 * rowwiseProduct(scalerTerms, H.raw() - H0_temp);
 
-  // calculate bendingForce
-  bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
-  bendingPressure.raw().array() *= protein.cast<double>().array();
+    // calculate bendingForce
+    bendingPressure.raw() = (H0.raw().array() != 0).cast<double>().array() *
+                            (-P.Kb * (productTerms + lap_H)).array();
 
-  H0.raw().setConstant(0);
+    // compute the noncoated domain
+    H0_temp.setConstant(0);
 
-  /// A. non-optimized version
-  // calculate the Laplacian of mean curvature H
-  lap_H = M_inv * L * (H.raw() - H0.raw());
+    // calculate the Laplacian of mean curvature H
+    lap_H = M_inv * L * (H.raw() - H0_temp);
 
-  // initialize and calculate intermediary result scalerTerms
-  scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
-                rowwiseProduct(H.raw(), H0.raw()) - K.raw();
+    // initialize and calculate intermediary result scalerTerms
+    scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
+                  rowwiseProduct(H.raw(), H0_temp) - K.raw();
 
-  // initialize and calculate intermediary result productTerms
-  productTerms = 2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
-  bendingPressure.raw().array() += (!protein).cast<double>().array() * (-P.Kb * (productTerms + lap_H)).array();
+    // initialize and calculate intermediary result productTerms
+    productTerms = 2.0 * rowwiseProduct(scalerTerms, H.raw() - H0_temp);
+    bendingPressure.raw().array() +=
+        (H0.raw().array() == 0).cast<double>().array() *
+        (-P.Kb * (productTerms + lap_H)).array();
+  } else {
+    // compute the coated domain
+    // calculate the Laplacian of mean curvature H
+    Eigen::Matrix<double, Eigen::Dynamic, 1> lap_H =
+        M_inv * L * (H.raw() - H0.raw());
+
+    // initialize and calculate intermediary result scalerTerms
+    Eigen::Matrix<double, Eigen::Dynamic, 1> scalerTerms =
+        rowwiseProduct(H.raw(), H.raw()) + rowwiseProduct(H.raw(), H0.raw()) -
+        K.raw();
+    // Eigen::Matrix<double, Eigen::Dynamic, 1> zeroMatrix;
+    // zeroMatrix.resize(n_vertices, 1);
+    // zeroMatrix.setZero();
+    // scalerTerms = scalerTerms.array().max(zeroMatrix.array());
+
+    // initialize and calculate intermediary result productTerms
+    Eigen::Matrix<double, Eigen::Dynamic, 1> productTerms =
+        2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+
+    // calculate bendingForce
+    bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
+  }
 
   return bendingPressure.raw();
 
