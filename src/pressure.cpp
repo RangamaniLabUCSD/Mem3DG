@@ -180,9 +180,15 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   // normal curvature of the dual edges, t
   EigenVectorX1D normalCurv_integrated =
       vpg->hodge1Inverse * vpg->edgeDihedralAngles.raw();
+
+  // zeros out the nonpositive normal curvature to compensate the fact that d0
+  // is ill-defined in low resolution
+  EigenVectorX1D zeroMatrix;
+  zeroMatrix.resize(mesh->nEdges(), 1);
+  zeroMatrix.setZero();
   lineCapillaryForce.raw() =
       -D * vpg->hodge1Inverse *
-      (lineTension.raw().array() * normalCurv_integrated.array()).matrix();
+      (lineTension.raw().array() * normalCurv_integrated.array().max(zeroMatrix.array())).matrix();
 
   return lineCapillaryForce.raw();
 }
