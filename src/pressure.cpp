@@ -62,10 +62,7 @@ EigenVectorX1D System::computeBendingPressure() {
     // initialize and calculate intermediary result scalerTerms
     EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
                                  rowwiseProduct(H.raw(), H0.raw()) - K.raw();
-    // EigenVectorX1D zeroMatrix;
-    // zeroMatrix.resize(n_vertices, 1);
-    // zeroMatrix.setZero();
-    // scalerTerms = scalerTerms.array().max(zeroMatrix.array());
+    // scalerTerms = scalerTerms.array().max(0);
 
     // initialize and calculate intermediary result productTerms
     EigenVectorX1D productTerms =
@@ -180,9 +177,12 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   // normal curvature of the dual edges, t
   EigenVectorX1D normalCurv_integrated =
       vpg->hodge1Inverse * vpg->edgeDihedralAngles.raw();
+
+  // zeros out the nonpositive normal curvature to compensate the fact that d0
+  // is ill-defined in low resolution
   lineCapillaryForce.raw() =
       -D * vpg->hodge1Inverse *
-      (lineTension.raw().array() * normalCurv_integrated.array()).matrix();
+      (lineTension.raw().array() * normalCurv_integrated.array().max(0)).matrix();
 
   return lineCapillaryForce.raw();
 }
