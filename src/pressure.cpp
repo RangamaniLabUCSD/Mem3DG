@@ -39,38 +39,41 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 EigenVectorX1D System::computeBendingPressure() {
-  /// A. non-optimized version
-  if (isLocalCurvature) {
-    auto subdomain = [&](double H0_temp) {
-      EigenVectorX1D lap_H = M_inv * L * (H.raw().array() - H0_temp).matrix();
-      EigenVectorX1D scalerTerms =
-          rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
-      EigenVectorX1D productTerms =
-          2.0 *
-          rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
-      bendingPressure.raw().array() +=
-          (H0.raw().array() == H0_temp).cast<double>().array() *
-          (-P.Kb * (productTerms + lap_H)).array();
-    };
-    subdomain(P.H0);
-    subdomain(0);
-  } else {
-    // compute the coated domain
-    // calculate the Laplacian of mean curvature H
-    EigenVectorX1D lap_H = M_inv * L * (H.raw() - H0.raw());
+  // A. non-optimized version
 
-    // initialize and calculate intermediary result scalerTerms
-    EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
-                                 rowwiseProduct(H.raw(), H0.raw()) - K.raw();
-    // scalerTerms = scalerTerms.array().max(0);
+  // Split calculation for two domain
+  // if (isLocalCurvature) {
+  //   bendingPressure.raw().setZero();
+  //   auto subdomain = [&](double H0_temp) {
+  //     EigenVectorX1D lap_H = M_inv * L * (H.raw().array() -
+  //     H0_temp).matrix(); EigenVectorX1D scalerTerms =
+  //         rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
+  //     EigenVectorX1D productTerms =
+  //         2.0 *
+  //         rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
+  //     bendingPressure.raw().array() +=
+  //         (H0.raw().array() == H0_temp).cast<double>().array() *
+  //         (-P.Kb * (productTerms + lap_H)).array();
+  //   };
+  //   subdomain(P.H0);
+  //   subdomain(0);
+  // } else {}
 
-    // initialize and calculate intermediary result productTerms
-    EigenVectorX1D productTerms =
-        2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+  // compute the coated domain
+  // calculate the Laplacian of mean curvature H
+  EigenVectorX1D lap_H = M_inv * L * (H.raw() - H0.raw());
 
-    // calculate bendingForce
-    bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
-  }
+  // initialize and calculate intermediary result scalerTerms
+  EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
+                               rowwiseProduct(H.raw(), H0.raw()) - K.raw();
+  // scalerTerms = scalerTerms.array().max(0);
+
+  // initialize and calculate intermediary result productTerms
+  EigenVectorX1D productTerms =
+      2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+
+  // calculate bendingForce
+  bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
 
   return bendingPressure.raw();
 
@@ -182,7 +185,8 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   // is ill-defined in low resolution
   lineCapillaryForce.raw() =
       -D * vpg->hodge1Inverse *
-      (lineTension.raw().array() * normalCurv_integrated.array().max(0)).matrix();
+      (lineTension.raw().array() * normalCurv_integrated.array().max(0))
+          .matrix();
 
   return lineCapillaryForce.raw();
 }

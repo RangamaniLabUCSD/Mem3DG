@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include <stdexcept>
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
 #endif
@@ -181,6 +182,10 @@ System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
 void System::checkParameters() {
   // check validity of parameters / options
   if (mesh->hasBoundary()) {
+    if (P.Ksl != 0 || P.Kse != 0) {
+      throw std::logic_error("For open boundary simulation, local mesh "
+                             "regularization Ksl and Kse cannot be applied!");
+    }
     if (isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
       throw std::logic_error(
           "For open boundary simulation, isReducedVolume has to be false, Vt "
@@ -335,7 +340,8 @@ void System::updateVertexPositions() {
   // initialize/update spontaneous curvature (local
   // spontaneous curvature)
   if (isLocalCurvature) {
-    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(), P.r_H0);
+    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+                         P.r_H0);
     H0.raw() *= P.H0;
   }
 

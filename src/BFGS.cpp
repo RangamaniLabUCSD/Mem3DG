@@ -64,7 +64,11 @@ bool BFGS::integrate() {
 
   // return if optimization is sucessful
   if (!SUCCESS) {
-    markFileName("_failed");
+    if (tol == 0) {
+      markFileName("_most");
+    } else {
+      markFileName("_failed");
+    }
   }
 
   // stop the timer and report time spent
