@@ -348,11 +348,11 @@ void System::updateVertexPositions() {
   // initialize/update line tension (on dual edge)
   if (P.eta != 0) {
     // scale the dH0 such that it is integrated over the edge
-    // this is under the case where the resolution is low,
-    // WIP
-
-    // The unit of line tension is in force (e.g. XXNewton)
-    lineTension.raw() = P.eta * vpg->hodge1 * (vpg->d0 * H0.raw()).cwiseAbs();
+    // this is under the case where the resolution is low. This is where the
+    // extra vpg->edgeLength comes from!!!
+    // WIP The unit of line tension is in force*length (e.g. XXNewton)
+    lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
+                        (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
 
   // initialize/update mean curvature
@@ -441,6 +441,15 @@ void System::visualize() {
       ->addEdgeScalarQuantity("line_tension", lineTension.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", vpg->edgeDihedralAngles.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity(
+          "edge_line_capillary",
+          vpg->hodge1Inverse * ((vpg->hodge1 * (lineTension.raw().array() /
+                                                vpg->edgeLengths.raw().array())
+                                                   .matrix())
+                                    .array() *
+                                vpg->edgeDihedralAngles.raw().array().max(0))
+                                   .matrix());
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {

@@ -333,7 +333,7 @@ ellipticDistribution(gcs::VertexPositionGeometry &vpg,
       radius = axes[0] * axes[1] /
                sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
                     axes[1] * axes[1]);
-      distribution[i] = (bool)distance[i] < radius;
+      distribution[i] = (double)(distance[i] < radius);
     }
   }
 }
