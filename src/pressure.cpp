@@ -164,28 +164,15 @@ EigenVectorX1D System::computeInsidePressure() {
 }
 
 EigenVectorX1D System::computeLineCapillaryForce() {
-  // Instructional version:
-  // // normal curvature of the dual edges
-  // EigenVectorX1D normalCurv =
-  //     (vpg->edgeDihedralAngles.raw().array() /
-  //      (vpg->hodge1 * vpg->edgeLengths.raw()).array())
-  //         .matrix();
-  // lineCapillaryForce.raw() = -D * vpg->hodge1Inverse *
-  //                            (vpg->edgeLengths.raw().array() *
-  //                             lineTension.raw().array() * normalCurv.array())
-  //                                .matrix();
-
-  // optimized version (this version is a bit confusing, Instructional version
-  // on the top is preferred for understanding):
-  // normal curvature of the dual edges, t
-  EigenVectorX1D normalCurv_integrated =
-      vpg->hodge1Inverse * vpg->edgeDihedralAngles.raw();
-
   // zeros out the nonpositive normal curvature to compensate the fact that d0
   // is ill-defined in low resolution
+  auto normalCurvature = vpg->edgeDihedralAngles.raw();
   lineCapillaryForce.raw() =
       -D * vpg->hodge1Inverse *
-      (lineTension.raw().array() * normalCurv_integrated.array().max(0))
+      ((vpg->hodge1 *
+        (lineTension.raw().array() / vpg->edgeLengths.raw().array()).matrix())
+           .array() *
+       normalCurvature.array().max(0))
           .matrix();
 
   return lineCapillaryForce.raw();
