@@ -101,12 +101,12 @@ TrajFile::EigenVector TrajFile::getCoords(const std::size_t idx) const {
   return vec;
 }
 
-// topology
+// topology frame
 Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
 TrajFile::getTopoFrame(const std::size_t idx) const {
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> vec(
       npolygons_dim.getSize(), POLYGON_ORDER);
-  topo_frame_var.getVar({0, 0}, {npolygons_dim.getSize(), POLYGON_ORDER}, vec.data());
+  topo_frame_var.getVar({idx, 0, 0}, {1, npolygons_dim.getSize(), POLYGON_ORDER}, vec.data());
   return vec;
 }
 

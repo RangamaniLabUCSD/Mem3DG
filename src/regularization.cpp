@@ -160,7 +160,6 @@ void System::vertexShift() {
 }
 
 void System::edgeFlip() {
-  isFlip.fill(false);
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
     if (mask[he.vertex()] && mask[he.twin().vertex()]) {
