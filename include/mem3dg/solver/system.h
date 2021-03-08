@@ -174,6 +174,8 @@ public:
   const bool isReducedVolume;
   /// Whether calculate geodesic distance
   const bool isLocalCurvature;
+  /// Whether edge flip
+  const bool isEdgeFlip = true;
 
   /// Target area per face
   gcs::FaceData<double> &targetFaceAreas;
@@ -347,19 +349,20 @@ public:
          bool isVertexShift_)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), richData(*mesh), P(p), time(0),
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), bendingPressure(*mesh, 0),
+        capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
+        lineCapillaryForce(*mesh, 0), externalPressure(*mesh, 0),
+        insidePressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
+        stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
+        proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0),
         isReducedVolume(isReducedVolume_), isProtein(isProtein_),
         isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
-        M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian),
-        bendingPressure(*mesh, 0), insidePressure(*mesh, 0), D(),
-        capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
-        lineCapillaryForce(*mesh, 0), chemicalPotential(*mesh, 0),
-        externalPressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
         targetLcr(*mesh), targetEdgeLengths(refVpg->edgeLengths),
-        targetFaceAreas(refVpg->faceAreas), stochasticForce(*mesh, {0, 0, 0}),
-        dampingForce(*mesh, {0, 0, 0}), proteinDensity(*mesh, 0),
-        vel(*mesh, {0, 0, 0}), isFlip(*mesh, false), isSplit(*mesh, false),
-        isCollapse(*mesh, false), E({0, 0, 0, 0, 0, 0, 0, 0, 0}),
-        heatSolver(*vpg) {
+        targetFaceAreas(refVpg->faceAreas), heatSolver(*vpg),
+        M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian), D(),
+        geodesicDistanceFromPtInd(*mesh, 0), pastPositions(*mesh, {0, 0, 0}),
+        vel(*mesh, {0, 0, 0}), H(*mesh), K(*mesh), H0(*mesh), mask(*mesh, true),
+        isFlip(*mesh, false), isSplit(*mesh, false), isCollapse(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -613,5 +616,9 @@ public:
    */
   gcs::EdgeData<double>
   computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const;
+  double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                 gcs::Edge &e) const;
+  double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                 gcs::Edge &&e) const;
 };
 } // namespace mem3dg

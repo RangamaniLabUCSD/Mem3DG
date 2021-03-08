@@ -232,9 +232,10 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
     idx = 0;
   }
 
-  EigenVectorX3D coords;
-  coords = fd.getCoords(idx);
-  mesh->updateVertexPositions(coords);
+  EigenTopVec topo_frame = fd.getTopoFrame(idx);
+  EigenVectorX3D coords = fd.getCoords(idx);
+  // mesh->updateVertexPositions(coords);
+  mesh = polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
 
   if (options.ref_coord) {
     EigenVectorX3D refcoords = fd.getRefcoordinate();
