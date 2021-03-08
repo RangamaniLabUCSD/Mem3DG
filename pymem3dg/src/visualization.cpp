@@ -236,6 +236,8 @@ void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
   EigenVectorX3D coords = fd.getCoords(idx);
   // mesh->updateVertexPositions(coords);
   mesh = polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
+  mesh->setSmoothShade(true);
+  mesh->setEnabled(true);
 
   if (options.ref_coord) {
     EigenVectorX3D refcoords = fd.getRefcoordinate();
@@ -428,8 +430,8 @@ int animation_nc(std::string &filename, float transparency, float angle,
 
   // Initialize surface mesh
   auto mesh = registerSurfaceMesh(fd, options);
-  mesh->setEdgeWidth(edgeWidth);
-  mesh->setTransparency(transparency);
+  // mesh->setEdgeWidth(edgeWidth);
+  // mesh->setTransparency(transparency);
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -446,8 +448,8 @@ int animation_nc(std::string &filename, float transparency, float angle,
     ImGui::SliderInt("slow-mo", &waitTime, 0,
                      maxWaitTime); // set a float variable
 
-    // Execute transparency slider
-    mesh->setTransparency(transparency);
+    // // Execute transparency slider
+    // mesh->setTransparency(transparency);
 
     // Define buttons
     if (ImGui::Button("Play/Pause")) {
