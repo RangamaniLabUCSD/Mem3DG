@@ -88,6 +88,8 @@ static const std::string TIME_VAR = "time";
 static const std::string COORD_VAR = "coordinates";
 /// Name of the mesh topology data
 static const std::string TOPO_VAR = "topology";
+/// Name of the mesh topology data
+static const std::string TOPO_FRAME_VAR = "topologyframe";
 /// Name of the mesh corner angle data
 static const std::string ANGLE_VAR = "angle";
 /// Name of the refMesh coordinates data
@@ -195,6 +197,7 @@ public:
     angle_var = fd->getVar(ANGLE_VAR);
     time_var = fd->getVar(TIME_VAR);
     coord_var = fd->getVar(COORD_VAR);
+    topo_frame_var = fd->getVar(TOPO_FRAME_VAR);
     vel_var = fd->getVar(VEL_VAR);
     externpress_var = fd->getVar(EXTERNPRESS_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
@@ -270,6 +273,10 @@ public:
     coord_var = fd->addVar(COORD_VAR, netCDF::ncDouble,
                            {frame_dim, nvertices_dim, spatial_dim});
     coord_var.putAtt(UNITS, LEN_UNITS);
+
+    topo_frame_var = fd->addVar(TOPO_FRAME_VAR, netCDF::ncUint,
+                                {frame_dim, npolygons_dim, polygon_order_dim});
+    topo_frame_var.putAtt(UNITS, LEN_UNITS);
 
     angle_var =
         fd->addVar(ANGLE_VAR, netCDF::ncDouble, {frame_dim, ncorners_dim});
@@ -353,8 +360,7 @@ public:
         fd->addVar(L1PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
     l1pressnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    l1linenorm_var =
-        fd->addVar(L1LINENORM_VAR, netCDF::ncDouble, {frame_dim});
+    l1linenorm_var = fd->addVar(L1LINENORM_VAR, netCDF::ncDouble, {frame_dim});
     l1linenorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     volume_var = fd->addVar(VOLUME_VAR, netCDF::ncDouble, {frame_dim});
@@ -468,9 +474,16 @@ public:
 
   void writeCoords(const std::size_t idx, const EigenVector &data);
 
+  void writeTopoFrame(const std::size_t idx,
+                      const Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3,
+                                          Eigen::RowMajor> &data);
+
   double getTime(const std::size_t idx) const;
 
   EigenVector getCoords(const std::size_t idx) const;
+
+  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
+  getTopoFrame(const std::size_t idx) const;
 
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
   getTopology() const;
@@ -682,6 +695,7 @@ private:
   nc::NcVar refcoord;
   nc::NcVar time_var;
   nc::NcVar coord_var;
+  nc::NcVar topo_frame_var;
   nc::NcVar angle_var;
   nc::NcVar vel_var;
   nc::NcVar proteinden_var;

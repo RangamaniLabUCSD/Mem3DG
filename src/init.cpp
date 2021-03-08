@@ -181,11 +181,18 @@ System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
 
 void System::checkParameters() {
   // check validity of parameters / options
+
+  if (P.Kst != 0 && isEdgeFlip) {
+    throw std::logic_error("For topology changing simulation, conformal mesh "
+                           "regularization Kst cannot be applied!");
+  }
+
   if (mesh->hasBoundary()) {
-    if (P.Ksl != 0 || P.Kse != 0) {
-      throw std::logic_error("For open boundary simulation, local mesh "
-                             "regularization Ksl and Kse cannot be applied!");
-    }
+    // if (P.Ksl != 0 || P.Kse != 0) {
+    //   throw std::logic_error("For open boundary simulation, local mesh "
+    //                          "regularization Ksl and Kse cannot be
+    //                          applied!");
+    // }
     if (isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
       throw std::logic_error(
           "For open boundary simulation, isReducedVolume has to be false, Vt "
@@ -306,6 +313,14 @@ void System::initConstants() {
   H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
 }
 
+template <typename T> inline T clamp(T val, T low, T high) {
+  if (val > high)
+    return high;
+  if (val < low)
+    return low;
+  return val;
+}
+
 void System::updateVertexPositions() {
 
   // regularization
@@ -313,6 +328,27 @@ void System::updateVertexPositions() {
   gc::EigenMap<double, 3>(regularizationForce) = rowwiseScaling(
       mask.raw().cast<double>(), gc::EigenMap<double, 3>(regularizationForce));
   vpg->inputVertexPositions.raw() += regularizationForce.raw();
+
+  for (gcs::Corner c : mesh->corners()) {
+
+    // WARNING: Logic duplicated between cached and immediate version
+    gcs::Halfedge he = c.halfedge();
+    gc::Vector3 pA = vpg->vertexPositions[he.vertex()];
+    he = he.next();
+    gc::Vector3 pB = vpg->vertexPositions[he.vertex()];
+    he = he.next();
+    gc::Vector3 pC = vpg->vertexPositions[he.vertex()];
+
+    GC_SAFETY_ASSERT(he.next() == c.halfedge(), "faces must be triangular");
+
+    double q = dot(unit(pB - pA), unit(pC - pA));
+    q = clamp(q, -1.0, 1.0);
+    double angle = std::acos(q);
+
+    vpg->cornerAngles[c] = angle;
+  }
+
+  edgeFlip();
 
   vpg->refreshQuantities();
 

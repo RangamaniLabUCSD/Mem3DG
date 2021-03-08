@@ -316,6 +316,7 @@ void Integrator::saveNetcdfData() {
 
   // write geometry
   fd.writeCoords(frame, EigenMap<double, 3>(f.vpg->inputVertexPositions));
+  fd.writeTopoFrame(frame, getFaceVertexMatrix(*f.mesh));
   fd.writeVolume(frame, f.volume);
   fd.writeSurfArea(frame, f.surfaceArea);
   fd.writeMeanCurvature(frame, f.H.raw());
