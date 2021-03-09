@@ -187,6 +187,11 @@ void System::checkParameters() {
                            "regularization Kst cannot be applied!");
   }
 
+  if (P.Kst != 0 && isGrowMesh) {
+    throw std::logic_error("For topology changing simulation, conformal mesh "
+                           "regularization Kst cannot be applied!");
+  }
+
   if (mesh->hasBoundary()) {
     // if (P.Ksl != 0 || P.Kse != 0) {
     //   throw std::logic_error("For open boundary simulation, local mesh "
@@ -295,10 +300,11 @@ void System::initConstants() {
     boundaryMask(*mesh, mask.raw());
   }
 
-  // Initialize the constant target face/surface areas
+  // Initialize the constant target surface (total mesh) area
   targetSurfaceArea = targetFaceAreas.raw().sum();
 
-  targetFaceArea = targetFaceAreas.raw().sum() / mesh->nFaces();
+  // Initialize the constant target mean face area
+  meanTargetFaceArea = targetFaceAreas.raw().sum() / mesh->nFaces();
 
   // Initialize the target constant cross length ration
   targetLcr = computeLengthCrossRatio(*refVpg);
@@ -315,63 +321,48 @@ void System::initConstants() {
   H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
 }
 
-template <typename T> inline T clamp(T val, T low, T high) {
-  if (val > high)
-    return high;
-  if (val < low)
-    return low;
-  return val;
-}
-
 void System::updateVertexPositions() {
 
+  // split edge and collapse edge
   growMesh();
+
+  // linear edge flip for non-Delauney triangles
   edgeFlip();
+
   // regularization
   computeRegularizationForce();
-  gc::EigenMap<double, 3>(regularizationForce) = rowwiseScaling(
-      mask.raw().cast<double>(), gc::EigenMap<double, 3>(regularizationForce));
   vpg->inputVertexPositions.raw() += regularizationForce.raw();
 
-  for (gcs::Corner c : mesh->corners()) {
-
-    // WARNING: Logic duplicated between cached and immediate version
-    gcs::Halfedge he = c.halfedge();
-    gc::Vector3 pA = vpg->vertexPositions[he.vertex()];
-    he = he.next();
-    gc::Vector3 pB = vpg->vertexPositions[he.vertex()];
-    he = he.next();
-    gc::Vector3 pC = vpg->vertexPositions[he.vertex()];
-
-    GC_SAFETY_ASSERT(he.next() == c.halfedge(), "faces must be triangular");
-
-    double q = dot(unit(pB - pA), unit(pC - pA));
-    q = clamp(q, -1.0, 1.0);
-    double angle = std::acos(q);
-
-    vpg->cornerAngles[c] = angle;
-  }
-
+  // refresh cached quantities after regularization
   vpg->refreshQuantities();
-
-  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
 
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
   auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
+
+  // recompute "the vertex" after topological changes
+  if (isGrowMesh) {
+    closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
+  }
 
   // initialize/update Laplacian matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // initialize/update distance from the point specified
   if (isLocalCurvature) {
-    // geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
-    geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
+    if (isEdgeFlip || isGrowMesh) {
+      geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
+    } else {
+      geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+    }
   }
 
-  D = vpg->d0.transpose();
-  for (int k = 0; k < D.outerSize(); ++k) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-      it.valueRef() = 0.5;
+  // Update the distribution matrix when topology changes
+  if (isEdgeFlip || isGrowMesh) {
+    D = vpg->d0.transpose();
+    for (int k = 0; k < D.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+        it.valueRef() = 0.5;
+      }
     }
   }
 
@@ -425,8 +416,6 @@ void System::updateVertexPositions() {
   // initialize/update the vertex position of the last
   // iteration
   pastPositions = vpg->inputVertexPositions;
-
-  mesh->compress();
 }
 
 void System::visualize() {

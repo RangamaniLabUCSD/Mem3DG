@@ -276,7 +276,6 @@ public:
 
     topo_frame_var = fd->addVar(TOPO_FRAME_VAR, netCDF::ncUint,
                                 {frame_dim, npolygons_dim, polygon_order_dim});
-    topo_frame_var.putAtt(UNITS, LEN_UNITS);
 
     angle_var =
         fd->addVar(ANGLE_VAR, netCDF::ncDouble, {frame_dim, ncorners_dim});
