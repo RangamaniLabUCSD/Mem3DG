@@ -93,7 +93,7 @@ void System::computeRegularizationForce() {
           gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
           gc::Vector3 localAreaGradient =
               -gc::cross(base_vec, vpg->faceNormals[he.face()]);
-          if (isEdgeFlip) {
+          if (isEdgeFlip || isGrowMesh) {
             regularizationForce[v] +=
                 -P.Ksl * localAreaGradient * vpg->faceAreas[base_he.face()];
           } else {
@@ -106,7 +106,7 @@ void System::computeRegularizationForce() {
         // local edge regularization
         if (P.Kse != 0) {
           gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-          if (isEdgeFlip) {
+          if (isEdgeFlip || isGrowMesh) {
             regularizationForce[v] +=
                 -P.Kse * edgeGradient * vpg->edgeLengths[he.edge()];
           } else {
@@ -130,12 +130,17 @@ void System::computeRegularizationForce() {
     }
   }
 
-  // remove the normal component
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  gc::EigenMap<double, 3>(regularizationForce) -= rowwiseScaling(
-      rowwiseDotProduct(gc::EigenMap<double, 3>(regularizationForce),
-                        vertexAngleNormal_e),
+  auto regularizationForce_e = gc::EigenMap<double, 3>(regularizationForce);
+
+  // remove the normal component
+  regularizationForce_e -= rowwiseScaling(
+      rowwiseDotProduct(regularizationForce_e, vertexAngleNormal_e),
       vertexAngleNormal_e);
+
+  // remove the masked components
+  regularizationForce_e =
+      rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
 }
 
 void System::vertexShift() {
@@ -159,7 +164,39 @@ void System::vertexShift() {
   }
 }
 
+template <typename T> inline T clamp(T val, T low, T high) {
+  if (val > high)
+    return high;
+  if (val < low)
+    return low;
+  return val;
+}
+
 void System::edgeFlip() {
+
+  // WIP: recompute corner angle explicitly since refreshQuantities is too
+  // expensive
+  // linear edge flip for non-Delauney triangles
+  // might not be neccessary because it is immediate quantities.
+  for (gcs::Corner c : mesh->corners()) {
+    // WARNING: Logic duplicated between cached and immediate version
+    gcs::Halfedge he = c.halfedge();
+    gc::Vector3 pA = vpg->vertexPositions[he.vertex()];
+    he = he.next();
+    gc::Vector3 pB = vpg->vertexPositions[he.vertex()];
+    he = he.next();
+    gc::Vector3 pC = vpg->vertexPositions[he.vertex()];
+
+    GC_SAFETY_ASSERT(he.next() == c.halfedge(), "faces must be triangular");
+
+    double q = dot(unit(pB - pA), unit(pC - pA));
+    q = clamp(q, -1.0, 1.0);
+    double angle = std::acos(q);
+
+    vpg->cornerAngles[c] = angle;
+  }
+
+  // flip edge if not delauney
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
     if (mask[he.vertex()] && mask[he.twin().vertex()]) {
@@ -176,11 +213,13 @@ void System::edgeFlip() {
 }
 
 void System::growMesh() {
+
+  // expand the mesh when area is too large
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
     if (mask[he.vertex()] && mask[he.twin().vertex()]) {
       if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
-          (4 * targetFaceArea)) {
+          (4 * meanTargetFaceArea)) {
         gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
         vpg->inputVertexPositions[newhe.vertex()] =
             (vpg->inputVertexPositions
@@ -191,18 +230,20 @@ void System::growMesh() {
       }
     }
   }
+
+  // shrink the mesh is vertex is too close
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
     if (mask[he.vertex()] && mask[he.twin().vertex()]) {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) <
           constants::PI / 3) {
-        // isFlip[he.edge()] = true;
         mesh->collapseEdgeTriangular(he.edge());
         // std::cout << "collapse!!!" << std::endl;
       }
     }
   }
+
   mesh->compress();
 }
 

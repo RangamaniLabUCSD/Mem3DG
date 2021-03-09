@@ -176,10 +176,13 @@ public:
   const bool isLocalCurvature;
   /// Whether edge flip
   const bool isEdgeFlip = true;
+  /// Whether grow mesh
+  const bool isGrowMesh = true;
 
   /// Target area per face
   gcs::FaceData<double> &targetFaceAreas;
-  double targetFaceArea;
+  /// Mean target area per face
+  double meanTargetFaceArea;
   /// Target total face area
   double targetSurfaceArea;
   /// Maximal volume
@@ -384,8 +387,6 @@ public:
 
     // Check confliciting parameters and options
     checkParameters();
-
-    vpg->refreshQuantities();
 
     // Initialize reference values
     initConstants();
