@@ -298,6 +298,8 @@ void System::initConstants() {
   // Initialize the constant target face/surface areas
   targetSurfaceArea = targetFaceAreas.raw().sum();
 
+  targetFaceArea = targetFaceAreas.raw().sum() / mesh->nFaces();
+
   // Initialize the target constant cross length ration
   targetLcr = computeLengthCrossRatio(*refVpg);
 
@@ -323,6 +325,8 @@ template <typename T> inline T clamp(T val, T low, T high) {
 
 void System::updateVertexPositions() {
 
+  growMesh();
+  edgeFlip();
   // regularization
   computeRegularizationForce();
   gc::EigenMap<double, 3>(regularizationForce) = rowwiseScaling(
@@ -348,9 +352,9 @@ void System::updateVertexPositions() {
     vpg->cornerAngles[c] = angle;
   }
 
-  edgeFlip();
-
   vpg->refreshQuantities();
+
+  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
 
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
   auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
@@ -360,7 +364,15 @@ void System::updateVertexPositions() {
 
   // initialize/update distance from the point specified
   if (isLocalCurvature) {
-    geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+    // geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+    geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
+  }
+
+  D = vpg->d0.transpose();
+  for (int k = 0; k < D.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+      it.valueRef() = 0.5;
+    }
   }
 
   // initialize/update spontaneous curvature (protein
@@ -413,6 +425,8 @@ void System::updateVertexPositions() {
   // initialize/update the vertex position of the last
   // iteration
   pastPositions = vpg->inputVertexPositions;
+
+  mesh->compress();
 }
 
 void System::visualize() {
@@ -486,6 +500,8 @@ void System::visualize() {
                                     .array() *
                                 vpg->edgeDihedralAngles.raw().array().max(0))
                                    .matrix());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity("isFlip", isFlip.raw().cast<double>());
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
