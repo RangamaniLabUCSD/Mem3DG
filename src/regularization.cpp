@@ -166,15 +166,44 @@ void System::edgeFlip() {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) >
           constants::PI) {
-        isFlip[he.edge()] = true;
+        // isFlip[he.edge()] = true;
         auto success = mesh->flip(he.edge());
-        std::cout << "flipped!!!" << std::endl;
+        // std::cout << "flipped!!!" << std::endl;
       }
     }
   }
   mesh->compress();
 }
 
-void System::growMesh() {}
+void System::growMesh() {
+  for (gcs::Edge e : mesh->edges()) {
+    gcs::Halfedge he = e.halfedge();
+    if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+      if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
+          (4 * targetFaceArea)) {
+        gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
+        vpg->inputVertexPositions[newhe.vertex()] =
+            (vpg->inputVertexPositions
+                 [newhe.next().next().twin().next().next().vertex()] +
+             vpg->inputVertexPositions[newhe.next().vertex()]) /
+            2;
+        // std::cout << "grow!!!" << std::endl;
+      }
+    }
+  }
+  for (gcs::Edge e : mesh->edges()) {
+    gcs::Halfedge he = e.halfedge();
+    if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+      if ((vpg->cornerAngle(he.next().next().corner()) +
+           vpg->cornerAngle(he.twin().next().next().corner())) <
+          constants::PI / 3) {
+        // isFlip[he.edge()] = true;
+        mesh->collapseEdgeTriangular(he.edge());
+        // std::cout << "collapse!!!" << std::endl;
+      }
+    }
+  }
+  mesh->compress();
+}
 
 } // namespace mem3dg

@@ -179,6 +179,7 @@ public:
 
   /// Target area per face
   gcs::FaceData<double> &targetFaceAreas;
+  double targetFaceArea;
   /// Target total face area
   double targetSurfaceArea;
   /// Maximal volume
@@ -383,6 +384,8 @@ public:
 
     // Check confliciting parameters and options
     checkParameters();
+
+    vpg->refreshQuantities();
 
     // Initialize reference values
     initConstants();

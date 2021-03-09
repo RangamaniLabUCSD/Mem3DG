@@ -174,7 +174,6 @@ EigenVectorX1D System::computeLineCapillaryForce() {
            .array() *
        normalCurvature.array().max(0))
           .matrix();
-
   return lineCapillaryForce.raw();
 }
 
