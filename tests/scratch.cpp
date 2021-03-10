@@ -43,9 +43,13 @@ int main() {
   mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
                        Kv,   eta,   epsilon, Bc,  gamma, Vt,     Pam,
                        temp, sigma, pt,      Kf,  conc,  height, radius};
+
+  mem3dg::Options o{isVertexShift,    isProtein, isReducedVolume,
+                    isLocalCurvature, false,     false};
+
   mem3dg::System f(std::move(ptrMesh), std::move(ptrVpg), std::move(ptrRefVpg),
-                   p, isReducedVolume, isProtein, isLocalCurvature,
-                   isVertexShift);
+                   p, o);
+
   std::cout << "Finished!" << std::endl;
 
   std::cout << "Solving the system ..." << std::endl;

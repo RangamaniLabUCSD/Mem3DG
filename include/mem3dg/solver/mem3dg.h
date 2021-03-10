@@ -37,11 +37,11 @@ int viewer_ply(std::string fileName, const bool mean_curvature = 0,
 std::unique_ptr<mem3dg::System> system_ply(
     const size_t verbosity, std::string inputMesh, std::string refMesh,
     size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, double Kb, double H0, std::vector<double> r_H0,
-    double Kse, double Kst, double Ksl, double Ksg, double Kv, double eta,
-    double epsilon, double Bc, double Vt, double cam, double gamma, double temp,
-    std::vector<double> pt, double Kf, double conc, double height,
-    double radius, double h, double T, double eps, double tSave,
+    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double H0,
+    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
+    double Kv, double eta, double epsilon, double Bc, double Vt, double cam,
+    double gamma, double temp, std::vector<double> pt, double Kf, double conc,
+    double height, double radius, double h, double T, double eps, double tSave,
     std::string outputDir, std::string integrationMethod, bool isBacktrack,
     double rho, double c1, double ctol, bool isAugmentedLagrangian);
 
@@ -52,15 +52,15 @@ std::unique_ptr<mem3dg::System> system_ply(
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
-               double Kb, double H0, std::vector<double> r_H0, double Kse,
-               double Kst, double Ksl, double Ksg, double Kv, double eta,
-               double epsilon, double Bc, double Vt, double cam, double gamma,
-               double temp, std::vector<double> pt, double Kf, double conc,
-               double height, double radius, double h, double T, double eps,
-               double tSave, std::string outputDir,
-               std::string integrationMethod, bool isBacktrack, double rho,
-               double c1, double ctol, bool isAugmentedLagrangian,
-               bool isAdaptiveStep);
+               bool isEdgeFlip, bool isGrowMesh, double Kb, double H0,
+               std::vector<double> r_H0, double Kse, double Kst, double Ksl,
+               double Ksg, double Kv, double eta, double epsilon, double Bc,
+               double Vt, double cam, double gamma, double temp,
+               std::vector<double> pt, double Kf, double conc, double height,
+               double radius, double h, double T, double eps, double tSave,
+               std::string outputDir, std::string integrationMethod,
+               bool isBacktrack, double rho, double c1, double ctol,
+               bool isAugmentedLagrangian, bool isAdaptiveStep);
 
 /**
  * @brief Run forward sweep simulation starting with .ply
@@ -69,17 +69,17 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
  */
 int forwardsweep_ply(std::string inputMesh, std::string refMesh, size_t nSub,
                      bool isReducedVolume, bool isProtein,
-                     bool isLocalCurvature, bool isVertexShift, double Kb,
-                     std::vector<double> H0, std::vector<double> r_H0,
-                     double Kse, double Kst, double Ksl, double Ksg, double Kv,
-                     double eta, double epsilon, double Bc,
-                     std::vector<double> Vt, std::vector<double> cam,
-                     double gamma, double temp, std::vector<double> pt,
-                     double Kf, double conc, double height, double radius,
-                     double h, double T, double eps, double tSave,
-                     std::string outputDir, bool isBacktrack, double rho,
-                     double c1, double ctol, bool isAugmentedLagrangian,
-                     bool isAdaptiveStep);
+                     bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
+                     bool isGrowMesh, double Kb, std::vector<double> H0,
+                     std::vector<double> r_H0, double Kse, double Kst,
+                     double Ksl, double Ksg, double Kv, double eta,
+                     double epsilon, double Bc, std::vector<double> Vt,
+                     std::vector<double> cam, double gamma, double temp,
+                     std::vector<double> pt, double Kf, double conc,
+                     double height, double radius, double h, double T,
+                     double eps, double tSave, std::string outputDir,
+                     bool isBacktrack, double rho, double c1, double ctol,
+                     bool isAugmentedLagrangian, bool isAdaptiveStep);
 
 #ifdef MEM3DG_WITH_NETCDF
 /**
@@ -116,15 +116,16 @@ int animation_nc(std::string &filename, float transparency = 1, float angle = 0,
  */
 int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
-              bool isLocalCurvature, bool isVertexShift, double Kb, double H0,
-              std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-              double Ksg, double Kv, double eta, double epsilon, double Bc,
-              double Vt, double cam, double gamma, double temp,
-              std::vector<double> pt, double Kf, double conc, double height,
-              double radius, double h, double T, double eps, double tSave,
-              std::string outputDir, std::string integrationMethod,
-              bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian, bool isAdaptiveStep);
+              bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
+              bool isGrowMesh, double Kb, double H0, std::vector<double> r_H0,
+              double Kse, double Kst, double Ksl, double Ksg, double Kv,
+              double eta, double epsilon, double Bc, double Vt, double cam,
+              double gamma, double temp, std::vector<double> pt, double Kf,
+              double conc, double height, double radius, double h, double T,
+              double eps, double tSave, std::string outputDir,
+              std::string integrationMethod, bool isBacktrack, double rho,
+              double c1, double ctol, bool isAugmentedLagrangian,
+              bool isAdaptiveStep);
 
 /**
  * @brief Run forward sweep simulation starting with netcdf
@@ -133,16 +134,16 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
  */
 int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
                     bool isContinue, bool isReducedVolume, bool isProtein,
-                    bool isLocalCurvature, bool isVertexShift, double Kb,
-                    std::vector<double> H0, std::vector<double> r_H0,
-                    double Kse, double Kst, double Ksl, double Ksg, double Kv,
-                    double eta, double epsilon, double Bc,
-                    std::vector<double> Vt, std::vector<double> cam,
-                    double gamma, double temp, std::vector<double> pt,
-                    double Kf, double conc, double height, double radius,
-                    double h, double T, double eps, double tSave,
-                    std::string outputDir, bool isBacktrack, double rho,
-                    double c1, double ctol, bool isAugmentedLagrangian,
-                    bool isAdaptiveStep);
+                    bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
+                    bool isGrowMesh, double Kb, std::vector<double> H0,
+                    std::vector<double> r_H0, double Kse, double Kst,
+                    double Ksl, double Ksg, double Kv, double eta,
+                    double epsilon, double Bc, std::vector<double> Vt,
+                    std::vector<double> cam, double gamma, double temp,
+                    std::vector<double> pt, double Kf, double conc,
+                    double height, double radius, double h, double T,
+                    double eps, double tSave, std::string outputDir,
+                    bool isBacktrack, double rho, double c1, double ctol,
+                    bool isAugmentedLagrangian, bool isAdaptiveStep);
 
 #endif

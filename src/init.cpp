@@ -182,12 +182,12 @@ System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
 void System::checkParameters() {
   // check validity of parameters / options
 
-  if (P.Kst != 0 && isEdgeFlip) {
+  if (P.Kst != 0 && O.isEdgeFlip) {
     throw std::logic_error("For topology changing simulation, conformal mesh "
                            "regularization Kst cannot be applied!");
   }
 
-  if (P.Kst != 0 && isGrowMesh) {
+  if (P.Kst != 0 && O.isGrowMesh) {
     throw std::logic_error("For topology changing simulation, conformal mesh "
                            "regularization Kst cannot be applied!");
   }
@@ -198,14 +198,14 @@ void System::checkParameters() {
     //                          "regularization Ksl and Kse cannot be
     //                          applied!");
     // }
-    if (isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
+    if (O.isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
       throw std::logic_error(
           "For open boundary simulation, isReducedVolume has to be false, Vt "
           "has to be -1, and cam has to be 0 ");
     }
   }
 
-  if (!isLocalCurvature) {
+  if (!O.isLocalCurvature) {
     if (P.eta != 0) {
       throw std::logic_error(
           "line tension eta has to be 0 for nonlocal curvature!");
@@ -215,7 +215,7 @@ void System::checkParameters() {
     }
   }
 
-  if (isReducedVolume) {
+  if (O.isReducedVolume) {
     if (P.cam != -1) {
       throw std::logic_error("ambient concentration cam has to be -1 for "
                              "reduced volume parametrized simulation!");
@@ -227,14 +227,14 @@ void System::checkParameters() {
     }
   }
 
-  if (!isProtein) {
+  if (!O.isProtein) {
     if (P.epsilon != -1 || P.Bc != -1) {
       throw std::logic_error("Binding constant Bc and binding energy "
                              "epsilon has to be both -1 for "
                              "protein binding disabled simulation!");
     }
   } else {
-    if (isLocalCurvature) {
+    if (O.isLocalCurvature) {
       throw std::logic_error("Local curvature should be deactivated with "
                              "protein binding activated!");
     }
@@ -323,11 +323,20 @@ void System::initConstants() {
 
 void System::updateVertexPositions() {
 
+  // vertex shift for regularization
+  if (O.isVertexShift) {
+    vertexShift();
+  }
+
   // split edge and collapse edge
-  growMesh();
+  if (O.isGrowMesh) {
+    growMesh();
+  }
 
   // linear edge flip for non-Delauney triangles
-  edgeFlip();
+  if (O.isEdgeFlip) {
+    edgeFlip();
+  }
 
   // regularization
   computeRegularizationForce();
@@ -336,11 +345,12 @@ void System::updateVertexPositions() {
   // refresh cached quantities after regularization
   vpg->refreshQuantities();
 
+  // EigenMap commonly used matrices
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
   auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
 
   // recompute "the vertex" after topological changes
-  if (isGrowMesh) {
+  if (O.isGrowMesh) {
     closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
   }
 
@@ -348,8 +358,8 @@ void System::updateVertexPositions() {
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
   // initialize/update distance from the point specified
-  if (isLocalCurvature) {
-    if (isEdgeFlip || isGrowMesh) {
+  if (O.isLocalCurvature) {
+    if (O.isGrowMesh) {
       geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
     } else {
       geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
@@ -357,7 +367,7 @@ void System::updateVertexPositions() {
   }
 
   // Update the distribution matrix when topology changes
-  if (isEdgeFlip || isGrowMesh) {
+  if (O.isEdgeFlip || O.isGrowMesh) {
     D = vpg->d0.transpose();
     for (int k = 0; k < D.outerSize(); ++k) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
@@ -368,7 +378,7 @@ void System::updateVertexPositions() {
 
   // initialize/update spontaneous curvature (protein
   // binding)
-  if (isProtein) {
+  if (O.isProtein) {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
     H0.raw() =
@@ -378,7 +388,7 @@ void System::updateVertexPositions() {
 
   // initialize/update spontaneous curvature (local
   // spontaneous curvature)
-  if (isLocalCurvature) {
+  if (O.isLocalCurvature) {
     ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
                          P.r_H0);
     H0.raw() *= P.H0;
@@ -489,8 +499,8 @@ void System::visualize() {
                                     .array() *
                                 vpg->edgeDihedralAngles.raw().array().max(0))
                                    .matrix());
-  polyscope::getSurfaceMesh("Membrane")
-      ->addEdgeScalarQuantity("isFlip", isFlip.raw().cast<double>());
+  // polyscope::getSurfaceMesh("Membrane")
+  //     ->addEdgeScalarQuantity("isFlip", isFlip.raw().cast<double>());
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {

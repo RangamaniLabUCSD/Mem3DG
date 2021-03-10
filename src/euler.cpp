@@ -112,7 +112,7 @@ void Euler::status() {
               ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
               : 0.0;
 
-  if (f.isReducedVolume) {
+  if (f.O.isReducedVolume) {
     // compute volume constraint error
     dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
               ? abs(f.volume / f.refVolume / f.P.Vt - 1)
@@ -160,13 +160,8 @@ void Euler::march() {
   }
 
   // time stepping on protein density
-  if (f.isProtein) {
+  if (f.O.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
-  }
-
-  // vertex shift for regularization
-  if (f.isVertexShift) {
-    f.vertexShift();
   }
 }
 } // namespace mem3dg

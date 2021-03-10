@@ -188,14 +188,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                             R"delim(
         The system
     )delim");
-  system.def(py::init<std::string, std::string, size_t, Parameters &, bool,
-                      bool, bool, bool>());
-  system.def(py::init<std::string, int, size_t, bool, Parameters &, bool, bool,
-                      bool, bool>());
+  system.def(
+      py::init<std::string, std::string, size_t, Parameters &, Options &>());
+  system.def(
+      py::init<std::string, int, size_t, bool, Parameters &, Options &>());
   system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t,
-                      Parameters &, bool, bool, bool, bool>());
+                      Parameters &, Options &>());
   system.def_readwrite("E", &System::E,
                        R"delim(
           get the Energy components struct
@@ -203,6 +203,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def_readwrite("P", &System::P,
                        R"delim(
           get the Parameters struct
+      )delim");
+  system.def_readonly("O", &System::O,
+                       R"delim(
+          get the Options struct
       )delim");
   system.def_readwrite("time", &System::time,
                        R"delim(
@@ -495,7 +499,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   /// Energy struct
   py::class_<Energy> energy(pymem3dg, "Energy", R"delim(
-        The parameters
+        The energy
     )delim");
   energy.def(py::init<double, double, double, double, double, double, double,
                       double, double>());
@@ -536,23 +540,54 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get work of external force  
       )delim");
 
+  /// Options struct
+  py::class_<Options> options(pymem3dg, "Options", R"delim(
+        The options
+    )delim");
+  options.def(py::init<>());
+  options.def(py::init<bool, bool, bool, bool, bool, bool>());
+  options.def_readwrite("isVertexShift", &Options::isVertexShift,
+                        R"delim(
+          get the option of whether do vertex shift  
+      )delim");
+  options.def_readwrite("isProtein", &Options::isProtein,
+                        R"delim(
+          get the option of whether simulate protein  
+      )delim");
+  options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
+                        R"delim(
+          get the option of whether adopt reduced volume  
+      )delim");
+  options.def_readwrite("isLocalCurvature", &Options::isLocalCurvature,
+                        R"delim(
+          get the option of whether consider local curvature  
+      )delim");
+  options.def_readwrite("isEdgeFlip", &Options::isEdgeFlip,
+                        R"delim(
+          get the option of whether do edge flip
+      )delim");
+  options.def_readwrite("isGrowMesh", &Options::isGrowMesh,
+                        R"delim(
+          get the option of whether grow mesh 
+      )delim");
+
   /// Driver function for system generation
-  pymem3dg.def("system_ply", &system_ply,
-               "Run single simulation starting with .ply files",
-               py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
-               py::arg("nSub"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isLocalCurvature"),
-               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-                py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
-               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               R"delim(
+  pymem3dg.def(
+      "system_ply", &system_ply,
+      "Run single simulation starting with .ply files", py::arg("verbosity"),
+      py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
+      py::arg("isReducedVolume"), py::arg("isProtein"),
+      py::arg("isLocalCurvature"), py::arg("isVertexShift"),
+      py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
+      py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
+      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+      R"delim(
         )delim");
 
   pymem3dg.def(
@@ -569,16 +604,17 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "Run single simulation starting with .ply files", py::arg("verbosity"),
       py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
       py::arg("isReducedVolume"), py::arg("isProtein"),
-      py::arg("isLocalCurvature"), py::arg("isVertexShift"), py::arg("Kb"),
-      py::arg("H0"),  py::arg("r_H0"), py::arg("Kse"),
-      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-      py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-      py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
-      py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-      py::arg("outputDir"), py::arg("integration"), py::arg("isBacktrack"),
-      py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-      py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
+      py::arg("isLocalCurvature"), py::arg("isVertexShift"),
+      py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
+      py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
+      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+      py::arg("isAdaptiveStep"),
       R"delim(
                     Run single simulation starting with .ply files
                Args:
@@ -590,6 +626,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isProtein (:py:class:`bool`): whether consider protein binding
                    isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
+                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
+                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
@@ -630,9 +668,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
                py::arg("isReducedVolume"), py::arg("isProtein"),
                py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-               py::arg("Kb"), py::arg("H0"), 
-               py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"),
-               py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+               py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
+               py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
+               py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
                py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
                py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
                py::arg("conc"), py::arg("height"), py::arg("radius"),
@@ -650,6 +688,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isProtein (:py:class:`bool`): whether consider protein binding
                    isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
+                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
+                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
@@ -718,16 +758,17 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "Run single simulation starting with netcdf files", py::arg("verbosity"),
       py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
       py::arg("isContinue"), py::arg("isReducedVolume"), py::arg("isProtein"),
-      py::arg("isLocalCurvature"), py::arg("isVertexShift"), py::arg("Kb"),
-      py::arg("H0"),  py::arg("r_H0"), py::arg("Kse"),
-      py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-      py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-      py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-      py::arg("Kf"), py::arg("conc"), py::arg("height"), py::arg("radius"),
-      py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-      py::arg("outputDir"), py::arg("integration"), py::arg("isBacktrack"),
-      py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-      py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
+      py::arg("isLocalCurvature"), py::arg("isVertexShift"),
+      py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
+      py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
+      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
+      py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+      py::arg("isAdaptiveStep"),
       R"delim(
                    Run single simulation starting with netcdf files
                Args:
@@ -740,6 +781,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isProtein (:py:class:`bool`): whether consider protein binding
                    isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
+                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
+                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
@@ -775,22 +818,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def("forwardsweep_nc", &forwardsweep_nc,
-               "Run forward sweep simulation starting with netcdf files",
-               py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
-               py::arg("isContinue"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isLocalCurvature"),
-               py::arg("isVertexShift"), py::arg("Kb"), py::arg("H0"),
-               py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
-               py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-               py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
-               R"delim(
+  pymem3dg.def(
+      "forwardsweep_nc", &forwardsweep_nc,
+      "Run forward sweep simulation starting with netcdf files",
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
+      py::arg("isContinue"), py::arg("isReducedVolume"), py::arg("isProtein"),
+      py::arg("isLocalCurvature"), py::arg("isVertexShift"),
+      py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
+      py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
+      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
+      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
+      py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), py::arg("ctol"),
+      py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
+      R"delim(
                    Run forward sweep simulation starting with netcdf files
                Args:
                    trajFile (:py:class:`str`): input trajectory file path
@@ -801,6 +844,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isProtein (:py:class:`bool`): whether consider protein binding
                    isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
+                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
+                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
                    Kb (:py:class:`double`): bending modulus of the membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
                    r_H0 (:py:class:`list`): principal axis of elliptical domain of H0

@@ -122,10 +122,27 @@ struct Energy {
   double exE;
 };
 
+struct Options {
+  /// Whether or not do vertex shift
+  bool isVertexShift;
+  /// Whether or not consider protein binding
+  bool isProtein;
+  /// Whether adopt reduced volume parametrization
+  bool isReducedVolume;
+  /// Whether calculate geodesic distance
+  bool isLocalCurvature;
+  /// Whether edge flip
+  bool isEdgeFlip;
+  /// Whether grow mesh
+  bool isGrowMesh;
+};
+
 class DLL_PUBLIC System {
 public:
   /// Parameters
   Parameters P;
+  /// Options
+  const Options O;
 
   /// Cached mesh of interest
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -165,19 +182,6 @@ public:
   gcs::VertexData<double> proteinDensity;
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
-
-  /// Whether or not do vertex shift
-  const bool isVertexShift;
-  /// Whether or not consider protein binding
-  const bool isProtein;
-  /// Whether adopt reduced volume parametrization
-  const bool isReducedVolume;
-  /// Whether calculate geodesic distance
-  const bool isLocalCurvature;
-  /// Whether edge flip
-  const bool isEdgeFlip = true;
-  /// Whether grow mesh
-  const bool isGrowMesh = true;
 
   /// Target area per face
   gcs::FaceData<double> &targetFaceAreas;
@@ -257,11 +261,9 @@ public:
   System(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix, size_t nSub,
-         Parameters &p, bool isReducedVolume_, bool isProtein_,
-         bool isLocalCurvature_, bool isVertexShift_)
+         Parameters &p, Options &o)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
-               p, isReducedVolume_, isProtein_, isLocalCurvature_,
-               isVertexShift_){};
+               p, o){};
 
   /**
    * @brief Construct a new Force object by reading mesh file path
@@ -278,10 +280,8 @@ public:
    * regularization
    */
   System(std::string inputMesh, std::string refMesh, size_t nSub, Parameters &p,
-         bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
-         bool isVertexShift_)
-      : System(readMeshes(inputMesh, refMesh, nSub), p, isReducedVolume_,
-               isProtein_, isLocalCurvature_, isVertexShift_){};
+         Options &o)
+      : System(readMeshes(inputMesh, refMesh, nSub), p, o){};
 
   /**
    * @brief Construct a new System object by reading netcdf trajectory file path
@@ -298,10 +298,8 @@ public:
    * regularization
    */
   System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
-         Parameters &p, bool isReducedVolume_, bool isProtein_,
-         bool isLocalCurvature_, bool isVertexShift_)
-      : System(readTrajFile(trajFile, startingFrame, nSub), p, isReducedVolume_,
-               isProtein_, isLocalCurvature_, isVertexShift_) {
+         Parameters &p, Options &o)
+      : System(readTrajFile(trajFile, startingFrame, nSub), p, o) {
     if (isContinue) {
       mapContinuationVariables(trajFile, startingFrame);
     }
@@ -325,12 +323,10 @@ public:
                     std::unique_ptr<gcs::VertexPositionGeometry>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
-         Parameters &p, bool isReducedVolume_, bool isProtein_,
-         bool isLocalCurvature_, bool isVertexShift_)
+         Parameters &p, Options &o)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)),
-               std::move(std::get<2>(meshVpgTuple)), p, isReducedVolume_,
-               isProtein_, isLocalCurvature_, isVertexShift_){};
+               std::move(std::get<2>(meshVpgTuple)), p, o){};
 
   /**
    * @brief Construct a new System object by reading unique_ptrs to mesh and
@@ -349,19 +345,16 @@ public:
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
-         bool isReducedVolume_, bool isProtein_, bool isLocalCurvature_,
-         bool isVertexShift_)
+         Options &o)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
-        refVpg(std::move(ptrrefVpg_)), richData(*mesh), P(p), time(0),
+        refVpg(std::move(ptrrefVpg_)), richData(*mesh), P(p), O(o), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}), bendingPressure(*mesh, 0),
         capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
         lineCapillaryForce(*mesh, 0), externalPressure(*mesh, 0),
         insidePressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
         stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
-        proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0),
-        isReducedVolume(isReducedVolume_), isProtein(isProtein_),
-        isLocalCurvature(isLocalCurvature_), isVertexShift(isVertexShift_),
-        targetLcr(*mesh), targetEdgeLengths(refVpg->edgeLengths),
+        proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0), targetLcr(*mesh),
+        targetEdgeLengths(refVpg->edgeLengths),
         targetFaceAreas(refVpg->faceAreas), heatSolver(*vpg),
         M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian), D(),
         geodesicDistanceFromPtInd(*mesh, 0), pastPositions(*mesh, {0, 0, 0}),
@@ -392,7 +385,7 @@ public:
     initConstants();
 
     // Regularize the vetex position geometry if needed
-    if (isVertexShift) {
+    if (O.isVertexShift) {
       vertexShift();
     }
 

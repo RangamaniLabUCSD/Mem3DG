@@ -199,7 +199,7 @@ void Integrator::createNetcdfFile() {
 
 void Integrator::saveData() {
   // save variable to richData and save ply file
-  if (verbosity > 3 && !f.isGrowMesh) {
+  if (verbosity > 3 && !f.O.isGrowMesh) {
     saveRichData();
     char buffer[50];
     sprintf(buffer, "/frame%d", (int)frame);
@@ -208,7 +208,7 @@ void Integrator::saveData() {
 
 #ifdef MEM3DG_WITH_NETCDF
   // save variable to netcdf traj file
-  if (verbosity > 0 && !f.isGrowMesh) {
+  if (verbosity > 0 && !f.O.isGrowMesh) {
     saveNetcdfData();
   }
 #endif
@@ -238,7 +238,7 @@ void Integrator::saveData() {
   }
   // break loop if EXIT flag is on
   if (EXIT) {
-    if (verbosity > 0 && !f.isGrowMesh) {
+    if (verbosity > 0 && !f.O.isGrowMesh) {
       std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
                 << ", and data saved to " + outputDir << std::endl;
       if (verbosity > 2) {
@@ -329,7 +329,7 @@ void Integrator::saveNetcdfData() {
 
   // write velocity
   fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
-  if (f.isProtein) {
+  if (f.O.isProtein) {
     fd.writeProteinDensity(frame, f.proteinDensity.raw());
   }
 
@@ -467,8 +467,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Options: \n";
     myfile << "\n";
-    myfile << "Is considering protein: " << f.isProtein << "\n"
-           << "Is vertex shift: " << f.isVertexShift << "\n";
+    myfile << "Is considering protein: " << f.O.isProtein << "\n"
+           << "Is vertex shift: " << f.O.isVertexShift << "\n";
 
     myfile.close();
   } else

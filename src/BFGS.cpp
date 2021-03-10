@@ -115,7 +115,7 @@ void BFGS::status() {
               ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
               : 0.0;
 
-  if (f.isReducedVolume) {
+  if (f.O.isReducedVolume) {
     // compute volume constraint error
     dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
               ? abs(f.volume / f.refVolume / f.P.Vt - 1)
@@ -161,7 +161,6 @@ void BFGS::march() {
     alpha = backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, physicalForce, vel_e);
     s = alpha *
         rowwiseDotProduct(vel_e, gc::EigenMap<double, 3>(f.vpg->vertexNormals));
-
   } else {
     pos_e += vel_e * dt;
     f.time += dt;
@@ -169,13 +168,8 @@ void BFGS::march() {
   }
 
   // time stepping on protein density
-  if (f.isProtein) {
+  if (f.O.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
-  }
-
-  // vertex shift for regularization
-  if (f.isVertexShift) {
-    f.vertexShift();
   }
 }
 

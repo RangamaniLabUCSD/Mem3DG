@@ -141,7 +141,7 @@ EigenVectorX1D System::computeInsidePressure() {
   if (mesh->hasBoundary()) {
     /// Inside excess pressure of patch
     insidePressure.raw().setConstant(P.Kv);
-  } else if (isReducedVolume) {
+  } else if (O.isReducedVolume) {
     /// Inside excess pressure of vesicle
     insidePressure.raw().setConstant(
         -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV));
@@ -311,7 +311,7 @@ void System::computePhysicalForces() {
   if ((P.gamma != 0) || (P.sigma != 0)) {
     computeDPDForces();
   }
-  if (isProtein) {
+  if (O.isProtein) {
     computeChemicalPotential();
   }
   if (P.Kf != 0) {

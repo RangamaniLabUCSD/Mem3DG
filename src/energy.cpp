@@ -52,7 +52,7 @@ void System::computePressureEnergy() {
   double V_difference = volume - refVolume * P.Vt;
   if (mesh->hasBoundary()) {
     E.pE = -P.Kv * V_difference;
-  } else if (isReducedVolume) {
+  } else if (O.isReducedVolume) {
     E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
            P.lambdaV * V_difference;
   } else {
@@ -98,7 +98,7 @@ void System::computePotentialEnergy() {
   if (P.Kv != 0) {
     computePressureEnergy();
   }
-  if (isProtein) {
+  if (O.isProtein) {
     computeChemicalEnergy();
   }
   if (P.eta != 0) {

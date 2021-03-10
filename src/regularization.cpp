@@ -93,7 +93,7 @@ void System::computeRegularizationForce() {
           gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
           gc::Vector3 localAreaGradient =
               -gc::cross(base_vec, vpg->faceNormals[he.face()]);
-          if (isEdgeFlip || isGrowMesh) {
+          if (O.isEdgeFlip || O.isGrowMesh) {
             regularizationForce[v] +=
                 -P.Ksl * localAreaGradient * vpg->faceAreas[base_he.face()];
           } else {
@@ -106,7 +106,7 @@ void System::computeRegularizationForce() {
         // local edge regularization
         if (P.Kse != 0) {
           gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-          if (isEdgeFlip || isGrowMesh) {
+          if (O.isEdgeFlip || O.isGrowMesh) {
             regularizationForce[v] +=
                 -P.Kse * edgeGradient * vpg->edgeLengths[he.edge()];
           } else {
