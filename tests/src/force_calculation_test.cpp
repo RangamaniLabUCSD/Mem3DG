@@ -44,9 +44,13 @@ protected:
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   Parameters p;
+  Options o{.isVertexShift = false,
+            .isProtein = false,
+            .isReducedVolume = true,
+            .isLocalCurvature = false,
+            .isEdgeFlip = false,
+            .isGrowMesh = false};
   double h = 0.0002;
-  bool isProtein = false, isLocalCurvature = false, isVertexShift = false,
-       isReducedVolume = true;
 
   ForceCalculationTest() {
     // physical parameters
@@ -92,7 +96,7 @@ protected:
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // Instantiate system object
   mem3dg::System f(std::move(ptrMesh), std::move(ptrVpg), std::move(ptrVpg), p,
-                   isReducedVolume, isProtein, isLocalCurvature, isVertexShift);
+                   o);
 
   // First time calculation of force
   f.computePhysicalForces();
@@ -112,7 +116,7 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   EigenVectorX1D bendingPressure2 = f.bendingPressure.raw(),
                  insidePressure2 = f.insidePressure.raw(),
                  capillaryPressure2 = f.capillaryPressure.raw(),
-                 lineTensionPressure2 =  f.M_inv * f.lineCapillaryForce.raw(),
+                 lineTensionPressure2 = f.M_inv * f.lineCapillaryForce.raw(),
                  externalPressure2 = f.externalPressure.raw(),
                  chemicalPotential2 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =
@@ -136,7 +140,7 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   // Instantiate system object
   mem3dg::System f(std::move(ptrMesh), std::move(ptrVpg), std::move(ptrVpg), p,
-                   isReducedVolume, isProtein, isLocalCurvature, isVertexShift);
+                   o);
 
   // Get forces in one-pass
   f.computePhysicalForces();
@@ -144,7 +148,7 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   EigenVectorX1D bendingPressure1 = f.bendingPressure.raw(),
                  insidePressure1 = f.insidePressure.raw(),
                  capillaryPressure1 = f.capillaryPressure.raw(),
-                 lineTensionPressure1 =  f.M_inv * f.lineCapillaryForce.raw(),
+                 lineTensionPressure1 = f.M_inv * f.lineCapillaryForce.raw(),
                  externalPressure1 = f.externalPressure.raw();
   //  chemicalPotential1 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce1 =
@@ -161,7 +165,7 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   EigenVectorX1D bendingPressure2 = f.bendingPressure.raw(),
                  insidePressure2 = f.insidePressure.raw(),
                  capillaryPressure2 = f.capillaryPressure.raw(),
-                 lineTensionPressure2 =  f.M_inv * f.lineCapillaryForce.raw(),
+                 lineTensionPressure2 = f.M_inv * f.lineCapillaryForce.raw(),
                  externalPressure2 = f.externalPressure.raw();
   //  chemicalPotential2 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =
@@ -184,7 +188,7 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
  */
 TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   mem3dg::System f(std::move(ptrMesh), std::move(ptrVpg), std::move(ptrVpg), p,
-                   isReducedVolume, isProtein, isLocalCurvature, isVertexShift);
+                   o);
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   //   Energy E_pre{f.E.totalE, f.E.kE, f.E.potE, f.E.BE, f.E.sE,

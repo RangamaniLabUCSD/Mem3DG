@@ -46,8 +46,10 @@ int main() {
                        Kv,   eta,   epsilon, Bc,  gamma, Vt,     Pam,
                        temp, sigma, pt,      Kf,  conc,  height, radius};
 
-  mem3dg::System f(inputMesh, refMesh, 0, p, isReducedVolume, isProtein,
-                   isLocalCurvature, isVertexShift);
+  mem3dg::Options o{isVertexShift,    isProtein, isReducedVolume,
+                    isLocalCurvature, false,     false};
+
+  mem3dg::System f(inputMesh, refMesh, 0, p, o);
 
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100, errorJumpLim = 600;
