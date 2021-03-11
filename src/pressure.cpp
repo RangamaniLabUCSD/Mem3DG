@@ -40,40 +40,54 @@ namespace gcs = ::geometrycentral::surface;
 
 EigenVectorX1D System::computeBendingPressure() {
   // A. non-optimized version
+  if (O.isLocalCurvature) {
 
-  // Split calculation for two domain
-  // if (isLocalCurvature) {
-  //   bendingPressure.raw().setZero();
-  //   auto subdomain = [&](double H0_temp) {
-  //     EigenVectorX1D lap_H = M_inv * L * (H.raw().array() -
-  //     H0_temp).matrix(); EigenVectorX1D scalerTerms =
-  //         rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
-  //     EigenVectorX1D productTerms =
-  //         2.0 *
-  //         rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
-  //     bendingPressure.raw().array() +=
-  //         (H0.raw().array() == H0_temp).cast<double>().array() *
-  //         (-P.Kb * (productTerms + lap_H)).array();
-  //   };
-  //   subdomain(P.H0);
-  //   subdomain(0);
-  // } else {}
+    // initialize/update distance from the point specified
+    if (O.isGrowMesh) {
+      geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
+    } else {
+      geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+    }
 
-  // compute the coated domain
-  // calculate the Laplacian of mean curvature H
-  EigenVectorX1D lap_H = M_inv * L * (H.raw() - H0.raw());
+    // initialize/update spontaneous curvature (local
+    // spontaneous curvature)
+    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+                         P.r_H0);
+    H0.raw() *= P.H0;
 
-  // initialize and calculate intermediary result scalerTerms
-  EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
-                               rowwiseProduct(H.raw(), H0.raw()) - K.raw();
-  // scalerTerms = scalerTerms.array().max(0);
+    // Split calculation for two domain
+    bendingPressure.raw().setZero();
+    auto subdomain = [&](double H0_temp) {
+      EigenVectorX1D lap_H = M_inv * L * (H.raw().array() - H0_temp).matrix();
+      EigenVectorX1D scalerTerms =
+          rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
+      EigenVectorX1D productTerms =
+          2.0 *
+          rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
+      bendingPressure.raw().array() +=
+          (H0.raw().array() == H0_temp).cast<double>().array() *
+          (-P.Kb * (productTerms + lap_H)).array();
+    };
+    subdomain(P.H0);
+    subdomain(0);
+  } else {
+    
+    // compute the coated domain
+    // calculate the Laplacian of mean curvature H
+    EigenVectorX1D lap_H = M_inv * L * (H.raw() - H0.raw());
 
-  // initialize and calculate intermediary result productTerms
-  EigenVectorX1D productTerms =
-      2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+    // initialize and calculate intermediary result scalerTerms
+    EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
+                                 rowwiseProduct(H.raw(), H0.raw()) - K.raw();
+    // scalerTerms = scalerTerms.array().max(0);
 
-  // calculate bendingForce
-  bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
+    // initialize and calculate intermediary result productTerms
+    EigenVectorX1D productTerms =
+        2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+
+    // calculate bendingForce
+    bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
+  }
 
   return bendingPressure.raw();
 

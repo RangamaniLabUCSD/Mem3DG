@@ -193,6 +193,8 @@ public:
   double refVolume;
   /// Target length per edge
   gcs::EdgeData<double> &targetEdgeLengths;
+  /// Mean target area per face
+  double meanTargetEdgeLength;
   /// Target edge cross length ratio
   gcs::EdgeData<double> targetLcr;
   /// Distance solver

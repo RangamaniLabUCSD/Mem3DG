@@ -62,11 +62,10 @@ double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
 
 void System::computeRegularizationForce() {
   for (gcs::Vertex v : mesh->vertices()) {
-    if (!v.isBoundary()) {
-      for (gcs::Halfedge he : v.outgoingHalfedges()) {
-
+    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+      if (P.Kst != 0) {
         // Conformal regularization
-        if (P.Kst != 0) {
+        if (!he.edge().isBoundary()) {
           gcs::Halfedge jl = he.next();
           gcs::Halfedge li = jl.next();
           gcs::Halfedge ik = he.twin().next();
@@ -83,50 +82,80 @@ void System::computeRegularizationForce() {
               (grad_li * vpg->edgeLengths[ik.edge()] -
                grad_ik * vpg->edgeLengths[li.edge()]) /
               vpg->edgeLengths[ik.edge()] / vpg->edgeLengths[ik.edge()];
-
-          // regularizationForce[v] += -P.Kst * localAreaGradient;
         }
 
-        // Local area regularization
-        if (P.Ksl != 0) {
+        // non-specific area regularization
+        // regularizationForce[v] += -P.Kst * localAreaGradient;
+      }
+
+      // Local area regularization
+      if (P.Ksl != 0) {
+        if (he.isInterior()) {
           gcs::Halfedge base_he = he.next();
           gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
           gc::Vector3 localAreaGradient =
               -gc::cross(base_vec, vpg->faceNormals[he.face()]);
           if (O.isEdgeFlip || O.isGrowMesh) {
-            regularizationForce[v] +=
-                -P.Ksl * localAreaGradient * vpg->faceAreas[base_he.face()];
+            if (v.isBoundary()) {
+              regularizationForce[v] += -P.Ksl * localAreaGradient *
+                                        (vpg->faceAreas[base_he.face()] -
+                                         targetFaceAreas[base_he.face()]);
+            } else {
+              // without reference
+              // regularizationForce[v] +=
+              //     -P.Ksl * localAreaGradient *
+              //     vpg->faceAreas[base_he.face()];
+
+              // with constant reference
+              regularizationForce[v] +=
+                  -P.Ksl * localAreaGradient *
+                  (vpg->faceAreas[base_he.face()] - meanTargetFaceArea);
+            }
           } else {
+            // with local reference
             regularizationForce[v] += -P.Ksl * localAreaGradient *
                                       (vpg->faceAreas[base_he.face()] -
                                        targetFaceAreas[base_he.face()]);
           }
         }
+      }
 
-        // local edge regularization
-        if (P.Kse != 0) {
-          gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-          if (O.isEdgeFlip || O.isGrowMesh) {
-            regularizationForce[v] +=
-                -P.Kse * edgeGradient * vpg->edgeLengths[he.edge()];
-          } else {
+      // local edge regularization
+      if (P.Kse != 0) {
+        gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
+        if (O.isEdgeFlip || O.isGrowMesh) {
+          if (v.isBoundary()) {
             regularizationForce[v] +=
                 -P.Kse * edgeGradient *
                 (vpg->edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]);
-          }
-        }
+          } else {
+            // without reference
+            // regularizationForce[v] +=
+            //     -P.Kse * edgeGradient * vpg->edgeLengths[he.edge()];
 
-        // / Patch regularization
-        // the cubic penalty is for regularizing the mesh,
-        // need better physical interpretation or alternative method
-        // if (P.Kse != 0) {
-        //   double strain =
-        //       (vpg->edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
-        //       targetEdgeLengths[he.edge()];
-        //   regularizationForce[v] +=
-        //      -P.Kse * edgeGradient * strain * strain * strain;
-        // }
+            // with constant reference
+            regularizationForce[v] +=
+                -P.Kse * edgeGradient *
+                (vpg->edgeLengths[he.edge()] - meanTargetEdgeLength);
+          }
+        } else {
+          // with local reference
+          regularizationForce[v] +=
+              -P.Kse * edgeGradient *
+              (vpg->edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]);
+        }
       }
+
+      // / Patch regularization
+      // the cubic penalty is for regularizing the mesh,
+      // need better physical interpretation or alternative method
+      // if (P.Kse != 0) {
+      //   double strain =
+      //       (vpg->edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
+      //       targetEdgeLengths[he.edge()];
+      //   regularizationForce[v] +=
+      //      -P.Kse * edgeGradient * strain * strain * strain;
+      // }
     }
   }
 
@@ -139,8 +168,33 @@ void System::computeRegularizationForce() {
       vertexAngleNormal_e);
 
   // remove the masked components
-  regularizationForce_e =
-      rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
+  // regularizationForce_e =
+  //     rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
+
+  // moving boundary 
+  for (gcs::Vertex v : mesh->vertices()) {
+    if (!mask[v]) {
+      regularizationForce[v].z = 0;
+
+      // boundary tension, mostly likely not necessary 
+      // if (v.isBoundary()) {
+      //   double boundaryEdgeLength = 0;
+      //   for (gcs::Edge e : v.adjacentEdges()) {
+      //     if (e.isBoundary()) {
+      //       boundaryEdgeLength += vpg->edgeLength(e);
+      //     }
+      //   }
+      //   boundaryEdgeLength /= 2;
+      //   double scaling;
+      //   if (regularizationForce[v].norm() > 1e-15) {
+      //     scaling = 1 - abs(P.Ksg * boundaryEdgeLength /
+      //                       (regularizationForce[v].norm()));
+      //   }
+      //   regularizationForce[v] *= scaling;
+      // }
+
+    }
+  }
 }
 
 void System::vertexShift() {
