@@ -21,6 +21,7 @@
 
 #include <Eigen/Core>
 
+#include "geometrycentral/surface/halfedge_element_types.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 
@@ -30,6 +31,16 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void System::computeBendingEnergy() {
+
+  // no particular reason, just experiment
+  // E.BE = 0;
+  // for (gcs::Vertex v : mesh->vertices()) {
+  //   if (vpg->inputVertexPositions[v].z > 1e-12) {
+  //     E.BE += P.Kb * (H[v] - H0[v]) * (H[v] - H0[v]) *
+  //     vpg->vertexDualArea(v);
+  //   }
+  // }
+
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = H.raw() - H0.raw();
   E.BE = P.Kb * H_difference.transpose() * M * H_difference;
 
@@ -39,10 +50,22 @@ void System::computeBendingEnergy() {
 }
 
 void System::computeSurfaceEnergy() {
-  double A_difference = surfaceArea - targetSurfaceArea;
+  double A_difference = 0;
   if (mesh->hasBoundary()) {
+
+    // non moving boundary
+    // A_difference = surfaceArea - targetSurfaceArea;
+
+    // moving boundary
+    for (gcs::Vertex v : mesh->vertices()) {
+      if (vpg->inputVertexPositions[v].z > 1e-12) {
+        A_difference += vpg->vertexDualArea(v);
+      }
+    }
+    
     E.sE = P.Ksg * A_difference;
   } else {
+    A_difference = surfaceArea - targetSurfaceArea;
     E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 +
            P.lambdaSG * A_difference;
   }

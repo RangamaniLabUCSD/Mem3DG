@@ -306,6 +306,9 @@ void System::initConstants() {
   // Initialize the constant target mean face area
   meanTargetFaceArea = targetFaceAreas.raw().sum() / mesh->nFaces();
 
+  // Initialize the constant target mean edge length
+  meanTargetEdgeLength = targetEdgeLengths.raw().sum() / mesh->nEdges();
+
   // Initialize the target constant cross length ration
   targetLcr = computeLengthCrossRatio(*refVpg);
 
@@ -350,21 +353,27 @@ void System::updateVertexPositions() {
   auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
 
   // recompute "the vertex" after topological changes
-  if (O.isGrowMesh) {
-    closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
-  }
+  // if (O.isGrowMesh) {
+  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
+  // }
 
   // initialize/update Laplacian matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
 
-  // initialize/update distance from the point specified
-  if (O.isLocalCurvature) {
-    if (O.isGrowMesh) {
-      geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
-    } else {
-      geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
-    }
-  }
+  // move this until we compute forces
+  // if (O.isLocalCurvature) {
+  //   // initialize/update distance from the point specified
+  //   if (O.isGrowMesh) {
+  //     geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
+  //   } else {
+  //     geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+  //   }
+  //   // initialize/update spontaneous curvature (local
+  //   // spontaneous curvature)
+  //   ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+  //                        P.r_H0);
+  //   H0.raw() *= P.H0;
+  // }
 
   // Update the distribution matrix when topology changes
   if (O.isEdgeFlip || O.isGrowMesh) {
@@ -384,14 +393,6 @@ void System::updateVertexPositions() {
     H0.raw() =
         (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
             .matrix();
-  }
-
-  // initialize/update spontaneous curvature (local
-  // spontaneous curvature)
-  if (O.isLocalCurvature) {
-    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-                         P.r_H0);
-    H0.raw() *= P.H0;
   }
 
   // initialize/update line tension (on dual edge)
