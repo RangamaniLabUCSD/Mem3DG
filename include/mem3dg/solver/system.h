@@ -150,8 +150,6 @@ public:
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
   /// reference embedding geometry
   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-  /// Cached mesh data
-  gcs::RichSurfaceMeshData richData;
   /// Energy
   Energy E;
   /// Time
@@ -348,8 +346,8 @@ public:
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
          Options &o)
-      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
-        refVpg(std::move(ptrrefVpg_)), richData(*mesh), P(p), O(o), time(0),
+      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)), 
+        refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}), bendingPressure(*mesh, 0),
         capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
         lineCapillaryForce(*mesh, 0), externalPressure(*mesh, 0),
