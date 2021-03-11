@@ -16,6 +16,7 @@
 #include "solver/mem3dg.h"
 #include "solver/system.h"
 #include "solver/integrator.h"
+#include "solver/visualization.h"
 #include "solver/mesh.h"
 #include "solver/trajfile.h"
 #include "solver/typetraits.h"

@@ -16,6 +16,8 @@
 #include <iostream>
 #include <time.h>
 
+#include "mem3dg/solver/system.h"
+#include "mem3dg/solver/visualization.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/view.h"
@@ -23,6 +25,7 @@
 #include <geometrycentral/surface/meshio.h>
 
 #include "mem3dg/mem3dg"
+#
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -40,136 +43,67 @@ using EigenVectorX3D =
 using EigenTopVec =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
-int viewer_ply(std::string fileName, const bool mean_curvature,
-               const bool gauss_curvature, const bool spon_curvature,
-               const bool ext_pressure, const bool physical_pressure,
-               const bool capillary_pressure, const bool bending_pressure,
-               const bool line_pressure) {
-
+void visualize(mem3dg::System &f) {
   signal(SIGINT, mem3dg::signalHandler);
-
-  /// alias eigen matrix
-  using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-  using EigenVectorX3D =
-      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-  using EigenTopVec =
-      Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
-
-  /// Declare pointers to mesh, geometry and richdata objects
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
-
-  /// Load input mesh
-  if (!mean_curvature && !gauss_curvature && !spon_curvature && !ext_pressure &&
-      !physical_pressure && !capillary_pressure && !bending_pressure &&
-      !line_pressure) {
-    std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(fileName);
-  } else {
-    std::tie(ptrMesh, ptrRichData) =
-        gcs::RichSurfaceMeshData::readMeshAndData(fileName);
-    ptrVpg = ptrRichData->getGeometry();
-  }
-
   // Initialize visualization variables
   float transparency = 1;
 
   // Set preference for polyscope
-  polyscope::options::programName = "Mem3DG Visualization";
-  polyscope::options::verbosity = 0;
-  polyscope::options::usePrefsFile = false;
-  polyscope::options::autocenterStructures = false;
-  polyscope::options::autoscaleStructures = false;
-  polyscope::options::groundPlaneEnabled = false;
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
-  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+  initGui();
 
   /// Initiate in polyscope
   polyscope::init();
-  polyscope::SurfaceMesh *mesh = polyscope::registerSurfaceMesh(
-      "Vesicle surface", ptrVpg->inputVertexPositions,
-      ptrMesh->getFaceVertexList());
-  mesh->setSmoothShade(true);
-  mesh->setEnabled(true);
-  mesh->setEdgeWidth(1);
+
+  polyscope::SurfaceMesh *polyMesh = polyscope::registerSurfaceMesh(
+      "Membrane", f.vpg->inputVertexPositions, f.mesh->getFaceVertexList());
+  polyMesh->setSmoothShade(true);
+  polyMesh->setEnabled(true);
+  polyMesh->setEdgeWidth(1);
+
+  // Process attributes
+  Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
+
+  fn = f.bendingPressure.raw() + f.capillaryPressure.raw() +
+       f.insidePressure.raw() + f.externalPressure.raw() +
+       f.M_inv * f.lineCapillaryForce.raw();
 
   /// Read element data
-  if (mean_curvature) {
-    gcs::VertexData<double> meanCurvature =
-        ptrRichData->getVertexProperty<double>("mean_curvature");
-    EigenVectorX1D meanCurvature_e = meanCurvature.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
-  }
-  if (gauss_curvature) {
-    gcs::VertexData<double> gaussCurvature =
-        ptrRichData->getVertexProperty<double>("gauss_curvature");
-    EigenVectorX1D gaussCurvature_e = gaussCurvature.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("gauss_curvature", gaussCurvature_e);
-  }
-  if (spon_curvature) {
-    gcs::VertexData<double> sponCurvature =
-        ptrRichData->getVertexProperty<double>("spon_curvature");
-    EigenVectorX1D sponCurvature_e = sponCurvature.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
-  }
-  if (ext_pressure) {
-    gcs::VertexData<double> extPressure =
-        ptrRichData->getVertexProperty<double>("external_pressure");
-    EigenVectorX1D extPressure_e = extPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("applied_pressure", extPressure_e);
-  }
-  if (physical_pressure) {
-    gcs::VertexData<double> physicalPressure =
-        ptrRichData->getVertexProperty<double>("physical_pressure");
-    EigenVectorX1D physicalPressure_e = physicalPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("physical_pressure", physicalPressure_e);
-  }
-  if (capillary_pressure) {
-    gcs::VertexData<double> capillaryPressure =
-        ptrRichData->getVertexProperty<double>("capillary_pressure");
-    EigenVectorX1D capillaryPressure_e = capillaryPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("surface_tension", capillaryPressure_e);
-  }
-  if (bending_pressure) {
-    gcs::VertexData<double> bendingPressure =
-        ptrRichData->getVertexProperty<double>("bending_pressure");
-    EigenVectorX1D bendingPressure_e = bendingPressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("bending_pressure", bendingPressure_e);
-  }
-  if (line_pressure) {
-    gcs::VertexData<double> linePressure =
-        ptrRichData->getVertexProperty<double>("line_tension_pressure");
-    EigenVectorX1D linePressure_e = linePressure.raw();
-    polyscope::getSurfaceMesh("Vesicle surface")
-        ->addVertexScalarQuantity("line_tension_pressure", linePressure_e);
-  }
-
-  /*gcs::VertexData<gc::Vector3> vertexVelocity =
-      ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
-  /*gcs::VertexData<gc::Vector3> normalForce =
-  ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
-  gcs::VertexData<gc::Vector3> tangentialForce =
-  ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
-  // EigenVectorX3D vertexVelocity_e =
-  //    mem3dg::EigenMap<double, 3>(vertexVelocity);
-  /*EigenVectorX3D normalForce_e =
-  gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
-  Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
-  3>(tangentialForce);*/
-  /*polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
-  /*polyscope::getSurfaceMesh("Vesicle
-  surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
-  polyscope::getSurfaceMesh("Vesicle
-  surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("mean_curvature", f.H.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("gauss_curvature", f.K.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("spon_curvature", f.H0.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("external_pressure", f.externalPressure.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("bending_pressure", f.bendingPressure.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("line_tension_pressure",
+                                f.M_inv * f.lineCapillaryForce.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("capillary_pressure",
+                                f.capillaryPressure.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("inside_pressure", f.insidePressure.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("physical_pressure", fn);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity("line_tension", f.lineTension.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles.raw());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity(
+          "edge_line_capillary",
+          f.vpg->hodge1Inverse *
+              ((f.vpg->hodge1 *
+                (f.lineTension.raw().array() / f.vpg->edgeLengths.raw().array())
+                    .matrix())
+                   .array() *
+               f.vpg->edgeDihedralAngles.raw().array().max(0))
+                  .matrix());
+  // polyscope::getSurfaceMesh("Membrane")
+  //     ->addEdgeScalarQuantity("isFlip", isFlip.raw().cast<double>());
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -183,7 +117,50 @@ int viewer_ply(std::string fileName, const bool mean_curvature,
     ImGui::SliderFloat("transparency", &transparency, 0, 1);
 
     // Execute transparency slider
-    mesh->setTransparency(transparency);
+    polyMesh->setTransparency(transparency);
+
+    // Define buttons
+    if (ImGui::Button("Screenshot")) {
+      // char buff[50];
+      // snprintf(buff, 50, "screenshot_frame%06d.png", frame);
+      // std::string defaultName(buff);
+      polyscope::screenshot("screenshot.png", true);
+    }
+
+    ImGui::PopItemWidth();
+  };
+  polyscope::state::userCallback = myCallback;
+  polyscope::show();
+}
+
+int snapshot_ply(std::string fileName, const Quantities &option) {
+
+  signal(SIGINT, mem3dg::signalHandler);
+
+  auto polyscopeMesh = registerSurfaceMesh(fileName, option);
+
+  // Initialize visualization variables
+  float transparency = 1;
+
+  // Set preference for polyscope
+  initGui();
+
+  /// Initiate in polyscope
+  polyscope::init();
+
+  // Callback function for interactive GUI
+  auto myCallback = [&]() {
+    // Since options::openImGuiWindowForUserCallback == true by default,
+    // we can immediately start using ImGui commands to build a UI
+    ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
+                               // instead of full width. Must have
+                               // matching PopItemWidth() below.
+
+    // Initialize sliders
+    ImGui::SliderFloat("transparency", &transparency, 0, 1);
+
+    // Execute transparency slider
+    polyscopeMesh->setTransparency(transparency);
 
     // Define buttons
     if (ImGui::Button("Screenshot")) {
@@ -201,198 +178,97 @@ int viewer_ply(std::string fileName, const bool mean_curvature,
   return 0;
 }
 
+int animate_ply(std::string &frameDir, std::vector<size_t> frameNum,
+                  const Quantities &options) {
+
+  // Activate signal handling
+  signal(SIGINT, mem3dg::signalHandler);
+
+  // Initialize visualization variables
+  int prevFrame = frameNum[0];
+  int currFrame = frameNum[0];
+  bool isStart = false;
+  bool isRecord = false;
+  int maxFrame = frameNum[1];
+  int maxWaitTime = 500;
+  int waitTime = 0;
+
+  // Set preference for polyscope
+  initGui();
+
+  // Initialize polyscope
+  polyscope::init();
+
+  // Initialize surface mesh
+  char buffer[50];
+  sprintf(buffer, "/frame%d.ply", (int)frameNum[0]);
+  std::string plyName(buffer);
+  plyName = frameDir + plyName;
+  auto polyscopeMesh = registerSurfaceMesh(plyName, options);
+  polyscopeMesh->setSmoothShade(true);
+
+  // Callback function for interactive GUI
+  auto myCallback = [&]() {
+    // Since options::openImGuiWindowForUserCallback == true by default,
+    // we can immediately start using ImGui commands to build a UI
+    ImGui::PushItemWidth(100); // Make ui elements 100 pixels wide,
+                               // instead of full width. Must have
+                               // matching PopItemWidth() below.
+
+    // Initialize sliders
+    ImGui::SliderInt("index", &currFrame, 0,
+                     maxFrame); // set a float variable
+    ImGui::SliderInt("slow-mo", &waitTime, 0,
+                     maxWaitTime); // set a float variable
+
+    // Define buttons
+    if (ImGui::Button("Play/Pause")) {
+      isStart = !isStart;
+    }
+    if (ImGui::Button("Screenshot")) {
+      char buff[50];
+      snprintf(buff, 50, "screenshot_frame%06d.png", currFrame);
+      std::string defaultName(buff);
+      polyscope::screenshot(defaultName, true);
+      // polyscope::screenshot("screenshot.png", true);
+    }
+    if (ImGui::Button("Record")) {
+      isRecord = !isRecord;
+    }
+    if (prevFrame != currFrame) {
+      char buffer[50];
+      sprintf(buffer, "/frame%d.ply", (int)currFrame);
+      std::string plyName(buffer);
+      plyName = frameDir + plyName;
+      polyscopeMesh = registerSurfaceMesh(plyName, options);
+      prevFrame = currFrame;
+    }
+    if (isRecord) {
+      char buff[50];
+      snprintf(buff, 50, "video/frame%06d.png", currFrame);
+      std::string defaultName(buff);
+      polyscope::screenshot(defaultName, true);
+      play(frameDir, currFrame, waitTime, options, isRecord, frameNum[1]);
+      prevFrame = currFrame;
+    }
+    if (isStart) {
+      play(frameDir, currFrame, waitTime, options, isStart, frameNum[1]);
+      prevFrame = currFrame;
+    }
+
+    ImGui::PopItemWidth();
+  };
+
+  polyscope::state::userCallback = myCallback;
+  polyscope::show();
+
+  return 0;
+}
+
 #ifdef MEM3DG_WITH_NETCDF
 
-void wait(unsigned timeout) {
-  timeout += std::clock();
-  while (std::clock() < timeout)
-    continue;
-}
-
-struct checkBox {
-  const bool ref_coord;
-  const bool velocity;
-  const bool mean_curvature;
-  const bool gauss_curvature;
-  const bool spon_curvature;
-  const bool ext_pressure;
-  const bool physical_pressure;
-  const bool capillary_pressure;
-  const bool inside_pressure;
-  const bool bending_pressure;
-  const bool line_pressure;
-  const bool mask;
-  const bool H_H0;
-};
-
-void updateSurfaceMesh(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd,
-                       int &idx, checkBox options) {
-
-  if (idx >= fd.getNextFrameIndex()) {
-    idx = 0;
-  }
-
-  EigenTopVec topo_frame = fd.getTopoFrame(idx);
-  EigenVectorX3D coords = fd.getCoords(idx);
-  // mesh->updateVertexPositions(coords);
-  mesh = polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
-  mesh->setSmoothShade(true);
-  mesh->setEnabled(true);
-
-  if (options.ref_coord) {
-    EigenVectorX3D refcoords = fd.getRefcoordinate();
-    mesh->addVertexVectorQuantity("ref_coordinate", refcoords);
-  }
-  if (options.mean_curvature) {
-    EigenVectorX1D H = fd.getMeanCurvature(idx);
-    mesh->addVertexScalarQuantity("mean_curvature", H);
-  }
-  if (options.gauss_curvature) {
-    EigenVectorX1D K = fd.getGaussCurvature(idx);
-    mesh->addVertexScalarQuantity("gauss_curvature", K);
-  }
-  if (options.spon_curvature) {
-    EigenVectorX1D H0 = fd.getSponCurvature(idx);
-    mesh->addVertexScalarQuantity("spon_curvature", H0);
-  }
-  if (options.mask) {
-    EigenVectorX1D_i msk = fd.getMask();
-    mesh->addVertexScalarQuantity("mask", msk);
-  }
-  if (options.H_H0) {
-    EigenVectorX1D h_h0 = fd.getH_H0_diff(idx);
-    mesh->addVertexScalarQuantity("curvature_diff", h_h0);
-  }
-
-  if (options.velocity) {
-    EigenVectorX3D vel = fd.getVelocity(idx);
-    mesh->addVertexVectorQuantity("velocity", vel);
-  }
-
-  if (options.bending_pressure) {
-    EigenVectorX1D fb = fd.getBendingPressure(idx);
-    mesh->addVertexScalarQuantity("bending_pressure", fb);
-  }
-  if (options.capillary_pressure) {
-    EigenVectorX1D ft = fd.getCapillaryPressure(idx);
-    mesh->addVertexScalarQuantity("capillary_pressure", ft);
-  }
-  if (options.inside_pressure) {
-    EigenVectorX1D ft = fd.getInsidePressure(idx);
-    mesh->addVertexScalarQuantity("inside_pressure", ft);
-  }
-  if (options.ext_pressure) {
-    EigenVectorX1D f_ext = fd.getExternalPressure(idx);
-    mesh->addVertexScalarQuantity("external_pressure", f_ext);
-  }
-  if (options.line_pressure) {
-    EigenVectorX1D fl = fd.getLinePressure(idx);
-    mesh->addVertexScalarQuantity("line_tension_pressure", fl);
-  }
-  if (options.physical_pressure) {
-    EigenVectorX1D fn = fd.getPhysicalPressure(idx);
-    mesh->addVertexScalarQuantity("physical_pressure", fn);
-  }
-  // polyscope::registerSurfaceMesh("Mesh", coords, top);
-}
-
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd,
-                                            checkBox options) {
-  EigenVectorX3D coords;
-  EigenTopVec top = fd.getTopology();
-  coords = fd.getCoords(0);
-  polyscope::SurfaceMesh *mesh =
-      polyscope::registerSurfaceMesh("Mesh", coords, top);
-  mesh->setSmoothShade(true);
-  mesh->setEnabled(true);
-
-  if (options.ref_coord) {
-    EigenVectorX3D refcoords = fd.getRefcoordinate();
-    polyscope::getSurfaceMesh("Mesh")->addVertexVectorQuantity("ref_coordinate",
-                                                               refcoords);
-  }
-
-  if (options.velocity) {
-    EigenVectorX3D vel = fd.getVelocity(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexVectorQuantity("velocity", vel);
-  }
-  if (options.mean_curvature) {
-    EigenVectorX1D H = fd.getMeanCurvature(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mean_curvature",
-                                                               H);
-  }
-  if (options.gauss_curvature) {
-    EigenVectorX1D K = fd.getGaussCurvature(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
-        "gauss_curvature", K);
-  }
-  if (options.spon_curvature) {
-    EigenVectorX1D H0 = fd.getSponCurvature(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("spon_curvature",
-                                                               H0);
-  }
-  if (options.ext_pressure) {
-    EigenVectorX1D f_ext = fd.getExternalPressure(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
-        "external_pressure", f_ext);
-  }
-  if (options.physical_pressure) {
-    EigenVectorX1D fn = fd.getPhysicalPressure(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
-        "physical_pressure", fn);
-  }
-  if (options.capillary_pressure) {
-    EigenVectorX1D ft = fd.getCapillaryPressure(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
-        "capillary_pressure", ft);
-  }
-  if (options.inside_pressure) {
-    EigenVectorX1D ft = fd.getInsidePressure(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
-        "inside_pressure", ft);
-  }
-  if (options.bending_pressure) {
-    EigenVectorX1D fb = fd.getBendingPressure(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
-        "bending_pressure", fb);
-  }
-  if (options.line_pressure) {
-    EigenVectorX1D fb = fd.getLinePressure(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity(
-        "line_tension_pressure", fb);
-  }
-  if (options.mask) {
-    EigenVectorX1D_i msk = fd.getMask();
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("mask", msk);
-  }
-  if (options.H_H0) {
-    EigenVectorX1D h_h0 = fd.getH_H0_diff(0);
-    polyscope::getSurfaceMesh("Mesh")->addVertexScalarQuantity("curvature_diff",
-                                                               h_h0);
-  }
-  return mesh;
-}
-
-void animate(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd, int &idx,
-             int &waitTime, checkBox options, bool &toggle) {
-
-  updateSurfaceMesh(mesh, fd, idx, options);
-  idx++;
-  if (idx >= fd.getNextFrameIndex()) {
-    idx = 0;
-    toggle = !toggle;
-  }
-  wait(waitTime);
-}
-
-int animation_nc(std::string &filename, float transparency, float angle,
-                 float fov, float edgeWidth, const bool ref_coord,
-                 const bool velocity, const bool mean_curvature,
-                 const bool gauss_curvature, const bool spon_curvature,
-                 const bool ext_pressure, const bool physical_pressure,
-                 const bool capillary_pressure, const bool inside_pressure,
-                 const bool bending_pressure, const bool line_pressure,
-                 const bool mask, const bool H_H0) {
+int animate_nc(std::string &filename, const Quantities &options,
+                 float transparency, float angle, float fov, float edgeWidth) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -403,35 +279,24 @@ int animation_nc(std::string &filename, float transparency, float angle,
   // Initialize visualization variables
   int prevFrame = 0;
   int currFrame = 0;
-  bool play = false;
-  bool record = false;
+  bool isStart = false;
+  bool isRecord = false;
   int maxFrame = fd.getNextFrameIndex() - 1;
   int maxWaitTime = 500;
   int waitTime = 0;
-  checkBox options({ref_coord, velocity, mean_curvature, gauss_curvature,
-                    spon_curvature, ext_pressure, physical_pressure,
-                    capillary_pressure, inside_pressure, bending_pressure,
-                    line_pressure, mask, H_H0});
 
   // Set preference for polyscope
-  polyscope::options::programName = "Mem3DG Visualization";
-  polyscope::options::verbosity = 0;
-  polyscope::options::usePrefsFile = false;
-  polyscope::options::autocenterStructures = false;
-  polyscope::options::autoscaleStructures = false;
-  polyscope::options::groundPlaneEnabled = false;
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
-  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+  initGui();
   polyscope::view::fov = fov;
 
   // Initialize polyscope
   polyscope::init();
 
   // Initialize surface mesh
-  auto mesh = registerSurfaceMesh(fd, options);
-  // mesh->setEdgeWidth(edgeWidth);
-  // mesh->setTransparency(transparency);
+  auto polyscopeMesh = registerSurfaceMesh(fd, 0, options);
+  polyscopeMesh->setSmoothShade(true);
+  // polyscopeMesh->setEdgeWidth(edgeWidth);
+  // polyscopeMesh->setTransparency(transparency);
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -449,11 +314,11 @@ int animation_nc(std::string &filename, float transparency, float angle,
                      maxWaitTime); // set a float variable
 
     // // Execute transparency slider
-    // mesh->setTransparency(transparency);
+    // polyscopeMesh->setTransparency(transparency);
 
     // Define buttons
     if (ImGui::Button("Play/Pause")) {
-      play = !play;
+      isStart = !isStart;
     }
     if (ImGui::Button("Screenshot")) {
       char buff[50];
@@ -463,22 +328,22 @@ int animation_nc(std::string &filename, float transparency, float angle,
       // polyscope::screenshot("screenshot.png", true);
     }
     if (ImGui::Button("Record")) {
-      record = !record;
+      isRecord = !isRecord;
     }
     if (prevFrame != currFrame) {
-      updateSurfaceMesh(mesh, fd, currFrame, options);
+      polyscopeMesh = registerSurfaceMesh(fd, currFrame, options);
       prevFrame = currFrame;
     }
-    if (record) {
+    if (isRecord) {
       char buff[50];
       snprintf(buff, 50, "video/frame%06d.png", currFrame);
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
-      animate(mesh, fd, currFrame, waitTime, options, record);
+      play(fd, currFrame, waitTime, options, isRecord);
       prevFrame = currFrame;
     }
-    if (play) {
-      animate(mesh, fd, currFrame, waitTime, options, play);
+    if (isStart) {
+      play(fd, currFrame, waitTime, options, isStart);
       prevFrame = currFrame;
     }
 
@@ -491,15 +356,9 @@ int animation_nc(std::string &filename, float transparency, float angle,
   return 0;
 }
 
-int snapshot_nc(std::string &filename, int frame, float transparency,
-                float angle, float fov, float edgeWidth, bool isShow,
-                bool isSave, std::string screenshotName, const bool ref_coord,
-                const bool velocity, const bool mean_curvature,
-                const bool gauss_curvature, const bool spon_curvature,
-                const bool ext_pressure, const bool physical_pressure,
-                const bool capillary_pressure, const bool inside_pressure,
-                const bool bending_pressure, const bool line_pressure,
-                const bool mask, const bool H_H0) {
+int snapshot_nc(std::string &filename, const Quantities &options, int frame,
+                float transparency, float angle, float fov, float edgeWidth,
+                bool isShow, bool isSave, std::string screenshotName) {
 
   static int ENTRY = 0;
 
@@ -510,22 +369,8 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
   mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
   fd.getNcFrame(frame);
 
-  // Initialize visualization variables
-  checkBox options({ref_coord, velocity, mean_curvature, gauss_curvature,
-                    spon_curvature, ext_pressure, physical_pressure,
-                    capillary_pressure, inside_pressure, bending_pressure,
-                    line_pressure, mask, H_H0});
-
   // Set preference for polyscope
-  polyscope::options::programName = "Mem3DG Visualization";
-  polyscope::options::verbosity = 0;
-  polyscope::options::usePrefsFile = false;
-  polyscope::options::autocenterStructures = false;
-  polyscope::options::autoscaleStructures = false;
-  polyscope::options::groundPlaneEnabled = false;
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
-  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+  initGui();
   // polyscope::view::fov = 50;
 
   // Initialize polyscope
@@ -534,65 +379,10 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
   }
 
   // Initialize surface mesh and switch to specific frame
-  auto mesh = registerSurfaceMesh(fd, options);
-  updateSurfaceMesh(mesh, fd, frame, options);
-  mesh->setEdgeWidth(edgeWidth);
-  mesh->setTransparency(transparency);
-
-  if (options.ref_coord) {
-    EigenVectorX3D refcoords = fd.getRefcoordinate();
-    mesh->addVertexVectorQuantity("ref_coordinate", refcoords)
-        ->setEnabled(true);
-  }
-  if (options.velocity) {
-    EigenVectorX3D vel = fd.getVelocity(frame);
-    mesh->addVertexVectorQuantity("velocity", vel)->setEnabled(true);
-  }
-  if (options.mean_curvature) {
-    EigenVectorX1D H = fd.getMeanCurvature(frame);
-    mesh->addVertexScalarQuantity("mean_curvature", H)->setEnabled(true);
-  }
-  if (options.gauss_curvature) {
-    EigenVectorX1D K = fd.getGaussCurvature(frame);
-    mesh->addVertexScalarQuantity("gauss_curvature", K)->setEnabled(true);
-  }
-  if (options.spon_curvature) {
-    EigenVectorX1D H0 = fd.getSponCurvature(frame);
-    mesh->addVertexScalarQuantity("spon_curvature", H0)->setEnabled(true);
-  }
-  if (options.ext_pressure) {
-    EigenVectorX1D f_ext = fd.getExternalPressure(frame);
-    mesh->addVertexScalarQuantity("external_pressure", f_ext)->setEnabled(true);
-  }
-  if (options.physical_pressure) {
-    EigenVectorX1D fn = fd.getPhysicalPressure(frame);
-    mesh->addVertexScalarQuantity("physical_pressure", fn)->setEnabled(true);
-  }
-  if (options.capillary_pressure) {
-    EigenVectorX1D ft = fd.getCapillaryPressure(frame);
-    mesh->addVertexScalarQuantity("capillary_pressure", ft)->setEnabled(true);
-  }
-  if (options.inside_pressure) {
-    EigenVectorX1D ft = fd.getInsidePressure(frame);
-    mesh->addVertexScalarQuantity("inside_pressure", ft)->setEnabled(true);
-  }
-  if (options.bending_pressure) {
-    EigenVectorX1D fb = fd.getBendingPressure(frame);
-    mesh->addVertexScalarQuantity("bending_pressure", fb)->setEnabled(true);
-  }
-  if (options.line_pressure) {
-    EigenVectorX1D fl = fd.getLinePressure(frame);
-    mesh->addVertexScalarQuantity("line_tension_pressure", fl)
-        ->setEnabled(true);
-  }
-  if (options.mask) {
-    EigenVectorX1D_i msk = fd.getMask();
-    mesh->addVertexScalarQuantity("mask", msk)->setEnabled(true);
-  }
-  if (options.H_H0) {
-    EigenVectorX1D h_h0 = fd.getH_H0_diff(frame);
-    mesh->addVertexScalarQuantity("curvature_diff", h_h0)->setEnabled(true);
-  }
+  auto polyscopeMesh = registerSurfaceMesh(fd, frame, options);
+  polyscopeMesh->setEdgeWidth(edgeWidth);
+  polyscopeMesh->setTransparency(transparency);
+  polyscopeMesh->setSmoothShade(true);
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -606,7 +396,7 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
     ImGui::SliderFloat("transparency", &transparency, 0, 1);
 
     // Execute transparency slider
-    mesh->setTransparency(transparency);
+    polyscopeMesh->setTransparency(transparency);
 
     // Define buttons
     if (ImGui::Button("Screenshot")) {
@@ -646,4 +436,229 @@ int snapshot_nc(std::string &filename, int frame, float transparency,
   ENTRY++;
   return 0;
 }
+
 #endif
+
+#ifdef MEM3DG_WITH_NETCDF
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int &idx,
+                                            Quantities &options) {
+  if (idx >= fd.getNextFrameIndex()) {
+    idx = 0;
+  }
+
+  EigenTopVec topo_frame = fd.getTopoFrame(idx);
+  EigenVectorX3D coords = fd.getCoords(idx);
+  // mesh->updateVertexPositions(coords);
+  polyscope::SurfaceMesh *polyscopeMesh =
+      polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
+  polyscopeMesh->setEnabled(true);
+
+  if (options.ref_coord) {
+    EigenVectorX3D refcoords = fd.getRefcoordinate();
+    polyscopeMesh->addVertexVectorQuantity("ref_coordinate", refcoords);
+
+    // Show quantities at the opening
+    // polyscopeMesh->addVertexVectorQuantity("ref_coordinate", refcoords)
+    //     ->setEnabled(true);
+  }
+  if (options.mean_curvature) {
+    EigenVectorX1D H = fd.getMeanCurvature(idx);
+    polyscopeMesh->addVertexScalarQuantity("mean_curvature", H);
+  }
+  if (options.gauss_curvature) {
+    EigenVectorX1D K = fd.getGaussCurvature(idx);
+    polyscopeMesh->addVertexScalarQuantity("gauss_curvature", K);
+  }
+  if (options.spon_curvature) {
+    EigenVectorX1D H0 = fd.getSponCurvature(idx);
+    polyscopeMesh->addVertexScalarQuantity("spon_curvature", H0);
+  }
+  if (options.mask) {
+    EigenVectorX1D_i msk = fd.getMask();
+    polyscopeMesh->addVertexScalarQuantity("mask", msk);
+  }
+  if (options.H_H0) {
+    EigenVectorX1D h_h0 = fd.getH_H0_diff(idx);
+    polyscopeMesh->addVertexScalarQuantity("curvature_diff", h_h0);
+  }
+  if (options.velocity) {
+    EigenVectorX3D vel = fd.getVelocity(idx);
+    polyscopeMesh->addVertexVectorQuantity("velocity", vel);
+  }
+  if (options.bending_pressure) {
+    EigenVectorX1D fb = fd.getBendingPressure(idx);
+    polyscopeMesh->addVertexScalarQuantity("bending_pressure", fb);
+  }
+  if (options.capillary_pressure) {
+    EigenVectorX1D ft = fd.getCapillaryPressure(idx);
+    polyscopeMesh->addVertexScalarQuantity("capillary_pressure", ft);
+  }
+  if (options.inside_pressure) {
+    EigenVectorX1D ft = fd.getInsidePressure(idx);
+    polyscopeMesh->addVertexScalarQuantity("inside_pressure", ft);
+  }
+  if (options.ext_pressure) {
+    EigenVectorX1D f_ext = fd.getExternalPressure(idx);
+    polyscopeMesh->addVertexScalarQuantity("external_pressure", f_ext);
+  }
+  if (options.line_pressure) {
+    EigenVectorX1D fl = fd.getLinePressure(idx);
+    polyscopeMesh->addVertexScalarQuantity("line_tension_pressure", fl);
+  }
+  if (options.physical_pressure) {
+    EigenVectorX1D fn = fd.getPhysicalPressure(idx);
+    polyscopeMesh->addVertexScalarQuantity("physical_pressure", fn);
+  }
+  // polyscope::registerSurfaceMesh("Mesh", coords, top);
+
+  return polyscopeMesh;
+}
+
+void play(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd, int &idx,
+          int &waitTime, Quantities options, bool &toggle) {
+
+  registerSurfaceMesh(fd, idx, options);
+  idx++;
+  if (idx >= fd.getNextFrameIndex()) {
+    idx = 0;
+    toggle = !toggle;
+  }
+  wait(waitTime);
+}
+#endif
+
+void play(std::string framesDir, int &idx, int &waitTime, Quantities options,
+          bool &toggle, int maxFrame) {
+  char buffer[50];
+  sprintf(buffer, "/frame%d.ply", (int)idx);
+  std::string plyName(buffer);
+  plyName = framesDir + plyName;
+  registerSurfaceMesh(plyName, options);
+  idx++;
+  if (idx >= maxFrame) {
+    idx = 0;
+    toggle = !toggle;
+  }
+  wait(waitTime);
+}
+
+polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
+                                            const Quantities &options) {
+
+  /// Declare pointers to mesh, geometry and richdata objects
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
+
+  /// Load input mesh
+  if (!options.mean_curvature && !options.gauss_curvature &&
+      !options.spon_curvature && !options.ext_pressure &&
+      !options.physical_pressure && !options.capillary_pressure &&
+      !options.bending_pressure && !options.line_pressure) {
+    std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(plyName);
+  } else {
+    std::tie(ptrMesh, ptrRichData) =
+        gcs::RichSurfaceMeshData::readMeshAndData(plyName);
+    ptrVpg = ptrRichData->getGeometry();
+  }
+
+  polyscope::SurfaceMesh *polyscopeMesh = polyscope::registerSurfaceMesh(
+      "Vesicle surface", ptrVpg->inputVertexPositions,
+      ptrMesh->getFaceVertexList());
+  polyscopeMesh->setSmoothShade(true);
+  polyscopeMesh->setEnabled(true);
+  polyscopeMesh->setEdgeWidth(1);
+
+  /// Read element data
+  if (options.mean_curvature) {
+    gcs::VertexData<double> meanCurvature =
+        ptrRichData->getVertexProperty<double>("mean_curvature");
+    EigenVectorX1D meanCurvature_e = meanCurvature.raw();
+    polyscopeMesh->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
+  }
+  if (options.gauss_curvature) {
+    gcs::VertexData<double> gaussCurvature =
+        ptrRichData->getVertexProperty<double>("gauss_curvature");
+    EigenVectorX1D gaussCurvature_e = gaussCurvature.raw();
+    polyscopeMesh->addVertexScalarQuantity("gauss_curvature", gaussCurvature_e);
+  }
+  if (options.spon_curvature) {
+    gcs::VertexData<double> sponCurvature =
+        ptrRichData->getVertexProperty<double>("spon_curvature");
+    EigenVectorX1D sponCurvature_e = sponCurvature.raw();
+    polyscopeMesh->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
+  }
+  if (options.ext_pressure) {
+    gcs::VertexData<double> extPressure =
+        ptrRichData->getVertexProperty<double>("external_pressure");
+    EigenVectorX1D extPressure_e = extPressure.raw();
+    polyscopeMesh->addVertexScalarQuantity("applied_pressure", extPressure_e);
+  }
+  if (options.physical_pressure) {
+    gcs::VertexData<double> physicalPressure =
+        ptrRichData->getVertexProperty<double>("physical_pressure");
+    EigenVectorX1D physicalPressure_e = physicalPressure.raw();
+    polyscopeMesh->addVertexScalarQuantity("physical_pressure",
+                                           physicalPressure_e);
+  }
+  if (options.capillary_pressure) {
+    gcs::VertexData<double> capillaryPressure =
+        ptrRichData->getVertexProperty<double>("capillary_pressure");
+    EigenVectorX1D capillaryPressure_e = capillaryPressure.raw();
+    polyscopeMesh->addVertexScalarQuantity("surface_tension",
+                                           capillaryPressure_e);
+  }
+  if (options.bending_pressure) {
+    gcs::VertexData<double> bendingPressure =
+        ptrRichData->getVertexProperty<double>("bending_pressure");
+    EigenVectorX1D bendingPressure_e = bendingPressure.raw();
+    polyscopeMesh->addVertexScalarQuantity("bending_pressure",
+                                           bendingPressure_e);
+  }
+  if (options.line_pressure) {
+    gcs::VertexData<double> linePressure =
+        ptrRichData->getVertexProperty<double>("line_tension_pressure");
+    EigenVectorX1D linePressure_e = linePressure.raw();
+    polyscopeMesh->addVertexScalarQuantity("line_tension_pressure",
+                                           linePressure_e);
+  }
+
+  /*gcs::VertexData<gc::Vector3> vertexVelocity =
+      ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
+  /*gcs::VertexData<gc::Vector3> normalForce =
+  ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
+  gcs::VertexData<gc::Vector3> tangentialForce =
+  ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
+  // EigenVectorX3D vertexVelocity_e =
+  //    mem3dg::EigenMap<double, 3>(vertexVelocity);
+  /*EigenVectorX3D normalForce_e =
+  gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
+  Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
+  3>(tangentialForce);*/
+  /*polyscope::getSurfaceMesh("Vesicle surface")
+      ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
+  /*polyscope::getSurfaceMesh("Vesicle
+  surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
+  polyscope::getSurfaceMesh("Vesicle
+  surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
+
+  return polyscopeMesh;
+}
+
+void wait(unsigned timeout) {
+  timeout += std::clock();
+  while (std::clock() < timeout)
+    continue;
+}
+
+void initGui() {
+  polyscope::options::programName = "Mem3DG Visualization";
+  polyscope::options::verbosity = 0;
+  polyscope::options::usePrefsFile = false;
+  polyscope::options::autocenterStructures = false;
+  polyscope::options::autoscaleStructures = false;
+  polyscope::options::groundPlaneEnabled = false;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
+  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+}
