@@ -21,6 +21,7 @@
 #include "Eigen/src/Core/util/Constants.h"
 #include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
+#include "mem3dg/solver/visualization.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
@@ -373,11 +374,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           compute the free energy of the system
       )delim");
-
-  system.def("visualize", &System::visualize,
-             R"delim(
-          visualization of the system object
-      )delim");
   //   system.def("computeL1Norm", &System::computeL1Norm,
   //              R"delim(
   //                    compute error norm
@@ -531,6 +527,93 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get work of external force  
       )delim");
 
+  pymem3dg.def("visualize", &visualize, py::arg("f"),
+               R"delim(
+          visualization of the system object
+      )delim");
+
+  pymem3dg.def(
+      "snapshot_ply", &snapshot_ply,
+      " Visualize .ply file in polysope with options of additional quantities",
+      py::arg("fileName"), py::arg("options"));
+
+  pymem3dg.def(
+      "animate_ply", &animate_ply,
+      " Visualize .ply files in polysope with options of additional quantities",
+      py::arg("framesDir"), py::arg("frameNum"), py::arg("options"));
+
+  pymem3dg.def("snapshot_nc", &snapshot_nc,
+               "Visualize netcdf file in single frame", py::arg("fileName"),
+               py::arg("frame"), py::arg("options"), py::arg("transparency"),
+               py::arg("angle"), py::arg("fov"), py::arg("edgeWidth"),
+               py::arg("isShow"), py::arg("isSave"), py::arg("screenshotName"));
+
+  pymem3dg.def("animate_nc", &animate_nc,
+               "Animate netcdf file with options of additional quantities",
+               py::arg("fileName"), py::arg("options"), py::arg("transparency"),
+               py::arg("angle"), py::arg("fov"), py::arg("edgeWidth"));
+
+  /// visualization quantities struct
+  py::class_<Quantities> quantities(pymem3dg, "Quantities", R"delim(
+        The quantities for visualization
+    )delim");
+  quantities.def(py::init<>());
+  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool,
+                          bool, bool, bool, bool>());
+  quantities.def_readwrite("ref_coord", &Quantities::ref_coord,
+                           R"delim(
+        visualize reference coordinate 
+      )delim");
+  quantities.def_readwrite("velocity", &Quantities::velocity,
+                           R"delim(
+        visualize velocity
+      )delim");
+  quantities.def_readwrite("mean_curvature", &Quantities::mean_curvature,
+                           R"delim(
+        visualize mean_curvature
+      )delim");
+  quantities.def_readwrite("gauss_curvature", &Quantities::gauss_curvature,
+                           R"delim(
+        visualize gaussian curvature
+      )delim");
+  quantities.def_readwrite("spon_curvature", &Quantities::spon_curvature,
+                           R"delim(
+       visualize spontaneous curvature
+      )delim");
+  quantities.def_readwrite("ext_pressure", &Quantities::ext_pressure,
+                           R"delim(
+        visualize external pressure
+      )delim");
+  quantities.def_readwrite("physical_pressure", &Quantities::physical_pressure,
+                           R"delim(
+        visualize reference coordinate 
+      )delim");
+  quantities.def_readwrite("capillary_pressure",
+                           &Quantities::capillary_pressure,
+                           R"delim(
+        visualize capillary_pressure
+      )delim");
+  quantities.def_readwrite("inside_pressure", &Quantities::inside_pressure,
+                           R"delim(
+        visualize inside_pressure
+      )delim");
+  quantities.def_readwrite("bending_pressure", &Quantities::bending_pressure,
+                           R"delim(
+        visualize bending pressure
+      )delim");
+  quantities.def_readwrite("line_pressure", &Quantities::line_pressure,
+                           R"delim(
+       visualize line tension pressure
+      )delim");
+  quantities.def_readwrite("mask", &Quantities::mask,
+                           R"delim(
+        visualize mask for integration
+      )delim");
+  quantities.def_readwrite("H_H0", &Quantities::H_H0,
+                           R"delim(
+        visualize H - H0
+      )delim");
+
   /// Options struct
   py::class_<Options> options(pymem3dg, "Options", R"delim(
         The options
@@ -580,15 +663,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
       R"delim(
         )delim");
-
-  pymem3dg.def(
-      "viewer_ply", &viewer_ply,
-      " Visualize .ply file in polysope with options of additional quantities",
-      py::arg("fileName"), py::arg("mean_curvature"),
-      py::arg("gauss_curvature"), py::arg("spon_curvature"),
-      py::arg("ext_pressure"), py::arg("physical_pressure"),
-      py::arg("capillary_pressure"), py::arg("bending_pressure"),
-      py::arg("line_pressure"));
 
   pymem3dg.def(
       "driver_ply", &driver_ply,
@@ -720,29 +794,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("n"), py::arg("R"));
 
 #ifdef MEM3DG_WITH_NETCDF
-
-  pymem3dg.def("snapshot_nc", &snapshot_nc,
-               "Visualize netcdf file in single frame", py::arg("fileName"),
-               py::arg("frame"), py::arg("transparency"), py::arg("angle"),
-               py::arg("fov"), py::arg("edgeWidth"), py::arg("isShow"),
-               py::arg("isSave"), py::arg("screenshotName"),
-               py::arg("ref_coord"), py::arg("velocity"),
-               py::arg("mean_curvature"), py::arg("gauss_curvature"),
-               py::arg("spon_curvature"), py::arg("ext_pressure"),
-               py::arg("physical_pressure"), py::arg("capillary_pressure"),
-               py::arg("inside_pressure"), py::arg("bending_pressure"),
-               py::arg("line_pressure"), py::arg("mask"), py::arg("H_H0"));
-
-  pymem3dg.def("animation_nc", &animation_nc,
-               "Animate netcdf file with options of additional quantities",
-               py::arg("fileName"), py::arg("transparency"), py::arg("angle"),
-               py::arg("fov"), py::arg("edgeWidth"), py::arg("ref_coord"),
-               py::arg("velocity"), py::arg("mean_curvature"),
-               py::arg("gauss_curvature"), py::arg("spon_curvature"),
-               py::arg("ext_pressure"), py::arg("physical_pressure"),
-               py::arg("capillary_pressure"), py::arg("inside_pressure"),
-               py::arg("bending_pressure"), py::arg("line_pressure"),
-               py::arg("mask"), py::arg("H_H0"));
 
   pymem3dg.def(
       "driver_nc", &driver_nc,
