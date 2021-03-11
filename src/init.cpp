@@ -284,9 +284,6 @@ void System::initConstants() {
     }
   }
 
-  // Initialize RichData
-  richData.addMeshConnectivity();
-  richData.addGeometry(*vpg);
 
   // compute constant values during simulation
   // Find the closest point index to P.pt in refVpg

@@ -143,10 +143,6 @@ public:
    */
   void saveData();
 
-  /**
-   * @brief Save data to richData
-   */
-  void saveRichData();
 
   /**
    * @brief Save data to richData and output ply file

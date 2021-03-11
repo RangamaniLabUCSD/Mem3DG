@@ -199,11 +199,10 @@ void Integrator::createNetcdfFile() {
 
 void Integrator::saveData() {
   // save variable to richData and save ply file
-  if (verbosity > 3 && !f.O.isGrowMesh) {
-    saveRichData();
+  if ((verbosity > 3 && !f.O.isGrowMesh) || (verbosity > 0 && f.O.isGrowMesh)) {
     char buffer[50];
-    sprintf(buffer, "/frame%d", (int)frame);
-    f.richData.write(outputDir + buffer + ".ply");
+    sprintf(buffer, "/frame%d.ply", (int)frame);
+    saveRichData(buffer);
   }
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -238,12 +237,11 @@ void Integrator::saveData() {
   }
   // break loop if EXIT flag is on
   if (EXIT) {
-    if (verbosity > 0 && !f.O.isGrowMesh) {
+    if (verbosity > 0) {
       std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
                 << ", and data saved to " + outputDir << std::endl;
       if (verbosity > 2) {
-        saveRichData();
-        f.richData.write(outputDir + "/out.ply");
+        saveRichData("/out.ply");
       }
     }
   }
@@ -285,25 +283,26 @@ void Integrator::markFileName(std::string marker_str) {
   delete[] file;
 }
 
-void Integrator::saveRichData() {
+void Integrator::saveRichData(std::string plyName) {
+  gcs::RichSurfaceMeshData richData(*f.mesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*f.vpg);
+
   gcs::VertexData<double> fn(*f.mesh);
   fn.fromVector(f.M_inv * physicalForce);
   gcs::VertexData<double> fl(*f.mesh);
   fl.fromVector(f.M_inv * f.lineCapillaryForce.raw());
 
-  f.richData.addVertexProperty("mean_curvature", f.H);
-  f.richData.addVertexProperty("gauss_curvature", f.K);
-  f.richData.addVertexProperty("spon_curvature", f.H0);
-  f.richData.addVertexProperty("external_pressure", f.externalPressure);
-  f.richData.addVertexProperty("physical_pressure", fn);
-  f.richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
-  f.richData.addVertexProperty("bending_pressure", f.bendingPressure);
-  f.richData.addVertexProperty("line_tension_pressure", fl);
-}
+  richData.addVertexProperty("mean_curvature", f.H);
+  richData.addVertexProperty("gauss_curvature", f.K);
+  richData.addVertexProperty("spon_curvature", f.H0);
+  richData.addVertexProperty("external_pressure", f.externalPressure);
+  richData.addVertexProperty("physical_pressure", fn);
+  richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
+  richData.addVertexProperty("bending_pressure", f.bendingPressure);
+  richData.addVertexProperty("line_tension_pressure", fl);
 
-void Integrator::saveRichData(std::string plyName) {
-  saveRichData();
-  f.richData.write(outputDir + plyName);
+  richData.write(outputDir + plyName);
 }
 
 #ifdef MEM3DG_WITH_NETCDF

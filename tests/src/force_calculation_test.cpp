@@ -44,12 +44,7 @@ protected:
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   Parameters p;
-  Options o{.isVertexShift = false,
-            .isProtein = false,
-            .isReducedVolume = true,
-            .isLocalCurvature = false,
-            .isEdgeFlip = false,
-            .isGrowMesh = false};
+  Options o;
   double h = 0.0002;
 
   ForceCalculationTest() {
@@ -83,8 +78,15 @@ protected:
 
     p.radius = 3;
 
-    // Create mesh and geometry objects
-    std::tie(ptrMesh, ptrVpg) = icosphere(2, 1);
+    o.isVertexShift = false;
+    o.isProtein = false;
+    o.isReducedVolume = true;
+    o.isLocalCurvature = false;
+    o.isEdgeFlip = false;
+    o.isGrowMesh = false;
+
+        // Create mesh and geometry objects
+        std::tie(ptrMesh, ptrVpg) = icosphere(2, 1);
   }
 };
 

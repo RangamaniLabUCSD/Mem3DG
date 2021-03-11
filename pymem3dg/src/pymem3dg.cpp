@@ -47,18 +47,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                  R"delim(
           save data to output directory
       )delim");
-  integrator.def(
-      "saveRichData",
-      static_cast<void (Integrator::*)(void)>(&Integrator::saveRichData),
-      "save to richData",
-      R"delim(
-          save data to output directory
-      )delim");
-  integrator.def(
-      "saveRichData",
-      static_cast<void (Integrator::*)(std::string)>(&Integrator::saveRichData),
-      "save to richData and output .ply file to output directory",
-      R"delim(
+  integrator.def("saveRichData", (&Integrator::saveRichData),
+                 "save to richData and output .ply file to output directory",
+                 R"delim(
           save data to output directory
       )delim");
   integrator.def("saveNetcdfData", &Integrator::saveNetcdfData,
@@ -205,7 +196,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the Parameters struct
       )delim");
   system.def_readonly("O", &System::O,
-                       R"delim(
+                      R"delim(
           get the Options struct
       )delim");
   system.def_readwrite("time", &System::time,
