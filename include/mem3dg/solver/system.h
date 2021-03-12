@@ -217,7 +217,7 @@ public:
   double volume;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
-  /// Cached vertex velocity by finite differencing past and current position
+  /// Cached vertex velocity 
   gcs::VertexData<gc::Vector3> vel;
   /// Mean curvature of the mesh
   gcs::VertexData<double> H;
@@ -241,7 +241,7 @@ public:
   gcs::EdgeData<bool> isCollapse;
 
   // ==========================================================
-  // =============        Constructors           +=============
+  // =============        Constructors           ==============
   // ==========================================================
   /**
    * @brief Construct a new Force object by reading topology and vertex matrices
