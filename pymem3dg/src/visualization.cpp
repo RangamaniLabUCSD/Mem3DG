@@ -16,8 +16,6 @@
 #include <iostream>
 #include <time.h>
 
-#include "mem3dg/solver/system.h"
-#include "mem3dg/solver/visualization.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/view.h"
@@ -25,7 +23,7 @@
 #include <geometrycentral/surface/meshio.h>
 
 #include "mem3dg/mem3dg"
-#
+#include <pybind11/embed.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -178,8 +176,8 @@ int snapshot_ply(std::string fileName, const Quantities &option) {
   return 0;
 }
 
-int animate_ply(std::string &frameDir, std::vector<size_t> frameNum,
-                  const Quantities &options) {
+int animate_ply(std::string frameDir, std::vector<size_t> frameNum,
+                const Quantities &options) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -216,7 +214,7 @@ int animate_ply(std::string &frameDir, std::vector<size_t> frameNum,
                                // matching PopItemWidth() below.
 
     // Initialize sliders
-    ImGui::SliderInt("index", &currFrame, 0,
+    ImGui::SliderInt("index", &currFrame, frameNum[0],
                      maxFrame); // set a float variable
     ImGui::SliderInt("slow-mo", &waitTime, 0,
                      maxWaitTime); // set a float variable
@@ -248,11 +246,11 @@ int animate_ply(std::string &frameDir, std::vector<size_t> frameNum,
       snprintf(buff, 50, "video/frame%06d.png", currFrame);
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
-      play(frameDir, currFrame, waitTime, options, isRecord, frameNum[1]);
+      play(frameDir, currFrame, waitTime, options, isRecord, frameNum);
       prevFrame = currFrame;
     }
     if (isStart) {
-      play(frameDir, currFrame, waitTime, options, isStart, frameNum[1]);
+      play(frameDir, currFrame, waitTime, options, isStart, frameNum);
       prevFrame = currFrame;
     }
 
@@ -268,7 +266,7 @@ int animate_ply(std::string &frameDir, std::vector<size_t> frameNum,
 #ifdef MEM3DG_WITH_NETCDF
 
 int animate_nc(std::string &filename, const Quantities &options,
-                 float transparency, float angle, float fov, float edgeWidth) {
+               float transparency, float angle, float fov, float edgeWidth) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -440,8 +438,8 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
 #endif
 
 #ifdef MEM3DG_WITH_NETCDF
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int &idx,
-                                            Quantities &options) {
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
+                                            const Quantities &options) {
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
   }
@@ -514,8 +512,8 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int &idx,
   return polyscopeMesh;
 }
 
-void play(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd, int &idx,
-          int &waitTime, Quantities options, bool &toggle) {
+void play(mem3dg::TrajFile &fd, int &idx, int &waitTime, Quantities options,
+          bool &toggle) {
 
   registerSurfaceMesh(fd, idx, options);
   idx++;
@@ -527,19 +525,22 @@ void play(polyscope::SurfaceMesh *mesh, mem3dg::TrajFile &fd, int &idx,
 }
 #endif
 
-void play(std::string framesDir, int &idx, int &waitTime, Quantities options,
-          bool &toggle, int maxFrame) {
-  char buffer[50];
-  sprintf(buffer, "/frame%d.ply", (int)idx);
-  std::string plyName(buffer);
-  plyName = framesDir + plyName;
-  registerSurfaceMesh(plyName, options);
-  idx++;
-  if (idx >= maxFrame) {
-    idx = 0;
-    toggle = !toggle;
-  }
-  wait(waitTime);
+void wait(unsigned timeout) {
+  timeout += std::clock();
+  while (std::clock() < timeout)
+    continue;
+}
+
+void initGui() {
+  polyscope::options::programName = "Mem3DG Visualization";
+  polyscope::options::verbosity = 0;
+  polyscope::options::usePrefsFile = false;
+  polyscope::options::autocenterStructures = false;
+  polyscope::options::autoscaleStructures = false;
+  polyscope::options::groundPlaneEnabled = false;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
+  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
 }
 
 polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
@@ -645,20 +646,18 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
   return polyscopeMesh;
 }
 
-void wait(unsigned timeout) {
-  timeout += std::clock();
-  while (std::clock() < timeout)
-    continue;
-}
+void play(std::string framesDir, int &idx, int &waitTime, Quantities options,
+          bool &toggle, std::vector<size_t> frameNum) {
+  char buffer[50];
+  sprintf(buffer, "/frame%d.ply", (int)idx);
+  std::string plyName(buffer);
+  plyName = framesDir + plyName;
+  registerSurfaceMesh(plyName, options);
 
-void initGui() {
-  polyscope::options::programName = "Mem3DG Visualization";
-  polyscope::options::verbosity = 0;
-  polyscope::options::usePrefsFile = false;
-  polyscope::options::autocenterStructures = false;
-  polyscope::options::autoscaleStructures = false;
-  polyscope::options::groundPlaneEnabled = false;
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
-  polyscope::view::upDir = polyscope::view::UpDir::ZUp;
-  polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+  idx++;
+  if (idx > frameNum[1]) {
+    idx = frameNum[0];
+    toggle = !toggle;
+  }
+  wait(waitTime);
 }

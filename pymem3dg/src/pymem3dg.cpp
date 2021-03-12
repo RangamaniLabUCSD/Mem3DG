@@ -21,7 +21,6 @@
 #include "Eigen/src/Core/util/Constants.h"
 #include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
-#include "mem3dg/solver/visualization.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
@@ -381,6 +380,37 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //                   force (:py:class:`list`): mesh vertex force
   //         )delim");
 
+  /// Options struct
+  py::class_<Options> options(pymem3dg, "Options", R"delim(
+        The options
+    )delim");
+  options.def(py::init<>());
+  options.def(py::init<bool, bool, bool, bool, bool, bool>());
+  options.def_readwrite("isVertexShift", &Options::isVertexShift,
+                        R"delim(
+          get the option of whether do vertex shift  
+      )delim");
+  options.def_readwrite("isProtein", &Options::isProtein,
+                        R"delim(
+          get the option of whether simulate protein  
+      )delim");
+  options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
+                        R"delim(
+          get the option of whether adopt reduced volume  
+      )delim");
+  options.def_readwrite("isLocalCurvature", &Options::isLocalCurvature,
+                        R"delim(
+          get the option of whether consider local curvature  
+      )delim");
+  options.def_readwrite("isEdgeFlip", &Options::isEdgeFlip,
+                        R"delim(
+          get the option of whether do edge flip
+      )delim");
+  options.def_readwrite("isGrowMesh", &Options::isGrowMesh,
+                        R"delim(
+          get the option of whether grow mesh 
+      )delim");
+
   /// Parameter struct
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
         The parameters
@@ -542,6 +572,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       " Visualize .ply files in polysope with options of additional quantities",
       py::arg("framesDir"), py::arg("frameNum"), py::arg("options"));
 
+#ifdef MEM3DG_WITH_NETCDF
   pymem3dg.def("snapshot_nc", &snapshot_nc,
                "Visualize netcdf file in single frame", py::arg("fileName"),
                py::arg("frame"), py::arg("options"), py::arg("transparency"),
@@ -552,7 +583,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                "Animate netcdf file with options of additional quantities",
                py::arg("fileName"), py::arg("options"), py::arg("transparency"),
                py::arg("angle"), py::arg("fov"), py::arg("edgeWidth"));
-
+#endif
   /// visualization quantities struct
   py::class_<Quantities> quantities(pymem3dg, "Quantities", R"delim(
         The quantities for visualization
@@ -612,37 +643,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   quantities.def_readwrite("H_H0", &Quantities::H_H0,
                            R"delim(
         visualize H - H0
-      )delim");
-
-  /// Options struct
-  py::class_<Options> options(pymem3dg, "Options", R"delim(
-        The options
-    )delim");
-  options.def(py::init<>());
-  options.def(py::init<bool, bool, bool, bool, bool, bool>());
-  options.def_readwrite("isVertexShift", &Options::isVertexShift,
-                        R"delim(
-          get the option of whether do vertex shift  
-      )delim");
-  options.def_readwrite("isProtein", &Options::isProtein,
-                        R"delim(
-          get the option of whether simulate protein  
-      )delim");
-  options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
-                        R"delim(
-          get the option of whether adopt reduced volume  
-      )delim");
-  options.def_readwrite("isLocalCurvature", &Options::isLocalCurvature,
-                        R"delim(
-          get the option of whether consider local curvature  
-      )delim");
-  options.def_readwrite("isEdgeFlip", &Options::isEdgeFlip,
-                        R"delim(
-          get the option of whether do edge flip
-      )delim");
-  options.def_readwrite("isGrowMesh", &Options::isGrowMesh,
-                        R"delim(
-          get the option of whether grow mesh 
       )delim");
 
   /// Driver function for system generation
