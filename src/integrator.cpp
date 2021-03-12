@@ -245,6 +245,8 @@ void Integrator::saveData() {
       }
     }
   }
+
+  frame++;
 }
 
 void Integrator::markFileName(std::string marker_str) {
@@ -307,54 +309,54 @@ void Integrator::saveRichData(std::string plyName) {
 
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::saveNetcdfData() {
-  frame = fd.getNextFrameIndex();
+  std::size_t idx = fd.getNextFrameIndex();
 
   // write time
-  fd.writeTime(frame, f.time);
+  fd.writeTime(idx, f.time);
 
   // write geometry
-  fd.writeCoords(frame, EigenMap<double, 3>(f.vpg->inputVertexPositions));
-  fd.writeTopoFrame(frame, getFaceVertexMatrix(*f.mesh));
-  fd.writeVolume(frame, f.volume);
-  fd.writeSurfArea(frame, f.surfaceArea);
-  fd.writeMeanCurvature(frame, f.H.raw());
-  fd.writeGaussCurvature(frame, f.K.raw());
-  fd.writeSponCurvature(frame, f.H0.raw());
-  fd.writeHeight(frame, abs(f.vpg->inputVertexPositions[f.theVertex].z));
-  // fd.writeAngles(frame, f.vpg.cornerAngles.raw());
-  // fd.writeH_H0_diff(frame,
+  fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
+  fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
+  fd.writeVolume(idx, f.volume);
+  fd.writeSurfArea(idx, f.surfaceArea);
+  fd.writeMeanCurvature(idx, f.H.raw());
+  fd.writeGaussCurvature(idx, f.K.raw());
+  fd.writeSponCurvature(idx, f.H0.raw());
+  fd.writeHeight(idx, abs(f.vpg->inputVertexPositions[f.theVertex].z));
+  // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
+  // fd.writeH_H0_diff(idx,
   //                   ((f.H - f.H0).array() * (f.H -
   //                   f.H0).array()).matrix());
 
   // write velocity
-  fd.writeVelocity(frame, EigenMap<double, 3>(f.vel));
+  fd.writeVelocity(idx, EigenMap<double, 3>(f.vel));
   if (f.O.isProtein) {
-    fd.writeProteinDensity(frame, f.proteinDensity.raw());
+    fd.writeProteinDensity(idx, f.proteinDensity.raw());
   }
 
   // write pressures
-  fd.writeBendingPressure(frame, f.bendingPressure.raw());
-  fd.writeCapillaryPressure(frame, f.capillaryPressure.raw());
-  fd.writeLinePressure(frame, f.M_inv * f.lineCapillaryForce.raw());
-  fd.writeInsidePressure(frame, f.insidePressure.raw());
-  fd.writeExternalPressure(frame, f.externalPressure.raw());
-  fd.writePhysicalPressure(frame, f.M_inv * physicalForce);
+  fd.writeBendingPressure(idx, f.bendingPressure.raw());
+  fd.writeCapillaryPressure(idx, f.capillaryPressure.raw());
+  fd.writeLinePressure(idx, f.M_inv * f.lineCapillaryForce.raw());
+  fd.writeInsidePressure(idx, f.insidePressure.raw());
+  fd.writeExternalPressure(idx, f.externalPressure.raw());
+  fd.writePhysicalPressure(idx, f.M_inv * physicalForce);
 
   // write energies
-  fd.writeBendEnergy(frame, f.E.BE);
-  fd.writeSurfEnergy(frame, f.E.sE);
-  fd.writePressEnergy(frame, f.E.pE);
-  fd.writeKineEnergy(frame, f.E.kE);
-  fd.writeChemEnergy(frame, f.E.cE);
-  fd.writeLineEnergy(frame, f.E.lE);
-  fd.writeTotalEnergy(frame, f.E.totalE);
+  fd.writeBendEnergy(idx, f.E.BE);
+  fd.writeSurfEnergy(idx, f.E.sE);
+  fd.writePressEnergy(idx, f.E.pE);
+  fd.writeKineEnergy(idx, f.E.kE);
+  fd.writeChemEnergy(idx, f.E.cE);
+  fd.writeLineEnergy(idx, f.E.lE);
+  fd.writeTotalEnergy(idx, f.E.totalE);
 
   // write Norms
-  fd.writeL1ErrorNorm(frame, f.L1ErrorNorm);
-  fd.writeL1BendNorm(frame, f.computeL1Norm(f.M * f.bendingPressure.raw()));
-  fd.writeL1SurfNorm(frame, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
-  fd.writeL1PressNorm(frame, f.computeL1Norm(f.M * f.insidePressure.raw()));
-  fd.writeL1LineNorm(frame, f.computeL1Norm(f.lineCapillaryForce.raw()));
+  fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
+  fd.writeL1BendNorm(idx, f.computeL1Norm(f.M * f.bendingPressure.raw()));
+  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
+  fd.writeL1PressNorm(idx, f.computeL1Norm(f.M * f.insidePressure.raw()));
+  fd.writeL1LineNorm(idx, f.computeL1Norm(f.lineCapillaryForce.raw()));
 }
 #endif
 
