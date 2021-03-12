@@ -15,6 +15,7 @@
 set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/constants.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mem3dg.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/visualization.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/system.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh.h"

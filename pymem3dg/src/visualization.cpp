@@ -14,6 +14,7 @@
 
 #include <csignal>
 #include <iostream>
+#include <memory>
 #include <time.h>
 
 #include "polyscope/polyscope.h"
@@ -119,9 +120,6 @@ void visualize(mem3dg::System &f) {
 
     // Define buttons
     if (ImGui::Button("Screenshot")) {
-      // char buff[50];
-      // snprintf(buff, 50, "screenshot_frame%06d.png", frame);
-      // std::string defaultName(buff);
       polyscope::screenshot("screenshot.png", true);
     }
 
@@ -131,20 +129,23 @@ void visualize(mem3dg::System &f) {
   polyscope::show();
 }
 
-int snapshot_ply(std::string fileName, const Quantities &option) {
+int snapshot_ply(std::string fileName, const Quantities &option,
+                 float transparency, float fov, float edgeWidth) {
 
   signal(SIGINT, mem3dg::signalHandler);
 
-  auto polyscopeMesh = registerSurfaceMesh(fileName, option);
-
-  // Initialize visualization variables
-  float transparency = 1;
-
   // Set preference for polyscope
   initGui();
+  polyscope::view::fov = fov;
 
   /// Initiate in polyscope
   polyscope::init();
+
+  // Initialize surface mesh
+  auto polyscopeMesh = registerSurfaceMesh(fileName, option);
+  polyscopeMesh->setSmoothShade(true);
+  polyscopeMesh->setEdgeWidth(edgeWidth);
+  polyscopeMesh->setTransparency(transparency);
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -176,8 +177,9 @@ int snapshot_ply(std::string fileName, const Quantities &option) {
   return 0;
 }
 
-int animate_ply(std::string frameDir, std::vector<size_t> frameNum,
-                const Quantities &options) {
+int animate_ply(std::string frameDir, const Quantities &options,
+                std::vector<size_t> frameNum, float transparency, float fov,
+                float edgeWidth) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -193,6 +195,7 @@ int animate_ply(std::string frameDir, std::vector<size_t> frameNum,
 
   // Set preference for polyscope
   initGui();
+  polyscope::view::fov = fov;
 
   // Initialize polyscope
   polyscope::init();
@@ -204,6 +207,8 @@ int animate_ply(std::string frameDir, std::vector<size_t> frameNum,
   plyName = frameDir + plyName;
   auto polyscopeMesh = registerSurfaceMesh(plyName, options);
   polyscopeMesh->setSmoothShade(true);
+  polyscopeMesh->setEdgeWidth(edgeWidth);
+  polyscopeMesh->setTransparency(transparency);
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -216,8 +221,12 @@ int animate_ply(std::string frameDir, std::vector<size_t> frameNum,
     // Initialize sliders
     ImGui::SliderInt("index", &currFrame, frameNum[0],
                      maxFrame); // set a float variable
+    ImGui::SliderFloat("transparency", &transparency, 0, 1);
     ImGui::SliderInt("slow-mo", &waitTime, 0,
                      maxWaitTime); // set a float variable
+
+    // Execute transparency slider
+    polyscopeMesh->setTransparency(transparency);
 
     // Define buttons
     if (ImGui::Button("Play/Pause")) {
@@ -246,11 +255,13 @@ int animate_ply(std::string frameDir, std::vector<size_t> frameNum,
       snprintf(buff, 50, "video/frame%06d.png", currFrame);
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
-      play(frameDir, currFrame, waitTime, options, isRecord, frameNum);
+      play(polyscopeMesh, frameDir, currFrame, waitTime, options, isRecord,
+           frameNum);
       prevFrame = currFrame;
     }
     if (isStart) {
-      play(frameDir, currFrame, waitTime, options, isStart, frameNum);
+      play(polyscopeMesh, frameDir, currFrame, waitTime, options, isStart,
+           frameNum);
       prevFrame = currFrame;
     }
 
@@ -266,7 +277,7 @@ int animate_ply(std::string frameDir, std::vector<size_t> frameNum,
 #ifdef MEM3DG_WITH_NETCDF
 
 int animate_nc(std::string &filename, const Quantities &options,
-               float transparency, float angle, float fov, float edgeWidth) {
+               float transparency, float fov, float edgeWidth) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -293,8 +304,8 @@ int animate_nc(std::string &filename, const Quantities &options,
   // Initialize surface mesh
   auto polyscopeMesh = registerSurfaceMesh(fd, 0, options);
   polyscopeMesh->setSmoothShade(true);
-  // polyscopeMesh->setEdgeWidth(edgeWidth);
-  // polyscopeMesh->setTransparency(transparency);
+  polyscopeMesh->setEdgeWidth(edgeWidth);
+  polyscopeMesh->setTransparency(transparency);
 
   // Callback function for interactive GUI
   auto myCallback = [&]() {
@@ -311,8 +322,8 @@ int animate_nc(std::string &filename, const Quantities &options,
     ImGui::SliderInt("slow-mo", &waitTime, 0,
                      maxWaitTime); // set a float variable
 
-    // // Execute transparency slider
-    // polyscopeMesh->setTransparency(transparency);
+    // Execute transparency slider
+    polyscopeMesh->setTransparency(transparency);
 
     // Define buttons
     if (ImGui::Button("Play/Pause")) {
@@ -337,11 +348,11 @@ int animate_nc(std::string &filename, const Quantities &options,
       snprintf(buff, 50, "video/frame%06d.png", currFrame);
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
-      play(fd, currFrame, waitTime, options, isRecord);
+      play(polyscopeMesh, fd, currFrame, waitTime, options, isRecord);
       prevFrame = currFrame;
     }
     if (isStart) {
-      play(fd, currFrame, waitTime, options, isStart);
+      play(polyscopeMesh, fd, currFrame, waitTime, options, isStart);
       prevFrame = currFrame;
     }
 
@@ -512,10 +523,10 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
   return polyscopeMesh;
 }
 
-void play(mem3dg::TrajFile &fd, int &idx, int &waitTime, Quantities options,
-          bool &toggle) {
+void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::TrajFile &fd,
+          int &idx, int &waitTime, Quantities options, bool &toggle) {
 
-  registerSurfaceMesh(fd, idx, options);
+  polyscopeMesh = registerSurfaceMesh(fd, idx, options);
   idx++;
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
@@ -646,14 +657,14 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
   return polyscopeMesh;
 }
 
-void play(std::string framesDir, int &idx, int &waitTime, Quantities options,
-          bool &toggle, std::vector<size_t> frameNum) {
+void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
+          int &idx, int &waitTime, Quantities options, bool &toggle,
+          std::vector<size_t> frameNum) {
   char buffer[50];
   sprintf(buffer, "/frame%d.ply", (int)idx);
   std::string plyName(buffer);
   plyName = framesDir + plyName;
-  registerSurfaceMesh(plyName, options);
-
+  polyscopeMesh = registerSurfaceMesh(plyName, options);
   idx++;
   if (idx > frameNum[1]) {
     idx = frameNum[0];

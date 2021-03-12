@@ -565,24 +565,29 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def(
       "snapshot_ply", &snapshot_ply,
       " Visualize .ply file in polysope with options of additional quantities",
-      py::arg("fileName"), py::arg("options"));
+      py::arg("fileName"), py::arg("options"), py::arg("transparency") = 1,
+      py::arg("fov") = 50, py::arg("edgeWidth") = 1);
 
   pymem3dg.def(
       "animate_ply", &animate_ply,
       " Visualize .ply files in polysope with options of additional quantities",
-      py::arg("framesDir"), py::arg("frameNum"), py::arg("options"));
+      py::arg("framesDir"), py::arg("options"), py::arg("frameNum"),
+      py::arg("transparency") = 1, py::arg("fov") = 50,
+      py::arg("edgeWidth") = 1);
 
 #ifdef MEM3DG_WITH_NETCDF
-  pymem3dg.def("snapshot_nc", &snapshot_nc,
-               "Visualize netcdf file in single frame", py::arg("fileName"),
-               py::arg("frame"), py::arg("options"), py::arg("transparency"),
-               py::arg("angle"), py::arg("fov"), py::arg("edgeWidth"),
-               py::arg("isShow"), py::arg("isSave"), py::arg("screenshotName"));
+  pymem3dg.def(
+      "snapshot_nc", &snapshot_nc, "Visualize netcdf file in single frame",
+      py::arg("fileName"), py::arg("frame"), py::arg("options"),
+      py::arg("transparency") = 1, py::arg("angle") = 0, py::arg("fov") = 50,
+      py::arg("edgeWidth") = 1, py::arg("isShow") = true,
+      py::arg("isSave") = false, py::arg("screenshotName") = "screenshot.png");
 
   pymem3dg.def("animate_nc", &animate_nc,
                "Animate netcdf file with options of additional quantities",
-               py::arg("fileName"), py::arg("options"), py::arg("transparency"),
-               py::arg("angle"), py::arg("fov"), py::arg("edgeWidth"));
+               py::arg("fileName"), py::arg("options"),
+               py::arg("transparency") = 1, py::arg("fov") = 50,
+               py::arg("edgeWidth") = 1);
 #endif
   /// visualization quantities struct
   py::class_<Quantities> quantities(pymem3dg, "Quantities", R"delim(
