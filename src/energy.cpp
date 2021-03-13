@@ -50,22 +50,11 @@ void System::computeBendingEnergy() {
 }
 
 void System::computeSurfaceEnergy() {
-  double A_difference = 0;
+  double A_difference = surfaceArea - targetSurfaceArea;
   if (mesh->hasBoundary()) {
-
     // non moving boundary
-    // A_difference = surfaceArea - targetSurfaceArea;
-
-    // moving boundary
-    for (gcs::Vertex v : mesh->vertices()) {
-      if (vpg->inputVertexPositions[v].z > 1e-12) {
-        A_difference += vpg->vertexDualArea(v);
-      }
-    }
-    
     E.sE = P.Ksg * A_difference;
   } else {
-    A_difference = surfaceArea - targetSurfaceArea;
     E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 +
            P.lambdaSG * A_difference;
   }
@@ -168,6 +157,14 @@ double
 System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
   // L1 Norm
   return force.cwiseAbs().sum() / surfaceArea;
+}
+
+double System::computeProjectedArea(
+    Eigen::Matrix<double, Eigen::Dynamic, 3> positions) const {
+  positions.col(2) *= 0;
+  gcs::VertexPositionGeometry projectedVpg(*mesh, positions);
+  projectedVpg.requireFaceAreas();
+  return projectedVpg.faceAreas.raw().sum();
 }
 
 } // namespace mem3dg

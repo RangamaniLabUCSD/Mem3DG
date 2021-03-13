@@ -217,7 +217,7 @@ public:
   double volume;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
-  /// Cached vertex velocity 
+  /// Cached vertex velocity
   gcs::VertexData<gc::Vector3> vel;
   /// Mean curvature of the mesh
   gcs::VertexData<double> H;
@@ -346,7 +346,7 @@ public:
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
          Options &o)
-      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)), 
+      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}), bendingPressure(*mesh, 0),
         capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
@@ -602,6 +602,9 @@ public:
    */
   void growMesh();
 
+  // ==========================================================
+  // =============          Helpers             ===============
+  // ==========================================================
   /**
    * @brief Get length cross ratio of the mesh
    */
@@ -611,5 +614,10 @@ public:
                                  gcs::Edge &e) const;
   double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
                                  gcs::Edge &&e) const;
+  /**
+   * @brief Get projected area of the mesh onto x-y plane
+   */
+  double computeProjectedArea(
+      Eigen::Matrix<double, Eigen::Dynamic, 3> positions) const;
 };
 } // namespace mem3dg

@@ -557,22 +557,23 @@ void initGui() {
 polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
                                             const Quantities &options) {
 
-  /// Declare pointers to mesh, geometry and richdata objects
+  // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
 
-  /// Load input mesh
-  if (!options.mean_curvature && !options.gauss_curvature &&
-      !options.spon_curvature && !options.ext_pressure &&
-      !options.physical_pressure && !options.capillary_pressure &&
-      !options.bending_pressure && !options.line_pressure) {
-    std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(plyName);
-  } else {
-    std::tie(ptrMesh, ptrRichData) =
-        gcs::RichSurfaceMeshData::readMeshAndData(plyName);
-    ptrVpg = ptrRichData->getGeometry();
-  }
+  // Load input mesh
+  // Case of viewing raw .ply file
+  // if (!options.mean_curvature && !options.gauss_curvature &&
+  //     !options.spon_curvature && !options.ext_pressure &&
+  //     !options.physical_pressure && !options.capillary_pressure &&
+  //     !options.bending_pressure && !options.line_pressure) {
+  //   std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(plyName);
+  // } else {
+  std::tie(ptrMesh, ptrRichData) =
+      gcs::RichSurfaceMeshData::readMeshAndData(plyName);
+  ptrVpg = ptrRichData->getGeometry();
+  // }
 
   polyscope::SurfaceMesh *polyscopeMesh = polyscope::registerSurfaceMesh(
       "Vesicle surface", ptrVpg->inputVertexPositions,
@@ -600,11 +601,12 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
     EigenVectorX1D sponCurvature_e = sponCurvature.raw();
     polyscopeMesh->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
   }
+
   if (options.ext_pressure) {
     gcs::VertexData<double> extPressure =
         ptrRichData->getVertexProperty<double>("external_pressure");
     EigenVectorX1D extPressure_e = extPressure.raw();
-    polyscopeMesh->addVertexScalarQuantity("applied_pressure", extPressure_e);
+    polyscopeMesh->addVertexScalarQuantity("external_pressure", extPressure_e);
   }
   if (options.physical_pressure) {
     gcs::VertexData<double> physicalPressure =
@@ -617,7 +619,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
     gcs::VertexData<double> capillaryPressure =
         ptrRichData->getVertexProperty<double>("capillary_pressure");
     EigenVectorX1D capillaryPressure_e = capillaryPressure.raw();
-    polyscopeMesh->addVertexScalarQuantity("surface_tension",
+    polyscopeMesh->addVertexScalarQuantity("capillary_pressure",
                                            capillaryPressure_e);
   }
   if (options.bending_pressure) {
@@ -633,6 +635,12 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
     EigenVectorX1D linePressure_e = linePressure.raw();
     polyscopeMesh->addVertexScalarQuantity("line_tension_pressure",
                                            linePressure_e);
+  }
+  if (options.inside_pressure) {
+    gcs::VertexData<double> data =
+        ptrRichData->getVertexProperty<double>("inside_pressure");
+    EigenVectorX1D data_e = data.raw();
+    polyscopeMesh->addVertexScalarQuantity("inside_pressure", data_e);
   }
 
   /*gcs::VertexData<gc::Vector3> vertexVelocity =

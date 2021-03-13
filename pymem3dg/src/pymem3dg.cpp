@@ -578,7 +578,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 #ifdef MEM3DG_WITH_NETCDF
   pymem3dg.def(
       "snapshot_nc", &snapshot_nc, "Visualize netcdf file in single frame",
-      py::arg("fileName"), py::arg("frame"), py::arg("options"),
+      py::arg("fileName"), py::arg("options"), py::arg("frame"),
       py::arg("transparency") = 1, py::arg("angle") = 0, py::arg("fov") = 50,
       py::arg("edgeWidth") = 1, py::arg("isShow") = true,
       py::arg("isSave") = false, py::arg("screenshotName") = "screenshot.png");
