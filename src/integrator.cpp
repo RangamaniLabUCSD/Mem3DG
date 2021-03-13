@@ -191,8 +191,10 @@ void Integrator::createNetcdfFile() {
     fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.mask.raw().cast<int>());
-    fd.writeRefVolume(f.refVolume);
-    fd.writeRefSurfArea(f.targetSurfaceArea);
+    if (!f.mesh->hasBoundary()) {
+      fd.writeRefVolume(f.refVolume);
+      fd.writeRefSurfArea(f.targetSurfaceArea);
+    }
   }
 #endif
 }
@@ -207,7 +209,7 @@ void Integrator::saveData() {
 
 #ifdef MEM3DG_WITH_NETCDF
   // save variable to netcdf traj file
-  if (verbosity > 0 && !f.O.isGrowMesh) {
+  if (verbosity > 0) {
     saveNetcdfData();
   }
 #endif
@@ -217,7 +219,7 @@ void Integrator::saveData() {
     std::cout << "\n"
               << "t: " << f.time << ", "
               << "n: " << frame << "\n"
-              << "dA: " << dArea << ", "
+              << "dA: " << dArea << "/" << f.surfaceArea << ", "
               << "dVP: " << dVP << ", "
               << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
               << "\n"
@@ -290,19 +292,27 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addMeshConnectivity();
   richData.addGeometry(*f.vpg);
 
+  // write protein distribution
+  if (f.O.isProtein) {
+    richData.addVertexProperty("protein_density", f.proteinDensity);
+  }
+
+  // write geometry
+  richData.addVertexProperty("mean_curvature", f.H);
+  richData.addVertexProperty("gauss_curvature", f.K);
+  richData.addVertexProperty("spon_curvature", f.H0);
+
+  // write pressures
   gcs::VertexData<double> fn(*f.mesh);
   fn.fromVector(f.M_inv * physicalForce);
   gcs::VertexData<double> fl(*f.mesh);
   fl.fromVector(f.M_inv * f.lineCapillaryForce.raw());
-
-  richData.addVertexProperty("mean_curvature", f.H);
-  richData.addVertexProperty("gauss_curvature", f.K);
-  richData.addVertexProperty("spon_curvature", f.H0);
+  richData.addVertexProperty("bending_pressure", f.bendingPressure);
+  richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
+  richData.addVertexProperty("line_tension_pressure", fl);
+  richData.addVertexProperty("inside_pressure", f.insidePressure);
   richData.addVertexProperty("external_pressure", f.externalPressure);
   richData.addVertexProperty("physical_pressure", fn);
-  richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
-  richData.addVertexProperty("bending_pressure", f.bendingPressure);
-  richData.addVertexProperty("line_tension_pressure", fl);
 
   richData.write(outputDir + plyName);
 }
@@ -311,37 +321,13 @@ void Integrator::saveRichData(std::string plyName) {
 void Integrator::saveNetcdfData() {
   std::size_t idx = fd.getNextFrameIndex();
 
+  // scalar quantities
   // write time
   fd.writeTime(idx, f.time);
-
   // write geometry
-  fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
-  fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
   fd.writeVolume(idx, f.volume);
   fd.writeSurfArea(idx, f.surfaceArea);
-  fd.writeMeanCurvature(idx, f.H.raw());
-  fd.writeGaussCurvature(idx, f.K.raw());
-  fd.writeSponCurvature(idx, f.H0.raw());
   fd.writeHeight(idx, abs(f.vpg->inputVertexPositions[f.theVertex].z));
-  // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
-  // fd.writeH_H0_diff(idx,
-  //                   ((f.H - f.H0).array() * (f.H -
-  //                   f.H0).array()).matrix());
-
-  // write velocity
-  fd.writeVelocity(idx, EigenMap<double, 3>(f.vel));
-  if (f.O.isProtein) {
-    fd.writeProteinDensity(idx, f.proteinDensity.raw());
-  }
-
-  // write pressures
-  fd.writeBendingPressure(idx, f.bendingPressure.raw());
-  fd.writeCapillaryPressure(idx, f.capillaryPressure.raw());
-  fd.writeLinePressure(idx, f.M_inv * f.lineCapillaryForce.raw());
-  fd.writeInsidePressure(idx, f.insidePressure.raw());
-  fd.writeExternalPressure(idx, f.externalPressure.raw());
-  fd.writePhysicalPressure(idx, f.M_inv * physicalForce);
-
   // write energies
   fd.writeBendEnergy(idx, f.E.BE);
   fd.writeSurfEnergy(idx, f.E.sE);
@@ -350,13 +336,41 @@ void Integrator::saveNetcdfData() {
   fd.writeChemEnergy(idx, f.E.cE);
   fd.writeLineEnergy(idx, f.E.lE);
   fd.writeTotalEnergy(idx, f.E.totalE);
-
   // write Norms
   fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
   fd.writeL1BendNorm(idx, f.computeL1Norm(f.M * f.bendingPressure.raw()));
   fd.writeL1SurfNorm(idx, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
   fd.writeL1PressNorm(idx, f.computeL1Norm(f.M * f.insidePressure.raw()));
   fd.writeL1LineNorm(idx, f.computeL1Norm(f.lineCapillaryForce.raw()));
+
+  // vector quantities
+  if (!f.O.isGrowMesh) {
+    // write velocity
+    fd.writeVelocity(idx, EigenMap<double, 3>(f.vel));
+    // write protein density distribution
+    if (f.O.isProtein) {
+      fd.writeProteinDensity(idx, f.proteinDensity.raw());
+    }
+
+    // write geometry
+    fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
+    fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
+    fd.writeMeanCurvature(idx, f.H.raw());
+    fd.writeGaussCurvature(idx, f.K.raw());
+    fd.writeSponCurvature(idx, f.H0.raw());
+    // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
+    // fd.writeH_H0_diff(idx,
+    //                   ((f.H - f.H0).array() * (f.H -
+    //                   f.H0).array()).matrix());
+
+    // write pressures
+    fd.writeBendingPressure(idx, f.bendingPressure.raw());
+    fd.writeCapillaryPressure(idx, f.capillaryPressure.raw());
+    fd.writeLinePressure(idx, f.M_inv * f.lineCapillaryForce.raw());
+    fd.writeInsidePressure(idx, f.insidePressure.raw());
+    fd.writeExternalPressure(idx, f.externalPressure.raw());
+    fd.writePhysicalPressure(idx, f.M_inv * physicalForce);
+  }
 }
 #endif
 

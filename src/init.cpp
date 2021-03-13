@@ -284,7 +284,6 @@ void System::initConstants() {
     }
   }
 
-
   // compute constant values during simulation
   // Find the closest point index to P.pt in refVpg
   closestPtIndToPt(*mesh, *refVpg, P.pt, theVertex);
@@ -416,7 +415,7 @@ void System::updateVertexPositions() {
   }
 
   // initialize/update total surface area
-  surfaceArea = vpg->faceAreas.raw().sum();
+  surfaceArea = vpg->faceAreas.raw().sum() - computeProjectedArea(positions);
 
   // initialize/update external force
   computeExternalPressure();
