@@ -179,8 +179,16 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
 DLL_PUBLIC inline void
 boundaryMask(gcs::SurfaceMesh &mesh,
              Eigen::Matrix<bool, Eigen::Dynamic, 1> &mask) {
-  for (gcs::Vertex v : mesh.vertices()) {
-    if (v.isBoundary()) {
+  // for (gcs::Vertex v : mesh.vertices()) {
+  //   if (v.isBoundary()) {
+  //     mask[v.getIndex()] = 0;
+  //     for (gcs::Halfedge he : v.outgoingHalfedges()) {
+  //       mask[he.next().vertex().getIndex()] = 0;
+  //     }
+  //   }
+  // }
+  for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+    for (gcs::Vertex v : bl.adjacentVertices()) {
       mask[v.getIndex()] = 0;
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
         mask[he.next().vertex().getIndex()] = 0;
@@ -318,9 +326,9 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
  */
 DLL_PUBLIC inline void
 ellipticDistribution(gcs::VertexPositionGeometry &vpg,
-               Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-               Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
-               std::vector<double> &axes) {
+                     Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
+                     Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
+                     std::vector<double> &axes) {
   distribution.resize(distance.rows(), 1);
   if (axes[0] == axes[1]) {
     distribution = (distance.array() < axes[0]).cast<double>();

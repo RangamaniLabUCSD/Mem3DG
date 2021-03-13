@@ -471,52 +471,50 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
     //     ->setEnabled(true);
   }
   if (options.mean_curvature) {
-    EigenVectorX1D H = fd.getMeanCurvature(idx);
-    polyscopeMesh->addVertexScalarQuantity("mean_curvature", H);
+    polyscopeMesh->addVertexScalarQuantity("mean_curvature",
+                                           fd.getMeanCurvature(idx));
   }
   if (options.gauss_curvature) {
-    EigenVectorX1D K = fd.getGaussCurvature(idx);
-    polyscopeMesh->addVertexScalarQuantity("gauss_curvature", K);
+    polyscopeMesh->addVertexScalarQuantity("gauss_curvature",
+                                           fd.getGaussCurvature(idx));
   }
   if (options.spon_curvature) {
-    EigenVectorX1D H0 = fd.getSponCurvature(idx);
-    polyscopeMesh->addVertexScalarQuantity("spon_curvature", H0);
+    polyscopeMesh->addVertexScalarQuantity("spon_curvature",
+                                           fd.getSponCurvature(idx));
   }
   if (options.mask) {
-    EigenVectorX1D_i msk = fd.getMask();
-    polyscopeMesh->addVertexScalarQuantity("mask", msk);
+    polyscopeMesh->addVertexScalarQuantity("mask", fd.getMask());
   }
   if (options.H_H0) {
-    EigenVectorX1D h_h0 = fd.getH_H0_diff(idx);
-    polyscopeMesh->addVertexScalarQuantity("curvature_diff", h_h0);
+    polyscopeMesh->addVertexScalarQuantity("curvature_diff",
+                                           fd.getH_H0_diff(idx));
   }
   if (options.velocity) {
-    EigenVectorX3D vel = fd.getVelocity(idx);
-    polyscopeMesh->addVertexVectorQuantity("velocity", vel);
+    polyscopeMesh->addVertexVectorQuantity("velocity", fd.getVelocity(idx));
   }
   if (options.bending_pressure) {
-    EigenVectorX1D fb = fd.getBendingPressure(idx);
-    polyscopeMesh->addVertexScalarQuantity("bending_pressure", fb);
+    polyscopeMesh->addVertexScalarQuantity("bending_pressure",
+                                           fd.getBendingPressure(idx));
   }
   if (options.capillary_pressure) {
-    EigenVectorX1D ft = fd.getCapillaryPressure(idx);
-    polyscopeMesh->addVertexScalarQuantity("capillary_pressure", ft);
+    polyscopeMesh->addVertexScalarQuantity("capillary_pressure",
+                                           fd.getCapillaryPressure(idx));
   }
   if (options.inside_pressure) {
-    EigenVectorX1D ft = fd.getInsidePressure(idx);
-    polyscopeMesh->addVertexScalarQuantity("inside_pressure", ft);
+    polyscopeMesh->addVertexScalarQuantity("inside_pressure",
+                                           fd.getInsidePressure(idx));
   }
   if (options.ext_pressure) {
-    EigenVectorX1D f_ext = fd.getExternalPressure(idx);
-    polyscopeMesh->addVertexScalarQuantity("external_pressure", f_ext);
+    polyscopeMesh->addVertexScalarQuantity("external_pressure",
+                                           fd.getExternalPressure(idx));
   }
   if (options.line_pressure) {
-    EigenVectorX1D fl = fd.getLinePressure(idx);
-    polyscopeMesh->addVertexScalarQuantity("line_tension_pressure", fl);
+    polyscopeMesh->addVertexScalarQuantity("line_tension_pressure",
+                                           fd.getLinePressure(idx));
   }
   if (options.physical_pressure) {
-    EigenVectorX1D fn = fd.getPhysicalPressure(idx);
-    polyscopeMesh->addVertexScalarQuantity("physical_pressure", fn);
+    polyscopeMesh->addVertexScalarQuantity("physical_pressure",
+                                           fd.getPhysicalPressure(idx));
   }
   // polyscope::registerSurfaceMesh("Mesh", coords, top);
 
@@ -584,65 +582,56 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
 
   /// Read element data
   if (options.mean_curvature) {
-    gcs::VertexData<double> meanCurvature =
-        ptrRichData->getVertexProperty<double>("mean_curvature");
-    EigenVectorX1D meanCurvature_e = meanCurvature.raw();
-    polyscopeMesh->addVertexScalarQuantity("mean_curvature", meanCurvature_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "mean_curvature",
+        ptrRichData->getVertexProperty<double>("mean_curvature").raw());
   }
   if (options.gauss_curvature) {
-    gcs::VertexData<double> gaussCurvature =
-        ptrRichData->getVertexProperty<double>("gauss_curvature");
-    EigenVectorX1D gaussCurvature_e = gaussCurvature.raw();
-    polyscopeMesh->addVertexScalarQuantity("gauss_curvature", gaussCurvature_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "gauss_curvature",
+        ptrRichData->getVertexProperty<double>("gauss_curvature").raw());
   }
   if (options.spon_curvature) {
-    gcs::VertexData<double> sponCurvature =
-        ptrRichData->getVertexProperty<double>("spon_curvature");
-    EigenVectorX1D sponCurvature_e = sponCurvature.raw();
-    polyscopeMesh->addVertexScalarQuantity("spon_curvature", sponCurvature_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "spon_curvature",
+        ptrRichData->getVertexProperty<double>("spon_curvature").raw());
   }
 
   if (options.ext_pressure) {
-    gcs::VertexData<double> extPressure =
-        ptrRichData->getVertexProperty<double>("external_pressure");
-    EigenVectorX1D extPressure_e = extPressure.raw();
-    polyscopeMesh->addVertexScalarQuantity("external_pressure", extPressure_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "external_pressure",
+        ptrRichData->getVertexProperty<double>("external_pressure").raw());
   }
   if (options.physical_pressure) {
-    gcs::VertexData<double> physicalPressure =
-        ptrRichData->getVertexProperty<double>("physical_pressure");
-    EigenVectorX1D physicalPressure_e = physicalPressure.raw();
-    polyscopeMesh->addVertexScalarQuantity("physical_pressure",
-                                           physicalPressure_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "physical_pressure",
+        ptrRichData->getVertexProperty<double>("physical_pressure").raw());
   }
   if (options.capillary_pressure) {
-    gcs::VertexData<double> capillaryPressure =
-        ptrRichData->getVertexProperty<double>("capillary_pressure");
-    EigenVectorX1D capillaryPressure_e = capillaryPressure.raw();
-    polyscopeMesh->addVertexScalarQuantity("capillary_pressure",
-                                           capillaryPressure_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "capillary_pressure",
+        ptrRichData->getVertexProperty<double>("capillary_pressure").raw());
   }
   if (options.bending_pressure) {
-    gcs::VertexData<double> bendingPressure =
-        ptrRichData->getVertexProperty<double>("bending_pressure");
-    EigenVectorX1D bendingPressure_e = bendingPressure.raw();
-    polyscopeMesh->addVertexScalarQuantity("bending_pressure",
-                                           bendingPressure_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "bending_pressure",
+        ptrRichData->getVertexProperty<double>("bending_pressure").raw());
   }
   if (options.line_pressure) {
-    gcs::VertexData<double> linePressure =
-        ptrRichData->getVertexProperty<double>("line_tension_pressure");
-    EigenVectorX1D linePressure_e = linePressure.raw();
-    polyscopeMesh->addVertexScalarQuantity("line_tension_pressure",
-                                           linePressure_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "line_tension_pressure",
+        ptrRichData->getVertexProperty<double>("line_tension_pressure").raw());
   }
   if (options.inside_pressure) {
-    gcs::VertexData<double> data =
-        ptrRichData->getVertexProperty<double>("inside_pressure");
-    EigenVectorX1D data_e = data.raw();
-    polyscopeMesh->addVertexScalarQuantity("inside_pressure", data_e);
+    polyscopeMesh->addVertexScalarQuantity(
+        "inside_pressure",
+        ptrRichData->getVertexProperty<double>("inside_pressure").raw());
   }
 
+  if (options.mask) {
+    polyscopeMesh->addVertexScalarQuantity(
+        "mask", ptrRichData->getVertexProperty<int>("mask").raw());
+  }
   /*gcs::VertexData<gc::Vector3> vertexVelocity =
       ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
   /*gcs::VertexData<gc::Vector3> normalForce =

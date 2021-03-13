@@ -219,8 +219,9 @@ void Integrator::saveData() {
     std::cout << "\n"
               << "t: " << f.time << ", "
               << "n: " << frame << "\n"
-              << "dA: " << dArea << "/" << f.surfaceArea << ", "
-              << "dVP: " << dVP << ", "
+              << "dA/Area: " << dArea << "/"
+              << f.surfaceArea - f.targetSurfaceArea << ", "
+              << "dVP/Volume: " << dVP << "/" << f.volume << ", "
               << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
               << "\n"
               << "E_total: " << f.E.totalE << "\n"
@@ -297,6 +298,11 @@ void Integrator::saveRichData(std::string plyName) {
     richData.addVertexProperty("protein_density", f.proteinDensity);
   }
 
+  // write mask
+  gcs::VertexData<int> msk(*f.mesh);
+  msk.fromVector(f.mask.raw().cast<int>());
+  richData.addVertexProperty("mask", msk);
+
   // write geometry
   richData.addVertexProperty("mean_curvature", f.H);
   richData.addVertexProperty("gauss_curvature", f.K);
@@ -326,7 +332,9 @@ void Integrator::saveNetcdfData() {
   fd.writeTime(idx, f.time);
   // write geometry
   fd.writeVolume(idx, f.volume);
-  fd.writeSurfArea(idx, f.surfaceArea);
+  fd.writeSurfArea(idx, f.mesh->hasBoundary()
+                            ? f.surfaceArea - f.targetSurfaceArea
+                            : f.surfaceArea);
   fd.writeHeight(idx, abs(f.vpg->inputVertexPositions[f.theVertex].z));
   // write energies
   fd.writeBendEnergy(idx, f.E.BE);
