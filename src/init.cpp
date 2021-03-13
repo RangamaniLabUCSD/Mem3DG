@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include "geometrycentral/utilities/vector3.h"
 #include <stdexcept>
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
@@ -410,12 +411,16 @@ void System::updateVertexPositions() {
   /// initialize/update enclosed volume
   volume = 0;
   for (gcs::Face f : mesh->faces()) {
-    volume +=
-        signedVolumeFromFace(f, *vpg, refVpg->inputVertexPositions[theVertex]);
+    volume += signedVolumeFromFace(f, *vpg, gc::Vector3{0, 0, 0});
   }
 
   // initialize/update total surface area
-  surfaceArea = vpg->faceAreas.raw().sum() - computeProjectedArea(positions);
+  surfaceArea = vpg->faceAreas.raw().sum();
+
+  // update reference area by projecting to xy plane
+  if (mesh->hasBoundary()) {
+    targetSurfaceArea = computeProjectedArea(*vpg);
+  }
 
   // initialize/update external force
   computeExternalPressure();

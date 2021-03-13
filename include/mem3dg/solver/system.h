@@ -617,7 +617,6 @@ public:
   /**
    * @brief Get projected area of the mesh onto x-y plane
    */
-  double computeProjectedArea(
-      Eigen::Matrix<double, Eigen::Dynamic, 3> positions) const;
+  double computeProjectedArea(gcs::VertexPositionGeometry &vpg) const;
 };
 } // namespace mem3dg

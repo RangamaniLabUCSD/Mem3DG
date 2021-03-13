@@ -622,7 +622,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   quantities.def_readwrite("physical_pressure", &Quantities::physical_pressure,
                            R"delim(
-        visualize reference coordinate 
+        visualize (total) physical pressure
       )delim");
   quantities.def_readwrite("capillary_pressure",
                            &Quantities::capillary_pressure,
