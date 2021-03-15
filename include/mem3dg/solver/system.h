@@ -368,6 +368,7 @@ public:
     vpg->requireFaceAreas();
     vpg->requireVertexIndices();
     vpg->requireVertexGaussianCurvatures();
+    vpg->requireVertexMeanCurvatures();
     vpg->requireFaceIndices();
     vpg->requireEdgeLengths();
     vpg->requireVertexNormals();
@@ -407,6 +408,7 @@ public:
     vpg->unrequireFaceAreas();
     vpg->unrequireVertexIndices();
     vpg->unrequireVertexGaussianCurvatures();
+    vpg->unrequireVertexMeanCurvatures();
     vpg->unrequireFaceIndices();
     vpg->unrequireEdgeLengths();
     vpg->unrequireVertexNormals();

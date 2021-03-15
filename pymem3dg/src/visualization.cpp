@@ -68,29 +68,28 @@ void visualize(mem3dg::System &f) {
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("mean_curvature", f.H.raw());
+      ->addVertexScalarQuantity("mean_curvature", f.vpg->vertexMeanCurvatures);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("gauss_curvature", f.K.raw());
+      ->addVertexScalarQuantity("gauss_curvature", f.K);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("spon_curvature", f.H0.raw());
+      ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("external_pressure", f.externalPressure.raw());
+      ->addVertexScalarQuantity("external_pressure", f.externalPressure);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("bending_pressure", f.bendingPressure.raw());
+      ->addVertexScalarQuantity("bending_pressure", f.bendingPressure);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
                                 f.M_inv * f.lineCapillaryForce.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("capillary_pressure",
-                                f.capillaryPressure.raw());
+      ->addVertexScalarQuantity("capillary_pressure", f.capillaryPressure);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("inside_pressure", f.insidePressure.raw());
+      ->addVertexScalarQuantity("inside_pressure", f.insidePressure);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_pressure", fn);
   polyscope::getSurfaceMesh("Membrane")
-      ->addEdgeScalarQuantity("line_tension", f.lineTension.raw());
+      ->addEdgeScalarQuantity("line_tension", f.lineTension);
   polyscope::getSurfaceMesh("Membrane")
-      ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles.raw());
+      ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity(
           "edge_line_capillary",
@@ -584,53 +583,53 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
   if (options.mean_curvature) {
     polyscopeMesh->addVertexScalarQuantity(
         "mean_curvature",
-        ptrRichData->getVertexProperty<double>("mean_curvature").raw());
+        ptrRichData->getVertexProperty<double>("mean_curvature"));
   }
   if (options.gauss_curvature) {
     polyscopeMesh->addVertexScalarQuantity(
         "gauss_curvature",
-        ptrRichData->getVertexProperty<double>("gauss_curvature").raw());
+        ptrRichData->getVertexProperty<double>("gauss_curvature"));
   }
   if (options.spon_curvature) {
     polyscopeMesh->addVertexScalarQuantity(
         "spon_curvature",
-        ptrRichData->getVertexProperty<double>("spon_curvature").raw());
+        ptrRichData->getVertexProperty<double>("spon_curvature"));
   }
 
   if (options.ext_pressure) {
     polyscopeMesh->addVertexScalarQuantity(
         "external_pressure",
-        ptrRichData->getVertexProperty<double>("external_pressure").raw());
+        ptrRichData->getVertexProperty<double>("external_pressure"));
   }
   if (options.physical_pressure) {
     polyscopeMesh->addVertexScalarQuantity(
         "physical_pressure",
-        ptrRichData->getVertexProperty<double>("physical_pressure").raw());
+        ptrRichData->getVertexProperty<double>("physical_pressure"));
   }
   if (options.capillary_pressure) {
     polyscopeMesh->addVertexScalarQuantity(
         "capillary_pressure",
-        ptrRichData->getVertexProperty<double>("capillary_pressure").raw());
+        ptrRichData->getVertexProperty<double>("capillary_pressure"));
   }
   if (options.bending_pressure) {
     polyscopeMesh->addVertexScalarQuantity(
         "bending_pressure",
-        ptrRichData->getVertexProperty<double>("bending_pressure").raw());
+        ptrRichData->getVertexProperty<double>("bending_pressure"));
   }
   if (options.line_pressure) {
     polyscopeMesh->addVertexScalarQuantity(
         "line_tension_pressure",
-        ptrRichData->getVertexProperty<double>("line_tension_pressure").raw());
+        ptrRichData->getVertexProperty<double>("line_tension_pressure"));
   }
   if (options.inside_pressure) {
     polyscopeMesh->addVertexScalarQuantity(
         "inside_pressure",
-        ptrRichData->getVertexProperty<double>("inside_pressure").raw());
+        ptrRichData->getVertexProperty<double>("inside_pressure"));
   }
 
   if (options.mask) {
     polyscopeMesh->addVertexScalarQuantity(
-        "mask", ptrRichData->getVertexProperty<int>("mask").raw());
+        "mask", ptrRichData->getVertexProperty<int>("mask"));
   }
   /*gcs::VertexData<gc::Vector3> vertexVelocity =
       ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
