@@ -403,7 +403,11 @@ void System::updateVertexPositions() {
   }
 
   // initialize/update mean curvature
-  H.raw() = rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e);
+  // 1. cotan laplacian definition
+  // H.raw() = rowwiseDotProduct(M_inv * L * positions / 2.0,
+  // vertexAngleNormal_e);
+  // 2. dihedral definition
+  H.raw() = M_inv * vpg->vertexMeanCurvatures.raw();
 
   // initialize/update Gaussian curvature
   K.raw() = M_inv * vpg->vertexGaussianCurvatures.raw();

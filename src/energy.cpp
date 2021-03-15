@@ -11,8 +11,6 @@
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
-
-#include <bits/c++config.h>
 #include <iostream>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
