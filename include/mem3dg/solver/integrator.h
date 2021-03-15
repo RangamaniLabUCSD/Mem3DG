@@ -403,6 +403,9 @@ public:
   double currentNormSq;
   double pastNormSq;
 
+  size_t countCG = 0;
+  size_t restartNum = 15;
+
   ConjugateGradient(System &f_, double dt_, bool isAdaptiveStep_,
                     double total_time_, double tSave_, double tolerance_,
                     std::string outputDir_, std::string trajFileName_,

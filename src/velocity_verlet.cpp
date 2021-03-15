@@ -158,6 +158,9 @@ void VelocityVerlet::march() {
   if (f.O.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
   }
+
+  // process the mesh with regularization or mutation
+  f.processMesh();
 }
 
 } // namespace mem3dg

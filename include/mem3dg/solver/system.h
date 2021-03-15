@@ -477,6 +477,11 @@ public:
   void initConstants();
 
   /**
+   * @brief Mesh processing by regularization or mutation
+   */
+  void processMesh();
+
+  /**
    * @brief Update the vertex position and recompute cached values
    * (all quantities that characterizes the current energy state)
    * Careful when using eigenMap: memory address may change after update!!

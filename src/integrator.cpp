@@ -42,7 +42,7 @@ double Integrator::backtrack(
   double alpha = dt;
   size_t count = 0;
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-
+  
   pos_e += alpha * direction;
   f.updateVertexPositions();
   f.computeFreeEnergy();

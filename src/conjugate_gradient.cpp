@@ -137,16 +137,16 @@ void ConjugateGradient::march() {
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
-  // typedef gc::EigenVectorMap_T<double, 3, Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>);
-  // EigenMap3 Map3 = gc::EigenMap<double, 3>;
+  // typedef gc::EigenVectorMap_T<double, 3,
+  // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3 Map3
+  // = gc::EigenMap<double, 3>;
 
   // determine conjugate gradient direction, restart after nVertices() cycles
-  size_t countCG = 0;
-  if (countCG % (f.mesh->nVertices() + 1) == 0) {
+  if (countCG % restartNum == 0) {
     pastNormSq = physicalForce.squaredNorm();
     vel_e = rowwiseScaling(physicalForce,
                            gc::EigenMap<double, 3>(f.vpg->vertexNormals));
-    countCG = 0;
+    countCG = 1;
   } else {
     currentNormSq = physicalForce.squaredNorm();
     vel_e = currentNormSq / pastNormSq * vel_e +
@@ -174,6 +174,9 @@ void ConjugateGradient::march() {
   if (f.O.isProtein) {
     f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
   }
+
+  // process the mesh with regularization or mutation
+  f.processMesh();
 }
 
 void FeedForwardSweep::sweep() {

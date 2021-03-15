@@ -57,6 +57,8 @@ void StormerVerlet::integrate() {
       }
     }
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
+    // process the mesh with regularization or mutation
+    f.processMesh();
     f.updateVertexPositions();
     f.pastPositions = temp;
     f.computeFreeEnergy();
