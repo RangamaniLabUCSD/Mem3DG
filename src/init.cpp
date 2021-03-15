@@ -321,8 +321,7 @@ void System::initConstants() {
   H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
 }
 
-void System::updateVertexPositions() {
-
+void System::processMesh() {
   // vertex shift for regularization
   if (O.isVertexShift) {
     vertexShift();
@@ -341,6 +340,9 @@ void System::updateVertexPositions() {
   // regularization
   computeRegularizationForce();
   vpg->inputVertexPositions.raw() += regularizationForce.raw();
+}
+
+void System::updateVertexPositions() {
 
   // refresh cached quantities after regularization
   vpg->refreshQuantities();
@@ -390,6 +392,8 @@ void System::updateVertexPositions() {
     H0.raw() =
         (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
             .matrix();
+  } else if (O.isGrowMesh) {
+    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
   }
 
   // initialize/update line tension (on dual edge)
