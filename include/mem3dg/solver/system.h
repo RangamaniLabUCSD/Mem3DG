@@ -283,6 +283,7 @@ public:
          Options &o)
       : System(readMeshes(inputMesh, refMesh, nSub), p, o){};
 
+#ifdef MEM3DG_WITH_NETCDF
   /**
    * @brief Construct a new System object by reading netcdf trajectory file path
    *
@@ -304,6 +305,7 @@ public:
       mapContinuationVariables(trajFile, startingFrame);
     }
   };
+#endif
 
   /**
    * @brief Construct a new System object by reading tuple of unique_ptrs
@@ -389,6 +391,9 @@ public:
     if (O.isVertexShift) {
       vertexShift();
     }
+
+    // Process the mesh by regularization and mutation
+    processMesh();
 
     /// compute nonconstant values during simulation
     updateVertexPositions();

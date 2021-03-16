@@ -13,6 +13,7 @@
 //
 
 #include <cstdarg>
+#include <cstddef>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
@@ -121,9 +122,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         conjugate Gradient propagator
     )delim");
 
-  conjugategradient.def(
-      py::init<System &, double, bool, double, double, double, std::string,
-               std::string, size_t, bool, double, double, double, bool>());
+  conjugategradient.def(py::init<System &, double, bool, double, double, double,
+                                 std::string, std::string, size_t, bool, double,
+                                 double, double, bool, size_t>());
   conjugategradient.def("integrate", &ConjugateGradient::integrate,
                         R"delim(
           integrate 
@@ -684,7 +685,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
       py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
       py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-      py::arg("isAdaptiveStep"),
+      py::arg("restartNum"), py::arg("isAdaptiveStep"),
       R"delim(
                     Run single simulation starting with .ply files
                Args:
@@ -729,6 +730,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
                    ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
+                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
                Returns:
                    :py:class:`int`: success.
             )delim");
@@ -747,7 +749,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
                py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
                py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               py::arg("isAdaptiveStep"),
+               py::arg("restartNum"), py::arg("isAdaptiveStep"),
                R"delim(
                     Run forward sweep simulation starting with .ply files
                Args:
@@ -790,6 +792,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
                    ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
+                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
                Returns:
                    :py:class:`int`: success.
             )delim");
@@ -815,7 +818,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
       py::arg("integration"), py::arg("isBacktrack"), py::arg("rho"),
       py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-      py::arg("isAdaptiveStep"),
+      py::arg("restartNum"), py::arg("isAdaptiveStep"),
       R"delim(
                    Run single simulation starting with netcdf files
                Args:
@@ -861,26 +864,28 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
                    ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
+                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
                Returns:
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def(
-      "forwardsweep_nc", &forwardsweep_nc,
-      "Run forward sweep simulation starting with netcdf files",
-      py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
-      py::arg("isContinue"), py::arg("isReducedVolume"), py::arg("isProtein"),
-      py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-      py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
-      py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
-      py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-      py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
-      py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-      py::arg("conc"), py::arg("height"), py::arg("radius"), py::arg("h"),
-      py::arg("T"), py::arg("eps"), py::arg("tSave"), py::arg("outputDir"),
-      py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-      py::arg("isAugmentedLagrangian"), py::arg("isAdaptiveStep"),
-      R"delim(
+  pymem3dg.def("forwardsweep_nc", &forwardsweep_nc,
+               "Run forward sweep simulation starting with netcdf files",
+               py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
+               py::arg("isContinue"), py::arg("isReducedVolume"),
+               py::arg("isProtein"), py::arg("isLocalCurvature"),
+               py::arg("isVertexShift"), py::arg("isEdgeFlip"),
+               py::arg("isGrowMesh"), py::arg("Kb"), py::arg("H0"),
+               py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"),
+               py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
+               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
+               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
+               py::arg("conc"), py::arg("height"), py::arg("radius"),
+               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
+               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
+               py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
+               py::arg("restartNum"), py::arg("isAdaptiveStep"),
+               R"delim(
                    Run forward sweep simulation starting with netcdf files
                Args:
                    trajFile (:py:class:`str`): input trajectory file path
@@ -923,6 +928,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
                    ctol (:py:class:`double`): tolerance of constraints
                    isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
+                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
                Returns:
                    :py:class:`int`: success.
             )delim");

@@ -272,6 +272,7 @@ void System::growMesh() {
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
     if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+      // if(!he.edge().isBoundary()){
       if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea)) {
         gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
@@ -289,6 +290,7 @@ void System::growMesh() {
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
     if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+      // if(!he.edge().isBoundary()){
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) <
           constants::PI / 3) {
