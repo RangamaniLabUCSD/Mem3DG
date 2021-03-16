@@ -41,20 +41,6 @@ namespace gcs = ::geometrycentral::surface;
 EigenVectorX1D System::computeBendingPressure() {
   // A. non-optimized version
   if (O.isLocalCurvature) {
-
-    // initialize/update distance from the point specified
-    if (O.isGrowMesh) {
-      geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
-    } else {
-      geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
-    }
-
-    // initialize/update spontaneous curvature (local
-    // spontaneous curvature)
-    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-                         P.r_H0);
-    H0.raw() *= P.H0;
-
     // Split calculation for two domain
     bendingPressure.raw().setZero();
     auto subdomain = [&](double H0_temp) {

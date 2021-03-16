@@ -143,7 +143,6 @@ public:
    */
   void saveData();
 
-
   /**
    * @brief Save data to richData and output ply file
    */
@@ -404,17 +403,20 @@ public:
   double pastNormSq;
 
   size_t countCG = 0;
-  size_t restartNum = 15;
+  size_t restartNum;
+
+  size_t countPM = 0;
 
   ConjugateGradient(System &f_, double dt_, bool isAdaptiveStep_,
                     double total_time_, double tSave_, double tolerance_,
                     std::string outputDir_, std::string trajFileName_,
                     size_t verbosity_, bool isBacktrack_, double rho_,
-                    double c1_, double ctol_, bool isAugmentedLagrangian_)
+                    double c1_, double ctol_, bool isAugmentedLagrangian_,
+                    size_t restartNum_)
       : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
                    outputDir_, trajFileName_, verbosity_),
         isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
-        isAugmentedLagrangian(isAugmentedLagrangian_) {
+        isAugmentedLagrangian(isAugmentedLagrangian_), restartNum(restartNum_) {
 
     // print to console
     if (verbosity > 1) {
@@ -559,11 +561,12 @@ public:
                    std::string outputDir_, std::string trajFileName_,
                    size_t verbosity_, bool isBacktrack_, double rho_,
                    double c1_, double ctol_, bool isAugmentedLagrangian_,
-                   std::vector<double> H__, std::vector<double> VP__)
+                   size_t restartNum_, std::vector<double> H__,
+                   std::vector<double> VP__)
       : ConjugateGradient(f_, dt_, isAdaptiveStep_, total_time_, tSave_,
                           tolerance_, outputDir_, trajFileName_, verbosity_,
                           isBacktrack_, rho_, c1_, ctol_,
-                          isAugmentedLagrangian_),
+                          isAugmentedLagrangian_, restartNum_),
         H_(H__), VP_(VP__) {}
   void sweep();
 };

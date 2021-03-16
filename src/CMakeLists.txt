@@ -26,6 +26,7 @@ set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/integrator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/trajfile.cpp"
 
+    "${CMAKE_CURRENT_SOURCE_DIR}/visualization.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
     PARENT_SCOPE
 )

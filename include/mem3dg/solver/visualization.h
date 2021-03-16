@@ -22,7 +22,7 @@
  * @brief Quantities option for visualization
  *
  */
-struct Quantities {
+struct DLL_PUBLIC Quantities {
   /// reference coordinate
   bool ref_coord = false;
   /// vertex velocity
@@ -58,18 +58,18 @@ struct Quantities {
 /**
  * @brief visualize system object
  */
-void visualize(mem3dg::System &f);
+DLL_PUBLIC void visualize(mem3dg::System &f);
 
 /**
  * @brief Visualize .ply file in polysope with options of additional quantities
  */
-int snapshot_ply(std::string fileName, const Quantities &options,
+DLL_PUBLIC int snapshot_ply(std::string fileName, const Quantities &options,
                  float transparency = 1, float fov = 50, float edgeWidth = 1);
 
 /**
  * @brief Visualize .ply files in polysope with options of additional quantities
  */
-int animate_ply(std::string framesDir, const Quantities &options,
+DLL_PUBLIC int animate_ply(std::string framesDir, const Quantities &options,
                 std::vector<size_t> frameNum, float transparency = 1,
                 float fov = 50, float edgeWidth = 1);
 
@@ -77,7 +77,7 @@ int animate_ply(std::string framesDir, const Quantities &options,
 /**
  * @brief Visualize netcdf file in single frame
  */
-int snapshot_nc(std::string &filename, const Quantities &options, int frame,
+DLL_PUBLIC int snapshot_nc(std::string &filename, const Quantities &options, int frame,
                 float transparency = 1, float angle = 0, float fov = 50,
                 float edgeWidth = 1, bool isShow = true, bool isSave = false,
                 std::string screenshotName = "screenshot.png");
@@ -85,7 +85,7 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
 /**
  * @brief Animate netcdf file with options of additional quantities
  */
-int animate_nc(std::string &filename, const Quantities &options,
+DLL_PUBLIC int animate_nc(std::string &filename, const Quantities &options,
                float transparency = 1, float fov = 50, float edgeWidth = 1);
 #endif
 

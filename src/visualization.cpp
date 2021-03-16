@@ -24,7 +24,7 @@
 #include <geometrycentral/surface/meshio.h>
 
 #include "mem3dg/mem3dg"
-#include <pybind11/embed.h>
+//#include <pybind11/embed.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -90,6 +90,10 @@ void visualize(mem3dg::System &f) {
       ->addEdgeScalarQuantity("line_tension", f.lineTension);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);
+      std::cout << "no of edges: " << f.mesh-> nEdges() << std::endl;
+      std::cout << "no of edges: " << f.vpg->edgeLengths.raw().rows() << std::endl;
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity(
           "edge_line_capillary",

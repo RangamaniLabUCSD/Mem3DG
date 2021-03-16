@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include "geometrycentral/surface/heat_method_distance.h"
 #include "geometrycentral/utilities/vector3.h"
 #include <stdexcept>
 #ifdef MEM3DG_WITH_NETCDF
@@ -340,6 +341,49 @@ void System::processMesh() {
   // regularization
   computeRegularizationForce();
   vpg->inputVertexPositions.raw() += regularizationForce.raw();
+
+  // refresh cached quantities after regularization
+  vpg->refreshQuantities();
+
+  // Update the distribution matrix when topology changes
+  if (O.isEdgeFlip || O.isGrowMesh) {
+    D = vpg->d0.transpose();
+    for (int k = 0; k < D.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+        it.valueRef() = 0.5;
+      }
+    }
+  }
+
+  // Update constant values when topology changes
+  if (O.isGrowMesh) {
+    boundaryMask(*mesh, mask.raw());
+  }
+
+  // recompute "the vertex" after topological changes
+  // if (O.isGrowMesh) {
+  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
+  // }
+
+  // initialize/update distance from the point specified
+  if (O.isGrowMesh) {
+    // geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
+    gc::HeatMethodDistanceSolver heatSolverHere(*vpg);
+    geodesicDistanceFromPtInd = heatSolverHere.computeDistance(theVertex);
+  } else {
+    geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+  }
+
+  // initialize/update spontaneous curvature (local
+  // spontaneous curvature)
+  if (O.isGrowMesh) {
+    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+  }
+  if (O.isLocalCurvature) {
+    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+                         P.r_H0);
+    H0.raw() *= P.H0;
+  }
 }
 
 void System::updateVertexPositions() {
@@ -350,11 +394,6 @@ void System::updateVertexPositions() {
   // EigenMap commonly used matrices
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
   auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
-
-  // recompute "the vertex" after topological changes
-  // if (O.isGrowMesh) {
-  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
-  // }
 
   // initialize/update Laplacian matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
@@ -374,16 +413,6 @@ void System::updateVertexPositions() {
   //   H0.raw() *= P.H0;
   // }
 
-  // Update the distribution matrix when topology changes
-  if (O.isEdgeFlip || O.isGrowMesh) {
-    D = vpg->d0.transpose();
-    for (int k = 0; k < D.outerSize(); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-        it.valueRef() = 0.5;
-      }
-    }
-  }
-
   // initialize/update spontaneous curvature (protein
   // binding)
   if (O.isProtein) {
@@ -392,8 +421,6 @@ void System::updateVertexPositions() {
     H0.raw() =
         (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
             .matrix();
-  } else if (O.isGrowMesh) {
-    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
   }
 
   // initialize/update line tension (on dual edge)
