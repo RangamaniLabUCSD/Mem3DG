@@ -210,14 +210,13 @@ bool System::edgeFlip() {
 }
 
 template <typename E, typename T>
-void averageData(gc::MeshData<E, T> &meshData, E &element1, E &element2,
-                 E &newElement) {
+void averageData(gc::MeshData<E, T> &meshData, const E &element1, const E &element2,
+                 const E &newElement) {
   meshData[newElement] = (meshData[element1] + meshData[element2]) / 2;
 }
-
 template <typename E, typename T>
-T averageData(gc::MeshData<E, T> &meshData, E &element1, E &element2) {
-  return (meshData[element1] + meshData[element2]) / 2;
+T averageData(gc::MeshData<E, T> &meshData, const E &&element1, const E &&element2) {
+	  return (meshData[element1] + meshData[element2]) / 2;
 }
 
 bool System::growMesh() {
@@ -232,9 +231,9 @@ bool System::growMesh() {
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
         gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
 
-        auto &element1 = newhe.tipVertex(),
-             &element2 = newhe.next().next().twin().next().next().vertex(),
-             &newElement = newhe.vertex();
+        const auto &element1 = newhe.tipVertex(),
+                   &element2 = newhe.next().next().twin().next().next().vertex(),
+                   &newElement = newhe.vertex();
         averageData(vpg->inputVertexPositions, element1, element2, newElement);
         averageData(vel, element1, element2, newElement);
         if (O.isProtein)
