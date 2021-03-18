@@ -40,40 +40,42 @@ namespace gcs = ::geometrycentral::surface;
 
 EigenVectorX1D System::computeBendingPressure() {
   // A. non-optimized version
-  if (O.isLocalCurvature) {
-    // Split calculation for two domain
-    bendingPressure.raw().setZero();
-    auto subdomain = [&](double H0_temp) {
-      EigenVectorX1D lap_H = M_inv * L * (H.raw().array() - H0_temp).matrix();
-      EigenVectorX1D scalerTerms =
-          rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
-      EigenVectorX1D productTerms =
-          2.0 *
-          rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
-      bendingPressure.raw().array() +=
-          (H0.raw().array() == H0_temp).cast<double>().array() *
-          (-P.Kb * (productTerms + lap_H)).array();
-    };
-    subdomain(P.H0);
-    subdomain(0);
-  } else {
-    
-    // compute the coated domain
-    // calculate the Laplacian of mean curvature H
-    EigenVectorX1D lap_H = M_inv * L * (H.raw() - H0.raw());
+  // if (O.isLocalCurvature) {
+  //   // Split calculation for two domain
+  //   bendingPressure.raw().setZero();
+  //   auto subdomain = [&](double H0_temp) {
+  //     EigenVectorX1D lap_H = M_inv * L * (H.raw().array() -
+  //     H0_temp).matrix(); EigenVectorX1D scalerTerms =
+  //         rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
+  //     EigenVectorX1D productTerms =
+  //         2.0 *
+  //         rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
+  //     bendingPressure.raw().array() +=
+  //         (H0.raw().array() == H0_temp).cast<double>().array() *
+  //         (-P.Kb * (productTerms + lap_H)).array();
+  //   };
+  //   subdomain(P.H0);
+  //   subdomain(0);
+  // } else {
 
-    // initialize and calculate intermediary result scalerTerms
-    EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
-                                 rowwiseProduct(H.raw(), H0.raw()) - K.raw();
-    // scalerTerms = scalerTerms.array().max(0);
+  // compute the coated domain
+  // calculate the Laplacian of mean curvature H
+  EigenVectorX1D lap_H =
+      -M_inv * L * rowwiseProduct(Kb.raw(), H.raw() - H0.raw());
 
-    // initialize and calculate intermediary result productTerms
-    EigenVectorX1D productTerms =
-        2.0 * rowwiseProduct(scalerTerms, H.raw() - H0.raw());
+  // initialize and calculate intermediary result scalerTerms
+  EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
+                               rowwiseProduct(H.raw(), H0.raw()) - K.raw();
+  // scalerTerms = scalerTerms.array().max(0);
 
-    // calculate bendingForce
-    bendingPressure.raw() = -P.Kb * (productTerms + lap_H);
-  }
+  // initialize and calculate intermediary result productTerms
+  EigenVectorX1D productTerms =
+      -2.0 *
+      (Kb.raw().array() * (H.raw() - H0.raw()).array() * scalerTerms.array())
+          .matrix();
+  // calculate bendingForce
+  bendingPressure.raw() = productTerms + lap_H;
+  // }
 
   return bendingPressure.raw();
 
@@ -111,14 +113,13 @@ EigenVectorX1D System::computeCapillaryPressure() {
     surfaceTension = -P.Ksg;
   } else { // surface tension of vesicle
     surfaceTension =
-        -(P.Ksg * (surfaceArea - targetSurfaceArea) / targetSurfaceArea +
-          P.lambdaSG);
+        -(P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea + P.lambdaSG);
   }
   capillaryPressure.raw() = surfaceTension * 2 * H.raw();
 
   return capillaryPressure.raw();
 
-  // /// Nongeometric implementation
+  // /// Nongeometric implementationx
   // for (gcs::Vertex v : mesh->vertices()) {
   //   gc::Vector3 globalForce{0.0, 0.0, 0.0};
   //   for (gcs::Halfedge he : v.outgoingHalfedges()) {
@@ -128,8 +129,8 @@ EigenVectorX1D System::computeCapillaryPressure() {
   //     assert((gc::dot(localAreaGradient, vecFromHalfedge(he, vpg))) < 0);
   //     if (P.Ksg != 0) {
   //       capillaryPressure[v] += -P.Ksg * localAreaGradient *
-  //                               (surfaceArea - targetSurfaceArea) /
-  //                               targetSurfaceArea;
+  //                               (surfaceArea - refSurfaceArea) /
+  //                               refSurfaceArea;
   //     }
   //   }
   //   capillaryPressure[v] /= vpg->vertexDualAreas[v];
@@ -225,9 +226,9 @@ EigenVectorX1D System::computeChemicalPotential() {
        ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
           .matrix();
 
-  chemicalPotential.raw() =
-      (P.epsilon - (2 * P.Kb * (H.raw() - H0.raw())).array() * dH0dphi.array())
-          .matrix();
+  chemicalPotential.raw().array() =
+      P.epsilon -
+      2 * Kb.raw().array() * (H.raw() - H0.raw()).array() * dH0dphi.array();
 
   return chemicalPotential.raw();
 }
@@ -293,9 +294,7 @@ void System::computePhysicalForces() {
   gc::EigenMap<double, 3>(stochasticForce).setZero();
   chemicalPotential.raw().setZero();
 
-  if (P.Kb != 0) {
-    computeBendingPressure();
-  }
+  computeBendingPressure();
   if (P.Kv != 0) {
     computeInsidePressure();
   }
@@ -305,9 +304,6 @@ void System::computePhysicalForces() {
   if (P.eta != 0) {
     computeLineCapillaryForce();
   }
-  // if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
-  //   getRegularizationForce();
-  // }
   if ((P.gamma != 0) || (P.sigma != 0)) {
     computeDPDForces();
   }

@@ -55,6 +55,8 @@ namespace mem3dg {
 struct Parameters {
   /// Bending modulus
   double Kb;
+  /// Bending modulus with coated area
+  double Kbc;
   /// Spontaneous curvature
   double H0;
   /// radius of non-zero spontaneous curvature
@@ -181,16 +183,12 @@ public:
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
-  /// Target area per face
-  gcs::FaceData<double> &targetFaceAreas;
   /// Mean target area per face
   double meanTargetFaceArea;
   /// Target total face area
-  double targetSurfaceArea;
+  double refSurfaceArea;
   /// Maximal volume
   double refVolume;
-  /// Target length per edge
-  gcs::EdgeData<double> &targetEdgeLengths;
   /// Mean target area per face
   double meanTargetEdgeLength;
   /// Target edge cross length ratio
@@ -225,6 +223,8 @@ public:
   gcs::VertexData<double> K;
   /// Spontaneous curvature of the mesh
   gcs::VertexData<double> H0;
+  /// Bending rigidity of the membrane
+  gcs::VertexData<double> Kb;
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -356,12 +356,11 @@ public:
         insidePressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
         stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
         proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0), targetLcr(*mesh),
-        targetEdgeLengths(refVpg->edgeLengths),
-        targetFaceAreas(refVpg->faceAreas), heatSolver(*vpg),
-        M(vpg->vertexLumpedMassMatrix), L(vpg->cotanLaplacian), D(),
-        geodesicDistanceFromPtInd(*mesh, 0), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), H(*mesh), K(*mesh), H0(*mesh), mask(*mesh, true),
-        isFlip(*mesh, false), isSplit(*mesh, false), isCollapse(*mesh, false) {
+        heatSolver(*vpg), M(vpg->vertexLumpedMassMatrix),
+        L(vpg->cotanLaplacian), D(), geodesicDistanceFromPtInd(*mesh, 0),
+        pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H(*mesh),
+        K(*mesh), H0(*mesh), Kb(*mesh), mask(*mesh, true), isFlip(*mesh, false),
+        isSplit(*mesh, false), isCollapse(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();

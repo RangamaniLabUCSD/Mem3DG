@@ -51,13 +51,14 @@
 std::unique_ptr<mem3dg::System> system_ply(
     const size_t verbosity, std::string inputMesh, std::string refMesh,
     size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double H0,
-    std::vector<double> r_H0, double Kse, double Kst, double Ksl, double Ksg,
-    double Kv, double eta, double epsilon, double Bc, double Vt, double cam,
-    double gamma, double temp, std::vector<double> pt, double Kf, double conc,
-    double height, double radius, double h, double T, double eps, double tSave,
-    std::string outputDir, std::string integrationMethod, bool isBacktrack,
-    double rho, double c1, double ctol, bool isAugmentedLagrangian) {
+    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
+    double H0, std::vector<double> r_H0, double Kse, double Kst, double Ksl,
+    double Ksg, double Kv, double eta, double epsilon, double Bc, double Vt,
+    double cam, double gamma, double temp, std::vector<double> pt, double Kf,
+    double conc, double height, double radius, double h, double T, double eps,
+    double tSave, std::string outputDir, std::string integrationMethod,
+    bool isBacktrack, double rho, double c1, double ctol,
+    bool isAugmentedLagrangian) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
@@ -71,9 +72,9 @@ std::unique_ptr<mem3dg::System> system_ply(
   std::cout << "Initializing the system ..." << std::endl;
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
-  mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
-                       Kv,   eta,   epsilon, Bc,  gamma, Vt,     cam,
-                       temp, sigma, pt,      Kf,  conc,  height, radius};
+  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
+                       sigma, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
                     isLocalCurvature, isEdgeFlip, isGrowMesh};
@@ -86,10 +87,10 @@ std::unique_ptr<mem3dg::System> system_ply(
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
-               bool isEdgeFlip, bool isGrowMesh, double Kb, double H0,
-               std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-               double Ksg, double Kv, double eta, double epsilon, double Bc,
-               double Vt, double cam, double gamma, double temp,
+               bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
+               double H0, std::vector<double> r_H0, double Kse, double Kst,
+               double Ksl, double Ksg, double Kv, double eta, double epsilon,
+               double Bc, double Vt, double cam, double gamma, double temp,
                std::vector<double> pt, double Kf, double conc, double height,
                double radius, double h, double T, double eps, double tSave,
                std::string outputDir, std::string integrationMethod,
@@ -108,9 +109,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   /// Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
-  mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
-                       Kv,   eta,   epsilon, Bc,  gamma, Vt,     cam,
-                       temp, sigma, pt,      Kf,  conc,  height, radius};
+  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
+                       sigma, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
                     isLocalCurvature, isEdgeFlip, isGrowMesh};
@@ -145,7 +146,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 int forwardsweep_ply(
     std::string inputMesh, std::string refMesh, size_t nSub,
     bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb,
+    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
     std::vector<double> H0, std::vector<double> r_H0, double Kse, double Kst,
     double Ksl, double Ksg, double Kv, double eta, double epsilon, double Bc,
     std::vector<double> Vt, std::vector<double> cam, double gamma, double temp,
@@ -159,9 +160,9 @@ int forwardsweep_ply(
 
   /// Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,   H0[0], r_H0,    Ksg, Kst,   Ksl,    Kse,
-                       Kv,   eta,   epsilon, Bc,  gamma, Vt[0],  cam[0],
-                       temp, sigma, pt,      Kf,  conc,  height, radius};
+  mem3dg::Parameters p{Kb,    Kbc, H0[0],   r_H0, Ksg,    Kst,   Ksl,    Kse,
+                       Kv,    eta, epsilon, Bc,   gamma,  Vt[0], cam[0], temp,
+                       sigma, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
                     isLocalCurvature, isEdgeFlip, isGrowMesh};
@@ -170,10 +171,10 @@ int forwardsweep_ply(
   mem3dg::System f(inputMesh, refMesh, nSub, p, o);
 
   /// Time integration / optimization
-  mem3dg::FeedForwardSweep integrator(f, h, isAdaptiveStep, T, tSave, eps,
-                                      outputDir, "/traj.nc", 3, isBacktrack,
-                                      rho, c1, ctol, isAugmentedLagrangian, restartNum,
-                                      H0, (isReducedVolume) ? Vt : cam);
+  mem3dg::FeedForwardSweep integrator(
+      f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", 3,
+      isBacktrack, rho, c1, ctol, isAugmentedLagrangian, restartNum, H0,
+      (isReducedVolume) ? Vt : cam);
   integrator.sweep();
 
   return 0;
@@ -183,15 +184,16 @@ int forwardsweep_ply(
 int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
               bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
-              bool isGrowMesh, double Kb, double H0, std::vector<double> r_H0,
-              double Kse, double Kst, double Ksl, double Ksg, double Kv,
-              double eta, double epsilon, double Bc, double Vt, double cam,
-              double gamma, double temp, std::vector<double> pt, double Kf,
-              double conc, double height, double radius, double h, double T,
-              double eps, double tSave, std::string outputDir,
-              std::string integrationMethod, bool isBacktrack, double rho,
-              double c1, double ctol, bool isAugmentedLagrangian,
-              size_t restartNum, bool isAdaptiveStep) {
+              bool isGrowMesh, double Kb, double Kbc, double H0,
+              std::vector<double> r_H0, double Kse, double Kst, double Ksl,
+              double Ksg, double Kv, double eta, double epsilon, double Bc,
+              double Vt, double cam, double gamma, double temp,
+              std::vector<double> pt, double Kf, double conc, double height,
+              double radius, double h, double T, double eps, double tSave,
+              std::string outputDir, std::string integrationMethod,
+              bool isBacktrack, double rho, double c1, double ctol,
+              bool isAugmentedLagrangian, size_t restartNum,
+              bool isAdaptiveStep) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -199,9 +201,9 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
 
   // Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,   H0,    r_H0,    Ksg, Kst,   Ksl,    Kse,
-                       Kv,   eta,   epsilon, Bc,  gamma, Vt,     cam,
-                       temp, sigma, pt,      Kf,  conc,  height, radius};
+  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
+                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
+                       sigma, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
                     isLocalCurvature, isEdgeFlip, isGrowMesh};
@@ -236,7 +238,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
 int forwardsweep_nc(
     std::string trajFile, int startingFrame, int nSub, bool isContinue,
     bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb,
+    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
     std::vector<double> H0, std::vector<double> r_H0, double Kse, double Kst,
     double Ksl, double Ksg, double Kv, double eta, double epsilon, double Bc,
     std::vector<double> Vt, std::vector<double> cam, double gamma, double temp,
@@ -251,9 +253,9 @@ int forwardsweep_nc(
 
   /// Initialize parameter struct
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,   H0[0], r_H0,    Ksg, Kst,   Ksl,    Kse,
-                       Kv,   eta,   epsilon, Bc,  gamma, Vt[0],  cam[0],
-                       temp, sigma, pt,      Kf,  conc,  height, radius};
+  mem3dg::Parameters p{Kb,    Kbc, H0[0],   r_H0, Ksg,    Kst,   Ksl,    Kse,
+                       Kv,    eta, epsilon, Bc,   gamma,  Vt[0], cam[0], temp,
+                       sigma, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
                     isLocalCurvature, isEdgeFlip, isGrowMesh};
@@ -262,10 +264,10 @@ int forwardsweep_nc(
   mem3dg::System f(trajFile, startingFrame, nSub, isContinue, p, o);
 
   /// Time integration / optimization
-  mem3dg::FeedForwardSweep integrator(f, h, isAdaptiveStep, T, tSave, eps,
-                                      outputDir, "/traj.nc", 3, isBacktrack,
-                                      rho, c1, ctol, isAugmentedLagrangian, restartNum,
-                                      H0, (isReducedVolume) ? Vt : cam);
+  mem3dg::FeedForwardSweep integrator(
+      f, h, isAdaptiveStep, T, tSave, eps, outputDir, "/traj.nc", 3,
+      isBacktrack, rho, c1, ctol, isAugmentedLagrangian, restartNum, H0,
+      (isReducedVolume) ? Vt : cam);
   integrator.sweep();
 
   return 0;

@@ -35,14 +35,19 @@ void System::computeBendingEnergy() {
   // no particular reason, just experiment
   // E.BE = 0;
   // for (gcs::Vertex v : mesh->vertices()) {
-  //   if (vpg->inputVertexPositions[v].z > 1e-12) {
+  //   if (H0[v] == H0[v.halfedge().tipVertex()]) {
   //     E.BE += P.Kb * (H[v] - H0[v]) * (H[v] - H0[v]) *
   //     vpg->vertexDualArea(v);
   //   }
   // }
 
+  // Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = H.raw() - H0.raw();
+  // E.BE = P.Kb * H_difference.transpose() * M * H_difference;
+
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = H.raw() - H0.raw();
-  E.BE = P.Kb * H_difference.transpose() * M * H_difference;
+  E.BE = (Kb.raw().array() * H_difference.array() *
+          vpg->vertexDualAreas.raw().array() * H_difference.array())
+             .sum();
 
   // when considering topological changes, additional term of gauss curvature
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
@@ -50,12 +55,12 @@ void System::computeBendingEnergy() {
 }
 
 void System::computeSurfaceEnergy() {
-  double A_difference = surfaceArea - targetSurfaceArea;
+  double A_difference = surfaceArea - refSurfaceArea;
   if (mesh->hasBoundary()) {
     // non moving boundary
     E.sE = P.Ksg * A_difference;
   } else {
-    E.sE = P.Ksg * A_difference * A_difference / targetSurfaceArea / 2 +
+    E.sE = P.Ksg * A_difference * A_difference / refSurfaceArea / 2 +
            P.lambdaSG * A_difference;
   }
 }
@@ -101,9 +106,7 @@ void System::computeKineticEnergy() {
 }
 
 void System::computePotentialEnergy() {
-  if (P.Kb != 0) {
     computeBendingEnergy();
-  }
   if (P.Ksg != 0) {
     computeSurfaceEnergy();
   }

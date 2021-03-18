@@ -256,9 +256,25 @@ DLL_PUBLIC inline void closestPtIndToPt(gcs::SurfaceMesh &mesh,
                                         std::vector<double> position,
                                         gcs::Vertex &theVertex) {
   double shorestDistance = 1e18;
-  gc::Vector3 position_vec{position[0], position[1], position[2]};
+  gc::Vector3 position_vec;
+  if (position.size() == 2) {
+    position_vec = gc::Vector3{position[0], position[1], 0};
+  } else if (position.size() == 3) {
+    position_vec = gc::Vector3{position[0], position[1], position[2]};
+  } else {
+    throw std::runtime_error(
+        "closestPtIndToPt: does not support non-2d/3d position vector!");
+  }
   for (gcs::Vertex v : mesh.vertices()) {
-    double distance = (vpg.inputVertexPositions[v] - position_vec).norm();
+    double distance;
+    if (position.size() == 2) {
+      distance = (gc::Vector3{vpg.inputVertexPositions[v].x,
+                              vpg.inputVertexPositions[v].y, 0} -
+                  position_vec)
+                     .norm();
+    } else {
+      distance = (vpg.inputVertexPositions[v] - position_vec).norm();
+    }
     if (distance < shorestDistance) {
       shorestDistance = distance;
       theVertex = v;

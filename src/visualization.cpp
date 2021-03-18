@@ -87,11 +87,24 @@ void visualize(mem3dg::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_pressure", fn);
   polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("bending_rigidity", f.Kb);
+  polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("line_tension", f.lineTension);
   polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity(
+          "-lapH(smoothing)",
+          -f.Kb.raw().array() *
+              (f.M_inv * f.L * (f.H.raw() - f.H0.raw())).array());
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity(
+          "spon part)",
+          f.bendingPressure.raw().array() +
+              f.Kb.raw().array() *
+                  (f.M_inv * f.L * (f.H.raw() - f.H0.raw())).array());
+  polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);
-      std::cout << "no of edges: " << f.mesh-> nEdges() << std::endl;
-      std::cout << "no of edges: " << f.vpg->edgeLengths.raw().rows() << std::endl;
+  std::cout << "no of edges: " << f.mesh->nEdges() << std::endl;
+  std::cout << "no of edges: " << f.vpg->edgeLengths.raw().rows() << std::endl;
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
   polyscope::getSurfaceMesh("Membrane")

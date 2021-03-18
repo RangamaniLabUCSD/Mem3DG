@@ -99,7 +99,7 @@ void System::computeRegularizationForce() {
             if (v.isBoundary()) {
               regularizationForce[v] += -P.Ksl * localAreaGradient *
                                         (vpg->faceAreas[base_he.face()] -
-                                         targetFaceAreas[base_he.face()]);
+                                         refVpg->faceAreas[base_he.face()]);
             } else {
               // without reference
               // regularizationForce[v] +=
@@ -115,7 +115,7 @@ void System::computeRegularizationForce() {
             // with local reference
             regularizationForce[v] += -P.Ksl * localAreaGradient *
                                       (vpg->faceAreas[base_he.face()] -
-                                       targetFaceAreas[base_he.face()]);
+                                       refVpg->faceAreas[base_he.face()]);
           }
         }
       }
@@ -127,7 +127,7 @@ void System::computeRegularizationForce() {
           if (v.isBoundary()) {
             regularizationForce[v] +=
                 -P.Kse * edgeGradient *
-                (vpg->edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]);
+                (vpg->edgeLengths[he.edge()] - refVpg->edgeLengths[he.edge()]);
           } else {
             // without reference
             // regularizationForce[v] +=
@@ -142,7 +142,7 @@ void System::computeRegularizationForce() {
           // with local reference
           regularizationForce[v] +=
               -P.Kse * edgeGradient *
-              (vpg->edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]);
+              (vpg->edgeLengths[he.edge()] - refVpg->edgeLengths[he.edge()]);
         }
       }
 
@@ -167,34 +167,38 @@ void System::computeRegularizationForce() {
       rowwiseDotProduct(regularizationForce_e, vertexAngleNormal_e),
       vertexAngleNormal_e);
 
-  // remove the masked components
-  // regularizationForce_e =
-  //     rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
-
-  // moving boundary 
+  // moving boundary
   for (gcs::Vertex v : mesh->vertices()) {
     if (!mask[v]) {
       regularizationForce[v].z = 0;
-
-      // boundary tension, mostly likely not necessary 
-      // if (v.isBoundary()) {
-      //   double boundaryEdgeLength = 0;
-      //   for (gcs::Edge e : v.adjacentEdges()) {
-      //     if (e.isBoundary()) {
-      //       boundaryEdgeLength += vpg->edgeLength(e);
-      //     }
-      //   }
-      //   boundaryEdgeLength /= 2;
-      //   double scaling;
-      //   if (regularizationForce[v].norm() > 1e-15) {
-      //     scaling = 1 - abs(P.Ksg * boundaryEdgeLength /
-      //                       (regularizationForce[v].norm()));
-      //   }
-      //   regularizationForce[v] *= scaling;
-      // }
-
     }
   }
+
+  // // remove the masked components
+  // regularizationForce_e =
+  //     rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
+  // // moving boundary
+  // for (gcs::Vertex v : mesh->vertices()) {
+  //   if (!mask[v]) {
+  //     regularizationForce[v].z = 0;
+  //     // boundary tension, mostly likely not necessary
+  //     if (v.isBoundary()) {
+  //       double boundaryEdgeLength = 0;
+  //       for (gcs::Edge e : v.adjacentEdges()) {
+  //         if (e.isBoundary()) {
+  //           boundaryEdgeLength += vpg->edgeLength(e);
+  //         }
+  //       }
+  //       boundaryEdgeLength /= 2;
+  //       double scaling;
+  //       if (regularizationForce[v].norm() > 1e-15) {
+  //         scaling = 1 - abs(P.Ksg * boundaryEdgeLength /
+  //                           (regularizationForce[v].norm()));
+  //       }
+  //       regularizationForce[v] *= scaling;
+  //     }
+  //   }
+  // }
 }
 
 void System::vertexShift() {
@@ -218,37 +222,7 @@ void System::vertexShift() {
   }
 }
 
-template <typename T> inline T clamp(T val, T low, T high) {
-  if (val > high)
-    return high;
-  if (val < low)
-    return low;
-  return val;
-}
-
 void System::edgeFlip() {
-
-  // WIP: recompute corner angle explicitly since refreshQuantities is too
-  // expensive
-  // linear edge flip for non-Delauney triangles
-  // might not be neccessary because it is immediate quantities.
-  for (gcs::Corner c : mesh->corners()) {
-    // WARNING: Logic duplicated between cached and immediate version
-    gcs::Halfedge he = c.halfedge();
-    gc::Vector3 pA = vpg->vertexPositions[he.vertex()];
-    he = he.next();
-    gc::Vector3 pB = vpg->vertexPositions[he.vertex()];
-    he = he.next();
-    gc::Vector3 pC = vpg->vertexPositions[he.vertex()];
-
-    GC_SAFETY_ASSERT(he.next() == c.halfedge(), "faces must be triangular");
-
-    double q = dot(unit(pB - pA), unit(pC - pA));
-    q = clamp(q, -1.0, 1.0);
-    double angle = std::acos(q);
-
-    vpg->cornerAngles[c] = angle;
-  }
 
   // flip edge if not delauney
   for (gcs::Edge e : mesh->edges()) {
@@ -275,6 +249,7 @@ void System::growMesh() {
       // if(!he.edge().isBoundary()){
       if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea)) {
+        // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
         gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
         vpg->inputVertexPositions[newhe.vertex()] =
             (vpg->inputVertexPositions
