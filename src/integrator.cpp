@@ -219,8 +219,7 @@ void Integrator::saveData() {
     std::cout << "\n"
               << "t: " << f.time << ", "
               << "n: " << frame << "\n"
-              << "dA/Area: " << dArea << "/" << f.surfaceArea - f.refSurfaceArea
-              << ", "
+              << "dA/Area: " << dArea << "/" << f.surfaceArea << ", "
               << "dVP/Volume: " << dVP << "/" << f.volume << ", "
               << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
               << "\n"

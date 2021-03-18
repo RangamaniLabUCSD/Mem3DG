@@ -51,7 +51,8 @@
 std::unique_ptr<mem3dg::System> system_ply(
     const size_t verbosity, std::string inputMesh, std::string refMesh,
     size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
+    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
+    bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
     double H0, std::vector<double> r_H0, double Kse, double Kst, double Ksl,
     double Ksg, double Kv, double eta, double epsilon, double Bc, double Vt,
     double cam, double gamma, double temp, std::vector<double> pt, double Kf,
@@ -76,8 +77,9 @@ std::unique_ptr<mem3dg::System> system_ply(
                        Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
                        sigma, pt,  Kf,      conc, height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
-                    isLocalCurvature, isEdgeFlip, isGrowMesh};
+  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+                    isLocalCurvature, isEdgeFlip,    isGrowMesh,
+                    isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   std::unique_ptr<mem3dg::System> f(
       new mem3dg::System(inputMesh, refMesh, nSub, p, o));
@@ -87,16 +89,17 @@ std::unique_ptr<mem3dg::System> system_ply(
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
-               bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
-               double H0, std::vector<double> r_H0, double Kse, double Kst,
-               double Ksl, double Ksg, double Kv, double eta, double epsilon,
-               double Bc, double Vt, double cam, double gamma, double temp,
-               std::vector<double> pt, double Kf, double conc, double height,
-               double radius, double h, double T, double eps, double tSave,
-               std::string outputDir, std::string integrationMethod,
-               bool isBacktrack, double rho, double c1, double ctol,
-               bool isAugmentedLagrangian, size_t restartNum,
-               bool isAdaptiveStep) {
+               bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
+               bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb,
+               double Kbc, double H0, std::vector<double> r_H0, double Kse,
+               double Kst, double Ksl, double Ksg, double Kv, double eta,
+               double epsilon, double Bc, double Vt, double cam, double gamma,
+               double temp, std::vector<double> pt, double Kf, double conc,
+               double height, double radius, double h, double T, double eps,
+               double tSave, std::string outputDir,
+               std::string integrationMethod, bool isBacktrack, double rho,
+               double c1, double ctol, bool isAugmentedLagrangian,
+               size_t restartNum, bool isAdaptiveStep) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
@@ -113,8 +116,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                        Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
                        sigma, pt,  Kf,      conc, height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
-                    isLocalCurvature, isEdgeFlip, isGrowMesh};
+  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+                    isLocalCurvature, isEdgeFlip,    isGrowMesh,
+                    isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
   mem3dg::System f(inputMesh, refMesh, nSub, p, o);
@@ -146,7 +150,8 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 int forwardsweep_ply(
     std::string inputMesh, std::string refMesh, size_t nSub,
     bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
+    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
+    bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
     std::vector<double> H0, std::vector<double> r_H0, double Kse, double Kst,
     double Ksl, double Ksg, double Kv, double eta, double epsilon, double Bc,
     std::vector<double> Vt, std::vector<double> cam, double gamma, double temp,
@@ -164,8 +169,9 @@ int forwardsweep_ply(
                        Kv,    eta, epsilon, Bc,   gamma,  Vt[0], cam[0], temp,
                        sigma, pt,  Kf,      conc, height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
-                    isLocalCurvature, isEdgeFlip, isGrowMesh};
+  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+                    isLocalCurvature, isEdgeFlip,    isGrowMesh,
+                    isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
   mem3dg::System f(inputMesh, refMesh, nSub, p, o);
@@ -184,7 +190,8 @@ int forwardsweep_ply(
 int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
               bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
-              bool isGrowMesh, double Kb, double Kbc, double H0,
+              bool isGrowMesh, bool isRefMesh, bool isFloatVertex,
+              bool isLaplacianMeanCurvature, double Kb, double Kbc, double H0,
               std::vector<double> r_H0, double Kse, double Kst, double Ksl,
               double Ksg, double Kv, double eta, double epsilon, double Bc,
               double Vt, double cam, double gamma, double temp,
@@ -205,8 +212,9 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
                        Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
                        sigma, pt,  Kf,      conc, height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
-                    isLocalCurvature, isEdgeFlip, isGrowMesh};
+  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+                    isLocalCurvature, isEdgeFlip,    isGrowMesh,
+                    isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   // Initialize the system
   mem3dg::System f(trajFile, startingFrame, nSub, isContinue, p, o);
@@ -238,7 +246,8 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
 int forwardsweep_nc(
     std::string trajFile, int startingFrame, int nSub, bool isContinue,
     bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, double Kb, double Kbc,
+    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
+    bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
     std::vector<double> H0, std::vector<double> r_H0, double Kse, double Kst,
     double Ksl, double Ksg, double Kv, double eta, double epsilon, double Bc,
     std::vector<double> Vt, std::vector<double> cam, double gamma, double temp,
@@ -257,8 +266,9 @@ int forwardsweep_nc(
                        Kv,    eta, epsilon, Bc,   gamma,  Vt[0], cam[0], temp,
                        sigma, pt,  Kf,      conc, height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,  isReducedVolume,
-                    isLocalCurvature, isEdgeFlip, isGrowMesh};
+  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+                    isLocalCurvature, isEdgeFlip,    isGrowMesh,
+                    isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
   mem3dg::System f(trajFile, startingFrame, nSub, isContinue, p, o);

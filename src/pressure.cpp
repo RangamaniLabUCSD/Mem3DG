@@ -73,6 +73,7 @@ EigenVectorX1D System::computeBendingPressure() {
       -2.0 *
       (Kb.raw().array() * (H.raw() - H0.raw()).array() * scalerTerms.array())
           .matrix();
+          
   // calculate bendingForce
   bendingPressure.raw() = productTerms + lap_H;
   // }
@@ -107,15 +108,12 @@ EigenVectorX1D System::computeBendingPressure() {
 }
 
 EigenVectorX1D System::computeCapillaryPressure() {
-
   /// Geometric implementation
-  if (mesh->hasBoundary()) { // surface tension of patch
-    surfaceTension = -P.Ksg;
-  } else { // surface tension of vesicle
-    surfaceTension =
-        -(P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea + P.lambdaSG);
-  }
-  capillaryPressure.raw() = surfaceTension * 2 * H.raw();
+  surfaceTension =
+      O.isOpenMesh ? P.Ksg
+                   : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
+                         P.lambdaSG;
+  capillaryPressure.raw() = -surfaceTension * 2 * H.raw();
 
   return capillaryPressure.raw();
 
@@ -181,38 +179,36 @@ EigenVectorX1D System::computeLineCapillaryForce() {
 EigenVectorX1D System::computeExternalPressure() {
   EigenVectorX1D externalPressureMagnitude;
 
-  if (P.Kf != 0) {
+  // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT
+  // GEOMETRY
 
-    // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT
-    // GEOMETRY
+  // auto &dist_e = heatMethodDistance(vpg, mesh->vertex(P.ptInd)).raw();
+  // double stdDev = dist_e.maxCoeff() / P.conc;
+  // externalPressureMagnitude =
+  //    P.Kf / (stdDev * pow(M_PI * 2, 0.5)) *
+  //    (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
 
-    // auto &dist_e = heatMethodDistance(vpg, mesh->vertex(P.ptInd)).raw();
-    // double stdDev = dist_e.maxCoeff() / P.conc;
-    // externalPressureMagnitude =
-    //    P.Kf / (stdDev * pow(M_PI * 2, 0.5)) *
-    //    (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
+  // b. APPLY EXTERNAL PRESSURE NORMAL TO THE SURFACE
 
-    // b. APPLY EXTERNAL PRESSURE NORMAL TO THE SURFACE
+  // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
+  // externalPressure_e = externalPressureMagnitude *
+  // vertexAngleNormal_e.row(P.ptInd);
 
-    // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-    // externalPressure_e = externalPressureMagnitude *
-    // vertexAngleNormal_e.row(P.ptInd);
+  // c. ALTERNATIVELY, PRESSURE BASED ON INITIAL GEOMETRY + ALONG A FIXED
+  // DIRECTION, E.G. NEGATIVE Z DIRECTION
 
-    // c. ALTERNATIVELY, PRESSURE BASED ON INITIAL GEOMETRY + ALONG A FIXED
-    // DIRECTION, E.G. NEGATIVE Z DIRECTION
+  // initialize/update the external pressure magnitude distribution
+  gaussianDistribution(externalPressureMagnitude,
+                       geodesicDistanceFromPtInd.raw(),
+                       geodesicDistanceFromPtInd.raw().maxCoeff() / P.conc);
+  externalPressureMagnitude *= P.Kf;
 
-    // initialize/update the external pressure magnitude distribution
-    gaussianDistribution(externalPressureMagnitude,
-                         geodesicDistanceFromPtInd.raw(),
-                         geodesicDistanceFromPtInd.raw().maxCoeff() / P.conc);
-    externalPressureMagnitude *= P.Kf;
+  Eigen::Matrix<double, 1, 3> zDir;
+  zDir << 0.0, 0.0, -1.0;
+  // externalPressure_e = -externalPressureMagnitude * zDir *
+  //                      (vpg->inputVertexPositions[theVertex].z - P.height);
+  externalPressure.raw() = externalPressureMagnitude;
 
-    Eigen::Matrix<double, 1, 3> zDir;
-    zDir << 0.0, 0.0, -1.0;
-    // externalPressure_e = -externalPressureMagnitude * zDir *
-    //                      (vpg->inputVertexPositions[theVertex].z - P.height);
-    externalPressure.raw() = externalPressureMagnitude;
-  }
   return externalPressure.raw();
 }
 

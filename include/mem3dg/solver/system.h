@@ -101,6 +101,8 @@ struct Parameters {
   double lambdaSG = 0;
   /// augmented Lagrangian parameter for volume
   double lambdaV = 0;
+  /// sharpness of tanh transition
+  double sharpness = 20;
 };
 
 struct Energy {
@@ -137,6 +139,14 @@ struct Options {
   bool isEdgeFlip;
   /// Whether grow mesh
   bool isGrowMesh;
+  /// Whether need reference mesh
+  bool isRefMesh;
+  /// Whether floating "the" vertex
+  bool isFloatVertex;
+  /// Whether Laplacian mean curvature
+  bool isLaplacianMeanCurvature;
+  /// Whether open boundary mesh
+  bool isOpenMesh = false;
 };
 
 class DLL_PUBLIC System {
@@ -144,7 +154,7 @@ public:
   /// Parameters
   Parameters P;
   /// Options
-  const Options O;
+  Options O;
 
   /// Cached mesh of interest
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -232,13 +242,6 @@ public:
   gcs::VertexData<bool> mask;
   /// "the vertex"
   gcs::Vertex theVertex;
-
-  /// If flipping the edge
-  gcs::EdgeData<bool> isFlip;
-  /// If splitting the edge
-  gcs::EdgeData<bool> isSplit;
-  /// If collapsing the edge
-  gcs::EdgeData<bool> isCollapse;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -359,8 +362,7 @@ public:
         heatSolver(*vpg), M(vpg->vertexLumpedMassMatrix),
         L(vpg->cotanLaplacian), D(), geodesicDistanceFromPtInd(*mesh, 0),
         pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H(*mesh),
-        K(*mesh), H0(*mesh), Kb(*mesh), mask(*mesh, true), isFlip(*mesh, false),
-        isSplit(*mesh, false), isCollapse(*mesh, false) {
+        K(*mesh), H0(*mesh), Kb(*mesh), mask(*mesh, true) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -381,15 +383,10 @@ public:
     // vpg->requireVertexTangentBasis();
 
     // Check confliciting parameters and options
-    checkParameters();
+    checkParametersAndOptions();
 
     // Initialize reference values
     initConstants();
-
-    // Regularize the vetex position geometry if needed
-    if (O.isVertexShift) {
-      vertexShift();
-    }
 
     // Process the mesh by regularization and mutation
     processMesh();
@@ -466,7 +463,7 @@ public:
    * @brief Check all conflicting parameters and options
    *
    */
-  void checkParameters();
+  void checkParametersAndOptions();
 
   /**
    * @brief testing of random number generator pcg
@@ -606,12 +603,12 @@ public:
   /**
    * @brief Edge flip if not Delaunay
    */
-  void edgeFlip();
+  bool edgeFlip();
 
   /**
    * @brief Get regularization pressure component of the system
    */
-  void growMesh();
+  bool growMesh();
 
   // ==========================================================
   // =============          Helpers             ===============
@@ -625,9 +622,15 @@ public:
                                  gcs::Edge &e) const;
   double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
                                  gcs::Edge &&e) const;
+
   /**
    * @brief Get projected area of the mesh onto x-y plane
    */
   double computeProjectedArea(gcs::VertexPositionGeometry &vpg) const;
+
+  /**
+   * @brief Find "the" vertex
+   */
+  void findTheVertex(gcs::VertexPositionGeometry &vpg);
 };
 } // namespace mem3dg

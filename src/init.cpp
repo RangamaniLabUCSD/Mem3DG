@@ -121,7 +121,9 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
         mesh->nEdges() == referenceMesh->nEdges() &&
         mesh->nFaces() == referenceMesh->nFaces())) {
     throw std::logic_error(
-        "Topology of input mesh and reference mesh is not consistent!");
+        "Topology of input mesh and reference mesh is not consistent! If not "
+        "referencing a mesh, please have the option isRefMesh on and have "
+        "input mesh as the duplicated argument!");
   }
 
   // Subdivide the mesh and geometry objects
@@ -181,25 +183,24 @@ System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
 
-void System::checkParameters() {
-  // check validity of parameters / options
+void System::checkParametersAndOptions() {
 
-  if (P.Kst != 0 && O.isEdgeFlip) {
-    throw std::logic_error("For topology changing simulation, conformal mesh "
-                           "regularization Kst cannot be applied!");
+  if (mesh->hasBoundary()) {
+    O.isOpenMesh = true;
   }
 
-  if (P.Kst != 0 && O.isGrowMesh) {
+  // check validity of parameters / options
+  if ((O.isEdgeFlip || O.isGrowMesh) && O.isRefMesh) {
+    throw std::logic_error(
+        "Topology changes are not compatible with reference mesh!");
+  }
+
+  if (P.Kst != 0 && !O.isRefMesh) {
     throw std::logic_error("For topology changing simulation, conformal mesh "
                            "regularization Kst cannot be applied!");
   }
 
   if (mesh->hasBoundary()) {
-    // if (P.Ksl != 0 || P.Kse != 0) {
-    //   throw std::logic_error("For open boundary simulation, local mesh "
-    //                          "regularization Ksl and Kse cannot be
-    //                          applied!");
-    // }
     if (O.isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
       throw std::logic_error(
           "For open boundary simulation, isReducedVolume has to be false, Vt "
@@ -214,6 +215,9 @@ void System::checkParameters() {
     }
     if (P.r_H0 != std::vector<double>({-1, -1})) {
       throw std::logic_error("r_H0 has to be {-1, -1} for nonlocal curvature!");
+    }
+    if (P.Kbc != -1) {
+      throw std::logic_error("Kbc has to be set to -1 for nonlocal curvature!");
     }
   }
 
@@ -249,6 +253,18 @@ void System::checkParameters() {
                              "and prescribed height should be set to 0!");
     }
   }
+
+  if (P.pt.size() > 3) {
+    throw std::logic_error(
+        "Length of p.pt cannnot exceed 3! Instruction: (Length=1) => (vertex "
+        "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
+        "coordinate)");
+  }
+
+  if (P.pt.size() == 1 && O.isFloatVertex) {
+    throw std::logic_error(
+        "To have Floating vertex, one must specify vertex by coordinate!");
+  }
 }
 
 void System::pcg_test() {
@@ -278,49 +294,55 @@ void System::initConstants() {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
-  // Initialize V-E distribution matrix
-  D = vpg->d0.transpose();
-  for (int k = 0; k < D.outerSize(); ++k) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-      it.valueRef() = 0.5;
+  // define local vpg
+  const auto &localVpg = O.isRefMesh ? vpg : refVpg;
+
+  // Initialize V-E distribution matrix for line tension calculation
+  if (P.eta != 0) {
+    D = localVpg->d0.transpose();
+    for (int k = 0; k < D.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+        it.valueRef() = 0.5;
+      }
     }
   }
 
-  // compute constant values during simulation
-  // Find the closest point index to P.pt in refVpg
-  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
+  // Find "the" vertex
+  findTheVertex(*localVpg);
 
   // Initialize the constant mask based on distance from the point specified
-  mask.raw() = (heatMethodDistance(*refVpg, theVertex).raw().array() < P.radius)
-                   .matrix();
+  mask.raw() =
+      (heatMethodDistance(*localVpg, theVertex).raw().array() < P.radius)
+          .matrix();
+
   // Mask boundary element
   if (mesh->hasBoundary()) {
     boundaryMask(*mesh, mask.raw());
   }
 
   // Initialize the constant target surface (total mesh) area
-  if (mesh->hasBoundary()) {
-    refSurfaceArea = computeProjectedArea(*vpg);
-  } else {
-    refSurfaceArea = refVpg->faceAreas.raw().sum();
-  }
+  refSurfaceArea = O.isOpenMesh ? computeProjectedArea(*localVpg)
+                                : localVpg->faceAreas.raw().sum();
 
   // Initialize the constant target mean face area
-  meanTargetFaceArea = refVpg->faceAreas.raw().sum() / mesh->nFaces();
+  if (!O.isRefMesh || O.isGrowMesh) {
+    meanTargetFaceArea = localVpg->faceAreas.raw().sum() / mesh->nFaces();
+  }
 
   // Initialize the constant target mean edge length
-  meanTargetEdgeLength = refVpg->edgeLengths.raw().sum() / mesh->nEdges();
+  if (!O.isRefMesh) {
+    meanTargetEdgeLength = localVpg->edgeLengths.raw().sum() / mesh->nEdges();
+  }
 
   // Initialize the target constant cross length ration
-  targetLcr = computeLengthCrossRatio(*refVpg);
+  if (O.isRefMesh) {
+    targetLcr = computeLengthCrossRatio(*localVpg);
+  }
 
   // Initialize the constant reference volume
-  if (mesh->hasBoundary()) {
-    refVolume = 0.0;
-  } else {
-    refVolume = std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
-                (4 * constants::PI / 3);
-  }
+  refVolume = O.isOpenMesh ? 0.0
+                           : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
+                                 (4 * constants::PI / 3);
 
   // Initialize the constant spontaneous curvature
   H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
@@ -330,6 +352,9 @@ void System::initConstants() {
 }
 
 void System::processMesh() {
+
+  bool isTopologyChanged = false;
+
   // vertex shift for regularization
   if (O.isVertexShift) {
     vertexShift();
@@ -337,12 +362,12 @@ void System::processMesh() {
 
   // split edge and collapse edge
   if (O.isGrowMesh) {
-    growMesh();
+    isTopologyChanged = growMesh();
   }
 
   // linear edge flip for non-Delauney triangles
   if (O.isEdgeFlip) {
-    edgeFlip();
+    isTopologyChanged = edgeFlip();
   }
 
   // regularization
@@ -351,11 +376,8 @@ void System::processMesh() {
   }
   vpg->inputVertexPositions.raw() += regularizationForce.raw();
 
-  // refresh cached quantities after regularization
-  vpg->refreshQuantities();
-
   // Update the distribution matrix when topology changes
-  if (O.isEdgeFlip || O.isGrowMesh) {
+  if (P.eta != 0 && isTopologyChanged) {
     D = vpg->d0.transpose();
     for (int k = 0; k < D.outerSize(); ++k) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
@@ -365,41 +387,38 @@ void System::processMesh() {
   }
 
   // Update constant values when topology changes
-  if (O.isGrowMesh && mesh->hasBoundary()) {
+  if (O.isOpenMesh && isTopologyChanged) {
     boundaryMask(*mesh, mask.raw());
   }
 
   // recompute "the vertex" after topological changes
-  // if (O.isGrowMesh) {
-  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
-  // }
-
-  // initialize/update distance from the point specified
-  if (O.isLocalCurvature || P.Kf != 0) {
-    if (O.isGrowMesh) {
-      geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
-      // gc::HeatMethodDistanceSolver heatSolverHere(*vpg);p
-      // geodesicDistanceFromPtInd = heatSolverHere.computeDistance(theVertex);
-    } else {
-      geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
-    }
+  if (O.isFloatVertex) {
+    closestVertexToPt(*mesh, *vpg, P.pt, theVertex);
   }
 
+  // initialize/update distance from the point specified
   // initialize/update spontaneous curvature (local
   // spontaneous curvature) and bending rigidity
-  if (O.isLocalCurvature) {
-    tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(), 20,
-                     P.r_H0);
+  if (O.isLocalCurvature || P.Kf != 0) {
+    vpg->refreshQuantities();
+    geodesicDistanceFromPtInd = (O.isGrowMesh || O.isEdgeFlip)
+                                    ? heatMethodDistance(*vpg, theVertex)
+                                    : heatSolver.computeDistance(theVertex);
+
+    tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+                     P.sharpness, P.r_H0);
+    tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
+                     P.sharpness, P.r_H0);
     H0.raw() *= P.H0;
-    // ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-    //                      P.r_H0);
-    tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(), 20,
-                     P.r_H0);
-    // ellipticDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
-    //                      P.r_H0);
     Kb.raw() *= P.Kbc - P.Kb;
     Kb.raw().array() += P.Kb;
-  } else if (O.isGrowMesh) {
+    // ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+    //                      P.r_H0);
+    // ellipticDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
+    //                      P.r_H0);
+  }
+
+  if (!O.isLocalCurvature && isTopologyChanged) {
     H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
     Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
   }
@@ -416,6 +435,27 @@ void System::updateVertexPositions() {
 
   // initialize/update Laplacian matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
+
+  // initialize/update mean curvature 1. cotan laplacian definition, 2. dihedral
+  // definition
+  H.raw() =
+      O.isLaplacianMeanCurvature
+          ? rowwiseDotProduct(M_inv * L * positions / 2.0, vertexAngleNormal_e)
+          : M_inv * vpg->vertexMeanCurvatures.raw();
+
+  // initialize/update Gaussian curvature
+  K.raw() = M_inv * vpg->vertexGaussianCurvatures.raw();
+
+  /// initialize/update enclosed volume
+  volume = getMeshVolume(*mesh, *vpg, gc::Vector3{0, 0, 0});
+
+  // initialize/update total surface area
+  surfaceArea = vpg->faceAreas.raw().sum();
+
+  // update reference area by projecting to xy plane
+  if (O.isOpenMesh) {
+    refSurfaceArea = computeProjectedArea(*vpg);
+  }
 
   // initialize/update spontaneous curvature (protein
   // binding)
@@ -438,35 +478,22 @@ void System::updateVertexPositions() {
     // lineTension.raw() = P.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
 
-  // initialize/update mean curvature 1. cotan laplacian definition, 2. dihedral
-  // definition
-  // H.raw() = rowwiseDotProduct(M_inv * L * positions / 2.0,
-  // vertexAngleNormal_e);
-  H.raw() = M_inv * vpg->vertexMeanCurvatures.raw();
-
-  // initialize/update Gaussian curvature
-  K.raw() = M_inv * vpg->vertexGaussianCurvatures.raw();
-
-  /// initialize/update enclosed volume
-  volume = 0;
-  for (gcs::Face f : mesh->faces()) {
-    volume += signedVolumeFromFace(f, *vpg, gc::Vector3{0, 0, 0});
-  }
-
-  // initialize/update total surface area
-  surfaceArea = vpg->faceAreas.raw().sum();
-
-  // update reference area by projecting to xy plane
-  if (mesh->hasBoundary()) {
-    refSurfaceArea = computeProjectedArea(*vpg);
-  }
-
   // initialize/update external force
-  computeExternalPressure();
+  if (P.Kf != 0) {
+    computeExternalPressure();
+  }
 
   // initialize/update the vertex position of the last
   // iteration
   pastPositions = vpg->inputVertexPositions;
+}
+
+void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
+  if (P.pt.size() == 1) {
+    theVertex = mesh->vertex((std::size_t)P.pt[0]);
+  } else {
+    closestVertexToPt(*mesh, vpg, P.pt, theVertex);
+  }
 }
 
 } // namespace mem3dg

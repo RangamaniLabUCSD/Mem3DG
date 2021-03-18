@@ -54,8 +54,6 @@ int main() {
          Ksg = 0.1;
   std::vector<double> pt = {1, 1, 1};
   std::vector<double> r_H0 = {0.5, 0.5};
-  bool isProtein = false, isVertexShift = false, isReducedVolume = true,
-       isLocalCurvature = true;
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
   std::cout << "Initiating the system ...";
@@ -63,9 +61,17 @@ int main() {
                        Kv,    eta, epsilon, Bc,   gamma,  Vt,    Pam, temp,
                        sigma, pt,  Kf,      conc, height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein, isReducedVolume,
-                    isLocalCurvature, false,     false};
-
+  mem3dg::Options o;
+  o.isProtein = false;
+  o.isVertexShift = false;
+  o.isReducedVolume = true;
+  o.isLocalCurvature = true;
+  o.isEdgeFlip = false;
+  o.isGrowMesh = false;
+  o.isRefMesh = true;
+  o.isFloatVertex = false;
+  o.isLaplacianMeanCurvature = false;
+  
   mem3dg::System f(inputMesh, refMesh, 0, p, o);
 
   gcs::RichSurfaceMeshData richData(*f.mesh);

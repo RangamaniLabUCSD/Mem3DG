@@ -69,6 +69,23 @@ DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
 }
 
 /**
+ * @brief Get mesh volume
+ *
+ * @param f
+ * @param vpg
+ * @return double
+ */
+DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
+                                       gcs::VertexPositionGeometry &vpg,
+                                       gc::Vector3 center) {
+  double volume = 0;
+  for (gcs::Face f : mesh.faces()) {
+    volume += signedVolumeFromFace(f, vpg, center);
+  }
+  return volume;
+}
+
+/**
  * @brief Get the vector from halfedge vertices
  *
  * @param he
@@ -251,7 +268,7 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  * @param
  * @param standard deviation
  */
-DLL_PUBLIC inline void closestPtIndToPt(gcs::SurfaceMesh &mesh,
+DLL_PUBLIC inline void closestVertexToPt(gcs::SurfaceMesh &mesh,
                                         gcs::VertexPositionGeometry &vpg,
                                         std::vector<double> position,
                                         gcs::Vertex &theVertex) {
@@ -263,7 +280,7 @@ DLL_PUBLIC inline void closestPtIndToPt(gcs::SurfaceMesh &mesh,
     position_vec = gc::Vector3{position[0], position[1], position[2]};
   } else {
     throw std::runtime_error(
-        "closestPtIndToPt: does not support non-2d/3d position vector!");
+        "closestVertexToPt: does not support non-2d/3d position vector!");
   }
   for (gcs::Vertex v : mesh.vertices()) {
     double distance;
