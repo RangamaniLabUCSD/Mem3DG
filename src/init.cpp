@@ -295,7 +295,7 @@ void System::initConstants() {
   rng = pcg32(seed_source);
 
   // define local vpg
-  const auto &localVpg = O.isRefMesh ? vpg : refVpg;
+  const auto &localVpg = O.isRefMesh ? refVpg : vpg;
 
   // Initialize V-E distribution matrix for line tension calculation
   if (P.eta != 0) {
