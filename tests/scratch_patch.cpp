@@ -39,16 +39,22 @@ int main() {
 
   std::vector<double> pt = {0, 0, 0};
   std::vector<double> r_H0 = {0.15, 0.15};
-  bool isProtein = false, isVertexShift = false, isReducedVolume = true,
-       isLocalCurvature = false;
   double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
   mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
                        Kv,    eta, epsilon, Bc,   gamma,  Vt,    Pam, temp,
                        sigma, pt,  Kf,      conc, height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein, isReducedVolume,
-                    isLocalCurvature, false,     false};
+   mem3dg::Options o;
+  o.isProtein = false;
+  o.isVertexShift = false;
+  o.isReducedVolume = true;
+  o.isLocalCurvature = true;
+  o.isEdgeFlip = false;
+  o.isGrowMesh = false;
+  o.isRefMesh = true;
+  o.isFloatVertex = false;
+  o.isLaplacianMeanCurvature = false;
 
   mem3dg::System f(inputMesh, refMesh, 0, p, o);
 

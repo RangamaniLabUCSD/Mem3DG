@@ -392,7 +392,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The options
     )delim");
   options.def(py::init<>());
-  options.def(py::init<bool, bool, bool, bool, bool, bool>());
+  options.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool>());
   options.def_readwrite("isVertexShift", &Options::isVertexShift,
                         R"delim(
           get the option of whether do vertex shift  
@@ -416,6 +416,20 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   options.def_readwrite("isGrowMesh", &Options::isGrowMesh,
                         R"delim(
           get the option of whether grow mesh 
+      )delim");
+  options.def_readwrite("isRefMesh", &Options::isRefMesh,
+                        R"delim(
+          get the option of whether have a reference mesh
+      )delim");
+  options.def_readwrite("isFloatVertex", &Options::isFloatVertex,
+                        R"delim(
+          get the option of whether have "the" vertex floating in embedded space
+      )delim");
+  options.def_readwrite("isLaplacianMeanCurvature",
+                        &Options::isLaplacianMeanCurvature,
+                        R"delim(
+          get the option of whether adopt Laplacian mean curvature definition, 
+          otherwise dihedral angle definition.
       )delim");
 
   /// Parameter struct
@@ -668,14 +682,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("nSub"), py::arg("isReducedVolume"),
                py::arg("isProtein"), py::arg("isLocalCurvature"),
                py::arg("isVertexShift"), py::arg("isEdgeFlip"),
-               py::arg("isGrowMesh"), py::arg("Kb"), py::arg("Kbc"),
-               py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
-               py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
-               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-               py::arg("conc"), py::arg("height"), py::arg("radius"),
-               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-               py::arg("outputDir"), py::arg("integration"),
+               py::arg("isGrowMesh"), py::arg("isRefMesh"),
+               py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
+               py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
+               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
+               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
+               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
+               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
+               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
                py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
                py::arg("ctol"), py::arg("isAugmentedLagrangian"),
                R"delim(
@@ -687,14 +702,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("nSub"), py::arg("isReducedVolume"),
                py::arg("isProtein"), py::arg("isLocalCurvature"),
                py::arg("isVertexShift"), py::arg("isEdgeFlip"),
-               py::arg("isGrowMesh"), py::arg("Kb"), py::arg("Kbc"),
-               py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
-               py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
-               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-               py::arg("conc"), py::arg("height"), py::arg("radius"),
-               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-               py::arg("outputDir"), py::arg("integration"),
+               py::arg("isGrowMesh"), py::arg("isRefMesh"),
+               py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
+               py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
+               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
+               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
+               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
+               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
+               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
                py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
                py::arg("ctol"), py::arg("isAugmentedLagrangian"),
                py::arg("restartNum"), py::arg("isAdaptiveStep"),
@@ -711,6 +727,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
                    isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
+                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
+                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
+                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
                    Kb (:py:class:`double`): bending modulus of the bare membrane 
                    Kbc (:py:class:`double`): bending modulus of the coated membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
@@ -753,7 +772,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
                py::arg("isReducedVolume"), py::arg("isProtein"),
                py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-               py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
+               py::arg("isEdgeFlip"), py::arg("isGrowMesh"),
+               py::arg("isRefMesh"), py::arg("isFloatVertex"),
+               py::arg("isLaplacianMeanCurvature"), py::arg("Kb"),
                py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"), py::arg("Kse"),
                py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
                py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
@@ -776,6 +797,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
                    isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
+                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
+                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
+                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
                    Kb (:py:class:`double`): bending modulus of the bare membrane 
                    Kbc (:py:class:`double`): bending modulus of the coated membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
@@ -818,24 +842,25 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
 #ifdef MEM3DG_WITH_NETCDF
 
-  pymem3dg.def("driver_nc", &driver_nc,
-               "Run single simulation starting with netcdf files",
-               py::arg("verbosity"), py::arg("trajFile"),
-               py::arg("startingFrame"), py::arg("nSub"), py::arg("isContinue"),
-               py::arg("isReducedVolume"), py::arg("isProtein"),
-               py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-               py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("Kb"),
-               py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
-               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               py::arg("restartNum"), py::arg("isAdaptiveStep"),
-               R"delim(
+  pymem3dg.def(
+      "driver_nc", &driver_nc,
+      "Run single simulation starting with netcdf files", py::arg("verbosity"),
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
+      py::arg("isContinue"), py::arg("isReducedVolume"), py::arg("isProtein"),
+      py::arg("isLocalCurvature"), py::arg("isVertexShift"),
+      py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("isRefMesh"),
+      py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
+      py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
+      py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
+      py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
+      py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
+      py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
+      py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
+      py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
+      py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), py::arg("ctol"),
+      py::arg("isAugmentedLagrangian"), py::arg("restartNum"),
+      py::arg("isAdaptiveStep"),
+      R"delim(
                    Run single simulation starting with netcdf files
                Args:
                    verbosity (:py:class:`int`): verbosity of output data
@@ -849,6 +874,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
                    isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
+                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
+                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
+                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
                    Kb (:py:class:`double`): bending modulus of the bare membrane 
                    Kbc (:py:class:`double`): bending modulus of the coated membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
@@ -892,16 +920,18 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("isContinue"), py::arg("isReducedVolume"),
                py::arg("isProtein"), py::arg("isLocalCurvature"),
                py::arg("isVertexShift"), py::arg("isEdgeFlip"),
-               py::arg("isGrowMesh"), py::arg("Kb"), py::arg("Kbc"),
-               py::arg("H0"), py::arg("r_H0"), py::arg("Kse"), py::arg("Kst"),
-               py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"), py::arg("eta"),
-               py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"), py::arg("cam"),
-               py::arg("gamma"), py::arg("temp"), py::arg("pt"), py::arg("Kf"),
-               py::arg("conc"), py::arg("height"), py::arg("radius"),
-               py::arg("h"), py::arg("T"), py::arg("eps"), py::arg("tSave"),
-               py::arg("outputDir"), py::arg("isBacktrack"), py::arg("rho"),
-               py::arg("c1"), py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               py::arg("restartNum"), py::arg("isAdaptiveStep"),
+               py::arg("isGrowMesh"), py::arg("isRefMesh"),
+               py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
+               py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
+               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
+               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
+               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
+               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
+               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
+               py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
+               py::arg("rho"), py::arg("c1"), py::arg("ctol"),
+               py::arg("isAugmentedLagrangian"), py::arg("restartNum"),
+               py::arg("isAdaptiveStep"),
                R"delim(
                    Run forward sweep simulation starting with netcdf files
                Args:
@@ -915,6 +945,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
                    isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
                    isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
+                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
+                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
+                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
                    Kb (:py:class:`double`): bending modulus of the bare membrane 
                    Kbc (:py:class:`double`): bending modulus of the coated membrane 
                    H0 (:py:class:`double`): spontaneous curvature of the membrane
