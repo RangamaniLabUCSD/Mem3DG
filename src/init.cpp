@@ -288,7 +288,7 @@ void System::initConstants() {
 
   // compute constant values during simulation
   // Find the closest point index to P.pt in refVpg
-  closestPtIndToPt(*mesh, *refVpg, P.pt, theVertex);
+  closestPtIndToPt(*mesh, *vpg, P.pt, theVertex);
 
   // Initialize the constant mask based on distance from the point specified
   mask.raw() = (heatMethodDistance(*refVpg, theVertex).raw().array() < P.radius)
@@ -299,13 +299,17 @@ void System::initConstants() {
   }
 
   // Initialize the constant target surface (total mesh) area
-  targetSurfaceArea = targetFaceAreas.raw().sum();
+  if (mesh->hasBoundary()) {
+    refSurfaceArea = computeProjectedArea(*vpg);
+  } else {
+    refSurfaceArea = refVpg->faceAreas.raw().sum();
+  }
 
   // Initialize the constant target mean face area
-  meanTargetFaceArea = targetFaceAreas.raw().sum() / mesh->nFaces();
+  meanTargetFaceArea = refVpg->faceAreas.raw().sum() / mesh->nFaces();
 
   // Initialize the constant target mean edge length
-  meanTargetEdgeLength = targetEdgeLengths.raw().sum() / mesh->nEdges();
+  meanTargetEdgeLength = refVpg->edgeLengths.raw().sum() / mesh->nEdges();
 
   // Initialize the target constant cross length ration
   targetLcr = computeLengthCrossRatio(*refVpg);
@@ -314,12 +318,15 @@ void System::initConstants() {
   if (mesh->hasBoundary()) {
     refVolume = 0.0;
   } else {
-    refVolume = std::pow(targetSurfaceArea / constants::PI / 4, 1.5) *
+    refVolume = std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
                 (4 * constants::PI / 3);
   }
 
   // Initialize the constant spontaneous curvature
   H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+
+  // Initialize the constant bending rigidity
+  Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
 }
 
 void System::processMesh() {
@@ -339,7 +346,9 @@ void System::processMesh() {
   }
 
   // regularization
-  computeRegularizationForce();
+  if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
+    computeRegularizationForce();
+  }
   vpg->inputVertexPositions.raw() += regularizationForce.raw();
 
   // refresh cached quantities after regularization
@@ -356,7 +365,7 @@ void System::processMesh() {
   }
 
   // Update constant values when topology changes
-  if (O.isGrowMesh) {
+  if (O.isGrowMesh && mesh->hasBoundary()) {
     boundaryMask(*mesh, mask.raw());
   }
 
@@ -366,23 +375,33 @@ void System::processMesh() {
   // }
 
   // initialize/update distance from the point specified
-  if (O.isGrowMesh) {
-    // geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
-    gc::HeatMethodDistanceSolver heatSolverHere(*vpg);
-    geodesicDistanceFromPtInd = heatSolverHere.computeDistance(theVertex);
-  } else {
-    geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+  if (O.isLocalCurvature || P.Kf != 0) {
+    if (O.isGrowMesh) {
+      geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
+      // gc::HeatMethodDistanceSolver heatSolverHere(*vpg);p
+      // geodesicDistanceFromPtInd = heatSolverHere.computeDistance(theVertex);
+    } else {
+      geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
+    }
   }
 
   // initialize/update spontaneous curvature (local
-  // spontaneous curvature)
-  if (O.isGrowMesh) {
-    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
-  }
+  // spontaneous curvature) and bending rigidity
   if (O.isLocalCurvature) {
-    ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-                         P.r_H0);
+    tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(), 20,
+                     P.r_H0);
     H0.raw() *= P.H0;
+    // ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+    //                      P.r_H0);
+    tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(), 20,
+                     P.r_H0);
+    // ellipticDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
+    //                      P.r_H0);
+    Kb.raw() *= P.Kbc - P.Kb;
+    Kb.raw().array() += P.Kb;
+  } else if (O.isGrowMesh) {
+    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+    Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
   }
 }
 
@@ -397,21 +416,6 @@ void System::updateVertexPositions() {
 
   // initialize/update Laplacian matrix
   M_inv = (1 / (M.diagonal().array())).matrix().asDiagonal();
-
-  // move this until we compute forces
-  // if (O.isLocalCurvature) {
-  //   // initialize/update distance from the point specified
-  //   if (O.isGrowMesh) {
-  //     geodesicDistanceFromPtInd = heatMethodDistance(*vpg, theVertex);
-  //   } else {
-  //     geodesicDistanceFromPtInd = heatSolver.computeDistance(theVertex);
-  //   }
-  //   // initialize/update spontaneous curvature (local
-  //   // spontaneous curvature)
-  //   ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-  //                        P.r_H0);
-  //   H0.raw() *= P.H0;
-  // }
 
   // initialize/update spontaneous curvature (protein
   // binding)
@@ -431,13 +435,13 @@ void System::updateVertexPositions() {
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
     lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
                         (vpg->d0 * H0.raw()).cwiseAbs().array();
+    // lineTension.raw() = P.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
 
-  // initialize/update mean curvature
-  // 1. cotan laplacian definition
+  // initialize/update mean curvature 1. cotan laplacian definition, 2. dihedral
+  // definition
   // H.raw() = rowwiseDotProduct(M_inv * L * positions / 2.0,
   // vertexAngleNormal_e);
-  // 2. dihedral definition
   H.raw() = M_inv * vpg->vertexMeanCurvatures.raw();
 
   // initialize/update Gaussian curvature
@@ -454,7 +458,7 @@ void System::updateVertexPositions() {
 
   // update reference area by projecting to xy plane
   if (mesh->hasBoundary()) {
-    targetSurfaceArea = computeProjectedArea(*vpg);
+    refSurfaceArea = computeProjectedArea(*vpg);
   }
 
   // initialize/update external force

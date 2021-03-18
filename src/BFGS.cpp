@@ -112,7 +112,7 @@ void BFGS::status() {
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
-              ? abs(f.surfaceArea / f.targetSurfaceArea - 1)
+              ? abs(f.surfaceArea / f.refSurfaceArea - 1)
               : 0.0;
 
   if (f.O.isReducedVolume) {

@@ -42,7 +42,7 @@ double Integrator::backtrack(
   double alpha = dt;
   size_t count = 0;
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  
+
   pos_e += alpha * direction;
   f.updateVertexPositions();
   f.computeFreeEnergy();
@@ -126,8 +126,8 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
       } else { // iterate if not
         std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
                   << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-                        f.targetSurfaceArea;
+        f.P.lambdaSG +=
+            f.P.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
         std::cout << " -> [" << f.P.lambdaSG << "]" << std::endl;
       }
     } else {              // incremental harmonic penalty method
@@ -156,8 +156,8 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
       } else { // iterate if not
         std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
                   << f.P.lambdaV << "]";
-        f.P.lambdaSG += f.P.Ksg * (f.surfaceArea - f.targetSurfaceArea) /
-                        f.targetSurfaceArea;
+        f.P.lambdaSG +=
+            f.P.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
         f.P.lambdaV +=
             f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
         std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
@@ -193,7 +193,7 @@ void Integrator::createNetcdfFile() {
     fd.writeMask(f.mask.raw().cast<int>());
     if (!f.mesh->hasBoundary()) {
       fd.writeRefVolume(f.refVolume);
-      fd.writeRefSurfArea(f.targetSurfaceArea);
+      fd.writeRefSurfArea(f.refSurfaceArea);
     }
   }
 #endif
@@ -219,8 +219,8 @@ void Integrator::saveData() {
     std::cout << "\n"
               << "t: " << f.time << ", "
               << "n: " << frame << "\n"
-              << "dA/Area: " << dArea << "/"
-              << f.surfaceArea - f.targetSurfaceArea << ", "
+              << "dA/Area: " << dArea << "/" << f.surfaceArea - f.refSurfaceArea
+              << ", "
               << "dVP/Volume: " << dVP << "/" << f.volume << ", "
               << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
               << "\n"
@@ -332,9 +332,8 @@ void Integrator::saveNetcdfData() {
   fd.writeTime(idx, f.time);
   // write geometry
   fd.writeVolume(idx, f.volume);
-  fd.writeSurfArea(idx, f.mesh->hasBoundary()
-                            ? f.surfaceArea - f.targetSurfaceArea
-                            : f.surfaceArea);
+  fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.refSurfaceArea
+                                              : f.surfaceArea);
   fd.writeHeight(idx, abs(f.vpg->inputVertexPositions[f.theVertex].z));
   // write energies
   fd.writeBendEnergy(idx, f.E.BE);
@@ -389,7 +388,8 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile << "Input Mesh:     " << inputMesh << "\n";
     myfile << "Physical parameters used: \n";
     myfile << "\n";
-    myfile << "Kb:     " << f.P.Kb << "\n"
+    myfile << "Kb(bare):     " << f.P.Kb << "\n"
+           << "Kb(coated):   " << f.P.Kbc << "\n"
            << "H0:     " << f.P.H0 << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
@@ -429,7 +429,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "Input Mesh: " << inputMesh << "\n";
     myfile << "Final parameter: \n";
     myfile << "\n";
-    myfile << "Kb:     " << f.P.Kb << "\n"
+    myfile << "Kb(bare):     " << f.P.Kb << "\n"
+           << "Kb(coated):   " << f.P.Kbc << "\n"
            << "H0:     " << f.P.H0 << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
@@ -466,7 +467,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << f.volume / f.refVolume << " reduced volume"
            << "\n"
            << "Surface area:     " << f.surfaceArea << " = "
-           << f.surfaceArea / f.targetSurfaceArea << " target surface area"
+           << f.surfaceArea / f.refSurfaceArea << " target surface area"
            << "\n"
            << "COM (x, y, z):		 "
            << gc::EigenMap<double, 3>(f.vpg->inputVertexPositions)
