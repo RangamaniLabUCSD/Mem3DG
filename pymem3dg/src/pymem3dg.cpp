@@ -43,7 +43,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The integrator
     )delim");
   integrator.def(py::init<System &, double, bool, double, double, double,
-                          std::string, std::string, size_t>());
+                          std::string, std::string, size_t>(),
+                 py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
+                 py::arg("total_time_"), py::arg("tSave_"),
+                 py::arg("tolerance_"), py::arg("outputDir_"),
+                 py::arg("trajFileName_"), py::arg("verbosity_"),
+                 R"delim(
+        Integrator constructor
+      )delim");
   integrator.def("saveData", &Integrator::saveData,
                  R"delim(
           save data to output directory
@@ -53,11 +60,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                  R"delim(
           save data to output directory
       )delim");
+#ifdef MEM3DG_WITH_NETCDF
   integrator.def("saveNetcdfData", &Integrator::saveNetcdfData,
                  "save to netcdf file in output directory",
                  R"delim(
           save data to output directory
       )delim");
+#endif
   /// Integrator-velocity verlet object
   py::class_<VelocityVerlet> velocityverlet(pymem3dg, "VelocityVerlet",
                                             R"delim(
@@ -65,7 +74,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
 
   velocityverlet.def(py::init<System &, double, bool, double, double, double,
-                              std::string, std::string, size_t>());
+                              std::string, std::string, size_t>(),
+                     py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
+                     py::arg("total_time_"), py::arg("tSave_"),
+                     py::arg("tolerance_"), py::arg("outputDir_"),
+                     py::arg("trajFileName_"), py::arg("verbosity_"),
+                     R"delim(
+        Velocity Verlet integrator constructor
+      )delim");
   velocityverlet.def("integrate", &VelocityVerlet::integrate,
                      R"delim(
           integrate 
@@ -93,7 +109,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
 
   euler.def(py::init<System &, double, bool, double, double, double,
-                     std::string, std::string, size_t, bool, double, double>());
+                     std::string, std::string, size_t, bool, double, double>(),
+            py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
+            py::arg("total_time_"), py::arg("tSave_"), py::arg("tolerance_"),
+            py::arg("outputDir_"), py::arg("trajFileName_"),
+            py::arg("verbosity_"), py::arg("isBacktrack_"), py::arg("rho_"),
+            py::arg("c1_"),
+            R"delim(
+        Euler integrator (steepest descent) constructor
+      )delim");
   euler.def("integrate", &Euler::integrate,
             R"delim(
           integrate 
@@ -122,9 +146,18 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         conjugate Gradient propagator
     )delim");
 
-  conjugategradient.def(py::init<System &, double, bool, double, double, double,
-                                 std::string, std::string, size_t, bool, double,
-                                 double, double, bool, size_t>());
+  conjugategradient.def(
+      py::init<System &, double, bool, double, double, double, std::string,
+               std::string, size_t, bool, double, double, double, bool,
+               size_t>(),
+      py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
+      py::arg("total_time_"), py::arg("tSave_"), py::arg("tolerance_"),
+      py::arg("outputDir_"), py::arg("trajFileName_"), py::arg("verbosity_"),
+      py::arg("isBacktrack_"), py::arg("rho_"), py::arg("c1_"), py::arg("ctol"),
+      py::arg("isAugmentedLagrangian_"), py::arg("restartNum_"),
+      R"delim(
+        Conjugate Gradient optimizer constructor
+      )delim");
   conjugategradient.def("integrate", &ConjugateGradient::integrate,
                         R"delim(
           integrate 
@@ -153,7 +186,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
 
   bfgs.def(py::init<System &, double, bool, double, double, double, std::string,
-                    std::string, size_t, bool, double, double, double, bool>());
+                    std::string, size_t, bool, double, double, double, bool>(),
+           py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
+           py::arg("total_time_"), py::arg("tSave_"), py::arg("tolerance_"),
+           py::arg("outputDir_"), py::arg("trajFileName_"),
+           py::arg("verbosity_"), py::arg("isBacktrack_"), py::arg("rho_"),
+           py::arg("c1_"), py::arg("ctol"), py::arg("isAugmentedLagrangian_"),
+           R"delim(
+        BFGS optimizer constructor
+      )delim");
   bfgs.def("integrate", &BFGS::integrate,
            R"delim(
           integrate 
@@ -181,13 +222,29 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The system
     )delim");
   system.def(
-      py::init<std::string, std::string, size_t, Parameters &, Options &>());
+      py::init<std::string, std::string, size_t, Parameters &, Options &>(),
+      py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"), py::arg("p"),
+      py::arg("o"),
+      R"delim(
+        System constructor
+      )delim");
   system.def(
-      py::init<std::string, int, size_t, bool, Parameters &, Options &>());
+      py::init<std::string, int, size_t, bool, Parameters &, Options &>(),
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
+      py::arg("isContinue"), py::arg("p"), py::arg("o"),
+      R"delim(
+        System constructor
+      )delim");
   system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t,
-                      Parameters &, Options &>());
+                      Parameters &, Options &>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("refVertexMatrix"), py::arg("nSub"), py::arg("p"),
+             py::arg("o"),
+             R"delim(
+        System constructor
+      )delim");
   system.def_readwrite("E", &System::E,
                        R"delim(
           get the Energy components struct
