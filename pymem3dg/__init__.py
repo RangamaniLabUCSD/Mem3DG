@@ -9,7 +9,7 @@ def __bootstrap__():
     # delete junk introduced
     __loader__ = None; del __bootstrap__, __loader__
     # get path to shared extension library
-    with pkg_resources.path(__name__, "pymem3dg.cpython-38-x86_64-linux-gnu.so") as __file__:
+    with pkg_resources.path(__name__, "pymem3dg.cp37-win_amd64.pyd") as __file__:
         # load the module
         spec = importlib.util.spec_from_file_location(__name__, __file__)
         mod = importlib.util.module_from_spec(spec)

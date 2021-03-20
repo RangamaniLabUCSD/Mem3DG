@@ -296,6 +296,8 @@ void System::initConstants() {
 
   // define local vpg
   const auto &localVpg = O.isRefMesh ? refVpg : vpg;
+  localVpg->requireEdgeLengths();
+  localVpg->requireFaceAreas();
 
   // Initialize V-E distribution matrix for line tension calculation
   if (P.eta != 0) {
@@ -312,7 +314,8 @@ void System::initConstants() {
 
   // Initialize the constant mask based on distance from the point specified
   mask.raw() =
-      (heatMethodDistance(*localVpg, theVertex).raw().array() < P.radius)
+      (heatMethodDistance(*localVpg, thePoint.nearestVertex()).raw().array() <
+       P.radius)
           .matrix();
 
   // Mask boundary element
@@ -320,23 +323,29 @@ void System::initConstants() {
     boundaryMask(*mesh, mask.raw());
   }
 
+  // Explicitly cached the reference face areas data
+  refFaceAreas = localVpg->faceAreas;
+
+  // Explicitly cached the reference edge length data
+  refEdgeLengths = localVpg->edgeLengths;
+
   // Initialize the constant target surface (total mesh) area
-  refSurfaceArea = O.isOpenMesh ? computeProjectedArea(*localVpg)
-                                : localVpg->faceAreas.raw().sum();
+  refSurfaceArea =
+      O.isOpenMesh ? computeProjectedArea(*localVpg) : refFaceAreas.raw().sum();
 
   // Initialize the constant target mean face area
   if (!O.isRefMesh || O.isGrowMesh) {
-    meanTargetFaceArea = localVpg->faceAreas.raw().sum() / mesh->nFaces();
+    meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
   }
 
   // Initialize the constant target mean edge length
   if (!O.isRefMesh) {
-    meanTargetEdgeLength = localVpg->edgeLengths.raw().sum() / mesh->nEdges();
+    meanTargetEdgeLength = refEdgeLengths.raw().sum() / mesh->nEdges();
   }
 
   // Initialize the target constant cross length ration
   if (O.isRefMesh) {
-    targetLcr = computeLengthCrossRatio(*localVpg);
+    targetLcrs = computeLengthCrossRatio(*localVpg);
   }
 
   // Initialize the constant reference volume
@@ -349,79 +358,6 @@ void System::initConstants() {
 
   // Initialize the constant bending rigidity
   Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
-}
-
-void System::processMesh() {
-
-  bool isTopologyChanged = false;
-
-  // vertex shift for regularization
-  if (O.isVertexShift) {
-    vertexShift();
-  }
-
-  // split edge and collapse edge
-  if (O.isGrowMesh) {
-    isTopologyChanged = growMesh();
-  }
-
-  // linear edge flip for non-Delauney triangles
-  if (O.isEdgeFlip) {
-    isTopologyChanged = edgeFlip();
-  }
-
-  // regularization
-  if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
-    computeRegularizationForce();
-  }
-  vpg->inputVertexPositions.raw() += regularizationForce.raw();
-
-  // Update the distribution matrix when topology changes
-  if (P.eta != 0 && isTopologyChanged) {
-    D = vpg->d0.transpose();
-    for (int k = 0; k < D.outerSize(); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-        it.valueRef() = 0.5;
-      }
-    }
-  }
-
-  // Update constant values when topology changes
-  if (O.isOpenMesh && isTopologyChanged) {
-    boundaryMask(*mesh, mask.raw());
-  }
-
-  // recompute "the vertex" after topological changes
-  if (O.isFloatVertex) {
-    closestVertexToPt(*mesh, *vpg, P.pt, theVertex);
-  }
-
-  // initialize/update distance from the point specified
-  // initialize/update spontaneous curvature (local
-  // spontaneous curvature) and bending rigidity
-  if (O.isLocalCurvature || P.Kf != 0) {
-    vpg->refreshQuantities();
-    geodesicDistanceFromPtInd = (O.isGrowMesh || O.isEdgeFlip)
-                                    ? heatMethodDistance(*vpg, theVertex)
-                                    : heatSolver.computeDistance(theVertex);
-
-    tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-                     P.sharpness, P.r_H0);
-    tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
-                     P.sharpness, P.r_H0);
-    H0.raw() *= P.H0;
-    Kb.raw() *= P.Kbc - P.Kb;
-    Kb.raw().array() += P.Kb;
-    // ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-    //                      P.r_H0);
-    // ellipticDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
-    //                      P.r_H0);
-  }
-
-  if (!O.isLocalCurvature && isTopologyChanged) {
-    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
-    Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
-  }
 }
 
 void System::updateVertexPositions() {
@@ -490,9 +426,27 @@ void System::updateVertexPositions() {
 
 void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
   if (P.pt.size() == 1) {
-    theVertex = mesh->vertex((std::size_t)P.pt[0]);
-  } else {
-    closestVertexToPt(*mesh, vpg, P.pt, theVertex);
+    thePoint.vertex = mesh->vertex((std::size_t)P.pt[0]);
+  } else if (P.pt.size() == 2) {
+    auto closestVertex = closestVertexToPt(*mesh, vpg, P.pt);
+
+    for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
+      gc::Vector2 v1{vpg.inputVertexPositions[he.vertex()].x,
+                     vpg.inputVertexPositions[he.vertex()].y};
+      gc::Vector2 v2{vpg.inputVertexPositions[he.next().vertex()].x,
+                     vpg.inputVertexPositions[he.next().vertex()].y};
+      gc::Vector2 v3{vpg.inputVertexPositions[he.next().next().vertex()].x,
+                     vpg.inputVertexPositions[he.next().next().vertex()].y};
+      gc::Vector2 v{P.pt[0], P.pt[1]};
+      gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
+      
+      if (baryCoords_.x > 0 && baryCoords_.y > 0 && baryCoords_.z > 0) {
+        thePoint = gcs::SurfacePoint(
+            he.face(), correspondBarycentricCoordinates(baryCoords_, he));
+        break;
+      }
+
+    }
   }
 }
 
