@@ -89,23 +89,22 @@ void System::computeRegularizationForce() {
         gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
         gc::Vector3 localAreaGradient =
             -gc::cross(base_vec, vpg->faceNormals[he.face()]);
-        double &localReferenceArea = v.isBoundary()
-                                         ? refVpg->faceAreas[base_he.face()]
-                                         : meanTargetFaceArea;
+        // ->faceArea() is used over ->faceAreas[] when initConst() is not on
+        // refVpg
         regularizationForce[v] +=
             -P.Ksl * localAreaGradient *
-            (vpg->faceAreas[base_he.face()] - localReferenceArea);
+            (vpg->faceAreas[base_he.face()] - v.isBoundary()
+                 ? refVpg->faceArea(base_he.face())
+                 : meanTargetFaceArea);
       }
 
       // local edge regularization
       if (P.Kse != 0) {
         gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-        double &localReferenceLength = v.isBoundary()
-                                           ? refVpg->edgeLengths[he.edge()]
-                                           : meanTargetEdgeLength;
-        regularizationForce[v] +=
-            -P.Kse * edgeGradient *
-            (vpg->edgeLengths[he.edge()] - localReferenceLength);
+        regularizationForce[v] += -P.Kse * edgeGradient *
+                                  (vpg->edgeLengths[he.edge()] - v.isBoundary()
+                                       ? refVpg->edgeLength(he.edge())
+                                       : meanTargetEdgeLength);
       }
     }
   }
@@ -202,21 +201,10 @@ bool System::edgeFlip() {
     }
   }
 
-  if (isFlipped) {
+  if (isFlipped)
     mesh->compress();
-  }
 
   return isFlipped;
-}
-
-template <typename E, typename T>
-void averageData(gc::MeshData<E, T> &meshData, const E &element1, const E &element2,
-                 const E &newElement) {
-  meshData[newElement] = (meshData[element1] + meshData[element2]) / 2;
-}
-template <typename E, typename T>
-T averageData(gc::MeshData<E, T> &meshData, const E &&element1, const E &&element2) {
-	  return (meshData[element1] + meshData[element2]) / 2;
 }
 
 bool System::growMesh() {
@@ -229,15 +217,13 @@ bool System::growMesh() {
       if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea)) {
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
-        gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
+        // split the edge
+        const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
+        gcs::Halfedge &newhe = mesh->splitEdgeTriangular(he.edge());
+        const auto &newVertex = newhe.vertex();
 
-        const auto &element1 = newhe.tipVertex(),
-                   &element2 = newhe.next().next().twin().next().next().vertex(),
-                   &newElement = newhe.vertex();
-        averageData(vpg->inputVertexPositions, element1, element2, newElement);
-        averageData(vel, element1, element2, newElement);
-        if (O.isProtein)
-          averageData(proteinDensity, element1, element2, newElement);
+        // update quantities
+        localUpdateAfterMutation(vertex1, vertex2, newVertex);
 
         isGrown = true;
       }
@@ -251,34 +237,120 @@ bool System::growMesh() {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) <
           constants::PI / 3) {
-
-        auto meanPosition = averageData(vpg->inputVertexPositions,
-                                        he.tipVertex(), he.tailVertex());
-        auto meanVel = averageData(vel, he.tipVertex(), he.tailVertex());
-        auto meanProteinDensity =
-            averageData(proteinDensity, he.tipVertex(), he.tailVertex());
-
+        // collapse the edge
+        const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
         auto newVertex = mesh->collapseEdgeTriangular(he.edge());
 
-        if ((theVertex == he.tailVertex() || theVertex == he.tipVertex()) &&
-            !O.isFloatVertex) // retrieve "the" vertex
-          theVertex = newVertex;
+        // update quantities
+        localUpdateAfterMutation(vertex1, vertex2, newVertex);
 
-        vpg->inputVertexPositions[newVertex] = meanPosition;
-        vel[newVertex] = meanVel;
-        if (O.isProtein)
-          proteinDensity[newVertex] = meanProteinDensity;
+        // update "the" vertex
+        // if (P.pt.size() == 1 &&
+        //     (thePoint.vertex == vertex1 || thePoint.vertex == vertex2) &&
+        //     !O.isFloatVertex)
+        //   thePoint.vertex = newVertex;
 
         isGrown = true;
       }
     }
   }
 
-  if (isGrown) {
+  if (isGrown)
     mesh->compress();
+  return isGrown;
+}
+
+void System::processMesh() {
+
+  bool isTopologyChanged = false;
+
+  // vertex shift for regularization
+  if (O.isVertexShift) {
+    vertexShift();
   }
 
-  return isGrown;
+  // split edge and collapse edge
+  if (O.isGrowMesh) {
+    isTopologyChanged = growMesh();
+  }
+
+  // linear edge flip for non-Delauney triangles
+  if (O.isEdgeFlip) {
+    isTopologyChanged = edgeFlip();
+  }
+
+  // regularization
+  if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
+    computeRegularizationForce();
+    vpg->inputVertexPositions.raw() += regularizationForce.raw();
+  }
+
+  // globally update quantities
+  globalUpdateAfterMeshProcessing(isTopologyChanged);
+}
+
+template <typename T>
+void System::localUpdateAfterMutation(const T &element1, const T &element2,
+                                      const T &newElement) {
+  averageData(vpg->inputVertexPositions, element1, element2, newElement);
+  averageData(vel, element1, element2, newElement);
+  if (O.isProtein)
+    averageData(proteinDensity, element1, element2, newElement);
+}
+
+void System::globalUpdateAfterMeshProcessing(bool &isTopologyChanged) {
+
+  // recompute "the vertex" after topological changes
+  if (O.isFloatVertex) {
+    findTheVertex(*vpg);
+  }
+
+  // initialize/update local spontaneous curvature and bending rigidity
+  if (O.isLocalCurvature || P.Kf != 0) {
+    vpg->refreshQuantities();
+
+    if (O.isGrowMesh || O.isEdgeFlip) {
+      gcs::HeatMethodDistanceSolver heatSolverLocal(*vpg);
+      geodesicDistanceFromPtInd = heatSolverLocal.computeDistance(thePoint);
+    } else {
+      geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
+    }
+
+    tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+                     P.sharpness, P.r_H0);
+    tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
+                     P.sharpness, P.r_H0);
+    H0.raw() *= P.H0;
+    Kb.raw() *= P.Kbc - P.Kb;
+    Kb.raw().array() += P.Kb;
+    // ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
+    //                      P.r_H0);
+    // ellipticDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
+    //                      P.r_H0);
+  }
+
+  if (isTopologyChanged) {
+    // Update the distribution matrix when topology changes
+    if (P.eta != 0) {
+      D = vpg->d0.transpose();
+      for (int k = 0; k < D.outerSize(); ++k) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+          it.valueRef() = 0.5;
+        }
+      }
+    }
+
+    // Update mask when topology changes
+    if (O.isOpenMesh) {
+      boundaryMask(*mesh, mask.raw());
+    }
+
+    // Update spontaneous curvature and bending rigidity when topology changes
+    if (!O.isLocalCurvature) {
+      H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+      Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
+    }
+  }
 }
 
 } // namespace mem3dg
