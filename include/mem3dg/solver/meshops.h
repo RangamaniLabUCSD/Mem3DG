@@ -86,6 +86,46 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
 }
 
 /**
+ * @brief Get average data
+ *
+ * @param meshData
+ * @param element1
+ * @param element2
+ * @param newElement
+ * @return
+ */
+template <typename E, typename T>
+DLL_PUBLIC inline void averageData(gc::MeshData<E, T> &meshData,
+                                   const E &element1, const E &element2,
+                                   const E &newElement) {
+  meshData[newElement] = (meshData[element1] + meshData[element2]) / 2;
+}
+
+/**
+ * @brief get barycentric coordinate from cartesian coordinate
+ *
+ * @param meshData
+ * @param element1
+ * @param element2
+ * @param newElement
+ * @return
+ */
+DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
+                                                     gc::Vector2 &v2,
+                                                     gc::Vector2 &v3,
+                                                     gc::Vector2 &v) {
+  gc::Vector3 lambda;
+
+  lambda.x = ((v2.y - v3.y) * (v.x - v3.x) + (v3.x - v2.x) * (v.y - v3.y)) /
+             ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y));
+  lambda.y = ((v3.y - v1.y) * (v.x - v3.x) + (v1.x - v3.x) * (v.y - v3.y)) /
+             ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y));
+  lambda.z = 1 - lambda.x - lambda.y;
+
+  return lambda;
+}
+
+/**
  * @brief Get the vector from halfedge vertices
  *
  * @param he
@@ -268,35 +308,32 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  * @param
  * @param standard deviation
  */
-DLL_PUBLIC inline void closestVertexToPt(gcs::SurfaceMesh &mesh,
-                                        gcs::VertexPositionGeometry &vpg,
-                                        std::vector<double> position,
-                                        gcs::Vertex &theVertex) {
+DLL_PUBLIC inline gcs::Vertex
+closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
+                  std::vector<double> position) {
+  gcs::Vertex theVertex;
   double shorestDistance = 1e18;
-  gc::Vector3 position_vec;
-  if (position.size() == 2) {
-    position_vec = gc::Vector3{position[0], position[1], 0};
-  } else if (position.size() == 3) {
-    position_vec = gc::Vector3{position[0], position[1], position[2]};
-  } else {
-    throw std::runtime_error(
-        "closestVertexToPt: does not support non-2d/3d position vector!");
-  }
   for (gcs::Vertex v : mesh.vertices()) {
     double distance;
     if (position.size() == 2) {
-      distance = (gc::Vector3{vpg.inputVertexPositions[v].x,
-                              vpg.inputVertexPositions[v].y, 0} -
-                  position_vec)
+      distance = (gc::Vector2{vpg.inputVertexPositions[v].x,
+                              vpg.inputVertexPositions[v].y} -
+                  gc::Vector2{position[0], position[1]})
+                     .norm();
+    } else if (position.size() == 3) {
+      distance = (vpg.inputVertexPositions[v] -
+                  gc::Vector3{position[0], position[1], position[2]})
                      .norm();
     } else {
-      distance = (vpg.inputVertexPositions[v] - position_vec).norm();
+      throw std::runtime_error(
+          "closestVertexToPt: does not support non-2d/3d position vector!");
     }
     if (distance < shorestDistance) {
       shorestDistance = distance;
       theVertex = v;
     }
   }
+  return theVertex;
 }
 
 /**
