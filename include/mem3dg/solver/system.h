@@ -202,7 +202,11 @@ public:
   /// Mean target area per face
   double meanTargetEdgeLength;
   /// Target edge cross length ratio
-  gcs::EdgeData<double> targetLcr;
+  gcs::EdgeData<double> targetLcrs;
+  /// Reference edge Length of reference mesh
+  gcs::EdgeData<double> refEdgeLengths;
+  /// Reference face Area of reference mesh
+  gcs::FaceData<double> refFaceAreas;
   /// Distance solver
   gcs::HeatMethodDistanceSolver heatSolver;
 
@@ -241,7 +245,7 @@ public:
   /// Indices for vertices chosen for integration
   gcs::VertexData<bool> mask;
   /// "the vertex"
-  gcs::Vertex theVertex;
+  gcs::SurfacePoint thePoint;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -358,7 +362,8 @@ public:
         lineCapillaryForce(*mesh, 0), externalPressure(*mesh, 0),
         insidePressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
         stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
-        proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0), targetLcr(*mesh),
+        proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0),
+        targetLcrs(*mesh), refEdgeLengths(*mesh), refFaceAreas(*mesh),
         heatSolver(*vpg), M(vpg->vertexLumpedMassMatrix),
         L(vpg->cotanLaplacian), D(), geodesicDistanceFromPtInd(*mesh, 0),
         pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H(*mesh),
@@ -632,5 +637,17 @@ public:
    * @brief Find "the" vertex
    */
   void findTheVertex(gcs::VertexPositionGeometry &vpg);
+
+  /**
+   * @brief pointwise update of quantities after mutation of the mesh
+   */
+  template <typename T>
+  void localUpdateAfterMutation(const T &element1, const T &element2,
+                                const T &newElement);
+
+  /**
+   * @brief global update of quantities after mutation of the mesh
+   */
+  void globalUpdateAfterMeshProcessing(bool &isTopologyChanged);
 };
 } // namespace mem3dg

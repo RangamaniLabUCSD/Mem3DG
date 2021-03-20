@@ -126,6 +126,35 @@ DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
 }
 
 /**
+ * @brief get coorresponding barycentric coordinate to a face
+ *
+ * @param baryCoords reference to Barycentric coordinate
+ * @param firstHalfedge reference to the halfedge associated with the first
+ * vertex of the Barycentric coordinate
+ * @return
+ */
+DLL_PUBLIC inline gc::Vector3
+correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
+                                 gcs::Halfedge &firstHalfedge) {
+  size_t vertexInd = 0;
+  gc::Vector3 baryCoords;
+  for (gcs::Vertex v : firstHalfedge.face().adjacentVertices()) {
+    if (v == firstHalfedge.vertex()) {
+      baryCoords[vertexInd] = baryCoords_.x;
+    } else if (v == firstHalfedge.next().vertex()) {
+      baryCoords[vertexInd] = baryCoords_.y;
+    } else if (v == firstHalfedge.next().next().vertex()) {
+      baryCoords[vertexInd] = baryCoords_.z;
+    } else {
+      throw std::runtime_error(
+          "correspondBarycentricCoordinates: firstVertex is not on the face!");
+    }
+    vertexInd++;
+  }
+  return baryCoords;
+}
+
+/**
  * @brief Get the vector from halfedge vertices
  *
  * @param he

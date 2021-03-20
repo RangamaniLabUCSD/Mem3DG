@@ -75,8 +75,8 @@ void System::computeRegularizationForce() {
         gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
         regularizationForce[v] +=
             -P.Kst *
-            (computeLengthCrossRatio(*vpg, he.edge()) - targetLcr[he.edge()]) /
-            targetLcr[he.edge()] *
+            (computeLengthCrossRatio(*vpg, he.edge()) - targetLcrs[he.edge()]) /
+            targetLcrs[he.edge()] *
             (vpg->edgeLengths[kj.edge()] / vpg->edgeLengths[jl.edge()]) *
             (grad_li * vpg->edgeLengths[ik.edge()] -
              grad_ik * vpg->edgeLengths[li.edge()]) /
@@ -89,22 +89,21 @@ void System::computeRegularizationForce() {
         gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
         gc::Vector3 localAreaGradient =
             -gc::cross(base_vec, vpg->faceNormals[he.face()]);
-        // ->faceArea() is used over ->faceAreas[] when initConst() is not on
-        // refVpg
+        auto &referenceArea = (v.isBoundary() ? refFaceAreas[base_he.face()]
+                                              : meanTargetFaceArea);
         regularizationForce[v] +=
             -P.Ksl * localAreaGradient *
-            (vpg->faceAreas[base_he.face()] - v.isBoundary()
-                 ? refVpg->faceArea(base_he.face())
-                 : meanTargetFaceArea);
+            (vpg->faceAreas[base_he.face()] - referenceArea);
       }
 
       // local edge regularization
       if (P.Kse != 0) {
         gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-        regularizationForce[v] += -P.Kse * edgeGradient *
-                                  (vpg->edgeLengths[he.edge()] - v.isBoundary()
-                                       ? refVpg->edgeLength(he.edge())
-                                       : meanTargetEdgeLength);
+        auto &referenceLength =
+            (v.isBoundary() ? refEdgeLengths[he.edge()] : meanTargetEdgeLength);
+        regularizationForce[v] +=
+            -P.Kse * edgeGradient *
+            (vpg->edgeLengths[he.edge()] - referenceLength);
       }
     }
   }

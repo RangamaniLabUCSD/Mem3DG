@@ -221,7 +221,8 @@ void Integrator::saveData() {
               << "n: " << frame << "\n"
               << "dA/Area: " << dArea << "/" << f.surfaceArea << ", "
               << "dVP/Volume: " << dVP << "/" << f.volume << ", "
-              << "h: " << abs(f.vpg->inputVertexPositions[f.theVertex].z)
+              << "h: "
+              << abs(f.vpg->inputVertexPositions[f.thePoint.nearestVertex()].z)
               << "\n"
               << "E_total: " << f.E.totalE << "\n"
               << "E_pot: " << f.E.potE << "\n"
@@ -333,7 +334,8 @@ void Integrator::saveNetcdfData() {
   fd.writeVolume(idx, f.volume);
   fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.refSurfaceArea
                                               : f.surfaceArea);
-  fd.writeHeight(idx, abs(f.vpg->inputVertexPositions[f.theVertex].z));
+  fd.writeHeight(
+      idx, abs(f.vpg->inputVertexPositions[f.thePoint.nearestVertex()].z));
   // write energies
   fd.writeBendEnergy(idx, f.E.BE);
   fd.writeSurfEnergy(idx, f.E.sE);
@@ -399,7 +401,6 @@ void Integrator::getParameterLog(std::string inputMesh) {
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
            << "sigma:  " << f.P.sigma << "\n"
-           << "ptInd:  " << f.theVertex.getIndex() << "\n"
            << "Kf:     " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n"
            << "height: " << f.P.height << "\n";
@@ -440,7 +441,6 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
            << "sigma:  " << f.P.sigma << "\n"
-           << "ptInd:  " << f.theVertex.getIndex() << "\n"
            << "Kf:   " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n";
 
