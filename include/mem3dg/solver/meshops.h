@@ -145,9 +145,12 @@ correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
       baryCoords[vertexInd] = baryCoords_.y;
     } else if (v == firstHalfedge.next().next().vertex()) {
       baryCoords[vertexInd] = baryCoords_.z;
+    } else if (firstHalfedge.face().isBoundaryLoop()) {
+      throw std::runtime_error(
+          "correspondBarycentricCoordinates: face is on boundary!");
     } else {
       throw std::runtime_error(
-          "correspondBarycentricCoordinates: firstVertex is not on the face!");
+          "correspondBarycentricCoordinates: undefined behavior!");
     }
     vertexInd++;
   }
