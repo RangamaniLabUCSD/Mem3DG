@@ -25,24 +25,6 @@ namespace gcs = ::geometrycentral::surface;
  * @brief Run single simulation starting with .ply files
  *
  */
-
-std::unique_ptr<mem3dg::System> system_ply(
-    const size_t verbosity, std::string inputMesh, std::string refMesh,
-    size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
-    bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
-    double H0, std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-    double Ksg, double Kv, double eta, double epsilon, double Bc, double Vt,
-    double cam, double gamma, double temp, std::vector<double> pt, double Kf,
-    double conc, double height, double radius, double h, double T, double eps,
-    double tSave, std::string outputDir, std::string integrationMethod,
-    bool isBacktrack, double rho, double c1, double ctol,
-    bool isAugmentedLagrangian);
-
-/**
- * @brief Run single simulation starting with .ply files
- *
- */
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,

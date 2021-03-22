@@ -298,10 +298,13 @@ void Integrator::saveRichData(std::string plyName) {
     richData.addVertexProperty("protein_density", f.proteinDensity);
   }
 
-  // write mask
+  // write bool
   gcs::VertexData<int> msk(*f.mesh);
   msk.fromVector(f.mask.raw().cast<int>());
   richData.addVertexProperty("mask", msk);
+  gcs::VertexData<int> tkr(*f.mesh);
+  tkr.fromVector(f.thePointTracker.raw().cast<int>());
+  richData.addVertexProperty("the_point", tkr);
 
   // write geometry
   richData.addVertexProperty("mean_curvature", f.H);

@@ -103,8 +103,6 @@ void visualize(mem3dg::System &f) {
                   (f.M_inv * f.L * (f.H.raw() - f.H0.raw())).array());
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);
-  std::cout << "no of edges: " << f.mesh->nEdges() << std::endl;
-  std::cout << "no of edges: " << f.vpg->edgeLengths.raw().rows() << std::endl;
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
   polyscope::getSurfaceMesh("Membrane")
@@ -117,38 +115,11 @@ void visualize(mem3dg::System &f) {
                    .array() *
                f.vpg->edgeDihedralAngles.raw().array().max(0))
                   .matrix());
-  std::vector<std::pair<size_t, int>> values;
-  values.push_back(
-      std::make_pair(f.thePoint.nearestVertex().getIndex(), 1));
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexCountQuantity("the point", values);
-  std::vector<std::pair<size_t, int>> values2;
-  gcs::Vertex theVertex;
-  double shorestDistance = 1e18;
-  double distance;
-  for (gcs::Vertex v : f.mesh->vertices()) {
-    distance = (gc::Vector2{f.vpg->inputVertexPositions[v].x,
-                            f.vpg->inputVertexPositions[v].y})
-                   .norm();
-    if (distance < shorestDistance) {
-      shorestDistance = distance;
-      theVertex = v;
-    }
-  }
-  std::cout << "the vertex is: " << theVertex.getIndex()
-            << "and the distance is: " << shorestDistance << std::endl;
-  values2.push_back(std::make_pair(theVertex.getIndex(), 2));
-  polyscope::getSurfaceMesh("Membrane")
-      ->addVertexCountQuantity("the point2", values2);
-
-  gc::VertexData<double> xydistance(*f.mesh);
-  for (gcs::Vertex v : f.mesh->vertices()) {
-    xydistance[v] = std::sqrt(
-        f.vpg->inputVertexPositions[v].x * f.vpg->inputVertexPositions[v].x +
-        f.vpg->inputVertexPositions[v].y * f.vpg->inputVertexPositions[v].y);
-  }
-  polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("x y distance", xydistance);
+      ->addFaceCountQuantity("the point",
+                             std::vector<std::pair<size_t, int>>{std::make_pair(
+                                 f.thePoint.inSomeFace().face.getIndex(), 1)})
+      ->setPointRadius(f.meanTargetEdgeLength / 2, false);
 
   // polyscope::getSurfaceMesh("Membrane")
   //     ->addEdgeScalarQuantity("isFlip", isFlip.raw().cast<double>());
@@ -681,6 +652,14 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
     polyscopeMesh->addVertexScalarQuantity(
         "mask", ptrRichData->getVertexProperty<int>("mask"));
   }
+  if (options.the_point) {
+    polyscopeMesh
+        ->addVertexCountQuantity(
+            "the_point", getCountQuantities(
+                             ptrRichData->getVertexProperty<int>("the_point")))
+        ->setPointRadius(0.01, true);
+    ;
+  }
   /*gcs::VertexData<gc::Vector3> vertexVelocity =
       ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
   /*gcs::VertexData<gc::Vector3> normalForce =
@@ -717,4 +696,15 @@ void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
     toggle = !toggle;
   }
   wait(waitTime);
+}
+
+std::vector<std::pair<size_t, int>>
+getCountQuantities(gc::VertexData<int> &&meshData) {
+  std::vector<std::pair<size_t, int>> values;
+  for (gc::Vertex v : meshData.getMesh()->vertices()) {
+    if (meshData[v] != 0) {
+      values.push_back(std::make_pair(v.getIndex(), meshData[v]));
+    }
+  }
+  return values;
 }

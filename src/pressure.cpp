@@ -58,7 +58,6 @@ EigenVectorX1D System::computeBendingPressure() {
   //   subdomain(0);
   // } else {
 
-  // compute the coated domain
   // calculate the Laplacian of mean curvature H
   EigenVectorX1D lap_H =
       -M_inv * L * rowwiseProduct(Kb.raw(), H.raw() - H0.raw());
@@ -73,7 +72,7 @@ EigenVectorX1D System::computeBendingPressure() {
       -2.0 *
       (Kb.raw().array() * (H.raw() - H0.raw()).array() * scalerTerms.array())
           .matrix();
-          
+
   // calculate bendingForce
   bendingPressure.raw() = productTerms + lap_H;
   // }
@@ -137,7 +136,7 @@ EigenVectorX1D System::computeCapillaryPressure() {
 
 EigenVectorX1D System::computeInsidePressure() {
   /// Geometric implementation
-  if (mesh->hasBoundary()) {
+  if (O.isOpenMesh) {
     /// Inside excess pressure of patch
     insidePressure.raw().setConstant(P.Kv);
   } else if (O.isReducedVolume) {
@@ -285,7 +284,6 @@ void System::computePhysicalForces() {
   lineCapillaryForce.raw().setZero();
   externalPressure.raw().setZero();
   insidePressure.raw().setZero();
-  // gc::EigenMap<double, 3>(regularizationForce).setZero();
   gc::EigenMap<double, 3>(dampingForce).setZero();
   gc::EigenMap<double, 3>(stochasticForce).setZero();
   chemicalPotential.raw().setZero();

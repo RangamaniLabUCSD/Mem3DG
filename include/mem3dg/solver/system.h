@@ -246,6 +246,8 @@ public:
   gcs::VertexData<bool> mask;
   /// "the vertex"
   gcs::SurfacePoint thePoint;
+  // "the vertex" tracker
+  gcs::VertexData<bool> thePointTracker;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -366,8 +368,9 @@ public:
         targetLcrs(*mesh), refEdgeLengths(*mesh), refFaceAreas(*mesh),
         heatSolver(*vpg), M(vpg->vertexLumpedMassMatrix),
         L(vpg->cotanLaplacian), D(), geodesicDistanceFromPtInd(*mesh, 0),
-        pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H(*mesh),
-        K(*mesh), H0(*mesh), Kb(*mesh), mask(*mesh, true) {
+        thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
+        vel(*mesh, {0, 0, 0}), H(*mesh), K(*mesh), H0(*mesh), Kb(*mesh),
+        mask(*mesh, true) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -648,6 +651,6 @@ public:
   /**
    * @brief global update of quantities after mutation of the mesh
    */
-  void globalUpdateAfterMeshProcessing(bool &isTopologyChanged);
+  void globalUpdateAfterMutation();
 };
 } // namespace mem3dg

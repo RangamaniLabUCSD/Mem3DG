@@ -30,8 +30,6 @@ System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const {
     gcs::Edge ki = e.halfedge().twin().next().edge();
     gcs::Edge il = e.halfedge().next().next().edge();
     gcs::Edge jk = e.halfedge().twin().next().next().edge();
-    // clr[e] = edgeLength[il] * edgeLength[jk] / edgeLength[ki] /
-    //          edgeLength[lj];
     LCR[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
              vpg.edgeLengths[lj];
   }
@@ -193,7 +191,6 @@ bool System::edgeFlip() {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) >
           constants::PI) {
-        // isFlip[he.edge()] = true;
         auto success = mesh->flip(he.edge());
         isFlipped = true;
       }
@@ -236,20 +233,24 @@ bool System::growMesh() {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) <
           constants::PI / 3) {
-        // collapse the edge
+        // alias the neighboring vertices
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
+        // flag if this is "the" point
+        bool isThePoint = (O.isFloatVertex) ? false
+                                            : thePointTracker[vertex1] ||
+                                                  thePointTracker[vertex2];
+        // collapse the edge
         auto newVertex = mesh->collapseEdgeTriangular(he.edge());
-
         // update quantities
         localUpdateAfterMutation(vertex1, vertex2, newVertex);
-
-        // update "the" vertex
-        // if (P.pt.size() == 1 &&
-        //     (thePoint.vertex == vertex1 || thePoint.vertex == vertex2) &&
-        //     !O.isFloatVertex)
-        //   thePoint.vertex = newVertex;
+        // update "the" point
+        if (isThePoint && !O.isFloatVertex) {
+          thePointTracker[newVertex] = true;
+        }
 
         isGrown = true;
+        // std::cout << "in shirnk sum: "
+        //           << thePointTracker.raw().cast<double>().sum() << std::endl;
       }
     }
   }
@@ -261,7 +262,7 @@ bool System::growMesh() {
 
 void System::processMesh() {
 
-  bool isTopologyChanged = false;
+  bool isGrown = false, isFlipped = false;
 
   // vertex shift for regularization
   if (O.isVertexShift) {
@@ -270,12 +271,12 @@ void System::processMesh() {
 
   // split edge and collapse edge
   if (O.isGrowMesh) {
-    isTopologyChanged = growMesh();
+    isGrown = growMesh();
   }
 
   // linear edge flip for non-Delauney triangles
   if (O.isEdgeFlip) {
-    isTopologyChanged = edgeFlip();
+    isFlipped = edgeFlip();
   }
 
   // regularization
@@ -285,7 +286,9 @@ void System::processMesh() {
   }
 
   // globally update quantities
-  globalUpdateAfterMeshProcessing(isTopologyChanged);
+  if (isGrown || isFlipped) {
+    globalUpdateAfterMutation();
+  }
 }
 
 template <typename T>
@@ -295,59 +298,42 @@ void System::localUpdateAfterMutation(const T &element1, const T &element2,
   averageData(vel, element1, element2, newElement);
   if (O.isProtein)
     averageData(proteinDensity, element1, element2, newElement);
+  if (!O.isFloatVertex)
+    thePointTracker[newElement] = false;
 }
 
-void System::globalUpdateAfterMeshProcessing(bool &isTopologyChanged) {
-
-  // recompute "the vertex" after topological changes
-  if (O.isFloatVertex) {
-    findTheVertex(*vpg);
-  }
-
-  // initialize/update local spontaneous curvature and bending rigidity
-  if (O.isLocalCurvature || P.Kf != 0) {
-    vpg->refreshQuantities();
-
-    if (O.isGrowMesh || O.isEdgeFlip) {
-      gcs::HeatMethodDistanceSolver heatSolverLocal(*vpg);
-      geodesicDistanceFromPtInd = heatSolverLocal.computeDistance(thePoint);
-    } else {
-      geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
-    }
-
-    tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-                     P.sharpness, P.r_H0);
-    tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
-                     P.sharpness, P.r_H0);
-    H0.raw() *= P.H0;
-    Kb.raw() *= P.Kbc - P.Kb;
-    Kb.raw().array() += P.Kb;
-    // ellipticDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-    //                      P.r_H0);
-    // ellipticDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
-    //                      P.r_H0);
-  }
-
-  if (isTopologyChanged) {
-    // Update the distribution matrix when topology changes
-    if (P.eta != 0) {
-      D = vpg->d0.transpose();
-      for (int k = 0; k < D.outerSize(); ++k) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-          it.valueRef() = 0.5;
-        }
+void System::globalUpdateAfterMutation() {
+  // Update the distribution matrix when topology changes
+  if (P.eta != 0) {
+    D = vpg->d0.transpose();
+    for (int k = 0; k < D.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+        it.valueRef() = 0.5;
       }
     }
+  }
 
-    // Update mask when topology changes
-    if (O.isOpenMesh) {
-      boundaryMask(*mesh, mask.raw());
+  // Update mask when topology changes
+  if (O.isOpenMesh) {
+    boundaryMask(*mesh, mask.raw());
+  }
+
+  // Update spontaneous curvature and bending rigidity when topology changes
+  if (!O.isLocalCurvature) {
+    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+    Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
+  }
+
+  // Update the vertex when topology changes
+  if (!O.isFloatVertex) {
+    for (gcs::Vertex v : mesh->vertices()) {
+      if (thePointTracker[v]) {
+        thePoint = gcs::SurfacePoint(v);
+      }
     }
-
-    // Update spontaneous curvature and bending rigidity when topology changes
-    if (!O.isLocalCurvature) {
-      H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
-      Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
+    if (thePointTracker.raw().cast<int>().sum() != 1) {
+      throw std::runtime_error("globalUpdateAfterMutation: there is no "
+                               "unique/existing \"the\" point!");
     }
   }
 }

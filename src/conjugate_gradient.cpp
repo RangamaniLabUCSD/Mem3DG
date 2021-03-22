@@ -176,12 +176,6 @@ void ConjugateGradient::march() {
   }
 
   // process the mesh with regularization or mutation
-  // if (countPM % 20 == 0) {
-  //   f.processMesh();
-  //   countPM = 1;
-  // } else {
-  //   countPM++;
-  // }
   f.processMesh();
 }
 

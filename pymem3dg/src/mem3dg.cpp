@@ -48,44 +48,6 @@
 #include <unistd.h>
 #endif
 
-std::unique_ptr<mem3dg::System> system_ply(
-    const size_t verbosity, std::string inputMesh, std::string refMesh,
-    size_t nSub, bool isReducedVolume, bool isProtein, bool isLocalCurvature,
-    bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
-    bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
-    double H0, std::vector<double> r_H0, double Kse, double Kst, double Ksl,
-    double Ksg, double Kv, double eta, double epsilon, double Bc, double Vt,
-    double cam, double gamma, double temp, std::vector<double> pt, double Kf,
-    double conc, double height, double radius, double h, double T, double eps,
-    double tSave, std::string outputDir, std::string integrationMethod,
-    bool isBacktrack, double rho, double c1, double ctol,
-    bool isAugmentedLagrangian) {
-  /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
-  std::tie(ptrMesh, ptrRichData) =
-  gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
-  connectivity for UVsphere.ply ptrVpg = ptrRichData->getGeometry();*/
-
-  /// Activate signal handling
-  signal(SIGINT, mem3dg::signalHandler);
-  // pybind11::scoped_interpreter guard{};
-
-  /// Initialize parameter struct
-  std::cout << "Initializing the system ..." << std::endl;
-  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-
-  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
-                       sigma, pt,  Kf,      conc, height, radius};
-
-  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
-                    isLocalCurvature, isEdgeFlip,    isGrowMesh,
-                    isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
-
-  std::unique_ptr<mem3dg::System> f(
-      new mem3dg::System(inputMesh, refMesh, nSub, p, o));
-  return f;
-}
-
 int driver_ply(const size_t verbosity, std::string inputMesh,
                std::string refMesh, size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
