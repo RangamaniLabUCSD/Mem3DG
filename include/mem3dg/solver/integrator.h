@@ -405,7 +405,7 @@ public:
   size_t countCG = 0;
   size_t restartNum;
 
-  size_t countPM = 0;
+  // size_t countPM = 0;
 
   ConjugateGradient(System &f_, double dt_, bool isAdaptiveStep_,
                     double total_time_, double tSave_, double tolerance_,

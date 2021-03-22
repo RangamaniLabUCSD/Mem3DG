@@ -731,27 +731,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize H - H0
       )delim");
-
-  /// Driver function for system generation
-  pymem3dg.def("system_ply", &system_ply,
-               "Run single simulation starting with .ply files",
-               py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
-               py::arg("nSub"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isLocalCurvature"),
-               py::arg("isVertexShift"), py::arg("isEdgeFlip"),
-               py::arg("isGrowMesh"), py::arg("isRefMesh"),
-               py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
-               py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
-               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
-               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
-               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               R"delim(
-        )delim");
+  quantities.def_readwrite("the_point", &Quantities::the_point,
+                           R"delim(
+        visualize "the" point
+      )delim");
 
   pymem3dg.def("driver_ply", &driver_ply,
                "Run single simulation starting with .ply files",
