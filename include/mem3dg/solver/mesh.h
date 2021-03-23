@@ -48,12 +48,36 @@ getIcosphereMatrix(int n, double R);
 /**
  * @brief Hard code a tetrahedron in PolygonSoup form
  *
- * @param coords    Reference to vector of vertex coordinates
- * @param polygons  Polygons of the mesh
  */
 DLL_PUBLIC
-void tetrahedron(std::vector<gc::Vector3> &coords,
-                 std::vector<std::vector<std::size_t>> &polygons);
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+tetrahedron();
+/**
+ * @brief Hard code a tetrahedron in PolygonSoup form
+ *
+ */
+DLL_PUBLIC
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getTetrahedronMatrix();
+
+/**
+ * @brief Hard code a diamond in PolygonSoup form
+ *
+ */
+DLL_PUBLIC
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+diamond(double dihedral);
+/**
+ * @brief Hard code a diamond in PolygonSoup form
+ *
+ */
+DLL_PUBLIC
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getDiamondMatrix(double dihedral);
 
 /**
  * @brief Subdivide a manifold mesh
