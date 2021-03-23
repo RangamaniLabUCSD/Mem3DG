@@ -115,10 +115,17 @@ public:
     dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
                      f.vpg->edgeLengths.raw().minCoeff();
 
+    // Initialize geometry constraints
+    dArea = 1e10;
+    dVP = 1e10;
+
     // Initialize system summarized forces
     regularizationForce.resize(f.mesh->nVertices(), 3);
     physicalForce.resize(f.mesh->nVertices(), 1);
     DPDForce.resize(f.mesh->nVertices(), 1);
+    regularizationForce.setZero();
+    physicalForce.setZero();
+    DPDForce.setZero();
 
     // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF

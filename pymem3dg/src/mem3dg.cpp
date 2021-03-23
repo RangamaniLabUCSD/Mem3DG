@@ -71,12 +71,9 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   signal(SIGINT, mem3dg::signalHandler);
   // pybind11::scoped_interpreter guard{};
 
-  /// Initialize parameter struct
-  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-
-  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
-                       sigma, pt,  Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,  Kbc,  H0,  r_H0,    Ksg,  Kst,    Ksl,
+                       Kse, Kv,   eta, epsilon, Bc,   gamma,  Vt,
+                       cam, temp, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
@@ -126,10 +123,9 @@ int forwardsweep_ply(
   signal(SIGINT, mem3dg::signalHandler);
 
   /// Initialize parameter struct
-  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,    Kbc, H0[0],   r_H0, Ksg,    Kst,   Ksl,    Kse,
-                       Kv,    eta, epsilon, Bc,   gamma,  Vt[0], cam[0], temp,
-                       sigma, pt,  Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,     Kbc,  H0[0], r_H0,    Ksg,  Kst,    Ksl,
+                       Kse,    Kv,   eta,   epsilon, Bc,   gamma,  Vt[0],
+                       cam[0], temp, pt,    Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
@@ -169,10 +165,9 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
   // pybind11::scoped_interpreter guard{};
 
   // Initialize parameter struct
-  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    cam, temp,
-                       sigma, pt,  Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,  Kbc,  H0,  r_H0,    Ksg,  Kst,    Ksl,
+                       Kse, Kv,   eta, epsilon, Bc,   gamma,  Vt,
+                       cam, temp, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
@@ -223,10 +218,9 @@ int forwardsweep_nc(
   // pybind11::scoped_interpreter guard{};
 
   /// Initialize parameter struct
-  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
-  mem3dg::Parameters p{Kb,    Kbc, H0[0],   r_H0, Ksg,    Kst,   Ksl,    Kse,
-                       Kv,    eta, epsilon, Bc,   gamma,  Vt[0], cam[0], temp,
-                       sigma, pt,  Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,     Kbc,  H0[0], r_H0,    Ksg,  Kst,    Ksl,
+                       Kse,    Kv,   eta,   epsilon, Bc,   gamma,  Vt[0],
+                       cam[0], temp, pt,    Kf,      conc, height, radius};
 
   mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,

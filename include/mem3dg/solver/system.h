@@ -85,8 +85,6 @@ struct Parameters {
   double cam;
   /// Temperature
   double temp;
-  /// Noise
-  double sigma;
   /// index of node with applied external force
   std::vector<double> pt;
   /// Magnitude of external force
@@ -526,11 +524,6 @@ public:
   EigenVectorX1D computeLineCapillaryForce();
 
   /**
-   * @brief Compute DPD forces of the system
-   */
-  std::tuple<EigenVectorX3D, EigenVectorX3D> computeDPDForces();
-
-  /**
    * @brief Compute external pressure component of the system
    */
   EigenVectorX1D computeExternalPressure();
@@ -539,6 +532,11 @@ public:
    * @brief Compute all forces of the system
    */
   void computePhysicalForces();
+
+  /**
+   * @brief Compute DPD forces of the system
+   */
+  std::tuple<EigenVectorX3D, EigenVectorX3D> computeDPDForces(double dt);
 
   // ==========================================================
   // ================        Energy          ==================

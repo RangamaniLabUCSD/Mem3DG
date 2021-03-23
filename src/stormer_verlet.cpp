@@ -33,7 +33,7 @@ void StormerVerlet::integrate() {
     f.computeBendingPressure();
     f.computeCapillaryPressure();
     f.computeInsidePressure();
-    f.computeDPDForces();
+    f.computeDPDForces(dt);
     f.computeExternalPressure();
 
     gcs::VertexData<gc::Vector3> temp = f.vpg->inputVertexPositions;
