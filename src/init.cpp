@@ -314,12 +314,12 @@ void System::initConstants() {
 
   // Initialize V-E distribution matrix for line tension calculation
   if (P.eta != 0) {
-    D = localVpg->d0.transpose();
-    for (int k = 0; k < D.outerSize(); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-        it.valueRef() = 0.5;
-      }
-    }
+    D = localVpg->d0.transpose().cwiseAbs() / 2;
+    // for (int k = 0; k < D.outerSize(); ++k) {
+    //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+    //     it.valueRef() = 0.5;
+    //   }
+    // }
   }
 
   // Find "the" vertex

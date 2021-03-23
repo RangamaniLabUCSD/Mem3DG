@@ -29,7 +29,7 @@
 #include <geometrycentral/utilities/vector3.h>
 
 #include "igl/loop.h"
-
+#include <math.h>
 namespace mem3dg {
 
 namespace gc = ::geometrycentral;
@@ -201,8 +201,12 @@ getIcosphereMatrix(int n, double R) {
   return std::tie(meshMatrix, vertexMatrix);
 }
 
-void tetrahedron(std::vector<gc::Vector3> &coords,
-                 std::vector<std::vector<std::size_t>> &polygons) {
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+tetrahedron() {
+  std::vector<gc::Vector3> coords;
+  std::vector<std::vector<std::size_t>> polygons;
+
   // Initialize vertex coordinates
   auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
     return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
@@ -217,5 +221,62 @@ void tetrahedron(std::vector<gc::Vector3> &coords,
   polygons.emplace_back(std::vector<std::size_t>{2, 0, 1});
   polygons.emplace_back(std::vector<std::size_t>{3, 0, 2});
   polygons.emplace_back(std::vector<std::size_t>{3, 2, 1});
+
+  gcs::SimplePolygonMesh soup(polygons, coords);
+  soup.mergeIdenticalVertices();
+  return gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons,
+                                                 soup.vertexCoordinates);
+}
+
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getTetrahedronMatrix() {
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::tie(mesh, vpg) = tetrahedron();
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  meshMatrix = mesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+diamond(double dihedral) {
+  std::vector<gc::Vector3> coords;
+  std::vector<std::vector<std::size_t>> polygons;
+
+  // Initialize vertex coordinates
+  auto makeVertex = [](double x, double y, double z) -> gc::Vector3 {
+    return gc::Vector3{std::move(x), std::move(y), std::move(z)};
+  };
+
+  coords.emplace_back(makeVertex(0, 0.5, 0));
+  coords.emplace_back(makeVertex(0, -0.5, 0));
+  coords.emplace_back(makeVertex(cos(dihedral) * std::sqrt(3) / 2, 0,
+                                 -sin(dihedral) * std::sqrt(3) / 2));
+  coords.emplace_back(makeVertex(-std::sqrt(3) / 2, 0, 0));
+  // Initialize Faces
+  polygons.emplace_back(std::vector<std::size_t>{0, 1, 2});
+  polygons.emplace_back(std::vector<std::size_t>{0, 3, 1});
+
+  gcs::SimplePolygonMesh soup(polygons, coords);
+  soup.mergeIdenticalVertices();
+  return gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons,
+                                                 soup.vertexCoordinates);
+}
+
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getDiamondMatrix(double dihedral) {
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::tie(mesh, vpg) = diamond(dihedral);
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  meshMatrix = mesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
 }
 } // namespace mem3dg
