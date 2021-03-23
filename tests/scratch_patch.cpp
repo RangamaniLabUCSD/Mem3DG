@@ -39,13 +39,12 @@ int main() {
 
   std::vector<double> pt = {0, 0, 0};
   std::vector<double> r_H0 = {0.15, 0.15};
-  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
-  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    Pam, temp,
-                       sigma, pt,  Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,  Kbc,  H0,  r_H0,    Ksg,  Kst,    Ksl,
+                       Kse, Kv,   eta, epsilon, Bc,   gamma,  Vt,
+                       Pam, temp, pt,  Kf,      conc, height, radius};
 
-   mem3dg::Options o;
+  mem3dg::Options o;
   o.isProtein = false;
   o.isVertexShift = false;
   o.isReducedVolume = true;

@@ -228,7 +228,7 @@ EigenVectorX1D System::computeChemicalPotential() {
   return chemicalPotential.raw();
 }
 
-std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces() {
+std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
 
   auto dampingForce_e = EigenMap<double, 3>(dampingForce);
   auto stochasticForce_e = EigenMap<double, 3>(stochasticForce);
@@ -242,7 +242,9 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces() {
 
   // std::default_random_engine random_generator;
   // gcs::EdgeData<double> random_var(mesh);
-  std::normal_distribution<double> normal_dist(0, P.sigma);
+  double sigma =
+      sqrt(2 * P.gamma * mem3dg::constants::kBoltzmann * P.temp / dt);
+  std::normal_distribution<double> normal_dist(0, sigma);
 
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
@@ -258,7 +260,7 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces() {
       dampingForce[v2] += df;
     }
 
-    if (P.sigma != 0) {
+    if (sigma != 0) {
       double noise = normal_dist(rng);
       stochasticForce[v1] += noise * dPos12_n;
       stochasticForce[v2] -= noise * dPos12_n;
@@ -284,8 +286,6 @@ void System::computePhysicalForces() {
   lineCapillaryForce.raw().setZero();
   externalPressure.raw().setZero();
   insidePressure.raw().setZero();
-  gc::EigenMap<double, 3>(dampingForce).setZero();
-  gc::EigenMap<double, 3>(stochasticForce).setZero();
   chemicalPotential.raw().setZero();
 
   computeBendingPressure();
@@ -297,9 +297,6 @@ void System::computePhysicalForces() {
   }
   if (P.eta != 0) {
     computeLineCapillaryForce();
-  }
-  if ((P.gamma != 0) || (P.sigma != 0)) {
-    computeDPDForces();
   }
   if (O.isProtein) {
     computeChemicalPotential();

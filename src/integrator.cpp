@@ -97,11 +97,14 @@ void Integrator::getForces() {
                    f.lineCapillaryForce.raw())
                       .array();
 
-  DPDForce = f.mask.raw().cast<double>().array() *
-             rowwiseDotProduct((EigenMap<double, 3>(f.dampingForce) +
-                                EigenMap<double, 3>(f.stochasticForce)),
-                               vertexAngleNormal_e)
-                 .array();
+  if ((f.P.gamma != 0) || (f.P.temp != 0)) {
+    f.computeDPDForces(dt);
+    DPDForce = f.mask.raw().cast<double>().array() *
+               rowwiseDotProduct((EigenMap<double, 3>(f.dampingForce) +
+                                  EigenMap<double, 3>(f.stochasticForce)),
+                                 vertexAngleNormal_e)
+                   .array();
+  }
 
   if (!f.mesh->hasBoundary()) {
     removeTranslation(rowwiseScaling(physicalForce, vertexAngleNormal_e));
@@ -403,7 +406,6 @@ void Integrator::getParameterLog(std::string inputMesh) {
            << "gamma:  " << f.P.gamma << "\n"
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
-           << "sigma:  " << f.P.sigma << "\n"
            << "Kf:     " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n"
            << "height: " << f.P.height << "\n";
@@ -443,7 +445,6 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "gamma:  " << f.P.gamma << "\n"
            << "Vt:     " << f.P.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
-           << "sigma:  " << f.P.sigma << "\n"
            << "Kf:   " << f.P.Kf << "\n"
            << "conc:   " << f.P.conc << "\n";
 

@@ -74,7 +74,6 @@ protected:
 
     p.gamma = 0;
     p.temp = 0;
-    p.sigma = 0;
 
     p.radius = 3;
 

@@ -54,12 +54,11 @@ int main() {
          Ksg = 0.1;
   std::vector<double> pt = {1, 1, 1};
   std::vector<double> r_H0 = {0.5, 0.5};
-  double sigma = sqrt(2 * gamma * mem3dg::constants::kBoltzmann * temp / h);
 
   std::cout << "Initiating the system ...";
-  mem3dg::Parameters p{Kb,    Kbc, H0,      r_H0, Ksg,    Kst,   Ksl, Kse,
-                       Kv,    eta, epsilon, Bc,   gamma,  Vt,    Pam, temp,
-                       sigma, pt,  Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,  Kbc,  H0,  r_H0,    Ksg,  Kst,    Ksl,
+                       Kse, Kv,   eta, epsilon, Bc,   gamma,  Vt,
+                       Pam, temp, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o;
   o.isProtein = false;

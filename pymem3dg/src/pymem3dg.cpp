@@ -405,7 +405,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       R"delim(
           get the Cotan Laplacian matrix of the mesh
       )delim");
-      
+
   system.def("computeBendingPressure", &System::computeBendingPressure,
              py::return_value_policy::reference_internal,
              R"delim(
@@ -431,11 +431,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           compute the LineTensionPressure
       )delim");
-  system.def("computeDPDForces", &System::computeDPDForces,
-             py::return_value_policy::reference_internal,
-             R"delim(
-          compute the DPDForces
-      )delim");
   system.def("computeExternalPressure", &System::computeExternalPressure,
              py::return_value_policy::reference_internal,
              R"delim(
@@ -444,6 +439,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def("computePhysicalForces", &System::computePhysicalForces,
              R"delim(
           compute all the forces
+      )delim");
+  system.def("computeDPDForces", &System::computeDPDForces,
+             py::return_value_policy::reference_internal, py::arg("dt"),
+             R"delim(
+          compute the DPDForces
       )delim");
   system.def("computeFreeEnergy", &System::computeFreeEnergy,
              R"delim(
@@ -509,8 +509,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def(
       py::init<double, double, double, std::vector<double>, double, double,
                double, double, double, double, double, double, double, double,
-               double, double, double, std::vector<double>, double, double,
-               double, double, double, double>());
+               double, double, std::vector<double>, double, double, double,
+               double, double, double>());
   parameters.def_readwrite("Kb", &Parameters::Kb,
                            R"delim(
           get Bending rigidity of the bare membrane 
@@ -574,10 +574,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("temp", &Parameters::temp,
                            R"delim(
           get Temperature 
-      )delim");
-  parameters.def_readwrite("sigma", &Parameters::sigma,
-                           R"delim(
-          get Noise 
       )delim");
   parameters.def_readwrite("pt", &Parameters::pt,
                            R"delim(
