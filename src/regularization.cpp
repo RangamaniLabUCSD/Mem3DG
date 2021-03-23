@@ -215,7 +215,7 @@ bool System::growMesh() {
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
         // split the edge
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
-        gcs::Halfedge &newhe = mesh->splitEdgeTriangular(he.edge());
+        gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
         const auto &newVertex = newhe.vertex();
 
         // update quantities

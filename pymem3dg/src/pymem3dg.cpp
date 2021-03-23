@@ -296,6 +296,18 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the face vertex matrix
       )delim");
   system.def(
+      "getVertexAdjacencyMatrix", [](System &s) { return s.vpg->d0; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the signed E-V vertex adjacency matrix, equivalent of d0 operator
+      )delim");
+  system.def(
+      "getEdgeAdjacencyMatrix", [](System &s) { return s.vpg->d1; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the signed F-E edge adjacency matrix, equivalent of d1 operator
+      )delim");
+  system.def(
       "getBendingPressure", [](System &s) { return s.bendingPressure.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
@@ -393,7 +405,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       R"delim(
           get the Cotan Laplacian matrix of the mesh
       )delim");
-
+      
   system.def("computeBendingPressure", &System::computeBendingPressure,
              py::return_value_policy::reference_internal,
              R"delim(
@@ -879,6 +891,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
                "get topology and vertex position matrix of icosphere",
                py::arg("n"), py::arg("R"));
+
+  pymem3dg.def("getTetrahedron", &getTetrahedronMatrix,
+               "get topology and vertex position matrix of tetrahedron");
+
+  pymem3dg.def("getDiamond", &getDiamondMatrix,
+               "get topology and vertex position matrix of diamond",
+               py::arg("dihedral"));
 
 #ifdef MEM3DG_WITH_NETCDF
 
