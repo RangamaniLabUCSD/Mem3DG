@@ -462,15 +462,18 @@ void System::updateVertexPositions() {
 }
 
 void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
+  bool isUpdated = false;
   if (O.isFloatVertex) {
     switch (P.pt.size()) {
     case 1: {
       throw std::logic_error(
           "To have Floating vertex, one must specify vertex by coordinate!");
+      break;
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
-      auto closestVertex = closestVertexToPt(*mesh, vpg, P.pt);
+      gcs::Vertex closestVertex = closestVertexToPt(*mesh, vpg, P.pt);
+      double shortestDistance = 1e18;
       // loop over every faces around the vertex
       for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
         if (he.isInterior()) {
@@ -485,19 +488,58 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
           // find the inverse barycentric mapping based on the cartesian vertex
           // coordinates
           gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
-          // set the surface point when the point lays within the triangle
-          if (baryCoords_.x > 0 && baryCoords_.y > 0 && baryCoords_.z > 0) {
-            thePoint = gcs::SurfacePoint(
-                he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-            break;
+          baryCoords_ = gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
+          baryCoords_ /= gc::sum(baryCoords_);
+          gcs::SurfacePoint someSurfacePoint(
+              he.face(), correspondBarycentricCoordinates(baryCoords_, he));
+          // compute optimum distance and set surface point
+          double distance =
+              (gc::Vector2{P.pt[0], P.pt[1]} -
+               gc::Vector2{
+                   someSurfacePoint.interpolate(vpg.inputVertexPositions).x,
+                   someSurfacePoint.interpolate(vpg.inputVertexPositions).y})
+                  .norm();
+          if (distance < shortestDistance) {
+            thePoint = someSurfacePoint;
+            shortestDistance = distance;
+            isUpdated = true;
           }
+          // set the surface point when the point lays within the triangle
+          // if (!(baryCoords_.x < 0) && !(baryCoords_.y < 0) &&
+          //     !(baryCoords_.z < 0)) {
+          //   thePoint = gcs::SurfacePoint(
+          //       he.face(), correspondBarycentricCoordinates(baryCoords_,
+          //       he));
+          //   isUpdated = true;
+          //   break;
+          // }
         }
       }
+      break;
+      // double distance1 =
+      //     (gc::Vector2{P.pt[0], P.pt[1]} -
+      //      gc::Vector2{thePoint.interpolate(vpg.inputVertexPositions).x,
+      //                  thePoint.interpolate(vpg.inputVertexPositions).y})
+      //         .norm();
+      // double distance2 =
+      //     (gc::Vector2{vpg.inputVertexPositions[closestVertex].x,
+      //                  vpg.inputVertexPositions[closestVertex].y} -
+      //      gc::Vector2{P.pt[0], P.pt[1]})
+      //         .norm();
+      // if ((distance1 > distance2)) {
+      //   std::cout << "distance1: " << distance1 << std::endl;
+      //   std::cout << "distance2: " << distance2 << std::endl;
+      //   std::cout << "mean: " << meanTargetEdgeLength << std::endl;
+      //   throw std::runtime_error(
+      //       "findTheVertex: the calculation of surface point is incorrect!");
+      // } else {
+      //   break;
+      // }
     }
     case 3: {
       // initialize embedded point and the closest vertex
       gc::Vector3 embeddedPoint{P.pt[0], P.pt[1], P.pt[2]};
-      auto closestVertex = closestVertexToPt(*mesh, vpg, P.pt);
+      gcs::Vertex closestVertex = closestVertexToPt(*mesh, vpg, P.pt);
       gc::Vector3 vertexToPoint =
           embeddedPoint - vpg.inputVertexPositions[closestVertex];
       // initialize the surface point as the closest vertex
@@ -511,8 +553,8 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
           auto faceNormal = vpg.faceNormal(he.face());
           gc::Vector3 projectedEmbeddedPoint =
               embeddedPoint - gc::dot(vertexToPoint, faceNormal) * faceNormal;
-          // determine the choice of coordinates used for inverse barycentric
-          // mapping based on orientation of the face
+          // determine the choice of coordinates used for inverse
+          // barycentric mapping based on orientation of the face
           gc::Vector2 v1, v2, v3, v;
           if (abs(faceNormal.z) > std::sqrt(3) / 3) {
             v1 = gc::Vector2{vpg.inputVertexPositions[he.vertex()].x,
@@ -542,11 +584,11 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
                 vpg.inputVertexPositions[he.next().next().vertex()].x};
             v = gc::Vector2{projectedEmbeddedPoint.z, projectedEmbeddedPoint.x};
           }
-          // find the inverse barycentric mapping based on the cartesian vertex
-          // coordinates
+          // find the inverse barycentric mapping based on the cartesian
+          // vertex coordinates
           gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
-          // since might not find the perfect reflecting face, best we could do
-          // within each triangle
+          // since might not find the perfect reflecting face, best we could
+          // do within each triangle
           baryCoords_ = gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
           baryCoords_ /= gc::sum(baryCoords_);
           gcs::SurfacePoint someSurfacePoint(
@@ -558,9 +600,11 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
           if (distance < shortestDistance) {
             thePoint = someSurfacePoint;
             shortestDistance = distance;
+            isUpdated = true;
           }
         }
       }
+      break;
     }
     }
     // mark three vertex on the face
@@ -573,16 +617,26 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
     case 1: {
       // Assign surface point as the indexed vertex
       thePoint = gc::SurfacePoint(mesh->vertex((std::size_t)P.pt[0]));
+      isUpdated = true;
+      break;
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
       thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, P.pt));
+      isUpdated = true;
+      break;
     }
     case 3: {
       thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, P.pt));
+      isUpdated = true;
+      break;
     }
     }
     thePointTracker[thePoint.vertex] = true;
+  }
+
+  if (!isUpdated) {
+    throw std::runtime_error("findTheVertex: surface point is no updated!");
   }
 }
 
