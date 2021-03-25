@@ -236,9 +236,7 @@ bool System::growMesh() {
         // alias the neighboring vertices
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
         // flag if this is "the" point
-        bool isThePoint = (O.isFloatVertex) ? false
-                                            : thePointTracker[vertex1] ||
-                                                  thePointTracker[vertex2];
+        bool isThePoint = thePointTracker[vertex1] || thePointTracker[vertex2];
         // collapse the edge
         auto newVertex = mesh->collapseEdgeTriangular(he.edge());
         // update quantities
@@ -305,12 +303,13 @@ void System::localUpdateAfterMutation(const T &element1, const T &element2,
 void System::globalUpdateAfterMutation() {
   // Update the distribution matrix when topology changes
   if (P.eta != 0) {
-    D = vpg->d0.transpose();
-    for (int k = 0; k < D.outerSize(); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-        it.valueRef() = 0.5;
-      }
-    }
+    D = vpg->d0.transpose().cwiseAbs() / 2;
+    // D = vpg->d0.transpose();
+    // for (int k = 0; k < D.outerSize(); ++k) {
+    //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+    //     it.valueRef() = 0.5;
+    //   }
+    // }
   }
 
   // Update mask when topology changes
