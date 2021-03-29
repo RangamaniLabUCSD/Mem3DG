@@ -488,53 +488,36 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
           // find the inverse barycentric mapping based on the cartesian vertex
           // coordinates
           gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
-          baryCoords_ = gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
-          baryCoords_ /= gc::sum(baryCoords_);
-          gcs::SurfacePoint someSurfacePoint(
-              he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-          // compute optimum distance and set surface point
-          double distance =
-              (gc::Vector2{P.pt[0], P.pt[1]} -
-               gc::Vector2{
-                   someSurfacePoint.interpolate(vpg.inputVertexPositions).x,
-                   someSurfacePoint.interpolate(vpg.inputVertexPositions).y})
-                  .norm();
-          if (distance < shortestDistance) {
-            thePoint = someSurfacePoint;
-            shortestDistance = distance;
+
+          if (baryCoords_.x > 0 && baryCoords_.y > 0 &&
+              baryCoords_.z > 0) { // A. set the surface point when the point
+                                   // lays within the triangle
+            thePoint = gcs::SurfacePoint(
+                he.face(), correspondBarycentricCoordinates(baryCoords_, he));
             isUpdated = true;
+            break;
+          } else { // B. avoid the floating point comparision, find the best by
+                   // looping over the whole fan
+            baryCoords_ =
+                gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
+            baryCoords_ /= gc::sum(baryCoords_);
+            gcs::SurfacePoint someSurfacePoint(
+                he.face(), correspondBarycentricCoordinates(baryCoords_, he));
+            double distance =
+                (gc::Vector2{P.pt[0], P.pt[1]} -
+                 gc::Vector2{
+                     someSurfacePoint.interpolate(vpg.inputVertexPositions).x,
+                     someSurfacePoint.interpolate(vpg.inputVertexPositions).y})
+                    .norm();
+            if (distance < shortestDistance) {
+              thePoint = someSurfacePoint;
+              shortestDistance = distance;
+              isUpdated = true;
+            }
           }
-          // set the surface point when the point lays within the triangle
-          // if (!(baryCoords_.x < 0) && !(baryCoords_.y < 0) &&
-          //     !(baryCoords_.z < 0)) {
-          //   thePoint = gcs::SurfacePoint(
-          //       he.face(), correspondBarycentricCoordinates(baryCoords_,
-          //       he));
-          //   isUpdated = true;
-          //   break;
-          // }
         }
       }
       break;
-      // double distance1 =
-      //     (gc::Vector2{P.pt[0], P.pt[1]} -
-      //      gc::Vector2{thePoint.interpolate(vpg.inputVertexPositions).x,
-      //                  thePoint.interpolate(vpg.inputVertexPositions).y})
-      //         .norm();
-      // double distance2 =
-      //     (gc::Vector2{vpg.inputVertexPositions[closestVertex].x,
-      //                  vpg.inputVertexPositions[closestVertex].y} -
-      //      gc::Vector2{P.pt[0], P.pt[1]})
-      //         .norm();
-      // if ((distance1 > distance2)) {
-      //   std::cout << "distance1: " << distance1 << std::endl;
-      //   std::cout << "distance2: " << distance2 << std::endl;
-      //   std::cout << "mean: " << meanTargetEdgeLength << std::endl;
-      //   throw std::runtime_error(
-      //       "findTheVertex: the calculation of surface point is incorrect!");
-      // } else {
-      //   break;
-      // }
     }
     case 3: {
       // initialize embedded point and the closest vertex
