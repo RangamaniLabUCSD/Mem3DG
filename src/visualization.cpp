@@ -63,10 +63,8 @@ void visualize(mem3dg::System &f) {
   // Process attributes
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  fn =
-      f.bendingPressure.raw() + f.capillaryPressure.raw() +
-      f.insidePressure.raw() + f.externalPressure.raw() +
-      f.vpg->vertexLumpedMassMatrix.cwiseInverse() * f.lineCapillaryForce.raw();
+  fn = f.bendingForce.raw() + f.capillaryForce.raw() + f.osmoticForce.raw() +
+       f.externalForce.raw() + f.lineCapillaryForce.raw();
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
@@ -80,19 +78,19 @@ void visualize(mem3dg::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("external_pressure", f.externalPressure);
+      ->addVertexScalarQuantity("external_Force", f.externalForce);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("bending_pressure", f.bendingPressure);
+      ->addVertexScalarQuantity("bending_force", f.bendingForce);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
                                 f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
                                     f.lineCapillaryForce.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("capillary_pressure", f.capillaryPressure);
+      ->addVertexScalarQuantity("capillary_force", f.capillaryForce);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("inside_pressure", f.insidePressure);
+      ->addVertexScalarQuantity("osmotic_force", f.osmoticForce);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("physical_pressure", fn);
+      ->addVertexScalarQuantity("physical_force", fn);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("bending_rigidity", f.Kb);
   polyscope::getSurfaceMesh("Membrane")
@@ -108,10 +106,9 @@ void visualize(mem3dg::System &f) {
                                     .array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity(
-          "spon part)", f.bendingPressure.raw().array() +
+          "spon part)", f.bendingForce.raw().array() +
                             f.Kb.raw().array() *
-                                (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                 f.vpg->cotanLaplacian *
+                                (f.vpg->cotanLaplacian *
                                  (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
                                       f.vpg->vertexMeanCurvatures.raw() -
                                   f.H0.raw()))
@@ -529,29 +526,29 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
   if (options.velocity) {
     polyscopeMesh->addVertexVectorQuantity("velocity", fd.getVelocity(idx));
   }
-  if (options.bending_pressure) {
-    polyscopeMesh->addVertexScalarQuantity("bending_pressure",
-                                           fd.getBendingPressure(idx));
+  if (options.bending_force) {
+    polyscopeMesh->addVertexScalarQuantity("bending_force",
+                                           fd.getBendingForce(idx));
   }
-  if (options.capillary_pressure) {
-    polyscopeMesh->addVertexScalarQuantity("capillary_pressure",
-                                           fd.getCapillaryPressure(idx));
+  if (options.capillary_force) {
+    polyscopeMesh->addVertexScalarQuantity("capillary_force",
+                                           fd.getCapillaryForce(idx));
   }
-  if (options.inside_pressure) {
-    polyscopeMesh->addVertexScalarQuantity("inside_pressure",
-                                           fd.getInsidePressure(idx));
+  if (options.inside_force) {
+    polyscopeMesh->addVertexScalarQuantity("inside_force",
+                                           fd.getOsmoticForce(idx));
   }
-  if (options.ext_pressure) {
-    polyscopeMesh->addVertexScalarQuantity("external_pressure",
-                                           fd.getExternalPressure(idx));
+  if (options.ext_force) {
+    polyscopeMesh->addVertexScalarQuantity("external_force",
+                                           fd.getExternalForce(idx));
   }
-  if (options.line_pressure) {
-    polyscopeMesh->addVertexScalarQuantity("line_tension_pressure",
-                                           fd.getLinePressure(idx));
+  if (options.line_force) {
+    polyscopeMesh->addVertexScalarQuantity("line_tension_force",
+                                           fd.getLineForce(idx));
   }
-  if (options.physical_pressure) {
-    polyscopeMesh->addVertexScalarQuantity("physical_pressure",
-                                           fd.getPhysicalPressure(idx));
+  if (options.physical_force) {
+    polyscopeMesh->addVertexScalarQuantity("physical_force",
+                                           fd.getPhysicalForce(idx));
   }
   // polyscope::registerSurfaceMesh("Mesh", coords, top);
 
@@ -634,35 +631,35 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
         ptrRichData->getVertexProperty<double>("spon_curvature"));
   }
 
-  if (options.ext_pressure) {
+  if (options.ext_force) {
     polyscopeMesh->addVertexScalarQuantity(
-        "external_pressure",
-        ptrRichData->getVertexProperty<double>("external_pressure"));
+        "external_force",
+        ptrRichData->getVertexProperty<double>("external_force"));
   }
-  if (options.physical_pressure) {
+  if (options.physical_force) {
     polyscopeMesh->addVertexScalarQuantity(
-        "physical_pressure",
-        ptrRichData->getVertexProperty<double>("physical_pressure"));
+        "physical_force",
+        ptrRichData->getVertexProperty<double>("physical_force"));
   }
-  if (options.capillary_pressure) {
+  if (options.capillary_force) {
     polyscopeMesh->addVertexScalarQuantity(
-        "capillary_pressure",
-        ptrRichData->getVertexProperty<double>("capillary_pressure"));
+        "capillary_force",
+        ptrRichData->getVertexProperty<double>("capillary_force"));
   }
-  if (options.bending_pressure) {
+  if (options.bending_force) {
     polyscopeMesh->addVertexScalarQuantity(
-        "bending_pressure",
-        ptrRichData->getVertexProperty<double>("bending_pressure"));
+        "bending_force",
+        ptrRichData->getVertexProperty<double>("bending_force"));
   }
-  if (options.line_pressure) {
+  if (options.line_force) {
     polyscopeMesh->addVertexScalarQuantity(
-        "line_tension_pressure",
-        ptrRichData->getVertexProperty<double>("line_tension_pressure"));
+        "line_tension_force",
+        ptrRichData->getVertexProperty<double>("line_tension_force"));
   }
-  if (options.inside_pressure) {
+  if (options.inside_force) {
     polyscopeMesh->addVertexScalarQuantity(
-        "inside_pressure",
-        ptrRichData->getVertexProperty<double>("inside_pressure"));
+        "osmotic_force",
+        ptrRichData->getVertexProperty<double>("osmotic_force"));
   }
 
   if (options.mask) {

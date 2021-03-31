@@ -297,7 +297,7 @@ TrajFile::getH_H0_diff(const std::size_t idx) const {
 }
 
 // external pressure
-void TrajFile::writeExternalPressure(
+void TrajFile::writeExternalForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
@@ -309,7 +309,7 @@ void TrajFile::writeExternalPressure(
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
-TrajFile::getExternalPressure(const std::size_t idx) const {
+TrajFile::getExternalForce(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
@@ -319,7 +319,7 @@ TrajFile::getExternalPressure(const std::size_t idx) const {
 }
 
 // physical pressure
-void TrajFile::writePhysicalPressure(
+void TrajFile::writePhysicalForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
@@ -331,7 +331,7 @@ void TrajFile::writePhysicalPressure(
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
-TrajFile::getPhysicalPressure(const std::size_t idx) const {
+TrajFile::getPhysicalForce(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
@@ -341,7 +341,7 @@ TrajFile::getPhysicalPressure(const std::size_t idx) const {
 }
 
 // capillary pressure
-void TrajFile::writeCapillaryPressure(
+void TrajFile::writeCapillaryForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
@@ -353,7 +353,7 @@ void TrajFile::writeCapillaryPressure(
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
-TrajFile::getCapillaryPressure(const std::size_t idx) const {
+TrajFile::getCapillaryForce(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
@@ -363,7 +363,7 @@ TrajFile::getCapillaryPressure(const std::size_t idx) const {
 }
 
 // bending pressure
-void TrajFile::writeBendingPressure(
+void TrajFile::writeBendingForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
@@ -375,7 +375,7 @@ void TrajFile::writeBendingPressure(
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
-TrajFile::getBendingPressure(const std::size_t idx) const {
+TrajFile::getBendingForce(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
@@ -385,7 +385,7 @@ TrajFile::getBendingPressure(const std::size_t idx) const {
 }
 
 // inside pressure
-void TrajFile::writeInsidePressure(
+void TrajFile::writeOsmoticForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
@@ -397,7 +397,7 @@ void TrajFile::writeInsidePressure(
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
-TrajFile::getInsidePressure(const std::size_t idx) const {
+TrajFile::getOsmoticForce(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
@@ -407,7 +407,7 @@ TrajFile::getInsidePressure(const std::size_t idx) const {
 }
 
 // line tension pressure
-void TrajFile::writeLinePressure(
+void TrajFile::writeLineForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
@@ -419,7 +419,7 @@ void TrajFile::writeLinePressure(
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
-TrajFile::getLinePressure(const std::size_t idx) const {
+TrajFile::getLineForce(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);

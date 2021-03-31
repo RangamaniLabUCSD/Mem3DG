@@ -407,7 +407,7 @@ void System::updateVertexPositions() {
     }
     // initialize/update external force
     if (P.Kf != 0) {
-      computeExternalPressure();
+      computeExternalForce();
     }
   }
 

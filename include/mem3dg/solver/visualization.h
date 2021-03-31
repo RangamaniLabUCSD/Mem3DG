@@ -33,18 +33,18 @@ struct DLL_PUBLIC Quantities {
   bool gauss_curvature = false;
   /// vertex spontaneous curvature
   bool spon_curvature = false;
-  /// vertex external pressure
-  bool ext_pressure = false;
-  /// vertex (total) physical pressure
-  bool physical_pressure = false;
-  /// vertex capillary pressure
-  bool capillary_pressure = false;
-  /// constant global inside pressure
-  bool inside_pressure = false;
-  /// vertex bending pressure
-  bool bending_pressure = false;
-  /// vertex line tension pressure
-  bool line_pressure = false;
+  /// vertex external force
+  bool ext_force = false;
+  /// vertex (total) physical force
+  bool physical_force = false;
+  /// vertex capillary force
+  bool capillary_force = false;
+  /// constant global inside force
+  bool inside_force = false;
+  /// vertex bending force
+  bool bending_force = false;
+  /// vertex line tension force
+  bool line_force = false;
   /// vertex mask for time integration
   bool mask = false;
   /// vertex mean - spontaneous curvature difference

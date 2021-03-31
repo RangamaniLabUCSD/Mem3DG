@@ -94,7 +94,7 @@ void System::computeLineTensionEnergy() {
 
 void System::computeExternalForceEnergy() {
   E.exE = -rowwiseDotProduct(
-               rowwiseScaling(externalPressure.raw(),
+               rowwiseScaling(externalForce.raw(),
                               gc::EigenMap<double, 3>(vpg->vertexNormals)),
                gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();
