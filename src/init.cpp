@@ -414,14 +414,6 @@ void System::updateVertexPositions() {
   // initialize/update Laplacian matrix
   M_inv = vpg->vertexLumpedMassMatrix.cwiseInverse();
 
-  // initialize/update mean curvature 1. cotan laplacian definition, 2. dihedral
-  // definition
-  H.raw() =
-      O.isLaplacianMeanCurvature
-          ? rowwiseDotProduct(M_inv * vpg->cotanLaplacian * positions / 2.0,
-                              vertexAngleNormal_e)
-          : M_inv * vpg->vertexMeanCurvatures.raw();
-
   // initialize/update Gaussian curvature
   K.raw() = M_inv * vpg->vertexGaussianCurvatures.raw();
 

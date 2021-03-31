@@ -59,19 +59,25 @@ EigenVectorX1D System::computeBendingPressure() {
   // } else {
 
   // calculate the Laplacian of mean curvature H
-  EigenVectorX1D lap_H = -M_inv * vpg->cotanLaplacian *
-                         rowwiseProduct(Kb.raw(), H.raw() - H0.raw());
+  EigenVectorX1D lap_H =
+      -M_inv * vpg->cotanLaplacian *
+      rowwiseProduct(Kb.raw(),
+                     M_inv * vpg->vertexMeanCurvatures.raw() - H0.raw());
 
   // initialize and calculate intermediary result scalerTerms
-  EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +
-                               rowwiseProduct(H.raw(), H0.raw()) - K.raw();
+  EigenVectorX1D scalerTerms =
+      rowwiseProduct(M_inv * vpg->vertexMeanCurvatures.raw(),
+                     M_inv * vpg->vertexMeanCurvatures.raw()) +
+      rowwiseProduct(M_inv * vpg->vertexMeanCurvatures.raw(), H0.raw()) -
+      K.raw();
   // scalerTerms = scalerTerms.array().max(0);
 
   // initialize and calculate intermediary result productTerms
   EigenVectorX1D productTerms =
-      -2.0 *
-      (Kb.raw().array() * (H.raw() - H0.raw()).array() * scalerTerms.array())
-          .matrix();
+      -2.0 * (Kb.raw().array() *
+              (M_inv * vpg->vertexMeanCurvatures.raw() - H0.raw()).array() *
+              scalerTerms.array())
+                 .matrix();
 
   // calculate bendingForce
   bendingPressure.raw() = productTerms + lap_H;
@@ -112,7 +118,8 @@ EigenVectorX1D System::computeCapillaryPressure() {
       O.isOpenMesh ? P.Ksg
                    : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
                          P.lambdaSG;
-  capillaryPressure.raw() = -surfaceTension * 2 * H.raw();
+  capillaryPressure.raw() =
+      -surfaceTension * 2 * M_inv * vpg->vertexMeanCurvatures.raw();
 
   return capillaryPressure.raw();
 
@@ -223,7 +230,9 @@ EigenVectorX1D System::computeChemicalPotential() {
 
   chemicalPotential.raw().array() =
       P.epsilon -
-      2 * Kb.raw().array() * (H.raw() - H0.raw()).array() * dH0dphi.array();
+      2 * Kb.raw().array() *
+          (M_inv * vpg->vertexMeanCurvatures.raw() - H0.raw()).array() *
+          dH0dphi.array();
 
   return chemicalPotential.raw();
 }
