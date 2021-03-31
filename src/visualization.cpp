@@ -69,7 +69,8 @@ void visualize(mem3dg::System &f) {
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("mean_curvature", f.H);
+      ->addVertexScalarQuantity("mean_curvature",
+                                f.M_inv * f.vpg->vertexMeanCurvatures.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("gauss_curvature", f.K);
   polyscope::getSurfaceMesh("Membrane")
@@ -95,14 +96,16 @@ void visualize(mem3dg::System &f) {
       ->addVertexScalarQuantity(
           "-lapH(smoothing)",
           -f.Kb.raw().array() *
-              (f.M_inv * f.vpg->cotanLaplacian * (f.H.raw() - f.H0.raw()))
+              (f.M_inv * f.vpg->cotanLaplacian *
+               (f.M_inv * f.vpg->vertexMeanCurvatures.raw() - f.H0.raw()))
                   .array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity(
           "spon part)",
           f.bendingPressure.raw().array() +
               f.Kb.raw().array() *
-                  (f.M_inv * f.vpg->cotanLaplacian * (f.H.raw() - f.H0.raw()))
+                  (f.M_inv * f.vpg->cotanLaplacian *
+                   (f.M_inv * f.vpg->vertexMeanCurvatures.raw() - f.H0.raw()))
                       .array());
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);

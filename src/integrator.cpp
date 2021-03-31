@@ -231,8 +231,9 @@ void Integrator::saveData() {
               << "E_total: " << f.E.totalE << "\n"
               << "E_pot: " << f.E.potE << "\n"
               << "|e|L1: " << f.L1ErrorNorm << "\n"
-              << "H: [" << f.H.raw().minCoeff() << "," << f.H.raw().maxCoeff()
-              << "]"
+              << "H: ["
+              << (f.M_inv * f.vpg->vertexMeanCurvatures.raw()).minCoeff() << ","
+              << (f.M_inv * f.vpg->vertexMeanCurvatures.raw()).maxCoeff() << "]"
               << "\n"
               << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff()
               << "]" << std::endl;
@@ -311,7 +312,9 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addVertexProperty("the_point", tkr);
 
   // write geometry
-  richData.addVertexProperty("mean_curvature", f.H);
+  gcs::VertexData<double> meanCurv(*f.mesh);
+  meanCurv.fromVector(f.M_inv * f.vpg->vertexMeanCurvatures.raw());
+  richData.addVertexProperty("mean_curvature", meanCurv);
   richData.addVertexProperty("gauss_curvature", f.K);
   richData.addVertexProperty("spon_curvature", f.H0);
 
@@ -373,7 +376,7 @@ void Integrator::saveNetcdfData() {
     // write geometry
     fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
     fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
-    fd.writeMeanCurvature(idx, f.H.raw());
+    fd.writeMeanCurvature(idx, f.M_inv * f.vpg->vertexMeanCurvatures.raw());
     fd.writeGaussCurvature(idx, f.K.raw());
     fd.writeSponCurvature(idx, f.H0.raw());
     // fd.writeAngles(idx, f.vpg.cornerAngles.raw());

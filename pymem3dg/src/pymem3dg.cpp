@@ -358,7 +358,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the protein Density
       )delim");
   system.def(
-      "getMeanCurvature", [](System &s) { return s.H.raw(); },
+      "getMeanCurvature",
+      [](System &s) { return s.M_inv * s.vpg->vertexMeanCurvatures.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the mean curvature
