@@ -394,13 +394,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the enclosed volume
       )delim");
   system.def(
-      "getLumpedMassMatrix", [](System &s) { return s.M; },
+      "getLumpedMassMatrix",
+      [](System &s) { return s.vpg->vertexLumpedMassMatrix; },
       py::return_value_policy::reference_internal,
       R"delim(
           get the lumped mass matrix of the mesh
       )delim");
   system.def(
-      "getCotanLaplacian", [](System &s) { return s.L; },
+      "getCotanLaplacian", [](System &s) { return s.vpg->cotanLaplacian; },
       py::return_value_policy::reference_internal,
       R"delim(
           get the Cotan Laplacian matrix of the mesh
