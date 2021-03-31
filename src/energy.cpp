@@ -78,7 +78,7 @@ void System::computePressureEnergy() {
 }
 
 void System::computeChemicalEnergy() {
-  E.cE = (M * P.epsilon * proteinDensity.raw()).sum();
+  E.cE = (vpg->vertexLumpedMassMatrix * P.epsilon * proteinDensity.raw()).sum();
 }
 
 void System::computeLineTensionEnergy() {
@@ -102,11 +102,13 @@ void System::computeKineticEnergy() {
   auto velocity =
       rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
                         gc::EigenMap<double, 3>(vpg->inputVertexPositions));
-  E.kE = 0.5 * (M * (velocity.array() * velocity.array()).matrix()).sum();
+  E.kE = 0.5 * (vpg->vertexLumpedMassMatrix *
+                (velocity.array() * velocity.array()).matrix())
+                   .sum();
 }
 
 void System::computePotentialEnergy() {
-    computeBendingEnergy();
+  computeBendingEnergy();
   if (P.Ksg != 0) {
     computeSurfaceEnergy();
   }
@@ -195,7 +197,7 @@ double System::computeProjectedArea(gcs::VertexPositionGeometry &vpg) const {
   // positions.col(2) *= 0;
   // gcs::VertexPositionGeometry projectedVpg(*mesh, positions);
   // projectedVpg.requireFaceAreas();
-  
+
   return projectedVpg->faceAreas.raw().sum();
 }
 

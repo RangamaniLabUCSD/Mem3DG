@@ -208,12 +208,8 @@ public:
   /// Distance solver
   gcs::HeatMethodDistanceSolver heatSolver;
 
-  /// Cached galerkin mass matrix
-  Eigen::SparseMatrix<double> &M;
-  /// Inverted galerkin mass matrix
+  /// Inverse lumped mass matrix
   Eigen::SparseMatrix<double> M_inv;
-  /// Cotangent Laplacian
-  Eigen::SparseMatrix<double> &L;
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
   /// V-E distribution matrix
@@ -364,8 +360,7 @@ public:
         stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
         proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0),
         targetLcrs(*mesh), refEdgeLengths(*mesh), refFaceAreas(*mesh),
-        heatSolver(*vpg), M(vpg->vertexLumpedMassMatrix),
-        L(vpg->cotanLaplacian), D(), geodesicDistanceFromPtInd(*mesh, 0),
+        heatSolver(*vpg), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
         vel(*mesh, {0, 0, 0}), H(*mesh), K(*mesh), H0(*mesh), Kb(*mesh),
         mask(*mesh, true) {

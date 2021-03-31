@@ -92,8 +92,9 @@ void Integrator::getForces() {
   f.computePhysicalForces();
 
   physicalForce = (f.mask.raw().cast<double>()).array() *
-                  (f.M * (f.bendingPressure.raw() + f.capillaryPressure.raw() +
-                          f.externalPressure.raw() + f.insidePressure.raw()) +
+                  (f.vpg->vertexLumpedMassMatrix *
+                       (f.bendingPressure.raw() + f.capillaryPressure.raw() +
+                        f.externalPressure.raw() + f.insidePressure.raw()) +
                    f.lineCapillaryForce.raw())
                       .array();
 
@@ -352,9 +353,12 @@ void Integrator::saveNetcdfData() {
   fd.writeTotalEnergy(idx, f.E.totalE);
   // write Norms
   fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
-  fd.writeL1BendNorm(idx, f.computeL1Norm(f.M * f.bendingPressure.raw()));
-  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.M * f.capillaryPressure.raw()));
-  fd.writeL1PressNorm(idx, f.computeL1Norm(f.M * f.insidePressure.raw()));
+  fd.writeL1BendNorm(idx, f.computeL1Norm(f.vpg->vertexLumpedMassMatrix *
+                                          f.bendingPressure.raw()));
+  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.vpg->vertexLumpedMassMatrix *
+                                          f.capillaryPressure.raw()));
+  fd.writeL1PressNorm(idx, f.computeL1Norm(f.vpg->vertexLumpedMassMatrix *
+                                           f.insidePressure.raw()));
   fd.writeL1LineNorm(idx, f.computeL1Norm(f.lineCapillaryForce.raw()));
 
   // vector quantities

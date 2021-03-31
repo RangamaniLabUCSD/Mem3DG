@@ -59,8 +59,8 @@ EigenVectorX1D System::computeBendingPressure() {
   // } else {
 
   // calculate the Laplacian of mean curvature H
-  EigenVectorX1D lap_H =
-      -M_inv * L * rowwiseProduct(Kb.raw(), H.raw() - H0.raw());
+  EigenVectorX1D lap_H = -M_inv * vpg->cotanLaplacian *
+                         rowwiseProduct(Kb.raw(), H.raw() - H0.raw());
 
   // initialize and calculate intermediary result scalerTerms
   EigenVectorX1D scalerTerms = rowwiseProduct(H.raw(), H.raw()) +

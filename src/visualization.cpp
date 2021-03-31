@@ -54,7 +54,8 @@ void visualize(mem3dg::System &f) {
   polyscope::init();
 
   polyscope::SurfaceMesh *polyMesh = polyscope::registerSurfaceMesh(
-      "Membrane", f.vpg->inputVertexPositions, f.mesh->getFaceVertexList());
+      "Membrane", f.vpg->inputVertexPositions, f.mesh->getFaceVertexList(),
+      gcs::polyscopePermutations(*f.mesh));
   polyMesh->setSmoothShade(true);
   polyMesh->setEnabled(true);
   polyMesh->setEdgeWidth(1);
@@ -68,7 +69,7 @@ void visualize(mem3dg::System &f) {
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("mean_curvature", f.vpg->vertexMeanCurvatures);
+      ->addVertexScalarQuantity("mean_curvature", f.H);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("gauss_curvature", f.K);
   polyscope::getSurfaceMesh("Membrane")
@@ -94,15 +95,19 @@ void visualize(mem3dg::System &f) {
       ->addVertexScalarQuantity(
           "-lapH(smoothing)",
           -f.Kb.raw().array() *
-              (f.M_inv * f.L * (f.H.raw() - f.H0.raw())).array());
+              (f.M_inv * f.vpg->cotanLaplacian * (f.H.raw() - f.H0.raw()))
+                  .array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity(
           "spon part)",
           f.bendingPressure.raw().array() +
               f.Kb.raw().array() *
-                  (f.M_inv * f.L * (f.H.raw() - f.H0.raw())).array());
+                  (f.M_inv * f.vpg->cotanLaplacian * (f.H.raw() - f.H0.raw()))
+                      .array());
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addEdgeScalarQuantity("cotan weight", f.vpg->edgeCotanWeights);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
   polyscope::getSurfaceMesh("Membrane")
@@ -595,7 +600,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
 
   polyscope::SurfaceMesh *polyscopeMesh = polyscope::registerSurfaceMesh(
       "Vesicle surface", ptrVpg->inputVertexPositions,
-      ptrMesh->getFaceVertexList());
+      ptrMesh->getFaceVertexList(), gcs::polyscopePermutations(*ptrMesh));
   polyscopeMesh->setSmoothShade(true);
   polyscopeMesh->setEnabled(true);
   polyscopeMesh->setEdgeWidth(1);
