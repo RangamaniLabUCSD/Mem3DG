@@ -30,11 +30,11 @@ void StormerVerlet::integrate() {
         (gc::EigenMap<double, 3>(f.vpg->inputVertexPositions) -
          gc::EigenMap<double, 3>(f.pastPositions)) /
         dt;
-    f.computeBendingPressure();
-    f.computeCapillaryPressure();
-    f.computeInsidePressure();
+    f.computeBendingForce();
+    f.computeCapillaryForce();
+    f.computeOsmoticForce();
     f.computeDPDForces(dt);
-    f.computeExternalPressure();
+    f.computeExternalForce();
 
     gcs::VertexData<gc::Vector3> temp = f.vpg->inputVertexPositions;
     for (gcs::Vertex v : f.mesh->vertices()) {
@@ -47,8 +47,8 @@ void StormerVerlet::integrate() {
       }
       if (flag == true) {
         f.vpg->inputVertexPositions[v] *= 2;
-        totalForce = (f.bendingPressure[v] + f.capillaryPressure[v] +
-                      f.insidePressure[v] + f.externalPressure[v]) *
+        totalForce = (f.bendingForce[v] + f.capillaryForce[v] +
+                      f.osmoticForce[v] + f.externalForce[v]) *
                          f.vpg->inputVertexPositions[v] +
                      f.dampingForce[v] + f.stochasticForce[v] +
                      f.regularizationForce[v];

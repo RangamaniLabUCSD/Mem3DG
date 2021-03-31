@@ -102,13 +102,13 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // First time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX1D bendingPressure1 = f.bendingPressure.raw(),
-                 insidePressure1 = f.insidePressure.raw(),
-                 capillaryPressure1 = f.capillaryPressure.raw(),
+  EigenVectorX1D bendingForce1 = f.bendingForce.raw(),
+                 osmoticForce1 = f.osmoticForce.raw(),
+                 capillaryForce1 = f.capillaryForce.raw(),
                  lineTensionPressure1 =
                      f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
                      f.lineCapillaryForce.raw(),
-                 externalPressure1 = f.externalPressure.raw(),
+                 externalForce1 = f.externalForce.raw(),
                  chemicalPotential1 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce1 =
       gc::EigenMap<double, 3>(f.regularizationForce);
@@ -116,23 +116,23 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // Second time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX1D bendingPressure2 = f.bendingPressure.raw(),
-                 insidePressure2 = f.insidePressure.raw(),
-                 capillaryPressure2 = f.capillaryPressure.raw(),
+  EigenVectorX1D bendingForce2 = f.bendingForce.raw(),
+                 osmoticForce2 = f.osmoticForce.raw(),
+                 capillaryForce2 = f.capillaryForce.raw(),
                  lineTensionPressure2 =
                      f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
                      f.lineCapillaryForce.raw(),
-                 externalPressure2 = f.externalPressure.raw(),
+                 externalForce2 = f.externalForce.raw(),
                  chemicalPotential2 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =
       gc::EigenMap<double, 3>(f.regularizationForce);
 
   // Comparison of 2 force calculations
-  ASSERT_TRUE((bendingPressure1 - bendingPressure2).norm() < 1e-12);
-  ASSERT_TRUE((capillaryPressure1 - capillaryPressure2).norm() < 1e-12);
-  ASSERT_TRUE((insidePressure1 - insidePressure2).norm() < 1e-12);
+  ASSERT_TRUE((bendingForce1 - bendingForce2).norm() < 1e-12);
+  ASSERT_TRUE((capillaryForce1 - capillaryForce2).norm() < 1e-12);
+  ASSERT_TRUE((osmoticForce1 - osmoticForce2).norm() < 1e-12);
   ASSERT_TRUE((regularizationForce1 - regularizationForce2).norm() < 1e-12);
-  ASSERT_TRUE((externalPressure1 - externalPressure2).norm() < 1e-12);
+  ASSERT_TRUE((externalForce1 - externalForce2).norm() < 1e-12);
   ASSERT_TRUE((chemicalPotential1 - chemicalPotential2).norm() < 1e-12);
   ASSERT_TRUE((lineTensionPressure1 - lineTensionPressure2).norm() < 1e-12);
 };
@@ -150,42 +150,42 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   // Get forces in one-pass
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX1D bendingPressure1 = f.bendingPressure.raw(),
-                 insidePressure1 = f.insidePressure.raw(),
-                 capillaryPressure1 = f.capillaryPressure.raw(),
+  EigenVectorX1D bendingForce1 = f.bendingForce.raw(),
+                 osmoticForce1 = f.osmoticForce.raw(),
+                 capillaryForce1 = f.capillaryForce.raw(),
                  lineTensionPressure1 =
                      f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
                      f.lineCapillaryForce.raw(),
-                 externalPressure1 = f.externalPressure.raw();
+                 externalForce1 = f.externalForce.raw();
   //  chemicalPotential1 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce1 =
       gc::EigenMap<double, 3>(f.regularizationForce);
 
   // Get force individually
-  f.computeBendingPressure();
-  f.computeCapillaryPressure();
-  f.computeInsidePressure();
+  f.computeBendingForce();
+  f.computeCapillaryForce();
+  f.computeOsmoticForce();
   f.computeRegularizationForce();
   f.computeLineCapillaryForce();
-  f.computeExternalPressure();
+  f.computeExternalForce();
   //   f.computeChemicalPotential();
-  EigenVectorX1D bendingPressure2 = f.bendingPressure.raw(),
-                 insidePressure2 = f.insidePressure.raw(),
-                 capillaryPressure2 = f.capillaryPressure.raw(),
+  EigenVectorX1D bendingForce2 = f.bendingForce.raw(),
+                 osmoticForce2 = f.osmoticForce.raw(),
+                 capillaryForce2 = f.capillaryForce.raw(),
                  lineTensionPressure2 =
                      f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
                      f.lineCapillaryForce.raw(),
-                 externalPressure2 = f.externalPressure.raw();
+                 externalForce2 = f.externalForce.raw();
   //  chemicalPotential2 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =
       gc::EigenMap<double, 3>(f.regularizationForce);
 
   // Comparison of two force calculations
-  ASSERT_TRUE((bendingPressure1 - bendingPressure2).norm() < 1e-12);
-  ASSERT_TRUE((capillaryPressure1 - capillaryPressure2).norm() < 1e-12);
-  ASSERT_TRUE((insidePressure1 - insidePressure2).norm() < 1e-12);
+  ASSERT_TRUE((bendingForce1 - bendingForce2).norm() < 1e-12);
+  ASSERT_TRUE((capillaryForce1 - capillaryForce2).norm() < 1e-12);
+  ASSERT_TRUE((osmoticForce1 - osmoticForce2).norm() < 1e-12);
   ASSERT_TRUE((regularizationForce1 - regularizationForce2).norm() < 1e-12);
-  ASSERT_TRUE((externalPressure1 - externalPressure2).norm() < 1e-12);
+  ASSERT_TRUE((externalForce1 - externalForce2).norm() < 1e-12);
   //   ASSERT_TRUE((chemicalPotential1 - chemicalPotential2).norm() < 1e-12);
   ASSERT_TRUE((lineTensionPressure1 - lineTensionPressure2).norm() < 1e-12);
 };
@@ -209,9 +209,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   //          BE_pre = f.E.BE, sE_pre = f.E.sE, pE_pre = f.E.pE, cE_pre =
   //          f.E.cE, lE_pre = f.E.lE, exE = f.E.exE;
   for (size_t i = 0; i < 50; i++) {
-    f.computeBendingPressure();
+    f.computeBendingForce();
     vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.bendingPressure.raw().array())
+        (f.mask.raw().cast<double>().array() * f.bendingForce.raw().array())
             .matrix(),
         EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;
@@ -221,9 +221,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     ASSERT_TRUE(E_aft.BE <= E_pre.BE);
     E_pre = E_aft;
 
-    f.computeCapillaryPressure();
+    f.computeCapillaryForce();
     vel_e = rowwiseScaling((f.mask.raw().cast<double>().array() *
-                            f.capillaryPressure.raw().array())
+                            f.capillaryForce.raw().array())
                                .matrix(),
                            EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;
@@ -233,9 +233,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     ASSERT_TRUE(E_aft.sE <= E_pre.sE);
     E_pre = E_aft;
 
-    f.computeInsidePressure();
+    f.computeOsmoticForce();
     vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.insidePressure.raw().array())
+        (f.mask.raw().cast<double>().array() * f.osmoticForce.raw().array())
             .matrix(),
         EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;
@@ -245,9 +245,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     ASSERT_TRUE(E_aft.pE <= E_pre.pE);
     E_pre = E_aft;
 
-    f.computeExternalPressure();
+    f.computeExternalForce();
     vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.externalPressure.raw().array())
+        (f.mask.raw().cast<double>().array() * f.externalForce.raw().array())
             .matrix(),
         EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;

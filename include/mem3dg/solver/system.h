@@ -165,17 +165,17 @@ public:
   /// Time
   double time;
 
-  /// Cached bending stress
-  gcs::VertexData<double> bendingPressure;
-  /// Cached tension-induced capillary pressure
-  gcs::VertexData<double> capillaryPressure;
+  /// Cached bending force
+  gcs::VertexData<double> bendingForce;
+  /// Cached tension-induced capillary force
+  gcs::VertexData<double> capillaryForce;
   /// Cached interfacial line tension force
   gcs::VertexData<double> lineCapillaryForce;
   gcs::EdgeData<double> lineTension;
-  /// Cached externally-applied pressure
-  gcs::VertexData<double> externalPressure;
-  /// Cached relative inside pressure
-  gcs::VertexData<double> insidePressure;
+  /// Cached externally-applied force
+  gcs::VertexData<double> externalForce;
+  /// Cached osmotic force
+  gcs::VertexData<double> osmoticForce;
   /// Cached Surface tension
   double surfaceTension;
 
@@ -347,10 +347,10 @@ public:
          Options &o)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), bendingPressure(*mesh, 0),
-        capillaryPressure(*mesh, 0), lineTension(*mesh, 0),
-        lineCapillaryForce(*mesh, 0), externalPressure(*mesh, 0),
-        insidePressure(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), bendingForce(*mesh, 0),
+        capillaryForce(*mesh, 0), lineTension(*mesh, 0),
+        lineCapillaryForce(*mesh, 0), externalForce(*mesh, 0),
+        osmoticForce(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
         stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
         proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0),
         targetLcrs(*mesh), refEdgeLengths(*mesh), refFaceAreas(*mesh),
@@ -487,9 +487,9 @@ public:
   // ================        Pressure        ==================
   // ==========================================================
   /**
-   * @brief Compute bending pressure component of the system
+   * @brief Compute bending force component of the system
    */
-  EigenVectorX1D computeBendingPressure();
+  EigenVectorX1D computeBendingForce();
 
   /**
    * @brief Compute chemical potential of the system
@@ -497,24 +497,24 @@ public:
   EigenVectorX1D computeChemicalPotential();
 
   /**
-   * @brief Compute capillary pressure component of the system
+   * @brief Compute capillary force component of the system
    */
-  EigenVectorX1D computeCapillaryPressure();
+  EigenVectorX1D computeCapillaryForce();
 
   /**
-   * @brief Compute inside pressure component of the system
+   * @brief Compute osmotic force component of the system
    */
-  EigenVectorX1D computeInsidePressure();
+  EigenVectorX1D computeOsmoticForce();
 
   /**
-   * @brief Compute line tension pressure component of the system
+   * @brief Compute line tension force component of the system
    */
   EigenVectorX1D computeLineCapillaryForce();
 
   /**
-   * @brief Compute external pressure component of the system
+   * @brief Compute external force component of the system
    */
-  EigenVectorX1D computeExternalPressure();
+  EigenVectorX1D computeExternalForce();
 
   /**
    * @brief Compute all forces of the system

@@ -308,14 +308,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the signed F-E edge adjacency matrix, equivalent of d1 operator
       )delim");
   system.def(
-      "getBendingPressure", [](System &s) { return s.bendingPressure.raw(); },
+      "getBendingForce", [](System &s) { return s.bendingForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the bending Pressure
+          get the bending Force
       )delim");
   system.def(
-      "getCapillaryPressure",
-      [](System &s) { return s.capillaryPressure.raw(); },
+      "getCapillaryForce",
+      [](System &s) { return s.capillaryForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the tension-induced capillary pressure
@@ -334,16 +334,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the interfacial line tension
       )delim");
   system.def(
-      "getExternalPressure", [](System &s) { return s.externalPressure.raw(); },
+      "getExternalForce", [](System &s) { return s.externalForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the externally-applied pressure
+          get the externally-applied Force
       )delim");
   system.def(
-      "getInsidePressure", [](System &s) { return s.insidePressure.raw(); },
+      "getOsmoticForce", [](System &s) { return s.osmoticForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the relative inside pressure
+          get the osmotic force
       )delim");
   system.def(
       "getSurfaceTension", [](System &s) { return s.surfaceTension; },
@@ -415,35 +415,35 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the Cotan Laplacian matrix of the mesh
       )delim");
 
-  system.def("computeBendingPressure", &System::computeBendingPressure,
+  system.def("computeBendingForce", &System::computeBendingForce,
              py::return_value_policy::reference_internal,
              R"delim(
-          compute the bending pressures
+          compute the bending force
       )delim");
   system.def("computeChemicalPotential", &System::computeChemicalPotential,
              py::return_value_policy::reference_internal,
              R"delim(
           compute the chemical potential
       )delim");
-  system.def("computeCapillaryPressure", &System::computeCapillaryPressure,
+  system.def("computeCapillaryForce", &System::computeCapillaryForce,
              py::return_value_policy::reference_internal,
              R"delim(
-          compute the capillary Pressure
+          compute the capillary force
       )delim");
-  system.def("computeInsidePressure", &System::computeInsidePressure,
+  system.def("computeOsmoticForce", &System::computeOsmoticForce,
              py::return_value_policy::reference_internal,
              R"delim(
-          compute the InsidePressure
+          compute the osmotic force
       )delim");
   system.def("computeLineCapillaryForce", &System::computeLineCapillaryForce,
              py::return_value_policy::reference_internal,
              R"delim(
-          compute the LineTensionPressure
+          compute the LineTensionForce
       )delim");
-  system.def("computeExternalPressure", &System::computeExternalPressure,
+  system.def("computeExternalForce", &System::computeExternalForce,
              py::return_value_policy::reference_internal,
              R"delim(
-          compute the ExternalPressure
+          compute the External Force
       )delim");
   system.def("computePhysicalForces", &System::computePhysicalForces,
              R"delim(
@@ -715,30 +715,30 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
        visualize spontaneous curvature
       )delim");
-  quantities.def_readwrite("ext_pressure", &Quantities::ext_pressure,
+  quantities.def_readwrite("ext_force", &Quantities::ext_force,
                            R"delim(
-        visualize external pressure
+        visualize external force
       )delim");
-  quantities.def_readwrite("physical_pressure", &Quantities::physical_pressure,
+  quantities.def_readwrite("physical_force", &Quantities::physical_force,
                            R"delim(
-        visualize (total) physical pressure
+        visualize (total) physical force
       )delim");
-  quantities.def_readwrite("capillary_pressure",
-                           &Quantities::capillary_pressure,
+  quantities.def_readwrite("capillary_force",
+                           &Quantities::capillary_force,
                            R"delim(
-        visualize capillary_pressure
+        visualize capillary_force
       )delim");
-  quantities.def_readwrite("inside_pressure", &Quantities::inside_pressure,
+  quantities.def_readwrite("inside_force", &Quantities::inside_force,
                            R"delim(
-        visualize inside_pressure
+        visualize inside_force
       )delim");
-  quantities.def_readwrite("bending_pressure", &Quantities::bending_pressure,
+  quantities.def_readwrite("bending_force", &Quantities::bending_force,
                            R"delim(
-        visualize bending pressure
+        visualize bending force
       )delim");
-  quantities.def_readwrite("line_pressure", &Quantities::line_pressure,
+  quantities.def_readwrite("line_force", &Quantities::line_force,
                            R"delim(
-       visualize line tension pressure
+       visualize line tension force
       )delim");
   quantities.def_readwrite("mask", &Quantities::mask,
                            R"delim(

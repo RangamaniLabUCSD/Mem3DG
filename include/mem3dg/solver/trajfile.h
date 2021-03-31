@@ -532,45 +532,45 @@ public:
   getSponCurvature(const std::size_t idx) const;
 
   void
-  writeExternalPressure(const std::size_t idx,
+  writeExternalForce(const std::size_t idx,
                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getExternalPressure(const std::size_t idx) const;
+  getExternalForce(const std::size_t idx) const;
 
   void
-  writePhysicalPressure(const std::size_t idx,
+  writePhysicalForce(const std::size_t idx,
                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getPhysicalPressure(const std::size_t idx) const;
+  getPhysicalForce(const std::size_t idx) const;
 
   void
-  writeCapillaryPressure(const std::size_t idx,
+  writeCapillaryForce(const std::size_t idx,
                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getCapillaryPressure(const std::size_t idx) const;
+  getCapillaryForce(const std::size_t idx) const;
 
   void
-  writeBendingPressure(const std::size_t idx,
+  writeBendingForce(const std::size_t idx,
                        const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getBendingPressure(const std::size_t idx) const;
+  getBendingForce(const std::size_t idx) const;
 
   void
-  writeInsidePressure(const std::size_t idx,
+  writeOsmoticForce(const std::size_t idx,
                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getInsidePressure(const std::size_t idx) const;
+  getOsmoticForce(const std::size_t idx) const;
 
-  void writeLinePressure(const std::size_t idx,
+  void writeLineForce(const std::size_t idx,
                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
-  getLinePressure(const std::size_t idx) const;
+  getLineForce(const std::size_t idx) const;
 
   void writeH_H0_diff(const std::size_t idx,
                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);

@@ -38,7 +38,7 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-EigenVectorX1D System::computeBendingPressure() {
+EigenVectorX1D System::computeBendingForce() {
   // A. non-optimized version
   // if (O.isLocalCurvature) {
   //   // Split calculation for two domain
@@ -58,41 +58,32 @@ EigenVectorX1D System::computeBendingPressure() {
   //   subdomain(0);
   // } else {
 
+  auto ptwiseH = vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                 vpg->vertexMeanCurvatures.raw();
+
   // calculate the Laplacian of mean curvature H
-  EigenVectorX1D lap_H =
-      -vpg->vertexLumpedMassMatrix.cwiseInverse() * vpg->cotanLaplacian *
-      rowwiseProduct(Kb.raw(), vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                       vpg->vertexMeanCurvatures.raw() -
-                                   H0.raw());
+  EigenVectorX1D lap_H = -vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                         vpg->cotanLaplacian *
+                         rowwiseProduct(Kb.raw(), ptwiseH - H0.raw());
 
   // initialize and calculate intermediary result scalerTerms
-  EigenVectorX1D scalerTerms =
-      rowwiseProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                         vpg->vertexMeanCurvatures.raw(),
-                     vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                         vpg->vertexMeanCurvatures.raw()) +
-      rowwiseProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                         vpg->vertexMeanCurvatures.raw(),
-                     H0.raw()) -
-      vpg->vertexLumpedMassMatrix.cwiseInverse() *
-          vpg->vertexGaussianCurvatures.raw();
+  EigenVectorX1D scalerTerms = rowwiseProduct(ptwiseH, ptwiseH) +
+                               rowwiseProduct(ptwiseH, H0.raw()) -
+                               vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                   vpg->vertexGaussianCurvatures.raw();
   // scalerTerms = scalerTerms.array().max(0);
 
   // initialize and calculate intermediary result productTerms
   EigenVectorX1D productTerms =
-      -2.0 * (Kb.raw().array() *
-              (vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                   vpg->vertexMeanCurvatures.raw() -
-               H0.raw())
-                  .array() *
-              scalerTerms.array())
-                 .matrix();
+      -2.0 *
+      (Kb.raw().array() * (ptwiseH - H0.raw()).array() * scalerTerms.array())
+          .matrix();
 
   // calculate bendingForce
-  bendingPressure.raw() = productTerms + lap_H;
+  bendingForce.raw() = vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
   // }
 
-  return bendingPressure.raw();
+  return bendingForce.raw();
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
@@ -124,17 +115,15 @@ EigenVectorX1D System::computeBendingPressure() {
   //                    vertexAngleNormal_e);
 }
 
-EigenVectorX1D System::computeCapillaryPressure() {
+EigenVectorX1D System::computeCapillaryForce() {
   /// Geometric implementation
   surfaceTension =
       O.isOpenMesh ? P.Ksg
                    : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
                          P.lambdaSG;
-  capillaryPressure.raw() = -surfaceTension * 2 *
-                            vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                            vpg->vertexMeanCurvatures.raw();
+  capillaryForce.raw() = -surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
 
-  return capillaryPressure.raw();
+  return capillaryForce.raw();
 
   // /// Nongeometric implementationx
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -154,20 +143,21 @@ EigenVectorX1D System::computeCapillaryPressure() {
   // }
 }
 
-EigenVectorX1D System::computeInsidePressure() {
+EigenVectorX1D System::computeOsmoticForce() {
   /// Geometric implementation
   if (O.isOpenMesh) {
     /// Inside excess pressure of patch
-    insidePressure.raw().setConstant(P.Kv);
+    osmoticForce.raw().setConstant(P.Kv);
   } else if (O.isReducedVolume) {
     /// Inside excess pressure of vesicle
-    insidePressure.raw().setConstant(
+    osmoticForce.raw().setConstant(
         -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV));
   } else {
-    insidePressure.raw().setConstant(P.Kv / volume - P.Kv * P.cam);
+    osmoticForce.raw().setConstant(P.Kv / volume - P.Kv * P.cam);
   }
+  osmoticForce.raw() *= vpg->vertexLumpedMassMatrix;
 
-  return insidePressure.raw();
+  return osmoticForce.raw();
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -195,7 +185,7 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   return lineCapillaryForce.raw();
 }
 
-EigenVectorX1D System::computeExternalPressure() {
+EigenVectorX1D System::computeExternalForce() {
   EigenVectorX1D externalPressureMagnitude;
 
   // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT
@@ -226,9 +216,10 @@ EigenVectorX1D System::computeExternalPressure() {
   zDir << 0.0, 0.0, -1.0;
   // externalPressure_e = -externalPressureMagnitude * zDir *
   //                      (vpg->inputVertexPositions[theVertex].z - P.height);
-  externalPressure.raw() = externalPressureMagnitude;
+  externalForce.raw() = externalPressureMagnitude;
+  externalForce.raw() *= vpg->vertexLumpedMassMatrix;
 
-  return externalPressure.raw();
+  return externalForce.raw();
 }
 
 EigenVectorX1D System::computeChemicalPotential() {
@@ -305,19 +296,19 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
 void System::computePhysicalForces() {
 
   // zero all forces
-  bendingPressure.raw().setZero();
-  capillaryPressure.raw().setZero();
+  bendingForce.raw().setZero();
+  capillaryForce.raw().setZero();
   lineCapillaryForce.raw().setZero();
-  externalPressure.raw().setZero();
-  insidePressure.raw().setZero();
+  externalForce.raw().setZero();
+  osmoticForce.raw().setZero();
   chemicalPotential.raw().setZero();
 
-  computeBendingPressure();
+  computeBendingForce();
   if (P.Kv != 0) {
-    computeInsidePressure();
+    computeOsmoticForce();
   }
   if (P.Ksg != 0) {
-    computeCapillaryPressure();
+    computeCapillaryForce();
   }
   if (P.eta != 0) {
     computeLineCapillaryForce();
@@ -326,7 +317,7 @@ void System::computePhysicalForces() {
     computeChemicalPotential();
   }
   if (P.Kf != 0) {
-    computeExternalPressure();
+    computeExternalForce();
   }
 }
 

@@ -91,12 +91,11 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
-  physicalForce = (f.mask.raw().cast<double>()).array() *
-                  (f.vpg->vertexLumpedMassMatrix *
-                       (f.bendingPressure.raw() + f.capillaryPressure.raw() +
-                        f.externalPressure.raw() + f.insidePressure.raw()) +
-                   f.lineCapillaryForce.raw())
-                      .array();
+  physicalForce =
+      (f.mask.raw().cast<double>()).array() *
+      (f.bendingForce.raw() + f.capillaryForce.raw() + f.externalForce.raw() +
+       f.osmoticForce.raw() + f.lineCapillaryForce.raw())
+          .array();
 
   if ((f.P.gamma != 0) || (f.P.temp != 0)) {
     f.computeDPDForces(dt);
@@ -337,16 +336,13 @@ void Integrator::saveRichData(std::string plyName) {
 
   // write pressures
   gcs::VertexData<double> fn(*f.mesh);
-  fn.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() * physicalForce);
-  gcs::VertexData<double> fl(*f.mesh);
-  fl.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                f.lineCapillaryForce.raw());
-  richData.addVertexProperty("bending_pressure", f.bendingPressure);
-  richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
-  richData.addVertexProperty("line_tension_pressure", fl);
-  richData.addVertexProperty("inside_pressure", f.insidePressure);
-  richData.addVertexProperty("external_pressure", f.externalPressure);
-  richData.addVertexProperty("physical_pressure", fn);
+  fn.fromVector(physicalForce);
+  richData.addVertexProperty("bending_force", f.bendingForce);
+  richData.addVertexProperty("capillary_force", f.capillaryForce);
+  richData.addVertexProperty("line_tension_force", f.lineCapillaryForce);
+  richData.addVertexProperty("osmotic_force", f.osmoticForce);
+  richData.addVertexProperty("external_force", f.externalForce);
+  richData.addVertexProperty("physical_force", fn);
 
   richData.write(outputDir + plyName);
 }
@@ -374,12 +370,9 @@ void Integrator::saveNetcdfData() {
   fd.writeTotalEnergy(idx, f.E.totalE);
   // write Norms
   fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
-  fd.writeL1BendNorm(idx, f.computeL1Norm(f.vpg->vertexLumpedMassMatrix *
-                                          f.bendingPressure.raw()));
-  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.vpg->vertexLumpedMassMatrix *
-                                          f.capillaryPressure.raw()));
-  fd.writeL1PressNorm(idx, f.computeL1Norm(f.vpg->vertexLumpedMassMatrix *
-                                           f.insidePressure.raw()));
+  fd.writeL1BendNorm(idx, f.computeL1Norm(f.bendingForce.raw()));
+  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.capillaryForce.raw()));
+  fd.writeL1PressNorm(idx, f.computeL1Norm(f.osmoticForce.raw()));
   fd.writeL1LineNorm(idx, f.computeL1Norm(f.lineCapillaryForce.raw()));
 
   // vector quantities
@@ -405,14 +398,12 @@ void Integrator::saveNetcdfData() {
     //                   f.H0).array()).matrix());
 
     // write pressures
-    fd.writeBendingPressure(idx, f.bendingPressure.raw());
-    fd.writeCapillaryPressure(idx, f.capillaryPressure.raw());
-    fd.writeLinePressure(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                  f.lineCapillaryForce.raw());
-    fd.writeInsidePressure(idx, f.insidePressure.raw());
-    fd.writeExternalPressure(idx, f.externalPressure.raw());
-    fd.writePhysicalPressure(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                      physicalForce);
+    fd.writeBendingForce(idx, f.bendingForce.raw());
+    fd.writeCapillaryForce(idx, f.capillaryForce.raw());
+    fd.writeLineForce(idx, f.lineCapillaryForce.raw());
+    fd.writeOsmoticForce(idx, f.osmoticForce.raw());
+    fd.writeExternalForce(idx, f.externalForce.raw());
+    fd.writePhysicalForce(idx, physicalForce);
   }
 }
 #endif
