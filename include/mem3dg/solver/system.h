@@ -225,8 +225,6 @@ public:
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached vertex velocity
   gcs::VertexData<gc::Vector3> vel;
-  /// Gaussian curvature of the mesh
-  gcs::VertexData<double> K;
   /// Spontaneous curvature of the mesh
   gcs::VertexData<double> H0;
   /// Bending rigidity of the membrane
@@ -360,8 +358,7 @@ public:
         targetLcrs(*mesh), refEdgeLengths(*mesh), refFaceAreas(*mesh),
         heatSolver(*vpg), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), K(*mesh), H0(*mesh), Kb(*mesh),
-        mask(*mesh, true) {
+        vel(*mesh, {0, 0, 0}), H0(*mesh), Kb(*mesh), mask(*mesh, true) {
 
     // GC computed properties
     vpg->requireFaceNormals();

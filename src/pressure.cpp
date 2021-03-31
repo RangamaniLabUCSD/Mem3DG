@@ -69,7 +69,7 @@ EigenVectorX1D System::computeBendingPressure() {
       rowwiseProduct(M_inv * vpg->vertexMeanCurvatures.raw(),
                      M_inv * vpg->vertexMeanCurvatures.raw()) +
       rowwiseProduct(M_inv * vpg->vertexMeanCurvatures.raw(), H0.raw()) -
-      K.raw();
+      M_inv * vpg->vertexGaussianCurvatures.raw();
   // scalerTerms = scalerTerms.array().max(0);
 
   // initialize and calculate intermediary result productTerms

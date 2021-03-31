@@ -365,7 +365,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the mean curvature
       )delim");
   system.def(
-      "getGaussianCurvature", [](System &s) { return s.K.raw(); },
+      "getGaussianCurvature",
+      [](System &s) { return s.M_inv * s.vpg->vertexGaussianCurvatures.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the Gaussian Curvature
