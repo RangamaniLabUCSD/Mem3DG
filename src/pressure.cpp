@@ -44,8 +44,8 @@ EigenVectorX1D System::computeBendingPressure() {
   //   // Split calculation for two domain
   //   bendingPressure.raw().setZero();
   //   auto subdomain = [&](double H0_temp) {
-  //     EigenVectorX1D lap_H = M_inv * L * (H.raw().array() -
-  //     H0_temp).matrix(); EigenVectorX1D scalerTerms =
+  //     EigenVectorX1D lap_H = vpg->vertexLumpedMassMatrix.cwiseInverse() * L *
+  //     (H.raw().array() - H0_temp).matrix(); EigenVectorX1D scalerTerms =
   //         rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
   //     EigenVectorX1D productTerms =
   //         2.0 *
@@ -60,22 +60,31 @@ EigenVectorX1D System::computeBendingPressure() {
 
   // calculate the Laplacian of mean curvature H
   EigenVectorX1D lap_H =
-      -M_inv * vpg->cotanLaplacian *
-      rowwiseProduct(Kb.raw(),
-                     M_inv * vpg->vertexMeanCurvatures.raw() - H0.raw());
+      -vpg->vertexLumpedMassMatrix.cwiseInverse() * vpg->cotanLaplacian *
+      rowwiseProduct(Kb.raw(), vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                       vpg->vertexMeanCurvatures.raw() -
+                                   H0.raw());
 
   // initialize and calculate intermediary result scalerTerms
   EigenVectorX1D scalerTerms =
-      rowwiseProduct(M_inv * vpg->vertexMeanCurvatures.raw(),
-                     M_inv * vpg->vertexMeanCurvatures.raw()) +
-      rowwiseProduct(M_inv * vpg->vertexMeanCurvatures.raw(), H0.raw()) -
-      M_inv * vpg->vertexGaussianCurvatures.raw();
+      rowwiseProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                         vpg->vertexMeanCurvatures.raw(),
+                     vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                         vpg->vertexMeanCurvatures.raw()) +
+      rowwiseProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                         vpg->vertexMeanCurvatures.raw(),
+                     H0.raw()) -
+      vpg->vertexLumpedMassMatrix.cwiseInverse() *
+          vpg->vertexGaussianCurvatures.raw();
   // scalerTerms = scalerTerms.array().max(0);
 
   // initialize and calculate intermediary result productTerms
   EigenVectorX1D productTerms =
       -2.0 * (Kb.raw().array() *
-              (M_inv * vpg->vertexMeanCurvatures.raw() - H0.raw()).array() *
+              (vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                   vpg->vertexMeanCurvatures.raw() -
+               H0.raw())
+                  .array() *
               scalerTerms.array())
                  .matrix();
 
@@ -92,8 +101,10 @@ EigenVectorX1D System::computeBendingPressure() {
   // // initialize and calculate intermediary result scalarTerms_integrated
   // EigenVectorX1D H_integrated = M * H;
   // EigenVectorX1D scalarTerms_integrated =
-  //     M * rowwiseProduct(M_inv * H_integrated, M_inv * H_integrated) +
-  //     rowwiseProduct(H_integrated, H0) - vpg->vertexGaussianCurvatures.raw();
+  //     M * rowwiseProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
+  //     H_integrated, vpg->vertexLumpedMassMatrix.cwiseInverse() *
+  //     H_integrated) + rowwiseProduct(H_integrated, H0) -
+  //     vpg->vertexGaussianCurvatures.raw();
   // EigenVectorX1D zeroMatrix;
   // zeroMatrix.resize(n_vertices, 1);
   // zeroMatrix.setZero();
@@ -108,7 +119,8 @@ EigenVectorX1D System::computeBendingPressure() {
 
   // bendingPressure_e =
   //     -2.0 * P.Kb *
-  //     rowwiseScaling(M_inv * (productTerms_integrated + lap_H_integrated),
+  //     rowwiseScaling(vpg->vertexLumpedMassMatrix.cwiseInverse() *
+  //     (productTerms_integrated + lap_H_integrated),
   //                    vertexAngleNormal_e);
 }
 
@@ -118,8 +130,9 @@ EigenVectorX1D System::computeCapillaryPressure() {
       O.isOpenMesh ? P.Ksg
                    : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
                          P.lambdaSG;
-  capillaryPressure.raw() =
-      -surfaceTension * 2 * M_inv * vpg->vertexMeanCurvatures.raw();
+  capillaryPressure.raw() = -surfaceTension * 2 *
+                            vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                            vpg->vertexMeanCurvatures.raw();
 
   return capillaryPressure.raw();
 
@@ -229,10 +242,12 @@ EigenVectorX1D System::computeChemicalPotential() {
           .matrix();
 
   chemicalPotential.raw().array() =
-      P.epsilon -
-      2 * Kb.raw().array() *
-          (M_inv * vpg->vertexMeanCurvatures.raw() - H0.raw()).array() *
-          dH0dphi.array();
+      P.epsilon - 2 * Kb.raw().array() *
+                      (vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                           vpg->vertexMeanCurvatures.raw() -
+                       H0.raw())
+                          .array() *
+                      dH0dphi.array();
 
   return chemicalPotential.raw();
 }

@@ -63,17 +63,20 @@ void visualize(mem3dg::System &f) {
   // Process attributes
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  fn = f.bendingPressure.raw() + f.capillaryPressure.raw() +
-       f.insidePressure.raw() + f.externalPressure.raw() +
-       f.M_inv * f.lineCapillaryForce.raw();
+  fn =
+      f.bendingPressure.raw() + f.capillaryPressure.raw() +
+      f.insidePressure.raw() + f.externalPressure.raw() +
+      f.vpg->vertexLumpedMassMatrix.cwiseInverse() * f.lineCapillaryForce.raw();
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("mean_curvature",
-                                f.M_inv * f.vpg->vertexMeanCurvatures.raw());
+                                f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                    f.vpg->vertexMeanCurvatures.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity(
-          "gauss_curvature", f.M_inv * f.vpg->vertexGaussianCurvatures.raw());
+      ->addVertexScalarQuantity("gauss_curvature",
+                                f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                    f.vpg->vertexGaussianCurvatures.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")
@@ -82,7 +85,8 @@ void visualize(mem3dg::System &f) {
       ->addVertexScalarQuantity("bending_pressure", f.bendingPressure);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
-                                f.M_inv * f.lineCapillaryForce.raw());
+                                f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                    f.lineCapillaryForce.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("capillary_pressure", f.capillaryPressure);
   polyscope::getSurfaceMesh("Membrane")
@@ -96,18 +100,22 @@ void visualize(mem3dg::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity(
           "-lapH(smoothing)",
-          -f.Kb.raw().array() *
-              (f.M_inv * f.vpg->cotanLaplacian *
-               (f.M_inv * f.vpg->vertexMeanCurvatures.raw() - f.H0.raw()))
-                  .array());
+          -f.Kb.raw().array() * (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                 f.vpg->cotanLaplacian *
+                                 (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                      f.vpg->vertexMeanCurvatures.raw() -
+                                  f.H0.raw()))
+                                    .array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity(
-          "spon part)",
-          f.bendingPressure.raw().array() +
-              f.Kb.raw().array() *
-                  (f.M_inv * f.vpg->cotanLaplacian *
-                   (f.M_inv * f.vpg->vertexMeanCurvatures.raw() - f.H0.raw()))
-                      .array());
+          "spon part)", f.bendingPressure.raw().array() +
+                            f.Kb.raw().array() *
+                                (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                 f.vpg->cotanLaplacian *
+                                 (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                      f.vpg->vertexMeanCurvatures.raw() -
+                                  f.H0.raw()))
+                                    .array());
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);
   polyscope::getSurfaceMesh("Membrane")

@@ -84,8 +84,8 @@ protected:
     o.isEdgeFlip = false;
     o.isGrowMesh = false;
 
-        // Create mesh and geometry objects
-        std::tie(ptrMesh, ptrVpg) = icosphere(2, 1);
+    // Create mesh and geometry objects
+    std::tie(ptrMesh, ptrVpg) = icosphere(2, 1);
   }
 };
 
@@ -105,7 +105,9 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   EigenVectorX1D bendingPressure1 = f.bendingPressure.raw(),
                  insidePressure1 = f.insidePressure.raw(),
                  capillaryPressure1 = f.capillaryPressure.raw(),
-                 lineTensionPressure1 = f.M_inv * f.lineCapillaryForce.raw(),
+                 lineTensionPressure1 =
+                     f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                     f.lineCapillaryForce.raw(),
                  externalPressure1 = f.externalPressure.raw(),
                  chemicalPotential1 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce1 =
@@ -117,7 +119,9 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   EigenVectorX1D bendingPressure2 = f.bendingPressure.raw(),
                  insidePressure2 = f.insidePressure.raw(),
                  capillaryPressure2 = f.capillaryPressure.raw(),
-                 lineTensionPressure2 = f.M_inv * f.lineCapillaryForce.raw(),
+                 lineTensionPressure2 =
+                     f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                     f.lineCapillaryForce.raw(),
                  externalPressure2 = f.externalPressure.raw(),
                  chemicalPotential2 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =
@@ -149,7 +153,9 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   EigenVectorX1D bendingPressure1 = f.bendingPressure.raw(),
                  insidePressure1 = f.insidePressure.raw(),
                  capillaryPressure1 = f.capillaryPressure.raw(),
-                 lineTensionPressure1 = f.M_inv * f.lineCapillaryForce.raw(),
+                 lineTensionPressure1 =
+                     f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                     f.lineCapillaryForce.raw(),
                  externalPressure1 = f.externalPressure.raw();
   //  chemicalPotential1 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce1 =
@@ -166,7 +172,9 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   EigenVectorX1D bendingPressure2 = f.bendingPressure.raw(),
                  insidePressure2 = f.insidePressure.raw(),
                  capillaryPressure2 = f.capillaryPressure.raw(),
-                 lineTensionPressure2 = f.M_inv * f.lineCapillaryForce.raw(),
+                 lineTensionPressure2 =
+                     f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                     f.lineCapillaryForce.raw(),
                  externalPressure2 = f.externalPressure.raw();
   //  chemicalPotential2 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =

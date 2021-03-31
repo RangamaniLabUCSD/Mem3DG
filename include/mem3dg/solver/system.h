@@ -208,8 +208,6 @@ public:
   /// Distance solver
   gcs::HeatMethodDistanceSolver heatSolver;
 
-  /// Inverse lumped mass matrix
-  Eigen::SparseMatrix<double> M_inv;
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
   /// V-E distribution matrix
