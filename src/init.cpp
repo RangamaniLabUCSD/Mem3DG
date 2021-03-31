@@ -411,9 +411,6 @@ void System::updateVertexPositions() {
     }
   }
 
-  // initialize/update Laplacian matrix
-  M_inv = vpg->vertexLumpedMassMatrix.cwiseInverse();
-
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, gc::Vector3{0, 0, 0});
 

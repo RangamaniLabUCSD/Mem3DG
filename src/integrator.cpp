@@ -232,13 +232,23 @@ void Integrator::saveData() {
               << "E_pot: " << f.E.potE << "\n"
               << "|e|L1: " << f.L1ErrorNorm << "\n"
               << "H: ["
-              << (f.M_inv * f.vpg->vertexMeanCurvatures.raw()).minCoeff() << ","
-              << (f.M_inv * f.vpg->vertexMeanCurvatures.raw()).maxCoeff() << "]"
+              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                  f.vpg->vertexMeanCurvatures.raw())
+                     .minCoeff()
+              << ","
+              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                  f.vpg->vertexMeanCurvatures.raw())
+                     .maxCoeff()
+              << "]"
               << "\n"
               << "K: ["
-              << f.M_inv * f.vpg->vertexGaussianCurvatures.raw().minCoeff()
+              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                  f.vpg->vertexGaussianCurvatures.raw())
+                     .minCoeff()
               << ","
-              << f.M_inv * f.vpg->vertexGaussianCurvatures.raw().maxCoeff()
+              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                  f.vpg->vertexGaussianCurvatures.raw())
+                     .maxCoeff()
               << "]" << std::endl;
     // << "COM: "
     // << gc::EigenMap<double,
@@ -316,18 +326,21 @@ void Integrator::saveRichData(std::string plyName) {
 
   // write geometry
   gcs::VertexData<double> meanCurv(*f.mesh);
-  meanCurv.fromVector(f.M_inv * f.vpg->vertexMeanCurvatures.raw());
+  meanCurv.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                      f.vpg->vertexMeanCurvatures.raw());
   richData.addVertexProperty("mean_curvature", meanCurv);
   gcs::VertexData<double> gaussCurv(*f.mesh);
-  gaussCurv.fromVector(f.M_inv * f.vpg->vertexGaussianCurvatures.raw());
+  gaussCurv.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                       f.vpg->vertexGaussianCurvatures.raw());
   richData.addVertexProperty("gauss_curvature", gaussCurv);
   richData.addVertexProperty("spon_curvature", f.H0);
 
   // write pressures
   gcs::VertexData<double> fn(*f.mesh);
-  fn.fromVector(f.M_inv * physicalForce);
+  fn.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() * physicalForce);
   gcs::VertexData<double> fl(*f.mesh);
-  fl.fromVector(f.M_inv * f.lineCapillaryForce.raw());
+  fl.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                f.lineCapillaryForce.raw());
   richData.addVertexProperty("bending_pressure", f.bendingPressure);
   richData.addVertexProperty("capillary_pressure", f.capillaryPressure);
   richData.addVertexProperty("line_tension_pressure", fl);
@@ -381,9 +394,10 @@ void Integrator::saveNetcdfData() {
     // write geometry
     fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
     fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
-    fd.writeMeanCurvature(idx, f.M_inv * f.vpg->vertexMeanCurvatures.raw());
-    fd.writeGaussCurvature(idx,
-                           f.M_inv * f.vpg->vertexGaussianCurvatures.raw());
+    fd.writeMeanCurvature(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                   f.vpg->vertexMeanCurvatures.raw());
+    fd.writeGaussCurvature(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                    f.vpg->vertexGaussianCurvatures.raw());
     fd.writeSponCurvature(idx, f.H0.raw());
     // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
     // fd.writeH_H0_diff(idx,
@@ -393,10 +407,12 @@ void Integrator::saveNetcdfData() {
     // write pressures
     fd.writeBendingPressure(idx, f.bendingPressure.raw());
     fd.writeCapillaryPressure(idx, f.capillaryPressure.raw());
-    fd.writeLinePressure(idx, f.M_inv * f.lineCapillaryForce.raw());
+    fd.writeLinePressure(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                  f.lineCapillaryForce.raw());
     fd.writeInsidePressure(idx, f.insidePressure.raw());
     fd.writeExternalPressure(idx, f.externalPressure.raw());
-    fd.writePhysicalPressure(idx, f.M_inv * physicalForce);
+    fd.writePhysicalPressure(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
+                                      physicalForce);
   }
 }
 #endif

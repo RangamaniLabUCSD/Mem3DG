@@ -72,8 +72,7 @@ void VelocityVerlet::integrate() {
 #endif
 }
 
-void VelocityVerlet::checkParameters() {
-}
+void VelocityVerlet::checkParameters() {}
 
 void VelocityVerlet::status() {
 
@@ -89,8 +88,9 @@ void VelocityVerlet::status() {
   // Compute total pressure
   totalPressure.resize(f.mesh->nVertices(), 3);
   totalPressure.setZero();
-  newTotalPressure =
-      rowwiseScaling(f.M_inv * (physicalForce + DPDForce), vertexAngleNormal_e);
+  newTotalPressure = rowwiseScaling(
+      f.vpg->vertexLumpedMassMatrix.cwiseInverse() * (physicalForce + DPDForce),
+      vertexAngleNormal_e);
 
   // compute the L1 error norm
   f.L1ErrorNorm = f.computeL1Norm(physicalForce);
