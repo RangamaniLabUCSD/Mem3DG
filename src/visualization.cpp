@@ -72,7 +72,8 @@ void visualize(mem3dg::System &f) {
       ->addVertexScalarQuantity("mean_curvature",
                                 f.M_inv * f.vpg->vertexMeanCurvatures.raw());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("gauss_curvature", f.K);
+      ->addVertexScalarQuantity(
+          "gauss_curvature", f.M_inv * f.vpg->vertexGaussianCurvatures.raw());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")

@@ -235,7 +235,10 @@ void Integrator::saveData() {
               << (f.M_inv * f.vpg->vertexMeanCurvatures.raw()).minCoeff() << ","
               << (f.M_inv * f.vpg->vertexMeanCurvatures.raw()).maxCoeff() << "]"
               << "\n"
-              << "K: [" << f.K.raw().minCoeff() << "," << f.K.raw().maxCoeff()
+              << "K: ["
+              << f.M_inv * f.vpg->vertexGaussianCurvatures.raw().minCoeff()
+              << ","
+              << f.M_inv * f.vpg->vertexGaussianCurvatures.raw().maxCoeff()
               << "]" << std::endl;
     // << "COM: "
     // << gc::EigenMap<double,
@@ -315,7 +318,9 @@ void Integrator::saveRichData(std::string plyName) {
   gcs::VertexData<double> meanCurv(*f.mesh);
   meanCurv.fromVector(f.M_inv * f.vpg->vertexMeanCurvatures.raw());
   richData.addVertexProperty("mean_curvature", meanCurv);
-  richData.addVertexProperty("gauss_curvature", f.K);
+  gcs::VertexData<double> gaussCurv(*f.mesh);
+  gaussCurv.fromVector(f.M_inv * f.vpg->vertexGaussianCurvatures.raw());
+  richData.addVertexProperty("gauss_curvature", gaussCurv);
   richData.addVertexProperty("spon_curvature", f.H0);
 
   // write pressures
@@ -377,7 +382,8 @@ void Integrator::saveNetcdfData() {
     fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
     fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
     fd.writeMeanCurvature(idx, f.M_inv * f.vpg->vertexMeanCurvatures.raw());
-    fd.writeGaussCurvature(idx, f.K.raw());
+    fd.writeGaussCurvature(idx,
+                           f.M_inv * f.vpg->vertexGaussianCurvatures.raw());
     fd.writeSponCurvature(idx, f.H0.raw());
     // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
     // fd.writeH_H0_diff(idx,
