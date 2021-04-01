@@ -231,22 +231,22 @@ void Integrator::saveData() {
               << "E_pot: " << f.E.potE << "\n"
               << "|e|L1: " << f.L1ErrorNorm << "\n"
               << "H: ["
-              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                  f.vpg->vertexMeanCurvatures.raw())
+              << (f.vpg->vertexMeanCurvatures.raw().array() /
+                  f.vpg->vertexDualAreas.raw().array())
                      .minCoeff()
               << ","
-              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                  f.vpg->vertexMeanCurvatures.raw())
+              << (f.vpg->vertexMeanCurvatures.raw().array() /
+                  f.vpg->vertexDualAreas.raw().array())
                      .maxCoeff()
               << "]"
               << "\n"
               << "K: ["
-              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                  f.vpg->vertexGaussianCurvatures.raw())
+              << (f.vpg->vertexGaussianCurvatures.raw().array() /
+                  f.vpg->vertexDualAreas.raw().array())
                      .minCoeff()
               << ","
-              << (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                  f.vpg->vertexGaussianCurvatures.raw())
+              << (f.vpg->vertexGaussianCurvatures.raw().array() /
+                  f.vpg->vertexDualAreas.raw().array())
                      .maxCoeff()
               << "]" << std::endl;
     // << "COM: "
@@ -325,12 +325,12 @@ void Integrator::saveRichData(std::string plyName) {
 
   // write geometry
   gcs::VertexData<double> meanCurv(*f.mesh);
-  meanCurv.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                      f.vpg->vertexMeanCurvatures.raw());
+  meanCurv.fromVector(f.vpg->vertexMeanCurvatures.raw().array() /
+                      f.vpg->vertexDualAreas.raw().array());
   richData.addVertexProperty("mean_curvature", meanCurv);
   gcs::VertexData<double> gaussCurv(*f.mesh);
-  gaussCurv.fromVector(f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                       f.vpg->vertexGaussianCurvatures.raw());
+  gaussCurv.fromVector(f.vpg->vertexGaussianCurvatures.raw().array() /
+                       f.vpg->vertexDualAreas.raw().array());
   richData.addVertexProperty("gauss_curvature", gaussCurv);
   richData.addVertexProperty("spon_curvature", f.H0);
 
@@ -387,10 +387,10 @@ void Integrator::saveNetcdfData() {
     // write geometry
     fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
     fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
-    fd.writeMeanCurvature(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                   f.vpg->vertexMeanCurvatures.raw());
-    fd.writeGaussCurvature(idx, f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                    f.vpg->vertexGaussianCurvatures.raw());
+    fd.writeMeanCurvature(idx, f.vpg->vertexMeanCurvatures.raw().array() /
+                                    f.vpg->vertexDualAreas.raw().array());
+    fd.writeGaussCurvature(idx, f.vpg->vertexGaussianCurvatures.raw().array() /
+                                    f.vpg->vertexDualAreas.raw().array());
     fd.writeSponCurvature(idx, f.H0.raw());
     // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
     // fd.writeH_H0_diff(idx,

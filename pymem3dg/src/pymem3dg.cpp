@@ -314,11 +314,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the bending Force
       )delim");
   system.def(
-      "getCapillaryForce",
-      [](System &s) { return s.capillaryForce.raw(); },
+      "getCapillaryForce", [](System &s) { return s.capillaryForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the tension-induced capillary pressure
+          get the tension-induced capillary Force
       )delim");
   system.def(
       "getLineCapillaryForce",
@@ -360,8 +359,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def(
       "getMeanCurvature",
       [](System &s) {
-        return s.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-               s.vpg->vertexMeanCurvatures.raw();
+        return s.vpg->vertexMeanCurvatures.raw().array() /
+               s.vpg->vertexDualAreas.raw().array();
       },
       py::return_value_policy::reference_internal,
       R"delim(
@@ -370,8 +369,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def(
       "getGaussianCurvature",
       [](System &s) {
-        return s.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-               s.vpg->vertexGaussianCurvatures.raw();
+        return s.vpg->vertexGaussianCurvatures.raw().array() /
+               s.vpg->vertexDualAreas.raw().array();
       },
       py::return_value_policy::reference_internal,
       R"delim(
@@ -723,8 +722,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize (total) physical force
       )delim");
-  quantities.def_readwrite("capillary_force",
-                           &Quantities::capillary_force,
+  quantities.def_readwrite("capillary_force", &Quantities::capillary_force,
                            R"delim(
         visualize capillary_force
       )delim");

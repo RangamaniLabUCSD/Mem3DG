@@ -45,9 +45,9 @@ void System::computeBendingEnergy() {
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference;
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference =
-      vpg->vertexLumpedMassMatrix.cwiseInverse() *
-          vpg->vertexMeanCurvatures.raw() -
-      H0.raw();
+      vpg->vertexMeanCurvatures.raw().array() /
+          vpg->vertexDualAreas.raw().array() -
+      H0.raw().array();
   E.BE = (Kb.raw().array() * H_difference.array() *
           vpg->vertexDualAreas.raw().array() * H_difference.array())
              .sum();

@@ -58,19 +58,21 @@ EigenVectorX1D System::computeBendingForce() {
   //   subdomain(0);
   // } else {
 
-  auto ptwiseH = vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                 vpg->vertexMeanCurvatures.raw();
+  EigenVectorX1D ptwiseH = vpg->vertexMeanCurvatures.raw().array() /
+                           vpg->vertexDualAreas.raw().array();
 
   // calculate the Laplacian of mean curvature H
-  EigenVectorX1D lap_H = -vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                         vpg->cotanLaplacian *
-                         rowwiseProduct(Kb.raw(), ptwiseH - H0.raw());
+  EigenVectorX1D lap_H =
+      -(vpg->cotanLaplacian * rowwiseProduct(Kb.raw(), ptwiseH - H0.raw()))
+           .array() /
+      vpg->vertexDualAreas.raw().array();
 
   // initialize and calculate intermediary result scalerTerms
   EigenVectorX1D scalerTerms = rowwiseProduct(ptwiseH, ptwiseH) +
                                rowwiseProduct(ptwiseH, H0.raw()) -
-                               vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                   vpg->vertexGaussianCurvatures.raw();
+                               (vpg->vertexGaussianCurvatures.raw().array() /
+                                vpg->vertexDualAreas.raw().array())
+                                   .matrix();
   // scalerTerms = scalerTerms.array().max(0);
 
   // initialize and calculate intermediary result productTerms
@@ -234,10 +236,9 @@ EigenVectorX1D System::computeChemicalPotential() {
 
   chemicalPotential.raw().array() =
       P.epsilon - 2 * Kb.raw().array() *
-                      (vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                           vpg->vertexMeanCurvatures.raw() -
-                       H0.raw())
-                          .array() *
+                      ((vpg->vertexMeanCurvatures.raw().array() /
+                        vpg->vertexDualAreas.raw().array()) -
+                       H0.raw().array()) *
                       dH0dphi.array();
 
   return chemicalPotential.raw();
