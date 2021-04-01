@@ -69,12 +69,12 @@ void visualize(mem3dg::System &f) {
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("mean_curvature",
-                                f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                    f.vpg->vertexMeanCurvatures.raw());
+                                f.vpg->vertexMeanCurvatures.raw().array() /
+                                    f.vpg->vertexDualAreas.raw().array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("gauss_curvature",
-                                f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                    f.vpg->vertexGaussianCurvatures.raw());
+                                f.vpg->vertexGaussianCurvatures.raw().array() /
+                                    f.vpg->vertexDualAreas.raw().array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")
@@ -83,8 +83,8 @@ void visualize(mem3dg::System &f) {
       ->addVertexScalarQuantity("bending_force", f.bendingForce);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
-                                f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                    f.lineCapillaryForce.raw());
+                                f.lineCapillaryForce.raw().array() /
+                                    f.vpg->vertexDualAreas.raw().array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("capillary_force", f.capillaryForce);
   polyscope::getSurfaceMesh("Membrane")

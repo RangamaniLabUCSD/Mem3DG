@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 #include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
