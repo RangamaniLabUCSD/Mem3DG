@@ -165,6 +165,12 @@ double
 System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
   // L1 Norm
   return force.cwiseAbs().sum() / surfaceArea;
+
+  // Mask the mutated (unsmooth) set of data
+  // return ((smoothingMask.raw().array() == false).cast<double>() * force.array())
+  //            .cwiseAbs()
+  //            .sum() /
+  //        (smoothingMask.raw().array() == false).cast<double>().sum();
 }
 
 double System::computeProjectedArea(gcs::VertexPositionGeometry &vpg) const {

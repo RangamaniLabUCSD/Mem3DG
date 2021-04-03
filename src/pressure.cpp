@@ -85,6 +85,25 @@ EigenVectorX1D System::computeBendingForce() {
   bendingForce.raw() = vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
   // }
 
+  isSmooth = !hasOutlier(bendingForce.raw());
+
+  // auto bf_diff = vpg->d0 * bendingForce.raw();
+  // double z_score =
+  //     abs(bf_diff.cwiseAbs().maxCoeff() - bf_diff.cwiseAbs().mean()) /
+  //     (std::sqrt((bf_diff.array() -
+  //     bf_diff.array().mean()).square().sum() /
+  //                bf_diff.array().rows()));
+  // isSmooth = z_score < 5;
+  // isSmooth = abs(bendingForce.raw().cwiseAbs().maxCoeff() -
+  //                bendingForce.raw().cwiseAbs().mean()) <
+  //            (2 * std::sqrt((bendingForce.raw().array() -
+  //                            bendingForce.raw().array().mean())
+  //                               .square()
+  //                               .sum() /
+  //                           bendingForce.raw().array().rows()));
+  // isSmooth = lap_H.cwiseAbs().maxCoeff() < 0.5;
+  // std::cout << "lapH: " << lap_H.cwiseAbs().maxCoeff() << std::endl;
+
   return bendingForce.raw();
 
   // /// B. optimized version

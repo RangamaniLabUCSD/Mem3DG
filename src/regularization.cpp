@@ -12,11 +12,14 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 #include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
+#include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 #include <Eigen/Core>
+#include <bits/c++config.h>
 
 namespace mem3dg {
 
@@ -223,6 +226,16 @@ bool System::growMesh() {
         localUpdateAfterMutation(vertex1, vertex2, newVertex);
 
         isGrown = true;
+
+        // auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
+        //                              const gcs::Vertex v) {
+        //   smoothingMask[v] = true;
+        //   for (gc::Vertex nv : v.adjacentVertices()) {
+        //     smoothingMask[nv] = true;
+        //   }
+        // };
+        // maskAllNeighboring(smoothingMask, newVertex);
+        // smoothingMask[newVertex] = true;
       }
     }
   }
@@ -262,6 +275,7 @@ bool System::growMesh() {
 void System::processMesh() {
 
   bool isGrown = false, isFlipped = false;
+  // smoothingMask.fill(false);
 
   // vertex shift for regularization
   if (O.isVertexShift) {
@@ -286,19 +300,112 @@ void System::processMesh() {
 
   // globally update quantities
   if (isGrown || isFlipped) {
+    // globalSmoothing(*vpg);
     globalUpdateAfterMutation();
   }
 }
 
-template <typename T>
-void System::localUpdateAfterMutation(const T &element1, const T &element2,
-                                      const T &newElement) {
+void System::localUpdateAfterMutation(const gcs::Vertex &element1,
+                                      const gcs::Vertex &element2,
+                                      const gcs::Vertex &newElement) {
   averageData(vpg->inputVertexPositions, element1, element2, newElement);
   averageData(vel, element1, element2, newElement);
   if (O.isProtein)
     averageData(proteinDensity, element1, element2, newElement);
   if (!O.isFloatVertex)
     thePointTracker[newElement] = false;
+}
+
+void System::globalSmoothing(gcs::VertexPositionGeometry &vpg,
+                             gcs::VertexData<bool> &smoothingMask, double tol,
+                             double stepSize) {
+  EigenVectorX1D gradient;
+  do {
+    vpg.refreshQuantities();
+    EigenVectorX1D ptwiseH = vpg.vertexMeanCurvatures.raw().array() /
+                             vpg.vertexDualAreas.raw().array();
+
+    // calculate the Laplacian of mean curvature H
+    EigenVectorX1D lap_H =
+        (vpg.cotanLaplacian * rowwiseProduct(Kb.raw(), ptwiseH - H0.raw()))
+            .array();
+
+    // calculate bendingForce
+    auto pos_e = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
+    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
+    gradient = (smoothingMask.raw().cast<double>()).array() * lap_H.array();
+    pos_e.array() -=
+        rowwiseScaling(gradient, vertexAngleNormal_e).array() * stepSize;
+    // std::cout << "gradient:  " << gradient.norm() << std::endl;
+  } while (gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum() >
+           tol);
+}
+
+void System::localSmoothing(gcs::VertexPositionGeometry &vpg,
+                            const gcs::Vertex &v, std::size_t num,
+                            double stepSize) {
+  std::size_t count = 0;
+  while (count < num) {
+    gc::Vector3 vertexNormal{0, 0, 0};
+    for (gcs::Corner c : v.adjacentCorners()) {
+      vertexNormal += vpg.cornerAngle(c) * vpg.faceNormal(c.face());
+    }
+    vertexNormal.normalize();
+    double localLapH = 0;
+    double H_center = vpg.vertexMeanCurvature(v) / vpg.vertexDualArea(v);
+    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+      localLapH += vpg.edgeCotanWeight(he.edge()) *
+                   (H_center - vpg.vertexMeanCurvature(he.tipVertex()) /
+                                   vpg.vertexDualArea(he.tipVertex()));
+    }
+    vpg.inputVertexPositions[v] -=
+        stepSize * vpg.vertexDualArea(v) * localLapH * vertexNormal;
+    count++;
+  }
+}
+
+void System::localSmoothing(gcs::VertexPositionGeometry &vpg,
+                            const gcs::Halfedge &he, std::size_t num,
+                            double stepSize) {
+  std::size_t count = 0;
+  while (count < num) {
+    gc::Vector3 vertexNormal1{0, 0, 0};
+    gc::Vector3 vertexNormal2{0, 0, 0};
+    double localLapH1 = 0;
+    double localLapH2 = 0;
+
+    auto v = he.tailVertex();
+    for (gcs::Corner c : v.adjacentCorners()) {
+      vertexNormal1 += vpg.cornerAngle(c) * vpg.faceNormal(c.face());
+    }
+    vertexNormal1.normalize();
+    double H_center = vpg.vertexMeanCurvature(v) / vpg.vertexDualArea(v);
+    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+      localLapH1 += vpg.edgeCotanWeight(he.edge()) *
+                    (H_center - vpg.vertexMeanCurvature(he.tipVertex()) /
+                                    vpg.vertexDualArea(he.tipVertex()));
+    }
+
+    v = he.tipVertex();
+    for (gcs::Corner c : v.adjacentCorners()) {
+      vertexNormal2 += vpg.cornerAngle(c) * vpg.faceNormal(c.face());
+    }
+    vertexNormal2.normalize();
+    H_center = vpg.vertexMeanCurvature(v) / vpg.vertexDualArea(v);
+    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+      localLapH2 += vpg.edgeCotanWeight(he.edge()) *
+                    (H_center - vpg.vertexMeanCurvature(he.tipVertex()) /
+                                    vpg.vertexDualArea(he.tipVertex()));
+    }
+
+    vpg.inputVertexPositions[he.tailVertex()] -=
+        stepSize * vpg.vertexDualArea(he.tailVertex()) * localLapH1 *
+        vertexNormal1;
+    vpg.inputVertexPositions[he.tipVertex()] -=
+        stepSize * vpg.vertexDualArea(he.tipVertex()) * localLapH2 *
+        vertexNormal2;
+    count++;
+  }
 }
 
 void System::globalUpdateAfterMutation() {

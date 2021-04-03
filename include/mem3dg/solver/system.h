@@ -34,6 +34,7 @@
 #include <math.h>
 #include <vector>
 
+#include "geometrycentral/surface/halfedge_element_types.h"
 #include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/mesh.h"
@@ -236,6 +237,8 @@ public:
   gcs::SurfacePoint thePoint;
   // "the vertex" tracker
   gcs::VertexData<bool> thePointTracker;
+  // is Smooth
+  bool isSmooth;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -356,7 +359,8 @@ public:
         targetLcrs(*mesh), refEdgeLengths(*mesh), refFaceAreas(*mesh),
         heatSolver(*vpg), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), H0(*mesh), Kb(*mesh), mask(*mesh, true) {
+        vel(*mesh, {0, 0, 0}), H0(*mesh), Kb(*mesh), mask(*mesh, true),
+        isSmooth(true) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -630,13 +634,28 @@ public:
   /**
    * @brief pointwise update of quantities after mutation of the mesh
    */
-  template <typename T>
-  void localUpdateAfterMutation(const T &element1, const T &element2,
-                                const T &newElement);
+  void localUpdateAfterMutation(const gcs::Vertex &element1,
+                                const gcs::Vertex &element2,
+                                const gcs::Vertex &newElement);
+
+  /**
+   * @brief pointwise smoothing after mutation of the mesh
+   */
+  void localSmoothing(gcs::VertexPositionGeometry &vpg, const gcs::Vertex &v,
+                      std::size_t num = 10, double stepSize = 0.01);
+  void localSmoothing(gcs::VertexPositionGeometry &vpg, const gcs::Halfedge &he,
+                      std::size_t num = 10, double stepSize = 0.01);
 
   /**
    * @brief global update of quantities after mutation of the mesh
    */
   void globalUpdateAfterMutation();
+  
+  /**
+   * @brief global smoothing after mutation of the mesh
+   */
+  void globalSmoothing(gcs::VertexPositionGeometry &vpg,
+                       gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
+                       double stepSize = 0.01);
 };
 } // namespace mem3dg

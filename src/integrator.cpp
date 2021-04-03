@@ -221,7 +221,8 @@ void Integrator::saveData() {
   if (verbosity > 1) {
     std::cout << "\n"
               << "t: " << f.time << ", "
-              << "n: " << frame << "\n"
+              << "n: " << frame << ", "
+              << "isSmooth: " << f.isSmooth << "\n"
               << "dA/Area: " << dArea << "/" << f.surfaceArea << ", "
               << "dVP/Volume: " << dVP << "/" << f.volume << ", "
               << "h: "
@@ -354,6 +355,7 @@ void Integrator::saveNetcdfData() {
   // scalar quantities
   // write time
   fd.writeTime(idx, f.time);
+  fd.writeIsSmooth(idx, f.isSmooth);
   // write geometry
   fd.writeVolume(idx, f.volume);
   fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.refSurfaceArea
@@ -388,7 +390,7 @@ void Integrator::saveNetcdfData() {
     fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
     fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
     fd.writeMeanCurvature(idx, f.vpg->vertexMeanCurvatures.raw().array() /
-                                    f.vpg->vertexDualAreas.raw().array());
+                                   f.vpg->vertexDualAreas.raw().array());
     fd.writeGaussCurvature(idx, f.vpg->vertexGaussianCurvatures.raw().array() /
                                     f.vpg->vertexDualAreas.raw().array());
     fd.writeSponCurvature(idx, f.H0.raw());

@@ -84,6 +84,8 @@ static const std::string FORCE_UNITS = " nanonewtons ";
 // Data/Variable block names
 /// Name of time data
 static const std::string TIME_VAR = "time";
+/// Name of isSmooth data
+static const std::string ISSMOOTH_VAR = "issmooth";
 /// Name of coordinates data
 static const std::string COORD_VAR = "coordinates";
 /// Name of the mesh topology data
@@ -105,17 +107,17 @@ static const std::string PROTEINDEN_VAR = "proteindensity";
 /// Name of the spontaneous curvature data
 static const std::string SPONCURVE_VAR = "sponcurvature";
 /// Name of the external pressure data
-static const std::string EXTERNPRESS_VAR = "externpressure";
+static const std::string EXTERNFORCE_VAR = "externpressure";
 /// Name of the physical pressure data
-static const std::string PHYSPRESS_VAR = "physpressure";
+static const std::string PHYSFORCE_VAR = "physpressure";
 /// Name of the capillary pressure data
-static const std::string CAPPRESS_VAR = "cappressure";
+static const std::string CAPFORCE_VAR = "cappressure";
 /// Name of the bending pressure data
-static const std::string BENDPRESS_VAR = "bendpressure";
+static const std::string BENDFORCE_VAR = "bendpressure";
 /// Name of the inside pressure data
-static const std::string INSIDEPRESS_VAR = "insidepressure";
+static const std::string OSMOTICFORCE_VAR = "insidepressure";
 /// Name of the line tension pressure data
-static const std::string LINEPRESS_VAR = "linepressure";
+static const std::string LINEFORCE_VAR = "linepressure";
 /// Name of the bending energy data
 static const std::string BENDENER_VAR = "bendenergy";
 /// Name of the surface energy data
@@ -196,19 +198,20 @@ public:
     refcoord = fd->getVar(REFCOORD_VAR);
     angle_var = fd->getVar(ANGLE_VAR);
     time_var = fd->getVar(TIME_VAR);
+    issmooth_var = fd->getVar(ISSMOOTH_VAR);
     coord_var = fd->getVar(COORD_VAR);
     topo_frame_var = fd->getVar(TOPO_FRAME_VAR);
     vel_var = fd->getVar(VEL_VAR);
-    externpress_var = fd->getVar(EXTERNPRESS_VAR);
+    externforce_var = fd->getVar(EXTERNFORCE_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
     gausscurve_var = fd->getVar(GAUSSCURVE_VAR);
     proteinden_var = fd->getVar(PROTEINDEN_VAR);
     sponcurve_var = fd->getVar(SPONCURVE_VAR);
-    physpress_var = fd->getVar(PHYSPRESS_VAR);
-    cappress_var = fd->getVar(CAPPRESS_VAR);
-    bendpress_var = fd->getVar(BENDPRESS_VAR);
-    insidepress_var = fd->getVar(INSIDEPRESS_VAR);
-    linepress_var = fd->getVar(LINEPRESS_VAR);
+    physforce_var = fd->getVar(PHYSFORCE_VAR);
+    capforce_var = fd->getVar(CAPFORCE_VAR);
+    bendforce_var = fd->getVar(BENDFORCE_VAR);
+    osmoticforce_var = fd->getVar(OSMOTICFORCE_VAR);
+    lineforce_var = fd->getVar(LINEFORCE_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
     l1errornorm_var = fd->getVar(L1ERRORNORM_VAR);
     l1bendnorm_var = fd->getVar(L1BENDNORM_VAR);
@@ -270,6 +273,8 @@ public:
     time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
     time_var.putAtt(UNITS, TIME_UNITS);
 
+    issmooth_var = fd->addVar(ISSMOOTH_VAR, netCDF::ncByte, {frame_dim});
+
     coord_var = fd->addVar(COORD_VAR, netCDF::ncDouble,
                            {frame_dim, nvertices_dim, spatial_dim});
     coord_var.putAtt(UNITS, LEN_UNITS);
@@ -300,29 +305,29 @@ public:
         fd->addVar(SPONCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
     sponcurve_var.putAtt(UNITS, LEN_UNITS + "^(-1)");
 
-    externpress_var = fd->addVar(EXTERNPRESS_VAR, netCDF::ncDouble,
+    externforce_var = fd->addVar(EXTERNFORCE_VAR, netCDF::ncDouble,
                                  {frame_dim, nvertices_dim});
-    externpress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+    externforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    physpress_var =
-        fd->addVar(PHYSPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-    physpress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+    physforce_var =
+        fd->addVar(PHYSFORCE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    physforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    cappress_var =
-        fd->addVar(CAPPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-    cappress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+    capforce_var =
+        fd->addVar(CAPFORCE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    capforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    bendpress_var =
-        fd->addVar(BENDPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-    bendpress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+    bendforce_var =
+        fd->addVar(BENDFORCE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    bendforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    insidepress_var = fd->addVar(INSIDEPRESS_VAR, netCDF::ncDouble,
+    osmoticforce_var = fd->addVar(OSMOTICFORCE_VAR, netCDF::ncDouble,
                                  {frame_dim, nvertices_dim});
-    insidepress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+    osmoticforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    linepress_var =
-        fd->addVar(LINEPRESS_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
-    linepress_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
+    lineforce_var =
+        fd->addVar(LINEFORCE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
+    lineforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     bendener_var = fd->addVar(BENDENER_VAR, netCDF::ncDouble, {frame_dim});
     bendener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
@@ -471,6 +476,8 @@ public:
 
   void writeTime(const std::size_t idx, const double time);
 
+  void writeIsSmooth(const std::size_t idx, const bool isSmooth);
+
   void writeCoords(const std::size_t idx, const EigenVector &data);
 
   void writeTopoFrame(const std::size_t idx,
@@ -478,6 +485,8 @@ public:
                                           Eigen::RowMajor> &data);
 
   double getTime(const std::size_t idx) const;
+
+  double getIsSmooth(const std::size_t idx) const;
 
   EigenVector getCoords(const std::size_t idx) const;
 
@@ -531,43 +540,39 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getSponCurvature(const std::size_t idx) const;
 
-  void
-  writeExternalForce(const std::size_t idx,
-                        const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+  void writeExternalForce(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getExternalForce(const std::size_t idx) const;
 
-  void
-  writePhysicalForce(const std::size_t idx,
-                        const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+  void writePhysicalForce(const std::size_t idx,
+                          const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getPhysicalForce(const std::size_t idx) const;
 
   void
   writeCapillaryForce(const std::size_t idx,
-                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getCapillaryForce(const std::size_t idx) const;
 
-  void
-  writeBendingForce(const std::size_t idx,
-                       const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+  void writeBendingForce(const std::size_t idx,
+                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getBendingForce(const std::size_t idx) const;
 
-  void
-  writeOsmoticForce(const std::size_t idx,
-                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+  void writeOsmoticForce(const std::size_t idx,
+                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getOsmoticForce(const std::size_t idx) const;
 
   void writeLineForce(const std::size_t idx,
-                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+                      const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getLineForce(const std::size_t idx) const;
@@ -693,6 +698,7 @@ private:
   nc::NcVar topology;
   nc::NcVar refcoord;
   nc::NcVar time_var;
+  nc::NcVar issmooth_var;
   nc::NcVar coord_var;
   nc::NcVar topo_frame_var;
   nc::NcVar angle_var;
@@ -701,12 +707,12 @@ private:
   nc::NcVar meancurve_var;
   nc::NcVar gausscurve_var;
   nc::NcVar sponcurve_var;
-  nc::NcVar externpress_var;
-  nc::NcVar physpress_var;
-  nc::NcVar cappress_var;
-  nc::NcVar bendpress_var;
-  nc::NcVar insidepress_var;
-  nc::NcVar linepress_var;
+  nc::NcVar externforce_var;
+  nc::NcVar physforce_var;
+  nc::NcVar capforce_var;
+  nc::NcVar bendforce_var;
+  nc::NcVar osmoticforce_var;
+  nc::NcVar lineforce_var;
   nc::NcVar bendener_var;
   nc::NcVar surfener_var;
   nc::NcVar pressener_var;
