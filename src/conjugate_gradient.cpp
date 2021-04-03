@@ -49,8 +49,7 @@ bool ConjugateGradient::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    static double lastSave;
-    if (f.time - lastSave >= tSave - 1e-12 || f.time == init_time || EXIT) {
+    if (f.time - lastSave >= tSave || f.time == init_time || EXIT) {
       lastSave = f.time;
       saveData();
     }

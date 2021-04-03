@@ -50,6 +50,8 @@ public:
   double total_time;
   /// period of saving output data
   double tSave;
+  /// last time saving the data
+  double lastSave;
   /// verbosity level of integrator
   size_t verbosity;
   /// tolerance for termination

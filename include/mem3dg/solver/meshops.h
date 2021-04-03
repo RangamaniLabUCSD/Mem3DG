@@ -35,7 +35,115 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 /**
- * @brief Signal handler for pybind
+ * @brief Sort Eigen vector from largest to smallest
+ * @param vec vector to be sorted
+ * @param sorted_vec sorted vector
+ * @param ind indices of sorted vector based on original vector
+ * @return
+ */
+DLL_PUBLIC inline void sortVector(const Eigen::VectorXd &vec,
+                                  Eigen::VectorXd &sorted_vec,
+                                  Eigen::VectorXi &ind) {
+  ind = Eigen::VectorXi::LinSpaced(vec.size(), 0,
+                                   vec.size() - 1); //[0 1 2 3 ... N-1]
+  auto rule = [vec](int i, int j) -> bool { return vec(i) > vec(j); };
+  // regular expression, as a predicate of sort
+  std::sort(ind.data(), ind.data() + ind.size(), rule);
+  // The data member function returns a pointer to
+  // the first element of VectorXd, similar to
+  // begin()
+  sorted_vec.resize(vec.size());
+  for (int i = 0; i < vec.size(); i++) {
+    sorted_vec(i) = vec(ind(i));
+  }
+}
+
+/**
+ * @brief Sort Eigen vector from largest to smallest (overloaded)
+ * @param vec vector to be sorted
+ * @param sorted_vec sorted vector
+ * @return
+ */
+DLL_PUBLIC inline void sortVector(const Eigen::VectorXd &vec,
+                                  Eigen::VectorXd &sorted_vec) {
+  Eigen::VectorXi ind =
+      Eigen::VectorXi::LinSpaced(vec.size(), 0,
+                                 vec.size() - 1); //[0 1 2 3 ... N-1]
+  auto rule = [vec](int i, int j) -> bool { return vec(i) > vec(j); };
+  // regular expression, as a predicate of sort
+  std::sort(ind.data(), ind.data() + ind.size(), rule);
+  // The data member function returns a pointer to
+  // the first element of VectorXd, similar to
+  // begin()
+  sorted_vec.resize(vec.size());
+  for (int i = 0; i < vec.size(); i++) {
+    sorted_vec(i) = vec(ind(i));
+  }
+}
+
+/**
+ * @brief find the middle index between two bounding indices
+ * @param l left bound
+ * @param r right bound
+ * @return middle index
+ */
+DLL_PUBLIC inline int findMedianIndex(int l, int r) {
+  int n = r - l + 1;
+  n = (n + 1) / 2 - 1;
+  return n + l;
+}
+
+/**
+ * @brief find the range of data based on percentile (quatile)
+ * @param a raw buffer of vector
+ * @param n size of vector
+ * @param r upper bound of range
+ * @param l lower bound of range
+ * @return
+ */
+DLL_PUBLIC inline void findRange(double *a, int n, double &r, double &l) {
+  // Index of median of entire data
+  int mid_index = findMedianIndex(0, n);
+
+  // first 1/128
+  r = a[findMedianIndex(
+      0, findMedianIndex(
+             0, findMedianIndex(
+                    0, findMedianIndex(
+                           0, findMedianIndex(
+                                  0, findMedianIndex(0, mid_index))))))];
+
+  // last 1/128
+  l = a[findMedianIndex(
+      findMedianIndex(
+          findMedianIndex(
+              findMedianIndex(
+                  findMedianIndex(findMedianIndex(mid_index + 1, n), n), n),
+              n),
+          n),
+      n)];
+}
+
+/**
+ * @brief test whether exist outliers to the set of data based range function
+ * @param vec data vector
+ * @param threshold coefficient used to bound the outlier.
+ * For example: (Outlier <--> r) < [threshold * (l <--> r)]
+ * @return
+ */
+DLL_PUBLIC inline bool hasOutlier(const Eigen::VectorXd &vec,
+                                  double threshold = 0.5) {
+  Eigen::VectorXd sorted_vec;
+  sortVector(vec, sorted_vec);
+  double r, l, range;
+  findRange(sorted_vec.data(), sorted_vec.size(), r, l);
+  range = r - l;
+  return (sorted_vec[0] - r > threshold * range) ||
+         (l - sorted_vec[sorted_vec.size() - 1] > threshold * range);
+}
+
+/**
+ * @brief Signal handler for pybindf
  */
 DLL_PUBLIC inline void signalHandler(int signum) {
   std::cout << "Interrupt signal (" << signum << ") received.\n";

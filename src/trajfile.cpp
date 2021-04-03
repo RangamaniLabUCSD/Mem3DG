@@ -58,6 +58,12 @@ void TrajFile::writeTime(const std::size_t idx, const double time) {
   time_var.putVar({idx}, &time);
 }
 
+void TrajFile::writeIsSmooth(const std::size_t idx, const bool isSmooth) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  issmooth_var.putVar({idx}, &isSmooth);
+}
+
 void TrajFile::writeCoords(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
@@ -92,6 +98,15 @@ double TrajFile::getTime(const std::size_t idx) const {
   return time;
 }
 
+double TrajFile::getIsSmooth(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  bool isSmooth;
+  issmooth_var.getVar({idx}, &isSmooth);
+
+  return isSmooth;
+}
+
 TrajFile::EigenVector TrajFile::getCoords(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
@@ -106,7 +121,8 @@ Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
 TrajFile::getTopoFrame(const std::size_t idx) const {
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> vec(
       npolygons_dim.getSize(), POLYGON_ORDER);
-  topo_frame_var.getVar({idx, 0, 0}, {1, npolygons_dim.getSize(), POLYGON_ORDER}, vec.data());
+  topo_frame_var.getVar(
+      {idx, 0, 0}, {1, npolygons_dim.getSize(), POLYGON_ORDER}, vec.data());
   return vec;
 }
 
@@ -305,7 +321,7 @@ void TrajFile::writeExternalForce(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  externpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+  externforce_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -314,7 +330,7 @@ TrajFile::getExternalForce(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  externpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  externforce_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
@@ -327,7 +343,7 @@ void TrajFile::writePhysicalForce(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  physpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+  physforce_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -336,7 +352,7 @@ TrajFile::getPhysicalForce(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  physpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  physforce_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
@@ -349,7 +365,7 @@ void TrajFile::writeCapillaryForce(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  cappress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+  capforce_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -358,7 +374,7 @@ TrajFile::getCapillaryForce(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  cappress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  capforce_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
@@ -371,7 +387,7 @@ void TrajFile::writeBendingForce(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  bendpress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+  bendforce_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -380,7 +396,7 @@ TrajFile::getBendingForce(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  bendpress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  bendforce_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
@@ -393,7 +409,7 @@ void TrajFile::writeOsmoticForce(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  insidepress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+  osmoticforce_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -402,7 +418,7 @@ TrajFile::getOsmoticForce(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  insidepress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  osmoticforce_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
@@ -415,7 +431,7 @@ void TrajFile::writeLineForce(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  linepress_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+  lineforce_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -424,7 +440,7 @@ TrajFile::getLineForce(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  linepress_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  lineforce_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
