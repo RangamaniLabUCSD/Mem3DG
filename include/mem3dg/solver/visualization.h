@@ -51,6 +51,8 @@ struct DLL_PUBLIC Quantities {
   bool H_H0 = false;
   /// "the" point
   bool the_point = false;
+  /// smoothing mask
+  bool smoothing_mask = false;
 };
 
 // ==========================================================

@@ -316,6 +316,26 @@ rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
 }
 
 /**
+ * @brief helper function for computing the polygon area enclosed by a boundary
+ * loop on a mesh
+ * @param bl boundary loop on a mesh
+ * @param inputVertexPosition embedded vertex position of the mesh
+ * @return enclosed polygon area
+ */
+DLL_PUBLIC inline double
+computePolygonArea(const gcs::BoundaryLoop &bl,
+                   const gcs::VertexData<gc::Vector3> &inputVertexPositions) {
+  gc::Vector3 signedArea{0, 0, 0};
+  for (gcs::Halfedge he : bl.adjacentHalfedges()) {
+    signedArea += cross(inputVertexPositions[he.tailVertex()],
+                        inputVertexPositions[he.tipVertex()]);
+  }
+
+  // could be used to poject onto other direction if needed
+  return 0.5 * signedArea.norm();
+}
+
+/**
  * @brief helper function for taking rowwise product of two vectors
  *
  * @param Eigen vector A

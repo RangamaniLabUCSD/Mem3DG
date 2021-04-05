@@ -343,8 +343,10 @@ void System::initConstants() {
   refEdgeLengths = localVpg->edgeLengths;
 
   // Initialize the constant target surface (total mesh) area
-  refSurfaceArea =
-      O.isOpenMesh ? computeProjectedArea(*localVpg) : refFaceAreas.raw().sum();
+  refSurfaceArea = O.isOpenMesh
+                       ? computePolygonArea(mesh->boundaryLoop(0),
+                                            localVpg->inputVertexPositions)
+                       : refFaceAreas.raw().sum();
 
   // Initialize the constant target mean face area
   if (!O.isRefMesh || O.isGrowMesh) {
@@ -419,7 +421,8 @@ void System::updateVertexPositions() {
 
   // update reference area by projecting to xy plane
   if (O.isOpenMesh) {
-    refSurfaceArea = computeProjectedArea(*vpg);
+    refSurfaceArea =
+        computePolygonArea(mesh->boundaryLoop(1), vpg->inputVertexPositions);
   }
 
   // initialize/update spontaneous curvature (protein

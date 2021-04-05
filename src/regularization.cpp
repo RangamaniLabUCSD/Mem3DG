@@ -191,12 +191,23 @@ bool System::edgeFlip() {
   // flip edge if not delauney
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
-    if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    // if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    if (!he.edge().isBoundary()) {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) >
           constants::PI) {
         auto success = mesh->flip(he.edge());
         isFlipped = true;
+
+        auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
+                                     const gcs::Vertex v) {
+          smoothingMask[v] = true;
+          for (gc::Vertex nv : v.adjacentVertices()) {
+            smoothingMask[nv] = true;
+          }
+        };
+        maskAllNeighboring(smoothingMask, he.tailVertex());
+        maskAllNeighboring(smoothingMask, he.tipVertex());
       }
     }
   }
@@ -212,8 +223,8 @@ bool System::growMesh() {
   // expand the mesh when area is too large
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
-    if (mask[he.vertex()] && mask[he.twin().vertex()]) {
-      // if(!he.edge().isBoundary()){
+    // if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    if (!he.edge().isBoundary()) {
       if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea)) {
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
@@ -227,14 +238,14 @@ bool System::growMesh() {
 
         isGrown = true;
 
-        // auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
-        //                              const gcs::Vertex v) {
-        //   smoothingMask[v] = true;
-        //   for (gc::Vertex nv : v.adjacentVertices()) {
-        //     smoothingMask[nv] = true;
-        //   }
-        // };
-        // maskAllNeighboring(smoothingMask, newVertex);
+        auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
+                                     const gcs::Vertex v) {
+          smoothingMask[v] = true;
+          for (gc::Vertex nv : v.adjacentVertices()) {
+            smoothingMask[nv] = true;
+          }
+        };
+        maskAllNeighboring(smoothingMask, newVertex);
         // smoothingMask[newVertex] = true;
       }
     }
@@ -243,7 +254,8 @@ bool System::growMesh() {
   // shrink the mesh is vertex is too close
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
-    if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    // if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    if (!he.edge().isBoundary()) {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) <
           constants::PI / 3) {
@@ -263,6 +275,15 @@ bool System::growMesh() {
         isGrown = true;
         // std::cout << "in shirnk sum: "
         //           << thePointTracker.raw().cast<double>().sum() << std::endl;
+
+        auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
+                                     const gcs::Vertex v) {
+          smoothingMask[v] = true;
+          for (gc::Vertex nv : v.adjacentVertices()) {
+            smoothingMask[nv] = true;
+          }
+        };
+        maskAllNeighboring(smoothingMask, newVertex);
       }
     }
   }
@@ -275,7 +296,7 @@ bool System::growMesh() {
 void System::processMesh() {
 
   bool isGrown = false, isFlipped = false;
-  // smoothingMask.fill(false);
+  smoothingMask.fill(false);
 
   // vertex shift for regularization
   if (O.isVertexShift) {
@@ -300,7 +321,7 @@ void System::processMesh() {
 
   // globally update quantities
   if (isGrown || isFlipped) {
-    // globalSmoothing(*vpg);
+    globalSmoothing(smoothingMask);
     globalUpdateAfterMutation();
   }
 }
@@ -316,56 +337,55 @@ void System::localUpdateAfterMutation(const gcs::Vertex &element1,
     thePointTracker[newElement] = false;
 }
 
-void System::globalSmoothing(gcs::VertexPositionGeometry &vpg,
-                             gcs::VertexData<bool> &smoothingMask, double tol,
+void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
                              double stepSize) {
   EigenVectorX1D gradient;
+  double pastGradNorm = 1e10;
+  double gradNorm;
   do {
-    vpg.refreshQuantities();
-    EigenVectorX1D ptwiseH = vpg.vertexMeanCurvatures.raw().array() /
-                             vpg.vertexDualAreas.raw().array();
-
-    // calculate the Laplacian of mean curvature H
-    EigenVectorX1D lap_H =
-        (vpg.cotanLaplacian * rowwiseProduct(Kb.raw(), ptwiseH - H0.raw()))
-            .array();
-
-    // calculate bendingForce
-    auto pos_e = gc::EigenMap<double, 3>(vpg.inputVertexPositions);
-    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-    gradient = (smoothingMask.raw().cast<double>()).array() * lap_H.array();
-    pos_e.array() -=
+    vpg->refreshQuantities();
+    computeBendingForce();
+    auto pos_e = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
+    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
+    gradient = (smoothingMask.raw().cast<double>()).array() *
+               bendingForce.raw().array();
+    gradNorm =
+        gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum();
+    if (gradNorm > pastGradNorm) {
+      stepSize /= 2;
+      // std::cout << "WARNING: globalSmoothing: stepSize too large, cut in half!"
+      //           << std::endl;
+    }
+    pos_e.array() +=
         rowwiseScaling(gradient, vertexAngleNormal_e).array() * stepSize;
-    // std::cout << "gradient:  " << gradient.norm() << std::endl;
-  } while (gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum() >
-           tol);
+    pastGradNorm = gradNorm;
+    // std::cout << "gradient:  " << gradNorm << std::endl;
+  } while (gradNorm > tol);
 }
 
-void System::localSmoothing(gcs::VertexPositionGeometry &vpg,
-                            const gcs::Vertex &v, std::size_t num,
+void System::localSmoothing(const gcs::Vertex &v, std::size_t num,
                             double stepSize) {
   std::size_t count = 0;
   while (count < num) {
     gc::Vector3 vertexNormal{0, 0, 0};
     for (gcs::Corner c : v.adjacentCorners()) {
-      vertexNormal += vpg.cornerAngle(c) * vpg.faceNormal(c.face());
+      vertexNormal += vpg->cornerAngle(c) * vpg->faceNormal(c.face());
     }
     vertexNormal.normalize();
     double localLapH = 0;
-    double H_center = vpg.vertexMeanCurvature(v) / vpg.vertexDualArea(v);
+    double H_center = vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v);
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      localLapH += vpg.edgeCotanWeight(he.edge()) *
-                   (H_center - vpg.vertexMeanCurvature(he.tipVertex()) /
-                                   vpg.vertexDualArea(he.tipVertex()));
+      localLapH += vpg->edgeCotanWeight(he.edge()) *
+                   (H_center - vpg->vertexMeanCurvature(he.tipVertex()) /
+                                   vpg->vertexDualArea(he.tipVertex()));
     }
-    vpg.inputVertexPositions[v] -=
-        stepSize * vpg.vertexDualArea(v) * localLapH * vertexNormal;
+    vpg->inputVertexPositions[v] -=
+        stepSize * vpg->vertexDualArea(v) * localLapH * vertexNormal;
     count++;
   }
 }
 
-void System::localSmoothing(gcs::VertexPositionGeometry &vpg,
-                            const gcs::Halfedge &he, std::size_t num,
+void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
                             double stepSize) {
   std::size_t count = 0;
   while (count < num) {
@@ -376,33 +396,33 @@ void System::localSmoothing(gcs::VertexPositionGeometry &vpg,
 
     auto v = he.tailVertex();
     for (gcs::Corner c : v.adjacentCorners()) {
-      vertexNormal1 += vpg.cornerAngle(c) * vpg.faceNormal(c.face());
+      vertexNormal1 += vpg->cornerAngle(c) * vpg->faceNormal(c.face());
     }
     vertexNormal1.normalize();
-    double H_center = vpg.vertexMeanCurvature(v) / vpg.vertexDualArea(v);
+    double H_center = vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v);
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      localLapH1 += vpg.edgeCotanWeight(he.edge()) *
-                    (H_center - vpg.vertexMeanCurvature(he.tipVertex()) /
-                                    vpg.vertexDualArea(he.tipVertex()));
+      localLapH1 += vpg->edgeCotanWeight(he.edge()) *
+                    (H_center - vpg->vertexMeanCurvature(he.tipVertex()) /
+                                    vpg->vertexDualArea(he.tipVertex()));
     }
 
     v = he.tipVertex();
     for (gcs::Corner c : v.adjacentCorners()) {
-      vertexNormal2 += vpg.cornerAngle(c) * vpg.faceNormal(c.face());
+      vertexNormal2 += vpg->cornerAngle(c) * vpg->faceNormal(c.face());
     }
     vertexNormal2.normalize();
-    H_center = vpg.vertexMeanCurvature(v) / vpg.vertexDualArea(v);
+    H_center = vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v);
     for (gcs::Halfedge he : v.outgoingHalfedges()) {
-      localLapH2 += vpg.edgeCotanWeight(he.edge()) *
-                    (H_center - vpg.vertexMeanCurvature(he.tipVertex()) /
-                                    vpg.vertexDualArea(he.tipVertex()));
+      localLapH2 += vpg->edgeCotanWeight(he.edge()) *
+                    (H_center - vpg->vertexMeanCurvature(he.tipVertex()) /
+                                    vpg->vertexDualArea(he.tipVertex()));
     }
 
-    vpg.inputVertexPositions[he.tailVertex()] -=
-        stepSize * vpg.vertexDualArea(he.tailVertex()) * localLapH1 *
+    vpg->inputVertexPositions[he.tailVertex()] -=
+        stepSize * vpg->vertexDualArea(he.tailVertex()) * localLapH1 *
         vertexNormal1;
-    vpg.inputVertexPositions[he.tipVertex()] -=
-        stepSize * vpg.vertexDualArea(he.tipVertex()) * localLapH2 *
+    vpg->inputVertexPositions[he.tipVertex()] -=
+        stepSize * vpg->vertexDualArea(he.tipVertex()) * localLapH2 *
         vertexNormal2;
     count++;
   }
