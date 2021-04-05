@@ -672,7 +672,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
             "the_point", getCountQuantities(
                              ptrRichData->getVertexProperty<int>("the_point")))
         ->setPointRadius(0.01, true);
-    ;
+  }
+  if (options.smoothing_mask) {
+    polyscopeMesh->addVertexScalarQuantity(
+        "smoothing_mask",
+        ptrRichData->getVertexProperty<int>("smoothing_mask"));
   }
   /*gcs::VertexData<gc::Vector3> vertexVelocity =
       ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/

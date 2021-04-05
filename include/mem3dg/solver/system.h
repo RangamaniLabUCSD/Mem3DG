@@ -239,6 +239,8 @@ public:
   gcs::VertexData<bool> thePointTracker;
   // is Smooth
   bool isSmooth;
+  // is
+  gcs::VertexData<bool> smoothingMask;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -360,7 +362,7 @@ public:
         heatSolver(*vpg), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
         vel(*mesh, {0, 0, 0}), H0(*mesh), Kb(*mesh), mask(*mesh, true),
-        isSmooth(true) {
+        isSmooth(true), smoothingMask(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -622,11 +624,6 @@ public:
                                  gcs::Edge &&e) const;
 
   /**
-   * @brief Get projected area of the mesh onto x-y plane
-   */
-  double computeProjectedArea(gcs::VertexPositionGeometry &vpg) const;
-
-  /**
    * @brief Find "the" vertex
    */
   void findTheVertex(gcs::VertexPositionGeometry &vpg);
@@ -641,10 +638,10 @@ public:
   /**
    * @brief pointwise smoothing after mutation of the mesh
    */
-  void localSmoothing(gcs::VertexPositionGeometry &vpg, const gcs::Vertex &v,
-                      std::size_t num = 10, double stepSize = 0.01);
-  void localSmoothing(gcs::VertexPositionGeometry &vpg, const gcs::Halfedge &he,
-                      std::size_t num = 10, double stepSize = 0.01);
+  void localSmoothing(const gcs::Vertex &v, std::size_t num = 10,
+                      double stepSize = 0.01);
+  void localSmoothing(const gcs::Halfedge &he, std::size_t num = 10,
+                      double stepSize = 0.01);
 
   /**
    * @brief global update of quantities after mutation of the mesh
@@ -654,8 +651,7 @@ public:
   /**
    * @brief global smoothing after mutation of the mesh
    */
-  void globalSmoothing(gcs::VertexPositionGeometry &vpg,
-                       gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
-                       double stepSize = 0.01);
+  void globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
+                       double stepSize = 1);
 };
 } // namespace mem3dg

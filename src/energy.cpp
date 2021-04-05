@@ -22,6 +22,7 @@
 #include <Eigen/Core>
 
 #include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/surface/surface_mesh.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 
@@ -167,47 +168,11 @@ System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
   return force.cwiseAbs().sum() / surfaceArea;
 
   // Mask the mutated (unsmooth) set of data
-  // return ((smoothingMask.raw().array() == false).cast<double>() * force.array())
+  // return ((smoothingMask.raw().array() == false).cast<double>() *
+  // force.array())
   //            .cwiseAbs()
   //            .sum() /
   //        (smoothingMask.raw().array() == false).cast<double>().sum();
-}
-
-double System::computeProjectedArea(gcs::VertexPositionGeometry &vpg) const {
-  // This is general mapping case
-  std::vector<gc::Vector3> coords;
-  std::vector<std::vector<std::size_t>> polygons;
-  coords.emplace_back(gc::Vector3{0, 0, 0});
-
-  std::size_t vertexIndex = 1;
-  for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-    for (gcs::Halfedge he : bl.adjacentHalfedges()) {
-      polygons.emplace_back(
-          std::vector<std::size_t>{vertexIndex, vertexIndex + 1, 0});
-      coords.emplace_back(gc::Vector3{vpg.inputVertexPositions[he.vertex()].x,
-                                      vpg.inputVertexPositions[he.vertex()].y,
-                                      0});
-      coords.emplace_back(
-          gc::Vector3{vpg.inputVertexPositions[he.next().vertex()].x,
-                      vpg.inputVertexPositions[he.next().vertex()].y, 0});
-      vertexIndex += 2;
-    }
-  }
-  gcs::SimplePolygonMesh soup(polygons, coords);
-  soup.mergeIdenticalVertices();
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> projectedMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> projectedVpg;
-  std::tie(projectedMesh, projectedVpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(soup.polygons,
-                                              soup.vertexCoordinates);
-  projectedVpg->requireFaceAreas();
-
-  // This is for 1-1 mapping case
-  // positions.col(2) *= 0;
-  // gcs::VertexPositionGeometry projectedVpg(*mesh, positions);
-  // projectedVpg.requireFaceAreas();
-
-  return projectedVpg->faceAreas.raw().sum();
 }
 
 } // namespace mem3dg

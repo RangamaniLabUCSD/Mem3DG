@@ -750,6 +750,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize "the" point
       )delim");
+  quantities.def_readwrite("smoothing_mask", &Quantities::smoothing_mask,
+                           R"delim(
+        visualize the smoothing mask
+      )delim");
 
   pymem3dg.def("driver_ply", &driver_ply,
                "Run single simulation starting with .ply files",
