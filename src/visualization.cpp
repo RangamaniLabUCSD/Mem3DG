@@ -534,7 +534,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
     polyscopeMesh->addVertexScalarQuantity("capillary_force",
                                            fd.getCapillaryForce(idx));
   }
-  if (options.inside_force) {
+  if (options.osmotic_force) {
     polyscopeMesh->addVertexScalarQuantity("inside_force",
                                            fd.getOsmoticForce(idx));
   }
@@ -656,7 +656,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
         "line_tension_force",
         ptrRichData->getVertexProperty<double>("line_tension_force"));
   }
-  if (options.inside_force) {
+  if (options.osmotic_force) {
     polyscopeMesh->addVertexScalarQuantity(
         "osmotic_force",
         ptrRichData->getVertexProperty<double>("osmotic_force"));

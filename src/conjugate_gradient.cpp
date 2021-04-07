@@ -163,7 +163,7 @@ void ConjugateGradient::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, physicalForce, vel_e);
+    backtrack(f.E.potE, vel_e, rho, c1);
   } else {
     pos_e += vel_e * dt;
     f.time += dt;

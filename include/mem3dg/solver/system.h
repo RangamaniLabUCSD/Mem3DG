@@ -629,13 +629,6 @@ public:
   void findTheVertex(gcs::VertexPositionGeometry &vpg);
 
   /**
-   * @brief pointwise update of quantities after mutation of the mesh
-   */
-  void localUpdateAfterMutation(const gcs::Vertex &element1,
-                                const gcs::Vertex &element2,
-                                const gcs::Vertex &newElement);
-
-  /**
    * @brief pointwise smoothing after mutation of the mesh
    */
   void localSmoothing(const gcs::Vertex &v, std::size_t num = 10,

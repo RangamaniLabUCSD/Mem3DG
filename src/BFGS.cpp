@@ -157,7 +157,7 @@ void BFGS::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    alpha = backtrack(rho, c1, EXIT, SUCCESS, f.E.potE, physicalForce, vel_e);
+    alpha = backtrack(f.E.potE, vel_e, rho, c1);
     s = alpha *
         rowwiseDotProduct(vel_e, gc::EigenMap<double, 3>(f.vpg->vertexNormals));
   } else {

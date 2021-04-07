@@ -14,8 +14,10 @@
 
 #pragma once
 
+#include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/halfedge_factories.h"
 #include "geometrycentral/surface/tufted_laplacian.h"
+#include "geometrycentral/utilities/vector3.h"
 #include <geometrycentral/surface/surface_mesh.h>
 
 #include <Eigen/Core>
@@ -150,6 +152,41 @@ DLL_PUBLIC inline void signalHandler(int signum) {
   exit(signum);
 }
 
+// /**
+//  * @brief close a open mesh
+//  *
+//  * @param f
+//  * @param vpg
+//  * @return double
+//  */
+// DLL_PUBLIC inline std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+//                              std::unique_ptr<gcs::VertexPositionGeometry>>
+// toClosedMesh(
+//     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> &&coords,
+//     Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> &&faces,
+//     gcs::BoundaryLoop &bl, gc::Vector3 center) {
+
+//   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> newFaces;
+//   newFaces.resize(bl.degree() - 2 + faces.rows());
+
+//   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+//   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+
+//   std::size_t count = 0;
+//   gcs::Vertex theVertex = bl.halfedge().tailVertex();
+//   for (gcs::Halfedge e : bl.adjacentHalfedges()) {
+//     if (e.tailVertex() != theVertex && e.tipVertex() != theVertex) {
+//       newFaces.row(count) << e.tailVertex().getIndex(),
+//           e.tipVertex().getIndex(), theVertex.getIndex();
+//       count++;
+//     }
+//   }
+
+//   newFaces.tail(faces.rows() * 3) << faces;
+
+//   return gcs::makeManifoldSurfaceMeshAndGeometry(coords, newFaces);
+// }
+
 /**
  * @brief Get volume from a face
  *
@@ -157,13 +194,38 @@ DLL_PUBLIC inline void signalHandler(int signum) {
  * @param vpg
  * @return double
  */
-DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
-                                              gcs::VertexPositionGeometry &vpg,
-                                              gc::Vector3 center) {
+DLL_PUBLIC inline double
+signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg) {
   gc::Vector3 p[3];
   size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
-    p[i] = vpg.inputVertexPositions[v] - center;
+    p[i] = vpg.inputVertexPositions[v];
+    i++;
+  }
+  double v321 = p[2].x * p[1].y * p[0].z;
+  double v231 = p[1].x * p[2].y * p[0].z;
+  double v312 = p[2].x * p[0].y * p[1].z;
+  double v132 = p[0].x * p[2].y * p[1].z;
+  double v213 = p[1].x * p[0].y * p[2].z;
+  double v123 = p[0].x * p[1].y * p[2].z;
+
+  return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+}
+
+/**
+ * @brief Get volume from a face
+ *
+ * @param f
+ * @param vpg
+ * @return double
+ */
+DLL_PUBLIC inline double
+signedVolumeFromFace(std::vector<std::size_t> f,
+                     gcs::VertexPositionGeometry &vpg) {
+  gc::Vector3 p[3];
+  size_t i = 0;
+  for (std::size_t v : f) {
+    p[i] = vpg.inputVertexPositions[v];
     i++;
   }
   double v321 = p[2].x * p[1].y * p[0].z;
@@ -185,10 +247,29 @@ DLL_PUBLIC inline double signedVolumeFromFace(gcs::Face &f,
  */
 DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
                                        gcs::VertexPositionGeometry &vpg,
-                                       gc::Vector3 center) {
+                                       bool isFillHole = true) {
   double volume = 0;
   for (gcs::Face f : mesh.faces()) {
-    volume += signedVolumeFromFace(f, vpg, center);
+    volume += signedVolumeFromFace(f, vpg);
+  }
+
+  // fill hole for open mesh
+  if (mesh.hasBoundary() && isFillHole) {
+    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+      gcs::Vertex theVertex = bl.halfedge().tailVertex();
+      for (gcs::Halfedge e : bl.adjacentHalfedges()) {
+        if (e.tailVertex() != theVertex && e.tipVertex() != theVertex) {
+          volume += signedVolumeFromFace(
+              std::vector<std::size_t>{e.tailVertex().getIndex(),
+                                       e.tipVertex().getIndex(),
+                                       theVertex.getIndex()},
+              vpg);
+        }
+      }
+    }
+  } else {
+    throw std::runtime_error("getMeshVolume: mesh is opened, not able to "
+                             "compute enclosed volume unless filled holes!");
   }
   return volume;
 }
@@ -393,9 +474,8 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
  * @param mask
  *
  */
-DLL_PUBLIC inline void
-boundaryMask(gcs::SurfaceMesh &mesh,
-             Eigen::Matrix<bool, Eigen::Dynamic, 1> &mask) {
+DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
+                                    gcs::VertexData<bool> &mask) {
   // for (gcs::Vertex v : mesh.vertices()) {
   //   if (v.isBoundary()) {
   //     mask[v.getIndex()] = 0;
@@ -405,10 +485,11 @@ boundaryMask(gcs::SurfaceMesh &mesh,
   //   }
   // }
   for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
-    for (gcs::Vertex v : bl.adjacentVertices()) {
-      mask[v.getIndex()] = 0;
-      for (gcs::Halfedge he : v.outgoingHalfedges()) {
-        mask[he.next().vertex().getIndex()] = 0;
+    for (gcs::Vertex v0 : bl.adjacentVertices()) {
+      for (gcs::Vertex v01 : v0.adjacentVertices()) {
+        for (gcs::Vertex v012 : v01.adjacentVertices()) {
+          mask[v012] = false;
+        }
       }
     }
   }

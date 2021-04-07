@@ -64,48 +64,51 @@ double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
 
 void System::computeRegularizationForce() {
   for (gcs::Vertex v : mesh->vertices()) {
-    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+    if (!v.isBoundary()) {
+      for (gcs::Halfedge he : v.outgoingHalfedges()) {
 
-      // Conformal regularization
-      if (P.Kst != 0 && !he.edge().isBoundary()) {
-        gcs::Halfedge jl = he.next();
-        gcs::Halfedge li = jl.next();
-        gcs::Halfedge ik = he.twin().next();
-        gcs::Halfedge kj = ik.next();
+        // Conformal regularization
+        if (P.Kst != 0 && !he.edge().isBoundary()) {
+          gcs::Halfedge jl = he.next();
+          gcs::Halfedge li = jl.next();
+          gcs::Halfedge ik = he.twin().next();
+          gcs::Halfedge kj = ik.next();
 
-        gc::Vector3 grad_li = vecFromHalfedge(li, *vpg).normalize();
-        gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
-        regularizationForce[v] +=
-            -P.Kst *
-            (computeLengthCrossRatio(*vpg, he.edge()) - targetLcrs[he.edge()]) /
-            targetLcrs[he.edge()] *
-            (vpg->edgeLengths[kj.edge()] / vpg->edgeLengths[jl.edge()]) *
-            (grad_li * vpg->edgeLengths[ik.edge()] -
-             grad_ik * vpg->edgeLengths[li.edge()]) /
-            vpg->edgeLengths[ik.edge()] / vpg->edgeLengths[ik.edge()];
-      }
+          gc::Vector3 grad_li = vecFromHalfedge(li, *vpg).normalize();
+          gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
+          regularizationForce[v] +=
+              -P.Kst *
+              (computeLengthCrossRatio(*vpg, he.edge()) -
+               targetLcrs[he.edge()]) /
+              targetLcrs[he.edge()] *
+              (vpg->edgeLengths[kj.edge()] / vpg->edgeLengths[jl.edge()]) *
+              (grad_li * vpg->edgeLengths[ik.edge()] -
+               grad_ik * vpg->edgeLengths[li.edge()]) /
+              vpg->edgeLengths[ik.edge()] / vpg->edgeLengths[ik.edge()];
+        }
 
-      // Local area regularization
-      if (P.Ksl != 0 && he.isInterior()) {
-        gcs::Halfedge base_he = he.next();
-        gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
-        gc::Vector3 localAreaGradient =
-            -gc::cross(base_vec, vpg->faceNormals[he.face()]);
-        auto &referenceArea = (v.isBoundary() ? refFaceAreas[base_he.face()]
-                                              : meanTargetFaceArea);
-        regularizationForce[v] +=
-            -P.Ksl * localAreaGradient *
-            (vpg->faceAreas[base_he.face()] - referenceArea);
-      }
+        // Local area regularization
+        if (P.Ksl != 0 && he.isInterior()) {
+          gcs::Halfedge base_he = he.next();
+          gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
+          gc::Vector3 localAreaGradient =
+              -gc::cross(base_vec, vpg->faceNormals[he.face()]);
+          auto &referenceArea = (v.isBoundary() ? refFaceAreas[base_he.face()]
+                                                : meanTargetFaceArea);
+          regularizationForce[v] +=
+              -P.Ksl * localAreaGradient *
+              (vpg->faceAreas[base_he.face()] - referenceArea);
+        }
 
-      // local edge regularization
-      if (P.Kse != 0) {
-        gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-        auto &referenceLength =
-            (v.isBoundary() ? refEdgeLengths[he.edge()] : meanTargetEdgeLength);
-        regularizationForce[v] +=
-            -P.Kse * edgeGradient *
-            (vpg->edgeLengths[he.edge()] - referenceLength);
+        // local edge regularization
+        if (P.Kse != 0) {
+          gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
+          auto &referenceLength = (v.isBoundary() ? refEdgeLengths[he.edge()]
+                                                  : meanTargetEdgeLength);
+          regularizationForce[v] +=
+              -P.Kse * edgeGradient *
+              (vpg->edgeLengths[he.edge()] - referenceLength);
+        }
       }
     }
   }
@@ -119,12 +122,12 @@ void System::computeRegularizationForce() {
       rowwiseDotProduct(regularizationForce_e, vertexAngleNormal_e),
       vertexAngleNormal_e);
 
-  // moving boundary
-  for (gcs::Vertex v : mesh->vertices()) {
-    if (!mask[v]) {
-      regularizationForce[v].z = 0;
-    }
-  }
+  // // moving boundary
+  // for (gcs::Vertex v : mesh->vertices()) {
+  //   if (v.isBoundary()) {
+  //     regularizationForce[v].z = 0;
+  //   }
+  // }
 
   // / Patch regularization
   // the cubic penalty is for regularizing the mesh,
@@ -191,7 +194,7 @@ bool System::edgeFlip() {
   // flip edge if not delauney
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
-    // if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) >
@@ -223,21 +226,24 @@ bool System::growMesh() {
   // expand the mesh when area is too large
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
-    // if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
       if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea)) {
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
+
         // split the edge
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
-        gcs::Halfedge newhe = mesh->splitEdgeTriangular(he.edge());
-        const auto &newVertex = newhe.vertex();
+        const auto &newVertex = mesh->splitEdgeTriangular(he.edge()).vertex();
 
         // update quantities
-        localUpdateAfterMutation(vertex1, vertex2, newVertex);
+        averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
+        averageData(vel, vertex1, vertex2, newVertex);
+        thePointTracker[newVertex] = false;
+        if (O.isProtein)
+          averageData(proteinDensity, vertex1, vertex2, newVertex);
 
-        isGrown = true;
-
+        // smoothing mask
         auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
                                      const gcs::Vertex v) {
           smoothingMask[v] = true;
@@ -247,6 +253,8 @@ bool System::growMesh() {
         };
         maskAllNeighboring(smoothingMask, newVertex);
         // smoothingMask[newVertex] = true;
+
+        isGrown = true;
       }
     }
   }
@@ -254,28 +262,35 @@ bool System::growMesh() {
   // shrink the mesh is vertex is too close
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
-    // if (mask[he.vertex()] && mask[he.twin().vertex()]) {
+    // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) <
           constants::PI / 3) {
+
         // alias the neighboring vertices
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
-        // flag if this is "the" point
+
+        // precached pre-mutation values or flag
+        gc::Vector3 collapsedPosition =
+            vertex1.isBoundary()   ? vpg->inputVertexPositions[vertex1]
+            : vertex2.isBoundary() ? vpg->inputVertexPositions[vertex2]
+                                   : (vpg->inputVertexPositions[vertex1] +
+                                      vpg->inputVertexPositions[vertex2]) /
+                                         2;
         bool isThePoint = thePointTracker[vertex1] || thePointTracker[vertex2];
+
         // collapse the edge
         auto newVertex = mesh->collapseEdgeTriangular(he.edge());
+
         // update quantities
-        localUpdateAfterMutation(vertex1, vertex2, newVertex);
-        // update "the" point
-        if (isThePoint && !O.isFloatVertex) {
-          thePointTracker[newVertex] = true;
-        }
+        vpg->inputVertexPositions[newVertex] = collapsedPosition;
+        thePointTracker[newVertex] = isThePoint && !O.isFloatVertex;
+        averageData(vel, vertex1, vertex2, newVertex);
+        if (O.isProtein)
+          averageData(proteinDensity, vertex1, vertex2, newVertex);
 
-        isGrown = true;
-        // std::cout << "in shirnk sum: "
-        //           << thePointTracker.raw().cast<double>().sum() << std::endl;
-
+        // smoothing mask
         auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
                                      const gcs::Vertex v) {
           smoothingMask[v] = true;
@@ -284,6 +299,11 @@ bool System::growMesh() {
           }
         };
         maskAllNeighboring(smoothingMask, newVertex);
+
+        isGrown = true;
+        // std::cout << "in shirnk sum: "
+        //           << thePointTracker.raw().cast<double>().sum() <<
+        //           std::endl;
       }
     }
   }
@@ -321,20 +341,9 @@ void System::processMesh() {
 
   // globally update quantities
   if (isGrown || isFlipped) {
-    globalSmoothing(smoothingMask);
+    // globalSmoothing(smoothingMask);
     globalUpdateAfterMutation();
   }
-}
-
-void System::localUpdateAfterMutation(const gcs::Vertex &element1,
-                                      const gcs::Vertex &element2,
-                                      const gcs::Vertex &newElement) {
-  averageData(vpg->inputVertexPositions, element1, element2, newElement);
-  averageData(vel, element1, element2, newElement);
-  if (O.isProtein)
-    averageData(proteinDensity, element1, element2, newElement);
-  if (!O.isFloatVertex)
-    thePointTracker[newElement] = false;
 }
 
 void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
@@ -353,7 +362,8 @@ void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
         gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum();
     if (gradNorm > pastGradNorm) {
       stepSize /= 2;
-      // std::cout << "WARNING: globalSmoothing: stepSize too large, cut in half!"
+      // std::cout << "WARNING: globalSmoothing: stepSize too large, cut in
+      // half!"
       //           << std::endl;
     }
     pos_e.array() +=
@@ -442,7 +452,13 @@ void System::globalUpdateAfterMutation() {
 
   // Update mask when topology changes
   if (O.isOpenMesh) {
-    boundaryMask(*mesh, mask.raw());
+    mask.fill(true);
+    boundaryMask(*mesh, mask);
+    for (gcs::Vertex v : mesh->vertices()) {
+      if (!mask[v]) {
+        vpg->inputVertexPositions[v].z = 0;
+      }
+    }
   }
 
   // Update spontaneous curvature and bending rigidity when topology changes
