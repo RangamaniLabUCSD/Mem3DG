@@ -46,11 +46,11 @@ void System::computeBendingEnergy() {
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference;
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference =
-      vpg->vertexMeanCurvatures.raw().array() /
-          vpg->vertexDualAreas.raw().array() -
-      H0.raw().array();
-  E.BE = (Kb.raw().array() * H_difference.array() *
-          vpg->vertexDualAreas.raw().array() * H_difference.array())
+      abs(vpg->vertexMeanCurvatures.raw().array() /
+              vpg->vertexDualAreas.raw().array() -
+          H0.raw().array());
+  E.BE = (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
+          H_difference.array().square())
              .sum();
 
   // when considering topological changes, additional term of gauss curvature
@@ -59,6 +59,8 @@ void System::computeBendingEnergy() {
 }
 
 void System::computeSurfaceEnergy() {
+  // cotan laplacian normal is exact for area variation
+  
   double A_difference = surfaceArea - refSurfaceArea;
   if (mesh->hasBoundary()) {
     // non moving boundary
@@ -70,6 +72,8 @@ void System::computeSurfaceEnergy() {
 }
 
 void System::computePressureEnergy() {
+  // Note: angled weight normal is exact volume variation
+
   double V_difference = volume - refVolume * P.Vt;
   if (mesh->hasBoundary()) {
     E.pE = -P.Kv * V_difference;

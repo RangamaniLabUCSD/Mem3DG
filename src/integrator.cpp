@@ -27,11 +27,10 @@ using namespace std;
 
 namespace mem3dg {
 
-double Integrator::backtrack(
-    double rho, double c1, bool &EXIT, bool &SUCCESS,
-    const double potentialEnergy_pre,
-    const Eigen::Matrix<double, Eigen::Dynamic, 1> &physicalForce,
-    const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction) {
+double
+Integrator::backtrack(const double potentialEnergy_pre,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction,
+                      double rho, double c1) {
 
   // calculate initial energy as reference level
   Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
@@ -54,17 +53,20 @@ double Integrator::backtrack(
 
   while (true) {
     if (projection < 0) {
-      std::cout << "\nBacktracking line search: on uphill direction! \n"
+      std::cout << "\nBacktracking line search: on uphill direction, use bare "
+                   "gradient! \n"
                 << std::endl;
-      EXIT = true;
-      SUCCESS = false;
+      direction = rowwiseScaling(physicalForce,
+                                 EigenMap<double, 3>(f.vpg->vertexNormals));
+      // EXIT = true;
+      // SUCCESS = false;
       break;
     }
     // while (f.E.potE > potentialEnergy_pre) {
     if (f.E.potE < (potentialEnergy_pre - c1 * alpha * projection)) {
       break;
     }
-    if (alpha < 1e-12) {
+    if (alpha < 1e-8) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
       SUCCESS = false;

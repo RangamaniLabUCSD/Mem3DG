@@ -39,8 +39,8 @@ struct DLL_PUBLIC Quantities {
   bool physical_force = false;
   /// vertex capillary force
   bool capillary_force = false;
-  /// constant global inside force
-  bool inside_force = false;
+  /// constant osmotic force
+  bool osmotic_force = false;
   /// vertex bending force
   bool bending_force = false;
   /// vertex line tension force
