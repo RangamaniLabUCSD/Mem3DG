@@ -737,9 +737,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize capillary_force
       )delim");
-  quantities.def_readwrite("inside_force", &Quantities::inside_force,
+  quantities.def_readwrite("osmotic_force", &Quantities::osmotic_force,
                            R"delim(
-        visualize inside_force
+        visualize osmotic_force
       )delim");
   quantities.def_readwrite("bending_force", &Quantities::bending_force,
                            R"delim(

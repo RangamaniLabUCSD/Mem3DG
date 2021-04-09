@@ -225,19 +225,15 @@ public:
   /**
    * @brief Backtracking algorithm that dynamically adjust step size based on
    * energy evaluation
+   * @param potentialEnergy_pre, previous energy evaluation
+   * @param direction, direction, most likely some function of gradient
    * @param rho, discount factor
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
-   * @param EXIT, exit flag for integration loop
-   * @param SUCCESS, test flag on simulation sucess
-   * @param potentialEnergy_pre, previous energy evaluation
-   * @param force, gradient of the energy
-   * @param direction, direction, most likely some function of gradient
    * @return alpha, line search step size
    */
-  double backtrack(double rho, double c1, bool &EXIT, bool &SUCCESS,
-                   const double potentialEnergy_pre,
-                   const Eigen::Matrix<double, Eigen::Dynamic, 1> &force,
-                   const Eigen::Matrix<double, Eigen::Dynamic, 3> &direction);
+  double backtrack(const double potentialEnergy_pre,
+                   Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction,
+                   double rho = 0.99, double c1 = 0.0001);
 
   /**
    * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure

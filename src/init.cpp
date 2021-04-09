@@ -333,7 +333,7 @@ void System::initConstants() {
 
   // Mask boundary element
   if (mesh->hasBoundary()) {
-    boundaryMask(*mesh, mask.raw());
+    boundaryMask(*mesh, mask);
   }
 
   // Explicitly cached the reference face areas data
@@ -414,16 +414,16 @@ void System::updateVertexPositions() {
   }
 
   /// initialize/update enclosed volume
-  volume = getMeshVolume(*mesh, *vpg, gc::Vector3{0, 0, 0});
+  volume = getMeshVolume(*mesh, *vpg, true);
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum();
 
-  // update reference area by projecting to xy plane
-  if (O.isOpenMesh) {
-    refSurfaceArea =
-        computePolygonArea(mesh->boundaryLoop(1), vpg->inputVertexPositions);
-  }
+  // // update reference area by projecting to xy plane
+  // if (O.isOpenMesh) {
+  //   refSurfaceArea =
+  //       computePolygonArea(mesh->boundaryLoop(0), vpg->inputVertexPositions);
+  // }
 
   // initialize/update spontaneous curvature (protein
   // binding)

@@ -38,12 +38,10 @@ namespace gcs = ::geometrycentral::surface;
 void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
                    std::unique_ptr<gcs::VertexPositionGeometry> &ptrVpg,
                    std::size_t nSub) {
-  using EigenVectorX3D =
-      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-  using EigenTopVec =
-      Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
-  EigenVectorX3D coords;
-  EigenTopVec faces;
+                     
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
+
   igl::loop(gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions),
             ptrMesh->getFaceVertexMatrix<size_t>(), coords, faces, nSub);
 
