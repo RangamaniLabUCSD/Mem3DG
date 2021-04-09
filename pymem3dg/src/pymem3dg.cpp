@@ -269,6 +269,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                        R"delim(
           get the enclosed volume of the mesh
       )delim");
+  system.def_readwrite("refVolume", &System::refVolume,
+                       R"delim(
+          get the reference enclosed volume of the mesh
+      )delim");
 
   system.def(
       "getVertexPositionMatrix",
@@ -278,6 +282,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::return_value_policy::reference_internal,
       R"delim(
           get the vertex position matrix
+      )delim");
+  system.def(
+      "getVertexVelocityMatrix",
+      [](System &s) { return gc::EigenMap<double, 3>(s.vel); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the vertex velocity matrix
       )delim");
   system.def(
       "getReferenceVertexPositionMatrix",
