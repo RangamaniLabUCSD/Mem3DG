@@ -40,6 +40,59 @@ namespace gcs = ::geometrycentral::surface;
 
 EigenVectorX3D System::computeFundamentalThreeForces() {
 
+  //   surfaceTension =
+  //     O.isOpenMesh ? P.Ksg
+  //                  : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea;
+
+  // // std::cout << "refSurfaceArea: " << refSurfaceArea << std::endl;
+  // double pressure =
+  //     O.isOpenMesh ? P.Kv
+  //     : O.isReducedVolume
+  //         ? -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) +
+  //             P.lambdaV)
+  //         : P.Kv / volume - P.Kv * P.cam;
+
+  // gc::Vector3 dAidxi{0, 0, 0};
+  // gc::Vector3 dHidxi{0, 0, 0};
+
+  // for (gc::Vertex v : mesh->vertices()) {
+  //   double Hi = vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v);
+  //   double Ai = Ai;
+  //   for (gc::Halfedge he : v.outgoingHalfedges()) {
+  //     dAidxi += cross(vpg->faceNormal(he.face()),
+  //                     vecFromHalfedge(he.next(), *vpg) / 2) /
+  //               3;
+  //   }
+
+  //   dHidxi = -Hi / Ai * dAidxi;
+  //   for (gc::Halfedge he : v.outgoingHalfedges()) {
+  //     gc::Vector3 eji = vpg->inputVertexPositions[v] -
+  //                       vpg->inputVertexPositions[he.tipVertex()];
+  //     gc::Vector3 dPhidx = 2 * vpg->halfedgeCotanWeight(he.next().next()) *
+  //                              vpg->faceNormal(he.face()) +
+  //                          2 * vpg->halfedgeCotanWeight(he.twin().next()) *
+  //                              vpg->faceNormal(he.twin().face());
+  //     dHidxi += 0.25 / Ai *
+  //               (eji.unit() * vpg->edgeDihedralAngle(he.edge()) +
+  //                vpg->edgeLength(he.edge()) * dPhidx);
+  //   }
+
+  //   gc::Vector3 bending3 =
+  //       2 * Kb[v] * Hi * dHidxi * Ai + Kb[v] * Hi * Hi * dAidxi;
+
+  //   for (gc::Halfedge he : v.outgoingHalfedges()) {
+  //     gcs::Vertex vj = he.tipVertex();
+  //     gc::Vector3 dAjdxi =
+  //         cross(vpg->faceNormal(he.face()), vecFromHalfedge(he.next(), *vpg))
+  //         /
+  //             6 +
+  //         cross(vpg->faceNormal(he.twin().face()),
+  //               vecFromHalfedge(he.twin().next().next(), *vpg)) /
+  //             6;
+  //     gc::Vector3 dHjdxi{0, 0, 0};
+  //   }
+  // }
+
   surfaceTension =
       O.isOpenMesh ? P.Ksg
                    : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea;
@@ -107,10 +160,18 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
       //           std::endl;
       gc::Vector3 gaussVecji =
           0.5 * vpg->edgeDihedralAngle(he.edge()) * eji.unit();
-      gc::Vector3 schlafliVecji = vpg->halfedgeCotanWeight(he.next().next()) *
-                                      vpg->faceNormal(he.face()) +
-                                  vpg->halfedgeCotanWeight(he.twin().next()) *
-                                      vpg->faceNormal(he.twin().face());
+      gc::Vector3 schlafliVecji =
+          vpg->halfedgeCotanWeight(he.next().next()) *
+              vpg->faceNormal(he.face()) +
+          vpg->halfedgeCotanWeight(he.twin().next()) *
+              vpg->faceNormal(he.twin().face()) -
+          vpg->edgeLength(he.next().edge()) *
+              vpg->edgeLength(he.next().edge()) / 4 / vpg->faceArea(he.face()) *
+              vpg->faceNormal(he.face()) -
+          vpg->edgeLength(he.twin().next().next().edge()) *
+              vpg->edgeLength(he.twin().next().next().edge()) / 4 /
+              vpg->faceArea(he.twin().face()) *
+              vpg->faceNormal(he.twin().face());
 
       // total for energyjGradi
       double Hj = vpg->vertexMeanCurvature(vj) / vpg->vertexDualArea(vj);
@@ -140,9 +201,9 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                     (gaussVec + schlafliVec + ((-Hi - H0[v]) * areaiGradi));
     surfaceiGradiSum = surfaceTension * areaiGradi;
 
-    std::cout << "areaGrad 1: " << surfaceiGradiSum + surfacejGradiSum
-              << " vs. "
-              << "areaGrad 2: " << surfaceTension * meanVec_ << std::endl;
+    // std::cout << "areaGrad 1: " << surfaceiGradiSum + surfacejGradiSum
+    //           << " vs. "
+    //           << "areaGrad 2: " << surfaceTension * meanVec_ << std::endl;
 
     // force components
     // std::cout << "bending ii" << bendiGradiSum.norm() << ", bending ji"
