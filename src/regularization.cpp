@@ -19,7 +19,6 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 #include <Eigen/Core>
-#include <bits/c++config.h>
 
 namespace mem3dg {
 

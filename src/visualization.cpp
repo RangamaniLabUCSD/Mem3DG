@@ -80,15 +80,15 @@ void visualize(mem3dg::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("external_Force", f.externalForce);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("bending_force", f.bendingForce);
+      ->addVertexVectorQuantity("bending_force", f.bendingForceVec);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
                                 f.lineCapillaryForce.raw().array() /
                                     f.vpg->vertexDualAreas.raw().array());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("capillary_force", f.capillaryForce);
+      ->addVertexVectorQuantity("capillary_force", f.capillaryForceVec);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("osmotic_force", f.osmoticForce);
+      ->addVertexVectorQuantity("osmotic_force", f.osmoticForceVec);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_force", fn);
   polyscope::getSurfaceMesh("Membrane")

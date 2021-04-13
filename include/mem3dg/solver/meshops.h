@@ -254,22 +254,24 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
   }
 
   // fill hole for open mesh
-  if (mesh.hasBoundary() && isFillHole) {
-    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
-      gcs::Vertex theVertex = bl.halfedge().tailVertex();
-      for (gcs::Halfedge e : bl.adjacentHalfedges()) {
-        if (e.tailVertex() != theVertex && e.tipVertex() != theVertex) {
-          volume += signedVolumeFromFace(
-              std::vector<std::size_t>{e.tailVertex().getIndex(),
-                                       e.tipVertex().getIndex(),
-                                       theVertex.getIndex()},
-              vpg);
+  if (mesh.hasBoundary()) {
+    if (isFillHole) {
+      for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+        gcs::Vertex theVertex = bl.halfedge().tailVertex();
+        for (gcs::Halfedge e : bl.adjacentHalfedges()) {
+          if (e.tailVertex() != theVertex && e.tipVertex() != theVertex) {
+            volume += signedVolumeFromFace(
+                std::vector<std::size_t>{e.tailVertex().getIndex(),
+                                         e.tipVertex().getIndex(),
+                                         theVertex.getIndex()},
+                vpg);
+          }
         }
       }
+    } else {
+      throw std::runtime_error("getMeshVolume: mesh is opened, not able to "
+                               "compute enclosed volume unless filled holes!");
     }
-  } else {
-    throw std::runtime_error("getMeshVolume: mesh is opened, not able to "
-                             "compute enclosed volume unless filled holes!");
   }
   return volume;
 }
