@@ -101,10 +101,12 @@ void Euler::status() {
   getForces();
 
   // compute force, which is equivalent to velocity
-  vel_e = rowwiseScaling(physicalForce, vertexAngleNormal_e);
+  // vel_e = rowwiseScaling(physicalForce, vertexAngleNormal_e);
+  vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
+                         gc::EigenMap<double, 3>(f.fundamentalThreeForces));
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
+  f.L1ErrorNorm = f.computeL1Norm(vel_e.rowwise().norm());
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())

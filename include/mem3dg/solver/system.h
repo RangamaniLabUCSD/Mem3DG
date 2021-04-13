@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/mesh.h"
@@ -177,6 +178,14 @@ public:
   gcs::VertexData<double> externalForce;
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
+  /// Cached three fundamentals
+  gcs::VertexData<gc::Vector3> fundamentalThreeForces;
+  /// Cached bending force
+  gcs::VertexData<gc::Vector3> bendingForceVec;
+  /// Cached tension-induced capillary force
+  gcs::VertexData<gc::Vector3> capillaryForceVec;
+  /// Cached osmotic force
+  gcs::VertexData<gc::Vector3> osmoticForceVec;
   /// Cached Surface tension
   double surfaceTension;
 
@@ -352,7 +361,10 @@ public:
          Options &o)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), bendingForce(*mesh, 0),
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}),
+        fundamentalThreeForces(*mesh, {0, 0, 0}),
+        bendingForceVec(*mesh, {0, 0, 0}), capillaryForceVec(*mesh, {0, 0, 0}),
+        osmoticForceVec(*mesh, {0, 0, 0}), bendingForce(*mesh, 0),
         capillaryForce(*mesh, 0), lineTension(*mesh, 0),
         lineCapillaryForce(*mesh, 0), externalForce(*mesh, 0),
         osmoticForce(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
@@ -498,11 +510,6 @@ public:
   EigenVectorX1D computeBendingForce();
 
   /**
-   * @brief Compute chemical potential of the system
-   */
-  EigenVectorX1D computeChemicalPotential();
-
-  /**
    * @brief Compute capillary force component of the system
    */
   EigenVectorX1D computeCapillaryForce();
@@ -511,6 +518,16 @@ public:
    * @brief Compute osmotic force component of the system
    */
   EigenVectorX1D computeOsmoticForce();
+
+  /**
+   * @brief Compute fundamental three forces at the same time
+   */
+  EigenVectorX3D computeFundamentalThreeForces();
+
+  /**
+   * @brief Compute chemical potential of the system
+   */
+  EigenVectorX1D computeChemicalPotential();
 
   /**
    * @brief Compute line tension force component of the system
@@ -640,7 +657,7 @@ public:
    * @brief global update of quantities after mutation of the mesh
    */
   void globalUpdateAfterMutation();
-  
+
   /**
    * @brief global smoothing after mutation of the mesh
    */

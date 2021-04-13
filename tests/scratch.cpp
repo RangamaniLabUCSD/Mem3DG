@@ -3,13 +3,13 @@
 #include <netcdf>
 #endif
 
+#include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/util.h"
-#include "mem3dg/solver/visualization.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -23,74 +23,56 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 int main() {
-
-  // std::string inputMesh =
-  // "/home/cuzhu/2020-Mem3DG-Applications/run/input-file/bud.ply"; std::string
-  // refMesh = "/home/cuzhu/2020-Mem3DG-Applications/run/input-file/patch.ply";
-  // std::string outputDir =
-  // "/home/cuzhu/2020-Mem3DG-Applications/results/bud/coarse/Ksg5e-4_H5";
+  // pybind11::scoped_interpreter guard{};
   std::string inputMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
-                          "run//input-file//bud.ply";
-  std::string refMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//run/"
-                        "/input-file//patch.ply";
-  std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
-                          "results//bud//asymm//testTraj";
-  // std::string inputMesh =
-  // "C://Users//Kieran//Dev//2020-Mem3DG-Applications//results//bud//asymm//testTraj//newBUD.ply";
-  // std::string refMesh =
-  // "C://Users//Kieran//Dev//2020-Mem3DG-Applications//results//bud//asymm//testTraj//newBUD.ply";
+                          "results//bud//asymm//testTraj//frame360.ply";
 
-  // Initialize unique ptr to mesh and geometry object
-  // std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
-  // std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  // std::unique_ptr<gcs::VertexPositionGeometry> ptrRefVpg;
-  // std::tie(ptrMesh, ptrVpg) = mem3dg::icosphere(1, 1);
-  // ptrRefVpg = ptrVpg->reinterpretTo(*ptrMesh);
-
-  // List parameters
-  double Kb = 8.22e-5, Kbc = 10 * 8.22e-5, H0 = 4, Kst = 0, Ksl = 0, Kse = 0,
-         epsilon = -1, Bc = -1, gamma = 0, Vt = 0.7, Pam = 0, Kf = 0, conc = 25,
-         height = 0, radius = 1000, temp = 0, h = 5e-4, Kv = 5e-2, eta = 0,
-         Ksg = 0.1;
-  std::vector<double> pt = {1, 1, 1};
-  std::vector<double> r_H0 = {0.5, 0.5};
-
-  std::cout << "Initiating the system ...";
-  mem3dg::Parameters p{Kb,  Kbc,  H0,  r_H0,    Ksg,  Kst,    Ksl,
-                       Kse, Kv,   eta, epsilon, Bc,   gamma,  Vt,
-                       Pam, temp, pt,  Kf,      conc, height, radius};
+  /// physical parameters
+  mem3dg::Parameters p;
+  p.Kb = 8.22e-5;
+  p.Kbc = 8.22e-4;
+  p.H0 = 6;
+  p.r_H0 = std::vector<double>{0.5, 0.5};
+  p.eta = 0;
+  p.Ksg = 2e-2;
+  p.Kst = 0; // 2e-6;
+  p.Ksl = 1e-7;
+  p.Kse = 1e-7;
+  p.epsilon = -1;
+  p.Bc = -1;
+  p.Kv = 1;
+  p.Vt = -1;
+  p.cam = 0;
+  p.Kf = 0;
+  p.conc = -1;
+  p.height = 0;
+  p.radius = 100000;
+  p.gamma = 0;
+  p.temp = 0;
+  p.pt = std::vector<double>{0, 0};
 
   mem3dg::Options o;
   o.isProtein = false;
-  o.isVertexShift = false;
-  o.isReducedVolume = true;
+  o.isReducedVolume = false;
   o.isLocalCurvature = true;
-  o.isEdgeFlip = false;
-  o.isGrowMesh = false;
-  o.isRefMesh = true;
-  o.isFloatVertex = false;
+  o.isEdgeFlip = true;
+  o.isGrowMesh = true;
+  o.isVertexShift = false;
+  o.isRefMesh = false;
+  o.isFloatVertex = true;
   o.isLaplacianMeanCurvature = false;
-  
-  mem3dg::System f(inputMesh, refMesh, 0, p, o);
 
-  gcs::RichSurfaceMeshData richData(*f.mesh);
-  // richData.addMeshConnectivity();
-  // richData.addGeometry(*f.vpg);
-  // std::string name{"//newBUD.ply"};
-  // richData.write(outputDir + name);
-  visualize(f);
+  mem3dg::System f(inputMesh, inputMesh, 0, p, o);
 
-  std::cout << "Finished!" << std::endl;
+  double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
+         verbosity = 3, restartNum = 5;
+  bool isAdaptiveStep = true, isAugmentedLagrangian = false, isBacktrack = false;
+  std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
+                          "results//bud//asymm//testTraj";
 
-  //   std::cout << "Solving the system ..." << std::endl;
-  //   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
-  //          tMollify = 100;
-  //   size_t verbosity = 0;
-
-  //   mem3dg::ConjugateGradient integrator(f, h, true, T, tSave, eps, "./",
-  //                                        "/traj.nc", verbosity, true, 0.5,
-  //                                        1e-4, 0.01, false);
-  //   integrator.integrate();
+  mem3dg::Euler integrator(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
+                           outputDir, verbosity, isBacktrack, rho, c1);
+  integrator.integrate();
 
   return 0;
 }

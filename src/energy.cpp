@@ -34,24 +34,24 @@ namespace gcs = ::geometrycentral::surface;
 void System::computeBendingEnergy() {
 
   // no particular reason, just experiment
-  // E.BE = 0;
-  // for (gcs::Vertex v : mesh->vertices()) {
-  //   if (H0[v] == H0[v.halfedge().tipVertex()]) {
-  //     E.BE += P.Kb * (H[v] - H0[v]) * (H[v] - H0[v]) *
-  //     vpg->vertexDualArea(v);
-  //   }
-  // }
+  E.BE = 0;
+  for (gcs::Vertex v : mesh->vertices()) {
+    E.BE += Kb[v] *
+            (vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v) - H0[v]) *
+            (vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v) - H0[v]) *
+            vpg->vertexDualArea(v);
+  }
 
   // Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = H.raw() - H0.raw();
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference;
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference =
-      abs(vpg->vertexMeanCurvatures.raw().array() /
-              vpg->vertexDualAreas.raw().array() -
-          H0.raw().array());
-  E.BE = (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
-          H_difference.array().square())
-             .sum();
+  // Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference =
+  //     abs(vpg->vertexMeanCurvatures.raw().array() /
+  //             vpg->vertexDualAreas.raw().array() -
+  //         H0.raw().array());
+  // E.BE = (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
+  //         H_difference.array().square())
+  //            .sum();
 
   // when considering topological changes, additional term of gauss curvature
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
@@ -60,7 +60,7 @@ void System::computeBendingEnergy() {
 
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
-  
+
   double A_difference = surfaceArea - refSurfaceArea;
   if (mesh->hasBoundary()) {
     // non moving boundary
