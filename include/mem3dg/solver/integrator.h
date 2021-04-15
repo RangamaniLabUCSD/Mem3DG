@@ -65,6 +65,7 @@ public:
   /// regularization force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce;
   /// physical vertex pressure to the system
+  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalForceVec;
   Eigen::Matrix<double, Eigen::Dynamic, 1> physicalForce;
   /// numerical dissipative particle dynamics force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 1> DPDForce;
@@ -83,6 +84,8 @@ public:
   double dVP;
   /// ratio of time step to the squared mesh size
   double dt_size2_ratio;
+  /// initial maximum force
+  double maxForce;
 
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
@@ -116,6 +119,10 @@ public:
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
                      f.vpg->edgeLengths.raw().minCoeff();
+
+    // Initialize the initial maxForce
+    getForces();
+    maxForce = physicalForce.cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
     dArea = 1e10;

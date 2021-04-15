@@ -58,15 +58,16 @@ Integrator::backtrack(const double potentialEnergy_pre,
                 << std::endl;
       direction = rowwiseScaling(physicalForce,
                                  EigenMap<double, 3>(f.vpg->vertexNormals));
+      projection = 1;
       // EXIT = true;
       // SUCCESS = false;
-      break;
+      // break;
     }
     // while (f.E.potE > potentialEnergy_pre) {
     if (f.E.potE < (potentialEnergy_pre - c1 * alpha * projection)) {
       break;
     }
-    if (alpha < 1e-8) {
+    if (alpha < 1e-6) {
       std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
       EXIT = true;
       SUCCESS = false;
@@ -93,6 +94,12 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
+  physicalForceVec = rowwiseScaling(
+      (f.mask.raw().cast<double>()).array(),
+      rowwiseScaling(f.externalForce.raw() + f.lineCapillaryForce.raw(),
+                     vertexAngleNormal_e) +
+          f.toMatrix(f.fundamentalThreeForces));
+
   physicalForce =
       (f.mask.raw().cast<double>()).array() *
       (f.bendingForce.raw() + f.capillaryForce.raw() + f.externalForce.raw() +
@@ -109,9 +116,9 @@ void Integrator::getForces() {
   }
 
   if (!f.mesh->hasBoundary()) {
-    removeTranslation(rowwiseScaling(physicalForce, vertexAngleNormal_e));
+    removeTranslation(physicalForceVec);
     removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
-                   rowwiseScaling(physicalForce, vertexAngleNormal_e));
+                   physicalForceVec);
     // removeTranslation(DPDPressure);
     // removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
     // DPDPressure);

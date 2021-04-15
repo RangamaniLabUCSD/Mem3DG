@@ -92,21 +92,11 @@ void Euler::status() {
   // recompute cached values
   f.updateVertexPositions();
 
-  // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
-
   // compute summerized forces
   getForces();
 
-  // compute force, which is equivalent to velocity
-  // vel_e = rowwiseScaling(physicalForce, vertexAngleNormal_e);
-  vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
-                         gc::EigenMap<double, 3>(f.fundamentalThreeForces));
-
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(vel_e.rowwise().norm());
+  f.L1ErrorNorm = f.computeL1Norm(physicalForceVec.rowwise().norm());
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -146,10 +136,15 @@ void Euler::march() {
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
+  // compute force, which is equivalent to velocity
+  vel_e = physicalForceVec; // rowwiseScaling(physicalForce,
+                            // vertexAngleNormal_e);
+
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-    dt = dt_size2_ratio * minMeshLength * minMeshLength;
+    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
+         physicalForce.cwiseAbs().maxCoeff();
   }
 
   // time stepping on vertex position

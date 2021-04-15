@@ -98,7 +98,7 @@ void ConjugateGradient::status() {
   getForces();
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
+  f.L1ErrorNorm = f.computeL1Norm(physicalForceVec.rowwise().norm());
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -143,14 +143,12 @@ void ConjugateGradient::march() {
   // determine conjugate gradient direction, restart after nVertices() cycles
   if (countCG % restartNum == 0) {
     pastNormSq = physicalForce.squaredNorm();
-    vel_e = rowwiseScaling(physicalForce,
-                           gc::EigenMap<double, 3>(f.vpg->vertexNormals));
+    vel_e = physicalForceVec;
     countCG = 1;
   } else {
     currentNormSq = physicalForce.squaredNorm();
-    vel_e = currentNormSq / pastNormSq * vel_e +
-            rowwiseScaling(physicalForce,
-                           gc::EigenMap<double, 3>(f.vpg->vertexNormals));
+    vel_e *= currentNormSq / pastNormSq;
+    vel_e += physicalForceVec;
     pastNormSq = currentNormSq;
     countCG++;
   }
@@ -158,7 +156,8 @@ void ConjugateGradient::march() {
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-    dt = dt_size2_ratio * minMeshLength * minMeshLength;
+    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
+         physicalForce.cwiseAbs().maxCoeff();
   }
 
   // time stepping on vertex position

@@ -105,15 +105,6 @@ void visualize(mem3dg::System &f) {
                                   f.H0.raw()))
                                     .array());
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity(
-          "spon part)", f.bendingForce.raw().array() +
-                            f.Kb.raw().array() *
-                                (f.vpg->cotanLaplacian *
-                                 (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
-                                      f.vpg->vertexMeanCurvatures.raw() -
-                                  f.H0.raw()))
-                                    .array());
-  polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_dihedral", f.vpg->edgeDihedralAngles);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("cotan weight", f.vpg->edgeCotanWeights);

@@ -548,15 +548,29 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
 /**
  * @brief find the closest point index to a given point
  *
- * @param
- * @param standard deviation
+ * @param mesh mesh
+ * @param vpg geometry
+ * @param position position of the target space point
+ * @param geodesicDistance geodesic distance from a particular point in order to
+ * specify range of search
+ * @param range range of search
  */
 DLL_PUBLIC inline gcs::Vertex
 closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-                  std::vector<double> position) {
+                  std::vector<double> position,
+                  gcs::VertexData<double> &geodesicDistance,
+                  double range = 1e10) {
   gcs::Vertex theVertex;
   double shorestDistance = 1e18;
   for (gcs::Vertex v : mesh.vertices()) {
+    if (geodesicDistance[v] > range) {
+      continue;
+    }
+    if (geodesicDistance[v] <= 0) {
+      std::cout << "WARNING: closestVertexToPt: geodesicDistance <= 0, may be "
+                   "uninitialized!"
+                << std::endl;
+    }
     double distance;
     if (position.size() == 2) {
       distance = (gc::Vector2{vpg.inputVertexPositions[v].x,

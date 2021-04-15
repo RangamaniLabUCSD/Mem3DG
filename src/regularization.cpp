@@ -19,6 +19,7 @@
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 #include <Eigen/Core>
+#include <cmath>
 
 namespace mem3dg {
 
@@ -227,8 +228,23 @@ bool System::growMesh() {
     gcs::Halfedge he = e.halfedge();
     // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
-      if ((vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
-          (4 * meanTargetFaceArea)) {
+      // curvature based remeshing:
+      // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
+      double eps = 0.0012;
+      double k1 = (abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex())) >
+                   abs(vpg->vertexMinPrincipalCurvature(he.tipVertex())))
+                      ? abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex()))
+                      : abs(vpg->vertexMinPrincipalCurvature(he.tipVertex()));
+      double k2 = (abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex())) >
+                   abs(vpg->vertexMinPrincipalCurvature(he.tailVertex())))
+                      ? abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex()))
+                      : abs(vpg->vertexMinPrincipalCurvature(he.tailVertex()));
+      double L = std::sqrt(6 * eps / ((k1 > k2) ? k1 : k2) - 3 * eps * eps);
+      bool is2Large =
+          (vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
+          (4 * meanTargetFaceArea);
+      bool is2Curved = vpg->edgeLength(he.edge()) > (2 * L);
+      if (is2Large || is2Curved) {
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
 
         // split the edge
@@ -238,6 +254,7 @@ bool System::growMesh() {
         // update quantities
         averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
         averageData(vel, vertex1, vertex2, newVertex);
+        averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
         thePointTracker[newVertex] = false;
         if (O.isProtein)
           averageData(proteinDensity, vertex1, vertex2, newVertex);
@@ -284,8 +301,9 @@ bool System::growMesh() {
 
         // update quantities
         vpg->inputVertexPositions[newVertex] = collapsedPosition;
-        thePointTracker[newVertex] = isThePoint && !O.isFloatVertex;
+        thePointTracker[newVertex] = isThePoint;
         averageData(vel, vertex1, vertex2, newVertex);
+        averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
         if (O.isProtein)
           averageData(proteinDensity, vertex1, vertex2, newVertex);
 
