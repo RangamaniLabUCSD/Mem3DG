@@ -13,6 +13,7 @@
 //
 
 #include "geometrycentral/surface/heat_method_distance.h"
+#include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
 #include <stdexcept>
 #ifdef MEM3DG_WITH_NETCDF
@@ -323,7 +324,7 @@ void System::initConstants() {
   }
 
   // Find "the" vertex
-  findTheVertex(*localVpg);
+  findTheVertex(*localVpg, geodesicDistanceFromPtInd, 1e18);
 
   // Initialize the constant mask based on distance from the point specified
   mask.raw() =
@@ -386,7 +387,9 @@ void System::updateVertexPositions() {
 
   // recompute floating "the vertex"
   if (O.isFloatVertex) {
-    findTheVertex(*vpg);
+    findTheVertex(
+        *vpg, geodesicDistanceFromPtInd,
+        2 * vpg->edgeLength(thePoint.nearestVertex().halfedge().edge()));
   }
 
   if (O.isLocalCurvature || P.Kf != 0) {
@@ -451,7 +454,9 @@ void System::updateVertexPositions() {
   pastPositions = vpg->inputVertexPositions;
 }
 
-void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
+void System::findTheVertex(gcs::VertexPositionGeometry &vpg,
+                           gcs::VertexData<double> &geodesicDistance,
+                           double range) {
   bool isUpdated = false;
   if (O.isFloatVertex) {
     switch (P.pt.size()) {
@@ -462,7 +467,8 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
-      gcs::Vertex closestVertex = closestVertexToPt(*mesh, vpg, P.pt);
+      gcs::Vertex closestVertex =
+          closestVertexToPt(*mesh, vpg, P.pt, geodesicDistance, range);
       double shortestDistance = 1e18;
       // loop over every faces around the vertex
       for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
@@ -512,7 +518,8 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
     case 3: {
       // initialize embedded point and the closest vertex
       gc::Vector3 embeddedPoint{P.pt[0], P.pt[1], P.pt[2]};
-      gcs::Vertex closestVertex = closestVertexToPt(*mesh, vpg, P.pt);
+      gcs::Vertex closestVertex =
+          closestVertexToPt(*mesh, vpg, P.pt, geodesicDistance, range);
       gc::Vector3 vertexToPoint =
           embeddedPoint - vpg.inputVertexPositions[closestVertex];
       // initialize the surface point as the closest vertex
@@ -595,12 +602,14 @@ void System::findTheVertex(gcs::VertexPositionGeometry &vpg) {
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
-      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, P.pt));
+      thePoint = gc::SurfacePoint(
+          closestVertexToPt(*mesh, vpg, P.pt, geodesicDistance, range));
       isUpdated = true;
       break;
     }
     case 3: {
-      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, P.pt));
+      thePoint = gc::SurfacePoint(
+          closestVertexToPt(*mesh, vpg, P.pt, geodesicDistance, range));
       isUpdated = true;
       break;
     }

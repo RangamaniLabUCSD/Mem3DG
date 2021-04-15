@@ -643,7 +643,9 @@ public:
   /**
    * @brief Find "the" vertex
    */
-  void findTheVertex(gcs::VertexPositionGeometry &vpg);
+  void findTheVertex(gcs::VertexPositionGeometry &vpg,
+                     gcs::VertexData<double> &geodesicDistance,
+                     double range = 1e10);
 
   /**
    * @brief pointwise smoothing after mutation of the mesh
@@ -663,5 +665,103 @@ public:
    */
   void globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
                        double stepSize = 1);
+
+  // ==========================================================
+  // =============      Data interop helpers    ===============
+  // ==========================================================
+  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &vector) {
+    return gc::EigenMap<double, 3>(vector);
+  }
+  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &&vector) {
+    return gc::EigenMap<double, 3>(vector);
+  }
+
+  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &vector) {
+    return vector.raw();
+  }
+  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &&vector) {
+    return vector.raw();
+  }
+
+  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &vector) {
+    return gcs::VertexData<double>(*mesh, vector);
+  }
+  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &&vector) {
+    return gcs::VertexData<double>(*mesh, vector);
+  }
+
+  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &vector) {
+    gcs::VertexData<gc::Vector3> vertexData(*mesh);
+    gc::EigenMap<double, 3>(vertexData) = vector;
+    return vertexData;
+  }
+  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &&vector) {
+    gcs::VertexData<gc::Vector3> vertexData(*mesh);
+    gc::EigenMap<double, 3>(vertexData) = vector;
+    return vertexData;
+  }
+
+  inline gcs::VertexData<double>
+  ontoNormal(gcs::VertexData<gc::Vector3> &vector) {
+    gcs::VertexData<double> vertexData(*mesh);
+    vertexData.raw() =
+        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                          gc::EigenMap<double, 3>(vpg->vertexNormals));
+    return vertexData;
+  }
+  inline gcs::VertexData<double>
+  ontoNormal(gcs::VertexData<gc::Vector3> &&vector) {
+    gcs::VertexData<double> vertexData(*mesh);
+    vertexData.raw() =
+        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                          gc::EigenMap<double, 3>(vpg->vertexNormals));
+    return vertexData;
+  }
+
+  inline gcs::VertexData<gc::Vector3>
+  addNormal(gcs::VertexData<double> &vector) {
+    gcs::VertexData<gc::Vector3> vertexData(*mesh);
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+        vector.raw(), gc::EigenMap<double, 3>(vpg->vertexNormals));
+    return vertexData;
+  }
+  inline gcs::VertexData<gc::Vector3>
+  addNormal(gcs::VertexData<double> &&vector) {
+    gcs::VertexData<gc::Vector3> vertexData(*mesh);
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+        vector.raw(), gc::EigenMap<double, 3>(vpg->vertexNormals));
+    return vertexData;
+  }
+
+  inline EigenVectorX1D ontoNormal(EigenVectorX3D &vector) {
+    return rowwiseDotProduct(vector,
+                             gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+  inline EigenVectorX1D ontoNormal(EigenVectorX3D &&vector) {
+    return rowwiseDotProduct(vector,
+                             gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+
+  inline EigenVectorX3D addNormal(EigenVectorX1D &vector) {
+    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+  inline EigenVectorX3D addNormal(EigenVectorX1D &&vector) {
+    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+
+  inline EigenVectorX3D removeNormal(gcs::VertexData<gc::Vector3> &vector) {
+    return gc::EigenMap<double, 3>(vector) -
+           rowwiseScaling(
+               rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                 gc::EigenMap<double, 3>(vpg->vertexNormals)),
+               gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+  inline EigenVectorX3D removeNormal(gcs::VertexData<gc::Vector3> &&vector) {
+    return gc::EigenMap<double, 3>(vector) -
+           rowwiseScaling(
+               rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                 gc::EigenMap<double, 3>(vpg->vertexNormals)),
+               gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
 };
 } // namespace mem3dg

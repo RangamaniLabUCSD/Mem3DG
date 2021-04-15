@@ -107,7 +107,7 @@ void BFGS::status() {
   pastPhysicalForce = physicalForce;
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
+  f.L1ErrorNorm = f.computeL1Norm(physicalForceVec.rowwise().norm());
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
@@ -146,13 +146,13 @@ void BFGS::march() {
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
-  vel_e = rowwiseScaling(hess_inv * physicalForce,
-                         gc::EigenMap<double, 3>(f.vpg->vertexNormals));
+  vel_e = hess_inv * physicalForceVec;
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-    dt = dt_size2_ratio * minMeshLength * minMeshLength;
+    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
+         physicalForce.cwiseAbs().maxCoeff();
   }
 
   // time stepping on vertex position

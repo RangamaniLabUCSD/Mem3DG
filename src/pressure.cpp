@@ -123,16 +123,21 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
       bendingForceVec[v] = -bendiGradiSum - bendjGradiSum;
       capillaryForceVec[v] = -surfaceiGradiSum - surfacejGradiSum;
       osmoticForceVec[v] = pressure * volGrad;
+      bendingForce[v] = dot(bendingForceVec[v], vpg->vertexNormals[v]);
+      capillaryForce[v] = dot(capillaryForceVec[v], vpg->vertexNormals[v]);
+      osmoticForce[v] = dot(osmoticForceVec[v], vpg->vertexNormals[v]);
 
       fundamentalThreeForces[v] =
           bendingForceVec[v] + capillaryForceVec[v] + osmoticForceVec[v];
     }
   }
-
+  isSmooth = !hasOutlier(bendingForce.raw());
   return gc::EigenMap<double, 3>(fundamentalThreeForces);
 }
 
 EigenVectorX1D System::computeBendingForce() {
+  throw std::runtime_error("computeBendingForce: out of data implementation, "
+                           "shouldn't be called!");
   // A. non-optimized version
   // if (O.isLocalCurvature) {
   //   // Split calculation for two domain
@@ -181,23 +186,6 @@ EigenVectorX1D System::computeBendingForce() {
 
   isSmooth = !hasOutlier(bendingForce.raw());
 
-  // auto bf_diff = vpg->d0 * bendingForce.raw();
-  // double z_score =
-  //     abs(bf_diff.cwiseAbs().maxCoeff() - bf_diff.cwiseAbs().mean()) /
-  //     (std::sqrt((bf_diff.array() -
-  //     bf_diff.array().mean()).square().sum() /
-  //                bf_diff.array().rows()));
-  // isSmooth = z_score < 5;
-  // isSmooth = abs(bendingForce.raw().cwiseAbs().maxCoeff() -
-  //                bendingForce.raw().cwiseAbs().mean()) <
-  //            (2 * std::sqrt((bendingForce.raw().array() -
-  //                            bendingForce.raw().array().mean())
-  //                               .square()
-  //                               .sum() /
-  //                           bendingForce.raw().array().rows()));
-  // isSmooth = lap_H.cwiseAbs().maxCoeff() < 0.5;
-  // std::cout << "lapH: " << lap_H.cwiseAbs().maxCoeff() << std::endl;
-
   return bendingForce.raw();
 
   // /// B. optimized version
@@ -231,6 +219,8 @@ EigenVectorX1D System::computeBendingForce() {
 }
 
 EigenVectorX1D System::computeCapillaryForce() {
+  throw std::runtime_error("computeCapillaryForce: out of data implementation, "
+                           "shouldn't be called!");
   /// Geometric implementation
   surfaceTension =
       O.isOpenMesh ? P.Ksg
@@ -259,6 +249,8 @@ EigenVectorX1D System::computeCapillaryForce() {
 }
 
 EigenVectorX1D System::computeOsmoticForce() {
+  throw std::runtime_error("computeOsmoticForce: out of data implementation, "
+                           "shouldn't be called!");
   /// Geometric implementation
   if (O.isOpenMesh) {
     /// Inside excess pressure of patch
@@ -411,6 +403,10 @@ void System::computePhysicalForces() {
 
   // zero all forces
   fundamentalThreeForces.fill({0, 0, 0});
+  bendingForceVec.fill({0, 0, 0});
+  capillaryForceVec.fill({0, 0, 0});
+  osmoticForceVec.fill({0, 0, 0});
+
   bendingForce.raw().setZero();
   capillaryForce.raw().setZero();
   lineCapillaryForce.raw().setZero();
@@ -419,13 +415,7 @@ void System::computePhysicalForces() {
   chemicalPotential.raw().setZero();
 
   computeFundamentalThreeForces();
-  // computeBendingForce();
-  // if (P.Kv != 0) {
-  //   computeOsmoticForce();
-  // }
-  // if (P.Ksg != 0) {
-  //   computeCapillaryForce();
-  // }
+
   if (P.eta != 0) {
     computeLineCapillaryForce();
   }
@@ -435,6 +425,14 @@ void System::computePhysicalForces() {
   if (P.Kf != 0) {
     computeExternalForce();
   }
+
+  // computeBendingForce();
+  // if (P.Kv != 0) {
+  //   computeOsmoticForce();
+  // }
+  // if (P.Ksg != 0) {
+  //   computeCapillaryForce();
+  // }
 }
 
 } // namespace mem3dg
