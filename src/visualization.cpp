@@ -63,8 +63,8 @@ void visualize(mem3dg::System &f) {
   // Process attributes
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  fn = f.bendingForce.raw() + f.capillaryForce.raw() + f.osmoticForce.raw() +
-       f.externalForce.raw() + f.lineCapillaryForce.raw();
+  fn = f.F.bendingForce.raw() + f.F.capillaryForce.raw() + f.F.osmoticForce.raw() +
+       f.F.externalForce.raw() + f.F.lineCapillaryForce.raw();
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
@@ -78,21 +78,17 @@ void visualize(mem3dg::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("external_Force", f.externalForce);
+      ->addVertexScalarQuantity("external_Force", f.F.externalForce);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
-                                f.lineCapillaryForce.raw().array() /
+                                f.F.lineCapillaryForce.raw().array() /
                                     f.vpg->vertexDualAreas.raw().array());
-  polyscope::getSurfaceMesh("Membrane")
-      ->addVertexVectorQuantity("capillary_force", f.capillaryForceVec);
-  polyscope::getSurfaceMesh("Membrane")
-      ->addVertexVectorQuantity("osmotic_force", f.osmoticForceVec);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_force", fn);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("bending_rigidity", f.Kb);
   polyscope::getSurfaceMesh("Membrane")
-      ->addEdgeScalarQuantity("line_tension", f.lineTension);
+      ->addEdgeScalarQuantity("line_tension", f.F.lineTension);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity(
           "-lapH(smoothing)",
@@ -113,7 +109,7 @@ void visualize(mem3dg::System &f) {
           "edge_line_capillary",
           f.vpg->hodge1Inverse *
               ((f.vpg->hodge1 *
-                (f.lineTension.raw().array() / f.vpg->edgeLengths.raw().array())
+                (f.F.lineTension.raw().array() / f.vpg->edgeLengths.raw().array())
                     .matrix())
                    .array() *
                f.vpg->edgeDihedralAngles.raw().array().max(0))

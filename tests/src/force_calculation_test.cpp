@@ -102,26 +102,26 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // First time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX1D bendingForce1 = f.bendingForce.raw(),
-                 osmoticForce1 = f.osmoticForce.raw(),
-                 capillaryForce1 = f.capillaryForce.raw(),
-                 lineTensionForce1 = f.lineCapillaryForce.raw(),
-                 externalForce1 = f.externalForce.raw(),
-                 chemicalPotential1 = f.chemicalPotential.raw();
+  EigenVectorX1D bendingForce1 = f.F.bendingForce.raw(),
+                 osmoticForce1 = f.F.osmoticForce.raw(),
+                 capillaryForce1 = f.F.capillaryForce.raw(),
+                 lineTensionForce1 = f.F.lineCapillaryForce.raw(),
+                 externalForce1 = f.F.externalForce.raw(),
+                 chemicalPotential1 = f.F.chemicalPotential.raw();
   EigenVectorX3D regularizationForce1 =
-      gc::EigenMap<double, 3>(f.regularizationForce);
+      gc::EigenMap<double, 3>(f.F.regularizationForce);
 
   // Second time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX1D bendingForce2 = f.bendingForce.raw(),
-                 osmoticForce2 = f.osmoticForce.raw(),
-                 capillaryForce2 = f.capillaryForce.raw(),
-                 lineTensionForce2 = f.lineCapillaryForce.raw(),
-                 externalForce2 = f.externalForce.raw(),
-                 chemicalPotential2 = f.chemicalPotential.raw();
+  EigenVectorX1D bendingForce2 = f.F.bendingForce.raw(),
+                 osmoticForce2 = f.F.osmoticForce.raw(),
+                 capillaryForce2 = f.F.capillaryForce.raw(),
+                 lineTensionForce2 = f.F.lineCapillaryForce.raw(),
+                 externalForce2 = f.F.externalForce.raw(),
+                 chemicalPotential2 = f.F.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =
-      gc::EigenMap<double, 3>(f.regularizationForce);
+      gc::EigenMap<double, 3>(f.F.regularizationForce);
 
   // Comparison of 2 force calculations
   ASSERT_TRUE((bendingForce1 - bendingForce2).norm() < 1e-12);
@@ -146,14 +146,14 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   // Get forces in one-pass
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX1D bendingForce1 = f.bendingForce.raw(),
-                 osmoticForce1 = f.osmoticForce.raw(),
-                 capillaryForce1 = f.capillaryForce.raw(),
-                 lineTensionForce1 = f.lineCapillaryForce.raw(),
-                 externalForce1 = f.externalForce.raw();
+  EigenVectorX1D bendingForce1 = f.F.bendingForce.raw(),
+                 osmoticForce1 = f.F.osmoticForce.raw(),
+                 capillaryForce1 = f.F.capillaryForce.raw(),
+                 lineTensionForce1 = f.F.lineCapillaryForce.raw(),
+                 externalForce1 = f.F.externalForce.raw();
   //  chemicalPotential1 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce1 =
-      gc::EigenMap<double, 3>(f.regularizationForce);
+      gc::EigenMap<double, 3>(f.F.regularizationForce);
 
   // Get force individually
   f.computeBendingForce();
@@ -163,14 +163,14 @@ TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
   f.computeLineCapillaryForce();
   f.computeExternalForce();
   //   f.computeChemicalPotential();
-  EigenVectorX1D bendingForce2 = f.bendingForce.raw(),
-                 osmoticForce2 = f.osmoticForce.raw(),
-                 capillaryForce2 = f.capillaryForce.raw(),
-                 lineTensionForce2 = f.lineCapillaryForce.raw(),
-                 externalForce2 = f.externalForce.raw();
+  EigenVectorX1D bendingForce2 = f.F.bendingForce.raw(),
+                 osmoticForce2 = f.F.osmoticForce.raw(),
+                 capillaryForce2 = f.F.capillaryForce.raw(),
+                 lineTensionForce2 = f.F.lineCapillaryForce.raw(),
+                 externalForce2 = f.F.externalForce.raw();
   //  chemicalPotential2 = f.chemicalPotential.raw();
   EigenVectorX3D regularizationForce2 =
-      gc::EigenMap<double, 3>(f.regularizationForce);
+      gc::EigenMap<double, 3>(f.F.regularizationForce);
 
   // Comparison of two force calculations
   ASSERT_TRUE((bendingForce1 - bendingForce2).norm() < 1e-12);
@@ -203,7 +203,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   for (size_t i = 0; i < 50; i++) {
     f.computeBendingForce();
     vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.bendingForce.raw().array())
+        (f.mask.raw().cast<double>().array() * f.F.bendingForce.raw().array())
             .matrix(),
         EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;
@@ -215,7 +215,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
     f.computeCapillaryForce();
     vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.capillaryForce.raw().array())
+        (f.mask.raw().cast<double>().array() * f.F.capillaryForce.raw().array())
             .matrix(),
         EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;
@@ -227,7 +227,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
     f.computeOsmoticForce();
     vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.osmoticForce.raw().array())
+        (f.mask.raw().cast<double>().array() * f.F.osmoticForce.raw().array())
             .matrix(),
         EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;
@@ -239,7 +239,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
     f.computeExternalForce();
     vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.externalForce.raw().array())
+        (f.mask.raw().cast<double>().array() * f.F.externalForce.raw().array())
             .matrix(),
         EigenMap<double, 3>(f.vpg->vertexNormals));
     pos_e += vel_e * h;
@@ -251,7 +251,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
     f.computeRegularizationForce();
     vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
-                           gc::EigenMap<double, 3>(f.regularizationForce));
+                           gc::EigenMap<double, 3>(f.F.regularizationForce));
     pos_e += vel_e * h;
     f.updateVertexPositions();
     f.computeFreeEnergy();

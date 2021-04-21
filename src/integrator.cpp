@@ -96,21 +96,21 @@ void Integrator::getForces() {
 
   physicalForceVec = rowwiseScaling(
       (f.mask.raw().cast<double>()).array(),
-      rowwiseScaling(f.externalForce.raw() + f.lineCapillaryForce.raw(),
+      rowwiseScaling(f.F.externalForce.raw() + f.F.lineCapillaryForce.raw(),
                      vertexAngleNormal_e) +
-          f.toMatrix(f.fundamentalThreeForces));
+          f.F.toMatrix(f.F.fundamentalThreeForces));
 
   physicalForce =
       (f.mask.raw().cast<double>()).array() *
-      (f.bendingForce.raw() + f.capillaryForce.raw() + f.externalForce.raw() +
-       f.osmoticForce.raw() + f.lineCapillaryForce.raw())
+      (f.F.bendingForce.raw() + f.F.capillaryForce.raw() + f.F.externalForce.raw() +
+       f.F.osmoticForce.raw() + f.F.lineCapillaryForce.raw())
           .array();
 
   if ((f.P.gamma != 0) || (f.P.temp != 0)) {
     f.computeDPDForces(dt);
     DPDForce = f.mask.raw().cast<double>().array() *
-               rowwiseDotProduct((EigenMap<double, 3>(f.dampingForce) +
-                                  EigenMap<double, 3>(f.stochasticForce)),
+               rowwiseDotProduct((EigenMap<double, 3>(f.F.dampingForce) +
+                                  EigenMap<double, 3>(f.F.stochasticForce)),
                                  vertexAngleNormal_e)
                    .array();
   }
@@ -350,11 +350,11 @@ void Integrator::saveRichData(std::string plyName) {
   // write pressures
   gcs::VertexData<double> fn(*f.mesh);
   fn.fromVector(physicalForce);
-  richData.addVertexProperty("bending_force", f.bendingForce);
-  richData.addVertexProperty("capillary_force", f.capillaryForce);
-  richData.addVertexProperty("line_tension_force", f.lineCapillaryForce);
-  richData.addVertexProperty("osmotic_force", f.osmoticForce);
-  richData.addVertexProperty("external_force", f.externalForce);
+  richData.addVertexProperty("bending_force", f.F.bendingForce);
+  richData.addVertexProperty("capillary_force", f.F.capillaryForce);
+  richData.addVertexProperty("line_tension_force", f.F.lineCapillaryForce);
+  richData.addVertexProperty("osmotic_force", f.F.osmoticForce);
+  richData.addVertexProperty("external_force", f.F.externalForce);
   richData.addVertexProperty("physical_force", fn);
 
   richData.write(outputDir + plyName);
@@ -384,10 +384,10 @@ void Integrator::saveNetcdfData() {
   fd.writeTotalEnergy(idx, f.E.totalE);
   // write Norms
   fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
-  fd.writeL1BendNorm(idx, f.computeL1Norm(f.bendingForce.raw()));
-  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.capillaryForce.raw()));
-  fd.writeL1PressNorm(idx, f.computeL1Norm(f.osmoticForce.raw()));
-  fd.writeL1LineNorm(idx, f.computeL1Norm(f.lineCapillaryForce.raw()));
+  fd.writeL1BendNorm(idx, f.computeL1Norm(f.F.bendingForce.raw()));
+  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.F.capillaryForce.raw()));
+  fd.writeL1PressNorm(idx, f.computeL1Norm(f.F.osmoticForce.raw()));
+  fd.writeL1LineNorm(idx, f.computeL1Norm(f.F.lineCapillaryForce.raw()));
 
   // vector quantities
   if (!f.O.isGrowMesh) {
@@ -412,11 +412,11 @@ void Integrator::saveNetcdfData() {
     //                   f.H0).array()).matrix());
 
     // write pressures
-    fd.writeBendingForce(idx, f.bendingForce.raw());
-    fd.writeCapillaryForce(idx, f.capillaryForce.raw());
-    fd.writeLineForce(idx, f.lineCapillaryForce.raw());
-    fd.writeOsmoticForce(idx, f.osmoticForce.raw());
-    fd.writeExternalForce(idx, f.externalForce.raw());
+    fd.writeBendingForce(idx, f.F.bendingForce.raw());
+    fd.writeCapillaryForce(idx, f.F.capillaryForce.raw());
+    fd.writeLineForce(idx, f.F.lineCapillaryForce.raw());
+    fd.writeOsmoticForce(idx, f.F.osmoticForce.raw());
+    fd.writeExternalForce(idx, f.F.externalForce.raw());
     fd.writePhysicalForce(idx, physicalForce);
   }
 }

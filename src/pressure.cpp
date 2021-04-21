@@ -62,9 +62,9 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
 
       for (gc::Halfedge he : v.outgoingHalfedges()) {
 
+        // Initialize local variables for computation
         gc::Vertex vj = he.tipVertex();
-        gc::Vector3 eji =
-            vpg->inputVertexPositions[v] - vpg->inputVertexPositions[vj];
+        gc::Vector3 eji = -vecFromHalfedge(he, *vpg);
         double Hi = vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v);
         double Hj = vpg->vertexMeanCurvature(vj) / vpg->vertexDualArea(vj);
         double H0i = H0[v];
@@ -72,7 +72,7 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
         double Kbi = Kb[v];
         double Kbj = Kb[vj];
 
-        // geometric variation
+        // Geometric variation vectors
         gc::Vector3 volGrad =
             cross(vpg->inputVertexPositions[he.next().tailVertex()],
                   vpg->inputVertexPositions[he.next().tipVertex()]) /
@@ -84,49 +84,43 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                          vecFromHalfedge(he.twin().next().next(), *vpg));
         gc::Vector3 gaussVec =
             0.5 * vpg->edgeDihedralAngle(he.edge()) * eji.unit();
-        gc::Vector3 schlafliVec = vpg->halfedgeCotanWeight(he.next().next()) *
-                                      vpg->faceNormal(he.face()) +
-                                  vpg->halfedgeCotanWeight(he.twin().next()) *
-                                      vpg->faceNormal(he.twin().face());
-        // gc::Vector3 schlafliVecji =
-        //     -vpg->edgeLength(he.next().edge()) *
-        //         vpg->edgeLength(he.next().edge()) *
-        //         vpg->faceNormal(he.face()) / vpg->faceArea(he.face()) / 4 -
-        //     vpg->edgeLength(he.twin().next().next().edge()) *
-        //         vpg->edgeLength(he.twin().next().next().edge()) *
-        //         vpg->faceNormal(he.twin().face()) /
-        //         vpg->faceArea(he.twin().face()) / 4;
-        gc::Vector3 schlafliVecji =
-            -(vpg->halfedgeCotanWeight(he) +
-              vpg->halfedgeCotanWeight(he.next().next())) *
-                vpg->faceNormal(he.face()) -
-            (vpg->halfedgeCotanWeight(he.twin()) +
-             vpg->halfedgeCotanWeight(he.twin().next())) *
-                vpg->faceNormal(he.twin().face());
+        gc::Vector3 schlafliVec1 = vpg->halfedgeCotanWeight(he.next().next()) *
+                                       vpg->faceNormal(he.face()) +
+                                   vpg->halfedgeCotanWeight(he.twin().next()) *
+                                       vpg->faceNormal(he.twin().face());
+        gc::Vector3 schlafliVec2 =
+            -(vpg->halfedgeCotanWeight(he) * vpg->faceNormal(he.face()) +
+              vpg->halfedgeCotanWeight(he.twin()) *
+                  vpg->faceNormal(he.twin().face()));
 
-        // assemble for forces
+        // Assemble to forces
+        osmoticForceVec += pressure * volGrad;
+        capillaryForceVec -= surfaceTension * areaGrad;
         bendForceVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
         bendForceVec -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
                          Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
                         areaGrad;
-        bendForceVec -= Kbi * (Hi - H0i) * schlafliVec +
-                        Kbj * (Hj - H0j) * (schlafliVec + schlafliVecji);
-        capillaryForceVec -= surfaceTension * areaGrad;
-        osmoticForceVec += pressure * volGrad;
+        bendForceVec -=
+            Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
       }
 
-      // combine to one
-      fundamentalThreeForces[v] =
+      // Combine to one
+      F.fundamentalThreeForces[v] =
           osmoticForceVec + capillaryForceVec + bendForceVec;
 
-      // scalar force
-      bendingForce[v] = ontoNormal(bendForceVec, v);
-      capillaryForce[v] = ontoNormal(capillaryForceVec, v);
-      osmoticForce[v] = ontoNormal(osmoticForceVec, v);
+      // Scalar force by projection to angle-weighted normal
+      F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
+      F.capillaryForce[v] = F.ontoNormal(capillaryForceVec, v);
+      F.osmoticForce[v] = F.ontoNormal(osmoticForceVec, v);
     }
   }
-  isSmooth = !hasOutlier(bendingForce.raw());
-  return gc::EigenMap<double, 3>(fundamentalThreeForces);
+
+  // measure smoothness
+  if (O.isGrowMesh) {
+    isSmooth = !hasOutlier(F.bendingForce.raw());
+  }
+  
+  return gc::EigenMap<double, 3>(F.fundamentalThreeForces);
 }
 
 EigenVectorX1D System::computeBendingForce() {
@@ -175,12 +169,12 @@ EigenVectorX1D System::computeBendingForce() {
           .matrix();
 
   // calculate bendingForce
-  bendingForce.raw() = vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
+  F.bendingForce.raw() = vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
   // }
 
-  isSmooth = !hasOutlier(bendingForce.raw());
+  isSmooth = !hasOutlier(F.bendingForce.raw());
 
-  return bendingForce.raw();
+  return F.bendingForce.raw();
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
@@ -220,9 +214,9 @@ EigenVectorX1D System::computeCapillaryForce() {
       O.isOpenMesh ? P.Ksg
                    : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
                          P.lambdaSG;
-  capillaryForce.raw() = -surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
+  F.capillaryForce.raw() = -surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
 
-  return capillaryForce.raw();
+  return F.capillaryForce.raw();
 
   // /// Nongeometric implementationx
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -248,17 +242,17 @@ EigenVectorX1D System::computeOsmoticForce() {
   /// Geometric implementation
   if (O.isOpenMesh) {
     /// Inside excess pressure of patch
-    osmoticForce.raw().setConstant(P.Kv);
+    F.osmoticForce.raw().setConstant(P.Kv);
   } else if (O.isReducedVolume) {
     /// Inside excess pressure of vesicle
-    osmoticForce.raw().setConstant(
+    F.osmoticForce.raw().setConstant(
         -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV));
   } else {
-    osmoticForce.raw().setConstant(P.Kv / volume - P.Kv * P.cam);
+    F.osmoticForce.raw().setConstant(P.Kv / volume - P.Kv * P.cam);
   }
-  osmoticForce.raw().array() /= vpg->vertexDualAreas.raw().array();
+  F.osmoticForce.raw().array() /= vpg->vertexDualAreas.raw().array();
 
-  return osmoticForce.raw();
+  return F.osmoticForce.raw();
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -276,14 +270,14 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   // zeros out the nonpositive normal curvature to compensate the fact that d0
   // is ill-defined in low resolution
   auto normalCurvature = vpg->edgeDihedralAngles.raw();
-  lineCapillaryForce.raw() =
+  F.lineCapillaryForce.raw() =
       -D * vpg->hodge1Inverse *
       ((vpg->hodge1 *
-        (lineTension.raw().array() / vpg->edgeLengths.raw().array()).matrix())
+        (F.lineTension.raw().array() / vpg->edgeLengths.raw().array()).matrix())
            .array() *
        normalCurvature.array().max(0))
           .matrix();
-  return lineCapillaryForce.raw();
+  return F.lineCapillaryForce.raw();
 }
 
 EigenVectorX1D System::computeExternalForce() {
@@ -317,10 +311,10 @@ EigenVectorX1D System::computeExternalForce() {
   zDir << 0.0, 0.0, -1.0;
   // externalPressure_e = -externalPressureMagnitude * zDir *
   //                      (vpg->inputVertexPositions[theVertex].z - P.height);
-  externalForce.raw() = externalPressureMagnitude;
-  externalForce.raw() *= vpg->vertexLumpedMassMatrix;
+  F.externalForce.raw() = externalPressureMagnitude;
+  F.externalForce.raw() *= vpg->vertexLumpedMassMatrix;
 
-  return externalForce.raw();
+  return F.externalForce.raw();
 }
 
 EigenVectorX1D System::computeChemicalPotential() {
@@ -333,20 +327,20 @@ EigenVectorX1D System::computeChemicalPotential() {
        ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
           .matrix();
 
-  chemicalPotential.raw().array() =
+  F.chemicalPotential.raw().array() =
       P.epsilon - 2 * Kb.raw().array() *
                       ((vpg->vertexMeanCurvatures.raw().array() /
                         vpg->vertexDualAreas.raw().array()) -
                        H0.raw().array()) *
                       dH0dphi.array();
 
-  return chemicalPotential.raw();
+  return F.chemicalPotential.raw();
 }
 
 std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
 
-  auto dampingForce_e = EigenMap<double, 3>(dampingForce);
-  auto stochasticForce_e = EigenMap<double, 3>(stochasticForce);
+  auto dampingForce_e = EigenMap<double, 3>(F.dampingForce);
+  auto stochasticForce_e = EigenMap<double, 3>(F.stochasticForce);
 
   // Reset forces to zero
   dampingForce_e.setZero();
@@ -371,14 +365,14 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
 
     if (P.gamma != 0) {
       gc::Vector3 df = P.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
-      dampingForce[v1] -= df;
-      dampingForce[v2] += df;
+      F.dampingForce[v1] -= df;
+      F.dampingForce[v2] += df;
     }
 
     if (sigma != 0) {
       double noise = normal_dist(rng);
-      stochasticForce[v1] += noise * dPos12_n;
-      stochasticForce[v2] -= noise * dPos12_n;
+      F.stochasticForce[v1] += noise * dPos12_n;
+      F.stochasticForce[v2] -= noise * dPos12_n;
     }
 
     // gc::Vector3 dVel21 = vel[v2] - vel[v1];
@@ -396,17 +390,17 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
 void System::computePhysicalForces() {
 
   // zero all forces
-  fundamentalThreeForces.fill({0, 0, 0});
+  F.fundamentalThreeForces.fill({0, 0, 0});
   // bendingForceVec.fill({0, 0, 0});
   // capillaryForceVec.fill({0, 0, 0});
   // osmoticForceVec.fill({0, 0, 0});
 
-  bendingForce.raw().setZero();
-  capillaryForce.raw().setZero();
-  lineCapillaryForce.raw().setZero();
-  externalForce.raw().setZero();
-  osmoticForce.raw().setZero();
-  chemicalPotential.raw().setZero();
+  F.bendingForce.raw().setZero();
+  F.capillaryForce.raw().setZero();
+  F.lineCapillaryForce.raw().setZero();
+  F.externalForce.raw().setZero();
+  F.osmoticForce.raw().setZero();
+  F.chemicalPotential.raw().setZero();
 
   computeFundamentalThreeForces();
 

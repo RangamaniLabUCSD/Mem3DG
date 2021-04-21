@@ -149,7 +149,7 @@ void VelocityVerlet::march() {
 
   // time stepping on protein density
   if (f.O.isProtein) {
-    f.proteinDensity.raw() += -f.P.Bc * f.chemicalPotential.raw() * dt;
+    f.proteinDensity.raw() += -f.P.Bc * f.F.chemicalPotential.raw() * dt;
   }
 
   // process the mesh with regularization or mutation

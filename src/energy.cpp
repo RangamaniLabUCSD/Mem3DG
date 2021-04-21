@@ -94,12 +94,12 @@ void System::computeLineTensionEnergy() {
   // this is under the case where the resolution is low, WIP
   // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *
   // H0.raw()).cwiseAbs()).array(); auto dH0 = (vpg->d0 * H0.raw()).cwiseAbs();
-  E.lE = (vpg->hodge1Inverse * lineTension.raw()).sum();
+  E.lE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
 }
 
 void System::computeExternalForceEnergy() {
   E.exE = -rowwiseDotProduct(
-               rowwiseScaling(externalForce.raw(),
+               rowwiseScaling(F.externalForce.raw(),
                               gc::EigenMap<double, 3>(vpg->vertexNormals)),
                gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();
