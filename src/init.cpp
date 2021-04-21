@@ -264,7 +264,7 @@ void System::checkParametersAndOptions() {
 
   if (P.pt.size() == 2 && !mesh->hasBoundary()) {
     std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
-                 "lead to ambiguity!\n"
+                 "lead to ambiguity! Please check by visualizing it first!\n"
               << std::endl;
   }
 
@@ -404,8 +404,9 @@ void System::updateVertexPositions() {
     if (O.isLocalCurvature) {
       tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
                        P.sharpness, P.r_H0);
-      tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
-                       P.sharpness, P.r_H0);
+      Kb.raw() = H0.raw();
+      // tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
+      //                  P.sharpness, P.r_H0);
       H0.raw() *= P.H0;
       Kb.raw() *= P.Kbc - P.Kb;
       Kb.raw().array() += P.Kb;

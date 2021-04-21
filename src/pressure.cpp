@@ -12,6 +12,8 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+// uncomment to disable assert()
+// #define NDEBUG
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -112,6 +114,16 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
             (gaussVecji + schlafliVecji + (-Hj - H0[vj]) * areajGradi);
         surfacejGradiSum += surfaceTension * areajGradi;
       }
+
+      assert((vpg->vertexDualArea(v) - ontoNormal(volGrad, v)) /
+                 abs(vpg->vertexDualArea(v)) <
+             0.01);
+      assert((vpg->vertexMeanCurvature(v) - 3 * ontoNormal(areaiGradi, v) / 2) /
+                 abs(vpg->vertexMeanCurvature(v)) <
+             0.01);
+      assert((vpg->vertexGaussianCurvature(v) - ontoNormal(gaussVec, v)) /
+                 abs(ontoNormal(gaussVec, v)) <
+             0.01);
 
       // total for energyiGradi
       double Hi = vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v);

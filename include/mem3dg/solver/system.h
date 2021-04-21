@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/utilities/vector2.h"
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/macros.h"
@@ -103,6 +104,8 @@ struct Parameters {
   double lambdaV = 0;
   /// sharpness of tanh transition
   double sharpness = 20;
+  /// tolerance for curvature approximation
+  double curvTol = 0.0012;
 };
 
 struct Energy {
@@ -669,6 +672,11 @@ public:
   // ==========================================================
   // =============      Data interop helpers    ===============
   // ==========================================================
+
+  /**
+   * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
+   * scaler values
+   */
   inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &vector) {
     return gc::EigenMap<double, 3>(vector);
   }
@@ -683,6 +691,9 @@ public:
     return vector.raw();
   }
 
+  /**
+   * @brief Return constructed vertexData that from Eigen matrix or vector
+   */
   inline gcs::VertexData<double> toVertexData(EigenVectorX1D &vector) {
     return gcs::VertexData<double>(*mesh, vector);
   }
@@ -701,6 +712,11 @@ public:
     return vertexData;
   }
 
+  /**
+   * @brief Find the corresponding scalar vector (vertexData) by rowwise
+   * (vertexwise) projecting matrix (vector vertexData) onto angle-weighted
+   * normal vector
+   */
   inline gcs::VertexData<double>
   ontoNormal(gcs::VertexData<gc::Vector3> &vector) {
     gcs::VertexData<double> vertexData(*mesh);
@@ -717,7 +733,26 @@ public:
                           gc::EigenMap<double, 3>(vpg->vertexNormals));
     return vertexData;
   }
+  inline EigenVectorX1D ontoNormal(EigenVectorX3D &vector) {
+    return rowwiseDotProduct(vector,
+                             gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+  inline EigenVectorX1D ontoNormal(EigenVectorX3D &&vector) {
+    return rowwiseDotProduct(vector,
+                             gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+  inline double ontoNormal(gc::Vector3 &vector, gc::Vertex &v) {
+    return dot(vector, vpg->vertexNormals[v]);
+  }
+  inline double ontoNormal(gc::Vector3 &&vector, gc::Vertex &v) {
+    return dot(vector, vpg->vertexNormals[v]);
+  }
 
+  /**
+   * @brief Find the corresponding matrix (vector vertexData) by rowwise
+   * (vertexwise) appending angle-weighted normal vector to the scalar vector
+   * (vertexData)
+   */
   inline gcs::VertexData<gc::Vector3>
   addNormal(gcs::VertexData<double> &vector) {
     gcs::VertexData<gc::Vector3> vertexData(*mesh);
@@ -733,15 +768,6 @@ public:
     return vertexData;
   }
 
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &vector) {
-    return rowwiseDotProduct(vector,
-                             gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &&vector) {
-    return rowwiseDotProduct(vector,
-                             gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-
   inline EigenVectorX3D addNormal(EigenVectorX1D &vector) {
     return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg->vertexNormals));
   }
@@ -749,19 +775,39 @@ public:
     return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg->vertexNormals));
   }
 
-  inline EigenVectorX3D removeNormal(gcs::VertexData<gc::Vector3> &vector) {
+  inline gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
+    return vector * vpg->vertexNormals[v];
+  }
+  inline gc::Vector3 addNormal(double &&vector, gc::Vertex &v) {
+    return vector * vpg->vertexNormals[v];
+  }
+
+  /**
+   * @brief Project the vector onto tangent plane by removing the angle-weighted
+   * normal component
+   */
+  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &vector) {
     return gc::EigenMap<double, 3>(vector) -
            rowwiseScaling(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg->vertexNormals)),
                gc::EigenMap<double, 3>(vpg->vertexNormals));
   }
-  inline EigenVectorX3D removeNormal(gcs::VertexData<gc::Vector3> &&vector) {
+  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &&vector) {
     return gc::EigenMap<double, 3>(vector) -
            rowwiseScaling(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg->vertexNormals)),
                gc::EigenMap<double, 3>(vpg->vertexNormals));
+  }
+
+  inline gc::Vector3 toTangent(gc::Vector3 &vector, gc::Vertex &v) {
+    return vector -
+           gc::dot(vector, vpg->vertexNormals[v]) * vpg->vertexNormals[v];
+  }
+  inline gc::Vector3 toTangent(gc::Vector3 &&vector, gc::Vertex &v) {
+    return vector -
+           gc::dot(vector, vpg->vertexNormals[v]) * vpg->vertexNormals[v];
   }
 };
 } // namespace mem3dg

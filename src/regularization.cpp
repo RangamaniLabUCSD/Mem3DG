@@ -199,6 +199,7 @@ bool System::edgeFlip() {
       if ((vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) >
           constants::PI) {
+        // && abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI / 36)) {
         auto success = mesh->flip(he.edge());
         isFlipped = true;
 
@@ -230,7 +231,6 @@ bool System::growMesh() {
     if (!he.edge().isBoundary()) {
       // curvature based remeshing:
       // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
-      double eps = 0.0012;
       double k1 = (abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex())) >
                    abs(vpg->vertexMinPrincipalCurvature(he.tipVertex())))
                       ? abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex()))
@@ -239,7 +239,8 @@ bool System::growMesh() {
                    abs(vpg->vertexMinPrincipalCurvature(he.tailVertex())))
                       ? abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex()))
                       : abs(vpg->vertexMinPrincipalCurvature(he.tailVertex()));
-      double L = std::sqrt(6 * eps / ((k1 > k2) ? k1 : k2) - 3 * eps * eps);
+      double L = std::sqrt(6 * P.curvTol / ((k1 > k2) ? k1 : k2) -
+                           3 * P.curvTol * P.curvTol);
       bool is2Large =
           (vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea);
@@ -280,9 +281,10 @@ bool System::growMesh() {
     gcs::Halfedge he = e.halfedge();
     // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
-      if ((vpg->cornerAngle(he.next().next().corner()) +
-           vpg->cornerAngle(he.twin().next().next().corner())) <
-          constants::PI / 3) {
+      bool is2Skinny = (vpg->cornerAngle(he.next().next().corner()) +
+                        vpg->cornerAngle(he.twin().next().next().corner())) <
+                       constants::PI / 3;
+      if (is2Skinny) {
 
         // alias the neighboring vertices
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();

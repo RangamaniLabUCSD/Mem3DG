@@ -562,13 +562,20 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
                   double range = 1e10) {
   gcs::Vertex theVertex;
   double shorestDistance = 1e18;
+  bool isIntialized = !geodesicDistance.raw().isZero(0);
+  if (!isIntialized) {
+    std::cout << "\nWARNING: closestVertexToPt: geodesicDistance not "
+                 "initialized, searching for all "
+                 "vertices!"
+              << std::endl;
+  }
   for (gcs::Vertex v : mesh.vertices()) {
     if (geodesicDistance[v] > range) {
       continue;
     }
-    if (geodesicDistance[v] <= 0) {
-      std::cout << "WARNING: closestVertexToPt: geodesicDistance <= 0, may be "
-                   "uninitialized!"
+    if (geodesicDistance[v] <= 0 && isIntialized) {
+      std::cout << "\nWARNING: closestVertexToPt: geodesicDistance <= 0, may be "
+                   "uninitialized/updated!"
                 << std::endl;
     }
     double distance;
