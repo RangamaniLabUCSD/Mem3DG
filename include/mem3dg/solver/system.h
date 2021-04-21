@@ -55,6 +55,196 @@ namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
 
+struct Forces {
+  /// Cached mesh of interest
+  gcs::ManifoldSurfaceMesh &mesh;
+  /// Embedding and other geometric details
+  gcs::VertexPositionGeometry &vpg;
+
+  /// Cached bending force
+  gcs::VertexData<double> bendingForce;
+  /// Cached tension-induced capillary force
+  gcs::VertexData<double> capillaryForce;
+  /// Cached interfacial line tension force
+  gcs::VertexData<double> lineCapillaryForce;
+  gcs::EdgeData<double> lineTension;
+  /// Cached externally-applied force
+  gcs::VertexData<double> externalForce;
+  /// Cached osmotic force
+  gcs::VertexData<double> osmoticForce;
+  /// Cached three fundamentals
+  gcs::VertexData<gc::Vector3> fundamentalThreeForces;
+  /// Cached bending force
+  gcs::VertexData<gc::Vector3> bendingForceVec;
+  /// Cached tension-induced capillary force
+  gcs::VertexData<gc::Vector3> capillaryForceVec;
+  /// Cached osmotic force
+  gcs::VertexData<gc::Vector3> osmoticForceVec;
+
+  /// Cached local stretching forces (in-plane regularization)
+  gcs::VertexData<gc::Vector3> regularizationForce;
+  /// Cached damping forces
+  gcs::VertexData<gc::Vector3> dampingForce;
+  /// Cached stochastic forces
+  gcs::VertexData<gc::Vector3> stochasticForce;
+
+  /// Cached chemical potential
+  gcs::VertexData<double> chemicalPotential;
+
+  Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
+      : mesh(mesh_), vpg(vpg_), fundamentalThreeForces(mesh, {0, 0, 0}),
+        bendingForceVec(mesh, {0, 0, 0}), capillaryForceVec(mesh, {0, 0, 0}),
+        osmoticForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
+        capillaryForce(mesh, 0), lineTension(mesh, 0),
+        lineCapillaryForce(mesh, 0), externalForce(mesh, 0),
+        osmoticForce(mesh, 0), regularizationForce(mesh, {0, 0, 0}),
+        stochasticForce(mesh, {0, 0, 0}), dampingForce(mesh, {0, 0, 0}),
+        chemicalPotential(mesh, 0) {}
+
+  ~Forces() {}
+
+  // ==========================================================
+  // =============      Data interop helpers    ===============
+  // ==========================================================
+
+  /**
+   * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
+   * scaler values
+   */
+  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &vector) {
+    return gc::EigenMap<double, 3>(vector);
+  }
+  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &&vector) {
+    return gc::EigenMap<double, 3>(vector);
+  }
+
+  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &vector) {
+    return vector.raw();
+  }
+  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &&vector) {
+    return vector.raw();
+  }
+
+  /**
+   * @brief Return constructed vertexData that from Eigen matrix or vector
+   */
+  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &vector) {
+    return gcs::VertexData<double>(mesh, vector);
+  }
+  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &&vector) {
+    return gcs::VertexData<double>(mesh, vector);
+  }
+
+  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &vector) {
+    gcs::VertexData<gc::Vector3> vertexData(mesh);
+    gc::EigenMap<double, 3>(vertexData) = vector;
+    return vertexData;
+  }
+  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &&vector) {
+    gcs::VertexData<gc::Vector3> vertexData(mesh);
+    gc::EigenMap<double, 3>(vertexData) = vector;
+    return vertexData;
+  }
+
+  /**
+   * @brief Find the corresponding scalar vector (vertexData) by rowwise
+   * (vertexwise) projecting matrix (vector vertexData) onto angle-weighted
+   * normal vector
+   */
+  inline gcs::VertexData<double>
+  ontoNormal(gcs::VertexData<gc::Vector3> &vector) {
+    gcs::VertexData<double> vertexData(mesh);
+    vertexData.raw() =
+        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                          gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return vertexData;
+  }
+  inline gcs::VertexData<double>
+  ontoNormal(gcs::VertexData<gc::Vector3> &&vector) {
+    gcs::VertexData<double> vertexData(mesh);
+    vertexData.raw() =
+        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                          gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return vertexData;
+  }
+  inline EigenVectorX1D ontoNormal(EigenVectorX3D &vector) {
+    return rowwiseDotProduct(vector,
+                             gc::EigenMap<double, 3>(vpg.vertexNormals));
+  }
+  inline EigenVectorX1D ontoNormal(EigenVectorX3D &&vector) {
+    return rowwiseDotProduct(vector,
+                             gc::EigenMap<double, 3>(vpg.vertexNormals));
+  }
+  inline double ontoNormal(gc::Vector3 &vector, gc::Vertex &v) {
+    return dot(vector, vpg.vertexNormals[v]);
+  }
+  inline double ontoNormal(gc::Vector3 &&vector, gc::Vertex &v) {
+    return dot(vector, vpg.vertexNormals[v]);
+  }
+
+  /**
+   * @brief Find the corresponding matrix (vector vertexData) by rowwise
+   * (vertexwise) appending angle-weighted normal vector to the scalar vector
+   * (vertexData)
+   */
+  inline gcs::VertexData<gc::Vector3>
+  addNormal(gcs::VertexData<double> &vector) {
+    gcs::VertexData<gc::Vector3> vertexData(mesh);
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+        vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return vertexData;
+  }
+  inline gcs::VertexData<gc::Vector3>
+  addNormal(gcs::VertexData<double> &&vector) {
+    gcs::VertexData<gc::Vector3> vertexData(mesh);
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+        vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return vertexData;
+  }
+
+  inline EigenVectorX3D addNormal(EigenVectorX1D &vector) {
+    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+  }
+  inline EigenVectorX3D addNormal(EigenVectorX1D &&vector) {
+    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+  }
+
+  inline gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
+    return vector * vpg.vertexNormals[v];
+  }
+  inline gc::Vector3 addNormal(double &&vector, gc::Vertex &v) {
+    return vector * vpg.vertexNormals[v];
+  }
+
+  /**
+   * @brief Project the vector onto tangent plane by removing the
+   * angle-weighted normal component
+   */
+  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &vector) {
+    return gc::EigenMap<double, 3>(vector) -
+           rowwiseScaling(
+               rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                 gc::EigenMap<double, 3>(vpg.vertexNormals)),
+               gc::EigenMap<double, 3>(vpg.vertexNormals));
+  }
+  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &&vector) {
+    return gc::EigenMap<double, 3>(vector) -
+           rowwiseScaling(
+               rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                 gc::EigenMap<double, 3>(vpg.vertexNormals)),
+               gc::EigenMap<double, 3>(vpg.vertexNormals));
+  }
+
+  inline gc::Vector3 toTangent(gc::Vector3 &vector, gc::Vertex &v) {
+    return vector -
+           gc::dot(vector, vpg.vertexNormals[v]) * vpg.vertexNormals[v];
+  }
+  inline gc::Vector3 toTangent(gc::Vector3 &&vector, gc::Vertex &v) {
+    return vector -
+           gc::dot(vector, vpg.vertexNormals[v]) * vpg.vertexNormals[v];
+  }
+};
+
 struct Parameters {
   /// Bending modulus
   double Kb;
@@ -170,39 +360,8 @@ public:
   /// Time
   double time;
 
-  /// Cached bending force
-  gcs::VertexData<double> bendingForce;
-  /// Cached tension-induced capillary force
-  gcs::VertexData<double> capillaryForce;
-  /// Cached interfacial line tension force
-  gcs::VertexData<double> lineCapillaryForce;
-  gcs::EdgeData<double> lineTension;
-  /// Cached externally-applied force
-  gcs::VertexData<double> externalForce;
-  /// Cached osmotic force
-  gcs::VertexData<double> osmoticForce;
-  /// Cached three fundamentals
-  gcs::VertexData<gc::Vector3> fundamentalThreeForces;
-  /// Cached bending force
-  gcs::VertexData<gc::Vector3> bendingForceVec;
-  /// Cached tension-induced capillary force
-  gcs::VertexData<gc::Vector3> capillaryForceVec;
-  /// Cached osmotic force
-  gcs::VertexData<gc::Vector3> osmoticForceVec;
-  /// Cached Surface tension
-  double surfaceTension;
-
-  /// Cached local stretching forces (in-plane regularization)
-  gcs::VertexData<gc::Vector3> regularizationForce;
-  /// Cached damping forces
-  gcs::VertexData<gc::Vector3> dampingForce;
-  /// Cached stochastic forces
-  gcs::VertexData<gc::Vector3> stochasticForce;
-
-  /// Cached protein surface density
-  gcs::VertexData<double> proteinDensity;
-  /// Cached chemical potential
-  gcs::VertexData<double> chemicalPotential;
+  /// Forces of the system
+  Forces F;
 
   /// Mean target area per face
   double meanTargetFaceArea;
@@ -232,8 +391,12 @@ public:
   double surfaceArea;
   /// Volume
   double volume;
+  /// Cached Surface tension
+  double surfaceTension;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
+  /// Cached protein surface density
+  gcs::VertexData<double> proteinDensity;
   /// Cached vertex velocity
   gcs::VertexData<gc::Vector3> vel;
   /// Spontaneous curvature of the mesh
@@ -364,20 +527,13 @@ public:
          Options &o)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0}),
-        fundamentalThreeForces(*mesh, {0, 0, 0}),
-        bendingForceVec(*mesh, {0, 0, 0}), capillaryForceVec(*mesh, {0, 0, 0}),
-        osmoticForceVec(*mesh, {0, 0, 0}), bendingForce(*mesh, 0),
-        capillaryForce(*mesh, 0), lineTension(*mesh, 0),
-        lineCapillaryForce(*mesh, 0), externalForce(*mesh, 0),
-        osmoticForce(*mesh, 0), regularizationForce(*mesh, {0, 0, 0}),
-        stochasticForce(*mesh, {0, 0, 0}), dampingForce(*mesh, {0, 0, 0}),
-        proteinDensity(*mesh, 0), chemicalPotential(*mesh, 0),
-        targetLcrs(*mesh), refEdgeLengths(*mesh), refFaceAreas(*mesh),
-        heatSolver(*vpg), D(), geodesicDistanceFromPtInd(*mesh, 0),
-        thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), H0(*mesh), Kb(*mesh), mask(*mesh, true),
-        isSmooth(true), smoothingMask(*mesh, false) {
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
+        proteinDensity(*mesh, 0), targetLcrs(*mesh), refEdgeLengths(*mesh),
+        refFaceAreas(*mesh), heatSolver(*vpg), D(),
+        geodesicDistanceFromPtInd(*mesh, 0), thePointTracker(*mesh, false),
+        pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H0(*mesh),
+        Kb(*mesh), mask(*mesh, true), isSmooth(true),
+        smoothingMask(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -668,146 +824,5 @@ public:
    */
   void globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
                        double stepSize = 1);
-
-  // ==========================================================
-  // =============      Data interop helpers    ===============
-  // ==========================================================
-
-  /**
-   * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
-   * scaler values
-   */
-  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &vector) {
-    return gc::EigenMap<double, 3>(vector);
-  }
-  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &&vector) {
-    return gc::EigenMap<double, 3>(vector);
-  }
-
-  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &vector) {
-    return vector.raw();
-  }
-  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &&vector) {
-    return vector.raw();
-  }
-
-  /**
-   * @brief Return constructed vertexData that from Eigen matrix or vector
-   */
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &vector) {
-    return gcs::VertexData<double>(*mesh, vector);
-  }
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &&vector) {
-    return gcs::VertexData<double>(*mesh, vector);
-  }
-
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &vector) {
-    gcs::VertexData<gc::Vector3> vertexData(*mesh);
-    gc::EigenMap<double, 3>(vertexData) = vector;
-    return vertexData;
-  }
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &&vector) {
-    gcs::VertexData<gc::Vector3> vertexData(*mesh);
-    gc::EigenMap<double, 3>(vertexData) = vector;
-    return vertexData;
-  }
-
-  /**
-   * @brief Find the corresponding scalar vector (vertexData) by rowwise
-   * (vertexwise) projecting matrix (vector vertexData) onto angle-weighted
-   * normal vector
-   */
-  inline gcs::VertexData<double>
-  ontoNormal(gcs::VertexData<gc::Vector3> &vector) {
-    gcs::VertexData<double> vertexData(*mesh);
-    vertexData.raw() =
-        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                          gc::EigenMap<double, 3>(vpg->vertexNormals));
-    return vertexData;
-  }
-  inline gcs::VertexData<double>
-  ontoNormal(gcs::VertexData<gc::Vector3> &&vector) {
-    gcs::VertexData<double> vertexData(*mesh);
-    vertexData.raw() =
-        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                          gc::EigenMap<double, 3>(vpg->vertexNormals));
-    return vertexData;
-  }
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &vector) {
-    return rowwiseDotProduct(vector,
-                             gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &&vector) {
-    return rowwiseDotProduct(vector,
-                             gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-  inline double ontoNormal(gc::Vector3 &vector, gc::Vertex &v) {
-    return dot(vector, vpg->vertexNormals[v]);
-  }
-  inline double ontoNormal(gc::Vector3 &&vector, gc::Vertex &v) {
-    return dot(vector, vpg->vertexNormals[v]);
-  }
-
-  /**
-   * @brief Find the corresponding matrix (vector vertexData) by rowwise
-   * (vertexwise) appending angle-weighted normal vector to the scalar vector
-   * (vertexData)
-   */
-  inline gcs::VertexData<gc::Vector3>
-  addNormal(gcs::VertexData<double> &vector) {
-    gcs::VertexData<gc::Vector3> vertexData(*mesh);
-    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
-        vector.raw(), gc::EigenMap<double, 3>(vpg->vertexNormals));
-    return vertexData;
-  }
-  inline gcs::VertexData<gc::Vector3>
-  addNormal(gcs::VertexData<double> &&vector) {
-    gcs::VertexData<gc::Vector3> vertexData(*mesh);
-    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
-        vector.raw(), gc::EigenMap<double, 3>(vpg->vertexNormals));
-    return vertexData;
-  }
-
-  inline EigenVectorX3D addNormal(EigenVectorX1D &vector) {
-    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-  inline EigenVectorX3D addNormal(EigenVectorX1D &&vector) {
-    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-
-  inline gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
-    return vector * vpg->vertexNormals[v];
-  }
-  inline gc::Vector3 addNormal(double &&vector, gc::Vertex &v) {
-    return vector * vpg->vertexNormals[v];
-  }
-
-  /**
-   * @brief Project the vector onto tangent plane by removing the angle-weighted
-   * normal component
-   */
-  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &vector) {
-    return gc::EigenMap<double, 3>(vector) -
-           rowwiseScaling(
-               rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                                 gc::EigenMap<double, 3>(vpg->vertexNormals)),
-               gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &&vector) {
-    return gc::EigenMap<double, 3>(vector) -
-           rowwiseScaling(
-               rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                                 gc::EigenMap<double, 3>(vpg->vertexNormals)),
-               gc::EigenMap<double, 3>(vpg->vertexNormals));
-  }
-
-  inline gc::Vector3 toTangent(gc::Vector3 &vector, gc::Vertex &v) {
-    return vector -
-           gc::dot(vector, vpg->vertexNormals[v]) * vpg->vertexNormals[v];
-  }
-  inline gc::Vector3 toTangent(gc::Vector3 &&vector, gc::Vertex &v) {
-    return vector -
-           gc::dot(vector, vpg->vertexNormals[v]) * vpg->vertexNormals[v];
-  }
 };
 } // namespace mem3dg

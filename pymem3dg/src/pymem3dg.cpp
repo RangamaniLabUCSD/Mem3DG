@@ -319,38 +319,38 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the signed F-E edge adjacency matrix, equivalent of d1 operator
       )delim");
   system.def(
-      "getBendingForce", [](System &s) { return s.bendingForce.raw(); },
+      "getBendingForce", [](System &s) { return s.F.bendingForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the bending Force
       )delim");
   system.def(
-      "getCapillaryForce", [](System &s) { return s.capillaryForce.raw(); },
+      "getCapillaryForce", [](System &s) { return s.F.capillaryForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the tension-induced capillary Force
       )delim");
   system.def(
       "getLineCapillaryForce",
-      [](System &s) { return s.lineCapillaryForce.raw(); },
+      [](System &s) { return s.F.lineCapillaryForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interfacial line tension
       )delim");
   system.def(
-      "getLineTension", [](System &s) { return s.lineTension.raw(); },
+      "getLineTension", [](System &s) { return s.F.lineTension.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interfacial line tension
       )delim");
   system.def(
-      "getExternalForce", [](System &s) { return s.externalForce.raw(); },
+      "getExternalForce", [](System &s) { return s.F.externalForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the externally-applied Force
       )delim");
   system.def(
-      "getOsmoticForce", [](System &s) { return s.osmoticForce.raw(); },
+      "getOsmoticForce", [](System &s) { return s.F.osmoticForce.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the osmotic force

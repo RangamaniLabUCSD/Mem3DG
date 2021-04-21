@@ -76,7 +76,7 @@ void System::computeRegularizationForce() {
 
           gc::Vector3 grad_li = vecFromHalfedge(li, *vpg).normalize();
           gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
-          regularizationForce[v] +=
+          F.regularizationForce[v] +=
               -P.Kst *
               (computeLengthCrossRatio(*vpg, he.edge()) -
                targetLcrs[he.edge()]) /
@@ -95,7 +95,7 @@ void System::computeRegularizationForce() {
               -gc::cross(base_vec, vpg->faceNormals[he.face()]);
           auto &referenceArea = (v.isBoundary() ? refFaceAreas[base_he.face()]
                                                 : meanTargetFaceArea);
-          regularizationForce[v] +=
+          F.regularizationForce[v] +=
               -P.Ksl * localAreaGradient *
               (vpg->faceAreas[base_he.face()] - referenceArea);
         }
@@ -105,7 +105,7 @@ void System::computeRegularizationForce() {
           gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
           auto &referenceLength = (v.isBoundary() ? refEdgeLengths[he.edge()]
                                                   : meanTargetEdgeLength);
-          regularizationForce[v] +=
+          F.regularizationForce[v] +=
               -P.Kse * edgeGradient *
               (vpg->edgeLengths[he.edge()] - referenceLength);
         }
@@ -115,7 +115,7 @@ void System::computeRegularizationForce() {
 
   // post processing regularization force
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto regularizationForce_e = gc::EigenMap<double, 3>(regularizationForce);
+  auto regularizationForce_e = gc::EigenMap<double, 3>(F.regularizationForce);
 
   // remove the normal component
   regularizationForce_e -= rowwiseScaling(
@@ -125,7 +125,7 @@ void System::computeRegularizationForce() {
   // // moving boundary
   // for (gcs::Vertex v : mesh->vertices()) {
   //   if (v.isBoundary()) {
-  //     regularizationForce[v].z = 0;
+  //     F.regularizationForce[v].z = 0;
   //   }
   // }
 
@@ -136,7 +136,7 @@ void System::computeRegularizationForce() {
   //   double strain =
   //       (vpg->edgeLengths[he.edge()] - targetEdgeLengths[he.edge()]) /
   //       targetEdgeLengths[he.edge()];
-  //   regularizationForce[v] +=
+  //   F.regularizationForce[v] +=
   //      -P.Kse * edgeGradient * strain * strain * strain;
   // }
 
@@ -146,7 +146,7 @@ void System::computeRegularizationForce() {
   // // moving boundary
   // for (gcs::Vertex v : mesh->vertices()) {
   //   if (!mask[v]) {
-  //     regularizationForce[v].z = 0;
+  //     F.regularizationForce[v].z = 0;
   //     // boundary tension, mostly likely not necessary
   //     if (v.isBoundary()) {
   //       double boundaryEdgeLength = 0;
@@ -157,11 +157,11 @@ void System::computeRegularizationForce() {
   //       }
   //       boundaryEdgeLength /= 2;
   //       double scaling;
-  //       if (regularizationForce[v].norm() > 1e-15) {
+  //       if (F.regularizationForce[v].norm() > 1e-15) {
   //         scaling = 1 - abs(P.Ksg * boundaryEdgeLength /
-  //                           (regularizationForce[v].norm()));
+  //                           (F.regularizationForce[v].norm()));
   //       }
-  //       regularizationForce[v] *= scaling;
+  //       F.regularizationForce[v] *= scaling;
   //     }
   //   }
   // }
@@ -355,7 +355,7 @@ void System::processMesh() {
   // regularization
   if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
     computeRegularizationForce();
-    vpg->inputVertexPositions.raw() += regularizationForce.raw();
+    vpg->inputVertexPositions.raw() += F.regularizationForce.raw();
   }
 
   // globally update quantities
@@ -376,7 +376,7 @@ void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
     auto pos_e = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
     auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
     gradient = (smoothingMask.raw().cast<double>()).array() *
-               bendingForce.raw().array();
+               F.bendingForce.raw().array();
     gradNorm =
         gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum();
     if (gradNorm > pastGradNorm) {

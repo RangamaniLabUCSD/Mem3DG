@@ -445,7 +445,7 @@ void System::updateVertexPositions() {
     // this is under the case where the resolution is low. This is where the
     // extra vpg->edgeLength comes from!!!
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
-    lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
+    F.lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
                         (vpg->d0 * H0.raw()).cwiseAbs().array();
     // lineTension.raw() = P.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
