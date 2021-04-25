@@ -196,10 +196,11 @@ bool System::edgeFlip() {
     gcs::Halfedge he = e.halfedge();
     // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
-      if ((vpg->cornerAngle(he.next().next().corner()) +
-           vpg->cornerAngle(he.twin().next().next().corner())) >
-          constants::PI) {
-        // && abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI / 36)) {
+      bool nonDelaunay =
+          (vpg->cornerAngle(he.next().next().corner()) +
+           vpg->cornerAngle(he.twin().next().next().corner())) > constants::PI;
+      bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI / 36);
+      if (nonDelaunay && flat) {
         auto success = mesh->flip(he.edge());
         isFlipped = true;
 
@@ -245,7 +246,12 @@ bool System::growMesh() {
           (vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea);
       bool is2Curved = vpg->edgeLength(he.edge()) > (2 * L);
-      if (is2Large || is2Curved) {
+      bool nonDelaunay =
+          (vpg->cornerAngle(he.next().next().corner()) +
+           vpg->cornerAngle(he.twin().next().next().corner())) > constants::PI;
+      bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI / 36);
+
+      if (is2Large || is2Curved || (nonDelaunay && !flat)) {
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
 
         // split the edge
@@ -254,6 +260,8 @@ bool System::growMesh() {
 
         // update quantities
         averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
+        // Note: think about conservation of energy, momentum and angular
+        // momentum
         averageData(vel, vertex1, vertex2, newVertex);
         averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
         thePointTracker[newVertex] = false;
@@ -304,6 +312,8 @@ bool System::growMesh() {
         // update quantities
         vpg->inputVertexPositions[newVertex] = collapsedPosition;
         thePointTracker[newVertex] = isThePoint;
+        // Note: think about conservation of energy, momentum and angular
+        // momentum
         averageData(vel, vertex1, vertex2, newVertex);
         averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
         if (O.isProtein)

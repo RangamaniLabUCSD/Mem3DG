@@ -31,7 +31,7 @@
 namespace mem3dg {
 namespace gc = ::geometrycentral;
 
-void VelocityVerlet::integrate() {
+bool VelocityVerlet::integrate() {
   signal(SIGINT, signalHandler);
 
 #ifdef __linux__
@@ -62,6 +62,11 @@ void VelocityVerlet::integrate() {
     march();
   }
 
+  // return if physical simulation is sucessful
+  if (!SUCCESS) {
+    markFileName("_failed");
+  }
+
   // stop the timer and report time spent
 #ifdef __linux__
   double duration = getDuration(start);
@@ -70,9 +75,20 @@ void VelocityVerlet::integrate() {
               << std::endl;
   }
 #endif
+
+  return SUCCESS;
 }
 
-void VelocityVerlet::checkParameters() {}
+void VelocityVerlet::checkParameters() {
+  if (f.O.isVertexShift) {
+    throw std::runtime_error(
+        "Vertex shift is not supported for Velocity Verlet!");
+  }
+  if (f.O.isGrowMesh || f.O.isEdgeFlip) {
+    throw std::runtime_error(
+        "Mesh mutations are currently not supported for Velocity Verlet!");
+  }
+}
 
 void VelocityVerlet::status() {
 
@@ -86,11 +102,15 @@ void VelocityVerlet::status() {
   getForces();
 
   // Compute total pressure
-  totalPressure.resize(f.mesh->nVertices(), 3);
-  totalPressure.setZero();
-  newTotalPressure = rowwiseScaling((physicalForce + DPDForce).array() /
-                                        f.vpg->vertexDualAreas.raw().array(),
-                                    vertexAngleNormal_e);
+  // newTotalPressure = rowwiseScaling((physicalForce + DPDForce).array() /
+  //                                       f.vpg->vertexDualAreas.raw().array(),
+  //                                   vertexAngleNormal_e);
+  newTotalPressure =
+      rowwiseScaling(DPDForce.array() / f.vpg->vertexDualAreas.raw().array(),
+                     vertexAngleNormal_e) +
+      (physicalForceVec.array().colwise() /
+       f.vpg->vertexDualAreas.raw().array())
+          .matrix();
 
   // compute the L1 error norm
   f.L1ErrorNorm = f.computeL1Norm(physicalForce);
@@ -124,6 +144,12 @@ void VelocityVerlet::status() {
 
   // compute the free energy of the system
   f.computeFreeEnergy();
+  if (f.E.totalE > 1.05 * totalEnergy) {
+    std::cout
+        << "\nVelocity Verlet: increasing system energy, simulation stopped!"
+        << std::endl;
+    SUCCESS = false;
+  }
 }
 
 void VelocityVerlet::march() {
