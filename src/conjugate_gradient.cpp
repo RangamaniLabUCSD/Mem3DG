@@ -88,6 +88,10 @@ void ConjugateGradient::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
     throw std::runtime_error("DPD has to be turned off for CG integration!");
   }
+  if (f.O.isVertexShift) {
+    throw std::runtime_error(
+        "Vertex shift is not supported for CG integration!");
+  }
 }
 
 void ConjugateGradient::status() {

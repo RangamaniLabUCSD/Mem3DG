@@ -115,14 +115,14 @@ void Integrator::getForces() {
                    .array();
   }
 
-  if (!f.mesh->hasBoundary()) {
-    removeTranslation(physicalForceVec);
-    removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
-                   physicalForceVec);
-    // removeTranslation(DPDPressure);
-    // removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
-    // DPDPressure);
-  }
+  // if (!f.mesh->hasBoundary()) {
+  //   removeTranslation(physicalForceVec);
+  //   removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
+  //                  physicalForceVec);
+  //   // removeTranslation(DPDPressure);
+  //   // removeRotation(EigenMap<double, 3>(f.vpg->inputVertexPositions),
+  //   // DPDPressure);
+  // }
 }
 
 void Integrator::pressureConstraintThreshold(bool &EXIT,

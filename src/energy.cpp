@@ -106,10 +106,10 @@ void System::computeExternalForceEnergy() {
 }
 
 void System::computeKineticEnergy() {
-  // auto velocity = gc::EigenMap<double, 3>(vel);
-  auto velocity =
-      rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
-                        gc::EigenMap<double, 3>(vpg->inputVertexPositions));
+  auto velocity = gc::EigenMap<double, 3>(vel);
+  // auto velocity =
+  //     rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
+  //                       gc::EigenMap<double, 3>(vpg->inputVertexPositions));
   E.kE = 0.5 * (vpg->vertexLumpedMassMatrix *
                 (velocity.array() * velocity.array()).matrix())
                    .sum();

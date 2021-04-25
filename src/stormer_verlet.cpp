@@ -18,7 +18,7 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void StormerVerlet::integrate() {
+bool StormerVerlet::integrate() {
   gcs::FaceData<size_t> faceInd = f.vpg->faceIndices;
   gc::Vector3 totalForce;
   for (size_t i = 0; i < total_time / dt; i++) {
@@ -65,5 +65,7 @@ void StormerVerlet::integrate() {
     // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<
     // "%" << std::endl;
   }
+
+  return true;
 }
 } // namespace mem3dg

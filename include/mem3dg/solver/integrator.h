@@ -147,6 +147,14 @@ public:
   }
 
   // ==========================================================
+  // =================   Template functions    ================
+  // ==========================================================
+  // virtual bool integrate() { return true; };
+  // virtual void march(){};
+  // virtual void status(){};
+  // virtual void checkParameters(){};
+
+  // ==========================================================
   // =================     Output Data         ================
   // ==========================================================
   /**
@@ -266,7 +274,7 @@ public:
       : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
                    outputDir_, trajFileName_, verbosity_) {}
 
-  void integrate();
+  bool integrate();
 };
 
 // ==========================================================
@@ -281,6 +289,8 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
   // total pressure of new iteration
   Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
+  // total energy of the system
+  double totalEnergy;
 
   VelocityVerlet(System &f_, double dt_, bool isAdaptiveStep_,
                  double total_time_, double tSave_, double tolerance_,
@@ -296,12 +306,20 @@ public:
 
     // check the validity of parameter
     checkParameters();
+
+    totalPressure.resize(f.mesh->nVertices(), 3);
+    newTotalPressure.resize(f.mesh->nVertices(), 3);
+    totalPressure.setZero();
+    newTotalPressure.setZero();
+
+    f.computeFreeEnergy();
+    totalEnergy = f.E.totalE;
   }
 
   /**
    * @brief velocity Verlet driver function
    */
-  void integrate();
+  bool integrate();
   /**
    * @brief velocity Verlet marcher
    */
