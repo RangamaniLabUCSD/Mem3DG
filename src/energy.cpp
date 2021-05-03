@@ -90,11 +90,22 @@ void System::computeChemicalEnergy() {
 }
 
 void System::computeLineTensionEnergy() {
-  // scale the dH0 such that it is integrated over the edge
-  // this is under the case where the resolution is low, WIP
-  // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *
-  // H0.raw()).cwiseAbs()).array(); auto dH0 = (vpg->d0 * H0.raw()).cwiseAbs();
-  E.lE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
+  if (false) {
+    throw std::runtime_error(
+        "computeLineTensionEnergy: out of data implementation, "
+        "shouldn't be called!");
+    // scale the dH0 such that it is integrated over the edge
+    // this is under the case where the resolution is low, WIP
+    // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *
+    // H0.raw()).cwiseAbs()).array(); auto dH0 = (vpg->d0 *
+    // H0.raw()).cwiseAbs();
+    E.lE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
+  }
+
+  E.lE = 0;
+  for (gcs::Face f : mesh->faces()) {
+    E.lE += P.eta * dH0[f].norm2() * vpg->faceAreas[f];
+  }
 }
 
 void System::computeExternalForceEnergy() {
@@ -177,6 +188,20 @@ System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
   //            .cwiseAbs()
   //            .sum() /
   //        (smoothingMask.raw().array() == false).cast<double>().sum();
+}
+
+void System::computeGradient(gcs::VertexData<double> &quantities,
+                             gcs::FaceData<gc::Vector3> &gradient) {
+  for (gcs::Face f : mesh->faces()) {
+    gc::Vector3 normal = vpg->faceNormals[f];
+    gc::Vector3 gradientVec{0, 0, 0};
+    for (gcs::Halfedge he : f.adjacentHalfedges()) {
+      gradientVec +=
+          quantities[he.next().tipVertex()] *
+          gc::cross(vpg->faceNormals[he.face()], vecFromHalfedge(he, *vpg));
+    }
+    gradient[f] = gradientVec / 2 / vpg->faceAreas[f];
+  }
 }
 
 } // namespace mem3dg

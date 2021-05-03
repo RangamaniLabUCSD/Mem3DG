@@ -622,6 +622,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
           get augmented Lagrangian parameter for volume 
       )delim");
+  parameters.def_readwrite("curvTol", &Parameters::curvTol,
+                           R"delim(
+          is2Curved mutation criterion length scale
+      )delim");
 
   /// Energy struct
   py::class_<Energy> energy(pymem3dg, "Energy", R"delim(

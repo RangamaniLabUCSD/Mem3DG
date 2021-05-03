@@ -361,7 +361,7 @@ void System::initConstants() {
 
   // Initialize the target constant cross length ration
   if (O.isRefMesh) {
-    targetLcrs = computeLengthCrossRatio(*localVpg);
+    computeLengthCrossRatio(*localVpg, targetLcrs);
   }
 
   // Initialize the constant reference volume
@@ -410,6 +410,7 @@ void System::updateVertexPositions() {
       H0.raw() *= P.H0;
       Kb.raw() *= P.Kbc - P.Kb;
       Kb.raw().array() += P.Kb;
+      computeGradient(H0, dH0);
     }
     // initialize/update external force
     if (P.Kf != 0) {
@@ -440,13 +441,16 @@ void System::updateVertexPositions() {
   }
 
   // initialize/update line tension (on dual edge)
-  if (P.eta != 0) {
+  if (P.eta != 0 && false) {
+    throw std::runtime_error(
+        "updateVertexPosition: out of data implementation on line tension, "
+        "shouldn't be called!");
     // scale the dH0 such that it is integrated over the edge
     // this is under the case where the resolution is low. This is where the
     // extra vpg->edgeLength comes from!!!
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
     F.lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
-                        (vpg->d0 * H0.raw()).cwiseAbs().array();
+                          (vpg->d0 * H0.raw()).cwiseAbs().array();
     // lineTension.raw() = P.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
 

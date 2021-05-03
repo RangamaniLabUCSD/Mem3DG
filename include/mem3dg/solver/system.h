@@ -401,6 +401,8 @@ public:
   gcs::VertexData<gc::Vector3> vel;
   /// Spontaneous curvature of the mesh
   gcs::VertexData<double> H0;
+  /// Spontaneous curvature gradient of the mesh
+  gcs::FaceData<gc::Vector3> dH0;
   /// Bending rigidity of the membrane
   gcs::VertexData<double> Kb;
   /// Random number engine
@@ -532,7 +534,7 @@ public:
         refFaceAreas(*mesh), heatSolver(*vpg), D(),
         geodesicDistanceFromPtInd(*mesh, 0), thePointTracker(*mesh, false),
         pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H0(*mesh),
-        Kb(*mesh), mask(*mesh, true), isSmooth(true),
+        dH0(*mesh), Kb(*mesh), mask(*mesh, true), isSmooth(true),
         smoothingMask(*mesh, false) {
 
     // GC computed properties
@@ -792,12 +794,19 @@ public:
   /**
    * @brief Get length cross ratio of the mesh
    */
-  gcs::EdgeData<double>
-  computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const;
+
+  void computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                               gcs::EdgeData<double> &targetLcrs);
   double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
                                  gcs::Edge &e) const;
   double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
                                  gcs::Edge &&e) const;
+
+  /**
+   * @brief Get gradient of quantities on face
+   */
+  void computeGradient(gcs::VertexData<double> &quantities,
+                       gcs::FaceData<gc::Vector3> &gradient);
 
   /**
    * @brief Find "the" vertex
