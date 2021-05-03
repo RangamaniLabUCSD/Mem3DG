@@ -59,14 +59,15 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
       gc::Vector3 bendForceVec{0, 0, 0};
       gc::Vector3 capillaryForceVec{0, 0, 0};
       gc::Vector3 osmoticForceVec{0, 0, 0};
+      gc::Vector3 lineCapForceVec{0, 0, 0};
 
       for (gc::Halfedge he : v.outgoingHalfedges()) {
 
         // Initialize local variables for computation
         gc::Vertex vj = he.tipVertex();
         gc::Vector3 eji = -vecFromHalfedge(he, *vpg);
-        double Hi = vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v);
-        double Hj = vpg->vertexMeanCurvature(vj) / vpg->vertexDualArea(vj);
+        double Hi = vpg->vertexMeanCurvatures[v] / vpg->vertexDualAreas[v];
+        double Hj = vpg->vertexMeanCurvatures[vj] / vpg->vertexDualAreas[vj];
         double H0i = H0[v];
         double H0j = H0[vj];
         double Kbi = Kb[v];
@@ -78,20 +79,23 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                   vpg->inputVertexPositions[he.next().tipVertex()]) /
             6;
         gc::Vector3 areaGrad =
-            0.25 * cross(vpg->faceNormal(he.face()),
-                         vecFromHalfedge(he.next(), *vpg)) +
-            0.25 * cross(vpg->faceNormal(he.twin().face()),
-                         vecFromHalfedge(he.twin().next().next(), *vpg));
+            0.25 * gc::cross(vpg->faceNormals[he.face()],
+                             vecFromHalfedge(he.next(), *vpg)) +
+            0.25 * gc::cross(vpg->faceNormals[he.twin().face()],
+                             vecFromHalfedge(he.twin().next().next(), *vpg));
         gc::Vector3 gaussVec =
-            0.5 * vpg->edgeDihedralAngle(he.edge()) * eji.unit();
-        gc::Vector3 schlafliVec1 = vpg->halfedgeCotanWeight(he.next().next()) *
-                                       vpg->faceNormal(he.face()) +
-                                   vpg->halfedgeCotanWeight(he.twin().next()) *
-                                       vpg->faceNormal(he.twin().face());
+            0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        gc::Vector3 schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
+                                       vpg->faceNormals[he.face()] +
+                                   vpg->halfedgeCotanWeights[he.twin().next()] *
+                                       vpg->faceNormals[he.twin().face()];
         gc::Vector3 schlafliVec2 =
-            -(vpg->halfedgeCotanWeight(he) * vpg->faceNormal(he.face()) +
-              vpg->halfedgeCotanWeight(he.twin()) *
-                  vpg->faceNormal(he.twin().face()));
+            -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
+              vpg->halfedgeCotanWeights[he.twin()] *
+                  vpg->faceNormals[he.twin().face()]);
+        gc::Vector3 oneSidedAreaGrad =
+            0.5 * gc::cross(vpg->faceNormals[he.face()],
+                            vecFromHalfedge(he.next(), *vpg));
 
         // Assemble to forces
         osmoticForceVec += pressure * volGrad;
@@ -102,16 +106,66 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                         areaGrad;
         bendForceVec -=
             Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
+        lineCapForceVec -= P.eta * (oneSidedAreaGrad * dH0[he.face()].norm2() -
+                                    gc::dot(oneSidedAreaGrad, dH0[he.face()]) *
+                                        dH0[he.face()]);
+
+        // Compare principal curvature vs truncated curvature vector
+
+        // This is outside the loop
+        // gc::Vector3 truncatedCurv{0, 0, 0};
+        // gc::Vector3 curvature{0, 0, 0};
+
+        // bool isinterface = false;
+        // for (gcs::Face f : v.adjacentFaces()) {
+        //   if (dH0[f].norm() > 1) {
+        //     isinterface = true;
+        //   }
+        // }
+
+        // inside of loop
+        //   if (isinterface) {
+        //     truncatedCurv +=
+        //         oneSidedAreaGrad - gc::dot(oneSidedAreaGrad, dH0[he.face()])
+        //         *
+        //                                dH0[he.face()] /
+        //                                dH0[he.face()].norm2();
+        //     curvature += oneSidedAreaGrad;
+        //   }
+        // }
+
+        // if (isinterface) {
+        //   std::cout << "curvature: " << curvature.norm()
+        //             << " and ontoNormal: " << F.ontoNormal(curvature, v)
+        //             << std::endl;
+        //   std::cout << "capillaryForceVec / surfacetension: "
+        //             << (capillaryForceVec / surfaceTension).norm()
+        //             << " and ontoNormal: "
+        //             << F.ontoNormal((capillaryForceVec / surfaceTension), v)
+        //             << std::endl;
+        //   std::cout << "truncated curvature: " << truncatedCurv.norm()
+        //             << " and ontoNormal: " << F.ontoNormal(truncatedCurv, v)
+        //             << std::endl;
+        //   vpg->requireVertexMaxPrincipalCurvatures();
+        //   vpg->requireVertexMinPrincipalCurvatures();
+        //   std::cout << "principal curvature: "
+        //             << vpg->vertexMaxPrincipalCurvatures[v] *
+        //                    vpg->vertexDualAreas[v]
+        //             << " and: "
+        //             << vpg->vertexMinPrincipalCurvatures[v] *
+        //                    vpg->vertexDualAreas[v]
+        //             << std::endl;
       }
 
       // Combine to one
       F.fundamentalThreeForces[v] =
-          osmoticForceVec + capillaryForceVec + bendForceVec;
+          osmoticForceVec + capillaryForceVec + bendForceVec + lineCapForceVec;
 
       // Scalar force by projection to angle-weighted normal
       F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
       F.capillaryForce[v] = F.ontoNormal(capillaryForceVec, v);
       F.osmoticForce[v] = F.ontoNormal(osmoticForceVec, v);
+      F.lineCapillaryForce[v] = F.ontoNormal(lineCapForceVec, v);
     }
   }
 
@@ -119,7 +173,7 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
   if (O.isGrowMesh) {
     isSmooth = !hasOutlier(F.bendingForce.raw());
   }
-  
+
   return gc::EigenMap<double, 3>(F.fundamentalThreeForces);
 }
 
@@ -214,7 +268,8 @@ EigenVectorX1D System::computeCapillaryForce() {
       O.isOpenMesh ? P.Ksg
                    : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
                          P.lambdaSG;
-  F.capillaryForce.raw() = -surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
+  F.capillaryForce.raw() =
+      -surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
 
   return F.capillaryForce.raw();
 
@@ -267,16 +322,22 @@ EigenVectorX1D System::computeOsmoticForce() {
 }
 
 EigenVectorX1D System::computeLineCapillaryForce() {
-  // zeros out the nonpositive normal curvature to compensate the fact that d0
-  // is ill-defined in low resolution
-  auto normalCurvature = vpg->edgeDihedralAngles.raw();
-  F.lineCapillaryForce.raw() =
-      -D * vpg->hodge1Inverse *
-      ((vpg->hodge1 *
-        (F.lineTension.raw().array() / vpg->edgeLengths.raw().array()).matrix())
-           .array() *
-       normalCurvature.array().max(0))
-          .matrix();
+  if (false) {
+    throw std::runtime_error(
+        "computeLineCapillaryForce: out of data implementation, "
+        "shouldn't be called!");
+    // zeros out the nonpositive normal curvature to compensate the fact that d0
+    // is ill-defined in low resolution
+    auto normalCurvature = vpg->edgeDihedralAngles.raw();
+    F.lineCapillaryForce.raw() =
+        -D * vpg->hodge1Inverse *
+        ((vpg->hodge1 *
+          (F.lineTension.raw().array() / vpg->edgeLengths.raw().array())
+              .matrix())
+             .array() *
+         normalCurvature.array().max(0))
+            .matrix();
+  }
   return F.lineCapillaryForce.raw();
 }
 
@@ -404,9 +465,6 @@ void System::computePhysicalForces() {
 
   computeFundamentalThreeForces();
 
-  if (P.eta != 0) {
-    computeLineCapillaryForce();
-  }
   if (O.isProtein) {
     computeChemicalPotential();
   }
@@ -420,6 +478,9 @@ void System::computePhysicalForces() {
   // }
   // if (P.Ksg != 0) {
   //   computeCapillaryForce();
+  // }
+  // if (P.eta != 0) {
+  //   computeLineCapillaryForce();
   // }
 }
 

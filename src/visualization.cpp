@@ -88,8 +88,6 @@ void visualize(mem3dg::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("bending_rigidity", f.Kb);
   polyscope::getSurfaceMesh("Membrane")
-      ->addEdgeScalarQuantity("line_tension", f.F.lineTension);
-  polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity(
           "-lapH(smoothing)",
           -f.Kb.raw().array() * (f.vpg->vertexLumpedMassMatrix.cwiseInverse() *
@@ -104,16 +102,6 @@ void visualize(mem3dg::System &f) {
       ->addEdgeScalarQuantity("cotan weight", f.vpg->edgeCotanWeights);
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
-  polyscope::getSurfaceMesh("Membrane")
-      ->addEdgeScalarQuantity(
-          "edge_line_capillary",
-          f.vpg->hodge1Inverse *
-              ((f.vpg->hodge1 *
-                (f.F.lineTension.raw().array() / f.vpg->edgeLengths.raw().array())
-                    .matrix())
-                   .array() *
-               f.vpg->edgeDihedralAngles.raw().array().max(0))
-                  .matrix());
   polyscope::getSurfaceMesh("Membrane")
       ->addFaceCountQuantity("the point",
                              std::vector<std::pair<size_t, int>>{std::make_pair(

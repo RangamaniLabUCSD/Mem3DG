@@ -96,15 +96,14 @@ void Integrator::getForces() {
 
   physicalForceVec = rowwiseScaling(
       (f.mask.raw().cast<double>()).array(),
-      rowwiseScaling(f.F.externalForce.raw() + f.F.lineCapillaryForce.raw(),
-                     vertexAngleNormal_e) +
+      rowwiseScaling(f.F.externalForce.raw(), vertexAngleNormal_e) +
           f.F.toMatrix(f.F.fundamentalThreeForces));
 
-  physicalForce =
-      (f.mask.raw().cast<double>()).array() *
-      (f.F.bendingForce.raw() + f.F.capillaryForce.raw() + f.F.externalForce.raw() +
-       f.F.osmoticForce.raw() + f.F.lineCapillaryForce.raw())
-          .array();
+  physicalForce = (f.mask.raw().cast<double>()).array() *
+                  (f.F.bendingForce.raw() + f.F.capillaryForce.raw() +
+                   f.F.externalForce.raw() + f.F.osmoticForce.raw() +
+                   f.F.lineCapillaryForce.raw())
+                      .array();
 
   if ((f.P.gamma != 0) || (f.P.temp != 0)) {
     f.computeDPDForces(dt);

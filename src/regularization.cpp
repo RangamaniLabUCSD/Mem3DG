@@ -26,18 +26,16 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-gcs::EdgeData<double>
-System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg) const {
-  gcs::EdgeData<double> LCR(*mesh);
+void System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                     gcs::EdgeData<double> &lcr) {
   for (gcs::Edge e : mesh->edges()) {
     gcs::Edge lj = e.halfedge().next().edge();
     gcs::Edge ki = e.halfedge().twin().next().edge();
     gcs::Edge il = e.halfedge().next().next().edge();
     gcs::Edge jk = e.halfedge().twin().next().next().edge();
-    LCR[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-             vpg.edgeLengths[lj];
+    lcr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] /
+                    vpg.edgeLengths[ki] / vpg.edgeLengths[lj];
   }
-  return LCR;
 }
 
 double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
@@ -199,8 +197,9 @@ bool System::edgeFlip() {
       bool nonDelaunay =
           (vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) > constants::PI;
-      bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI / 36);
-      if (nonDelaunay && flat) {
+      // bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI /
+      // 36);
+      if (nonDelaunay) {
         auto success = mesh->flip(he.edge());
         isFlipped = true;
 
@@ -225,6 +224,7 @@ bool System::edgeFlip() {
 
 bool System::growMesh() {
   bool isGrown = false;
+  int count = 0;
   // expand the mesh when area is too large
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
@@ -246,12 +246,16 @@ bool System::growMesh() {
           (vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea);
       bool is2Curved = vpg->edgeLength(he.edge()) > (2 * L);
-      bool nonDelaunay =
-          (vpg->cornerAngle(he.next().next().corner()) +
-           vpg->cornerAngle(he.twin().next().next().corner())) > constants::PI;
-      bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI / 36);
+      bool is2Sharp = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > 1.5;
+      // bool is2Fat = (vpg->cornerAngle(he.next().next().corner()) +
+      //                vpg->cornerAngle(he.twin().next().next().corner()))
+      //                >
+      //               (constants::PI * 1.33);
+      // bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI
+      // / 36);
 
-      if (is2Large || is2Curved || (nonDelaunay && !flat)) {
+      if (is2Large || is2Curved || is2Sharp) {
+        count++;
         // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
 
         // split the edge
@@ -337,6 +341,12 @@ bool System::growMesh() {
     }
   }
 
+  // if (count > 20){
+  //   edgeFlip();
+  //   edgeFlip();
+  //   edgeFlip();
+  // }
+  
   if (isGrown)
     mesh->compress();
   return isGrown;
