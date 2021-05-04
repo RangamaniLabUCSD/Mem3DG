@@ -96,7 +96,7 @@ void Euler::status() {
   getForces();
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForceVec.rowwise().norm());
+  f.L1ErrorNorm = f.computeL1Norm(f.F.ontoNormal(physicalForceVec));
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
