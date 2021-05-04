@@ -33,8 +33,8 @@ void System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
     gcs::Edge ki = e.halfedge().twin().next().edge();
     gcs::Edge il = e.halfedge().next().next().edge();
     gcs::Edge jk = e.halfedge().twin().next().next().edge();
-    lcr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] /
-                    vpg.edgeLengths[ki] / vpg.edgeLengths[lj];
+    lcr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
+             vpg.edgeLengths[lj];
   }
 }
 
@@ -225,6 +225,8 @@ bool System::edgeFlip() {
 bool System::growMesh() {
   bool isGrown = false;
   int count = 0;
+
+  const double targetdH0 = 0.5;
   // expand the mesh when area is too large
   for (gcs::Edge e : mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
@@ -246,17 +248,18 @@ bool System::growMesh() {
           (vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
           (4 * meanTargetFaceArea);
       bool is2Curved = vpg->edgeLength(he.edge()) > (2 * L);
-      bool is2Sharp = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > 1.5;
-      // bool is2Fat = (vpg->cornerAngle(he.next().next().corner()) +
-      //                vpg->cornerAngle(he.twin().next().next().corner()))
-      //                >
-      //               (constants::PI * 1.33);
+      bool is2Sharp =
+          abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 * targetdH0);
+      bool is2Fat =
+          (vpg->cornerAngle(he.next().next().corner()) +
+           vpg->cornerAngle(he.twin().next().next().corner())) > constants::PI;
       // bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI
       // / 36);
 
-      if (is2Large || is2Curved || is2Sharp) {
+      bool isSplit = (is2Large && is2Fat) || is2Curved || is2Sharp;
+
+      if (isSplit) {
         count++;
-        // || abs(H0[he.tailVertex()] - H0[he.tipVertex()]) > 0.2) {
 
         // split the edge
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
@@ -268,6 +271,7 @@ bool System::growMesh() {
         // momentum
         averageData(vel, vertex1, vertex2, newVertex);
         averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+        averageData(H0, vertex1, vertex2, newVertex);
         thePointTracker[newVertex] = false;
         if (O.isProtein)
           averageData(proteinDensity, vertex1, vertex2, newVertex);
@@ -293,11 +297,80 @@ bool System::growMesh() {
     gcs::Halfedge he = e.halfedge();
     // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
-      bool is2Skinny = (vpg->cornerAngle(he.next().next().corner()) +
-                        vpg->cornerAngle(he.twin().next().next().corner())) <
-                       constants::PI / 3;
-      if (is2Skinny) {
+      // double areaSum = 0;
+      // int num_t = -2;
+      // for (gcs::Vertex v : he.edge().adjacentVertices()) {
+      //   for (gcs::Face f : v.adjacentFaces()) {
+      //     areaSum += vpg->faceArea(f);
+      //     num_t++;
+      //   }
+      // }
 
+      // bool is2Skinny = (vpg->cornerAngle(he.next().next().corner()) +
+      //                   vpg->cornerAngle(he.twin().next().next().corner())) <
+      //                  constants::PI / 3;
+      // bool is2Small =
+      //     (areaSum - vpg->faceArea(he.face()) -
+      //      vpg->faceArea(he.twin().face())) < (num_t - 2) *
+      //      meanTargetFaceArea;
+      // double k1 = (abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex())) >
+      //              abs(vpg->vertexMinPrincipalCurvature(he.tipVertex())))
+      //                 ? abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex()))
+      //                 :
+      //                 abs(vpg->vertexMinPrincipalCurvature(he.tipVertex()));
+      // double k2 = (abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex())) >
+      //              abs(vpg->vertexMinPrincipalCurvature(he.tailVertex())))
+      //                 ?
+      //                 abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex()))
+      //                 :
+      //                 abs(vpg->vertexMinPrincipalCurvature(he.tailVertex()));
+      // double L = std::sqrt(6 * P.curvTol / ((k1 > k2) ? k1 : k2) -
+      //                      3 * P.curvTol * P.curvTol);
+      // bool isFlat = vpg->edgeLength(he.edge()) < (0.667 * L);
+      // bool isSmooth =
+      //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
+      //     targetdH0);
+
+      auto ifCollapse = [&]() {
+        if ((vpg->cornerAngle(he.next().next().corner()) +
+             vpg->cornerAngle(he.twin().next().next().corner())) <
+            constants::PI / 3) { // if too skinny
+          return true;
+        } else {
+          double areaSum = 0;
+          int num_t = -2;
+          for (gcs::Vertex v : he.edge().adjacentVertices()) {
+            for (gcs::Face f : v.adjacentFaces()) {
+              areaSum += vpg->faceArea(f);
+              num_t++;
+            }
+          }
+          if ((areaSum - vpg->faceArea(he.face()) -
+               vpg->faceArea(he.twin().face())) <
+              (num_t - 2) * meanTargetFaceArea) { // if too small
+            double k1 =
+                (abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex())) >
+                 abs(vpg->vertexMinPrincipalCurvature(he.tipVertex())))
+                    ? abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex()))
+                    : abs(vpg->vertexMinPrincipalCurvature(he.tipVertex()));
+            double k2 =
+                (abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex())) >
+                 abs(vpg->vertexMinPrincipalCurvature(he.tailVertex())))
+                    ? abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex()))
+                    : abs(vpg->vertexMinPrincipalCurvature(he.tailVertex()));
+            double L = std::sqrt(6 * P.curvTol / ((k1 > k2) ? k1 : k2) -
+                                 3 * P.curvTol * P.curvTol);
+            bool isFlat = vpg->edgeLength(he.edge()) < (0.667 * L);
+            bool isSmooth = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) <
+                            (0.667 * targetdH0);
+            return (isFlat && isSmooth);
+          } else {
+            return false;
+          }
+        }
+      };
+      // if (is2Skinny || (is2Small && isFlat && isSmooth)) {
+      if (ifCollapse()) {
         // alias the neighboring vertices
         const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
 
@@ -320,6 +393,7 @@ bool System::growMesh() {
         // momentum
         averageData(vel, vertex1, vertex2, newVertex);
         averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+        averageData(H0, vertex1, vertex2, newVertex);
         if (O.isProtein)
           averageData(proteinDensity, vertex1, vertex2, newVertex);
 
@@ -346,7 +420,7 @@ bool System::growMesh() {
   //   edgeFlip();
   //   edgeFlip();
   // }
-  
+
   if (isGrown)
     mesh->compress();
   return isGrown;
