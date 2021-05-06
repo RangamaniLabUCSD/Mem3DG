@@ -28,6 +28,7 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
+#include "igl/cylinder.h"
 #include "igl/loop.h"
 #include <math.h>
 namespace mem3dg {
@@ -38,7 +39,7 @@ namespace gcs = ::geometrycentral::surface;
 void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
                    std::unique_ptr<gcs::VertexPositionGeometry> &ptrVpg,
                    std::size_t nSub) {
-                     
+
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
 
@@ -95,6 +96,35 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       gc::EigenMap<double, 3, Eigen::RowMajor>(vpg->inputVertexPositions),
       mesh->getFaceVertexMatrix<size_t>());
+}
+
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getCylinderMatrix(double R, int nR, int nh) {
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
+
+  double side = 2 * R * sin(2 * 3.141592654 / nR);
+
+  igl::cylinder(nR, nh, coords, faces);
+  coords.col(0) *= R;
+  coords.col(1) *= R;
+  coords.col(2) *= 0.5 * ((nh-1) * side);
+  return std::tie(faces, coords);
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+cylinder(double R, int nR, int nh) {
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
+  double side = 2 * R * sin(2 * 3.141592654 / nR);
+
+  igl::cylinder(nR, nh, coords, faces);
+  coords.col(0) *= R;
+  coords.col(1) *= R;
+  coords.col(2) *= 0.5 * ((nh-1) * side);
+  return gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,

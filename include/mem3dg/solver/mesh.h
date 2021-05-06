@@ -28,6 +28,28 @@ namespace gcs = ::geometrycentral::surface;
 /**
  * @brief Construct an icosphere mesh in PolygonSoup form
  *
+ * @param R         Radius of the the cylinder
+ * @param nR        Number of element radially
+ * @param nh        Number of element axially
+ */
+DLL_PUBLIC std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                      std::unique_ptr<gcs::VertexPositionGeometry>>
+cylinder(double R, int nR, int nh);
+
+/**
+ * @brief Construct an icosphere mesh in PolygonSoup form
+ *
+ * @param R         Radius of the the cylinder
+ * @param nR        Number of element radially
+ * @param nh        Number of element axially
+ */
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getCylinderMatrix(double R, int nR, int nh);
+
+/**
+ * @brief Construct an icosphere mesh in PolygonSoup form
+ *
  * @param n         Iterations of quadrisections to perform
  * @param R         Radius of the icosphere
  */
@@ -57,7 +79,6 @@ tetrahedron();
  * @brief Hard code a tetrahedron in PolygonSoup form
  *
  */
-DLL_PUBLIC
 DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
 getTetrahedronMatrix();
@@ -74,7 +95,6 @@ diamond(double dihedral);
  * @brief Hard code a diamond in PolygonSoup form
  *
  */
-DLL_PUBLIC
 DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
 getDiamondMatrix(double dihedral);

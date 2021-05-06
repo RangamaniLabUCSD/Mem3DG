@@ -910,6 +910,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
+  pymem3dg.def("getCylinder", &getCylinderMatrix,
+               "get topology and vertex position matrix of a non-capped cylinder",
+               py::arg("R"), py::arg("nR"), py::arg("nh"));
+
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
                "get topology and vertex position matrix of icosphere",
                py::arg("n"), py::arg("R"));
