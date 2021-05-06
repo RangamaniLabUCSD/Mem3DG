@@ -50,7 +50,7 @@ protected:
   ForceCalculationTest() {
     // physical parameters
     p.H0 = 10;
-    p.r_H0 = {0.5, 0.5};
+    p.r_heter = {0.5, 0.5};
 
     p.Vt = 0.6;
     p.cam = 0;
@@ -78,9 +78,9 @@ protected:
     p.radius = 3;
 
     o.isVertexShift = false;
-    o.isProtein = false;
+    o.isProteinAdsorption = false;
     o.isReducedVolume = true;
-    o.isLocalCurvature = false;
+    o.isHeterogeneous = false;
     o.isEdgeFlip = false;
     o.isGrowMesh = false;
 

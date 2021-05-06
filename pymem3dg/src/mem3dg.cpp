@@ -80,7 +80,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                     isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
-  mem3dg::System f(inputMesh, refMesh, nSub, p, o);
+  mem3dg::System f(inputMesh, refMesh, nSub, false, p, o);
 
   /// Time integration / optimization
   if (integrationMethod == "velocity verlet") {
@@ -132,7 +132,7 @@ int forwardsweep_ply(
                     isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
-  mem3dg::System f(inputMesh, refMesh, nSub, p, o);
+  mem3dg::System f(inputMesh, refMesh, nSub, false, p, o);
 
   /// Time integration / optimization
   mem3dg::FeedForwardSweep integrator(

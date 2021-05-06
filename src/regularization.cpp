@@ -232,6 +232,19 @@ bool System::growMesh() {
     gcs::Halfedge he = e.halfedge();
     // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
     if (!he.edge().isBoundary()) {
+      // alias the neighboring vertices
+      const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
+      bool is2Large = false;
+      bool is2Curved = false;
+      bool is2Sharp = false;
+      bool is2Fat = false;
+      bool is2Small = false;
+      bool is2Skinny = false;
+      bool isFlat = false;
+      bool isSmooth = true;
+      bool isSplit = false;
+      bool isCollapse = false;
+
       // curvature based remeshing:
       // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
       double k1 = (abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex())) >
@@ -244,25 +257,45 @@ bool System::growMesh() {
                       : abs(vpg->vertexMinPrincipalCurvature(he.tailVertex()));
       double L = std::sqrt(6 * P.curvTol / ((k1 > k2) ? k1 : k2) -
                            3 * P.curvTol * P.curvTol);
-      bool is2Large =
-          (vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
-          (4 * meanTargetFaceArea);
-      bool is2Curved = vpg->edgeLength(he.edge()) > (2 * L);
-      bool is2Sharp =
-          abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 * targetdH0);
-      bool is2Fat =
+
+      // Conditions for splitting
+      is2Large = (vpg->faceArea(he.face()) + vpg->faceArea(he.twin().face())) >
+                 (4 * meanTargetFaceArea);
+      is2Curved = vpg->edgeLength(he.edge()) > (2 * L);
+      // is2Sharp =
+      //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 * targetdH0);
+      is2Fat =
           (vpg->cornerAngle(he.next().next().corner()) +
            vpg->cornerAngle(he.twin().next().next().corner())) > constants::PI;
       // bool flat = abs(vpg->edgeDihedralAngle(he.edge())) < (constants::PI
       // / 36);
+      isSplit = (is2Large && is2Fat) || is2Curved || is2Sharp;
 
-      bool isSplit = (is2Large && is2Fat) || is2Curved || is2Sharp;
+      // conditions for collapsing
+      double areaSum = 0;
+      int num_t = -2;
+      for (gcs::Vertex v : he.edge().adjacentVertices()) {
+        for (gcs::Face f : v.adjacentFaces()) {
+          areaSum += vpg->faceArea(f);
+          num_t++;
+        }
+      }
+      is2Small =
+          (areaSum - vpg->faceArea(he.face()) -
+           vpg->faceArea(he.twin().face())) < (num_t - 2) * meanTargetFaceArea;
+      is2Skinny = (vpg->cornerAngle(he.next().next().corner()) +
+                   vpg->cornerAngle(he.twin().next().next().corner())) <
+                  constants::PI / 3;
+      isFlat = vpg->edgeLength(he.edge()) < (0.667 * L);
+      // isSmooth =
+      //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
+      //     targetdH0);
+      isCollapse = is2Skinny || (is2Small && isFlat && isSmooth);
 
+      // Spltting
       if (isSplit) {
         count++;
-
         // split the edge
-        const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
         const auto &newVertex = mesh->splitEdgeTriangular(he.edge()).vertex();
 
         // update quantities
@@ -273,7 +306,7 @@ bool System::growMesh() {
         averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
         averageData(H0, vertex1, vertex2, newVertex);
         thePointTracker[newVertex] = false;
-        if (O.isProtein)
+        if (O.isProteinAdsorption)
           averageData(proteinDensity, vertex1, vertex2, newVertex);
 
         // smoothing mask
@@ -289,91 +322,8 @@ bool System::growMesh() {
 
         isGrown = true;
       }
-    }
-  }
-
-  // shrink the mesh is vertex is too close
-  for (gcs::Edge e : mesh->edges()) {
-    gcs::Halfedge he = e.halfedge();
-    // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
-    if (!he.edge().isBoundary()) {
-      // double areaSum = 0;
-      // int num_t = -2;
-      // for (gcs::Vertex v : he.edge().adjacentVertices()) {
-      //   for (gcs::Face f : v.adjacentFaces()) {
-      //     areaSum += vpg->faceArea(f);
-      //     num_t++;
-      //   }
-      // }
-
-      // bool is2Skinny = (vpg->cornerAngle(he.next().next().corner()) +
-      //                   vpg->cornerAngle(he.twin().next().next().corner())) <
-      //                  constants::PI / 3;
-      // bool is2Small =
-      //     (areaSum - vpg->faceArea(he.face()) -
-      //      vpg->faceArea(he.twin().face())) < (num_t - 2) *
-      //      meanTargetFaceArea;
-      // double k1 = (abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex())) >
-      //              abs(vpg->vertexMinPrincipalCurvature(he.tipVertex())))
-      //                 ? abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex()))
-      //                 :
-      //                 abs(vpg->vertexMinPrincipalCurvature(he.tipVertex()));
-      // double k2 = (abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex())) >
-      //              abs(vpg->vertexMinPrincipalCurvature(he.tailVertex())))
-      //                 ?
-      //                 abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex()))
-      //                 :
-      //                 abs(vpg->vertexMinPrincipalCurvature(he.tailVertex()));
-      // double L = std::sqrt(6 * P.curvTol / ((k1 > k2) ? k1 : k2) -
-      //                      3 * P.curvTol * P.curvTol);
-      // bool isFlat = vpg->edgeLength(he.edge()) < (0.667 * L);
-      // bool isSmooth =
-      //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
-      //     targetdH0);
-
-      auto ifCollapse = [&]() {
-        if ((vpg->cornerAngle(he.next().next().corner()) +
-             vpg->cornerAngle(he.twin().next().next().corner())) <
-            constants::PI / 3) { // if too skinny
-          return true;
-        } else {
-          double areaSum = 0;
-          int num_t = -2;
-          for (gcs::Vertex v : he.edge().adjacentVertices()) {
-            for (gcs::Face f : v.adjacentFaces()) {
-              areaSum += vpg->faceArea(f);
-              num_t++;
-            }
-          }
-          if ((areaSum - vpg->faceArea(he.face()) -
-               vpg->faceArea(he.twin().face())) <
-              (num_t - 2) * meanTargetFaceArea) { // if too small
-            double k1 =
-                (abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex())) >
-                 abs(vpg->vertexMinPrincipalCurvature(he.tipVertex())))
-                    ? abs(vpg->vertexMaxPrincipalCurvature(he.tipVertex()))
-                    : abs(vpg->vertexMinPrincipalCurvature(he.tipVertex()));
-            double k2 =
-                (abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex())) >
-                 abs(vpg->vertexMinPrincipalCurvature(he.tailVertex())))
-                    ? abs(vpg->vertexMaxPrincipalCurvature(he.tailVertex()))
-                    : abs(vpg->vertexMinPrincipalCurvature(he.tailVertex()));
-            double L = std::sqrt(6 * P.curvTol / ((k1 > k2) ? k1 : k2) -
-                                 3 * P.curvTol * P.curvTol);
-            bool isFlat = vpg->edgeLength(he.edge()) < (0.667 * L);
-            bool isSmooth = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) <
-                            (0.667 * targetdH0);
-            return (isFlat && isSmooth);
-          } else {
-            return false;
-          }
-        }
-      };
-      // if (is2Skinny || (is2Small && isFlat && isSmooth)) {
-      if (ifCollapse()) {
-        // alias the neighboring vertices
-        const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
-
+      // Collapsing
+      else if (isCollapse) {
         // precached pre-mutation values or flag
         gc::Vector3 collapsedPosition =
             vertex1.isBoundary()   ? vpg->inputVertexPositions[vertex1]
@@ -394,7 +344,7 @@ bool System::growMesh() {
         averageData(vel, vertex1, vertex2, newVertex);
         averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
         averageData(H0, vertex1, vertex2, newVertex);
-        if (O.isProtein)
+        if (O.isProteinAdsorption)
           averageData(proteinDensity, vertex1, vertex2, newVertex);
 
         // smoothing mask
@@ -414,12 +364,6 @@ bool System::growMesh() {
       }
     }
   }
-
-  // if (count > 20){
-  //   edgeFlip();
-  //   edgeFlip();
-  //   edgeFlip();
-  // }
 
   if (isGrown)
     mesh->compress();
@@ -575,7 +519,7 @@ void System::globalUpdateAfterMutation() {
   }
 
   // Update spontaneous curvature and bending rigidity when topology changes
-  if (!O.isLocalCurvature) {
+  if (!O.isHeterogeneous) {
     H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
     Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
   }

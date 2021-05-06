@@ -61,16 +61,19 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
       gc::Vector3 osmoticForceVec{0, 0, 0};
       gc::Vector3 lineCapForceVec{0, 0, 0};
 
+      double Hi = vpg->vertexMeanCurvatures[v] / vpg->vertexDualAreas[v];
+      double H0i = H0[v];
+      double Kbi = Kb[v];
+      double proteinDensityi = proteinDensity[v];
+
       for (gc::Halfedge he : v.outgoingHalfedges()) {
 
         // Initialize local variables for computation
         gc::Vertex vj = he.tipVertex();
         gc::Vector3 eji = -vecFromHalfedge(he, *vpg);
-        double Hi = vpg->vertexMeanCurvatures[v] / vpg->vertexDualAreas[v];
         double Hj = vpg->vertexMeanCurvatures[vj] / vpg->vertexDualAreas[vj];
-        double H0i = H0[v];
+
         double H0j = H0[vj];
-        double Kbi = Kb[v];
         double Kbj = Kb[vj];
 
         // Geometric variation vectors
@@ -99,7 +102,8 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
 
         // Assemble to forces
         osmoticForceVec += pressure * volGrad;
-        capillaryForceVec -= surfaceTension * areaGrad;
+        capillaryForceVec -=
+            (surfaceTension + proteinDensityi * P.epsilon) * areaGrad;
         bendForceVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
         bendForceVec -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
                          Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
@@ -379,21 +383,36 @@ EigenVectorX1D System::computeExternalForce() {
 }
 
 EigenVectorX1D System::computeChemicalPotential() {
+  gcs::VertexData<double> dH0dphi(*mesh, 0);
+  gcs::VertexData<double> dKbdphi(*mesh, 0);
 
-  EigenVectorX1D proteinDensitySq =
-      (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
-
-  EigenVectorX1D dH0dphi =
-      (2 * P.H0 * proteinDensity.raw().array() /
-       ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
-          .matrix();
+  if (P.relation == "linear") {
+    dH0dphi.fill(P.H0);
+    dKbdphi.fill(P.Kbc);
+  } else if (P.relation == "hill") {
+    EigenVectorX1D proteinDensitySq =
+        (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
+    dH0dphi.raw() =
+        (2 * P.H0 * proteinDensity.raw().array() /
+         ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
+            .matrix();
+    dKbdphi.raw() =
+        (2 * P.Kbc * proteinDensity.raw().array() /
+         ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
+            .matrix();
+  }
+  auto meanCurvDiff = (vpg->vertexMeanCurvatures.raw().array() /
+                       vpg->vertexDualAreas.raw().array()) -
+                      H0.raw().array();
 
   F.chemicalPotential.raw().array() =
-      P.epsilon - 2 * Kb.raw().array() *
-                      ((vpg->vertexMeanCurvatures.raw().array() /
-                        vpg->vertexDualAreas.raw().array()) -
-                       H0.raw().array()) *
-                      dH0dphi.array();
+      -vpg->vertexDualAreas.raw().array() *
+      (P.epsilon - 2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array() +
+       meanCurvDiff * meanCurvDiff * dKbdphi.raw().array());
+
+  F.chemicalPotential.raw().array() +=
+      P.lambdaPhi * (1 / proteinDensity.raw().array() -
+                     1 / (1 - proteinDensity.raw().array()));
 
   return F.chemicalPotential.raw();
 }
@@ -465,7 +484,7 @@ void System::computePhysicalForces() {
 
   computeFundamentalThreeForces();
 
-  if (O.isProtein) {
+  if (O.isProteinAdsorption) {
     computeChemicalPotential();
   }
   if (P.Kf != 0) {

@@ -45,17 +45,17 @@ int main() {
                        Pam, temp, pt,  Kf,      conc, height, radius};
 
   mem3dg::Options o;
-  o.isProtein = false;
+  o.isProteinAdsorption = false;
   o.isVertexShift = false;
   o.isReducedVolume = true;
-  o.isLocalCurvature = true;
+  o.isHeterogeneous = true;
   o.isEdgeFlip = false;
   o.isGrowMesh = false;
   o.isRefMesh = true;
   o.isFloatVertex = false;
   o.isLaplacianMeanCurvature = false;
 
-  mem3dg::System f(inputMesh, refMesh, 0, p, o);
+  mem3dg::System f(inputMesh, refMesh, 0, false, p, o);
 
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100, errorJumpLim = 600;

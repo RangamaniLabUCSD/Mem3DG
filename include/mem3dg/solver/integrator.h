@@ -246,9 +246,23 @@ public:
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double backtrack(const double potentialEnergy_pre,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction,
-                   double rho = 0.99, double c1 = 0.0001);
+  double
+  mechanicalBacktrack(const double potentialEnergy_pre,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction,
+                      double rho = 0.99, double c1 = 0.0001);
+
+  /**
+   * @brief Backtracking algorithm that dynamically adjust step size based on
+   * energy evaluation
+   * @param potentialEnergy_pre, previous energy evaluation
+   * @param direction, direction, most likely some function of gradient
+   * @param rho, discount factor
+   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+   * @return alpha, line search step size
+   */
+  double chemicalBacktrack(const double chemicalEnergy_pre,
+                           Eigen::Matrix<double, Eigen::Dynamic, 1> &direction,
+                           double rho = 0.99, double c1 = 0.0001);
 
   /**
    * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure

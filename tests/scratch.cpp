@@ -32,7 +32,7 @@ int main() {
   p.Kb = 8.22e-5;
   p.Kbc = 8.22e-4;
   p.H0 = 6;
-  p.r_H0 = std::vector<double>{0.5, 0.5};
+  p.r_heter = std::vector<double>{0.5, 0.5};
   p.eta = 0;
   p.Ksg = 2e-2;
   p.Kst = 0; // 2e-6;
@@ -52,9 +52,9 @@ int main() {
   p.pt = std::vector<double>{0, 0};
 
   mem3dg::Options o;
-  o.isProtein = false;
+  o.isProteinAdsorption = false;
   o.isReducedVolume = false;
-  o.isLocalCurvature = true;
+  o.isHeterogeneous = true;
   o.isEdgeFlip = true;
   o.isGrowMesh = true;
   o.isVertexShift = false;
@@ -62,7 +62,7 @@ int main() {
   o.isFloatVertex = true;
   o.isLaplacianMeanCurvature = false;
 
-  mem3dg::System f(inputMesh, inputMesh, 0, p, o);
+  mem3dg::System f(inputMesh, inputMesh, 0, false, p, o);
 
   double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
          verbosity = 3, restartNum = 5;

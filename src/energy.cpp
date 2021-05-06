@@ -86,7 +86,12 @@ void System::computePressureEnergy() {
 }
 
 void System::computeChemicalEnergy() {
-  E.cE = (vpg->vertexLumpedMassMatrix * P.epsilon * proteinDensity.raw()).sum();
+  E.cE = (vpg->vertexDualAreas.raw().array() * P.epsilon *
+          proteinDensity.raw().array())
+             .sum();
+  // interior method to constrain protein density to remain from 0 to 1
+  E.cE -= P.lambdaPhi * (proteinDensity.raw().array().log().sum() +
+                         (1 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeLineTensionEnergy() {
@@ -134,7 +139,7 @@ void System::computePotentialEnergy() {
   if (P.Kv != 0) {
     computePressureEnergy();
   }
-  if (O.isProtein) {
+  if (O.isProteinAdsorption || O.isHeterogeneous) {
     computeChemicalEnergy();
   }
   if (P.eta != 0) {

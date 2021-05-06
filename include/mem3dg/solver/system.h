@@ -248,12 +248,12 @@ struct Forces {
 struct Parameters {
   /// Bending modulus
   double Kb;
-  /// Bending modulus with coated area
+  /// linear constant of bending modulus vs protein density
   double Kbc;
   /// Spontaneous curvature
   double H0;
-  /// radius of non-zero spontaneous curvature
-  std::vector<double> r_H0;
+  /// radius of heterogenous domain
+  std::vector<double> r_heter;
   /// Global stretching modulus
   double Ksg;
   /// Vertex shifting constant
@@ -292,10 +292,14 @@ struct Parameters {
   double lambdaSG = 0;
   /// augmented Lagrangian parameter for volume
   double lambdaV = 0;
+  /// interior point parameter for protein density
+  double lambdaPhi = 1e-10;
   /// sharpness of tanh transition
   double sharpness = 20;
   /// tolerance for curvature approximation
   double curvTol = 0.0012;
+  /// type of relation between H0 and protein density
+  std::string relation = "linear";
 };
 
 struct Energy {
@@ -323,11 +327,11 @@ struct Options {
   /// Whether or not do vertex shift
   bool isVertexShift;
   /// Whether or not consider protein binding
-  bool isProtein;
+  bool isProteinAdsorption;
   /// Whether adopt reduced volume parametrization
   bool isReducedVolume;
   /// Whether calculate geodesic distance
-  bool isLocalCurvature;
+  bool isHeterogeneous;
   /// Whether edge flip
   bool isEdgeFlip;
   /// Whether grow mesh
@@ -340,6 +344,8 @@ struct Options {
   bool isLaplacianMeanCurvature;
   /// Whether open boundary mesh
   bool isOpenMesh = false;
+  /// Whether compute geodesic distance
+  bool isComputeGeodesics = false;
 };
 
 class DLL_PUBLIC System {
@@ -385,8 +391,10 @@ public:
   /// V-E distribution matrix
   Eigen::SparseMatrix<double> D;
 
-  /// L1 error norm
+  /// L1 mechanical error norm
   double L1ErrorNorm;
+  /// L1 chemical error norm
+  double L1ChemErrorNorm;
   /// surface area
   double surfaceArea;
   /// Volume
@@ -442,7 +450,19 @@ public:
          Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix, size_t nSub,
          Parameters &p, Options &o)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
-               p, o){};
+               p, o) {
+    // Check confliciting parameters and options
+    checkParametersAndOptions();
+
+    // Initialize reference values
+    initConstants();
+
+    // Process the mesh by regularization and mutation
+    processMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
 
   /**
    * @brief Construct a new Force object by reading mesh file path
@@ -458,9 +478,26 @@ public:
    * @param isVertexShift Option of whether conducting vertex shift
    * regularization
    */
-  System(std::string inputMesh, std::string refMesh, size_t nSub, Parameters &p,
-         Options &o)
-      : System(readMeshes(inputMesh, refMesh, nSub), p, o){};
+  System(std::string inputMesh, std::string refMesh, size_t nSub,
+         bool isContinue, Parameters &p, Options &o)
+      : System(readMeshes(inputMesh, refMesh, nSub), p, o) {
+    // Check confliciting parameters and options
+    checkParametersAndOptions();
+
+    // Initialize reference values
+    initConstants();
+
+    // Map continuation variables
+    if (isContinue) {
+      mapContinuationVariables(inputMesh);
+    }
+
+    // Process the mesh by regularization and mutation
+    processMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
 
 #ifdef MEM3DG_WITH_NETCDF
   /**
@@ -480,9 +517,22 @@ public:
   System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
          Parameters &p, Options &o)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, o) {
+    // Check confliciting parameters and options
+    checkParametersAndOptions();
+
+    // Initialize reference values
+    initConstants();
+
+    // Map continuation variables
     if (isContinue) {
       mapContinuationVariables(trajFile, startingFrame);
     }
+
+    // Process the mesh by regularization and mutation
+    processMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
   };
 #endif
 
@@ -530,7 +580,7 @@ public:
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
-        proteinDensity(*mesh, 0), targetLcrs(*mesh), refEdgeLengths(*mesh),
+        proteinDensity(*mesh, 0.5), targetLcrs(*mesh), refEdgeLengths(*mesh),
         refFaceAreas(*mesh), heatSolver(*vpg), D(),
         geodesicDistanceFromPtInd(*mesh, 0), thePointTracker(*mesh, false),
         pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H0(*mesh),
@@ -554,18 +604,6 @@ public:
     vpg->requireDECOperators();
     vpg->requireEdgeDihedralAngles();
     // vpg->requireVertexTangentBasis();
-
-    // Check confliciting parameters and options
-    checkParametersAndOptions();
-
-    // Initialize reference values
-    initConstants();
-
-    // Process the mesh by regularization and mutation
-    processMesh();
-
-    /// compute nonconstant values during simulation
-    updateVertexPositions();
   }
 
   /**
@@ -616,6 +654,12 @@ public:
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readMeshes(std::string inputMesh, std::string refMesh, size_t nSub);
+
+  /**
+   * @brief Map the continuation variables
+   *
+   */
+  void mapContinuationVariables(std::string plyFile);
 
 #ifdef MEM3DG_WITH_NETCDF
   /**

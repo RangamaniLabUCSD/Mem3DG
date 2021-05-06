@@ -32,7 +32,6 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
-
 #ifdef MEM3DG_WITH_NETCDF
 
 void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
@@ -52,9 +51,6 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
   time = fd.getTime(startingFrame);
   proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   gc::EigenMap<double, 3>(vel) = fd.getVelocity(startingFrame);
-
-  // Recompute cached variables
-  updateVertexPositions();
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
@@ -184,10 +180,35 @@ System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
 
+void System::mapContinuationVariables(std::string plyFile) {
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh_local;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData_local;
+
+  // Open mesh file
+  std::tie(ptrMesh_local, ptrRichData_local) =
+      gcs::RichSurfaceMeshData::readMeshAndData(plyFile);
+
+  // Check consistent topology for continuation
+  if (mesh->nFaces() != ptrMesh_local->nFaces() ||
+      mesh->nVertices() != ptrMesh_local->nVertices()) {
+    throw std::logic_error(
+        "Topology for continuation parameters mapping is not consistent!");
+  } else {
+    // Map continuation variables
+    proteinDensity =
+        ptrRichData_local->getVertexProperty<double>("protein_density")
+            .reinterpretTo(*mesh);
+  }
+}
+
 void System::checkParametersAndOptions() {
 
   if (mesh->hasBoundary()) {
     O.isOpenMesh = true;
+  }
+
+  if (O.isHeterogeneous || P.Kf != 0) {
+    O.isComputeGeodesics = true;
   }
 
   // check validity of parameters / options
@@ -209,16 +230,22 @@ void System::checkParametersAndOptions() {
     }
   }
 
-  if (!O.isLocalCurvature) {
+  if (!O.isHeterogeneous && !O.isProteinAdsorption) {
     if (P.eta != 0) {
       throw std::logic_error(
-          "line tension eta has to be 0 for nonlocal curvature!");
+          "line tension eta has to be 0 for homogeneous membrane!");
     }
-    if (P.r_H0 != std::vector<double>({-1, -1})) {
-      throw std::logic_error("r_H0 has to be {-1, -1} for nonlocal curvature!");
+    if (P.r_heter != std::vector<double>({-1, -1})) {
+      throw std::logic_error(
+          "r_H0 has to be {-1, -1} for homogeneous membrane!");
     }
-    if (P.Kbc != -1) {
-      throw std::logic_error("Kbc has to be set to -1 for nonlocal curvature!");
+    if (P.Kbc != 0) {
+      throw std::logic_error(
+          "Kbc has to be set to 0 for homogeneous membrane!");
+    }
+    if (P.epsilon != 0) {
+      throw std::logic_error(
+          "Protein energy has to be 0 for homogeneous membrane!");
     }
   }
 
@@ -234,16 +261,21 @@ void System::checkParametersAndOptions() {
     }
   }
 
-  if (!O.isProtein) {
-    if (P.epsilon != -1 || P.Bc != -1) {
-      throw std::logic_error("Binding constant Bc and binding energy "
-                             "epsilon has to be both -1 for "
-                             "protein binding disabled simulation!");
+  if (O.isProteinAdsorption) {
+    if (O.isHeterogeneous) {
+      throw std::logic_error(
+          "Prescribed heterogenity should be deactivated with "
+          "protein binding activated!");
+    }
+    if (P.eta != 0) {
+      throw std::logic_error(
+          "Line tension with protein bind is currently not supported!");
     }
   } else {
-    if (O.isLocalCurvature) {
-      throw std::logic_error("Local curvature should be deactivated with "
-                             "protein binding activated!");
+    if (P.Bc != -1) {
+      throw std::logic_error(
+          "Binding constant Bc has to be -1 for "
+          "protein adsorption dynamics disabled simulation!");
     }
   }
 
@@ -369,11 +401,10 @@ void System::initConstants() {
                            : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
                                  (4 * constants::PI / 3);
 
-  // Initialize the constant spontaneous curvature
-  H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
-
-  // Initialize the constant bending rigidity
-  Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
+  // Initialize const protein density
+  if (!O.isHeterogeneous && !O.isProteinAdsorption) {
+    proteinDensity.raw().setConstant(mesh->nVertices(), 1, 1);
+  }
 }
 
 void System::updateVertexPositions() {
@@ -392,30 +423,48 @@ void System::updateVertexPositions() {
         2 * vpg->edgeLength(thePoint.nearestVertex().halfedge().edge()));
   }
 
-  if (O.isLocalCurvature || P.Kf != 0) {
-    // update geodesic distance
+  // update geodesic distance
+  if (O.isComputeGeodesics) {
     if (O.isGrowMesh || O.isEdgeFlip) {
       gcs::HeatMethodDistanceSolver heatSolverLocal(*vpg);
       geodesicDistanceFromPtInd = heatSolverLocal.computeDistance(thePoint);
     } else {
       geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
     }
-    // initialize/update local spontaneous curvature and bending rigidity
-    if (O.isLocalCurvature) {
-      tanhDistribution(*vpg, H0.raw(), geodesicDistanceFromPtInd.raw(),
-                       P.sharpness, P.r_H0);
-      Kb.raw() = H0.raw();
-      // tanhDistribution(*vpg, Kb.raw(), geodesicDistanceFromPtInd.raw(),
-      //                  P.sharpness, P.r_H0);
-      H0.raw() *= P.H0;
-      Kb.raw() *= P.Kbc - P.Kb;
-      Kb.raw().array() += P.Kb;
-      computeGradient(H0, dH0);
-    }
-    // initialize/update external force
-    if (P.Kf != 0) {
-      computeExternalForce();
-    }
+  }
+
+  // initialize/update external force
+  if (P.Kf != 0) {
+    computeExternalForce();
+  }
+
+  // initialize/update protein density
+  if (O.isHeterogeneous) {
+    tanhDistribution(*vpg, proteinDensity.raw(),
+                     geodesicDistanceFromPtInd.raw(), P.sharpness, P.r_heter);
+  }
+
+  // compute face gradient of spontaneous curvature
+  if (P.eta != 0) {
+    computeGradient(H0, dH0);
+  }
+
+  // Update protein density dependent quantities
+  if (P.relation == "linear") {
+    H0.raw() = proteinDensity.raw() * P.H0;
+    Kb.raw() = P.Kb + P.Kbc * proteinDensity.raw().array();
+  } else if (P.relation == "hill") {
+    Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
+        (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
+    H0.raw() =
+        (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+            .matrix();
+    Kb.raw() = (P.Kb + P.Kbc * proteinDensitySq.array() /
+                           (1 + proteinDensitySq.array()))
+                   .matrix();
+  } else {
+    throw std::runtime_error(
+        "updateVertexPosition: P.relation is invalid option!");
   }
 
   /// initialize/update enclosed volume
@@ -423,22 +472,6 @@ void System::updateVertexPositions() {
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum();
-
-  // // update reference area by projecting to xy plane
-  // if (O.isOpenMesh) {
-  //   refSurfaceArea =
-  //       computePolygonArea(mesh->boundaryLoop(0), vpg->inputVertexPositions);
-  // }
-
-  // initialize/update spontaneous curvature (protein
-  // binding)
-  if (O.isProtein) {
-    Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
-        (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
-    H0.raw() =
-        (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
-            .matrix();
-  }
 
   // initialize/update line tension (on dual edge)
   if (P.eta != 0 && false) {

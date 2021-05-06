@@ -221,11 +221,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                             R"delim(
         The system
     )delim");
-  system.def(
-      py::init<std::string, std::string, size_t, Parameters &, Options &>(),
-      py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"), py::arg("p"),
-      py::arg("o"),
-      R"delim(
+  system.def(py::init<std::string, std::string, size_t, bool, Parameters &,
+                      Options &>(),
+             py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
+             py::arg("isContinue"), py::arg("p"), py::arg("o"),
+             R"delim(
         System constructor
       )delim");
   system.def(
@@ -485,17 +485,17 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether do vertex shift  
       )delim");
-  options.def_readwrite("isProtein", &Options::isProtein,
+  options.def_readwrite("isProteinAdsorption", &Options::isProteinAdsorption,
                         R"delim(
-          get the option of whether simulate protein  
+          get the option of whether simulate protein adsorption
       )delim");
   options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
                         R"delim(
           get the option of whether adopt reduced volume  
       )delim");
-  options.def_readwrite("isLocalCurvature", &Options::isLocalCurvature,
+  options.def_readwrite("isHeterogeneous", &Options::isHeterogeneous,
                         R"delim(
-          get the option of whether consider local curvature  
+          get the option of whether prescribe heterogenous membrane using geodesic distance 
       )delim");
   options.def_readwrite("isEdgeFlip", &Options::isEdgeFlip,
                         R"delim(
@@ -536,15 +536,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   parameters.def_readwrite("Kbc", &Parameters::Kbc,
                            R"delim(
-          get Bending rigidity of the coated membrane
+          get linear constant of bending modulus vs protein density
       )delim");
   parameters.def_readwrite("H0", &Parameters::H0,
                            R"delim(
           get Spontaneous curvature 
       )delim");
-  parameters.def_readwrite("r_H0", &Parameters::r_H0,
+  parameters.def_readwrite("r_heter", &Parameters::r_heter,
                            R"delim(
-          get radius of non-zero spontaneous curvature 
+          get radius of heterogenous domain
       )delim");
   parameters.def_readwrite("Ksg", &Parameters::Ksg,
                            R"delim(
