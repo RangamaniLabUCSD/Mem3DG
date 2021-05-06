@@ -334,6 +334,28 @@ TrajFile::getExternalForce(const std::size_t idx) const {
   return vec;
 }
 
+// chemical potential
+void TrajFile::writeChemicalPotential(
+    const std::size_t idx,
+    const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  chempotential_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+TrajFile::getChemicalPotential(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  chempotential_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
 // physical pressure
 void TrajFile::writePhysicalForce(
     const std::size_t idx,
@@ -547,6 +569,22 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
   double Energy;
   totalener_var.getVar({idx}, &Energy);
   return Energy;
+}
+
+// L1 chem error norm
+void TrajFile::writeL1ChemErrorNorm(const std::size_t idx,
+                                const double L1ChemErrorNorm) {
+  if (!writeable)
+    throw std::runtime_error("Cannot write to read only file.");
+  l1chemerrornorm_var.putVar({idx}, &L1ChemErrorNorm);
+}
+
+double TrajFile::getL1ChemErrorNorm(const std::size_t idx) const {
+  assert(idx < getNextFrameIndex());
+
+  double L1ChemErrorNorm;
+  l1chemerrornorm_var.getVar({idx}, &L1ChemErrorNorm);
+  return L1ChemErrorNorm;
 }
 
 // L1 error norm

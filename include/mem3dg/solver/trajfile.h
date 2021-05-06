@@ -108,6 +108,8 @@ static const std::string PROTEINDEN_VAR = "proteindensity";
 static const std::string SPONCURVE_VAR = "sponcurvature";
 /// Name of the external pressure data
 static const std::string EXTERNFORCE_VAR = "externpressure";
+/// Name of the chemical potential data
+static const std::string CHEMPOTENTIAL_VAR = "chempotential";
 /// Name of the physical pressure data
 static const std::string PHYSFORCE_VAR = "physpressure";
 /// Name of the capillary pressure data
@@ -132,6 +134,8 @@ static const std::string CHEMENER_VAR = "chemenergy";
 static const std::string LINEENER_VAR = "lineenergy";
 /// Name of the chemical energy data
 static const std::string TOTALENER_VAR = "totalenergy";
+/// Name of the L1 chem Error Norm data
+static const std::string L1CHEMERRORNORM_VAR = "l1chemerrornorm";
 /// Name of the L1 Error Norm data
 static const std::string L1ERRORNORM_VAR = "l1errornorm";
 /// Name of the L1 Error Norm data
@@ -207,12 +211,14 @@ public:
     gausscurve_var = fd->getVar(GAUSSCURVE_VAR);
     proteinden_var = fd->getVar(PROTEINDEN_VAR);
     sponcurve_var = fd->getVar(SPONCURVE_VAR);
+    chempotential_var = fd->getVar(CHEMPOTENTIAL_VAR);
     physforce_var = fd->getVar(PHYSFORCE_VAR);
     capforce_var = fd->getVar(CAPFORCE_VAR);
     bendforce_var = fd->getVar(BENDFORCE_VAR);
     osmoticforce_var = fd->getVar(OSMOTICFORCE_VAR);
     lineforce_var = fd->getVar(LINEFORCE_VAR);
     bendener_var = fd->getVar(BENDENER_VAR);
+    l1chemerrornorm_var = fd->getVar(L1CHEMERRORNORM_VAR);
     l1errornorm_var = fd->getVar(L1ERRORNORM_VAR);
     l1bendnorm_var = fd->getVar(L1BENDNORM_VAR);
     l1surfnorm_var = fd->getVar(L1SURFNORM_VAR);
@@ -309,6 +315,10 @@ public:
                                  {frame_dim, nvertices_dim});
     externforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
+    chempotential_var = fd->addVar(CHEMPOTENTIAL_VAR, netCDF::ncDouble,
+                                   {frame_dim, nvertices_dim});
+    chempotential_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
+
     physforce_var =
         fd->addVar(PHYSFORCE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
     physforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
@@ -322,7 +332,7 @@ public:
     bendforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     osmoticforce_var = fd->addVar(OSMOTICFORCE_VAR, netCDF::ncDouble,
-                                 {frame_dim, nvertices_dim});
+                                  {frame_dim, nvertices_dim});
     osmoticforce_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     lineforce_var =
@@ -349,6 +359,10 @@ public:
 
     totalener_var = fd->addVar(TOTALENER_VAR, netCDF::ncDouble, {frame_dim});
     totalener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
+
+    l1chemerrornorm_var =
+        fd->addVar(L1CHEMERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
+    l1chemerrornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-1)");
 
     l1errornorm_var =
         fd->addVar(L1ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
@@ -546,6 +560,13 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getExternalForce(const std::size_t idx) const;
 
+  void
+  writeChemicalPotential(const std::size_t idx,
+                         const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1>
+  getChemicalPotential(const std::size_t idx) const;
+
   void writePhysicalForce(const std::size_t idx,
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
@@ -610,6 +631,10 @@ public:
   void writeTotalEnergy(const std::size_t idx, const double Energy);
 
   double getTotalEnergy(const std::size_t idx) const;
+
+  void writeL1ChemErrorNorm(const std::size_t idx, const double L1ChemErrorNorm);
+
+  double getL1ChemErrorNorm(const std::size_t idx) const;
 
   void writeL1ErrorNorm(const std::size_t idx, const double L1ErrorNorm);
 
@@ -708,6 +733,7 @@ private:
   nc::NcVar gausscurve_var;
   nc::NcVar sponcurve_var;
   nc::NcVar externforce_var;
+  nc::NcVar chempotential_var;
   nc::NcVar physforce_var;
   nc::NcVar capforce_var;
   nc::NcVar bendforce_var;
@@ -720,6 +746,7 @@ private:
   nc::NcVar chemener_var;
   nc::NcVar lineener_var;
   nc::NcVar totalener_var;
+  nc::NcVar l1chemerrornorm_var;
   nc::NcVar l1errornorm_var;
   nc::NcVar l1bendnorm_var;
   nc::NcVar l1surfnorm_var;

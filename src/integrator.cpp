@@ -27,10 +27,10 @@ using namespace std;
 
 namespace mem3dg {
 
-double
-Integrator::backtrack(const double potentialEnergy_pre,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction,
-                      double rho, double c1) {
+double Integrator::mechanicalBacktrack(
+    const double potentialEnergy_pre,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction, double rho,
+    double c1) {
 
   // calculate initial energy as reference level
   Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
@@ -58,7 +58,11 @@ Integrator::backtrack(const double potentialEnergy_pre,
                 << std::endl;
       direction = rowwiseScaling(physicalForce,
                                  EigenMap<double, 3>(f.vpg->vertexNormals));
-      projection = 1;
+      projection = (physicalForce.array() *
+                    rowwiseDotProduct(direction,
+                                      EigenMap<double, 3>(f.vpg->vertexNormals))
+                        .array())
+                       .sum();
       // EXIT = true;
       // SUCCESS = false;
       // break;
@@ -83,6 +87,65 @@ Integrator::backtrack(const double potentialEnergy_pre,
   if (alpha != dt && verbosity > 3) {
     std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
     std::cout << "L1 norm: " << f.L1ErrorNorm << std::endl;
+  }
+  f.time = init_time + alpha;
+
+  return alpha;
+}
+
+double Integrator::chemicalBacktrack(
+    const double chemicalEnergy_pre,
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &direction, double rho,
+    double c1) {
+
+  // calculate initial energy as reference level
+  Eigen::Matrix<double, Eigen::Dynamic, 1> init_proteinDensity =
+      f.proteinDensity.raw();
+  double init_time = f.time;
+
+  // declare variables used in backtracking iterations
+  double alpha = dt;
+  size_t count = 0;
+
+  f.proteinDensity.raw() += alpha * direction;
+  f.updateVertexPositions();
+  f.computeFreeEnergy();
+  double projection =
+      (f.F.chemicalPotential.raw().array() * direction.array()).sum();
+
+  while (true) {
+    if (projection < 0) {
+      std::cout << "\nChemical backtracking line search: on uphill direction, "
+                   "use bare "
+                   "gradient! \n"
+                << std::endl;
+      direction = f.F.chemicalPotential.raw();
+      projection =
+          (f.F.chemicalPotential.raw().array() * direction.array()).sum();
+      // EXIT = true;
+      // SUCCESS = false;
+      // break;
+    }
+    // while (f.E.potE > potentialEnergy_pre) {
+    if (f.E.cE < (chemicalEnergy_pre - c1 * alpha * projection)) {
+      break;
+    }
+    if (alpha < 1e-6) {
+      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
+      EXIT = true;
+      SUCCESS = false;
+      break;
+    }
+    alpha *= rho;
+    f.proteinDensity.raw() = init_proteinDensity + alpha * direction;
+    f.updateVertexPositions();
+    f.computeFreeEnergy();
+    count++;
+  }
+
+  if (alpha != dt && verbosity > 3) {
+    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
+    std::cout << "L1 chem norm: " << f.L1ChemErrorNorm << std::endl;
   }
   f.time = init_time + alpha;
 
@@ -129,7 +192,7 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
                                              const double dArea,
                                              const double ctol,
                                              double increment) {
-  if (f.L1ErrorNorm < tol) {
+  if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
     if (isAugmentedLagrangian) { // augmented Lagrangian method
       if (dArea < ctol) {        // exit if fulfilled all constraints
         std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
@@ -159,7 +222,7 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
                                         const double dArea,
                                         const double dVolume, const double ctol,
                                         double increment) {
-  if (f.L1ErrorNorm < tol) {
+  if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
     if (isAugmentedLagrangian) {            // augmented Lagrangian method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
         std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
@@ -239,6 +302,7 @@ void Integrator::saveData() {
               << "E_total: " << f.E.totalE << "\n"
               << "E_pot: " << f.E.potE << "\n"
               << "|e|L1: " << f.L1ErrorNorm << "\n"
+              << "|e|L1Chem: " << f.L1ChemErrorNorm << "\n"
               << "H: ["
               << (f.vpg->vertexMeanCurvatures.raw().array() /
                   f.vpg->vertexDualAreas.raw().array())
@@ -320,9 +384,7 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addGeometry(*f.vpg);
 
   // write protein distribution
-  if (f.O.isProtein) {
-    richData.addVertexProperty("protein_density", f.proteinDensity);
-  }
+  richData.addVertexProperty("protein_density", f.proteinDensity);
 
   // write bool
   gcs::VertexData<int> msk(*f.mesh);
@@ -355,6 +417,7 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addVertexProperty("osmotic_force", f.F.osmoticForce);
   richData.addVertexProperty("external_force", f.F.externalForce);
   richData.addVertexProperty("physical_force", fn);
+  richData.addVertexProperty("chemical_potential", f.F.chemicalPotential);
 
   richData.write(outputDir + plyName);
 }
@@ -383,6 +446,7 @@ void Integrator::saveNetcdfData() {
   fd.writeTotalEnergy(idx, f.E.totalE);
   // write Norms
   fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
+  fd.writeL1ChemErrorNorm(idx, f.L1ChemErrorNorm);
   fd.writeL1BendNorm(idx, f.computeL1Norm(f.F.bendingForce.raw()));
   fd.writeL1SurfNorm(idx, f.computeL1Norm(f.F.capillaryForce.raw()));
   fd.writeL1PressNorm(idx, f.computeL1Norm(f.F.osmoticForce.raw()));
@@ -393,9 +457,7 @@ void Integrator::saveNetcdfData() {
     // write velocity
     fd.writeVelocity(idx, EigenMap<double, 3>(f.vel));
     // write protein density distribution
-    if (f.O.isProtein) {
-      fd.writeProteinDensity(idx, f.proteinDensity.raw());
-    }
+    fd.writeProteinDensity(idx, f.proteinDensity.raw());
 
     // write geometry
     fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
@@ -417,6 +479,7 @@ void Integrator::saveNetcdfData() {
     fd.writeOsmoticForce(idx, f.F.osmoticForce.raw());
     fd.writeExternalForce(idx, f.F.externalForce.raw());
     fd.writePhysicalForce(idx, physicalForce);
+    fd.writeChemicalPotential(idx, f.F.chemicalPotential.raw());
   }
 }
 #endif
@@ -428,8 +491,8 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile << "Input Mesh:     " << inputMesh << "\n";
     myfile << "Physical parameters used: \n";
     myfile << "\n";
-    myfile << "Kb(bare):     " << f.P.Kb << "\n"
-           << "Kb(coated):   " << f.P.Kbc << "\n"
+    myfile << "Kb:     " << f.P.Kb << "\n"
+           << "Kbc:   " << f.P.Kbc << "\n"
            << "H0:     " << f.P.H0 << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
@@ -467,8 +530,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "Input Mesh: " << inputMesh << "\n";
     myfile << "Final parameter: \n";
     myfile << "\n";
-    myfile << "Kb(bare):     " << f.P.Kb << "\n"
-           << "Kb(coated):   " << f.P.Kbc << "\n"
+    myfile << "Kb:     " << f.P.Kb << "\n"
+           << "Kbc:   " << f.P.Kbc << "\n"
            << "H0:     " << f.P.H0 << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
@@ -499,6 +562,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Line tension Energy:  " << f.E.lE << "\n"
            << "Total Energy:     " << f.E.totalE << "\n"
            << "L1 error norm:    " << f.L1ErrorNorm << "\n"
+           << "L1 chem error norm:    " << f.L1ChemErrorNorm << "\n"
            << "Volume:           " << f.volume << " = "
            << f.volume / f.refVolume << " reduced volume"
            << "\n"
@@ -527,7 +591,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Options: \n";
     myfile << "\n";
-    myfile << "Is considering protein: " << f.O.isProtein << "\n"
+    myfile << "Is considering protein: " << f.O.isProteinAdsorption << "\n"
            << "Is vertex shift: " << f.O.isVertexShift << "\n";
 
     myfile.close();

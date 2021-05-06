@@ -98,6 +98,9 @@ void Euler::status() {
   // compute the L1 error norm
   f.L1ErrorNorm = f.computeL1Norm(f.F.ontoNormal(physicalForceVec));
 
+  // compute the L1 chemical error norm
+  f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
+
   // compute the area contraint error
   dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
               ? abs(f.surfaceArea / f.refSurfaceArea - 1)
@@ -114,7 +117,7 @@ void Euler::status() {
   }
 
   // exit if under error tolerance
-  if (f.L1ErrorNorm < tol) {
+  if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
     std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
     EXIT = true;
   }
@@ -149,15 +152,16 @@ void Euler::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    backtrack(f.E.potE, vel_e, rho, c1);
+    mechanicalBacktrack(f.E.potE, vel_e, rho, c1);
   } else {
     pos_e += vel_e * dt;
     f.time += dt;
   }
 
   // time stepping on protein density
-  if (f.O.isProtein) {
-    f.proteinDensity.raw() += -f.P.Bc * f.F.chemicalPotential.raw() * dt;
+  if (f.O.isProteinAdsorption) {
+    chemicalBacktrack(f.E.cE, f.F.chemicalPotential.raw(), rho, c1);
+    // f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
   }
 
   // process the mesh with regularization or mutation
