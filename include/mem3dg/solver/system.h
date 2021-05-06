@@ -489,6 +489,9 @@ public:
 
     // Map continuation variables
     if (isContinue) {
+      std::cout << "\nWARNING: isContinue is on and make sure mesh file "
+                   "supports richData!"
+                << std::endl;
       mapContinuationVariables(inputMesh);
     }
 
