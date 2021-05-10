@@ -84,7 +84,7 @@ void VelocityVerlet::checkParameters() {
     throw std::runtime_error(
         "Vertex shift is not supported for Velocity Verlet!");
   }
-  if (f.O.isGrowMesh || f.O.isEdgeFlip) {
+  if (f.O.isSplitEdge || f.O.isEdgeFlip || f.O.isCollapseEdge) {
     throw std::runtime_error(
         "Mesh mutations are currently not supported for Velocity Verlet!");
   }
@@ -119,15 +119,11 @@ void VelocityVerlet::status() {
   f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
 
   // compute the area contraint error
-  dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
-              ? abs(f.surfaceArea / f.refSurfaceArea - 1)
-              : 0.0;
+  dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
   if (f.O.isReducedVolume) {
     // compute volume constraint error
-    dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
-              ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-              : 0.0;
+    dVP = (f.P.Kv != 0) ? abs(f.volume / f.refVolume / f.P.Vt - 1) : 0.0;
   } else {
     // compute pressure constraint error
     dVP = (!f.mesh->hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;

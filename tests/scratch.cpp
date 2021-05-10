@@ -35,12 +35,14 @@ int main() {
   p.r_heter = std::vector<double>{0.5, 0.5};
   p.eta = 0;
   p.Ksg = 2e-2;
+  p.A_res = 0;
   p.Kst = 0; // 2e-6;
   p.Ksl = 1e-7;
   p.Kse = 1e-7;
   p.epsilon = -1;
   p.Bc = -1;
   p.Kv = 1;
+  p.V_res = 0;
   p.Vt = -1;
   p.cam = 0;
   p.Kf = 0;
@@ -56,7 +58,8 @@ int main() {
   o.isReducedVolume = false;
   o.isHeterogeneous = true;
   o.isEdgeFlip = true;
-  o.isGrowMesh = true;
+  o.isSplitEdge = true;
+  o.isCollapseEdge = true;
   o.isVertexShift = false;
   o.isRefMesh = false;
   o.isFloatVertex = true;
@@ -66,7 +69,8 @@ int main() {
 
   double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
          verbosity = 3, restartNum = 5;
-  bool isAdaptiveStep = true, isAugmentedLagrangian = false, isBacktrack = false;
+  bool isAdaptiveStep = true, isAugmentedLagrangian = false,
+       isBacktrack = false;
   std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
                           "results//bud//asymm//testTraj";
 

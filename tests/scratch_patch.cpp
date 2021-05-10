@@ -35,14 +35,14 @@ int main() {
   double Kb = 8.22e-5, Kbc = 10 * 8.22e-5, H0 = 40, Kst = 0, Ksl = 0, Kse = 0,
          epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Pam = 0, Kf = 0,
          conc = 25, height = 0, radius = 100, temp = 0, h = 1e-5, Kv = 0,
-         eta = 0, Ksg = 0.05;
+         eta = 0, Ksg = 0.05, A_res = 0, V_res = 0;
 
   std::vector<double> pt = {0, 0, 0};
   std::vector<double> r_H0 = {0.15, 0.15};
 
-  mem3dg::Parameters p{Kb,  Kbc,  H0,  r_H0,    Ksg,  Kst,    Ksl,
-                       Kse, Kv,   eta, epsilon, Bc,   gamma,  Vt,
-                       Pam, temp, pt,  Kf,      conc, height, radius};
+  mem3dg::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
+                       Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
+                       Pam, temp, pt,    Kf,   conc,    height, radius};
 
   mem3dg::Options o;
   o.isProteinAdsorption = false;
@@ -50,7 +50,8 @@ int main() {
   o.isReducedVolume = true;
   o.isHeterogeneous = true;
   o.isEdgeFlip = false;
-  o.isGrowMesh = false;
+  o.isSplitEdge = false;
+  o.isCollapseEdge = false;
   o.isRefMesh = true;
   o.isFloatVertex = false;
   o.isLaplacianMeanCurvature = false;

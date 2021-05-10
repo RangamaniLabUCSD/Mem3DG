@@ -470,14 +470,16 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
 }
 
 /**
- * @brief Apply boundary condition mask
+ * @brief Apply boundary condition mask based on boundary condition type 
  *
  * @param mesh
  * @param mask
+ * @param boundaryConditionType: dirichlet or neumann
  *
  */
 DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
-                                    gcs::VertexData<bool> &mask) {
+                                    gcs::VertexData<bool> &mask,
+                                    std::string boundaryConditionType) {
   // for (gcs::Vertex v : mesh.vertices()) {
   //   if (v.isBoundary()) {
   //     mask[v.getIndex()] = 0;
@@ -486,14 +488,35 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
   //     }
   //   }
   // }
-  for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
-    for (gcs::Vertex v0 : bl.adjacentVertices()) {
-      for (gcs::Vertex v01 : v0.adjacentVertices()) {
-        for (gcs::Vertex v012 : v01.adjacentVertices()) {
-          mask[v012] = false;
+  if (boundaryConditionType == "neumann") {
+    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+      for (gcs::Vertex v0 : bl.adjacentVertices()) {
+        for (gcs::Vertex v01 : v0.adjacentVertices()) {
+          for (gcs::Vertex v012 : v01.adjacentVertices()) {
+            mask[v012] = false;
+          }
         }
       }
     }
+  } else if (boundaryConditionType == "dirichlet") {
+    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+      for (gcs::Vertex v0 : bl.adjacentVertices()) {
+        mask[v0] = false;
+      }
+    }
+  } else {
+    throw std::runtime_error(
+        "boundaryMask: boundaryConditionType not defined!");
+  }
+  if (mask.raw().all()) {
+    std::cout
+        << "boundaryMask: WARNING: there is no boundary vertex in the mesh!"
+        << std::endl;
+  }
+  if (!mask.raw().any()) {
+    std::cout
+        << "boundaryMask: WARNING: there is no non-masked DOF in the mesh!"
+        << std::endl;
   }
 }
 
@@ -574,9 +597,10 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
       continue;
     }
     if (geodesicDistance[v] <= 0 && isIntialized) {
-      std::cout << "\nWARNING: closestVertexToPt: geodesicDistance <= 0, may be "
-                   "uninitialized/updated!"
-                << std::endl;
+      std::cout
+          << "\nWARNING: closestVertexToPt: geodesicDistance <= 0, may be "
+             "uninitialized/updated!"
+          << std::endl;
     }
     double distance;
     if (position.size() == 2) {

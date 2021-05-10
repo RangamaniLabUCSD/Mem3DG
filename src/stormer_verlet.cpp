@@ -59,6 +59,9 @@ bool StormerVerlet::integrate() {
     f.processMesh();
     f.updateVertexPositions();
     f.pastPositions = temp;
+    // initialize/update the vertex position of the last
+    // iteration
+    f.pastPositions = f.vpg->inputVertexPositions;
     f.computeFreeEnergy();
 
     // std::cout << "energy: " << totalEnergy << std::endl;

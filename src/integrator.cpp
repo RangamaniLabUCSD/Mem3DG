@@ -33,8 +33,8 @@ double Integrator::mechanicalBacktrack(
     double c1) {
 
   // calculate initial energy as reference level
-  Eigen::Matrix<double, Eigen::Dynamic, 3> init_position =
-      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  gcs::VertexData<gc::Vector3> initial_pos(*f.mesh);
+  initial_pos = f.vpg->inputVertexPositions;
   double init_time = f.time;
 
   // declare variables used in backtracking iterations
@@ -78,8 +78,8 @@ double Integrator::mechanicalBacktrack(
       break;
     }
     alpha *= rho;
-    pos_e = init_position + alpha * direction;
-    f.updateVertexPositions();
+    pos_e = gc::EigenMap<double, 3>(initial_pos) + alpha * direction;
+    f.updateVertexPositions(false);
     f.computeFreeEnergy();
     count++;
   }
@@ -99,8 +99,8 @@ double Integrator::chemicalBacktrack(
     double c1) {
 
   // calculate initial energy as reference level
-  Eigen::Matrix<double, Eigen::Dynamic, 1> init_proteinDensity =
-      f.proteinDensity.raw();
+  gcs::VertexData<double> init_proteinDensity(*f.mesh);
+  init_proteinDensity = f.proteinDensity;
   double init_time = f.time;
 
   // declare variables used in backtracking iterations
@@ -137,8 +137,8 @@ double Integrator::chemicalBacktrack(
       break;
     }
     alpha *= rho;
-    f.proteinDensity.raw() = init_proteinDensity + alpha * direction;
-    f.updateVertexPositions();
+    f.proteinDensity.raw() = init_proteinDensity.raw() + alpha * direction;
+    f.updateVertexPositions(false);
     f.computeFreeEnergy();
     count++;
   }
@@ -275,7 +275,8 @@ void Integrator::createNetcdfFile() {
 
 void Integrator::saveData() {
   // save variable to richData and save ply file
-  if ((verbosity > 3 && !f.O.isGrowMesh) || (verbosity > 0 && f.O.isGrowMesh)) {
+  if ((verbosity > 3 && !f.O.isSplitEdge && !f.O.isCollapseEdge) ||
+      (verbosity > 0 && (f.O.isSplitEdge || f.O.isCollapseEdge))) {
     char buffer[50];
     sprintf(buffer, "/frame%d.ply", (int)frame);
     saveRichData(buffer);
@@ -297,7 +298,7 @@ void Integrator::saveData() {
               << "dA/Area: " << dArea << "/" << f.surfaceArea << ", "
               << "dVP/Volume: " << dVP << "/" << f.volume << ", "
               << "h: "
-              << abs(f.vpg->inputVertexPositions[f.thePoint.nearestVertex()].z)
+              << f.F.toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff()
               << "\n"
               << "E_total: " << f.E.totalE << "\n"
               << "E_pot: " << f.E.potE << "\n"
@@ -434,8 +435,8 @@ void Integrator::saveNetcdfData() {
   fd.writeVolume(idx, f.volume);
   fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.refSurfaceArea
                                               : f.surfaceArea);
-  fd.writeHeight(
-      idx, abs(f.vpg->inputVertexPositions[f.thePoint.nearestVertex()].z));
+  fd.writeHeight(idx,
+                 f.F.toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
   fd.writeBendEnergy(idx, f.E.BE);
   fd.writeSurfEnergy(idx, f.E.sE);
@@ -453,7 +454,7 @@ void Integrator::saveNetcdfData() {
   fd.writeL1LineNorm(idx, f.computeL1Norm(f.F.lineCapillaryForce.raw()));
 
   // vector quantities
-  if (!f.O.isGrowMesh) {
+  if (!f.O.isSplitEdge && !f.O.isCollapseEdge) {
     // write velocity
     fd.writeVelocity(idx, EigenMap<double, 3>(f.vel));
     // write protein density distribution

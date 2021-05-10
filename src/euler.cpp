@@ -102,20 +102,10 @@ void Euler::status() {
   f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
 
   // compute the area contraint error
-  dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
-              ? abs(f.surfaceArea / f.refSurfaceArea - 1)
-              : 0.0;
-
-  if (f.O.isReducedVolume) {
-    // compute volume constraint error
-    dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
-              ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-              : 0.0;
-  } else {
-    // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
-  }
-
+  dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
+  dVP = (f.O.isReducedVolume) ? abs(f.volume / f.refVolume / f.P.Vt - 1)
+                              : abs(1.0 / f.volume / f.P.cam - 1);
+                              
   // exit if under error tolerance
   if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
     std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
@@ -134,37 +124,45 @@ void Euler::status() {
 }
 
 void Euler::march() {
-
-  // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-
-  // compute force, which is equivalent to velocity
-  vel_e = physicalForceVec; // rowwiseScaling(physicalForce,
-                            // vertexAngleNormal_e);
-
-  // adjust time step if adopt adaptive time step based on mesh size
-  if (isAdaptiveStep) {
-    double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         physicalForce.cwiseAbs().maxCoeff();
-  }
-
-  // time stepping on vertex position
-  if (isBacktrack) {
-    mechanicalBacktrack(f.E.potE, vel_e, rho, c1);
+  if (f.time == lastSave) {
+    // process the mesh with regularization or mutation
+    f.processMesh();
+    f.time += 1e-10 * dt;
   } else {
-    pos_e += vel_e * dt;
-    f.time += dt;
-  }
+    // map the raw eigen datatype for computation
+    auto vel_e = gc::EigenMap<double, 3>(f.vel);
+    auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
-  // time stepping on protein density
-  if (f.O.isProteinAdsorption) {
-    chemicalBacktrack(f.E.cE, f.F.chemicalPotential.raw(), rho, c1);
-    // f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
-  }
+    // compute force, which is equivalent to velocity
+    vel_e = physicalForceVec; // rowwiseScaling(physicalForce,
+                              // vertexAngleNormal_e);
 
-  // process the mesh with regularization or mutation
-  f.processMesh();
+    // adjust time step if adopt adaptive time step based on mesh size
+    if (isAdaptiveStep) {
+      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
+      dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
+           physicalForce.cwiseAbs().maxCoeff();
+    }
+
+    // time stepping on vertex position
+    if (isBacktrack) {
+      mechanicalBacktrack(f.E.potE, vel_e, rho, c1);
+    } else {
+      pos_e += vel_e * dt;
+      f.time += dt;
+    }
+
+    // time stepping on protein density
+    if (f.O.isProteinAdsorption) {
+      chemicalBacktrack(f.E.cE, f.F.chemicalPotential.raw(), rho, c1);
+      // f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
+    }
+
+    // regularization
+    if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
+      f.computeRegularizationForce();
+      f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+    }
+  }
 }
 } // namespace mem3dg

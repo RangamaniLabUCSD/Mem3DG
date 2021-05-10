@@ -12,9 +12,11 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/heat_method_distance.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
+#include "mem3dg/solver/meshops.h"
 #include <stdexcept>
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
@@ -205,6 +207,21 @@ void System::checkParametersAndOptions() {
 
   if (mesh->hasBoundary()) {
     O.isOpenMesh = true;
+    if (O.boundaryConditionType != "neumann" &&
+        O.boundaryConditionType != "dirichlet") {
+      throw std::logic_error("boundary condition type (neumann or dirichlet) "
+                             "has to be specified for open boundary mesh!");
+    }
+  } else {
+    if (P.A_res != 0 || P.V_res != 0) {
+      throw std::logic_error(
+          "Closed mesh can not have area and volume reservior!");
+    }
+    if (O.boundaryConditionType != "none") {
+      throw std::logic_error(
+          "boundary condition type should be disable (= \"none\") "
+          "for closed boundary mesh!");
+    }
   }
 
   if (O.isHeterogeneous || P.Kf != 0) {
@@ -212,7 +229,7 @@ void System::checkParametersAndOptions() {
   }
 
   // check validity of parameters / options
-  if ((O.isEdgeFlip || O.isGrowMesh) && O.isRefMesh) {
+  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) && O.isRefMesh) {
     throw std::logic_error(
         "Topology changes are not compatible with reference mesh!");
   }
@@ -220,14 +237,6 @@ void System::checkParametersAndOptions() {
   if (P.Kst != 0 && !O.isRefMesh) {
     throw std::logic_error("For topology changing simulation, conformal mesh "
                            "regularization Kst cannot be applied!");
-  }
-
-  if (mesh->hasBoundary()) {
-    if (O.isReducedVolume || P.Vt != -1.0 || P.cam != 0.0) {
-      throw std::logic_error(
-          "For open boundary simulation, isReducedVolume has to be false, Vt "
-          "has to be -1, and cam has to be 0 ");
-    }
   }
 
   if (!O.isHeterogeneous && !O.isProteinAdsorption) {
@@ -254,10 +263,36 @@ void System::checkParametersAndOptions() {
       throw std::logic_error("ambient concentration cam has to be -1 for "
                              "reduced volume parametrized simulation!");
     }
+    if (O.isConstantOsmoticPressure) {
+      throw std::logic_error("reduced volume and constant osmotic pressure "
+                             "cannot be simultaneously turned on!");
+    }
   } else {
-    if (P.Vt != -1) {
+    if (P.Vt != -1 && !O.isConstantOsmoticPressure) {
       throw std::logic_error("reduced volume Vt has to be -1 for "
-                             "ambient pressure parametrized simulation!");
+                             "ambient pressure parametrized simulation! Note "
+                             "Kv now has the unit of energy!");
+    }
+  }
+
+  if (O.isConstantOsmoticPressure) {
+    if (O.isReducedVolume) {
+      throw std::logic_error("reduced volume and constant osmotic pressure "
+                             "cannot be simultaneously turned on!");
+    }
+    if (P.Vt != -1 || P.V_res != 0 || P.cam != -1) {
+      throw std::logic_error(
+          "Vt and cam have to be set to -1 and V_res to be 0 to "
+          "enable constant omostic pressure! Note Kv is the "
+          "pressure directly!");
+    }
+  }
+
+  if (O.isConstantSurfaceTension) {
+    if (P.A_res != 0) {
+      throw std::logic_error(
+          "A_res has to be set to 0 to "
+          "enable constant surface! Note Ksg is the surface tension directly!");
     }
   }
 
@@ -305,11 +340,12 @@ void System::checkParametersAndOptions() {
       throw std::logic_error(
           "To have Floating vertex, one must specify vertex by coordinate!");
     }
-    if (P.pt.size() == 3) {
-      std::cout << "\nWARNING: float vertex using 3D position may lead to jump "
-                   "in geodesic sense!\n"
-                << std::endl;
-    }
+    // if (P.pt.size() == 3) {
+    //   std::cout << "\nWARNING: float vertex using 3D position may lead to
+    //   jump "
+    //                "in geodesic sense!\n"
+    //             << std::endl;
+    // }
   }
 }
 
@@ -356,17 +392,24 @@ void System::initConstants() {
   }
 
   // Find "the" vertex
-  findTheVertex(*localVpg, geodesicDistanceFromPtInd, 1e18);
+  findThePoint(*localVpg, geodesicDistanceFromPtInd, 1e18);
+
+  // Initialize const geodesic distance
+  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
+  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
 
   // Initialize the constant mask based on distance from the point specified
-  mask.raw() =
-      (heatMethodDistance(*localVpg, thePoint.nearestVertex()).raw().array() <
-       P.radius)
-          .matrix();
+  mask.raw() = (geodesicDistanceFromPtInd.raw().array() < P.radius).matrix();
+
+  // Initialize the constant protein density
+  if (O.isHeterogeneous) {
+    tanhDistribution(*vpg, proteinDensity.raw(),
+                     geodesicDistanceFromPtInd.raw(), P.sharpness, P.r_heter);
+  }
 
   // Mask boundary element
   if (mesh->hasBoundary()) {
-    boundaryMask(*mesh, mask);
+    boundaryMask(*mesh, mask, O.boundaryConditionType);
   }
 
   // Explicitly cached the reference face areas data
@@ -376,13 +419,22 @@ void System::initConstants() {
   refEdgeLengths = localVpg->edgeLengths;
 
   // Initialize the constant target surface (total mesh) area
-  refSurfaceArea = O.isOpenMesh
-                       ? computePolygonArea(mesh->boundaryLoop(0),
-                                            localVpg->inputVertexPositions)
-                       : refFaceAreas.raw().sum();
+  if (O.isOpenMesh) {
+    refSurfaceArea = P.A_res;
+    for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
+      refSurfaceArea += computePolygonArea(bl, localVpg->inputVertexPositions);
+    }
+  } else {
+    refSurfaceArea = refFaceAreas.raw().sum();
+  }
+
+  // initialize/update total surface area
+  surfaceArea = vpg->faceAreas.raw().sum() + P.A_res;
+  std::cout << "area_init/area_ref = " << surfaceArea / refSurfaceArea
+            << std::endl;
 
   // Initialize the constant target mean face area
-  if (!O.isRefMesh || O.isGrowMesh) {
+  if (!O.isRefMesh || O.isSplitEdge || O.isCollapseEdge) {
     meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
   }
 
@@ -397,9 +449,13 @@ void System::initConstants() {
   }
 
   // Initialize the constant reference volume
-  refVolume = O.isOpenMesh ? 0.0
+  refVolume = O.isOpenMesh ? P.V_res
                            : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
                                  (4 * constants::PI / 3);
+
+  /// initialize/update enclosed volume
+  volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
+  std::cout << "vol_init/vol_ref = " << volume / refVolume << std::endl;
 
   // Initialize const protein density
   if (!O.isHeterogeneous && !O.isProteinAdsorption) {
@@ -407,7 +463,7 @@ void System::initConstants() {
   }
 }
 
-void System::updateVertexPositions() {
+void System::updateVertexPositions(bool isUpdateGeodesics) {
 
   // refresh cached quantities after regularization
   vpg->refreshQuantities();
@@ -417,29 +473,25 @@ void System::updateVertexPositions() {
   auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
 
   // recompute floating "the vertex"
-  if (O.isFloatVertex) {
-    findTheVertex(
+  if (O.isFloatVertex && isUpdateGeodesics) {
+    findThePoint(
         *vpg, geodesicDistanceFromPtInd,
-        2 * vpg->edgeLength(thePoint.nearestVertex().halfedge().edge()));
+        3 * vpg->edgeLength(thePoint.nearestVertex().halfedge().edge()));
   }
 
   // update geodesic distance
-  if (O.isComputeGeodesics) {
-    if (O.isGrowMesh || O.isEdgeFlip) {
-      gcs::HeatMethodDistanceSolver heatSolverLocal(*vpg);
-      geodesicDistanceFromPtInd = heatSolverLocal.computeDistance(thePoint);
-    } else {
-      geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
-    }
+  if (O.isComputeGeodesics && isUpdateGeodesics) {
+    gcs::HeatMethodDistanceSolver heatSolver(*vpg);
+    geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
   }
 
   // initialize/update external force
-  if (P.Kf != 0) {
+  if (P.Kf != 0 && isUpdateGeodesics) {
     computeExternalForce();
   }
 
-  // initialize/update protein density
-  if (O.isHeterogeneous) {
+  // update protein density
+  if (O.isHeterogeneous && isUpdateGeodesics) {
     tanhDistribution(*vpg, proteinDensity.raw(),
                      geodesicDistanceFromPtInd.raw(), P.sharpness, P.r_heter);
   }
@@ -468,10 +520,27 @@ void System::updateVertexPositions() {
   }
 
   /// initialize/update enclosed volume
-  volume = getMeshVolume(*mesh, *vpg, true);
+  volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
+
+  // update global osmotic pressure
+  if (O.isReducedVolume) {
+    F.osmoticPressure =
+        -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV);
+  } else if (O.isConstantOsmoticPressure) {
+    F.osmoticPressure = P.Kv;
+  } else {
+    F.osmoticPressure = P.Kv / volume - P.Kv * P.cam;
+  }
 
   // initialize/update total surface area
-  surfaceArea = vpg->faceAreas.raw().sum();
+  surfaceArea = vpg->faceAreas.raw().sum() + P.A_res;
+
+  // update global surface tension
+  F.surfaceTension =
+      O.isConstantSurfaceTension
+          ? P.Ksg
+          : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
+                P.lambdaSG;
 
   // initialize/update line tension (on dual edge)
   if (P.eta != 0 && false) {
@@ -486,15 +555,11 @@ void System::updateVertexPositions() {
                           (vpg->d0 * H0.raw()).cwiseAbs().array();
     // lineTension.raw() = P.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
-
-  // initialize/update the vertex position of the last
-  // iteration
-  pastPositions = vpg->inputVertexPositions;
 }
 
-void System::findTheVertex(gcs::VertexPositionGeometry &vpg,
-                           gcs::VertexData<double> &geodesicDistance,
-                           double range) {
+void System::findThePoint(gcs::VertexPositionGeometry &vpg,
+                          gcs::VertexData<double> &geodesicDistance,
+                          double range) {
   bool isUpdated = false;
   if (O.isFloatVertex) {
     switch (P.pt.size()) {
