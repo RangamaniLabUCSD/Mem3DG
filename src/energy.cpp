@@ -60,26 +60,19 @@ void System::computeBendingEnergy() {
 
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
-
   double A_difference = surfaceArea - refSurfaceArea;
-  if (mesh->hasBoundary()) {
-    // non moving boundary
-    E.sE = P.Ksg * A_difference;
-  } else {
-    E.sE = P.Ksg * A_difference * A_difference / refSurfaceArea / 2 +
-           P.lambdaSG * A_difference;
-  }
+  E.sE = O.isConstantSurfaceTension ? F.surfaceTension * surfaceArea
+                                    : F.surfaceTension * A_difference / 2 +
+                                          P.lambdaSG * A_difference / 2;
 }
 
 void System::computePressureEnergy() {
-  // Note: angled weight normal is exact volume variation
-
-  double V_difference = volume - refVolume * P.Vt;
-  if (mesh->hasBoundary()) {
-    E.pE = -P.Kv * V_difference;
-  } else if (O.isReducedVolume) {
-    E.pE = P.Kv * V_difference * V_difference / (refVolume * P.Vt) / 2 +
-           P.lambdaV * V_difference;
+  // Note: area weighted normal is exact volume variation
+  if (O.isReducedVolume) {
+    double V_difference = volume - refVolume * P.Vt;
+    E.pE = -F.osmoticPressure * V_difference / 2 + P.lambdaV * V_difference / 2;
+  } else if (O.isConstantOsmoticPressure) {
+    E.pE = -F.osmoticPressure * volume;
   } else {
     E.pE = P.Kv * (P.cam * volume - log(P.cam * volume) - 1);
   }
@@ -139,7 +132,7 @@ void System::computePotentialEnergy() {
   if (P.Kv != 0) {
     computePressureEnergy();
   }
-  if (O.isProteinAdsorption || O.isHeterogeneous) {
+  if (P.epsilon != 0) {
     computeChemicalEnergy();
   }
   if (P.eta != 0) {
@@ -179,13 +172,13 @@ void System::computeFreeEnergy() {
 double
 System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &force) const {
 
-  return force.cwiseAbs().sum() / surfaceArea;
+  return force.cwiseAbs().sum() / (surfaceArea - P.A_res);
 }
 
 double
 System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
   // L1 Norm
-  return force.cwiseAbs().sum() / surfaceArea;
+  return force.cwiseAbs().sum() / (surfaceArea - P.A_res);
 
   // Mask the mutated (unsmooth) set of data
   // return ((smoothingMask.raw().array() == false).cast<double>() *

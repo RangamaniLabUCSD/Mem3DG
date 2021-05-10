@@ -117,15 +117,11 @@ void BFGS::status() {
   f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
 
   // compute the area contraint error
-  dArea = (f.P.Ksg != 0 && !f.mesh->hasBoundary())
-              ? abs(f.surfaceArea / f.refSurfaceArea - 1)
-              : 0.0;
+  dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
   if (f.O.isReducedVolume) {
     // compute volume constraint error
-    dVP = (f.P.Kv != 0 && !f.mesh->hasBoundary())
-              ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-              : 0.0;
+    dVP = (f.P.Kv != 0) ? abs(f.volume / f.refVolume / f.P.Vt - 1) : 0.0;
     // thresholding, exit if fulfilled and iterate if not
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {

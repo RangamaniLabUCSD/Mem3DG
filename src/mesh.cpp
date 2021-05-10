@@ -16,6 +16,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "mem3dg/solver/constants.h"
 #include "mem3dg/solver/mesh.h"
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
@@ -31,6 +32,8 @@
 #include "igl/cylinder.h"
 #include "igl/loop.h"
 #include <math.h>
+#include <stdexcept>
+#include <tuple>
 namespace mem3dg {
 
 namespace gc = ::geometrycentral;
@@ -101,15 +104,47 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
 std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
            Eigen::Matrix<double, Eigen::Dynamic, 3>>
 getCylinderMatrix(double R, int nR, int nh) {
+  if (nR < 3 || nR < 2) {
+    throw std::runtime_error("getCylinderMatrix: nR > 2 and nh > 1!");
+  }
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
+  coords.resize(nR * nh, 3);
+  faces.resize(2 * nR * (nh - 1), 3);
 
-  double side = 2 * R * sin(2 * 3.141592654 / nR);
+  double sideLength = 2 * R * sin(3.141592654 / nR);
+  double totalHeight = (nh - 1) * sideLength / 2 * sqrt(3);
 
-  igl::cylinder(nR, nh, coords, faces);
-  coords.col(0) *= R;
-  coords.col(1) *= R;
-  coords.col(2) *= 0.5 * ((nh-1) * side);
+  int faceIndex = 0;
+  for (int clock = 0; clock < nR; clock++) {
+    for (int floor = 0; floor < nh; floor++) {
+      double z = floor * sideLength / 2 * sqrt(3);
+      double freq = 15;
+      double amp = 0;
+      double localR = R + amp * sin(freq * 2 * constants::PI / totalHeight * z);
+      double x =
+          localR * cos(2 * constants::PI * clock / nR + constants::PI / nR * floor);
+      double y =
+          localR * sin(2 * constants::PI * clock / nR + constants::PI / nR * floor);
+      coords(clock + floor * nR, 0) = x;
+      coords(clock + floor * nR, 1) = y;
+      coords(clock + floor * nR, 2) = z;
+      if (floor > 0) {
+        faces(faceIndex, 0) = ((clock + 0) % nR) + (floor - 1) * nR;
+        faces(faceIndex, 1) = ((clock + 1) % nR) + (floor - 1) * nR;
+        faces(faceIndex, 2) = ((clock + 0) % nR) + (floor + 0) * nR;
+        faceIndex++;
+        faces(faceIndex, 0) = ((clock + 1) % nR) + (floor - 1) * nR;
+        faces(faceIndex, 1) = ((clock + 1) % nR) + (floor + 0) * nR;
+        faces(faceIndex, 2) = ((clock + 0) % nR) + (floor + 0) * nR;
+        faceIndex++;
+      }
+    }
+  }
+
+  if (faceIndex != faces.rows()) {
+    throw std::runtime_error("getCylinderMatrix: faceIndex not agree!");
+  }
   return std::tie(faces, coords);
 }
 
@@ -118,12 +153,7 @@ std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
 cylinder(double R, int nR, int nh) {
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
-  double side = 2 * R * sin(2 * 3.141592654 / nR);
-
-  igl::cylinder(nR, nh, coords, faces);
-  coords.col(0) *= R;
-  coords.col(1) *= R;
-  coords.col(2) *= 0.5 * ((nh-1) * side);
+  std::tie(faces, coords) = getCylinderMatrix(R, nR, nh);
   return gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
 }
 

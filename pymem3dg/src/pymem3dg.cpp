@@ -356,10 +356,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the osmotic force
       )delim");
   system.def(
-      "getSurfaceTension", [](System &s) { return s.surfaceTension; },
+      "getSurfaceTension", [](System &s) { return s.F.surfaceTension; },
       py::return_value_policy::reference_internal,
       R"delim(
           get the Surface tension
+      )delim");
+  system.def(
+      "getOsmoticPressure", [](System &s) { return s.F.osmoticPressure; },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the osmotic pressure
       )delim");
   system.def(
       "getProteinDensity", [](System &s) { return s.proteinDensity.raw(); },
@@ -493,6 +499,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether adopt reduced volume  
       )delim");
+  options.def_readwrite("isConstantOsmoticPressure",
+                        &Options::isConstantOsmoticPressure,
+                        R"delim(
+          get the option of whether adopt constant osmotic pressure
+      )delim");
+  options.def_readwrite("isConstantSurfaceTension",
+                        &Options::isConstantSurfaceTension,
+                        R"delim(
+          get the option of whether adopt constant surface tension 
+      )delim");
   options.def_readwrite("isHeterogeneous", &Options::isHeterogeneous,
                         R"delim(
           get the option of whether prescribe heterogenous membrane using geodesic distance 
@@ -501,9 +517,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether do edge flip
       )delim");
-  options.def_readwrite("isGrowMesh", &Options::isGrowMesh,
+  options.def_readwrite("isSplitEdge", &Options::isSplitEdge,
                         R"delim(
-          get the option of whether grow mesh 
+          get the option of whether split edge to grow mesh
+      )delim");
+  options.def_readwrite("isCollapseEdge", &Options::isCollapseEdge,
+                        R"delim(
+          get the option of whether Collapse edge to grow mesh
       )delim");
   options.def_readwrite("isRefMesh", &Options::isRefMesh,
                         R"delim(
@@ -519,6 +539,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the option of whether adopt Laplacian mean curvature definition, 
           otherwise dihedral angle definition.
       )delim");
+  options.def_readwrite("boundaryConditionType",
+                        &Options::boundaryConditionType,
+                        R"delim(
+          get the option of "neumann", "dirichlet" or "none" to specify boundary condition.
+      )delim");
 
   /// Parameter struct
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
@@ -528,8 +553,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def(
       py::init<double, double, double, std::vector<double>, double, double,
                double, double, double, double, double, double, double, double,
-               double, double, std::vector<double>, double, double, double,
-               double, double, double>());
+               double, double, double, double, std::vector<double>, double,
+               double, double, double, double, double>());
   parameters.def_readwrite("Kb", &Parameters::Kb,
                            R"delim(
           get Bending rigidity of the bare membrane 
@@ -550,6 +575,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
           get Global stretching modulus 
       )delim");
+  parameters.def_readwrite("A_res", &Parameters::A_res,
+                           R"delim(
+          get area reservoir
+      )delim");
   parameters.def_readwrite("Kst", &Parameters::Kst,
                            R"delim(
           get Vertex shifting constant 
@@ -565,6 +594,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("Kv", &Parameters::Kv,
                            R"delim(
           get Volume regularization 
+      )delim");
+  parameters.def_readwrite("V_res", &Parameters::V_res,
+                           R"delim(
+          get volume reservoir
       )delim");
   parameters.def_readwrite("eta", &Parameters::eta,
                            R"delim(
@@ -910,9 +943,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                    :py:class:`int`: success.
             )delim");
 
-  pymem3dg.def("getCylinder", &getCylinderMatrix,
-               "get topology and vertex position matrix of a non-capped cylinder",
-               py::arg("R"), py::arg("nR"), py::arg("nh"));
+  pymem3dg.def(
+      "getCylinder", &getCylinderMatrix,
+      "get topology and vertex position matrix of a non-capped cylinder",
+      py::arg("R"), py::arg("nR"), py::arg("nh"));
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
                "get topology and vertex position matrix of icosphere",

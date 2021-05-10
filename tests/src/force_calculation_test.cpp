@@ -62,7 +62,9 @@ protected:
 
     p.Kb = 8.22e-5;
     p.Ksg = 0.01;
+    p.A_res = 0;
     p.Kv = 2e-2;
+    p.V_res = 0;
     p.eta = 0;
 
     p.epsilon = 15e-5;
@@ -82,7 +84,8 @@ protected:
     o.isReducedVolume = true;
     o.isHeterogeneous = false;
     o.isEdgeFlip = false;
-    o.isGrowMesh = false;
+    o.isSplitEdge = false;
+    o.isCollapseEdge = false;
 
     // Create mesh and geometry objects
     std::tie(ptrMesh, ptrVpg) = icosphere(2, 1);

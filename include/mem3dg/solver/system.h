@@ -65,6 +65,8 @@ struct Forces {
   gcs::VertexData<double> bendingForce;
   /// Cached tension-induced capillary force
   gcs::VertexData<double> capillaryForce;
+  /// Cached Surface tension
+  double surfaceTension;
   /// Cached interfacial line tension force
   gcs::VertexData<double> lineCapillaryForce;
   gcs::EdgeData<double> lineTension;
@@ -72,6 +74,7 @@ struct Forces {
   gcs::VertexData<double> externalForce;
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
+  double osmoticPressure;
   /// Cached three fundamentals
   gcs::VertexData<gc::Vector3> fundamentalThreeForces;
   /// Cached bending force
@@ -95,11 +98,11 @@ struct Forces {
       : mesh(mesh_), vpg(vpg_), fundamentalThreeForces(mesh, {0, 0, 0}),
         bendingForceVec(mesh, {0, 0, 0}), capillaryForceVec(mesh, {0, 0, 0}),
         osmoticForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
-        capillaryForce(mesh, 0), lineTension(mesh, 0),
+        capillaryForce(mesh, 0), surfaceTension(0), lineTension(mesh, 0),
         lineCapillaryForce(mesh, 0), externalForce(mesh, 0),
-        osmoticForce(mesh, 0), regularizationForce(mesh, {0, 0, 0}),
-        stochasticForce(mesh, {0, 0, 0}), dampingForce(mesh, {0, 0, 0}),
-        chemicalPotential(mesh, 0) {}
+        osmoticForce(mesh, 0), osmoticPressure(0),
+        regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
+        dampingForce(mesh, {0, 0, 0}), chemicalPotential(mesh, 0) {}
 
   ~Forces() {}
 
@@ -256,14 +259,18 @@ struct Parameters {
   std::vector<double> r_heter;
   /// Global stretching modulus
   double Ksg;
+  /// Area reservior
+  double A_res;
   /// Vertex shifting constant
   double Kst;
   /// Local stretching modulus
   double Ksl;
   /// Edge spring constant
   double Kse;
-  /// Volume regularization
+  /// pressure-volume modulus
   double Kv;
+  /// volume reservoir
+  double V_res;
   /// Line tension
   double eta;
   /// binding energy per protein
@@ -325,23 +332,31 @@ struct Energy {
 
 struct Options {
   /// Whether or not do vertex shift
-  bool isVertexShift;
+  bool isVertexShift = false;
   /// Whether or not consider protein binding
-  bool isProteinAdsorption;
+  bool isProteinAdsorption = false;
   /// Whether adopt reduced volume parametrization
-  bool isReducedVolume;
+  bool isReducedVolume = false;
+  /// Whether adopt constant osmotic pressure
+  bool isConstantOsmoticPressure = false;
+  /// Whether adopt constant surface tension
+  bool isConstantSurfaceTension = false;
   /// Whether calculate geodesic distance
-  bool isHeterogeneous;
+  bool isHeterogeneous = false;
   /// Whether edge flip
-  bool isEdgeFlip;
-  /// Whether grow mesh
-  bool isGrowMesh;
+  bool isEdgeFlip = false;
+  /// Whether split edge
+  bool isSplitEdge = false;
+  /// Whether collapse edge
+  bool isCollapseEdge = false;
   /// Whether need reference mesh
-  bool isRefMesh;
+  bool isRefMesh = false;
   /// Whether floating "the" vertex
-  bool isFloatVertex;
+  bool isFloatVertex = false;
   /// Whether Laplacian mean curvature
-  bool isLaplacianMeanCurvature;
+  bool isLaplacianMeanCurvature = false;
+  /// Boundary condition: neumann, dirichlet, none
+  std::string boundaryConditionType = "none";
   /// Whether open boundary mesh
   bool isOpenMesh = false;
   /// Whether compute geodesic distance
@@ -383,8 +398,6 @@ public:
   gcs::EdgeData<double> refEdgeLengths;
   /// Reference face Area of reference mesh
   gcs::FaceData<double> refFaceAreas;
-  /// Distance solver
-  gcs::HeatMethodDistanceSolver heatSolver;
 
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
@@ -399,8 +412,6 @@ public:
   double surfaceArea;
   /// Volume
   double volume;
-  /// Cached Surface tension
-  double surfaceTension;
   /// Cached vertex positions from the previous step
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached protein surface density
@@ -584,11 +595,10 @@ public:
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
         proteinDensity(*mesh, 0.5), targetLcrs(*mesh), refEdgeLengths(*mesh),
-        refFaceAreas(*mesh), heatSolver(*vpg), D(),
-        geodesicDistanceFromPtInd(*mesh, 0), thePointTracker(*mesh, false),
-        pastPositions(*mesh, {0, 0, 0}), vel(*mesh, {0, 0, 0}), H0(*mesh),
-        dH0(*mesh), Kb(*mesh), mask(*mesh, true), isSmooth(true),
-        smoothingMask(*mesh, false) {
+        refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
+        thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
+        vel(*mesh, {0, 0, 0}), H0(*mesh), dH0(*mesh), Kb(*mesh),
+        mask(*mesh, true), isSmooth(true), smoothingMask(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -606,6 +616,8 @@ public:
     vpg->requireCornerScaledAngles();
     vpg->requireDECOperators();
     vpg->requireEdgeDihedralAngles();
+    vpg->requireHalfedgeCotanWeights();
+    vpg->requireEdgeCotanWeights();
     // vpg->requireVertexTangentBasis();
   }
 
@@ -630,6 +642,10 @@ public:
     vpg->unrequireVertexDualAreas();
     vpg->unrequireCornerAngles();
     vpg->unrequireCornerScaledAngles();
+    vpg->unrequireDECOperators();
+    vpg->unrequireEdgeDihedralAngles();
+    vpg->unrequireHalfedgeCotanWeights();
+    vpg->unrequireEdgeCotanWeights();
   }
 
   // ==========================================================
@@ -705,9 +721,11 @@ public:
   /**
    * @brief Update the vertex position and recompute cached values
    * (all quantities that characterizes the current energy state)
-   * Careful when using eigenMap: memory address may change after update!!
+   * Careful: 1. when using eigenMap: memory address may change after update!!
+   * Careful: 2. choosing to update geodesics and spatial properties may lead to
+   * failing in backtrack!!
    */
-  void updateVertexPositions();
+  void updateVertexPositions(bool isUpdateGeodesics = false);
 
   // ==========================================================
   // ================        Pressure        ==================
@@ -858,9 +876,9 @@ public:
   /**
    * @brief Find "the" vertex
    */
-  void findTheVertex(gcs::VertexPositionGeometry &vpg,
-                     gcs::VertexData<double> &geodesicDistance,
-                     double range = 1e10);
+  void findThePoint(gcs::VertexPositionGeometry &vpg,
+                    gcs::VertexData<double> &geodesicDistance,
+                    double range = 1e10);
 
   /**
    * @brief pointwise smoothing after mutation of the mesh

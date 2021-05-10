@@ -41,17 +41,6 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 EigenVectorX3D System::computeFundamentalThreeForces() {
-  surfaceTension =
-      O.isOpenMesh ? P.Ksg
-                   : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea;
-
-  // std::cout << "refSurfaceArea: " << refSurfaceArea << std::endl;
-  double pressure =
-      O.isOpenMesh ? P.Kv
-      : O.isReducedVolume
-          ? -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) +
-              P.lambdaV)
-          : P.Kv / volume - P.Kv * P.cam;
 
   for (gc::Vertex v : mesh->vertices()) {
     if (mask[v]) {
@@ -101,9 +90,9 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                             vecFromHalfedge(he.next(), *vpg));
 
         // Assemble to forces
-        osmoticForceVec += pressure * volGrad;
+        osmoticForceVec += F.osmoticPressure * volGrad;
         capillaryForceVec -=
-            (surfaceTension + proteinDensityi * P.epsilon) * areaGrad;
+            (F.surfaceTension + proteinDensityi * P.epsilon) * areaGrad;
         bendForceVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
         bendForceVec -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
                          Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
@@ -174,7 +163,7 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
   }
 
   // measure smoothness
-  if (O.isGrowMesh) {
+  if (O.isSplitEdge || O.isCollapseEdge) {
     isSmooth = !hasOutlier(F.bendingForce.raw());
   }
 
@@ -268,12 +257,10 @@ EigenVectorX1D System::computeCapillaryForce() {
   throw std::runtime_error("computeCapillaryForce: out of data implementation, "
                            "shouldn't be called!");
   /// Geometric implementation
-  surfaceTension =
-      O.isOpenMesh ? P.Ksg
-                   : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
-                         P.lambdaSG;
+  F.surfaceTension =
+      P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea + P.lambdaSG;
   F.capillaryForce.raw() =
-      -surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
+      -F.surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
 
   return F.capillaryForce.raw();
 
@@ -298,18 +285,8 @@ EigenVectorX1D System::computeCapillaryForce() {
 EigenVectorX1D System::computeOsmoticForce() {
   throw std::runtime_error("computeOsmoticForce: out of data implementation, "
                            "shouldn't be called!");
-  /// Geometric implementation
-  if (O.isOpenMesh) {
-    /// Inside excess pressure of patch
-    F.osmoticForce.raw().setConstant(P.Kv);
-  } else if (O.isReducedVolume) {
-    /// Inside excess pressure of vesicle
-    F.osmoticForce.raw().setConstant(
-        -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV));
-  } else {
-    F.osmoticForce.raw().setConstant(P.Kv / volume - P.Kv * P.cam);
-  }
-  F.osmoticForce.raw().array() /= vpg->vertexDualAreas.raw().array();
+  F.osmoticForce.raw().setConstant(F.osmoticPressure);
+  F.osmoticForce.raw().array() *= vpg->vertexDualAreas.raw().array();
 
   return F.osmoticForce.raw();
 
