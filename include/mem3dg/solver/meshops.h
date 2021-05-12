@@ -17,6 +17,7 @@
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/halfedge_factories.h"
 #include "geometrycentral/surface/tufted_laplacian.h"
+#include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "geometrycentral/utilities/vector3.h"
 #include <geometrycentral/surface/surface_mesh.h>
 
@@ -470,7 +471,7 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
 }
 
 /**
- * @brief Apply boundary condition mask based on boundary condition type 
+ * @brief Apply boundary condition mask based on boundary condition type
  *
  * @param mesh
  * @param mask
@@ -488,7 +489,7 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
   //     }
   //   }
   // }
-  if (boundaryConditionType == "neumann") {
+  if (boundaryConditionType == "fixed") {
     for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
         for (gcs::Vertex v01 : v0.adjacentVertices()) {
@@ -498,25 +499,71 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
         }
       }
     }
-  } else if (boundaryConditionType == "dirichlet") {
+  } else if (boundaryConditionType == "pin") {
     for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
         mask[v0] = false;
       }
     }
+  } else if (boundaryConditionType == "roller" ||
+             boundaryConditionType == "none") {
   } else {
     throw std::runtime_error(
-        "boundaryMask: boundaryConditionType not defined!");
+        "boundaryMask(bool): boundaryConditionType not defined!");
   }
-  if (mask.raw().all()) {
-    std::cout
-        << "boundaryMask: WARNING: there is no boundary vertex in the mesh!"
-        << std::endl;
+
+  if (mask.raw().all() && boundaryConditionType != "roller" &&
+      boundaryConditionType != "none") {
+    std::cout << "\nboundaryMask(bool): WARNING: there is no boundary vertex "
+                 "in the mesh!"
+              << std::endl;
   }
   if (!mask.raw().any()) {
-    std::cout
-        << "boundaryMask: WARNING: there is no non-masked DOF in the mesh!"
-        << std::endl;
+    std::cout << "\nboundaryMask(bool): WARNING: there is no non-masked DOF in "
+                 "the mesh!"
+              << std::endl;
+  }
+}
+DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
+                                    gcs::VertexData<gc::Vector3> &mask,
+                                    std::string boundaryConditionType) {
+  if (boundaryConditionType == "fixed") {
+    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+      for (gcs::Vertex v0 : bl.adjacentVertices()) {
+        for (gcs::Vertex v01 : v0.adjacentVertices()) {
+          for (gcs::Vertex v012 : v01.adjacentVertices()) {
+            mask[v012] = gc::Vector3{0, 0, 0};
+          }
+        }
+      }
+    }
+  } else if (boundaryConditionType == "pin") {
+    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+      for (gcs::Vertex v0 : bl.adjacentVertices()) {
+        mask[v0] = gc::Vector3{0, 0, 0};
+      }
+    }
+  } else if (boundaryConditionType == "roller") {
+    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+      for (gcs::Vertex v0 : bl.adjacentVertices()) {
+        mask[v0] = gc::Vector3{1, 1, 0};
+      }
+    }
+  } else if (boundaryConditionType == "none") {
+  } else {
+    throw std::runtime_error(
+        "boundaryMask(double): boundaryConditionType not defined!");
+  }
+  if ((gc::EigenMap<double, 3>(mask).array() == 1).all() &&
+      boundaryConditionType != "none") {
+    std::cout << "\nboundaryMask(double): WARNING: there is no boundary vertex "
+                 "in the mesh!"
+              << std::endl;
+  }
+  if (!(gc::EigenMap<double, 3>(mask).array() == 1).any()) {
+    std::cout << "\nboundaryMask(double): WARNING: there is no non-masked DOF "
+                 "in the mesh!"
+              << std::endl;
   }
 }
 

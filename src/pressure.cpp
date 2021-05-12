@@ -43,123 +43,172 @@ namespace gcs = ::geometrycentral::surface;
 EigenVectorX3D System::computeFundamentalThreeForces() {
 
   for (gc::Vertex v : mesh->vertices()) {
-    if (mask[v]) {
+    gc::Vector3 bendForceVec{0, 0, 0};
+    gc::Vector3 capillaryForceVec{0, 0, 0};
+    gc::Vector3 osmoticForceVec{0, 0, 0};
+    gc::Vector3 lineCapForceVec{0, 0, 0};
+    double Hi = vpg->vertexMeanCurvatures[v] / vpg->vertexDualAreas[v];
+    double H0i = H0[v];
+    double Kbi = Kb[v];
+    double proteinDensityi = proteinDensity[v];
 
-      gc::Vector3 bendForceVec{0, 0, 0};
-      gc::Vector3 capillaryForceVec{0, 0, 0};
-      gc::Vector3 osmoticForceVec{0, 0, 0};
-      gc::Vector3 lineCapForceVec{0, 0, 0};
+    for (gc::Halfedge he : v.outgoingHalfedges()) {
+      // Initialize local variables for computation
+      gc::Vertex vj = he.tipVertex();
+      gc::Vector3 eji = -vecFromHalfedge(he, *vpg);
+      double Hj = vpg->vertexMeanCurvatures[vj] / vpg->vertexDualAreas[vj];
+      double H0j = H0[vj];
+      double Kbj = Kb[vj];
+      gc::Vector3 volGrad;
+      gc::Vector3 areaGrad;
+      gc::Vector3 gaussVec;
+      gc::Vector3 schlafliVec1;
+      gc::Vector3 schlafliVec2;
+      gc::Vector3 oneSidedAreaGrad;
 
-      double Hi = vpg->vertexMeanCurvatures[v] / vpg->vertexDualAreas[v];
-      double H0i = H0[v];
-      double Kbi = Kb[v];
-      double proteinDensityi = proteinDensity[v];
-
-      for (gc::Halfedge he : v.outgoingHalfedges()) {
-
-        // Initialize local variables for computation
-        gc::Vertex vj = he.tipVertex();
-        gc::Vector3 eji = -vecFromHalfedge(he, *vpg);
-        double Hj = vpg->vertexMeanCurvatures[vj] / vpg->vertexDualAreas[vj];
-
-        double H0j = H0[vj];
-        double Kbj = Kb[vj];
-
-        // Geometric variation vectors
-        gc::Vector3 volGrad =
-            cross(vpg->inputVertexPositions[he.next().tailVertex()],
-                  vpg->inputVertexPositions[he.next().tipVertex()]) /
-            6;
-        gc::Vector3 areaGrad =
+      if (v.isBoundary()) {
+        volGrad = he.isInterior() ? vpg->faceNormals[he.face()] *
+                                        vpg->faceAreas[he.face()] / 3
+                                  : gc::Vector3{0, 0, 0};
+        areaGrad =
+            0.25 *
+                gc::cross(vpg->faceNormals[he.face()],
+                          vecFromHalfedge(he.next(), *vpg)) *
+                (he.isInterior() ? 1.0 : 0.0) +
+            0.25 *
+                gc::cross(vpg->faceNormals[he.twin().face()],
+                          vecFromHalfedge(he.twin().next().next(), *vpg)) *
+                (he.twin().isInterior() ? 1.0 : 0.0);
+        oneSidedAreaGrad =
+            he.isInterior() ? 0.5 * gc::cross(vpg->faceNormals[he.face()],
+                                              vecFromHalfedge(he.next(), *vpg))
+                            : gc::Vector3{0, 0, 0};
+        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        schlafliVec1 = he.edge().isBoundary()
+                           ? gc::Vector3{0, 0, 0}
+                           : vpg->halfedgeCotanWeights[he.next().next()] *
+                                     vpg->faceNormals[he.face()] +
+                                 vpg->halfedgeCotanWeights[he.twin().next()] *
+                                     vpg->faceNormals[he.twin().face()];
+        schlafliVec2 =
+            (vpg->halfedgeCotanWeights[he.next().next()] *
+                 vpg->faceNormals[he.face()] +
+             vpg->halfedgeCotanWeights[he.twin().next()] *
+                 vpg->faceNormals[he.twin().face()]) *
+                (he.edge().isBoundary() ? 0.0 : 1.0) -
+            (vpg->halfedgeCotanWeights[he] +
+             vpg->halfedgeCotanWeights[he.next().next()]) *
+                vpg->faceNormals[he.face()] *
+                (he.next().edge().isBoundary() ? 0.0 : 1.0) -
+            (vpg->halfedgeCotanWeights[he.twin()] +
+             vpg->halfedgeCotanWeights[he.twin().next()]) *
+                vpg->faceNormals[he.twin().face()] *
+                (he.twin().next().next().edge().isBoundary() ? 0.0 : 1.0);
+      } else {
+        volGrad = vpg->faceNormals[he.face()] * vpg->faceAreas[he.face()] / 3;
+        areaGrad =
             0.25 * gc::cross(vpg->faceNormals[he.face()],
                              vecFromHalfedge(he.next(), *vpg)) +
             0.25 * gc::cross(vpg->faceNormals[he.twin().face()],
                              vecFromHalfedge(he.twin().next().next(), *vpg));
-        gc::Vector3 gaussVec =
-            0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
-        gc::Vector3 schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
-                                       vpg->faceNormals[he.face()] +
-                                   vpg->halfedgeCotanWeights[he.twin().next()] *
-                                       vpg->faceNormals[he.twin().face()];
-        gc::Vector3 schlafliVec2 =
-            -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
-              vpg->halfedgeCotanWeights[he.twin()] *
-                  vpg->faceNormals[he.twin().face()]);
-        gc::Vector3 oneSidedAreaGrad =
-            0.5 * gc::cross(vpg->faceNormals[he.face()],
-                            vecFromHalfedge(he.next(), *vpg));
-
-        // Assemble to forces
-        osmoticForceVec += F.osmoticPressure * volGrad;
-        capillaryForceVec -=
-            (F.surfaceTension + proteinDensityi * P.epsilon) * areaGrad;
-        bendForceVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
-        bendForceVec -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
-                         Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
-                        areaGrad;
-        bendForceVec -=
-            Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
-        lineCapForceVec -= P.eta * (oneSidedAreaGrad * dH0[he.face()].norm2() -
-                                    gc::dot(oneSidedAreaGrad, dH0[he.face()]) *
-                                        dH0[he.face()]);
-
-        // Compare principal curvature vs truncated curvature vector
-
-        // This is outside the loop
-        // gc::Vector3 truncatedCurv{0, 0, 0};
-        // gc::Vector3 curvature{0, 0, 0};
-
-        // bool isinterface = false;
-        // for (gcs::Face f : v.adjacentFaces()) {
-        //   if (dH0[f].norm() > 1) {
-        //     isinterface = true;
-        //   }
-        // }
-
-        // inside of loop
-        //   if (isinterface) {
-        //     truncatedCurv +=
-        //         oneSidedAreaGrad - gc::dot(oneSidedAreaGrad, dH0[he.face()])
-        //         *
-        //                                dH0[he.face()] /
-        //                                dH0[he.face()].norm2();
-        //     curvature += oneSidedAreaGrad;
-        //   }
-        // }
-
-        // if (isinterface) {
-        //   std::cout << "curvature: " << curvature.norm()
-        //             << " and ontoNormal: " << F.ontoNormal(curvature, v)
-        //             << std::endl;
-        //   std::cout << "capillaryForceVec / surfacetension: "
-        //             << (capillaryForceVec / surfaceTension).norm()
-        //             << " and ontoNormal: "
-        //             << F.ontoNormal((capillaryForceVec / surfaceTension), v)
-        //             << std::endl;
-        //   std::cout << "truncated curvature: " << truncatedCurv.norm()
-        //             << " and ontoNormal: " << F.ontoNormal(truncatedCurv, v)
-        //             << std::endl;
-        //   vpg->requireVertexMaxPrincipalCurvatures();
-        //   vpg->requireVertexMinPrincipalCurvatures();
-        //   std::cout << "principal curvature: "
-        //             << vpg->vertexMaxPrincipalCurvatures[v] *
-        //                    vpg->vertexDualAreas[v]
-        //             << " and: "
-        //             << vpg->vertexMinPrincipalCurvatures[v] *
-        //                    vpg->vertexDualAreas[v]
-        //             << std::endl;
+        oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[he.face()],
+                                           vecFromHalfedge(he.next(), *vpg));
+        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
+                           vpg->faceNormals[he.face()] +
+                       vpg->halfedgeCotanWeights[he.twin().next()] *
+                           vpg->faceNormals[he.twin().face()];
+        if (vj.isBoundary()) {
+          schlafliVec2 =
+              (vpg->halfedgeCotanWeights[he.next().next()] *
+                   vpg->faceNormals[he.face()] +
+               vpg->halfedgeCotanWeights[he.twin().next()] *
+                   vpg->faceNormals[he.twin().face()]) -
+              (vpg->halfedgeCotanWeights[he] +
+               vpg->halfedgeCotanWeights[he.next().next()]) *
+                  vpg->faceNormals[he.face()] *
+                  (he.next().edge().isBoundary() ? 0.0 : 1.0) -
+              (vpg->halfedgeCotanWeights[he.twin()] +
+               vpg->halfedgeCotanWeights[he.twin().next()]) *
+                  vpg->faceNormals[he.twin().face()] *
+                  (he.twin().next().next().edge().isBoundary() ? 0.0 : 1.0);
+        } else {
+          schlafliVec2 =
+              -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
+                vpg->halfedgeCotanWeights[he.twin()] *
+                    vpg->faceNormals[he.twin().face()]);
+        }
       }
 
-      // Combine to one
-      F.fundamentalThreeForces[v] =
-          osmoticForceVec + capillaryForceVec + bendForceVec + lineCapForceVec;
+      // Assemble to forces
+      osmoticForceVec += F.osmoticPressure * volGrad;
+      capillaryForceVec -=
+          (F.surfaceTension + proteinDensityi * P.epsilon) * areaGrad;
+      bendForceVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
+      bendForceVec -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
+                       Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
+                      areaGrad;
+      bendForceVec -=
+          Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
+      lineCapForceVec -=
+          P.eta * (oneSidedAreaGrad * dH0[he.face()].norm2() -
+                   gc::dot(oneSidedAreaGrad, dH0[he.face()]) * dH0[he.face()]);
 
-      // Scalar force by projection to angle-weighted normal
-      F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
-      F.capillaryForce[v] = F.ontoNormal(capillaryForceVec, v);
-      F.osmoticForce[v] = F.ontoNormal(osmoticForceVec, v);
-      F.lineCapillaryForce[v] = F.ontoNormal(lineCapForceVec, v);
+      // Compare principal curvature vs truncated curvature vector
+
+      // This is outside the loop
+      // gc::Vector3 truncatedCurv{0, 0, 0};
+      // gc::Vector3 curvature{0, 0, 0};
+
+      // bool isinterface = false;
+      // for (gcs::Face f : v.adjacentFaces()) {
+      //   if (dH0[f].norm() > 1) {
+      //     isinterface = true;
+      //   }
+      // }
+
+      // inside of loop
+      //   if (isinterface) {
+      //     truncatedCurv +=
+      //         oneSidedAreaGrad - gc::dot(oneSidedAreaGrad, dH0[he.face()])
+      //         *
+      //                                dH0[he.face()] /
+      //                                dH0[he.face()].norm2();
+      //     curvature += oneSidedAreaGrad;
+      //   }
+      // }
+
+      // if (isinterface) {
+      //   std::cout << "curvature: " << curvature.norm()
+      //             << " and ontoNormal: " << F.ontoNormal(curvature, v)
+      //             << std::endl;
+      //   std::cout << "capillaryForceVec / surfacetension: "
+      //             << (capillaryForceVec / surfaceTension).norm()
+      //             << " and ontoNormal: "
+      //             << F.ontoNormal((capillaryForceVec / surfaceTension), v)
+      //             << std::endl;
+      //   std::cout << "truncated curvature: " << truncatedCurv.norm()
+      //             << " and ontoNormal: " << F.ontoNormal(truncatedCurv, v)
+      //             << std::endl;
+      //   vpg->requireVertexMaxPrincipalCurvatures();
+      //   vpg->requireVertexMinPrincipalCurvatures();
+      //   std::cout << "principal curvature: "
+      //             << vpg->vertexMaxPrincipalCurvatures[v] *
+      //                    vpg->vertexDualAreas[v]
+      //             << " and: "
+      //             << vpg->vertexMinPrincipalCurvatures[v] *
+      //                    vpg->vertexDualAreas[v]
+      //             << std::endl;
     }
+    // Combine to one
+    F.fundamentalThreeForces[v] =
+        osmoticForceVec + capillaryForceVec + bendForceVec + lineCapForceVec;
+
+    // Scalar force by projection to angle-weighted normal
+    F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
+    F.capillaryForce[v] = F.ontoNormal(capillaryForceVec, v);
+    F.osmoticForce[v] = F.ontoNormal(osmoticForceVec, v);
+    F.lineCapillaryForce[v] = F.ontoNormal(lineCapForceVec, v);
   }
 
   // measure smoothness

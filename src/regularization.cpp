@@ -169,7 +169,7 @@ void System::computeRegularizationForce() {
 
 void System::vertexShift() {
   for (gcs::Vertex v : mesh->vertices()) {
-    if (mask[v]) {
+    if (gc::sum(F.forceMask[v]) == 3) {
       gc::Vector3 baryCenter{0.0, 0.0, 0.0};
       double n_vAdj = 0.0;
       for (gcs::Vertex vAdj : v.adjacentVertices()) {
@@ -199,7 +199,8 @@ bool System::edgeFlip() {
       continue;
     }
     gcs::Halfedge he = e.halfedge();
-    if (!mask[he.vertex()] && !mask[he.twin().vertex()]) {
+    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) ==
+        0) {
       continue;
     }
     // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
@@ -247,7 +248,8 @@ bool System::growMesh() {
     if (!isOrigEdge[e] || e.isBoundary()) {
       continue;
     }
-    if (!mask[he.vertex()] && !mask[he.twin().vertex()]) {
+    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) ==
+        0) {
       continue;
     }
     // alias the neighboring vertices
@@ -331,13 +333,15 @@ bool System::growMesh() {
         isOrigEdge[e] = false;
       }
       // update quantities
-      averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
       // Note: think about conservation of energy, momentum and angular
       // momentum
+      averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
       averageData(vel, vertex1, vertex2, newVertex);
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
       thePointTracker[newVertex] = false;
+      mask[newVertex] = true;
+      F.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
       // smoothing mask
       auto maskAllNeighboring = [](gcs::VertexData<bool> &smoothingMask,
@@ -354,11 +358,12 @@ bool System::growMesh() {
     } else if (isCollapse && O.isCollapseEdge) { // Collapsing
       // precached pre-mutation values or flag
       gc::Vector3 collapsedPosition =
-          !mask[vertex1]   ? vpg->inputVertexPositions[vertex1]
-          : !mask[vertex1] ? vpg->inputVertexPositions[vertex2]
-                           : (vpg->inputVertexPositions[vertex1] +
-                              vpg->inputVertexPositions[vertex2]) /
-                                 2;
+          gc::sum(F.forceMask[vertex1]) < 3 ? vpg->inputVertexPositions[vertex1]
+          : gc::sum(F.forceMask[vertex2]) < 3
+              ? vpg->inputVertexPositions[vertex2]
+              : (vpg->inputVertexPositions[vertex1] +
+                 vpg->inputVertexPositions[vertex2]) /
+                    2;
       bool isThePoint = thePointTracker[vertex1] || thePointTracker[vertex2];
 
       // collapse the edge
@@ -387,9 +392,6 @@ bool System::growMesh() {
       maskAllNeighboring(smoothingMask, newVertex);
 
       isGrown = true;
-      // std::cout << "in shirnk sum: "
-      //           << thePointTracker.raw().cast<double>().sum() <<
-      //           std::endl;
     }
   }
   if (isGrown)
@@ -538,10 +540,12 @@ void System::globalUpdateAfterMutation() {
     // }
   }
 
-  // Update mask when topology changes
+  // Update mask when topology changes (likely not necessary, just for safety)
   if (O.isOpenMesh) {
     mask.fill(true);
     boundaryMask(*mesh, mask, O.boundaryConditionType);
+    F.forceMask.fill({1, 1, 1});
+    boundaryMask(*mesh, F.forceMask, O.boundaryConditionType);
     // for (gcs::Vertex v : mesh->vertices()) {
     //   if (!mask[v]) {
     //     vpg->inputVertexPositions[v].z = 0;

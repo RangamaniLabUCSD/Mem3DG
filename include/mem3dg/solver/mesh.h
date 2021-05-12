@@ -45,7 +45,7 @@ cylinder(double R, int nR, int nh);
  */
 DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
-getCylinderMatrix(double R, int nR, int nh);
+getCylinderMatrix(double R, int nR, int nh, double freq = 1, double amp = 0);
 
 /**
  * @brief Construct an icosphere mesh in PolygonSoup form

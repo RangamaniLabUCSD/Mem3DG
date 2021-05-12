@@ -205,10 +205,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   //          f.E.cE, lE_pre = f.E.lE, exE = f.E.exE;
   for (size_t i = 0; i < 50; i++) {
     f.computeBendingForce();
-    vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.F.bendingForce.raw().array())
-            .matrix(),
-        EigenMap<double, 3>(f.vpg->vertexNormals));
+    vel_e = f.F.mask(rowwiseScaling(f.F.bendingForce.raw(),
+                                    EigenMap<double, 3>(f.vpg->vertexNormals)));
     pos_e += vel_e * h;
     f.updateVertexPositions();
     f.computeFreeEnergy();
@@ -217,10 +215,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.computeCapillaryForce();
-    vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.F.capillaryForce.raw().array())
-            .matrix(),
-        EigenMap<double, 3>(f.vpg->vertexNormals));
+    vel_e = f.F.mask(rowwiseScaling(f.F.capillaryForce.raw(),
+                                    EigenMap<double, 3>(f.vpg->vertexNormals)));
     pos_e += vel_e * h;
     f.updateVertexPositions();
     f.computeFreeEnergy();
@@ -229,10 +225,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.computeOsmoticForce();
-    vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.F.osmoticForce.raw().array())
-            .matrix(),
-        EigenMap<double, 3>(f.vpg->vertexNormals));
+    vel_e = f.F.mask(rowwiseScaling(f.F.osmoticForce.raw(),
+                                    EigenMap<double, 3>(f.vpg->vertexNormals)));
     pos_e += vel_e * h;
     f.updateVertexPositions();
     f.computeFreeEnergy();
@@ -241,10 +235,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.computeExternalForce();
-    vel_e = rowwiseScaling(
-        (f.mask.raw().cast<double>().array() * f.F.externalForce.raw().array())
-            .matrix(),
-        EigenMap<double, 3>(f.vpg->vertexNormals));
+    vel_e = f.F.mask(rowwiseScaling(f.F.externalForce.raw(),
+                                    EigenMap<double, 3>(f.vpg->vertexNormals)));
     pos_e += vel_e * h;
     f.updateVertexPositions();
     f.computeFreeEnergy();
@@ -253,8 +245,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
     E_pre = E_aft;
 
     f.computeRegularizationForce();
-    vel_e = rowwiseScaling(f.mask.raw().cast<double>(),
-                           gc::EigenMap<double, 3>(f.F.regularizationForce));
+    vel_e = f.F.mask(gc::EigenMap<double, 3>(f.F.regularizationForce));
     pos_e += vel_e * h;
     f.updateVertexPositions();
     f.computeFreeEnergy();

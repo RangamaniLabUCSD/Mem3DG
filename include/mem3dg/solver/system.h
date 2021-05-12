@@ -94,6 +94,9 @@ struct Forces {
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
+  /// force mask
+  gcs::VertexData<gc::Vector3> forceMask;
+
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
       : mesh(mesh_), vpg(vpg_), fundamentalThreeForces(mesh, {0, 0, 0}),
         bendingForceVec(mesh, {0, 0, 0}), capillaryForceVec(mesh, {0, 0, 0}),
@@ -102,7 +105,8 @@ struct Forces {
         lineCapillaryForce(mesh, 0), externalForce(mesh, 0),
         osmoticForce(mesh, 0), osmoticPressure(0),
         regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
-        dampingForce(mesh, {0, 0, 0}), chemicalPotential(mesh, 0) {}
+        dampingForce(mesh, {0, 0, 0}), chemicalPotential(mesh, 0),
+        forceMask(mesh, {1, 1, 1}) {}
 
   ~Forces() {}
 
@@ -246,6 +250,40 @@ struct Forces {
     return vector -
            gc::dot(vector, vpg.vertexNormals[v]) * vpg.vertexNormals[v];
   }
+
+  /**
+   * @brief Find the masked force
+   */
+  inline gcs::VertexData<gc::Vector3>
+  mask(gcs::VertexData<gc::Vector3> &vector) {
+    gcs::VertexData<gc::Vector3> vertexData(mesh);
+    gc::EigenMap<double, 3>(vertexData).array() =
+        gc::EigenMap<double, 3>(vector).array() *
+        gc::EigenMap<double, 3>(forceMask).array();
+    return vertexData;
+  }
+  inline gcs::VertexData<gc::Vector3>
+  mask(gcs::VertexData<gc::Vector3> &&vector) {
+    gcs::VertexData<gc::Vector3> vertexData(mesh);
+    gc::EigenMap<double, 3>(vertexData).array() =
+        gc::EigenMap<double, 3>(vector).array() *
+        gc::EigenMap<double, 3>(forceMask).array();
+    return vertexData;
+  }
+  inline EigenVectorX3D mask(EigenVectorX3D &vector) {
+    return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
+  }
+  inline EigenVectorX3D mask(EigenVectorX3D &&vector) {
+    return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
+  }
+  inline gc::Vector3 mask(gc::Vector3 &vector, gc::Vertex &v) {
+    return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
+                       vector.z * forceMask[v].z};
+  }
+  inline gc::Vector3 mask(gc::Vector3 &&vector, gc::Vertex &v) {
+    return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
+                       vector.z * forceMask[v].z};
+  }
 };
 
 struct Parameters {
@@ -355,7 +393,7 @@ struct Options {
   bool isFloatVertex = false;
   /// Whether Laplacian mean curvature
   bool isLaplacianMeanCurvature = false;
-  /// Boundary condition: neumann, dirichlet, none
+  /// Boundary condition: roller, pin, fixed, none
   std::string boundaryConditionType = "none";
   /// Whether open boundary mesh
   bool isOpenMesh = false;

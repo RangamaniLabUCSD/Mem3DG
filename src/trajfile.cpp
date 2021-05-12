@@ -165,15 +165,15 @@ TrajFile::getAngles(const std::size_t idx) const {
 }
 
 // Mask
-void TrajFile::writeMask(const Eigen::Matrix<int, Eigen::Dynamic, 1> &data) {
+void TrajFile::writeMask(const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   assert(data.rows() == nvertices_dim.getSize());
   mask_var.putVar({0}, {nvertices_dim.getSize()}, data.data());
 }
 
-Eigen::Matrix<int, Eigen::Dynamic, 1> TrajFile::getMask() const {
-  Eigen::Matrix<int, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+Eigen::Matrix<double, Eigen::Dynamic, 1> TrajFile::getMask() const {
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
   mask_var.getVar({0}, {nvertices_dim.getSize()}, vec.data());
   return vec;
 }

@@ -103,7 +103,7 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
 
 std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
            Eigen::Matrix<double, Eigen::Dynamic, 3>>
-getCylinderMatrix(double R, int nR, int nh) {
+getCylinderMatrix(double R, int nR, int nh, double freq, double amp) {
   if (nR < 3 || nR < 2) {
     throw std::runtime_error("getCylinderMatrix: nR > 2 and nh > 1!");
   }
@@ -119,13 +119,11 @@ getCylinderMatrix(double R, int nR, int nh) {
   for (int clock = 0; clock < nR; clock++) {
     for (int floor = 0; floor < nh; floor++) {
       double z = floor * sideLength / 2 * sqrt(3);
-      double freq = 15;
-      double amp = 0;
       double localR = R + amp * sin(freq * 2 * constants::PI / totalHeight * z);
-      double x =
-          localR * cos(2 * constants::PI * clock / nR + constants::PI / nR * floor);
-      double y =
-          localR * sin(2 * constants::PI * clock / nR + constants::PI / nR * floor);
+      double x = localR * cos(2 * constants::PI * clock / nR +
+                              constants::PI / nR * floor);
+      double y = localR * sin(2 * constants::PI * clock / nR +
+                              constants::PI / nR * floor);
       coords(clock + floor * nR, 0) = x;
       coords(clock + floor * nR, 1) = y;
       coords(clock + floor * nR, 2) = z;

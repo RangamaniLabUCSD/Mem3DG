@@ -207,10 +207,12 @@ void System::checkParametersAndOptions() {
 
   if (mesh->hasBoundary()) {
     O.isOpenMesh = true;
-    if (O.boundaryConditionType != "neumann" &&
-        O.boundaryConditionType != "dirichlet") {
-      throw std::logic_error("boundary condition type (neumann or dirichlet) "
-                             "has to be specified for open boundary mesh!");
+    if (O.boundaryConditionType != "roller" &&
+        O.boundaryConditionType != "pin" &&
+        O.boundaryConditionType != "fixed") {
+      throw std::logic_error(
+          "Boundary condition type (roller, pin or fixed) "
+          "has not been specified for open boundary mesh!");
     }
   } else {
     if (P.A_res != 0 || P.V_res != 0) {
@@ -400,6 +402,11 @@ void System::initConstants() {
 
   // Initialize the constant mask based on distance from the point specified
   mask.raw() = (geodesicDistanceFromPtInd.raw().array() < P.radius).matrix();
+  for (gcs::Vertex v : mesh->vertices()) {
+    F.forceMask[v] = (geodesicDistanceFromPtInd[v] < P.radius)
+                         ? gc::Vector3{1, 1, 1}
+                         : gc::Vector3{0, 0, 0};
+  }
 
   // Initialize the constant protein density
   if (O.isHeterogeneous) {
@@ -410,6 +417,7 @@ void System::initConstants() {
   // Mask boundary element
   if (mesh->hasBoundary()) {
     boundaryMask(*mesh, mask, O.boundaryConditionType);
+    boundaryMask(*mesh, F.forceMask, O.boundaryConditionType);
   }
 
   // Explicitly cached the reference face areas data
