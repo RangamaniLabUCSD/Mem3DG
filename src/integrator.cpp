@@ -157,10 +157,9 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
-  physicalForceVec = rowwiseScaling(
-      (f.mask.raw().cast<double>()).array(),
-      rowwiseScaling(f.F.externalForce.raw(), vertexAngleNormal_e) +
-          f.F.toMatrix(f.F.fundamentalThreeForces));
+  physicalForceVec.array() =
+      f.F.mask(rowwiseScaling(f.F.externalForce.raw(), vertexAngleNormal_e) +
+               f.F.toMatrix(f.F.fundamentalThreeForces));
 
   physicalForce = (f.mask.raw().cast<double>()).array() *
                   (f.F.bendingForce.raw() + f.F.capillaryForce.raw() +
@@ -170,11 +169,10 @@ void Integrator::getForces() {
 
   if ((f.P.gamma != 0) || (f.P.temp != 0)) {
     f.computeDPDForces(dt);
-    DPDForce = f.mask.raw().cast<double>().array() *
-               rowwiseDotProduct((EigenMap<double, 3>(f.F.dampingForce) +
-                                  EigenMap<double, 3>(f.F.stochasticForce)),
-                                 vertexAngleNormal_e)
-                   .array();
+    DPDForce =
+        rowwiseDotProduct(f.F.mask(EigenMap<double, 3>(f.F.dampingForce) +
+                                   EigenMap<double, 3>(f.F.stochasticForce)),
+                          vertexAngleNormal_e);
   }
 
   // if (!f.mesh->hasBoundary()) {
@@ -264,7 +262,7 @@ void Integrator::createNetcdfFile() {
   if (verbosity > 0) {
     fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
-    fd.writeMask(f.mask.raw().cast<int>());
+    fd.writeMask(f.F.toMatrix(f.F.forceMask).rowwise().sum());
     if (!f.mesh->hasBoundary()) {
       fd.writeRefVolume(f.refVolume);
       fd.writeRefSurfArea(f.refSurfaceArea);
@@ -388,8 +386,8 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addVertexProperty("protein_density", f.proteinDensity);
 
   // write bool
-  gcs::VertexData<int> msk(*f.mesh);
-  msk.fromVector(f.mask.raw().cast<int>());
+  gcs::VertexData<double> msk(*f.mesh);
+  msk.fromVector(f.F.toMatrix(f.F.forceMask).rowwise().sum());
   richData.addVertexProperty("mask", msk);
   gcs::VertexData<int> smthingMsk(*f.mesh);
   smthingMsk.fromVector(f.smoothingMask.raw().cast<int>());
@@ -513,9 +511,7 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile << "dt:       " << dt << "\n"
            << "T:        " << total_time << "\n"
            << "eps:		   " << tol << "\n"
-           << "tSave:    " << tSave << "\n"
-           << "no. non-integrated: "
-           << f.mask.raw().rows() - f.mask.raw().cast<size_t>().sum() << "\n";
+           << "tSave:    " << tSave << "\n";
     myfile.close();
 
   } else

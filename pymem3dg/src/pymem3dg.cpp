@@ -542,7 +542,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   options.def_readwrite("boundaryConditionType",
                         &Options::boundaryConditionType,
                         R"delim(
-          get the option of "neumann", "dirichlet" or "none" to specify boundary condition.
+          get the option of "roller", "pin", "fixed", or "none" to specify boundary condition.
       )delim");
 
   /// Parameter struct
@@ -946,7 +946,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.def(
       "getCylinder", &getCylinderMatrix,
       "get topology and vertex position matrix of a non-capped cylinder",
-      py::arg("R"), py::arg("nR"), py::arg("nh"));
+      py::arg("R"), py::arg("nR"), py::arg("nh"), py::arg("freq") = 1,
+      py::arg("amp") = 0);
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
                "get topology and vertex position matrix of icosphere",

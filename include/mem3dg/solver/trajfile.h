@@ -274,7 +274,7 @@ public:
     refcoorddata = gc::EigenMap<double, 3>(refVpg.inputVertexPositions).data();
     refcoord.putVar(refcoorddata);
 
-    mask_var = fd->addVar(MASK_VAR, netCDF::ncByte, {nvertices_dim});
+    mask_var = fd->addVar(MASK_VAR, netCDF::ncDouble, {nvertices_dim});
 
     time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
     time_var.putAtt(UNITS, TIME_UNITS);
@@ -519,9 +519,9 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getAngles(const std::size_t idx) const;
 
-  void writeMask(const Eigen::Matrix<int, Eigen::Dynamic, 1> &data);
+  void writeMask(const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
-  Eigen::Matrix<int, Eigen::Dynamic, 1> getMask() const;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> getMask() const;
 
   void writeVelocity(const std::size_t idx, const EigenVector &data);
 
