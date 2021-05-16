@@ -256,7 +256,7 @@ void System::checkParametersAndOptions() {
     }
     if (P.epsilon != 0) {
       throw std::logic_error(
-          "Protein energy has to be 0 for homogeneous membrane!");
+          "Protein energy epsilon has to be 0 for homogeneous membrane!");
     }
   }
 
@@ -401,7 +401,6 @@ void System::initConstants() {
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
 
   // Initialize the constant mask based on distance from the point specified
-  mask.raw() = (geodesicDistanceFromPtInd.raw().array() < P.radius).matrix();
   for (gcs::Vertex v : mesh->vertices()) {
     F.forceMask[v] = (geodesicDistanceFromPtInd[v] < P.radius)
                          ? gc::Vector3{1, 1, 1}
@@ -416,7 +415,6 @@ void System::initConstants() {
 
   // Mask boundary element
   if (mesh->hasBoundary()) {
-    boundaryMask(*mesh, mask, O.boundaryConditionType);
     boundaryMask(*mesh, F.forceMask, O.boundaryConditionType);
   }
 

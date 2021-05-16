@@ -532,7 +532,7 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
         for (gcs::Vertex v01 : v0.adjacentVertices()) {
           for (gcs::Vertex v012 : v01.adjacentVertices()) {
-            mask[v012] = gc::Vector3{0, 0, 0};
+            mask[v012] = gc::Vector3{0.0, 0.0, 0.0};
           }
         }
       }
@@ -540,13 +540,13 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
   } else if (boundaryConditionType == "pin") {
     for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
-        mask[v0] = gc::Vector3{0, 0, 0};
+        mask[v0] = gc::Vector3{0.0, 0.0, 0.0};
       }
     }
   } else if (boundaryConditionType == "roller") {
     for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
-        mask[v0] = gc::Vector3{1, 1, 0};
+        mask[v0] = gc::Vector3{1.0, 1.0, 0};
       }
     }
   } else if (boundaryConditionType == "none") {
@@ -554,13 +554,13 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
     throw std::runtime_error(
         "boundaryMask(double): boundaryConditionType not defined!");
   }
-  if ((gc::EigenMap<double, 3>(mask).array() == 1).all() &&
+  if (!(gc::EigenMap<double, 3>(mask).array() < 0.5).any() &&
       boundaryConditionType != "none") {
     std::cout << "\nboundaryMask(double): WARNING: there is no boundary vertex "
                  "in the mesh!"
               << std::endl;
   }
-  if (!(gc::EigenMap<double, 3>(mask).array() == 1).any()) {
+  if (!(gc::EigenMap<double, 3>(mask).array() > 0.5).any()) {
     std::cout << "\nboundaryMask(double): WARNING: there is no non-masked DOF "
                  "in the mesh!"
               << std::endl;

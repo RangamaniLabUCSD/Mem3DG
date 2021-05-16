@@ -18,6 +18,7 @@
 #include "mem3dg/solver/util.h"
 #include "mem3dg/solver/version.h"
 
+#include <cmath>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <fstream>
@@ -27,14 +28,102 @@ using namespace std;
 
 namespace mem3dg {
 
+double Integrator::backtrack(
+    const double energy_pre,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
+    const bool isProteinAdsorption, double rho, double c1) {
+
+  // calculate initial energy as reference level
+  Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
+      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  gcs::VertexData<double> init_proteinDensity(*f.mesh);
+  init_proteinDensity = f.proteinDensity;
+  double init_time = f.time;
+
+  // declare variables used in backtracking iterations
+  double alpha = dt;
+  size_t count = 0;
+
+  f.F.toMatrix(f.vpg->inputVertexPositions) += alpha * positionDirection;
+  f.proteinDensity.raw() += alpha * f.P.Bc * chemicalDirection;
+  f.updateVertexPositions();
+  f.computeFreeEnergy();
+  double positionProjection =
+      (physicalForceVec.array() * positionDirection.array()).sum();
+  double chemicalProjection =
+      (f.F.chemicalPotential.raw().array() * chemicalDirection.array()).sum();
+
+  while (true) {
+    if (positionProjection < 0) {
+      std::cout << "\nBacktracking line search: positional velocity on uphill "
+                   "direction, use bare "
+                   "gradient! \n"
+                << std::endl;
+      positionDirection = physicalForceVec;
+      positionProjection =
+          (physicalForceVec.array() * positionDirection.array()).sum();
+      // EXIT = true;
+      // SUCCESS = false;
+      // break;
+    }
+    if (chemicalProjection < 0 && isProteinAdsorption) {
+      std::cout << "\nBacktracking line search: chemical direction on "
+                   "uphill direction, "
+                   "use bare "
+                   "gradient! \n"
+                << std::endl;
+      chemicalDirection = f.F.chemicalPotential.raw();
+      chemicalProjection =
+          (f.F.chemicalPotential.raw().array() * chemicalDirection.array())
+              .sum();
+      // EXIT = true;
+      // SUCCESS = false;
+      // break;
+    }
+    // while (f.E.potE > potentialEnergy_pre) {
+    if (f.E.potE <
+        (energy_pre - c1 * alpha * (positionProjection + chemicalProjection))) {
+      break;
+    }
+    if (alpha < 1e-6) {
+      std::cout << "\nbacktrack: line search failure! Simulation "
+                   "stopped. \n"
+                << std::endl;
+      EXIT = true;
+      SUCCESS = false;
+      break;
+    }
+    alpha *= rho;
+    f.F.toMatrix(f.vpg->inputVertexPositions) =
+        initial_pos + alpha * positionDirection;
+    if (isProteinAdsorption) {
+      f.proteinDensity.raw() =
+          init_proteinDensity.raw() + alpha * f.P.Bc * chemicalDirection;
+    }
+    f.updateVertexPositions(false);
+    f.computeFreeEnergy();
+    count++;
+  }
+
+  if (alpha != dt && verbosity > 3) {
+    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
+    std::cout << "L1 norm: " << f.L1ErrorNorm << std::endl;
+    std::cout << "L1 chem norm: " << f.L1ChemErrorNorm << std::endl;
+  }
+  f.time = init_time + alpha;
+
+  return alpha;
+}
+
 double Integrator::mechanicalBacktrack(
     const double potentialEnergy_pre,
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction, double rho,
     double c1) {
 
   // calculate initial energy as reference level
-  gcs::VertexData<gc::Vector3> initial_pos(*f.mesh);
-  initial_pos = f.vpg->inputVertexPositions;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
+      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   double init_time = f.time;
 
   // declare variables used in backtracking iterations
@@ -45,24 +134,15 @@ double Integrator::mechanicalBacktrack(
   pos_e += alpha * direction;
   f.updateVertexPositions();
   f.computeFreeEnergy();
-  double projection =
-      (physicalForce.array() *
-       rowwiseDotProduct(direction, EigenMap<double, 3>(f.vpg->vertexNormals))
-           .array())
-          .sum();
+  double projection = (physicalForceVec.array() * direction.array()).sum();
 
   while (true) {
     if (projection < 0) {
       std::cout << "\nBacktracking line search: on uphill direction, use bare "
                    "gradient! \n"
                 << std::endl;
-      direction = rowwiseScaling(physicalForce,
-                                 EigenMap<double, 3>(f.vpg->vertexNormals));
-      projection = (physicalForce.array() *
-                    rowwiseDotProduct(direction,
-                                      EigenMap<double, 3>(f.vpg->vertexNormals))
-                        .array())
-                       .sum();
+      direction = physicalForceVec;
+      projection = (physicalForceVec.array() * direction.array()).sum();
       // EXIT = true;
       // SUCCESS = false;
       // break;
@@ -72,13 +152,15 @@ double Integrator::mechanicalBacktrack(
       break;
     }
     if (alpha < 1e-6) {
-      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
+      std::cout << "\nmechanicalBacktrack: line search failure! Simulation "
+                   "stopped. \n"
+                << std::endl;
       EXIT = true;
       SUCCESS = false;
       break;
     }
     alpha *= rho;
-    pos_e = gc::EigenMap<double, 3>(initial_pos) + alpha * direction;
+    pos_e = initial_pos + alpha * direction;
     f.updateVertexPositions(false);
     f.computeFreeEnergy();
     count++;
@@ -131,7 +213,9 @@ double Integrator::chemicalBacktrack(
       break;
     }
     if (alpha < 1e-6) {
-      std::cout << "\nline search failure! Simulation stopped. \n" << std::endl;
+      std::cout
+          << "\nchemicalBacktrack: line search failure! Simulation stopped. \n"
+          << std::endl;
       EXIT = true;
       SUCCESS = false;
       break;
@@ -152,20 +236,77 @@ double Integrator::chemicalBacktrack(
   return alpha;
 }
 
+void Integrator::errorBacktrack() {
+  if (!std::isfinite(f.L1ErrorNorm)) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(f.F.toMatrix(f.F.fundamentalThreeForces).norm())) {
+      if (!std::isfinite(f.F.toMatrix(f.F.capillaryForceVec).norm())) {
+        std::cout << "Capillary force is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.F.toMatrix(f.F.bendingForceVec).norm())) {
+        std::cout << "Bending force is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.F.toMatrix(f.F.osmoticForceVec).norm())) {
+        std::cout << "Osmotic force is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.F.toMatrix(f.F.lineCapillaryForceVec).norm())) {
+        std::cout << "Line capillary force is not finite!" << std::endl;
+      }
+    }
+
+    if (!std::isfinite(f.F.toMatrix(f.F.externalForce).norm())) {
+      std::cout << "External force is not finite!" << std::endl;
+    }
+  }
+
+  if (!std::isfinite(f.L1ChemErrorNorm)) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(f.F.toMatrix(f.F.chemicalPotential).norm())) {
+      std::cout << "Chemical potential is not finite!" << std::endl;
+    }
+  }
+
+  if (!std::isfinite(f.E.totalE)) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(f.E.kE)) {
+      std::cout << "Kinetic energy is not finite!" << std::endl;
+    }
+    if (!std::isfinite(f.E.potE)) {
+      if (!std::isfinite(f.E.BE)) {
+        std::cout << "Bending energy is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.E.sE)) {
+        std::cout << "Surface energy is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.E.pE)) {
+        std::cout << "pressure energy is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.E.cE)) {
+        std::cout << "Chemical energy is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.E.lE)) {
+        std::cout << "Line tension energy is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.E.exE)) {
+        std::cout << "External force energy is not finite!" << std::endl;
+      }
+    }
+  }
+}
+
 void Integrator::getForces() {
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   f.computePhysicalForces();
-
+  
   physicalForceVec.array() =
       f.F.mask(rowwiseScaling(f.F.externalForce.raw(), vertexAngleNormal_e) +
                f.F.toMatrix(f.F.fundamentalThreeForces));
 
-  physicalForce = (f.mask.raw().cast<double>()).array() *
-                  (f.F.bendingForce.raw() + f.F.capillaryForce.raw() +
-                   f.F.externalForce.raw() + f.F.osmoticForce.raw() +
-                   f.F.lineCapillaryForce.raw())
-                      .array();
+  physicalForce = f.F.ontoNormal(physicalForceVec);
 
   if ((f.P.gamma != 0) || (f.P.temp != 0)) {
     f.computeDPDForces(dt);

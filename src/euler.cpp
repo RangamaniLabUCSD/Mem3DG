@@ -105,7 +105,7 @@ void Euler::status() {
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
   dVP = (f.O.isReducedVolume) ? abs(f.volume / f.refVolume / f.P.Vt - 1)
                               : abs(1.0 / f.volume / f.P.cam - 1);
-                              
+
   // exit if under error tolerance
   if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
     std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
@@ -121,6 +121,9 @@ void Euler::status() {
 
   // compute the free energy of the system
   f.computeFreeEnergy();
+
+  // backtracking for error
+  errorBacktrack();
 }
 
 void Euler::march() {
@@ -146,17 +149,14 @@ void Euler::march() {
 
     // time stepping on vertex position
     if (isBacktrack) {
-      mechanicalBacktrack(f.E.potE, vel_e, rho, c1);
+      backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(),
+                f.O.isProteinAdsorption, rho, c1);
     } else {
       pos_e += vel_e * dt;
+      f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
       f.time += dt;
     }
 
-    // time stepping on protein density
-    if (f.O.isProteinAdsorption) {
-      chemicalBacktrack(f.E.cE, f.F.chemicalPotential.raw(), rho, c1);
-      // f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
-    }
 
     // regularization
     if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {

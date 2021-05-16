@@ -143,6 +143,9 @@ void VelocityVerlet::status() {
 
   // compute the free energy of the system
   f.computeFreeEnergy();
+
+  // backtracking for error
+  errorBacktrack();
   if (f.E.totalE > 1.05 * totalEnergy) {
     std::cout
         << "\nVelocity Verlet: increasing system energy, simulation stopped!"
