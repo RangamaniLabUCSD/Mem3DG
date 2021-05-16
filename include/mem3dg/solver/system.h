@@ -83,6 +83,8 @@ struct Forces {
   gcs::VertexData<gc::Vector3> capillaryForceVec;
   /// Cached osmotic force
   gcs::VertexData<gc::Vector3> osmoticForceVec;
+  /// Cached osmotic force
+  gcs::VertexData<gc::Vector3> lineCapillaryForceVec;
 
   /// Cached local stretching forces (in-plane regularization)
   gcs::VertexData<gc::Vector3> regularizationForce;
@@ -100,13 +102,14 @@ struct Forces {
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
       : mesh(mesh_), vpg(vpg_), fundamentalThreeForces(mesh, {0, 0, 0}),
         bendingForceVec(mesh, {0, 0, 0}), capillaryForceVec(mesh, {0, 0, 0}),
-        osmoticForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
+        osmoticForceVec(mesh, {0, 0, 0}),
+        lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
         capillaryForce(mesh, 0), surfaceTension(0), lineTension(mesh, 0),
         lineCapillaryForce(mesh, 0), externalForce(mesh, 0),
         osmoticForce(mesh, 0), osmoticPressure(0),
         regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
         dampingForce(mesh, {0, 0, 0}), chemicalPotential(mesh, 0),
-        forceMask(mesh, {1, 1, 1}) {}
+        forceMask(mesh, {1.0, 1.0, 1.0}) {}
 
   ~Forces() {}
 
@@ -118,17 +121,15 @@ struct Forces {
    * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
    * scaler values
    */
-  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &vector) {
+  inline auto toMatrix(gcs::VertexData<gc::Vector3> &vector) {
     return gc::EigenMap<double, 3>(vector);
   }
-  inline EigenVectorX3D toMatrix(gcs::VertexData<gc::Vector3> &&vector) {
+  inline auto toMatrix(gcs::VertexData<gc::Vector3> &&vector) {
     return gc::EigenMap<double, 3>(vector);
   }
 
-  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &vector) {
-    return vector.raw();
-  }
-  inline EigenVectorX1D toMatrix(gcs::VertexData<double> &&vector) {
+  inline auto toMatrix(gcs::VertexData<double> &vector) { return vector.raw(); }
+  inline auto toMatrix(gcs::VertexData<double> &&vector) {
     return vector.raw();
   }
 
@@ -465,8 +466,6 @@ public:
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
-  /// Indices for vertices chosen for integration
-  gcs::VertexData<bool> mask;
   /// "the vertex"
   gcs::SurfacePoint thePoint;
   // "the vertex" tracker
@@ -635,8 +634,8 @@ public:
         proteinDensity(*mesh, 0.5), targetLcrs(*mesh), refEdgeLengths(*mesh),
         refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), H0(*mesh), dH0(*mesh), Kb(*mesh),
-        mask(*mesh, true), isSmooth(true), smoothingMask(*mesh, false) {
+        vel(*mesh, {0, 0, 0}), H0(*mesh), dH0(*mesh, {0, 0, 0}), Kb(*mesh),
+         isSmooth(true), smoothingMask(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();

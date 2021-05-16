@@ -169,20 +169,59 @@ void System::computeRegularizationForce() {
 
 void System::vertexShift() {
   for (gcs::Vertex v : mesh->vertices()) {
-    if (gc::sum(F.forceMask[v]) == 3) {
-      gc::Vector3 baryCenter{0.0, 0.0, 0.0};
-      double n_vAdj = 0.0;
-      for (gcs::Vertex vAdj : v.adjacentVertices()) {
-        baryCenter += vpg->inputVertexPositions[vAdj];
-        n_vAdj += 1.0;
-      }
-      baryCenter /= n_vAdj;
-      for (gcs::Halfedge he : v.outgoingHalfedges()) {
-        gcs::Halfedge base_he = he.next();
+    if (gc::sum(F.forceMask[v]) > 0.5) {
+      if (v.isBoundary()) {
+        gcs::Vertex v1 = v;
+        gcs::Vertex v2 = v;
+        gc::Vector3 baryCenter{0.0, 0.0, 0.0};
+        int n_vAdj = 0;
+        for (gcs::Vertex vAdj : v.adjacentVertices()) {
+          if (vAdj.isBoundary()) {
+            // std::cout << "v: " << v.getIndex() << std::endl;
+            // std::cout << "v1:  " << v1.getIndex() << std::endl;
+            // std::cout << "v2: " << v2.getIndex() << std::endl;
+            if (v1 == v) {
+              v1 = vAdj;
+            } else if (v2 == v) {
+              v2 = vAdj;
+            }
+            // v1 = (v1 == v) ? vAdj : v1;
+            // v2 = (v2 == v) ? vAdj : v2;
+            n_vAdj += 1;
+          }
+        }
+        if (n_vAdj != 2) {
+          throw std::runtime_error(
+              "vertexShift: number of neighbor vertices on boundary is not 2!");
+        }
+        baryCenter =
+            (vpg->inputVertexPositions[v1] + vpg->inputVertexPositions[v2]) / 2;
+        gc::Vector3 faceNormal = gc::cross(
+            vpg->inputVertexPositions[v1] - vpg->inputVertexPositions[v],
+            vpg->inputVertexPositions[v2] - vpg->inputVertexPositions[v]);
+        gc::Vector3 sideNormal =
+            gc::cross(faceNormal, vpg->inputVertexPositions[v1] -
+                                      vpg->inputVertexPositions[v2])
+                .normalize();
         vpg->inputVertexPositions[v] =
-            baryCenter - gc::dot(vpg->vertexNormals[v],
-                                 baryCenter - vpg->inputVertexPositions[v]) *
-                             vpg->vertexNormals[v];
+            baryCenter -
+            gc::dot(sideNormal, baryCenter - vpg->inputVertexPositions[v]) *
+                sideNormal;
+      } else {
+        gc::Vector3 baryCenter{0.0, 0.0, 0.0};
+        double n_vAdj = 0.0;
+        for (gcs::Vertex vAdj : v.adjacentVertices()) {
+          baryCenter += vpg->inputVertexPositions[vAdj];
+          n_vAdj += 1.0;
+        }
+        baryCenter /= n_vAdj;
+        for (gcs::Halfedge he : v.outgoingHalfedges()) {
+          gcs::Halfedge base_he = he.next();
+          vpg->inputVertexPositions[v] =
+              baryCenter - gc::dot(vpg->vertexNormals[v],
+                                   baryCenter - vpg->inputVertexPositions[v]) *
+                               vpg->vertexNormals[v];
+        }
       }
     }
   }
@@ -199,8 +238,8 @@ bool System::edgeFlip() {
       continue;
     }
     gcs::Halfedge he = e.halfedge();
-    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) ==
-        0) {
+    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) <
+        0.5) {
       continue;
     }
     // if (mask[he.vertex()] || mask[he.twin().vertex()]) {
@@ -248,8 +287,8 @@ bool System::growMesh() {
     if (!isOrigEdge[e] || e.isBoundary()) {
       continue;
     }
-    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) ==
-        0) {
+    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) <
+        0.5) {
       continue;
     }
     // alias the neighboring vertices
@@ -296,12 +335,13 @@ bool System::growMesh() {
     // is2Sharp =
     //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 * targetdH0);
     // is2Fat =
-    //     (vpg->cornerAngle(he.next().next().corner()) +
-    //      vpg->cornerAngle(he.twin().next().next().corner())) >
-    //      constants::PI;
+    //     vpg->cornerAngle(he.next().next().corner()) > constants::PI * 0.667 ||
+    //     vpg->cornerAngle(he.twin().next().next().corner()) >
+    //         constants::PI * 0.667;
     // bool flat = abs(vpg->edgeDihedralAngle(e)) < (constants::PI
     // / 36);
-    isSplit = is2Large || is2Curved || is2Sharp || (is2Skinny && isDelaunay);
+    isSplit = is2Large || is2Curved || is2Fat || is2Sharp ||
+              (is2Skinny && isDelaunay);
     // conditions for collapsing
     double areaSum = 0;
     int num_t = -2;
@@ -314,9 +354,16 @@ bool System::growMesh() {
     is2Small =
         (areaSum - vpg->faceArea(he.face()) - vpg->faceArea(he.twin().face())) <
         (num_t - 2) * meanTargetFaceArea;
+    // is2Skinny = (vpg->cornerAngle(he.next().next().corner()) +
+    //              vpg->cornerAngle(he.twin().next().next().corner())) <
+    //             constants::PI / 3;
     is2Skinny = (vpg->cornerAngle(he.next().next().corner()) +
                  vpg->cornerAngle(he.twin().next().next().corner())) <
-                constants::PI / 3;
+                    constants::PI / 3 ||
+                (vpg->cornerAngle(he.next().corner()) +
+                 vpg->cornerAngle(he.twin().corner())) > (constants::PI * 1.333) ||
+                (vpg->cornerAngle(he.corner()) +
+                 vpg->cornerAngle(he.twin().next().corner())) > (constants::PI * 1.333);
     isFlat = vpg->edgeLength(e) < (0.667 * L);
     // isSmooth =
     //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
@@ -340,7 +387,6 @@ bool System::growMesh() {
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
       thePointTracker[newVertex] = false;
-      mask[newVertex] = true;
       F.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
       // smoothing mask
@@ -358,8 +404,9 @@ bool System::growMesh() {
     } else if (isCollapse && O.isCollapseEdge) { // Collapsing
       // precached pre-mutation values or flag
       gc::Vector3 collapsedPosition =
-          gc::sum(F.forceMask[vertex1]) < 3 ? vpg->inputVertexPositions[vertex1]
-          : gc::sum(F.forceMask[vertex2]) < 3
+          gc::sum(F.forceMask[vertex1]) < 2.5
+              ? vpg->inputVertexPositions[vertex1]
+          : gc::sum(F.forceMask[vertex2]) < 2.5
               ? vpg->inputVertexPositions[vertex2]
               : (vpg->inputVertexPositions[vertex1] +
                  vpg->inputVertexPositions[vertex2]) /
@@ -542,8 +589,6 @@ void System::globalUpdateAfterMutation() {
 
   // Update mask when topology changes (likely not necessary, just for safety)
   if (O.isOpenMesh) {
-    mask.fill(true);
-    boundaryMask(*mesh, mask, O.boundaryConditionType);
     F.forceMask.fill({1, 1, 1});
     boundaryMask(*mesh, F.forceMask, O.boundaryConditionType);
     // for (gcs::Vertex v : mesh->vertices()) {

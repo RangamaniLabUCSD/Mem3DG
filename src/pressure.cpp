@@ -56,54 +56,62 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
       // Initialize local variables for computation
       gc::Vertex vj = he.tipVertex();
       gc::Vector3 eji = -vecFromHalfedge(he, *vpg);
+      gc::Vector3 dH0ijk =
+          (he.isInterior()) ? dH0[he.face()] : gc::Vector3{0, 0, 0};
       double Hj = vpg->vertexMeanCurvatures[vj] / vpg->vertexDualAreas[vj];
       double H0j = H0[vj];
       double Kbj = Kb[vj];
-      gc::Vector3 volGrad;
-      gc::Vector3 areaGrad;
-      gc::Vector3 gaussVec;
-      gc::Vector3 schlafliVec1;
-      gc::Vector3 schlafliVec2;
-      gc::Vector3 oneSidedAreaGrad;
+      gc::Vector3 volGrad{0, 0, 0};
+      gc::Vector3 areaGrad{0, 0, 0};
+      gc::Vector3 gaussVec{0, 0, 0};
+      gc::Vector3 schlafliVec1{0, 0, 0};
+      gc::Vector3 schlafliVec2{0, 0, 0};
+      gc::Vector3 oneSidedAreaGrad{0, 0, 0};
 
+#define zeroDihedral 0
+#if zeroDihedral == 0
       if (v.isBoundary()) {
+        // Note: the missing contribution from faces only contributes to z -
+        // axis forces
         volGrad = he.isInterior() ? vpg->faceNormals[he.face()] *
                                         vpg->faceAreas[he.face()] / 3
                                   : gc::Vector3{0, 0, 0};
         areaGrad =
-            0.25 *
-                gc::cross(vpg->faceNormals[he.face()],
-                          vecFromHalfedge(he.next(), *vpg)) *
-                (he.isInterior() ? 1.0 : 0.0) +
-            0.25 *
-                gc::cross(vpg->faceNormals[he.twin().face()],
-                          vecFromHalfedge(he.twin().next().next(), *vpg)) *
-                (he.twin().isInterior() ? 1.0 : 0.0);
+            (he.isInterior()
+                 ? 0.25 * gc::cross(vpg->faceNormals[he.face()],
+                                    vecFromHalfedge(he.next(), *vpg))
+                 : gc::Vector3{0, 0, 0}) +
+            (he.twin().isInterior()
+                 ? 0.25 *
+                       gc::cross(vpg->faceNormals[he.twin().face()],
+                                 vecFromHalfedge(he.twin().next().next(), *vpg))
+                 : gc::Vector3{0, 0, 0});
         oneSidedAreaGrad =
             he.isInterior() ? 0.5 * gc::cross(vpg->faceNormals[he.face()],
                                               vecFromHalfedge(he.next(), *vpg))
                             : gc::Vector3{0, 0, 0};
-        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
-        schlafliVec1 = he.edge().isBoundary()
-                           ? gc::Vector3{0, 0, 0}
-                           : vpg->halfedgeCotanWeights[he.next().next()] *
-                                     vpg->faceNormals[he.face()] +
-                                 vpg->halfedgeCotanWeights[he.twin().next()] *
-                                     vpg->faceNormals[he.twin().face()];
-        schlafliVec2 =
-            (vpg->halfedgeCotanWeights[he.next().next()] *
-                 vpg->faceNormals[he.face()] +
-             vpg->halfedgeCotanWeights[he.twin().next()] *
-                 vpg->faceNormals[he.twin().face()]) *
-                (he.edge().isBoundary() ? 0.0 : 1.0) -
-            (vpg->halfedgeCotanWeights[he] +
-             vpg->halfedgeCotanWeights[he.next().next()]) *
-                vpg->faceNormals[he.face()] *
-                (he.next().edge().isBoundary() ? 0.0 : 1.0) -
-            (vpg->halfedgeCotanWeights[he.twin()] +
-             vpg->halfedgeCotanWeights[he.twin().next()]) *
-                vpg->faceNormals[he.twin().face()] *
-                (he.twin().next().next().edge().isBoundary() ? 0.0 : 1.0);
+        gaussVec = he.edge().isBoundary()
+                       ? gc::Vector3{0, 0, 0}
+                       : 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        if (he.edge().isBoundary()) {
+          schlafliVec1 = gc::Vector3{0, 0, 0};
+          schlafliVec2 = he.isInterior()
+                             ? (-(vpg->halfedgeCotanWeights[he] +
+                                  vpg->halfedgeCotanWeights[he.next().next()]) *
+                                vpg->faceNormals[he.face()])
+                             : (-(vpg->halfedgeCotanWeights[he.twin()] +
+                                  vpg->halfedgeCotanWeights[he.twin().next()]) *
+                                vpg->faceNormals[he.twin().face()]);
+        } else {
+          schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
+                             vpg->faceNormals[he.face()] +
+                         vpg->halfedgeCotanWeights[he.twin().next()] *
+                             vpg->faceNormals[he.twin().face()];
+          schlafliVec2 =
+              -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
+                vpg->halfedgeCotanWeights[he.twin()] *
+                    vpg->faceNormals[he.twin().face()]);
+        }
       } else {
         volGrad = vpg->faceNormals[he.face()] * vpg->faceAreas[he.face()] / 3;
         areaGrad =
@@ -119,19 +127,20 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                        vpg->halfedgeCotanWeights[he.twin().next()] *
                            vpg->faceNormals[he.twin().face()];
         if (vj.isBoundary()) {
-          schlafliVec2 =
-              (vpg->halfedgeCotanWeights[he.next().next()] *
-                   vpg->faceNormals[he.face()] +
-               vpg->halfedgeCotanWeights[he.twin().next()] *
-                   vpg->faceNormals[he.twin().face()]) -
-              (vpg->halfedgeCotanWeights[he] +
-               vpg->halfedgeCotanWeights[he.next().next()]) *
-                  vpg->faceNormals[he.face()] *
-                  (he.next().edge().isBoundary() ? 0.0 : 1.0) -
-              (vpg->halfedgeCotanWeights[he.twin()] +
-               vpg->halfedgeCotanWeights[he.twin().next()]) *
-                  vpg->faceNormals[he.twin().face()] *
-                  (he.twin().next().next().edge().isBoundary() ? 0.0 : 1.0);
+          schlafliVec2 = (vpg->halfedgeCotanWeights[he.next().next()] *
+                              vpg->faceNormals[he.face()] +
+                          vpg->halfedgeCotanWeights[he.twin().next()] *
+                              vpg->faceNormals[he.twin().face()]) +
+                         (he.next().edge().isBoundary()
+                              ? gc::Vector3{0, 0, 0}
+                              : -(vpg->halfedgeCotanWeights[he] +
+                                  vpg->halfedgeCotanWeights[he.next().next()]) *
+                                    vpg->faceNormals[he.face()]) +
+                         (he.twin().next().next().edge().isBoundary()
+                              ? gc::Vector3{0, 0, 0}
+                              : -(vpg->halfedgeCotanWeights[he.twin()] +
+                                  vpg->halfedgeCotanWeights[he.twin().next()]) *
+                                    vpg->faceNormals[he.twin().face()]);
         } else {
           schlafliVec2 =
               -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
@@ -139,7 +148,158 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                     vpg->faceNormals[he.twin().face()]);
         }
       }
-
+#elif zeroDihedral == 1
+      if (v.isBoundary()) {
+        // Note: the missing contribution from faces only contributes to z -
+        // axis forces
+        volGrad = he.isInterior() ? vpg->faceNormals[he.face()] *
+                                        vpg->faceAreas[he.face()] / 3
+                                  : gc::Vector3{0, 0, 0};
+        areaGrad =
+            (he.isInterior()
+                 ? 0.25 * gc::cross(vpg->faceNormals[he.face()],
+                                    vecFromHalfedge(he.next(), *vpg))
+                 : gc::Vector3{0, 0, 0}) +
+            (he.twin().isInterior()
+                 ? 0.25 *
+                       gc::cross(vpg->faceNormals[he.twin().face()],
+                                 vecFromHalfedge(he.twin().next().next(), *vpg))
+                 : gc::Vector3{0, 0, 0});
+        oneSidedAreaGrad =
+            he.isInterior() ? 0.5 * gc::cross(vpg->faceNormals[he.face()],
+                                              vecFromHalfedge(he.next(), *vpg))
+                            : gc::Vector3{0, 0, 0};
+        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        if (he.edge().isBoundary()) {
+          schlafliVec1 = he.isInterior()
+                             ? vpg->halfedgeCotanWeights[he.next().next()] *
+                                   vpg->faceNormals[he.face()]
+                             : vpg->halfedgeCotanWeights[he.twin().next()] *
+                                   vpg->faceNormals[he.twin().face()];
+          // schlafliVec2 = he.isInterior()
+          //                    ? (vpg->halfedgeCotanWeights[he.next().next()] *
+          //                           vpg->faceNormals[he.face()] -
+          //                       (vpg->halfedgeCotanWeights[he] +
+          //                        vpg->halfedgeCotanWeights[he.next().next()])
+          //                        *
+          //                           vpg->faceNormals[he.face()])
+          //                    : (vpg->halfedgeCotanWeights[he.twin().next()] *
+          //                           vpg->faceNormals[he.twin().face()] -
+          //                       (vpg->halfedgeCotanWeights[he.twin()] +
+          //                        vpg->halfedgeCotanWeights[he.twin().next()])
+          //                        *
+          //                           vpg->faceNormals[he.twin().face()]);
+          schlafliVec2 = he.isInterior()
+                             ? -(vpg->halfedgeCotanWeights[he] *
+                                 vpg->faceNormals[he.face()])
+                             : -(vpg->halfedgeCotanWeights[he.twin()] *
+                                 vpg->faceNormals[he.twin().face()]);
+        } else {
+          schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
+                             vpg->faceNormals[he.face()] +
+                         vpg->halfedgeCotanWeights[he.twin().next()] *
+                             vpg->faceNormals[he.twin().face()];
+          schlafliVec2 =
+              -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
+                vpg->halfedgeCotanWeights[he.twin()] *
+                    vpg->faceNormals[he.twin().face()]);
+        }
+      } else {
+        volGrad = vpg->faceNormals[he.face()] * vpg->faceAreas[he.face()] / 3;
+        areaGrad =
+            0.25 * gc::cross(vpg->faceNormals[he.face()],
+                             vecFromHalfedge(he.next(), *vpg)) +
+            0.25 * gc::cross(vpg->faceNormals[he.twin().face()],
+                             vecFromHalfedge(he.twin().next().next(), *vpg));
+        oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[he.face()],
+                                           vecFromHalfedge(he.next(), *vpg));
+        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
+                           vpg->faceNormals[he.face()] +
+                       vpg->halfedgeCotanWeights[he.twin().next()] *
+                           vpg->faceNormals[he.twin().face()];
+        schlafliVec2 =
+            -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
+              vpg->halfedgeCotanWeights[he.twin()] *
+                  vpg->faceNormals[he.twin().face()]);
+      }
+#else
+      if (v.isBoundary()) {
+        // Note: the missing contribution from faces only contributes to z -
+        // axis forces
+        volGrad = he.isInterior() ? vpg->faceNormals[he.face()] *
+                                        vpg->faceAreas[he.face()] / 3
+                                  : gc::Vector3{0, 0, 0};
+        areaGrad =
+            (he.isInterior()
+                 ? 0.25 * gc::cross(vpg->faceNormals[he.face()],
+                                    vecFromHalfedge(he.next(), *vpg))
+                 : gc::Vector3{0, 0, 0}) +
+            (he.twin().isInterior()
+                 ? 0.25 *
+                       gc::cross(vpg->faceNormals[he.twin().face()],
+                                 vecFromHalfedge(he.twin().next().next(), *vpg))
+                 : gc::Vector3{0, 0, 0});
+        oneSidedAreaGrad =
+            he.isInterior() ? 0.5 * gc::cross(vpg->faceNormals[he.face()],
+                                              vecFromHalfedge(he.next(), *vpg))
+                            : gc::Vector3{0, 0, 0};
+        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        if (he.edge().isBoundary()) {
+          // schlafliVec1 = he.isInterior()
+          //                    ? vpg->halfedgeCotanWeights[he.next().next()] *
+          //                          vpg->faceNormals[he.face()]
+          //                    : vpg->halfedgeCotanWeights[he.twin().next()] *
+          //                          vpg->faceNormals[he.twin().face()];
+          // schlafliVec2 = he.isInterior()
+          //                    ? (vpg->halfedgeCotanWeights[he.next().next()] *
+          //                           vpg->faceNormals[he.face()] -
+          //                       (vpg->halfedgeCotanWeights[he] +
+          //                        vpg->halfedgeCotanWeights[he.next().next()])
+          //                        *
+          //                           vpg->faceNormals[he.face()])
+          //                    : (vpg->halfedgeCotanWeights[he.twin().next()] *
+          //                           vpg->faceNormals[he.twin().face()] -
+          //                       (vpg->halfedgeCotanWeights[he.twin()] +
+          //                        vpg->halfedgeCotanWeights[he.twin().next()])
+          //                        *
+          //                           vpg->faceNormals[he.twin().face()]);
+          schlafliVec1 = gc::Vector3{0, 0, 0};
+          schlafliVec2 = he.isInterior()
+                             ? -(vpg->halfedgeCotanWeights[he] *
+                                 vpg->faceNormals[he.face()])
+                             : -(vpg->halfedgeCotanWeights[he.twin()] *
+                                 vpg->faceNormals[he.twin().face()]);
+        } else {
+          schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
+                             vpg->faceNormals[he.face()] +
+                         vpg->halfedgeCotanWeights[he.twin().next()] *
+                             vpg->faceNormals[he.twin().face()];
+          schlafliVec2 =
+              -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
+                vpg->halfedgeCotanWeights[he.twin()] *
+                    vpg->faceNormals[he.twin().face()]);
+        }
+      } else {
+        volGrad = vpg->faceNormals[he.face()] * vpg->faceAreas[he.face()] / 3;
+        areaGrad =
+            0.25 * gc::cross(vpg->faceNormals[he.face()],
+                             vecFromHalfedge(he.next(), *vpg)) +
+            0.25 * gc::cross(vpg->faceNormals[he.twin().face()],
+                             vecFromHalfedge(he.twin().next().next(), *vpg));
+        oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[he.face()],
+                                           vecFromHalfedge(he.next(), *vpg));
+        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
+        schlafliVec1 = vpg->halfedgeCotanWeights[he.next().next()] *
+                           vpg->faceNormals[he.face()] +
+                       vpg->halfedgeCotanWeights[he.twin().next()] *
+                           vpg->faceNormals[he.twin().face()];
+        schlafliVec2 =
+            -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
+              vpg->halfedgeCotanWeights[he.twin()] *
+                  vpg->faceNormals[he.twin().face()]);
+      }
+#endif
       // Assemble to forces
       osmoticForceVec += F.osmoticPressure * volGrad;
       capillaryForceVec -=
@@ -150,9 +310,8 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
                       areaGrad;
       bendForceVec -=
           Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
-      lineCapForceVec -=
-          P.eta * (oneSidedAreaGrad * dH0[he.face()].norm2() -
-                   gc::dot(oneSidedAreaGrad, dH0[he.face()]) * dH0[he.face()]);
+      lineCapForceVec -= P.eta * (oneSidedAreaGrad * dH0ijk.norm2() -
+                                  gc::dot(oneSidedAreaGrad, dH0ijk) * dH0ijk);
 
       // Compare principal curvature vs truncated curvature vector
 
@@ -201,6 +360,10 @@ EigenVectorX3D System::computeFundamentalThreeForces() {
       //             << std::endl;
     }
     // Combine to one
+    F.osmoticForceVec[v] = osmoticForceVec;
+    F.capillaryForceVec[v] = capillaryForceVec;
+    F.bendingForceVec[v] = bendForceVec;
+    F.lineCapillaryForceVec[v] = lineCapForceVec;
     F.fundamentalThreeForces[v] =
         osmoticForceVec + capillaryForceVec + bendForceVec + lineCapForceVec;
 

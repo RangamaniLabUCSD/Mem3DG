@@ -130,6 +130,9 @@ void ConjugateGradient::status() {
 
   // compute the free energy of the system
   f.computeFreeEnergy();
+
+  // backtracking for error
+  errorBacktrack();
 }
 
 void ConjugateGradient::march() {
@@ -169,16 +172,12 @@ void ConjugateGradient::march() {
 
     // time stepping on vertex position
     if (isBacktrack) {
-      mechanicalBacktrack(f.E.potE, vel_e, rho, c1);
+      backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(),
+                f.O.isProteinAdsorption, rho, c1);
     } else {
       pos_e += vel_e * dt;
+      f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
       f.time += dt;
-    }
-
-    // time stepping on protein density
-    if (f.O.isProteinAdsorption) {
-      chemicalBacktrack(f.E.cE, f.F.chemicalPotential.raw(), rho, c1);
-      // f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
     }
 
     // regularization
