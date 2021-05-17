@@ -216,6 +216,73 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           step for n iterations
       )delim");
 
+  /// Mesh mutator object
+  py::class_<MeshMutator> meshmutator(pymem3dg, "MeshMutator",
+                                      R"delim(
+        The mesh mutator settings 
+    )delim");
+
+  meshmutator.def(py::init<>(),
+                  R"delim(
+       meshmutator constructor
+      )delim");
+
+  meshmutator.def_readwrite("flipNonDelaunay", &MeshMutator::flipNonDelaunay,
+                            R"delim(
+          whether flip non-Delaunay edge
+      )delim");
+  meshmutator.def_readwrite("flipNonDelaunayRequireFlat",
+                            &MeshMutator::flipNonDelaunayRequireFlat,
+                            R"delim(
+          whether require flatness condition when flipping non-Delaunay edge
+      )delim");
+  meshmutator.def_readwrite("splitLarge", &MeshMutator::splitLarge,
+                            R"delim(
+          split edge with large faces
+      )delim");
+  meshmutator.def_readwrite("splitLong", &MeshMutator::splitLong,
+                            R"delim(
+          split long edge
+      )delim");
+  meshmutator.def_readwrite("splitCurved", &MeshMutator::splitCurved,
+                            R"delim(
+          split edge on high curvature domain
+      )delim");
+  meshmutator.def_readwrite("splitSharp", &MeshMutator::splitSharp,
+                            R"delim(
+          split edge with sharp membrane property change
+      )delim");
+  meshmutator.def_readwrite("splitFat", &MeshMutator::splitFat,
+                            R"delim(
+          split obtuse triangle
+      )delim");
+  meshmutator.def_readwrite("splitSkinnyDelaunay",
+                            &MeshMutator::splitSkinnyDelaunay,
+                            R"delim(
+          split poor aspected triangle that is still Delaunay
+      )delim");
+  meshmutator.def_readwrite("collapseSkinny", &MeshMutator::collapseSkinny,
+                            R"delim(
+          collapse skinny triangles
+      )delim");
+  meshmutator.def_readwrite("collapseSmall", &MeshMutator::collapseSmall,
+                            R"delim(
+          collapse small triangles
+      )delim");
+  meshmutator.def_readwrite("collapseSmallNeedFlat",
+                            &MeshMutator::collapseSmallNeedFlat,
+                            R"delim(
+         whether require flatness condition when collapsing small edge
+      )delim");
+  meshmutator.def_readwrite("curvTol", &MeshMutator::curvTol,
+                            R"delim(
+          tolerance for curvature approximation
+      )delim");
+  meshmutator.def_readwrite("targetFaceArea", &MeshMutator::targetFaceArea,
+                            R"delim(
+          target face area 
+      )delim");
+
   /// System object
   py::class_<System> system(pymem3dg, "System",
                             R"delim(
@@ -252,6 +319,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def_readwrite("P", &System::P,
                        R"delim(
           get the Parameters struct
+      )delim");
+  system.def_readwrite("meshMutator", &System::meshMutator,
+                       R"delim(
+          get the mesh mutator object
       )delim");
   system.def_readonly("O", &System::O,
                       R"delim(
@@ -654,10 +725,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("lambdaV", &Parameters::lambdaV,
                            R"delim(
           get augmented Lagrangian parameter for volume 
-      )delim");
-  parameters.def_readwrite("curvTol", &Parameters::curvTol,
-                           R"delim(
-          is2Curved mutation criterion length scale
       )delim");
 
   /// Energy struct

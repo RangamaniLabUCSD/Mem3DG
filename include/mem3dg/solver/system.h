@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/utilities/vector2.h"
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/solver/constants.h"
@@ -54,6 +55,67 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
+
+struct DLL_PUBLIC MeshMutator {
+  /// flip non-delaunay edge
+  bool flipNonDelaunay = false;
+  /// whether require flatness condition when flipping non-Delaunay edge
+  bool flipNonDelaunayRequireFlat = false;
+
+  /// split edge with large faces
+  bool splitLarge = false;
+  /// split long edge
+  bool splitLong = false;
+  /// split edge on high curvature domain
+  bool splitCurved = false;
+  /// split edge with sharp membrane property change
+  bool splitSharp = false;
+  /// split obtuse triangle
+  bool splitFat = false;
+  /// split poor aspected triangle that is still Delaunay
+  bool splitSkinnyDelaunay = false;
+
+  /// collapse skinny triangles
+  bool collapseSkinny = false;
+  /// collapse small triangles
+  bool collapseSmall = false;
+  /// whether require flatness condition when collapsing small edge
+  bool collapseSmallNeedFlat = false;
+
+  /// tolerance for curvature approximation
+  double curvTol = 0.0012;
+  /// target face area 
+  double targetFaceArea = 0.001;
+
+  MeshMutator() {}
+  ~MeshMutator() {}
+
+  /**
+   * @brief return condition of edge flip
+   */
+  bool ifFlip(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
+
+  /**
+   * @brief return condition of edge split
+   */
+  bool ifSplit(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+
+  /**
+   * @brief return condition of edge collapse
+   */
+  bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+
+  void maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
+                          const gcs::Vertex v);
+
+  void neighborAreaSum(const gcs::Edge e,
+                       const gcs::VertexPositionGeometry &vpg, double &area,
+                       size_t &num_neighbor);
+
+  double
+  computeCurvatureThresholdLength(const gcs::Edge e,
+                                  const gcs::VertexPositionGeometry &vpg);
+};
 
 struct Forces {
   /// Cached mesh of interest
@@ -342,8 +404,6 @@ struct Parameters {
   double lambdaPhi = 1e-10;
   /// sharpness of tanh transition
   double sharpness = 20;
-  /// tolerance for curvature approximation
-  double curvTol = 0.0012;
   /// type of relation between H0 and protein density
   std::string relation = "linear";
 };
@@ -408,6 +468,8 @@ public:
   Parameters P;
   /// Options
   Options O;
+  /// Mesh mutator;
+  MeshMutator meshMutator;
 
   /// Cached mesh of interest
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -635,7 +697,7 @@ public:
         refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
         vel(*mesh, {0, 0, 0}), H0(*mesh), dH0(*mesh, {0, 0, 0}), Kb(*mesh),
-         isSmooth(true), smoothingMask(*mesh, false) {
+        isSmooth(true), smoothingMask(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();
