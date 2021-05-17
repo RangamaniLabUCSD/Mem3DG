@@ -210,9 +210,8 @@ void System::checkParametersAndOptions() {
     if (O.boundaryConditionType != "roller" &&
         O.boundaryConditionType != "pin" &&
         O.boundaryConditionType != "fixed") {
-      throw std::logic_error(
-          "Boundary condition type (roller, pin or fixed) "
-          "has not been specified for open boundary mesh!");
+      throw std::logic_error("Boundary condition type (roller, pin or fixed) "
+                             "has not been specified for open boundary mesh!");
     }
   } else {
     if (P.A_res != 0 || P.V_res != 0) {
@@ -442,6 +441,7 @@ void System::initConstants() {
   // Initialize the constant target mean face area
   if (!O.isRefMesh || O.isSplitEdge || O.isCollapseEdge) {
     meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
+    meshMutator.targetFaceArea = meanTargetFaceArea;
   }
 
   // Initialize the constant target mean edge length
