@@ -48,7 +48,7 @@ bool StormerVerlet::integrate() {
       if (flag == true) {
         f.vpg->inputVertexPositions[v] *= 2;
         totalForce = f.F.addNormal(f.F.externalForce[v], v) +
-                     f.F.fundamentalThreeForces[v] + f.F.dampingForce[v] +
+                     f.F.vectorForces[v] + f.F.dampingForce[v] +
                      f.F.stochasticForce[v] + f.F.regularizationForce[v];
         f.vpg->inputVertexPositions[v] +=
             totalForce * dt * dt - f.pastPositions[v];

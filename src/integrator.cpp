@@ -240,7 +240,7 @@ void Integrator::errorBacktrack() {
   if (!std::isfinite(f.L1ErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
-    if (!std::isfinite(f.F.toMatrix(f.F.fundamentalThreeForces).norm())) {
+    if (!std::isfinite(f.F.toMatrix(f.F.vectorForces).norm())) {
       if (!std::isfinite(f.F.toMatrix(f.F.capillaryForceVec).norm())) {
         std::cout << "Capillary force is not finite!" << std::endl;
       }
@@ -304,7 +304,7 @@ void Integrator::getForces() {
   
   physicalForceVec.array() =
       f.F.mask(rowwiseScaling(f.F.externalForce.raw(), vertexAngleNormal_e) +
-               f.F.toMatrix(f.F.fundamentalThreeForces));
+               f.F.toMatrix(f.F.vectorForces));
 
   physicalForce = f.F.ontoNormal(physicalForceVec);
 

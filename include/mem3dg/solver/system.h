@@ -138,7 +138,7 @@ struct Forces {
   gcs::VertexData<double> osmoticForce;
   double osmoticPressure;
   /// Cached three fundamentals
-  gcs::VertexData<gc::Vector3> fundamentalThreeForces;
+  gcs::VertexData<gc::Vector3> vectorForces;
   /// Cached bending force
   gcs::VertexData<gc::Vector3> bendingForceVec;
   /// Cached tension-induced capillary force
@@ -162,7 +162,7 @@ struct Forces {
   gcs::VertexData<gc::Vector3> forceMask;
 
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
-      : mesh(mesh_), vpg(vpg_), fundamentalThreeForces(mesh, {0, 0, 0}),
+      : mesh(mesh_), vpg(vpg_), vectorForces(mesh, {0, 0, 0}),
         bendingForceVec(mesh, {0, 0, 0}), capillaryForceVec(mesh, {0, 0, 0}),
         osmoticForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
@@ -847,7 +847,7 @@ public:
   /**
    * @brief Compute fundamental three forces at the same time
    */
-  EigenVectorX3D computeFundamentalThreeForces();
+  EigenVectorX3D computeVectorForces();
 
   /**
    * @brief Compute chemical potential of the system
