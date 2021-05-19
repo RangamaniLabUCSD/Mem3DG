@@ -170,7 +170,7 @@ void BFGS::march() {
   }
 
   // time stepping on protein density
-  if (f.O.isProteinAdsorption) {
+  if (f.O.isProteinVariation) {
     f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
   }
 

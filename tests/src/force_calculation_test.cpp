@@ -80,7 +80,7 @@ protected:
     p.radius = 3;
 
     o.isVertexShift = false;
-    o.isProteinAdsorption = false;
+    o.isProteinVariation = false;
     o.isReducedVolume = true;
     o.isHeterogeneous = false;
     o.isEdgeFlip = false;

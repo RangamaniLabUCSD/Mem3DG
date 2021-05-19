@@ -729,7 +729,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Options: \n";
     myfile << "\n";
-    myfile << "Is considering protein: " << f.O.isProteinAdsorption << "\n"
+    myfile << "Is considering protein: " << f.O.isProteinVariation << "\n"
            << "Is vertex shift: " << f.O.isVertexShift << "\n";
 
     myfile.close();

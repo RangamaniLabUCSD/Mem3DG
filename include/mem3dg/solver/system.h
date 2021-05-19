@@ -84,7 +84,7 @@ struct DLL_PUBLIC MeshMutator {
 
   /// tolerance for curvature approximation
   double curvTol = 0.0012;
-  /// target face area 
+  /// target face area
   double targetFaceArea = 0.001;
 
   MeshMutator() {}
@@ -155,6 +155,12 @@ struct Forces {
   /// Cached stochastic forces
   gcs::VertexData<gc::Vector3> stochasticForce;
 
+  /// Cached bending related chemical potential
+  gcs::VertexData<double> bendingPotential;
+  /// Cached adsorption related chemical potential
+  gcs::VertexData<double> adsorptionPotential;
+  /// Cached dirichlet energy related chemical potential
+  gcs::VertexData<double> diffusionPotential;
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
@@ -170,8 +176,9 @@ struct Forces {
         lineCapillaryForce(mesh, 0), externalForce(mesh, 0),
         osmoticForce(mesh, 0), osmoticPressure(0),
         regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
-        dampingForce(mesh, {0, 0, 0}), chemicalPotential(mesh, 0),
-        forceMask(mesh, {1.0, 1.0, 1.0}) {}
+        dampingForce(mesh, {0, 0, 0}), bendingPotential(mesh, 0),
+        adsorptionPotential(mesh, 0), diffusionPotential(mesh, 0),
+        chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}) {}
 
   ~Forces() {}
 
@@ -433,14 +440,14 @@ struct Options {
   /// Whether or not do vertex shift
   bool isVertexShift = false;
   /// Whether or not consider protein binding
-  bool isProteinAdsorption = false;
+  bool isProteinVariation = false;
   /// Whether adopt reduced volume parametrization
   bool isReducedVolume = false;
   /// Whether adopt constant osmotic pressure
   bool isConstantOsmoticPressure = false;
   /// Whether adopt constant surface tension
   bool isConstantSurfaceTension = false;
-  /// Whether calculate geodesic distance
+  /// Whether precribe hetergenous membrane by geodesic distance
   bool isHeterogeneous = false;
   /// Whether edge flip
   bool isEdgeFlip = false;
@@ -517,12 +524,12 @@ public:
   gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached protein surface density
   gcs::VertexData<double> proteinDensity;
+  /// Spontaneous curvature gradient of the mesh
+  gcs::FaceData<gc::Vector3> proteinDensityGradient;
   /// Cached vertex velocity
   gcs::VertexData<gc::Vector3> vel;
   /// Spontaneous curvature of the mesh
   gcs::VertexData<double> H0;
-  /// Spontaneous curvature gradient of the mesh
-  gcs::FaceData<gc::Vector3> dH0;
   /// Bending rigidity of the membrane
   gcs::VertexData<double> Kb;
   /// Random number engine
@@ -696,8 +703,9 @@ public:
         proteinDensity(*mesh, 0.5), targetLcrs(*mesh), refEdgeLengths(*mesh),
         refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), H0(*mesh), dH0(*mesh, {0, 0, 0}), Kb(*mesh),
-        isSmooth(true), smoothingMask(*mesh, false) {
+        vel(*mesh, {0, 0, 0}), H0(*mesh),
+        proteinDensityGradient(*mesh, {0, 0, 0}), Kb(*mesh), isSmooth(true),
+        smoothingMask(*mesh, false) {
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -893,14 +901,14 @@ public:
   void computePressureEnergy();
 
   /**
-   * @brief Compute chemical energy
+   * @brief Compute adsorption energy
    */
-  void computeChemicalEnergy();
+  void computeAdsorptionEnergy();
 
   /**
-   * @brief Compute line tension energy
+   * @brief Compute Dirichlet energy
    */
-  void computeLineTensionEnergy();
+  void computeDirichletEnergy();
 
   /**
    * @brief Compute external force energy

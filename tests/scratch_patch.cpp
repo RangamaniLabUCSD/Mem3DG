@@ -45,7 +45,7 @@ int main() {
                        Pam, temp, pt,    Kf,   conc,    height, radius};
 
   mem3dg::Options o;
-  o.isProteinAdsorption = false;
+  o.isProteinVariation = false;
   o.isVertexShift = false;
   o.isReducedVolume = true;
   o.isHeterogeneous = true;

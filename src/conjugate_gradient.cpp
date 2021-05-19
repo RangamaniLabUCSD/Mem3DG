@@ -173,7 +173,7 @@ void ConjugateGradient::march() {
     // time stepping on vertex position
     if (isBacktrack) {
       backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(),
-                f.O.isProteinAdsorption, rho, c1);
+                f.O.isProteinVariation, rho, c1);
     } else {
       pos_e += vel_e * dt;
       f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
