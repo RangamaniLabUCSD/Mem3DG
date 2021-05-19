@@ -54,7 +54,7 @@ int main() {
   p.pt = std::vector<double>{0, 0};
 
   mem3dg::Options o;
-  o.isProteinAdsorption = false;
+  o.isProteinVariation = false;
   o.isReducedVolume = false;
   o.isHeterogeneous = true;
   o.isEdgeFlip = true;

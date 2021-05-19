@@ -240,7 +240,7 @@ void System::checkParametersAndOptions() {
                            "regularization Kst cannot be applied!");
   }
 
-  if (!O.isHeterogeneous && !O.isProteinAdsorption) {
+  if (!O.isHeterogeneous && !O.isProteinVariation) {
     if (P.eta != 0) {
       throw std::logic_error(
           "line tension eta has to be 0 for homogeneous membrane!");
@@ -297,7 +297,7 @@ void System::checkParametersAndOptions() {
     }
   }
 
-  if (O.isProteinAdsorption) {
+  if (O.isProteinVariation) {
     if (O.isHeterogeneous) {
       throw std::logic_error(
           "Prescribed heterogenity should be deactivated with "
@@ -464,7 +464,7 @@ void System::initConstants() {
   std::cout << "vol_init/vol_ref = " << volume / refVolume << std::endl;
 
   // Initialize const protein density
-  if (!O.isHeterogeneous && !O.isProteinAdsorption) {
+  if (!O.isHeterogeneous && !O.isProteinVariation) {
     proteinDensity.raw().setConstant(mesh->nVertices(), 1, 1);
   }
 }
@@ -504,7 +504,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
 
   // compute face gradient of spontaneous curvature
   if (P.eta != 0) {
-    computeGradient(H0, dH0);
+    computeGradient(proteinDensity, proteinDensityGradient);
   }
 
   // Update protein density dependent quantities

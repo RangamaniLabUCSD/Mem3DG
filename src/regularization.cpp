@@ -273,7 +273,7 @@ bool System::growMesh() {
     gcs::Halfedge he = e.halfedge();
     const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
 
-    if (!isOrigEdge[e] || e.isBoundary()) {
+    if (!isOrigEdge[e]) {
       continue;
     }
     if (gc::sum(F.forceMask[vertex1] + F.forceMask[vertex2]) < 0.5) {
@@ -305,7 +305,7 @@ bool System::growMesh() {
       isGrown = true;
     } else if (meshMutator.ifCollapse(e, *vpg) &&
                O.isCollapseEdge) { // Collapsing
-      // precached pre-mutation values or flag
+                                   // precached pre-mutation values or flag
       gc::Vector3 collapsedPosition =
           gc::sum(F.forceMask[vertex1]) < 2.5
               ? vpg->inputVertexPositions[vertex1]
@@ -518,7 +518,7 @@ bool MeshMutator::ifFlip(const gcs::Edge e,
   gcs::Halfedge he = e.halfedge();
   bool condition = false;
 
-  if (flipNonDelaunay) {
+  if (flipNonDelaunay && !e.isBoundary()) {
     bool nonDelaunay =
         (vpg.cornerAngle(he.next().next().corner()) +
          vpg.cornerAngle(he.twin().next().next().corner())) > (constants::PI);
@@ -532,17 +532,75 @@ bool MeshMutator::ifFlip(const gcs::Edge e,
   return condition;
 }
 
-void MeshMutator::maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
-                                     const gcs::Vertex v) {
-  smoothingMask[v] = true;
-  for (gc::Vertex nv : v.adjacentVertices()) {
-    smoothingMask[nv] = true;
+bool MeshMutator::ifCollapse(const gc::Edge e,
+                             const gcs::VertexPositionGeometry &vpg) {
+  gcs::Halfedge he = e.halfedge();
+  bool isBoundary = e.isBoundary();
+  if (!he.isInterior()) {
+    he = he.twin();
   }
+  bool condition = false;
+
+  bool is2Small = false;
+  bool is2Skinny = false;
+  bool isFlat = false;
+  bool isSmooth = true;
+  bool isCollapse = false;
+
+  // conditions for collapsing
+  if (collapseSkinny) {
+    // is2Skinny = (vpg.cornerAngle(he.next().next().corner()) +
+    //              vpg.cornerAngle(he.twin().next().next().corner())) <
+    //             constants::PI / 3;
+    is2Skinny =
+        (isBoundary)
+            ? (vpg.cornerAngle(he.next().next().corner()) < constants::PI / 6)
+            : (vpg.cornerAngle(he.next().next().corner()) +
+               vpg.cornerAngle(he.twin().next().next().corner())) <
+                      constants::PI / 3 ||
+                  (vpg.cornerAngle(he.next().corner()) +
+                   vpg.cornerAngle(he.twin().corner())) >
+                      (constants::PI * 1.333) ||
+                  (vpg.cornerAngle(he.corner()) +
+                   vpg.cornerAngle(he.twin().next().corner())) >
+                      (constants::PI * 1.333);
+    condition = is2Skinny;
+  }
+
+  if (collapseSmall) {
+    double areaSum;
+    size_t num_neighbor;
+    neighborAreaSum(e, vpg, areaSum, num_neighbor);
+    is2Small = (isBoundary) ? ((areaSum - vpg.faceArea(he.face()) -
+                                vpg.faceArea(he.twin().face())) <
+                               (num_neighbor - 1) * targetFaceArea)
+                            : ((areaSum - vpg.faceArea(he.face()) -
+                                vpg.faceArea(he.twin().face())) <
+                               (num_neighbor - 2) * targetFaceArea);
+    if (collapseSmallNeedFlat) {
+      isFlat =
+          vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
+      is2Small = is2Small && isFlat;
+    }
+    // isSmooth =
+    //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
+    //     targetdH0);
+    condition = condition || is2Small;
+  }
+
+  // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
+
+  return condition;
 }
 
 bool MeshMutator::ifSplit(const gcs::Edge e,
                           const gcs::VertexPositionGeometry &vpg) {
   gcs::Halfedge he = e.halfedge();
+  bool isBoundary = e.isBoundary();
+  if (!he.isInterior()) {
+    he = he.twin();
+  }
+
   bool condition = false;
 
   bool is2Large = false;
@@ -557,14 +615,19 @@ bool MeshMutator::ifSplit(const gcs::Edge e,
 
   // Conditions for splitting
   if (splitLarge) {
-    is2Large = (vpg.faceArea(he.face()) + vpg.faceArea(he.twin().face())) >
-               (4 * targetFaceArea);
+    is2Large = (isBoundary)
+                   ? vpg.faceArea(he.face()) > (2 * targetFaceArea)
+                   : (vpg.faceArea(he.face()) +
+                      vpg.faceArea(he.twin().face())) > (4 * targetFaceArea);
     condition = condition || is2Large;
   }
 
   if (splitLong) {
-    is2Long = vpg.edgeLength(e) > (vpg.edgeLength(he.next().edge()) +
-                                   vpg.edgeLength(he.twin().next().edge()));
+    is2Long =
+        (isBoundary)
+            ? (vpg.edgeLength(e) > (2 * vpg.edgeLength(he.next().edge())))
+            : (vpg.edgeLength(e) > (vpg.edgeLength(he.next().edge()) +
+                                    vpg.edgeLength(he.twin().next().edge())));
     condition = is2Long || condition;
   }
 
@@ -579,7 +642,7 @@ bool MeshMutator::ifSplit(const gcs::Edge e,
     // targetdH0);
   }
 
-  if (splitSkinnyDelaunay) {
+  if (splitSkinnyDelaunay && !isBoundary) {
     isDelaunay = (vpg.cornerAngle(e.halfedge().next().next().corner()) +
                   vpg.cornerAngle(e.halfedge().twin().next().next().corner())) <
                  (constants::PI);
@@ -590,10 +653,12 @@ bool MeshMutator::ifSplit(const gcs::Edge e,
   }
 
   if (splitFat) {
-    is2Fat =
-        vpg.cornerAngle(he.next().next().corner()) > constants::PI * 0.667 ||
-        vpg.cornerAngle(he.twin().next().next().corner()) >
-            constants::PI * 0.667;
+    is2Fat = (isBoundary) ? (vpg.cornerAngle(he.next().next().corner()) >
+                             constants::PI * 0.667)
+                          : (vpg.cornerAngle(he.next().next().corner()) >
+                                 constants::PI * 0.667 ||
+                             vpg.cornerAngle(he.twin().next().next().corner()) >
+                                 constants::PI * 0.667);
     condition = is2Fat || condition;
   }
 
@@ -603,6 +668,14 @@ bool MeshMutator::ifSplit(const gcs::Edge e,
   //     is2Large || is2Curved || is2Fat || is2Sharp || (is2Skinny &&
   //     isDelaunay);
   return condition;
+}
+
+void MeshMutator::maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
+                                     const gcs::Vertex v) {
+  smoothingMask[v] = true;
+  for (gc::Vertex nv : v.adjacentVertices()) {
+    smoothingMask[nv] = true;
+  }
 }
 
 void MeshMutator::neighborAreaSum(const gcs::Edge e,
@@ -632,56 +705,6 @@ double MeshMutator::computeCurvatureThresholdLength(
                   ? abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex()))
                   : abs(vpg.vertexMinPrincipalCurvature(he.tailVertex()));
   return std::sqrt(6 * curvTol / ((k1 > k2) ? k1 : k2) - 3 * curvTol * curvTol);
-}
-
-bool MeshMutator::ifCollapse(const gc::Edge e,
-                             const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  bool condition = false;
-
-  bool is2Small = false;
-  bool is2Skinny = false;
-  bool isFlat = false;
-  bool isSmooth = true;
-  bool isCollapse = false;
-
-  // conditions for collapsing
-  if (collapseSkinny) {
-    // is2Skinny = (vpg.cornerAngle(he.next().next().corner()) +
-    //              vpg.cornerAngle(he.twin().next().next().corner())) <
-    //             constants::PI / 3;
-    is2Skinny =
-        (vpg.cornerAngle(he.next().next().corner()) +
-         vpg.cornerAngle(he.twin().next().next().corner())) <
-            constants::PI / 3 ||
-        (vpg.cornerAngle(he.next().corner()) +
-         vpg.cornerAngle(he.twin().corner())) > (constants::PI * 1.333) ||
-        (vpg.cornerAngle(he.corner()) +
-         vpg.cornerAngle(he.twin().next().corner())) > (constants::PI * 1.333);
-    condition = is2Skinny;
-  }
-
-  if (collapseSmall) {
-    double areaSum;
-    size_t num_neighbor;
-    neighborAreaSum(e, vpg, areaSum, num_neighbor);
-    is2Small =
-        (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
-        (num_neighbor - 2) * targetFaceArea;
-    if (collapseSmallNeedFlat) {
-      isFlat =
-          vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
-      is2Small = is2Small && isFlat;
-    }
-    // isSmooth =
-    //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
-    //     targetdH0);
-    condition = condition || is2Small;
-  }
-
-  // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
-
-  return condition;
 }
 
 } // namespace mem3dg

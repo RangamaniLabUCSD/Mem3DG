@@ -63,8 +63,9 @@ void visualize(mem3dg::System &f) {
   // Process attributes
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  fn = f.F.bendingForce.raw() + f.F.capillaryForce.raw() + f.F.osmoticForce.raw() +
-       f.F.externalForce.raw() + f.F.lineCapillaryForce.raw();
+  fn = f.F.bendingForce.raw() + f.F.capillaryForce.raw() +
+       f.F.osmoticForce.raw() + f.F.externalForce.raw() +
+       f.F.lineCapillaryForce.raw();
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
@@ -639,10 +640,9 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
         "osmotic_force",
         ptrRichData->getVertexProperty<double>("osmotic_force"));
   }
-
   if (options.mask) {
     polyscopeMesh->addVertexScalarQuantity(
-        "mask", ptrRichData->getVertexProperty<int>("mask"));
+        "mask", ptrRichData->getVertexProperty<double>("mask"));
   }
   if (options.the_point) {
     polyscopeMesh

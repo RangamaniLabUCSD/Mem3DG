@@ -78,7 +78,7 @@ void System::computePressureEnergy() {
   }
 }
 
-void System::computeChemicalEnergy() {
+void System::computeAdsorptionEnergy() {
   E.cE = (vpg->vertexDualAreas.raw().array() * P.epsilon *
           proteinDensity.raw().array())
              .sum();
@@ -87,10 +87,10 @@ void System::computeChemicalEnergy() {
                          (1 - proteinDensity.raw().array()).log().sum());
 }
 
-void System::computeLineTensionEnergy() {
+void System::computeDirichletEnergy() {
   if (false) {
     throw std::runtime_error(
-        "computeLineTensionEnergy: out of data implementation, "
+        "computeDirichletEnergy: out of date implementation, "
         "shouldn't be called!");
     // scale the dH0 such that it is integrated over the edge
     // this is under the case where the resolution is low, WIP
@@ -102,7 +102,7 @@ void System::computeLineTensionEnergy() {
 
   E.lE = 0;
   for (gcs::Face f : mesh->faces()) {
-    E.lE += P.eta * dH0[f].norm2() * vpg->faceAreas[f];
+    E.lE += P.eta * proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
   }
 }
 
@@ -133,10 +133,10 @@ void System::computePotentialEnergy() {
     computePressureEnergy();
   }
   if (P.epsilon != 0) {
-    computeChemicalEnergy();
+    computeAdsorptionEnergy();
   }
   if (P.eta != 0) {
-    computeLineTensionEnergy();
+    computeDirichletEnergy();
   }
   if (P.Kf != 0) {
     computeExternalForceEnergy();
@@ -194,9 +194,8 @@ void System::computeGradient(gcs::VertexData<double> &quantities,
     gc::Vector3 normal = vpg->faceNormals[f];
     gc::Vector3 gradientVec{0, 0, 0};
     for (gcs::Halfedge he : f.adjacentHalfedges()) {
-      gradientVec +=
-          quantities[he.next().tipVertex()] *
-          gc::cross(vpg->faceNormals[he.face()], vecFromHalfedge(he, *vpg));
+      gradientVec += quantities[he.next().tipVertex()] *
+                     gc::cross(normal, vecFromHalfedge(he, *vpg));
     }
     gradient[f] = gradientVec / 2 / vpg->faceAreas[f];
   }

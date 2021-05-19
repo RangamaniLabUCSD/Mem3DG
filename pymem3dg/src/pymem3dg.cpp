@@ -562,9 +562,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether do vertex shift  
       )delim");
-  options.def_readwrite("isProteinAdsorption", &Options::isProteinAdsorption,
+  options.def_readwrite("isProteinVariation", &Options::isProteinVariation,
                         R"delim(
-          get the option of whether simulate protein adsorption
+          get the option of whether simulate protein variation
       )delim");
   options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
                         R"delim(
