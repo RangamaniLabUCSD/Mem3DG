@@ -557,6 +557,11 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addVertexProperty("osmotic_force", f.F.osmoticForce);
   richData.addVertexProperty("external_force", f.F.externalForce);
   richData.addVertexProperty("physical_force", fn);
+
+  // write chemical potential
+  richData.addVertexProperty("diffusion_potential", f.F.diffusionPotential);
+  richData.addVertexProperty("bending_potential", f.F.bendingPotential);
+  richData.addVertexProperty("adsorption_potential", f.F.adsorptionPotential);
   richData.addVertexProperty("chemical_potential", f.F.chemicalPotential);
 
   richData.write(outputDir + plyName);

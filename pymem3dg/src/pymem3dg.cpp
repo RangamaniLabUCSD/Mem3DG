@@ -869,6 +869,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize the smoothing mask
       )delim");
+  quantities.def_readwrite("chemical_potential", &Quantities::chemical_potential,
+                           R"delim(
+        visualize total chemical potential
+      )delim");
+  quantities.def_readwrite("bending_potential", &Quantities::bending_potential,
+                           R"delim(
+        visualize bending component of chemical potential
+      )delim");
+  quantities.def_readwrite("diffusion_potential", &Quantities::diffusion_potential,
+                           R"delim(
+        visualize diffusion component of chemical potential
+      )delim");
+  quantities.def_readwrite("adsorption_potential", &Quantities::adsorption_potential,
+                           R"delim(
+        visualize adsorption component of chemical potential
+      )delim");
 
   pymem3dg.def("driver_ply", &driver_ply,
                "Run single simulation starting with .ply files",
