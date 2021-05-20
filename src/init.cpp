@@ -304,8 +304,9 @@ void System::checkParametersAndOptions() {
           "protein binding activated!");
     }
     if (P.eta != 0) {
-      throw std::logic_error(
-          "Line tension with protein bind is currently not supported!");
+      std::cout << "\nWARNING: Line tension with protein bind is currently not "
+                   "supported! Activate protein diffusion instead!\n"
+                << std::endl;
     }
   } else {
     if (P.Bc != -1) {

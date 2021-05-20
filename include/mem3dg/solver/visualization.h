@@ -53,6 +53,14 @@ struct DLL_PUBLIC Quantities {
   bool the_point = false;
   /// smoothing mask
   bool smoothing_mask = false;
+  /// chemical potential
+  bool chemical_potential = false;
+  /// bending chemical potential
+  bool bending_potential = false;
+  /// diffusion chemical potential
+  bool diffusion_potential = false;
+  /// adsorption chemical potential 
+  bool adsorption_potential = false;
 };
 
 // ==========================================================

@@ -656,6 +656,26 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
         "smoothing_mask",
         ptrRichData->getVertexProperty<int>("smoothing_mask"));
   }
+  if (options.chemical_potential) {
+    polyscopeMesh->addVertexScalarQuantity(
+        "chemical_potential",
+        ptrRichData->getVertexProperty<double>("chemical_potential"));
+  }
+  if (options.bending_potential) {
+    polyscopeMesh->addVertexScalarQuantity(
+        "bending_potential",
+        ptrRichData->getVertexProperty<double>("bending_potential"));
+  }
+  if (options.diffusion_potential) {
+    polyscopeMesh->addVertexScalarQuantity(
+        "diffusion_potential",
+        ptrRichData->getVertexProperty<double>("diffusion_potential"));
+  }
+  if (options.adsorption_potential) {
+    polyscopeMesh->addVertexScalarQuantity(
+        "adsorption_potential",
+        ptrRichData->getVertexProperty<double>("adsorption_potential"));
+  }
   /*gcs::VertexData<gc::Vector3> vertexVelocity =
       ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
   /*gcs::VertexData<gc::Vector3> normalForce =
