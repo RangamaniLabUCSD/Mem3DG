@@ -99,7 +99,8 @@ EigenVectorX3D System::computeVectorForces() {
                                                vecFromHalfedge(he.next(), *vpg))
                              : gc::Vector3{0, 0, 0};
       dirichletVec = interiorHalfedge
-                         ? computeGradientNorm2Gradient(he, proteinDensity)
+                         ? computeGradientNorm2Gradient(he, proteinDensity) /
+                               vpg->faceAreas[he.face()]
                          : gc::Vector3{0, 0, 0};
       gaussVec = boundaryEdge
                      ? gc::Vector3{0, 0, 0}
@@ -151,21 +152,8 @@ EigenVectorX3D System::computeVectorForces() {
                       areaGrad;
       bendForceVec -=
           Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
-
-      if (O.isHeterogeneous) {
-        lineCapForceVec -= 0.5 * P.eta *
-                           (oneSidedAreaGrad * dphi_ijk.norm2() -
-                            gc::dot(oneSidedAreaGrad, dphi_ijk) * dphi_ijk);
-
-      } else if (O.isProteinVariation) {
-        lineCapForceVec -=
-            P.eta * (0.125 * dirichletVec / vpg->faceAreas[he.face()] -
-                     0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
-      } else {
-        if (P.eta != 0)
-          throw std::runtime_error(
-              "computeVectorForces: lineCapForceVec not supported!");
-      }
+      lineCapForceVec -= P.eta * (0.125 * dirichletVec -
+                                  0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
 
       // Compare principal curvature vs truncated curvature vector
 
@@ -580,16 +568,23 @@ void System::computePhysicalForces() {
 
   // zero all forces
   F.vectorForces.fill({0, 0, 0});
-  // bendingForceVec.fill({0, 0, 0});
-  // capillaryForceVec.fill({0, 0, 0});
-  // osmoticForceVec.fill({0, 0, 0});
+  F.bendingForceVec.fill({0, 0, 0});
+  F.capillaryForceVec.fill({0, 0, 0});
+  F.osmoticForceVec.fill({0, 0, 0});
+  F.lineCapillaryForceVec.fill({0, 0, 0});
+  F.adsorptionForceVec.fill({0, 0, 0});
 
   F.bendingForce.raw().setZero();
   F.capillaryForce.raw().setZero();
   F.lineCapillaryForce.raw().setZero();
   F.externalForce.raw().setZero();
   F.osmoticForce.raw().setZero();
+
   F.chemicalPotential.raw().setZero();
+  F.diffusionPotential.raw().setZero();
+  F.bendingPotential.raw().setZero();
+  F.adsorptionPotential.raw().setZero();
+  F.interiorPenaltyPotential.raw().setZero();
 
   computeVectorForces();
 
