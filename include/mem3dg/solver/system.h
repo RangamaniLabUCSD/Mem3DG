@@ -137,6 +137,7 @@ struct Forces {
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
   double osmoticPressure;
+  
   /// Cached three fundamentals
   gcs::VertexData<gc::Vector3> vectorForces;
   /// Cached bending force

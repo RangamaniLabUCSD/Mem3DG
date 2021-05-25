@@ -150,7 +150,9 @@ void System::computePotentialEnergy() {
   if (P.Kf != 0) {
     computeExternalForceEnergy();
   }
-  computeProteinInteriorPenaltyEnergy();
+  if (O.isProteinVariation) {
+    computeProteinInteriorPenaltyEnergy();
+  }
   E.potE = E.BE + E.sE + E.pE + E.aE + E.dE + E.exE + E.inE;
 }
 
