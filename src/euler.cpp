@@ -123,7 +123,7 @@ void Euler::status() {
   f.computeFreeEnergy();
 
   // backtracking for error
-  errorBacktrack();
+  finitenessErrorBacktrack();
 }
 
 void Euler::march() {
@@ -148,6 +148,7 @@ void Euler::march() {
     }
 
     // time stepping on vertex position
+    previousE = f.E;
     if (isBacktrack) {
       backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(),
                 f.O.isProteinVariation, rho, c1);
@@ -156,7 +157,6 @@ void Euler::march() {
       f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
       f.time += dt;
     }
-
 
     // regularization
     if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {

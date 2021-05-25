@@ -33,7 +33,9 @@
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/util.h"
 #include <Eigen/Core>
+#include <math.h>
 #include <pcg_random.hpp>
+#include <stdexcept>
 
 namespace mem3dg {
 
@@ -47,6 +49,7 @@ EigenVectorX3D System::computeVectorForces() {
     gc::Vector3 capillaryForceVec{0, 0, 0};
     gc::Vector3 osmoticForceVec{0, 0, 0};
     gc::Vector3 lineCapForceVec{0, 0, 0};
+    gc::Vector3 adsorptionForceVec{0, 0, 0};
     double Hi = vpg->vertexMeanCurvatures[v] / vpg->vertexDualAreas[v];
     double H0i = H0[v];
     double Kbi = Kb[v];
@@ -63,49 +66,53 @@ EigenVectorX3D System::computeVectorForces() {
       double Hj = vpg->vertexMeanCurvatures[vj] / vpg->vertexDualAreas[vj];
       double H0j = H0[vj];
       double Kbj = Kb[vj];
+      double proteinDensityj = proteinDensity[vj];
       gc::Vector3 volGrad{0, 0, 0};
       gc::Vector3 areaGrad{0, 0, 0};
       gc::Vector3 gaussVec{0, 0, 0};
       gc::Vector3 schlafliVec1{0, 0, 0};
       gc::Vector3 schlafliVec2{0, 0, 0};
       gc::Vector3 oneSidedAreaGrad{0, 0, 0};
+      gc::Vector3 dirichletVec{0, 0, 0};
       bool boundaryEdge = he.edge().isBoundary();
-      bool boundaryHalfedge = he.isInterior();
-      bool boundaryTwinHalfedge = he.twin().isInterior();
+      bool interiorHalfedge = he.isInterior();
+      bool interiorTwinHalfedge = he.twin().isInterior();
 
       // Note: the missing contribution from faces only contributes to z -
       // axis forces
       // volGrad = vpg->faceNormals[he.face()] * vpg->faceAreas[he.face()] /
       // 3;
-      volGrad = boundaryHalfedge ? vpg->faceNormals[he.face()] *
+      volGrad = interiorHalfedge ? vpg->faceNormals[he.face()] *
                                        vpg->faceAreas[he.face()] / 3
                                  : gc::Vector3{0, 0, 0};
       areaGrad =
-          (boundaryHalfedge ? 0.25 * gc::cross(vpg->faceNormals[he.face()],
+          (interiorHalfedge ? 0.25 * gc::cross(vpg->faceNormals[he.face()],
                                                vecFromHalfedge(he.next(), *vpg))
                             : gc::Vector3{0, 0, 0}) +
-          (boundaryTwinHalfedge
+          (interiorTwinHalfedge
                ? 0.25 *
                      gc::cross(vpg->faceNormals[he.twin().face()],
                                vecFromHalfedge(he.twin().next().next(), *vpg))
                : gc::Vector3{0, 0, 0});
-      oneSidedAreaGrad = boundaryHalfedge
+      oneSidedAreaGrad = interiorHalfedge
                              ? 0.5 * gc::cross(vpg->faceNormals[he.face()],
                                                vecFromHalfedge(he.next(), *vpg))
                              : gc::Vector3{0, 0, 0};
+      dirichletVec = interiorHalfedge
+                         ? computeGradientNorm2Gradient(he, proteinDensity) /
+                               vpg->faceAreas[he.face()]
+                         : gc::Vector3{0, 0, 0};
       gaussVec = boundaryEdge
                      ? gc::Vector3{0, 0, 0}
                      : 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
-
       schlafliVec1 = boundaryEdge
                          ? gc::Vector3{0, 0, 0}
                          : vpg->halfedgeCotanWeights[he.next().next()] *
                                    vpg->faceNormals[he.face()] +
                                vpg->halfedgeCotanWeights[he.twin().next()] *
                                    vpg->faceNormals[he.twin().face()];
-
       if (boundaryVertex && boundaryEdge) {
-        schlafliVec2 = boundaryHalfedge
+        schlafliVec2 = interiorHalfedge
                            ? (-(vpg->halfedgeCotanWeights[he] +
                                 vpg->halfedgeCotanWeights[he.next().next()]) *
                               vpg->faceNormals[he.face()])
@@ -136,21 +143,17 @@ EigenVectorX3D System::computeVectorForces() {
 
       // Assemble to forces
       osmoticForceVec += F.osmoticPressure * volGrad;
-      capillaryForceVec -= (F.surfaceTension + proteinDensityi * P.epsilon +
-                            P.eta * dphi_ijk.norm2()) *
-                           areaGrad;
+      capillaryForceVec -= F.surfaceTension * areaGrad;
+      adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
+                            P.epsilon * areaGrad;
       bendForceVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
       bendForceVec -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
                        Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
                       areaGrad;
       bendForceVec -=
           Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
-
-      if (O.isHeterogeneous) {
-        lineCapForceVec -=
-            P.eta * (oneSidedAreaGrad * dphi_ijk.norm2() -
-                     gc::dot(oneSidedAreaGrad, dphi_ijk) * dphi_ijk);
-      }
+      lineCapForceVec -= P.eta * (0.125 * dirichletVec -
+                                  0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
 
       // Compare principal curvature vs truncated curvature vector
 
@@ -203,8 +206,9 @@ EigenVectorX3D System::computeVectorForces() {
     F.capillaryForceVec[v] = capillaryForceVec;
     F.bendingForceVec[v] = bendForceVec;
     F.lineCapillaryForceVec[v] = lineCapForceVec;
-    F.vectorForces[v] =
-        osmoticForceVec + capillaryForceVec + bendForceVec + lineCapForceVec;
+    F.adsorptionForceVec[v] = adsorptionForceVec;
+    F.vectorForces[v] = osmoticForceVec + capillaryForceVec + bendForceVec +
+                        lineCapForceVec + adsorptionForceVec;
 
     // Scalar force by projection to angle-weighted normal
     F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
@@ -413,7 +417,6 @@ EigenVectorX1D System::computeExternalForce() {
 EigenVectorX1D System::computeChemicalPotential() {
   gcs::VertexData<double> dH0dphi(*mesh, 0);
   gcs::VertexData<double> dKbdphi(*mesh, 0);
-  EigenVectorX1D interiorPenalty;
   auto meanCurvDiff = (vpg->vertexMeanCurvatures.raw().array() /
                        vpg->vertexDualAreas.raw().array()) -
                       H0.raw().array();
@@ -440,13 +443,13 @@ EigenVectorX1D System::computeChemicalPotential() {
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
        2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array());
   F.diffusionPotential.raw() =
-      -P.eta * vpg->vertexDualAreas.raw().array() *
-      (vpg->cotanLaplacian * proteinDensity.raw()).array();
-  interiorPenalty = P.lambdaPhi * (1 / proteinDensity.raw().array() -
-                                   1 / (1 - proteinDensity.raw().array()));
-  F.chemicalPotential.raw() = F.adsorptionPotential.raw() +
-                              F.bendingPotential.raw() +
-                              F.diffusionPotential.raw() + interiorPenalty;
+      -P.eta * vpg->cotanLaplacian * proteinDensity.raw();
+  F.interiorPenaltyPotential.raw() =
+      P.lambdaPhi * (1 / proteinDensity.raw().array() -
+                     1 / (1 - proteinDensity.raw().array()));
+  F.chemicalPotential.raw() =
+      F.adsorptionPotential.raw() + F.bendingPotential.raw() +
+      F.diffusionPotential.raw() + F.interiorPenaltyPotential.raw();
 
   // F.chemicalPotential.raw().array() =
   //     -vpg->vertexDualAreas.raw().array() *
@@ -510,20 +513,78 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
   return std::tie(dampingForce_e, stochasticForce_e);
 }
 
+gc::Vector3 System::computeGradientNorm2Gradient(
+    const gcs::Halfedge &he, const gcs::VertexData<double> &quantities) {
+  if (!he.isInterior()) {
+    throw std::runtime_error(
+        "computeGradientNormGradient: halfedge is not interior!");
+  }
+
+  // Edge and normal vector
+  gc::Vector3 n = vpg->faceNormals[he.face()];
+  gc::Vector3 e1 = vecFromHalfedge(he, *vpg);
+  gc::Vector3 e2 = vecFromHalfedge(he.next(), *vpg);
+  gc::Vector3 e3 = vecFromHalfedge(he.next().next(), *vpg);
+
+  // exterior angle of triangles (angles formed by e_perp)
+  double theta3 = gc::angle(e1, e2);
+  double theta1 = gc::angle(e2, e3);
+  double theta2 = gc::angle(e3, e1);
+
+  // gradient quantities
+  double q1 = quantities[he.next().next().vertex()];
+  double q2 = quantities[he.vertex()];
+  double q3 = quantities[he.next().vertex()];
+
+  // gradient of edge length wrt he.vertex()
+  gc::Vector3 grad_e1norm = -e1.normalize();
+  gc::Vector3 grad_e3norm = e3.normalize();
+
+  // gradient of exterior angle wrt he.vertex()
+  gc::Vector3 grad_theta3 = gc::cross(n, e1).normalize() / gc::norm(e1);
+  gc::Vector3 grad_theta1 = gc::cross(n, e3).normalize() / gc::norm(e3);
+  gc::Vector3 grad_theta2 = -(grad_theta3 + grad_theta1);
+
+  // chain rule
+  gc::Vector3 grad_costheta3 = -sin(theta3) * grad_theta3;
+  gc::Vector3 grad_costheta2 = -sin(theta2) * grad_theta2;
+  gc::Vector3 grad_costheta1 = -sin(theta1) * grad_theta1;
+
+  // g = q1 * e1_perp +  q2 * e2_perp +  q2 * e2_perp
+  // gradient of |g|^2
+  return 2 * q1 * q1 * gc::norm(e1) * grad_e1norm +
+         2 * q3 * q3 * gc::norm(e3) * grad_e3norm +
+         2 * q1 * q2 * gc::norm(e2) *
+             (grad_e1norm * cos(theta3) + gc::norm(e1) * grad_costheta3) +
+         2 * q2 * q3 * gc::norm(e2) *
+             (grad_e3norm * cos(theta1) + gc::norm(e3) * grad_costheta1) +
+         2 * q1 * q3 *
+             (grad_e1norm * gc::norm(e3) * cos(theta2) +
+              gc::norm(e1) * grad_e3norm * cos(theta2) +
+              gc::norm(e1) * gc::norm(e3) * grad_costheta2);
+}
+
 void System::computePhysicalForces() {
 
   // zero all forces
   F.vectorForces.fill({0, 0, 0});
-  // bendingForceVec.fill({0, 0, 0});
-  // capillaryForceVec.fill({0, 0, 0});
-  // osmoticForceVec.fill({0, 0, 0});
+  F.bendingForceVec.fill({0, 0, 0});
+  F.capillaryForceVec.fill({0, 0, 0});
+  F.osmoticForceVec.fill({0, 0, 0});
+  F.lineCapillaryForceVec.fill({0, 0, 0});
+  F.adsorptionForceVec.fill({0, 0, 0});
 
   F.bendingForce.raw().setZero();
   F.capillaryForce.raw().setZero();
   F.lineCapillaryForce.raw().setZero();
   F.externalForce.raw().setZero();
   F.osmoticForce.raw().setZero();
+
   F.chemicalPotential.raw().setZero();
+  F.diffusionPotential.raw().setZero();
+  F.bendingPotential.raw().setZero();
+  F.adsorptionPotential.raw().setZero();
+  F.interiorPenaltyPotential.raw().setZero();
 
   computeVectorForces();
 

@@ -132,6 +132,7 @@ void BFGS::status() {
   }
 
   // exit if reached time
+  previousE = f.E;
   if (f.time > total_time) {
     std::cout << "\nReached time." << std::endl;
     EXIT = true;

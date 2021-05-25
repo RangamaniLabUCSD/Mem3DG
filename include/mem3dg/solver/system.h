@@ -137,6 +137,7 @@ struct Forces {
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
   double osmoticPressure;
+  
   /// Cached three fundamentals
   gcs::VertexData<gc::Vector3> vectorForces;
   /// Cached bending force
@@ -145,8 +146,10 @@ struct Forces {
   gcs::VertexData<gc::Vector3> capillaryForceVec;
   /// Cached osmotic force
   gcs::VertexData<gc::Vector3> osmoticForceVec;
-  /// Cached osmotic force
+  /// Cached Dirichlet energy driven force
   gcs::VertexData<gc::Vector3> lineCapillaryForceVec;
+  /// Cached adsorption driven force
+  gcs::VertexData<gc::Vector3> adsorptionForceVec;
 
   /// Cached local stretching forces (in-plane regularization)
   gcs::VertexData<gc::Vector3> regularizationForce;
@@ -155,6 +158,8 @@ struct Forces {
   /// Cached stochastic forces
   gcs::VertexData<gc::Vector3> stochasticForce;
 
+  /// Cached interior penalty chemical potential
+  gcs::VertexData<double> interiorPenaltyPotential;
   /// Cached bending related chemical potential
   gcs::VertexData<double> bendingPotential;
   /// Cached adsorption related chemical potential
@@ -170,15 +175,16 @@ struct Forces {
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
       : mesh(mesh_), vpg(vpg_), vectorForces(mesh, {0, 0, 0}),
         bendingForceVec(mesh, {0, 0, 0}), capillaryForceVec(mesh, {0, 0, 0}),
-        osmoticForceVec(mesh, {0, 0, 0}),
+        osmoticForceVec(mesh, {0, 0, 0}), adsorptionForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
         capillaryForce(mesh, 0), surfaceTension(0), lineTension(mesh, 0),
         lineCapillaryForce(mesh, 0), externalForce(mesh, 0),
         osmoticForce(mesh, 0), osmoticPressure(0),
         regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
-        dampingForce(mesh, {0, 0, 0}), bendingPotential(mesh, 0),
-        adsorptionPotential(mesh, 0), diffusionPotential(mesh, 0),
-        chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}) {}
+        dampingForce(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
+        bendingPotential(mesh, 0), adsorptionPotential(mesh, 0),
+        diffusionPotential(mesh, 0), chemicalPotential(mesh, 0),
+        forceMask(mesh, {1.0, 1.0, 1.0}) {}
 
   ~Forces() {}
 
@@ -428,12 +434,14 @@ struct Energy {
   double sE;
   /// work of pressure within membrane
   double pE;
-  /// chemical energy of the membrane protein
-  double cE;
+  /// adsorption energy of the membrane protein
+  double aE;
   /// line tension energy of interface
-  double lE;
+  double dE;
   /// work of external force
   double exE;
+  /// protein interior penalty energy
+  double inE;
 };
 
 struct Options {
@@ -699,7 +707,7 @@ public:
          Options &o)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
+        E({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
         proteinDensity(*mesh, 0.5), targetLcrs(*mesh), refEdgeLengths(*mesh),
         refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
@@ -906,6 +914,11 @@ public:
   void computeAdsorptionEnergy();
 
   /**
+   * @brief Compute protein interior penalty
+   */
+  void computeProteinInteriorPenaltyEnergy();
+
+  /**
    * @brief Compute Dirichlet energy
    */
   void computeDirichletEnergy();
@@ -979,6 +992,13 @@ public:
    */
   void computeGradient(gcs::VertexData<double> &quantities,
                        gcs::FaceData<gc::Vector3> &gradient);
+
+  /**
+   * @brief Get gradient of quantities on face
+   */
+  gc::Vector3
+  computeGradientNorm2Gradient(const gcs::Halfedge &he,
+                               const gcs::VertexData<double> &quantities);
 
   /**
    * @brief Find "the" vertex
