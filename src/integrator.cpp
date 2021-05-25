@@ -32,10 +32,10 @@ double Integrator::backtrack(
     const double energy_pre,
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
     Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
-    const bool isProteinAdsorption, double rho, double c1) {
+    const bool isProteinVariation, double rho, double c1) {
 
   // calculate initial energy as reference level
-  Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
+  const Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
       gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   gcs::VertexData<double> init_proteinDensity(*f.mesh);
   init_proteinDensity = f.proteinDensity;
@@ -67,7 +67,7 @@ double Integrator::backtrack(
       // SUCCESS = false;
       // break;
     }
-    if (chemicalProjection < 0 && isProteinAdsorption) {
+    if (chemicalProjection < 0 && isProteinVariation) {
       std::cout << "\nBacktracking line search: chemical direction on "
                    "uphill direction, "
                    "use bare "
@@ -86,10 +86,11 @@ double Integrator::backtrack(
         (energy_pre - c1 * alpha * (positionProjection + chemicalProjection))) {
       break;
     }
-    if (alpha < 1e-6) {
+    if (alpha < 1e-4 * dt) {
       std::cout << "\nbacktrack: line search failure! Simulation "
                    "stopped. \n"
                 << std::endl;
+      lineSearchErrorBacktrack(alpha, initial_pos, init_proteinDensity.raw());
       EXIT = true;
       SUCCESS = false;
       break;
@@ -97,7 +98,7 @@ double Integrator::backtrack(
     alpha *= rho;
     f.F.toMatrix(f.vpg->inputVertexPositions) =
         initial_pos + alpha * positionDirection;
-    if (isProteinAdsorption) {
+    if (isProteinVariation) {
       f.proteinDensity.raw() =
           init_proteinDensity.raw() + alpha * f.P.Bc * chemicalDirection;
     }
@@ -112,6 +113,9 @@ double Integrator::backtrack(
     std::cout << "L1 chem norm: " << f.L1ChemErrorNorm << std::endl;
   }
   f.time = init_time + alpha;
+
+  // If needed to test force-energy test
+  // lineSearchErrorBacktrack(alpha, initial_pos, init_proteinDensity.raw(), true);
 
   return alpha;
 }
@@ -176,7 +180,7 @@ double Integrator::mechanicalBacktrack(
 }
 
 double Integrator::chemicalBacktrack(
-    const double chemicalEnergy_pre,
+    const double potentialEnergy_pre,
     Eigen::Matrix<double, Eigen::Dynamic, 1> &direction, double rho,
     double c1) {
 
@@ -209,7 +213,7 @@ double Integrator::chemicalBacktrack(
       // break;
     }
     // while (f.E.potE > potentialEnergy_pre) {
-    if (f.E.cE < (chemicalEnergy_pre - c1 * alpha * projection)) {
+    if (f.E.potE < (potentialEnergy_pre - c1 * alpha * projection)) {
       break;
     }
     if (alpha < 1e-6) {
@@ -236,7 +240,194 @@ double Integrator::chemicalBacktrack(
   return alpha;
 }
 
-void Integrator::errorBacktrack() {
+void Integrator::lineSearchErrorBacktrack(
+    const double &alpha, const EigenVectorX3D &current_pos,
+    const EigenVectorX1D &current_proteinDensity, bool runAll) {
+  std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
+
+  if (runAll || f.E.potE > previousE.potE) {
+    if (runAll || f.E.BE > previousE.BE) {
+      std::cout << "\nWith F_tol, BE has increased " << f.E.BE - previousE.BE
+                << " from " << previousE.BE << " to " << f.E.BE << std::endl;
+
+      f.proteinDensity.raw() = current_proteinDensity;
+      f.F.toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.mask(f.F.toMatrix(f.F.bendingForceVec));
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.BE > previousE.BE) {
+        std::cout << "With only bending force, BE has increased "
+                  << f.E.BE - previousE.BE << " from " << previousE.BE << " to "
+                  << f.E.BE << ", expected dBE: "
+                  << -alpha *
+                         (f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array() *
+                          f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array())
+                             .sum()
+                  << std::endl;
+      }
+
+      f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+      f.proteinDensity.raw() =
+          current_proteinDensity + alpha * f.P.Bc * f.F.bendingPotential.raw();
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.BE > previousE.BE) {
+        std::cout << "With only bending potential, BE has increased "
+                  << f.E.BE - previousE.BE << " from " << previousE.BE << " to "
+                  << f.E.BE << ", expected dBE: "
+                  << -alpha * f.P.Bc *
+                         (f.F.bendingPotential.raw().array() *
+                          f.F.bendingPotential.raw().array())
+                             .sum()
+                  << std::endl;
+      }
+    }
+    if (runAll || f.E.sE > previousE.sE) {
+      std::cout << "\nWith F_tol, sE has increased " << f.E.sE - previousE.sE
+                << " from " << previousE.sE << " to " << f.E.sE << std::endl;
+
+      f.proteinDensity.raw() = current_proteinDensity;
+      f.F.toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.mask(f.F.toMatrix(f.F.capillaryForceVec));
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.sE > previousE.sE) {
+        std::cout
+            << "With only capillary force, sE has increased "
+            << f.E.sE - previousE.sE << " from " << previousE.sE << " to "
+            << f.E.sE << ", expected dsE: "
+            << -alpha * (f.F.mask(f.F.toMatrix(f.F.capillaryForceVec)).array() *
+                         f.F.mask(f.F.toMatrix(f.F.capillaryForceVec)).array())
+                            .sum()
+            << std::endl;
+      }
+    }
+    if (runAll || f.E.pE > previousE.pE) {
+      std::cout << "\nWith F_tol, pE has increased " << f.E.pE - previousE.pE
+                << " from " << previousE.pE << " to " << f.E.pE << std::endl;
+
+      f.proteinDensity.raw() = current_proteinDensity;
+      f.F.toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.mask(f.F.toMatrix(f.F.osmoticForceVec));
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.pE > previousE.pE) {
+        std::cout << "With only osmotic force, pE has increased "
+                  << f.E.pE - previousE.pE << " from " << previousE.pE << " to "
+                  << f.E.pE << ", expected dpE: "
+                  << -alpha *
+                         (f.F.mask(f.F.toMatrix(f.F.osmoticForceVec)).array() *
+                          f.F.mask(f.F.toMatrix(f.F.osmoticForceVec)).array())
+                             .sum()
+                  << std::endl;
+      }
+    }
+    if (runAll || f.E.aE > previousE.aE) {
+      std::cout << "\nWith F_tol, aE has increased " << f.E.aE - previousE.aE
+                << " from " << previousE.aE << " to " << f.E.aE << std::endl;
+
+      f.proteinDensity.raw() = current_proteinDensity;
+      f.F.toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.mask(f.F.toMatrix(f.F.adsorptionForceVec));
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.aE > previousE.aE) {
+        std::cout
+            << "With only adsorption force, aE has increased "
+            << f.E.aE - previousE.aE << " from " << previousE.aE << " to "
+            << f.E.aE << ", expected daE: "
+            << -alpha *
+                   (f.F.mask(f.F.toMatrix(f.F.adsorptionForceVec)).array() *
+                    f.F.mask(f.F.toMatrix(f.F.adsorptionForceVec)).array())
+                       .sum()
+            << std::endl;
+      }
+
+      f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+      f.proteinDensity.raw() = current_proteinDensity +
+                               alpha * f.P.Bc * f.F.adsorptionPotential.raw();
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.aE > previousE.aE) {
+        std::cout << "With only adsorption potential, aE has increased "
+                  << f.E.aE - previousE.aE << " from " << previousE.aE << " to "
+                  << f.E.aE << ", expected dBE: "
+                  << -alpha * f.P.Bc *
+                         (f.F.adsorptionPotential.raw().array() *
+                          f.F.adsorptionPotential.raw().array())
+                             .sum()
+                  << std::endl;
+      }
+    }
+    if (runAll || f.E.dE > previousE.dE) {
+      std::cout << "\nWith F_tol, dE has increased " << f.E.dE - previousE.dE
+                << " from " << previousE.dE << " to " << f.E.dE << std::endl;
+
+      f.proteinDensity.raw() = current_proteinDensity;
+      f.F.toMatrix(f.vpg->inputVertexPositions) =
+          current_pos +
+          alpha * f.F.mask(f.F.toMatrix(f.F.lineCapillaryForceVec));
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.dE > previousE.dE) {
+        std::cout
+            << "With only line tension force, dE has increased "
+            << f.E.dE - previousE.dE << " from " << previousE.dE << " to "
+            << f.E.dE << ", expected ddE: "
+            << -alpha *
+                   (f.F.mask(f.F.toMatrix(f.F.lineCapillaryForceVec)).array() *
+                    f.F.mask(f.F.toMatrix(f.F.lineCapillaryForceVec)).array())
+                       .sum()
+            << std::endl;
+      }
+
+      f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+      f.proteinDensity.raw() = current_proteinDensity +
+                               alpha * f.P.Bc * f.F.diffusionPotential.raw();
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.dE > previousE.dE) {
+        std::cout << "With only diffusion potential, dE has increased "
+                  << f.E.dE - previousE.dE << " from " << previousE.dE << " to "
+                  << f.E.dE << ", expected ddE: "
+                  << -alpha * f.P.Bc *
+                         (f.F.diffusionPotential.raw().array() *
+                          f.F.diffusionPotential.raw().array())
+                             .sum()
+                  << std::endl;
+      }
+    }
+    if (runAll || f.E.exE > previousE.exE) {
+      std::cout << "\nWith F_tol, exE has increased " << f.E.exE - previousE.exE
+                << " from " << previousE.exE << " to " << f.E.exE << std::endl;
+
+      f.proteinDensity.raw() = current_proteinDensity;
+      f.F.toMatrix(f.vpg->inputVertexPositions) =
+          current_pos +
+          alpha * f.F.mask(f.F.addNormal(f.F.externalForce.raw()));
+      f.updateVertexPositions(false);
+      f.computeFreeEnergy();
+      if (runAll || f.E.exE > previousE.exE) {
+        std::cout
+            << "With only external force, exE has increased "
+            << f.E.exE - previousE.exE << " from " << previousE.exE << " to "
+            << f.E.exE << ", expected dexE: "
+            << -alpha *
+                   (f.F.mask(f.F.addNormal(f.F.externalForce.raw())).array() *
+                    f.F.mask(f.F.addNormal(f.F.externalForce.raw())).array())
+                       .sum()
+            << std::endl;
+      }
+    }
+  }
+  if (runAll || f.E.kE > previousE.kE) {
+    std::cout << "\nWith F_tol, kE has increased " << f.E.kE - previousE.kE
+              << " from " << previousE.kE << " to " << f.E.kE << std::endl;
+  }
+}
+
+void Integrator::finitenessErrorBacktrack() {
+
   if (!std::isfinite(f.L1ErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
@@ -264,7 +455,19 @@ void Integrator::errorBacktrack() {
     EXIT = true;
     SUCCESS = false;
     if (!std::isfinite(f.F.toMatrix(f.F.chemicalPotential).norm())) {
-      std::cout << "Chemical potential is not finite!" << std::endl;
+      if (!std::isfinite(f.F.toMatrix(f.F.bendingPotential).norm())) {
+        std::cout << "Bending Potential is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.F.toMatrix(f.F.interiorPenaltyPotential).norm())) {
+        std::cout << "Protein interior penalty potential is not finite!"
+                  << std::endl;
+      }
+      if (!std::isfinite(f.F.toMatrix(f.F.diffusionPotential).norm())) {
+        std::cout << "Diffusion potential is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.F.toMatrix(f.F.adsorptionPotential).norm())) {
+        std::cout << "Adsorption potential is not finite!" << std::endl;
+      }
     }
   }
 
@@ -282,16 +485,20 @@ void Integrator::errorBacktrack() {
         std::cout << "Surface energy is not finite!" << std::endl;
       }
       if (!std::isfinite(f.E.pE)) {
-        std::cout << "pressure energy is not finite!" << std::endl;
+        std::cout << "Pressure energy is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.E.cE)) {
-        std::cout << "Chemical energy is not finite!" << std::endl;
+      if (!std::isfinite(f.E.aE)) {
+        std::cout << "Adsorption energy is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.E.lE)) {
+      if (!std::isfinite(f.E.dE)) {
         std::cout << "Line tension energy is not finite!" << std::endl;
       }
       if (!std::isfinite(f.E.exE)) {
         std::cout << "External force energy is not finite!" << std::endl;
+      }
+      if (!std::isfinite(f.E.inE)) {
+        std::cout << "Protein interior penalty energy is not finite!"
+                  << std::endl;
       }
     }
   }
@@ -301,7 +508,7 @@ void Integrator::getForces() {
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   f.computePhysicalForces();
-  
+
   physicalForceVec.array() =
       f.F.mask(rowwiseScaling(f.F.externalForce.raw(), vertexAngleNormal_e) +
                f.F.toMatrix(f.F.vectorForces));
@@ -586,8 +793,8 @@ void Integrator::saveNetcdfData() {
   fd.writeSurfEnergy(idx, f.E.sE);
   fd.writePressEnergy(idx, f.E.pE);
   fd.writeKineEnergy(idx, f.E.kE);
-  fd.writeChemEnergy(idx, f.E.cE);
-  fd.writeLineEnergy(idx, f.E.lE);
+  fd.writeAdspEnergy(idx, f.E.aE);
+  fd.writeLineEnergy(idx, f.E.dE);
   fd.writeTotalEnergy(idx, f.E.totalE);
   // write Norms
   fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
@@ -701,8 +908,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Surface Energy:   " << f.E.sE << "\n"
            << "Pressure Work:    " << f.E.pE << "\n"
            << "Kinetic Work:    " << f.E.kE << "\n"
-           << "Chemical Energy:  " << f.E.cE << "\n"
-           << "Line tension Energy:  " << f.E.lE << "\n"
+           << "Adsorption Energy:  " << f.E.aE << "\n"
+           << "Line tension Energy:  " << f.E.dE << "\n"
            << "Total Energy:     " << f.E.totalE << "\n"
            << "L1 error norm:    " << f.L1ErrorNorm << "\n"
            << "L1 chem error norm:    " << f.L1ChemErrorNorm << "\n"

@@ -527,17 +527,17 @@ double TrajFile::getKineEnergy(const std::size_t idx) const {
 }
 
 // chemical energy
-void TrajFile::writeChemEnergy(const std::size_t idx, const double Energy) {
+void TrajFile::writeAdspEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
-  chemener_var.putVar({idx}, &Energy);
+  adspener_var.putVar({idx}, &Energy);
 }
 
-double TrajFile::getChemEnergy(const std::size_t idx) const {
+double TrajFile::getAdspEnergy(const std::size_t idx) const {
   assert(idx < getNextFrameIndex());
 
   double Energy;
-  chemener_var.getVar({idx}, &Energy);
+  adspener_var.getVar({idx}, &Energy);
   return Energy;
 }
 

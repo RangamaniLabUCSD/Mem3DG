@@ -132,7 +132,7 @@ void ConjugateGradient::status() {
   f.computeFreeEnergy();
 
   // backtracking for error
-  errorBacktrack();
+  finitenessErrorBacktrack();
 }
 
 void ConjugateGradient::march() {
@@ -171,6 +171,7 @@ void ConjugateGradient::march() {
     }
 
     // time stepping on vertex position
+    previousE = f.E;
     if (isBacktrack) {
       backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(),
                 f.O.isProteinVariation, rho, c1);

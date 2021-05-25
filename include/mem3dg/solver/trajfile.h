@@ -128,8 +128,8 @@ static const std::string SURFENER_VAR = "surfenergy";
 static const std::string PRESSENER_VAR = "pressenergy";
 /// Name of the kinetic energy data
 static const std::string KINEENER_VAR = "kineenergy";
-/// Name of the chemical energy data
-static const std::string CHEMENER_VAR = "chemenergy";
+/// Name of the adsorption energy data
+static const std::string ADSPENER_VAR = "adspenergy";
 /// Name of the line tension energy data
 static const std::string LINEENER_VAR = "lineenergy";
 /// Name of the chemical energy data
@@ -351,8 +351,8 @@ public:
     kineener_var = fd->addVar(KINEENER_VAR, netCDF::ncDouble, {frame_dim});
     kineener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
-    chemener_var = fd->addVar(CHEMENER_VAR, netCDF::ncDouble, {frame_dim});
-    chemener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
+    adspener_var = fd->addVar(ADSPENER_VAR, netCDF::ncDouble, {frame_dim});
+    adspener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
 
     lineener_var = fd->addVar(LINEENER_VAR, netCDF::ncDouble, {frame_dim});
     lineener_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS);
@@ -620,9 +620,9 @@ public:
 
   double getKineEnergy(const std::size_t idx) const;
 
-  void writeChemEnergy(const std::size_t idx, const double Energy);
+  void writeAdspEnergy(const std::size_t idx, const double Energy);
 
-  double getChemEnergy(const std::size_t idx) const;
+  double getAdspEnergy(const std::size_t idx) const;
 
   void writeLineEnergy(const std::size_t idx, const double Energy);
 
@@ -743,7 +743,7 @@ private:
   nc::NcVar surfener_var;
   nc::NcVar pressener_var;
   nc::NcVar kineener_var;
-  nc::NcVar chemener_var;
+  nc::NcVar adspener_var;
   nc::NcVar lineener_var;
   nc::NcVar totalener_var;
   nc::NcVar l1chemerrornorm_var;
