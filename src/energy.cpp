@@ -79,12 +79,15 @@ void System::computePressureEnergy() {
 }
 
 void System::computeAdsorptionEnergy() {
-  E.cE = (vpg->vertexDualAreas.raw().array() * P.epsilon *
-          proteinDensity.raw().array())
-             .sum();
+  E.aE =
+      P.epsilon *
+      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
+}
+
+void System::computeProteinInteriorPenaltyEnergy() {
   // interior method to constrain protein density to remain from 0 to 1
-  E.cE -= P.lambdaPhi * (proteinDensity.raw().array().log().sum() +
-                         (1 - proteinDensity.raw().array()).log().sum());
+  E.inE = -P.lambdaPhi * (proteinDensity.raw().array().log().sum() +
+                          (1 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeDirichletEnergy() {
@@ -97,13 +100,19 @@ void System::computeDirichletEnergy() {
     // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *
     // H0.raw()).cwiseAbs()).array(); auto dH0 = (vpg->d0 *
     // H0.raw()).cwiseAbs();
-    E.lE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
+    E.dE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
   }
 
-  E.lE = 0;
+  // explicit dirichlet energy
+  E.dE = 0;
   for (gcs::Face f : mesh->faces()) {
-    E.lE += P.eta * proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
+    E.dE += 0.5 * P.eta * proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
   }
+
+  // alternative dirichlet energy after integration by part
+  // E.dE = 0.5 * P.eta * proteinDensity.raw().transpose() * vpg->cotanLaplacian
+  // *
+  //        proteinDensity.raw();
 }
 
 void System::computeExternalForceEnergy() {
@@ -141,13 +150,13 @@ void System::computePotentialEnergy() {
   if (P.Kf != 0) {
     computeExternalForceEnergy();
   }
-  E.potE = E.BE + E.sE + E.pE + E.cE + E.lE + E.exE;
+  computeProteinInteriorPenaltyEnergy();
+  E.potE = E.BE + E.sE + E.pE + E.aE + E.dE + E.exE + E.inE;
 }
 
 void System::computeFreeEnergy() {
   // zero all energy
-  E = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+  E = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   computeKineticEnergy();
   computePotentialEnergy();
   E.totalE = E.kE + E.potE;

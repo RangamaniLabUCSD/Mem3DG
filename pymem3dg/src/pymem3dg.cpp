@@ -757,17 +757,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                        R"delim(
           get work of pressure within membrane  
       )delim");
-  energy.def_readwrite("cE", &Energy::cE,
+  energy.def_readwrite("aE", &Energy::aE,
                        R"delim(
-          get chemical energy of the membrane protein  
+          get adsorption energy of the membrane protein  
       )delim");
-  energy.def_readwrite("lE", &Energy::lE,
+  energy.def_readwrite("dE", &Energy::dE,
                        R"delim(
-          get  line tension energy of interface   energy
+          get  line tension (dirichlet) energy of interface energy
       )delim");
   energy.def_readwrite("exE", &Energy::exE,
                        R"delim(
           get work of external force  
+      )delim");
+  energy.def_readwrite("inE", &Energy::inE,
+                       R"delim(
+          get protein interior penalty energy (numerical energy)
       )delim");
 
   pymem3dg.def("visualize", &visualize, py::arg("f"),
@@ -869,7 +873,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize the smoothing mask
       )delim");
-  quantities.def_readwrite("chemical_potential", &Quantities::chemical_potential,
+  quantities.def_readwrite("chemical_potential",
+                           &Quantities::chemical_potential,
                            R"delim(
         visualize total chemical potential
       )delim");
@@ -877,11 +882,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize bending component of chemical potential
       )delim");
-  quantities.def_readwrite("diffusion_potential", &Quantities::diffusion_potential,
+  quantities.def_readwrite("diffusion_potential",
+                           &Quantities::diffusion_potential,
                            R"delim(
         visualize diffusion component of chemical potential
       )delim");
-  quantities.def_readwrite("adsorption_potential", &Quantities::adsorption_potential,
+  quantities.def_readwrite("adsorption_potential",
+                           &Quantities::adsorption_potential,
                            R"delim(
         visualize adsorption component of chemical potential
       )delim");
