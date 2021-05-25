@@ -145,7 +145,7 @@ void VelocityVerlet::status() {
   f.computeFreeEnergy();
 
   // backtracking for error
-  errorBacktrack();
+  finitenessErrorBacktrack();
   if (f.E.totalE > 1.05 * totalEnergy) {
     std::cout
         << "\nVelocity Verlet: increasing system energy, simulation stopped!"
@@ -170,6 +170,7 @@ void VelocityVerlet::march() {
   //     sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt);
 
   // time stepping on vertex position
+  previousE = f.E;
   pos_e += vel_e * dt + hdt2 * totalPressure;
   vel_e += (totalPressure + newTotalPressure) * hdt;
   totalPressure = newTotalPressure;

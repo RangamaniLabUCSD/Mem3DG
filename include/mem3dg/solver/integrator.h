@@ -44,6 +44,8 @@ class DLL_PUBLIC Integrator {
 public:
   /// System object to be integrated
   System &f;
+  /// Energy of the last time step
+  Energy previousE;
   /// time step
   double dt;
   // total simulation time
@@ -110,7 +112,7 @@ public:
   Integrator(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
              double tSave_, double tolerance_, std::string outputDir_,
              std::string trajFileName_, size_t verbosity_)
-      : f(f_), dt(dt_), isAdaptiveStep(isAdaptiveStep_),
+      : f(f_), previousE(f_.E), dt(dt_), isAdaptiveStep(isAdaptiveStep_),
         total_time(total_time_), tSave(tSave_), tol(tolerance_),
         verbosity(verbosity_), outputDir(outputDir_),
         trajFileName(trajFileName_), init_time(f.time), SUCCESS(true),
@@ -289,10 +291,20 @@ public:
 
   /**
    * @brief Check finiteness of simulation states and backtrack for error in
-   * specfici component
+   * specific component
    * @return
    */
-  void errorBacktrack();
+  void finitenessErrorBacktrack();
+
+  /**
+   * @brief Backtrack the line search failure by inspecting specific
+   * energy-force relation
+   * @return
+   */
+  void lineSearchErrorBacktrack(const double &alpha,
+                                const EigenVectorX3D &initial_pos,
+                                const EigenVectorX1D &init_proteinDensity,
+                                bool runAll = false);
 };
 
 // ==========================================================
