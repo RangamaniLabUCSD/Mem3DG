@@ -36,7 +36,7 @@
 #include "mem3dg/solver/typetraits.h"
 #include "mem3dg/solver/util.h"
 
-#include <pybind11/embed.h>
+// #include <pybind11/embed.h>
 
 #include "igl/loop.h"
 
