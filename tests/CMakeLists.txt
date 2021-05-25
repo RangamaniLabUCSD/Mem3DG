@@ -17,25 +17,14 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG release-1.10.0
+  GIT_TAG origin/master
   GIT_SHALLOW TRUE
   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-src" 
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
 )
 # Prevent overriding the parent project's compiler/linker settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-  FetchContent_Populate(googletest)
-  # Add googletest directly to our build. This defines the gtest and gtest_main
-  # targets.
-  add_subdirectory(
-    ${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL
-  )
-endif()
-
-set_property(TARGET gtest PROPERTY CXX_STANDARD 11)
+FetchContent_MakeAvailable(googletest)
 
 # Build the tests
 set(TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
@@ -52,9 +41,9 @@ add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
 # Main DDG target
 # ##############################################################################
 add_executable(ddg scratch.cpp) 
-target_link_libraries(ddg PRIVATE mem3dg polyscope igl::core) 
+target_link_libraries(ddg PRIVATE mem3dg) 
 set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 add_executable(ddg_patch scratch_patch.cpp) 
-target_link_libraries(ddg_patch PRIVATE mem3dg polyscope igl::core) 
+target_link_libraries(ddg_patch PRIVATE mem3dg) 
 set_target_properties(ddg_patch PROPERTIES CXX_VISIBILITY_PRESET hidden)
