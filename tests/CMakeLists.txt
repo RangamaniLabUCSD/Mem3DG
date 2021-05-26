@@ -28,7 +28,7 @@ FetchContent_MakeAvailable(googletest)
 
 # Build the tests
 set(TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
-              src/force_calculation_test.cpp
+              # src/force_calculation_test.cpp
 )
 
 add_executable(Mem3DG-tests "${TEST_SRCS}")
