@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-10.15, macos-11]
+        os: [macos-10.15]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -85,20 +85,19 @@ jobs:
 
       - name: Setup VCPKG
         run: | 
-          mkdir -p vcpkg
-          pushd vcpkg
+          mkdir -p ${HOME}/vcpkg
+          cd ${HOME}/vcpkg
           git init
           git remote add origin https://github.com/microsoft/vcpkg 
           git fetch origin master
           git checkout -b master origin/master
           ./bootstrap-vcpkg.bat
           ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
-          popd
 
       - name: Build and test
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
           cmake --build . --config Release -j 4
           ctest -C Release -V -j 4
 
