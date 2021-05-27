@@ -144,4 +144,9 @@ CMakeSettings.json
 docs/html/
 .polyscope.ini
 _skbuild/
+
+
+pymem3dg/__init__.py
+
+docs/src/_pythonapi/
 docs/src/conf.py
