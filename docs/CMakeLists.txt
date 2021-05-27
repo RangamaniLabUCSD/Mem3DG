@@ -28,3 +28,36 @@ if(DOXYGEN_FOUND)
 else()
     message(NOTICE "CMake could not find Doxygen. Please install Doxygen or help me find your Doxygen binary to build the documentation!")
 endif(DOXYGEN_FOUND)
+
+
+find_package(Sphinx)
+SET(SPHINXOPTS CACHE STRING "Extra options to pass to Sphinx")
+
+if(SPHINX_FOUND)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/conf.py"
+        @ONLY)
+
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/conf.py"
+        @ONLY)
+
+    add_custom_target(sphinx_docs
+        ${SPHINX_EXECUTABLE}
+            -M html
+            "${CMAKE_CURRENT_SOURCE_DIR}/src"
+            "${CMAKE_CURRENT_BINARY_DIR}"
+            -c "${CMAKE_CURRENT_BINARY_DIR}"
+            ${SPHINXOPTS}
+        DEPENDS pymem3dg
+        COMMENT "Building HTML documentation with Sphinx")
+    message(STATUS "Build the Sphinx documentation using `make sphinx_docs`")
+else()
+    message(STATUS "CMake could not find Sphinx. Please install Sphinx or help me find your Sphinx binary to build the documentation!")
+endif(SPHINX_FOUND)
+
+set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/_pythonapi"
+        "${CMAKE_CURRENT_BINARY_DIR}/doctrees"
+        "${CMAKE_CURRENT_BINARY_DIR}/html"
+)
