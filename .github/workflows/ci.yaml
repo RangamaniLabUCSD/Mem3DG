@@ -83,21 +83,17 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Setup VCPKG
-        run: | 
-          mkdir -p ${HOME}/vcpkg
-          cd ${HOME}/vcpkg
-          git init
-          git remote add origin https://github.com/microsoft/vcpkg 
-          git fetch origin master
-          git checkout -b master origin/master
-          ./bootstrap-vcpkg.bat
-          ./vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
+      - name: Restore from cache and install vcpkg
+        # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
+        uses: lukka/run-vcpkg@v6
+        with:
+          setupOnly: true
+        - run: $VCPKG_ROOT/vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
 
       - name: Build and test
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="${HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
           cmake --build . --config Release -j 4
           ctest -C Release -V -j 4
 
