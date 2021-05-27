@@ -144,3 +144,4 @@ CMakeSettings.json
 docs/html/
 .polyscope.ini
 _skbuild/
+docs/src/conf.py
