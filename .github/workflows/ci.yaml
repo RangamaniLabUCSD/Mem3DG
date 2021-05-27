@@ -138,13 +138,13 @@ jobs:
         submodules: recursive
 
     - name: Resolve dependencies
-      run: sudo apt install xorg-dev libeigen3-dev pybind11-dev
+      run: sudo apt install xorg-dev libeigen3-dev pybind11-dev doxygen
 
     - name: Build and test
       run: |
         mkdir -p build && cd build;
         cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=OFF -DBUILD_MEM3DG_DOCS=ON ..
-        cmake --build . --target mem3dg_docs --config Release -j 4
+        cmake --build . --target mem3dg_doxy_docs --config Release -j 4
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
