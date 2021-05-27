@@ -88,7 +88,9 @@ jobs:
         uses: lukka/run-vcpkg@v6
         with:
           setupOnly: true
-        - run: $VCPKG_ROOT/vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
+      
+      - name: Download libraries
+        run: $VCPKG_ROOT/vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
 
       - name: Build and test
         run: |
