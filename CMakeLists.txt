@@ -111,6 +111,7 @@ add_library(mem3dg SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
 target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
 
 if(BUILD_PYMEM3DG)
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
   add_subdirectory(pymem3dg)
 endif()
 
