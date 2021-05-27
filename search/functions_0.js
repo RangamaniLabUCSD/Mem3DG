@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['dot_74',['dot',['../util_8h.html#a2a8bbe18d680dd9497e121b4d0670ea5',1,'ddgsolver']]]
+  ['addnormal_260',['addNormal',['../structmem3dg_1_1_forces.html#ae10c150911d81f3a7405b923b59fcf69',1,'mem3dg::Forces']]]
 ];

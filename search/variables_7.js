@@ -1,11 +1,6 @@
 var searchData=
 [
-  ['kb_98',['Kb',['../structddgsolver_1_1_parameters.html#a53aff9f4dfbd824d74bb22020b8ac0c2',1,'ddgsolver::Parameters']]],
-  ['kf_99',['Kf',['../structddgsolver_1_1_parameters.html#a0deeacca10c4b1e9d8bbe5bdd68f8be9',1,'ddgsolver::Parameters']]],
-  ['kse_100',['Kse',['../structddgsolver_1_1_parameters.html#ab42444dab146457013530e83e1af0637',1,'ddgsolver::Parameters']]],
-  ['ksg_101',['Ksg',['../structddgsolver_1_1_parameters.html#aa56f061433a8aa295c6b59671c0828ef',1,'ddgsolver::Parameters']]],
-  ['ksl_102',['Ksl',['../structddgsolver_1_1_parameters.html#adc0bf873172414f006889f98f07b9253',1,'ddgsolver::Parameters']]],
-  ['kst_103',['Kst',['../structddgsolver_1_1_parameters.html#ac80e6e632c795496efe5d5b0c0026ba4',1,'ddgsolver::Parameters']]],
-  ['kt_104',['kt',['../structddgsolver_1_1_parameters.html#aca38d028f0c0a89599dfe123a9aa559b',1,'ddgsolver::Parameters']]],
-  ['kv_105',['Kv',['../structddgsolver_1_1_parameters.html#a749f94c7732c2c688c4e3168a5fb90b1',1,'ddgsolver::Parameters']]]
+  ['h0_382',['H0',['../structmem3dg_1_1_parameters.html#a8e0c48f7f9eefe11b37d351081ccb58d',1,'mem3dg::Parameters::H0()'],['../classmem3dg_1_1_system.html#a5f6aa46cb00ba74f51fb99419a911dc4',1,'mem3dg::System::H0()']]],
+  ['h_5fh0_383',['H_H0',['../struct_quantities.html#abaa4994975f8979ce2897ca5826bebfa',1,'Quantities']]],
+  ['height_384',['height',['../structmem3dg_1_1_parameters.html#add1aa81aff31c9055d6c48d71d287fde',1,'mem3dg::Parameters']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['parameters_70',['Parameters',['../structddgsolver_1_1_parameters.html',1,'ddgsolver']]]
+  ['conjugategradient_244',['ConjugateGradient',['../classmem3dg_1_1_conjugate_gradient.html',1,'mem3dg']]]
 ];

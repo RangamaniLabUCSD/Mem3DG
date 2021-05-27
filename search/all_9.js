@@ -1,11 +1,12 @@
 var searchData=
 [
-  ['kb_25',['Kb',['../structddgsolver_1_1_parameters.html#a53aff9f4dfbd824d74bb22020b8ac0c2',1,'ddgsolver::Parameters']]],
-  ['kf_26',['Kf',['../structddgsolver_1_1_parameters.html#a0deeacca10c4b1e9d8bbe5bdd68f8be9',1,'ddgsolver::Parameters']]],
-  ['kse_27',['Kse',['../structddgsolver_1_1_parameters.html#ab42444dab146457013530e83e1af0637',1,'ddgsolver::Parameters']]],
-  ['ksg_28',['Ksg',['../structddgsolver_1_1_parameters.html#aa56f061433a8aa295c6b59671c0828ef',1,'ddgsolver::Parameters']]],
-  ['ksl_29',['Ksl',['../structddgsolver_1_1_parameters.html#adc0bf873172414f006889f98f07b9253',1,'ddgsolver::Parameters']]],
-  ['kst_30',['Kst',['../structddgsolver_1_1_parameters.html#ac80e6e632c795496efe5d5b0c0026ba4',1,'ddgsolver::Parameters']]],
-  ['kt_31',['kt',['../structddgsolver_1_1_parameters.html#aca38d028f0c0a89599dfe123a9aa559b',1,'ddgsolver::Parameters']]],
-  ['kv_32',['Kv',['../structddgsolver_1_1_parameters.html#a749f94c7732c2c688c4e3168a5fb90b1',1,'ddgsolver::Parameters']]]
+  ['kb_127',['Kb',['../structmem3dg_1_1_parameters.html#a57ed718a2cfb281f2b7d61dcad54c685',1,'mem3dg::Parameters::Kb()'],['../classmem3dg_1_1_system.html#aa22fae7e35e076add6b54ea85b3685fc',1,'mem3dg::System::Kb()']]],
+  ['kbc_128',['Kbc',['../structmem3dg_1_1_parameters.html#a98e8ec8962b2d00e1db53d0e9dec30d4',1,'mem3dg::Parameters']]],
+  ['ke_129',['kE',['../structmem3dg_1_1_energy.html#a74186fa4b759da574abe64718d1d3bc1',1,'mem3dg::Energy']]],
+  ['kf_130',['Kf',['../structmem3dg_1_1_parameters.html#a682308ebd20c3fbebfaa48a615156ddc',1,'mem3dg::Parameters']]],
+  ['kse_131',['Kse',['../structmem3dg_1_1_parameters.html#a27c6d76eb2cbe9484d620fdf3aedae3a',1,'mem3dg::Parameters']]],
+  ['ksg_132',['Ksg',['../structmem3dg_1_1_parameters.html#a21e7c94f302fc8df4efe003fd96c2a7f',1,'mem3dg::Parameters']]],
+  ['ksl_133',['Ksl',['../structmem3dg_1_1_parameters.html#ae2717fc10e68346d646638d633946e2c',1,'mem3dg::Parameters']]],
+  ['kst_134',['Kst',['../structmem3dg_1_1_parameters.html#a3206e2057a3733f71b65a037441abf2b',1,'mem3dg::Parameters']]],
+  ['kv_135',['Kv',['../structmem3dg_1_1_parameters.html#aadefb487893b20adfccca79593abaf5a',1,'mem3dg::Parameters']]]
 ];
