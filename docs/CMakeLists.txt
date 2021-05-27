@@ -20,7 +20,7 @@ find_package(Doxygen)
 if(DOXYGEN_FOUND)
     # Parse Doxyfile.in and replace CMake @macros@.
     configure_file(${CMAKE_SOURCE_DIR}/docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(mem3dg_docs
+    add_custom_target(mem3dg_doxy_docs
         ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
