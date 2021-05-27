@@ -30,6 +30,12 @@ message(STATUS "Mem3DG version: ${VERSION}")
 
 if(SKBUILD)
   message(STATUS "The project is being built using scikit-build")
+  # Currently, Scikit-build does not support FindPython, so we convert the
+  # provided hints ourselves.
+  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+  set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
+  set(Python_LIBRARY "${PYTHON_LIBRARY}")
+  set(Python_VERSION "${PYTHON_VERSION_STRING}")
 endif()
 
 # Configure version.cpp to give access to version in code
