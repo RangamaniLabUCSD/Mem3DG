@@ -87,6 +87,7 @@ jobs:
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
         uses: lukka/run-vcpkg@v6
         with:
+          vcpkgGitCommitId: 5568f110b509a9fd90711978a7cb76bae75bb092
           setupOnly: true
       
       - name: Download libraries
