@@ -132,6 +132,11 @@ jobs:
     # only deploy for master branch 
     # if: github.ref == 'refs/heads/master'
     steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
     - name: Build and test
       run: |
         mkdir -p build && cd build;
