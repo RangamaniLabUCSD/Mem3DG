@@ -30,6 +30,14 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Setup python libs
+        id: pyexe
+        run: |
+          python --version
+          python -m pip install pytest
+          py_exe_path=$(which python)
+          echo ::set-output name=path::$py_exe_pat
+
       - name: Resolve dependencies
         run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev
 
@@ -56,6 +64,14 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Setup python libs
+        id: pyexe
+        run: |
+          python --version
+          python -m pip install pytest
+          py_exe_path=$(which python)
+          echo ::set-output name=path::$py_exe_pat
+      
       - name: Resolve dependencies
         run: brew install netcdf eigen pybind11
 
@@ -82,6 +98,14 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+
+      - name: Setup python libs
+        id: pyexe
+        run: |
+          python --version
+          python -m pip install pytest
+          py_exe_path=$(which python)
+          echo ::set-output name=path::$py_exe_pat
 
       - name: Restore from cache and install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
