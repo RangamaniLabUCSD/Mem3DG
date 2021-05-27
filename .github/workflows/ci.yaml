@@ -36,7 +36,7 @@ jobs:
           python --version
           python -m pip install pytest
           py_exe_path=$(which python)
-          echo ::set-output name=path::$py_exe_pat
+          echo ::set-output name=path::$py_exe_path
 
       - name: Resolve dependencies
         run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev
@@ -44,7 +44,7 @@ jobs:
       - name: Build and test
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} ..
           cmake --build . --config Release -j 4
           ctest -C Release -V -j 4
 
@@ -70,7 +70,7 @@ jobs:
           python --version
           python -m pip install pytest
           py_exe_path=$(which python)
-          echo ::set-output name=path::$py_exe_pat
+          echo ::set-output name=path::$py_exe_path
       
       - name: Resolve dependencies
         run: brew install netcdf eigen pybind11
@@ -78,7 +78,7 @@ jobs:
       - name: Build and test
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} ..
           cmake --build . --config Release -j 4
           ctest -C Release -V -j 4
 
@@ -105,7 +105,7 @@ jobs:
           python --version
           python -m pip install pytest
           py_exe_path=$(which python)
-          echo ::set-output name=path::$py_exe_pat
+          echo ::set-output name=path::$py_exe_path
 
       - name: Restore from cache and install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
@@ -120,7 +120,7 @@ jobs:
       - name: Build and test
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" ..
           cmake --build . --config Release -j 4
           ctest -C Release -V -j 4
 
@@ -130,13 +130,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build_windows, build_linux, build_macos]
     # only deploy for master branch 
-    if: github.ref == 'refs/heads/master'
+    # if: github.ref == 'refs/heads/master'
     steps:
     - name: Build and test
       run: |
         mkdir -p build && cd build;
-        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DBUILD_MEM3DG_DOCS=ON -GNinja ..
-        ninja mem3dg_docs
+        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DBUILD_MEM3DG_DOCS=ON ..
+        cmake --build . --target mem3dg_docs --config Release -j 4
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
