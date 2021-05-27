@@ -27,15 +27,26 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Build the tests
-set(TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
+set(MEM3DG_TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
               # src/force_calculation_test.cpp
 )
 
-add_executable(Mem3DG-tests "${TEST_SRCS}")
+add_executable(Mem3DG-tests "${MEM3DG_TEST_SRCS}")
 target_link_libraries(Mem3DG-tests mem3dg gtest_main)
 
 add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
 
+# Configure testing of Python module
+find_package(pytest)
+if(NOT PYTEST_FOUND AND BUILD_PYMEM3DG)
+    message(WARNING "pytest could not be found! Please install pytest to run python tests.")
+elseif(BUILD_PYMEM3DG)
+    # Add a test for pytest
+    add_test(NAME Mem3DG_Python_Tests
+      COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
+      WORKING_DIRECTORY $<TARGET_FILE_DIR:pymem3dg>
+    )
+endif()
 
 # ##############################################################################
 # Main DDG target
