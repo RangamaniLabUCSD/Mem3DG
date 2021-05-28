@@ -144,13 +144,17 @@ jobs:
         echo $mem3dg_version
         echo ::set-output name=version::$mem3dg_version
 
+    - name: Configure python version
+      uses: actions/setup-python@v2
+      with: 
+        python-version: 3.8
+
     - name: Setup python libs
       id: pyexe
       run: |
         python --version
         python -m pip install -r ./docs/rtd-requirements.txt
         py_exe_path=$(which python)
-        echo $py_exe_path
         echo ::set-output name=path::$py_exe_path
 
     - name: Resolve dependencies
@@ -158,8 +162,7 @@ jobs:
 
     - name: Build pymem3dg and install
       run: |
-        ${{ steps.pyexe.outputs.path }} --version
-        sudo ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON     
+        ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON     
 
     - name: Build docs
       run: |
