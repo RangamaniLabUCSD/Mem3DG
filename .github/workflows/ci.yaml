@@ -167,7 +167,7 @@ jobs:
     - name: Build docs
       run: |
         mkdir -p build && cd build;
-        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} ..
+        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_MEM3DG_DOCS=ON -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} ..
         cmake --build . --target mem3dg_doxy_docs --config Release -j 4
         cmake --build . --target mem3dg_sphinx_docs --config Release -j 4
 
