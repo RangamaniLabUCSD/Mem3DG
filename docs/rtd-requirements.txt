@@ -1,5 +1,4 @@
 # Required for building
-cmake 
 scikit-build
 numpy
 pytest==6.2.3
@@ -8,3 +7,4 @@ docutils==0.16
 sphinx-issues==1.2.0
 nbsphinx==0.8.5
 jupyter_sphinx==0.3.1
+sphinx_rtd_theme
