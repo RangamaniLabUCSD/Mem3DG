@@ -471,16 +471,16 @@ void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
 }
 
 void System::globalUpdateAfterMutation() {
-  // Update the distribution matrix when topology changes
-  if (P.eta != 0) {
-    D = vpg->d0.transpose().cwiseAbs() / 2;
-    // D = vpg->d0.transpose();
-    // for (int k = 0; k < D.outerSize(); ++k) {
-    //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-    //     it.valueRef() = 0.5;
-    //   }
-    // }
-  }
+  // // Update the distribution matrix when topology changes
+  // if (P.eta != 0) {
+  //   D = vpg->d0.transpose().cwiseAbs() / 2;
+  //   // D = vpg->d0.transpose();
+  //   // for (int k = 0; k < D.outerSize(); ++k) {
+  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+  //   //     it.valueRef() = 0.5;
+  //   //   }
+  //   // }
+  // }
 
   // Update mask when topology changes (likely not necessary, just for safety)
   if (O.isOpenMesh) {
@@ -494,10 +494,11 @@ void System::globalUpdateAfterMutation() {
   }
 
   // Update spontaneous curvature and bending rigidity when topology changes
-  if (!O.isHeterogeneous) {
-    H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
-    Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
-  }
+  // if (!O.isHeterogeneous) {
+  //   proteinDensity.raw().se
+  //   // H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+  //   // Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
+  // }
 
   // Update the vertex when topology changes
   if (!O.isFloatVertex) {

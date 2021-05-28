@@ -232,9 +232,9 @@ void FeedForwardSweep::sweep() {
       trajFileName = buffer;
 
       // update sweeping paraemters
-      f.P.H0 = H;
+      f.P.H0c = H;
       (f.O.isReducedVolume ? f.P.Vt : f.P.cam) = VP;
-      std::cout << "\nH0: " << f.P.H0 << std::endl;
+      std::cout << "\nH0c: " << f.P.H0c << std::endl;
       std::cout << "VP: " << VP << std::endl;
 
       // recalculate cached values

@@ -371,8 +371,13 @@ vecFromHalfedge(const gcs::Halfedge &he,
  * @return Eigen matrix V
  */
 DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
-rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
-                  Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
+rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &A,
+                  Eigen::Matrix<double, Eigen::Dynamic, 3> &B) {
+  return ((A.array() * B.array()).rowwise().sum()).matrix();
+}
+DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
+rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &&A,
+                  Eigen::Matrix<double, Eigen::Dynamic, 3> &&B) {
   return ((A.array() * B.array()).rowwise().sum()).matrix();
 }
 
@@ -384,8 +389,8 @@ rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
  * @return Eigen matrix V
  */
 DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
-rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> A,
-                    Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
+rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &A,
+                    Eigen::Matrix<double, Eigen::Dynamic, 3> &B) {
   Eigen::Matrix<double, Eigen::Dynamic, 3> C;
   if (A.rows() != B.rows()) {
     throw std::runtime_error("The input matrices must have same sizes!");
@@ -627,7 +632,7 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  */
 DLL_PUBLIC inline gcs::Vertex
 closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-                  std::vector<double> position,
+                  Eigen::Matrix<double, Eigen::Dynamic, 1> &position,
                   gcs::VertexData<double> &geodesicDistance,
                   double range = 1e10) {
   gcs::Vertex theVertex;
@@ -650,12 +655,12 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
           << std::endl;
     }
     double distance;
-    if (position.size() == 2) {
+    if (position.rows() == 2) {
       distance = (gc::Vector2{vpg.inputVertexPositions[v].x,
                               vpg.inputVertexPositions[v].y} -
                   gc::Vector2{position[0], position[1]})
                      .norm();
-    } else if (position.size() == 3) {
+    } else if (position.rows() == 3) {
       distance = (vpg.inputVertexPositions[v] -
                   gc::Vector3{position[0], position[1], position[2]})
                      .norm();

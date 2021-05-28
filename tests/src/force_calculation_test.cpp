@@ -49,13 +49,15 @@ protected:
 
   ForceCalculationTest() {
     // physical parameters
-    p.H0 = 10;
-    p.r_heter = {0.5, 0.5};
+    p.H0c = 10;
+    p.protein0.resize(1, 1);
+    p.protein0 << 0.5;
 
     p.Vt = 0.6;
     p.cam = 0;
 
-    p.pt = {1, 1, 1};
+    p.pt.resize(2, 1);
+    p.pt << 1, 1;
     p.Kf = 0;
     p.conc = 25;
     p.height = 0;
@@ -82,7 +84,6 @@ protected:
     o.isVertexShift = false;
     o.isProteinVariation = false;
     o.isReducedVolume = true;
-    o.isHeterogeneous = false;
     o.isEdgeFlip = false;
     o.isSplitEdge = false;
     o.isCollapseEdge = false;
