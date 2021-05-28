@@ -158,7 +158,7 @@ jobs:
         echo ::set-output name=path::$py_exe_path
 
     - name: Resolve dependencies
-      run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev ninja-build
+      run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev ninja-build doxygen
 
     - name: Build pymem3dg and install
       run: |
