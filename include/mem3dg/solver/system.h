@@ -137,7 +137,7 @@ struct Forces {
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
   double osmoticPressure;
-  
+
   /// Cached three fundamentals
   gcs::VertexData<gc::Vector3> vectorForces;
   /// Cached bending force
@@ -365,12 +365,12 @@ struct Forces {
 struct Parameters {
   /// Bending modulus
   double Kb;
-  /// linear constant of bending modulus vs protein density
+  /// Constant of bending modulus vs protein density
   double Kbc;
-  /// Spontaneous curvature
-  double H0;
-  /// radius of heterogenous domain
-  std::vector<double> r_heter;
+  /// Constant of Spontaneous curvature vs protein density
+  double H0c;
+  /// (initial) protein density
+  EigenVectorX1D protein0;
   /// Global stretching modulus
   double Ksg;
   /// Area reservior
@@ -399,8 +399,8 @@ struct Parameters {
   double cam;
   /// Temperature
   double temp;
-  /// index of node with applied external force
-  std::vector<double> pt;
+  /// The point
+  EigenVectorX1D pt;
   /// Magnitude of external force
   double Kf;
   /// level of concentration of the external force
@@ -445,18 +445,16 @@ struct Energy {
 };
 
 struct Options {
-  /// Whether or not do vertex shift
-  bool isVertexShift = false;
   /// Whether or not consider protein binding
   bool isProteinVariation = false;
+  /// Whether or not do vertex shift
+  bool isVertexShift = false;
   /// Whether adopt reduced volume parametrization
   bool isReducedVolume = false;
   /// Whether adopt constant osmotic pressure
   bool isConstantOsmoticPressure = false;
   /// Whether adopt constant surface tension
   bool isConstantSurfaceTension = false;
-  /// Whether precribe hetergenous membrane by geodesic distance
-  bool isHeterogeneous = false;
   /// Whether edge flip
   bool isEdgeFlip = false;
   /// Whether split edge
@@ -467,14 +465,11 @@ struct Options {
   bool isRefMesh = false;
   /// Whether floating "the" vertex
   bool isFloatVertex = false;
-  /// Whether Laplacian mean curvature
-  bool isLaplacianMeanCurvature = false;
   /// Boundary condition: roller, pin, fixed, none
   std::string boundaryConditionType = "none";
+
   /// Whether open boundary mesh
   bool isOpenMesh = false;
-  /// Whether compute geodesic distance
-  bool isComputeGeodesics = false;
 };
 
 class DLL_PUBLIC System {
@@ -708,7 +703,7 @@ public:
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
-        proteinDensity(*mesh, 0.5), targetLcrs(*mesh), refEdgeLengths(*mesh),
+        proteinDensity(*mesh, 0), targetLcrs(*mesh), refEdgeLengths(*mesh),
         refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
         vel(*mesh, {0, 0, 0}), H0(*mesh),

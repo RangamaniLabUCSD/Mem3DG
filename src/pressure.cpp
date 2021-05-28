@@ -146,14 +146,14 @@ EigenVectorX3D System::computeVectorForces() {
       capillaryForceVec -= F.surfaceTension * areaGrad;
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
                             P.epsilon * areaGrad;
-      bendForceVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
-      bendForceVec -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
-                       Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
-                      areaGrad;
-      bendForceVec -=
-          Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
       lineCapForceVec -= P.eta * (0.125 * dirichletVec -
                                   0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
+      bendForceVec -=
+          (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec +
+          (Kbi * (H0i * H0i - Hi * Hi) / 3 +
+           Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
+              areaGrad +
+          (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
 
       // Compare principal curvature vs truncated curvature vector
 
@@ -422,13 +422,13 @@ EigenVectorX1D System::computeChemicalPotential() {
                       H0.raw().array();
 
   if (P.relation == "linear") {
-    dH0dphi.fill(P.H0);
+    dH0dphi.fill(P.H0c);
     dKbdphi.fill(P.Kbc);
   } else if (P.relation == "hill") {
     EigenVectorX1D proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
     dH0dphi.raw() =
-        (2 * P.H0 * proteinDensity.raw().array() /
+        (2 * P.H0c * proteinDensity.raw().array() /
          ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
             .matrix();
     dKbdphi.raw() =
@@ -445,8 +445,8 @@ EigenVectorX1D System::computeChemicalPotential() {
   F.diffusionPotential.raw() =
       -P.eta * vpg->cotanLaplacian * proteinDensity.raw();
   F.interiorPenaltyPotential.raw() =
-      P.lambdaPhi * (1 / proteinDensity.raw().array() -
-                     1 / (1 - proteinDensity.raw().array()));
+      P.lambdaPhi * (1 / (proteinDensity.raw().array() + 1e-4) -
+                     1 / (1 + 1e-4 - proteinDensity.raw().array()));
   F.chemicalPotential.raw() =
       F.adsorptionPotential.raw() + F.bendingPotential.raw() +
       F.diffusionPotential.raw() + F.interiorPenaltyPotential.raw();
@@ -520,48 +520,52 @@ gc::Vector3 System::computeGradientNorm2Gradient(
         "computeGradientNormGradient: halfedge is not interior!");
   }
 
-  // Edge and normal vector
-  gc::Vector3 n = vpg->faceNormals[he.face()];
-  gc::Vector3 e1 = vecFromHalfedge(he, *vpg);
-  gc::Vector3 e2 = vecFromHalfedge(he.next(), *vpg);
-  gc::Vector3 e3 = vecFromHalfedge(he.next().next(), *vpg);
-
-  // exterior angle of triangles (angles formed by e_perp)
-  double theta3 = gc::angle(e1, e2);
-  double theta1 = gc::angle(e2, e3);
-  double theta2 = gc::angle(e3, e1);
-
-  // gradient quantities
+  // quantities
   double q1 = quantities[he.next().next().vertex()];
   double q2 = quantities[he.vertex()];
   double q3 = quantities[he.next().vertex()];
 
-  // gradient of edge length wrt he.vertex()
-  gc::Vector3 grad_e1norm = -e1.normalize();
-  gc::Vector3 grad_e3norm = e3.normalize();
+  if (q1 == q2 && q1 == q3) {
+    return gc::Vector3({0, 0, 0});
+  } else {
+    // Edge and normal vector
+    gc::Vector3 n = vpg->faceNormals[he.face()];
+    gc::Vector3 e1 = vecFromHalfedge(he, *vpg);
+    gc::Vector3 e2 = vecFromHalfedge(he.next(), *vpg);
+    gc::Vector3 e3 = vecFromHalfedge(he.next().next(), *vpg);
 
-  // gradient of exterior angle wrt he.vertex()
-  gc::Vector3 grad_theta3 = gc::cross(n, e1).normalize() / gc::norm(e1);
-  gc::Vector3 grad_theta1 = gc::cross(n, e3).normalize() / gc::norm(e3);
-  gc::Vector3 grad_theta2 = -(grad_theta3 + grad_theta1);
+    // exterior angle of triangles (angles formed by e_perp)
+    double theta3 = gc::angle(e1, e2);
+    double theta1 = gc::angle(e2, e3);
+    double theta2 = gc::angle(e3, e1);
 
-  // chain rule
-  gc::Vector3 grad_costheta3 = -sin(theta3) * grad_theta3;
-  gc::Vector3 grad_costheta2 = -sin(theta2) * grad_theta2;
-  gc::Vector3 grad_costheta1 = -sin(theta1) * grad_theta1;
+    // gradient of edge length wrt he.vertex()
+    gc::Vector3 grad_e1norm = -e1.normalize();
+    gc::Vector3 grad_e3norm = e3.normalize();
 
-  // g = q1 * e1_perp +  q2 * e2_perp +  q2 * e2_perp
-  // gradient of |g|^2
-  return 2 * q1 * q1 * gc::norm(e1) * grad_e1norm +
-         2 * q3 * q3 * gc::norm(e3) * grad_e3norm +
-         2 * q1 * q2 * gc::norm(e2) *
-             (grad_e1norm * cos(theta3) + gc::norm(e1) * grad_costheta3) +
-         2 * q2 * q3 * gc::norm(e2) *
-             (grad_e3norm * cos(theta1) + gc::norm(e3) * grad_costheta1) +
-         2 * q1 * q3 *
-             (grad_e1norm * gc::norm(e3) * cos(theta2) +
-              gc::norm(e1) * grad_e3norm * cos(theta2) +
-              gc::norm(e1) * gc::norm(e3) * grad_costheta2);
+    // gradient of exterior angle wrt he.vertex()
+    gc::Vector3 grad_theta3 = gc::cross(n, e1).normalize() / gc::norm(e1);
+    gc::Vector3 grad_theta1 = gc::cross(n, e3).normalize() / gc::norm(e3);
+    gc::Vector3 grad_theta2 = -(grad_theta3 + grad_theta1);
+
+    // chain rule
+    gc::Vector3 grad_costheta3 = -sin(theta3) * grad_theta3;
+    gc::Vector3 grad_costheta2 = -sin(theta2) * grad_theta2;
+    gc::Vector3 grad_costheta1 = -sin(theta1) * grad_theta1;
+
+    // g = q1 * e1_perp +  q2 * e2_perp +  q2 * e2_perp
+    // gradient of |g|^2
+    return 2 * q1 * q1 * gc::norm(e1) * grad_e1norm +
+           2 * q3 * q3 * gc::norm(e3) * grad_e3norm +
+           2 * q1 * q2 * gc::norm(e2) *
+               (grad_e1norm * cos(theta3) + gc::norm(e1) * grad_costheta3) +
+           2 * q2 * q3 * gc::norm(e2) *
+               (grad_e3norm * cos(theta1) + gc::norm(e3) * grad_costheta1) +
+           2 * q1 * q3 *
+               (grad_e1norm * gc::norm(e3) * cos(theta2) +
+                gc::norm(e1) * grad_e3norm * cos(theta2) +
+                gc::norm(e1) * gc::norm(e3) * grad_costheta2);
+  }
 }
 
 void System::computePhysicalForces() {

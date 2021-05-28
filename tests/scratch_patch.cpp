@@ -22,6 +22,13 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3D =
+    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenTopVec =
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
 int main() {
   // pybind11::scoped_interpreter guard{};
   std::string inputMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
@@ -37,8 +44,9 @@ int main() {
          conc = 25, height = 0, radius = 100, temp = 0, h = 1e-5, Kv = 0,
          eta = 0, Ksg = 0.05, A_res = 0, V_res = 0;
 
-  std::vector<double> pt = {0, 0, 0};
-  std::vector<double> r_H0 = {0.15, 0.15};
+  EigenVectorX1D pt(3), r_H0(2);
+  pt << 0, 0, 0;
+  r_H0 << 0.15, 0.15;
 
   mem3dg::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
@@ -48,13 +56,11 @@ int main() {
   o.isProteinVariation = false;
   o.isVertexShift = false;
   o.isReducedVolume = true;
-  o.isHeterogeneous = true;
   o.isEdgeFlip = false;
   o.isSplitEdge = false;
   o.isCollapseEdge = false;
   o.isRefMesh = true;
   o.isFloatVertex = false;
-  o.isLaplacianMeanCurvature = false;
 
   mem3dg::System f(inputMesh, refMesh, 0, false, p, o);
 

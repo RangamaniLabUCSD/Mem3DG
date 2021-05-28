@@ -86,11 +86,11 @@ double Integrator::backtrack(
         (energy_pre - c1 * alpha * (positionProjection + chemicalProjection))) {
       break;
     }
-    if (alpha < 1e-4 * dt) {
+    if (alpha < 1e-5 * dt) {
       std::cout << "\nbacktrack: line search failure! Simulation "
                    "stopped. \n"
                 << std::endl;
-      lineSearchErrorBacktrack(alpha, initial_pos, init_proteinDensity.raw());
+      lineSearchErrorBacktrack(alpha, initial_pos, init_proteinDensity.raw(), true);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -845,7 +845,7 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile << "\n";
     myfile << "Kb:     " << f.P.Kb << "\n"
            << "Kbc:   " << f.P.Kbc << "\n"
-           << "H0:     " << f.P.H0 << "\n"
+           << "H0c:     " << f.P.H0c << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
            << "Kst:    " << f.P.Kst << "\n"
@@ -882,7 +882,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Kb:     " << f.P.Kb << "\n"
            << "Kbc:   " << f.P.Kbc << "\n"
-           << "H0:     " << f.P.H0 << "\n"
+           << "H0c:     " << f.P.H0c << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
            << "Kst:    " << f.P.Kst << "\n"
