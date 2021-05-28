@@ -155,7 +155,7 @@ jobs:
       run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev ninja-build
 
     - name: Build pymem3dg and install
-      run: sudo python setup.py install -- -DWITH_NETCDF=ON     
+      run: sudo ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON     
 
     - name: Build docs
       run: |
