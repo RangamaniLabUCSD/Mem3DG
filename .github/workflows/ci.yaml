@@ -141,6 +141,7 @@ jobs:
       id: version
       run: |
         mem3dg_version=$(git describe --tags --always --dirty)
+        echo $mem3dg_version
         echo ::set-output name=version::$mem3dg_version
 
     - name: Setup python libs
@@ -149,13 +150,16 @@ jobs:
         python --version
         python -m pip install -r ./docs/rtd-requirements.txt
         py_exe_path=$(which python)
+        echo $py_exe_path
         echo ::set-output name=path::$py_exe_path
 
     - name: Resolve dependencies
       run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev ninja-build
 
     - name: Build pymem3dg and install
-      run: sudo ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON     
+      run: |
+        ${{ steps.pyexe.outputs.path }} --version
+        sudo ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON     
 
     - name: Build docs
       run: |
