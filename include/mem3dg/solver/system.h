@@ -191,6 +191,35 @@ struct Forces {
   // ==========================================================
   // =============      Data interop helpers    ===============
   // ==========================================================
+  /**
+   * @brief Return colwise flattened vector of the matrix
+   */
+  inline auto flatten(EigenVectorX3D &matrix) {
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
+                                                                matrix.size());
+    return vector;
+  }
+  inline auto flatten(EigenVectorX3D &&matrix) {
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
+                                                                matrix.size());
+    return vector;
+  }
+
+  /**
+   * @brief Return colwise unflattened matrix of the vector
+   */
+  inline auto unflatten(EigenVectorX1D &vector) {
+    Eigen::Map<
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        matrix(vector.data(), vector.size() / 3, 3);
+    return matrix;
+  }
+  inline auto unflatten(EigenVectorX1D &&vector) {
+    Eigen::Map<
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        matrix(vector.data(), vector.size() / 3, 3);
+    return matrix;
+  }
 
   /**
    * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
@@ -414,7 +443,7 @@ struct Parameters {
   /// augmented Lagrangian parameter for volume
   double lambdaV = 0;
   /// interior point parameter for protein density
-  double lambdaPhi = 1e-10;
+  double lambdaPhi = 1e-7;
   /// sharpness of tanh transition
   double sharpness = 20;
   /// type of relation between H0 and protein density
@@ -447,6 +476,8 @@ struct Energy {
 struct Options {
   /// Whether or not consider protein binding
   bool isProteinVariation = false;
+  /// Whether or not consider shape evolution
+  bool isShapeVariation = true;
   /// Whether or not do vertex shift
   bool isVertexShift = false;
   /// Whether adopt reduced volume parametrization

@@ -22,6 +22,7 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <stdexcept>
 
 #include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/meshops.h"
@@ -86,9 +87,16 @@ void BFGS::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
     throw std::runtime_error("DPD has to be turned off for BFGS integration!");
   }
-  if (f.O.isVertexShift) {
+  // if (f.O.isVertexShift) {
+  //   throw std::runtime_error(
+  //       "Vertex shift is not supported for BFGS integration!");
+  // }
+  if (!isBacktrack) {
+    throw std::runtime_error("Backtracking is required for BFGS integration");
+  }
+  if (f.P.Bc != 1) {
     throw std::runtime_error(
-        "Vertex shift is not supported for BFGS integration!");
+        "Binding constant should be set to 1 for optimization!");
   }
 }
 
@@ -100,18 +108,33 @@ void BFGS::status() {
   getForces();
 
   // update
-  y = pastPhysicalForce - physicalForce;
-  if (f.time != init_time) {
-    hess_inv += (s * s.transpose()) *
-                    (s.transpose() * y + y.transpose() * hess_inv * y) /
-                    (s.transpose() * y) / (s.transpose() * y) -
-                (hess_inv * y * s.transpose() + s * y.transpose() * hess_inv) /
-                    (s.transpose() * y);
+  if (f.time != init_time || ifRestart) {
+    EigenVectorX1D y = -f.F.flatten(physicalForceVec) + pastPhysicalForce;
+    double sTy = (s.transpose() * y);
+    hess_inv +=
+        (s * s.transpose()) * (sTy + y.transpose() * hess_inv * y) / sTy / sTy -
+        (hess_inv * y * s.transpose() + s * y.transpose() * hess_inv) / sTy;
+
+    EigenVectorX1D y_protein =
+        -f.F.chemicalPotential.raw() + pastPhysicalForce_protein;
+    double sTy_protein = (s_protein.transpose() * y_protein);
+    hess_inv_protein += (s_protein * s_protein.transpose()) *
+                            (sTy_protein + y_protein.transpose() *
+                                               hess_inv_protein * y_protein) /
+                            sTy_protein / sTy_protein -
+                        (hess_inv_protein * y_protein * s_protein.transpose() +
+                         s_protein * y_protein.transpose() * hess_inv_protein) /
+                            sTy_protein;
   }
-  pastPhysicalForce = physicalForce;
+  pastPhysicalForce = f.F.flatten(physicalForceVec);
+  pastPhysicalForce_protein = f.F.chemicalPotential.raw();
+  // std::cout << "if equal: "
+  //           << (f.F.unflatten(f.F.flatten(physicalForceVec)).array() ==
+  //               physicalForceVec.array())
+  //           << std::endl;
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(f.F.ontoNormal(physicalForceVec));
+  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
 
   // compute the L1 chemical error norm
   f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
@@ -132,7 +155,6 @@ void BFGS::status() {
   }
 
   // exit if reached time
-  previousE = f.E;
   if (f.time > total_time) {
     std::cout << "\nReached time." << std::endl;
     EXIT = true;
@@ -141,42 +163,49 @@ void BFGS::status() {
 
   // compute the free energy of the system
   f.computeFreeEnergy();
+
+  // backtracking for error
+  finitenessErrorBacktrack();
 }
 
 void BFGS::march() {
-
-  // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
-
-  vel_e = hess_inv * physicalForceVec;
-
-  // adjust time step if adopt adaptive time step based on mesh size
-  if (isAdaptiveStep) {
-    double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         physicalForce.cwiseAbs().maxCoeff();
-  }
-
-  // time stepping on vertex position
-  if (isBacktrack) {
-    alpha = mechanicalBacktrack(f.E.potE, vel_e, rho, c1);
-    s = alpha *
-        rowwiseDotProduct(vel_e, gc::EigenMap<double, 3>(f.vpg->vertexNormals));
+  if (f.time == lastSave && f.time != init_time) {
+    // process the mesh with regularization or mutation
+    f.processMesh();
+    f.time += 1e-10 * dt;
+    ifRestart = true;
+    hess_inv.setIdentity();
+    hess_inv_protein.setIdentity();
   } else {
-    pos_e += vel_e * dt;
-    f.time += dt;
-    s = dt * hess_inv * physicalForce;
-  }
+    // map the raw eigen datatype for computation
+    auto vel_e = gc::EigenMap<double, 3>(f.vel);
+    auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
-  // time stepping on protein density
-  if (f.O.isProteinVariation) {
-    f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
-  }
+    vel_e = f.F.unflatten(hess_inv * f.F.flatten(physicalForceVec));
+    vel_protein = hess_inv_protein * f.F.chemicalPotential.raw();
 
-  // process the mesh with regularization or mutation
-  f.processMesh();
+    // adjust time step if adopt adaptive time step based on mesh size
+    if (isAdaptiveStep) {
+      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
+      dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
+           (f.O.isShapeVariation
+                ? physicalForce.cwiseAbs().maxCoeff()
+                : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
+    }
+
+    // time stepping on vertex position
+    previousE = f.E;
+    double alpha = backtrack(f.E.potE, vel_e, vel_protein, rho, c1);
+    s = alpha * f.F.flatten(vel_e);
+    s_protein = alpha * vel_protein;
+
+    // regularization
+    if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
+      f.computeRegularizationForce();
+      f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+    }
+  }
 }
 
 } // namespace mem3dg

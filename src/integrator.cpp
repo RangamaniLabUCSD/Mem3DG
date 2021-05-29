@@ -13,6 +13,7 @@
 //
 
 #include "mem3dg/solver/integrator.h"
+#include "Eigen/src/Core/util/Constants.h"
 #include "mem3dg/solver/meshops.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/util.h"
@@ -31,30 +32,15 @@ namespace mem3dg {
 double Integrator::backtrack(
     const double energy_pre,
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
-    const bool isProteinVariation, double rho, double c1) {
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
+    double c1) {
 
-  // calculate initial energy as reference level
-  const Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
-      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  gcs::VertexData<double> init_proteinDensity(*f.mesh);
-  init_proteinDensity = f.proteinDensity;
-  double init_time = f.time;
-
-  // declare variables used in backtracking iterations
-  double alpha = dt;
-  size_t count = 0;
-
-  f.F.toMatrix(f.vpg->inputVertexPositions) += alpha * positionDirection;
-  f.proteinDensity.raw() += alpha * f.P.Bc * chemicalDirection;
-  f.updateVertexPositions();
-  f.computeFreeEnergy();
-  double positionProjection =
-      (physicalForceVec.array() * positionDirection.array()).sum();
-  double chemicalProjection =
-      (f.F.chemicalPotential.raw().array() * chemicalDirection.array()).sum();
-
-  while (true) {
+  // validate the directions
+  double positionProjection = 0;
+  double chemicalProjection = 0;
+  if (f.O.isShapeVariation) {
+    positionProjection =
+        (physicalForceVec.array() * positionDirection.array()).sum();
     if (positionProjection < 0) {
       std::cout << "\nBacktracking line search: positional velocity on uphill "
                    "direction, use bare "
@@ -63,11 +49,12 @@ double Integrator::backtrack(
       positionDirection = physicalForceVec;
       positionProjection =
           (physicalForceVec.array() * positionDirection.array()).sum();
-      // EXIT = true;
-      // SUCCESS = false;
-      // break;
     }
-    if (chemicalProjection < 0 && isProteinVariation) {
+  }
+  if (f.O.isProteinVariation) {
+    chemicalProjection =
+        (f.F.chemicalPotential.raw().array() * chemicalDirection.array()).sum();
+    if (chemicalProjection < 0) {
       std::cout << "\nBacktracking line search: chemical direction on "
                    "uphill direction, "
                    "use bare "
@@ -77,165 +64,79 @@ double Integrator::backtrack(
       chemicalProjection =
           (f.F.chemicalPotential.raw().array() * chemicalDirection.array())
               .sum();
-      // EXIT = true;
-      // SUCCESS = false;
-      // break;
     }
-    // while (f.E.potE > potentialEnergy_pre) {
+  }
+
+  // calculate initial energy as reference level
+  const Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
+      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  const Eigen::Matrix<double, Eigen::Dynamic, 1> initial_protein =
+      f.proteinDensity.raw();
+  const double init_time = f.time;
+
+  // declare variables used in backtracking iterations
+  double alpha = dt;
+  size_t count = 0;
+
+  // zeroth iteration
+  if (f.O.isShapeVariation) {
+    f.F.toMatrix(f.vpg->inputVertexPositions) += alpha * positionDirection;
+  }
+  if (f.O.isProteinVariation) {
+    f.proteinDensity.raw() += alpha * f.P.Bc * chemicalDirection;
+  }
+  f.time += alpha;
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+
+  while (true) {
+    // Wolfe condition fulfillment
     if (f.E.potE <
         (energy_pre - c1 * alpha * (positionProjection + chemicalProjection))) {
       break;
     }
+
+    // limit of backtraking iterations
     if (alpha < 1e-5 * dt) {
       std::cout << "\nbacktrack: line search failure! Simulation "
                    "stopped. \n"
                 << std::endl;
-      lineSearchErrorBacktrack(alpha, initial_pos, init_proteinDensity.raw(), true);
+      lineSearchErrorBacktrack(alpha, initial_pos, initial_protein, true);
       EXIT = true;
       SUCCESS = false;
       break;
     }
+
+    // backtracking time step
     alpha *= rho;
-    f.F.toMatrix(f.vpg->inputVertexPositions) =
-        initial_pos + alpha * positionDirection;
-    if (isProteinVariation) {
-      f.proteinDensity.raw() =
-          init_proteinDensity.raw() + alpha * f.P.Bc * chemicalDirection;
+    if (f.O.isShapeVariation) {
+      f.F.toMatrix(f.vpg->inputVertexPositions) =
+          initial_pos + alpha * positionDirection;
     }
+    if (f.O.isProteinVariation) {
+      f.proteinDensity.raw() =
+          initial_protein + alpha * f.P.Bc * chemicalDirection;
+    }
+    f.time = init_time + alpha;
     f.updateVertexPositions(false);
     f.computeFreeEnergy();
+
+    // count the number of iterations
     count++;
   }
 
+  // report the backtracking if verbose
   if (alpha != dt && verbosity > 3) {
     std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
     std::cout << "L1 norm: " << f.L1ErrorNorm << std::endl;
     std::cout << "L1 chem norm: " << f.L1ChemErrorNorm << std::endl;
   }
-  f.time = init_time + alpha;
 
   // If needed to test force-energy test
-  // lineSearchErrorBacktrack(alpha, initial_pos, init_proteinDensity.raw(), true);
-
-  return alpha;
-}
-
-double Integrator::mechanicalBacktrack(
-    const double potentialEnergy_pre,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction, double rho,
-    double c1) {
-
-  // calculate initial energy as reference level
-  Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
-      gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  double init_time = f.time;
-
-  // declare variables used in backtracking iterations
-  double alpha = dt;
-  size_t count = 0;
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-
-  pos_e += alpha * direction;
-  f.updateVertexPositions();
-  f.computeFreeEnergy();
-  double projection = (physicalForceVec.array() * direction.array()).sum();
-
-  while (true) {
-    if (projection < 0) {
-      std::cout << "\nBacktracking line search: on uphill direction, use bare "
-                   "gradient! \n"
-                << std::endl;
-      direction = physicalForceVec;
-      projection = (physicalForceVec.array() * direction.array()).sum();
-      // EXIT = true;
-      // SUCCESS = false;
-      // break;
-    }
-    // while (f.E.potE > potentialEnergy_pre) {
-    if (f.E.potE < (potentialEnergy_pre - c1 * alpha * projection)) {
-      break;
-    }
-    if (alpha < 1e-6) {
-      std::cout << "\nmechanicalBacktrack: line search failure! Simulation "
-                   "stopped. \n"
-                << std::endl;
-      EXIT = true;
-      SUCCESS = false;
-      break;
-    }
-    alpha *= rho;
-    pos_e = initial_pos + alpha * direction;
-    f.updateVertexPositions(false);
-    f.computeFreeEnergy();
-    count++;
+  const bool isDebug = false;
+  if (isDebug) {
+    lineSearchErrorBacktrack(alpha, initial_pos, initial_protein, isDebug);
   }
-
-  if (alpha != dt && verbosity > 3) {
-    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
-    std::cout << "L1 norm: " << f.L1ErrorNorm << std::endl;
-  }
-  f.time = init_time + alpha;
-
-  return alpha;
-}
-
-double Integrator::chemicalBacktrack(
-    const double potentialEnergy_pre,
-    Eigen::Matrix<double, Eigen::Dynamic, 1> &direction, double rho,
-    double c1) {
-
-  // calculate initial energy as reference level
-  gcs::VertexData<double> init_proteinDensity(*f.mesh);
-  init_proteinDensity = f.proteinDensity;
-  double init_time = f.time;
-
-  // declare variables used in backtracking iterations
-  double alpha = dt;
-  size_t count = 0;
-
-  f.proteinDensity.raw() += alpha * direction;
-  f.updateVertexPositions();
-  f.computeFreeEnergy();
-  double projection =
-      (f.F.chemicalPotential.raw().array() * direction.array()).sum();
-
-  while (true) {
-    if (projection < 0) {
-      std::cout << "\nChemical backtracking line search: on uphill direction, "
-                   "use bare "
-                   "gradient! \n"
-                << std::endl;
-      direction = f.F.chemicalPotential.raw();
-      projection =
-          (f.F.chemicalPotential.raw().array() * direction.array()).sum();
-      // EXIT = true;
-      // SUCCESS = false;
-      // break;
-    }
-    // while (f.E.potE > potentialEnergy_pre) {
-    if (f.E.potE < (potentialEnergy_pre - c1 * alpha * projection)) {
-      break;
-    }
-    if (alpha < 1e-6) {
-      std::cout
-          << "\nchemicalBacktrack: line search failure! Simulation stopped. \n"
-          << std::endl;
-      EXIT = true;
-      SUCCESS = false;
-      break;
-    }
-    alpha *= rho;
-    f.proteinDensity.raw() = init_proteinDensity.raw() + alpha * direction;
-    f.updateVertexPositions(false);
-    f.computeFreeEnergy();
-    count++;
-  }
-
-  if (alpha != dt && verbosity > 3) {
-    std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
-    std::cout << "L1 chem norm: " << f.L1ChemErrorNorm << std::endl;
-  }
-  f.time = init_time + alpha;
 
   return alpha;
 }
