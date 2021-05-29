@@ -565,6 +565,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether simulate protein variation
       )delim");
+  options.def_readwrite("isShapeVariation", &Options::isShapeVariation,
+                        R"delim(
+          get the option of whether simulate shape variation
+      )delim");
   options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
                         R"delim(
           get the option of whether adopt reduced volume  

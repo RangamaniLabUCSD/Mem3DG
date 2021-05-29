@@ -590,13 +590,15 @@ void System::computePhysicalForces() {
   F.adsorptionPotential.raw().setZero();
   F.interiorPenaltyPotential.raw().setZero();
 
-  computeVectorForces();
+  if (O.isShapeVariation) {
+    computeVectorForces();
+    if (P.Kf != 0) {
+      computeExternalForce();
+    }
+  }
 
   if (O.isProteinVariation) {
     computeChemicalPotential();
-  }
-  if (P.Kf != 0) {
-    computeExternalForce();
   }
 
   // computeBendingForce();
