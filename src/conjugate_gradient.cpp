@@ -88,6 +88,10 @@ void ConjugateGradient::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
     throw std::runtime_error("DPD has to be turned off for CG integration!");
   }
+  if (f.P.Bc != 1) {
+    throw std::runtime_error(
+        "Binding constant should be set to 1 for optimization!");
+  }
   // if (f.O.isVertexShift) {
   //   throw std::runtime_error(
   //       "Vertex shift is not supported for CG integration!");
@@ -102,22 +106,18 @@ void ConjugateGradient::status() {
   getForces();
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(f.F.ontoNormal(physicalForceVec));
+  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
 
   // compute the L1 chemical error norm
   f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
 
   // compute the area contraint error
-  dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
   if (f.O.isReducedVolume) {
-    // compute volume constraint error
-    dVP = (f.P.Kv != 0) ? abs(f.volume / f.refVolume / f.P.Vt - 1) : 0.0;
-    // thresholding, exit if fulfilled and iterate if not
+    dVP = abs(f.volume / f.refVolume / f.P.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
-    // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
-    // thresholding, exit if fulfilled and iterate if not
+    dVP = abs(1 / f.volume / f.P.cam - 1);
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
 
@@ -152,13 +152,22 @@ void ConjugateGradient::march() {
 
     // determine conjugate gradient direction, restart after nVertices() cycles
     if (countCG % restartNum == 0) {
-      pastNormSq = physicalForce.squaredNorm();
+      pastNormSq =
+          (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
+          (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
+                                  : 0);
       vel_e = physicalForceVec;
+      vel_protein = f.F.chemicalPotential.raw();
       countCG = 1;
     } else {
-      currentNormSq = physicalForce.squaredNorm();
+      currentNormSq =
+          (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
+          (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
+                                  : 0);
       vel_e *= currentNormSq / pastNormSq;
       vel_e += physicalForceVec;
+      vel_protein *= currentNormSq / pastNormSq;
+      vel_protein += f.F.chemicalPotential.raw();
       pastNormSq = currentNormSq;
       countCG++;
     }
@@ -167,17 +176,18 @@ void ConjugateGradient::march() {
     if (isAdaptiveStep) {
       double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
       dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-           physicalForce.cwiseAbs().maxCoeff();
+           (f.O.isShapeVariation
+                ? physicalForce.cwiseAbs().maxCoeff()
+                : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
     }
 
     // time stepping on vertex position
     previousE = f.E;
     if (isBacktrack) {
-      backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(),
-                f.O.isProteinVariation, rho, c1);
+      backtrack(f.E.potE, vel_e, vel_protein, rho, c1);
     } else {
       pos_e += vel_e * dt;
-      f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
+      f.proteinDensity.raw() += f.P.Bc * vel_protein * dt;
       f.time += dt;
     }
 
@@ -232,9 +242,9 @@ void FeedForwardSweep::sweep() {
       trajFileName = buffer;
 
       // update sweeping paraemters
-      f.P.H0 = H;
+      f.P.H0c = H;
       (f.O.isReducedVolume ? f.P.Vt : f.P.cam) = VP;
-      std::cout << "\nH0: " << f.P.H0 << std::endl;
+      std::cout << "\nH0c: " << f.P.H0c << std::endl;
       std::cout << "VP: " << VP << std::endl;
 
       // recalculate cached values

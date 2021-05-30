@@ -302,7 +302,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       R"delim(
         System constructor
       )delim");
-  system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
+  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t,
                       Parameters &, Options &>(),
@@ -557,7 +557,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The options
     )delim");
   options.def(py::init<>());
-  options.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool>());
   options.def_readwrite("isVertexShift", &Options::isVertexShift,
                         R"delim(
           get the option of whether do vertex shift  
@@ -565,6 +564,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   options.def_readwrite("isProteinVariation", &Options::isProteinVariation,
                         R"delim(
           get the option of whether simulate protein variation
+      )delim");
+  options.def_readwrite("isShapeVariation", &Options::isShapeVariation,
+                        R"delim(
+          get the option of whether simulate shape variation
       )delim");
   options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
                         R"delim(
@@ -579,10 +582,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         &Options::isConstantSurfaceTension,
                         R"delim(
           get the option of whether adopt constant surface tension 
-      )delim");
-  options.def_readwrite("isHeterogeneous", &Options::isHeterogeneous,
-                        R"delim(
-          get the option of whether prescribe heterogenous membrane using geodesic distance 
       )delim");
   options.def_readwrite("isEdgeFlip", &Options::isEdgeFlip,
                         R"delim(
@@ -604,12 +603,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether have "the" vertex floating in embedded space
       )delim");
-  options.def_readwrite("isLaplacianMeanCurvature",
-                        &Options::isLaplacianMeanCurvature,
-                        R"delim(
-          get the option of whether adopt Laplacian mean curvature definition, 
-          otherwise dihedral angle definition.
-      )delim");
   options.def_readwrite("boundaryConditionType",
                         &Options::boundaryConditionType,
                         R"delim(
@@ -622,25 +615,25 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   parameters.def(py::init<>());
   parameters.def(
-      py::init<double, double, double, std::vector<double>, double, double,
+      py::init<double, double, double, EigenVectorX1D, double, double, double,
                double, double, double, double, double, double, double, double,
-               double, double, double, double, std::vector<double>, double,
-               double, double, double, double, double>());
+               double, double, double, EigenVectorX1D, double, double, double,
+               double, double, double>());
   parameters.def_readwrite("Kb", &Parameters::Kb,
                            R"delim(
           get Bending rigidity of the bare membrane 
       )delim");
   parameters.def_readwrite("Kbc", &Parameters::Kbc,
                            R"delim(
-          get linear constant of bending modulus vs protein density
+          get constant of bending modulus vs protein density
       )delim");
-  parameters.def_readwrite("H0", &Parameters::H0,
+  parameters.def_readwrite("H0c", &Parameters::H0c,
                            R"delim(
-          get Spontaneous curvature 
+          get constant of spontaneous curvature vs protein density
       )delim");
-  parameters.def_readwrite("r_heter", &Parameters::r_heter,
+  parameters.def_readwrite("protein0", &Parameters::protein0,
                            R"delim(
-          get radius of heterogenous domain
+          get setting of initial protein density
       )delim");
   parameters.def_readwrite("Ksg", &Parameters::Ksg,
                            R"delim(
@@ -700,7 +693,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   parameters.def_readwrite("pt", &Parameters::pt,
                            R"delim(
-          get index of node with applied external force 
+          get specification for the point
       )delim");
   parameters.def_readwrite("Kf", &Parameters::Kf,
                            R"delim(
