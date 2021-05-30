@@ -1,0 +1,57 @@
+﻿pymem3dg
+========
+
+.. automodule:: pymem3dg
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      animate_nc
+      animate_ply
+      driver_nc
+      driver_ply
+      forwardsweep_nc
+      forwardsweep_ply
+      getCylinder
+      getDiamond
+      getIcosphere
+      getTetrahedron
+      snapshot_nc
+      snapshot_ply
+      visualize
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BFGS
+      ConjugateGradient
+      Energy
+      Euler
+      Integrator
+      MeshMutator
+      Options
+      Parameters
+      Quantities
+      System
+      VelocityVerlet
+   
+   
+
+   
+   
+   
+
+
+
