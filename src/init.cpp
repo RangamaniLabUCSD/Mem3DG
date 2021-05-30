@@ -17,7 +17,9 @@
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/solver/meshops.h"
+#include <cmath>
 #include <stdexcept>
+#include <vector>
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
 #endif
@@ -51,7 +53,12 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Map continuation variables
   time = fd.getTime(startingFrame);
-  proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+  if (P.protein0.rows() == 1 && P.protein0[0] == -1) {
+    proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+  } else {
+    throw std::logic_error(
+        "protein0 has to be disabled (=[-1]) for continuing simulations!");
+  }
   gc::EigenMap<double, 3>(vel) = fd.getVelocity(startingFrame);
 }
 
@@ -144,7 +151,7 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
+System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> topologyMatrix,
                    Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
                    Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix,
                    size_t nSub) {
@@ -197,14 +204,60 @@ void System::mapContinuationVariables(std::string plyFile) {
         "Topology for continuation parameters mapping is not consistent!");
   } else {
     // Map continuation variables
-    proteinDensity =
-        ptrRichData_local->getVertexProperty<double>("protein_density")
-            .reinterpretTo(*mesh);
+    if (P.protein0.rows() == 1 && P.protein0[0] == -1) {
+      proteinDensity =
+          ptrRichData_local->getVertexProperty<double>("protein_density")
+              .reinterpretTo(*mesh);
+    } else {
+      throw std::logic_error(
+          "protein0 has to be disabled (=[-1]) for continuing simulations!");
+    }
   }
 }
 
 void System::checkParametersAndOptions() {
 
+  // check validity of parameters / options
+
+  // protein related
+  if (P.protein0.rows() == 1 && P.protein0[0] == -1) {
+    std::cout << "Disable protein init, expect continuation simulation."
+              << std::endl;
+  } else if (P.protein0.rows() == 1 && P.protein0[0] >= 0 &&
+             P.protein0[0] <= 1) {
+    if (!O.isProteinVariation) {
+      if (P.protein0[0] != 1 || P.Kb != 0 || P.eta != 0 || P.epsilon != 0) {
+        throw std::logic_error(
+            "For homogenous membrane simulation, good "
+            "practice is "
+            "to set protein0 = 1, Kb = 0, eta = 0, epsilon = 0 to "
+            "avoid ambiguity & save computation!");
+      }
+    }
+  } else if (P.protein0.rows() == 4 &&
+             (P.protein0[2] >= 0 && P.protein0[2] <= 1) &&
+             (P.protein0[3] >= 0 && P.protein0[3] <= 1) &&
+             (P.protein0[0] > 0 && P.protein0[1] > 0)) {
+    if (P.protein0[2] == P.protein0[3]) {
+      throw std::logic_error(
+          "Please switch to {phi} for homogeneous membrane!");
+    }
+  } else if (P.protein0.rows() == proteinDensity.raw().rows() &&
+             (P.protein0.array() >= 0).all() &&
+             (P.protein0.array() <= 1).all()) {
+  } else {
+    throw std::logic_error("protein 0 can only be specified in three ways: 1. "
+                           "length = 1, uniform {0<=phi<=1} 2. "
+                           "length = 4, geodesic disk, {r1>0, r2>0, "
+                           "0<=phi_in<=1, 0<=phi_out<=1} 3. length "
+                           "= nVertices, user defined. To disable use {-1}");
+  }
+  if (O.isProteinVariation != (P.Bc > 0)) {
+    throw std::logic_error("Binding constant Bc has to be consistent with the "
+                           "protein variation option!");
+  }
+
+  // boundary related
   if (mesh->hasBoundary()) {
     O.isOpenMesh = true;
     if (O.boundaryConditionType != "roller" &&
@@ -225,40 +278,42 @@ void System::checkParametersAndOptions() {
     }
   }
 
-  if (O.isHeterogeneous || P.Kf != 0) {
-    O.isComputeGeodesics = true;
-  }
-
-  // check validity of parameters / options
+  // regularization related
   if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) && O.isRefMesh) {
     throw std::logic_error(
         "Topology changes are not compatible with reference mesh!");
   }
-
   if (P.Kst != 0 && !O.isRefMesh) {
     throw std::logic_error("For topology changing simulation, conformal mesh "
                            "regularization Kst cannot be applied!");
   }
 
-  if (!O.isHeterogeneous && !O.isProteinVariation) {
-    if (P.eta != 0) {
+  // the vertex related
+  if (P.pt.rows() > 3) {
+    throw std::logic_error(
+        "Length of p.pt cannnot exceed 3! Instruction: (Length=1) => (vertex "
+        "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
+        "coordinate)");
+  }
+  if (P.pt.rows() == 2 && !mesh->hasBoundary()) {
+    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
+                 "lead to ambiguity! Please check by visualizing it first!\n"
+              << std::endl;
+  }
+  if (O.isFloatVertex) {
+    if (P.pt.rows() == 1) {
       throw std::logic_error(
-          "line tension eta has to be 0 for homogeneous membrane!");
+          "To have Floating vertex, one must specify vertex by coordinate!");
     }
-    if (P.r_heter != std::vector<double>({-1, -1})) {
-      throw std::logic_error(
-          "r_H0 has to be {-1, -1} for homogeneous membrane!");
-    }
-    if (P.Kbc != 0) {
-      throw std::logic_error(
-          "Kbc has to be set to 0 for homogeneous membrane!");
-    }
-    if (P.epsilon != 0) {
-      throw std::logic_error(
-          "Protein energy epsilon has to be 0 for homogeneous membrane!");
-    }
+    // if (P.pt.rows() == 3) {
+    //   std::cout << "\nWARNING: float vertex using 3D position may lead to
+    //   jump "
+    //                "in geodesic sense!\n"
+    //             << std::endl;
+    // }
   }
 
+  // Osmotic pressure related
   if (O.isReducedVolume) {
     if (P.cam != -1) {
       throw std::logic_error("ambient concentration cam has to be -1 for "
@@ -275,7 +330,6 @@ void System::checkParametersAndOptions() {
                              "Kv now has the unit of energy!");
     }
   }
-
   if (O.isConstantOsmoticPressure) {
     if (O.isReducedVolume) {
       throw std::logic_error("reduced volume and constant osmotic pressure "
@@ -289,6 +343,7 @@ void System::checkParametersAndOptions() {
     }
   }
 
+  // surface tension related
   if (O.isConstantSurfaceTension) {
     if (P.A_res != 0) {
       throw std::logic_error(
@@ -297,57 +352,13 @@ void System::checkParametersAndOptions() {
     }
   }
 
-  if (O.isProteinVariation) {
-    if (O.isHeterogeneous) {
-      throw std::logic_error(
-          "Prescribed heterogenity should be deactivated with "
-          "protein binding activated!");
-    }
-    if (P.eta != 0) {
-      std::cout << "\nWARNING: Line tension with protein bind is currently not "
-                   "supported! Activate protein diffusion instead!\n"
-                << std::endl;
-    }
-  } else {
-    if (P.Bc != -1) {
-      throw std::logic_error(
-          "Binding constant Bc has to be -1 for "
-          "protein adsorption dynamics disabled simulation!");
-    }
-  }
-
+  // external force related
   if (P.Kf == 0) {
     if (P.conc != -1 || P.height != 0) {
       throw std::logic_error("With no external force, its concentration "
                              "should be disabled (=-1) "
                              "and prescribed height should be set to 0!");
     }
-  }
-
-  if (P.pt.size() > 3) {
-    throw std::logic_error(
-        "Length of p.pt cannnot exceed 3! Instruction: (Length=1) => (vertex "
-        "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
-        "coordinate)");
-  }
-
-  if (P.pt.size() == 2 && !mesh->hasBoundary()) {
-    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
-                 "lead to ambiguity! Please check by visualizing it first!\n"
-              << std::endl;
-  }
-
-  if (O.isFloatVertex) {
-    if (P.pt.size() == 1) {
-      throw std::logic_error(
-          "To have Floating vertex, one must specify vertex by coordinate!");
-    }
-    // if (P.pt.size() == 3) {
-    //   std::cout << "\nWARNING: float vertex using 3D position may lead to
-    //   jump "
-    //                "in geodesic sense!\n"
-    //             << std::endl;
-    // }
   }
 }
 
@@ -383,15 +394,16 @@ void System::initConstants() {
   localVpg->requireEdgeLengths();
   localVpg->requireFaceAreas();
 
-  // Initialize V-E distribution matrix for line tension calculation
-  if (P.eta != 0) {
-    D = localVpg->d0.transpose().cwiseAbs() / 2;
-    // for (int k = 0; k < D.outerSize(); ++k) {
-    //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
-    //     it.valueRef() = 0.5;
-    //   }
-    // }
-  }
+  // // Initialize V-E distribution matrix for line tension calculation
+  // if (P.eta != 0) {
+  //   D = localVpg->d0.transpose().cwiseAbs() / 2;
+  //   // for (int k = 0; k < D.outerSize(); ++k) {
+  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
+  //   {
+  //   //     it.valueRef() = 0.5;
+  //   //   }
+  //   // }
+  // }
 
   // Find "the" vertex
   findThePoint(*localVpg, geodesicDistanceFromPtInd, 1e18);
@@ -407,10 +419,17 @@ void System::initConstants() {
                          : gc::Vector3{0, 0, 0};
   }
 
-  // Initialize the constant protein density
-  if (O.isHeterogeneous) {
+  // Initialize protein density
+  if (P.protein0.size() == 1) {
+    proteinDensity.raw().setConstant(mesh->nVertices(), 1, P.protein0[0]);
+  } else if (P.protein0.rows() == proteinDensity.raw().rows()) {
+    proteinDensity.raw() = P.protein0;
+  } else if (P.protein0.size() == 4) {
+    std::vector<double> r_heter{P.protein0[0], P.protein0[1]};
     tanhDistribution(*vpg, proteinDensity.raw(),
-                     geodesicDistanceFromPtInd.raw(), P.sharpness, P.r_heter);
+                     geodesicDistanceFromPtInd.raw(), P.sharpness, r_heter);
+    proteinDensity.raw() *= P.protein0[2] - P.protein0[3];
+    proteinDensity.raw().array() += P.protein0[3];
   }
 
   // Mask boundary element
@@ -463,11 +482,6 @@ void System::initConstants() {
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
   std::cout << "vol_init/vol_ref = " << volume / refVolume << std::endl;
-
-  // Initialize const protein density
-  if (!O.isHeterogeneous && !O.isProteinVariation) {
-    proteinDensity.raw().setConstant(mesh->nVertices(), 1, 1);
-  }
 }
 
 void System::updateVertexPositions(bool isUpdateGeodesics) {
@@ -487,7 +501,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // update geodesic distance
-  if (O.isComputeGeodesics && isUpdateGeodesics) {
+  if (isUpdateGeodesics) {
     gcs::HeatMethodDistanceSolver heatSolver(*vpg);
     geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
   }
@@ -498,9 +512,14 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // update protein density
-  if (O.isHeterogeneous && isUpdateGeodesics) {
-    tanhDistribution(*vpg, proteinDensity.raw(),
-                     geodesicDistanceFromPtInd.raw(), P.sharpness, P.r_heter);
+  if (P.protein0.rows() == 3 && !O.isProteinVariation) {
+    if (isUpdateGeodesics) {
+      std::vector<double> r_heter{P.protein0[0], P.protein0[1]};
+      tanhDistribution(*vpg, proteinDensity.raw(),
+                       geodesicDistanceFromPtInd.raw(), P.sharpness, r_heter);
+      proteinDensity.raw() *= P.protein0[2] - P.protein0[3];
+      proteinDensity.raw().array() += P.protein0[3];
+    }
   }
 
   // compute face gradient of spontaneous curvature
@@ -510,13 +529,13 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
 
   // Update protein density dependent quantities
   if (P.relation == "linear") {
-    H0.raw() = proteinDensity.raw() * P.H0;
+    H0.raw() = proteinDensity.raw() * P.H0c;
     Kb.raw() = P.Kb + P.Kbc * proteinDensity.raw().array();
   } else if (P.relation == "hill") {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
     H0.raw() =
-        (P.H0 * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
+        (P.H0c * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
             .matrix();
     Kb.raw() = (P.Kb + P.Kbc * proteinDensitySq.array() /
                            (1 + proteinDensitySq.array()))
@@ -569,7 +588,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
                           double range) {
   bool isUpdated = false;
   if (O.isFloatVertex) {
-    switch (P.pt.size()) {
+    switch (P.pt.rows()) {
     case 1: {
       throw std::logic_error(
           "To have Floating vertex, one must specify vertex by coordinate!");
@@ -703,7 +722,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     thePointTracker[thePoint.face.halfedge().next().vertex()] = true;
     thePointTracker[thePoint.face.halfedge().next().next().vertex()] = true;
   } else {
-    switch (P.pt.size()) {
+    switch (P.pt.rows()) {
     case 1: {
       // Assign surface point as the indexed vertex
       thePoint = gc::SurfacePoint(mesh->vertex((std::size_t)P.pt[0]));

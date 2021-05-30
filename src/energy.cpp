@@ -86,8 +86,9 @@ void System::computeAdsorptionEnergy() {
 
 void System::computeProteinInteriorPenaltyEnergy() {
   // interior method to constrain protein density to remain from 0 to 1
-  E.inE = -P.lambdaPhi * (proteinDensity.raw().array().log().sum() +
-                          (1 - proteinDensity.raw().array()).log().sum());
+  E.inE =
+      -P.lambdaPhi * ((proteinDensity.raw().array() + 1e-4).log().sum() +
+                      (1 + 1e-4 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeDirichletEnergy() {
@@ -134,7 +135,9 @@ void System::computeKineticEnergy() {
 }
 
 void System::computePotentialEnergy() {
-  computeBendingEnergy();
+  if (P.Kb != 0) {
+    computeBendingEnergy();
+  }
   if (P.Ksg != 0) {
     computeSurfaceEnergy();
   }
@@ -201,14 +204,18 @@ System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
 
 void System::computeGradient(gcs::VertexData<double> &quantities,
                              gcs::FaceData<gc::Vector3> &gradient) {
-  for (gcs::Face f : mesh->faces()) {
-    gc::Vector3 normal = vpg->faceNormals[f];
-    gc::Vector3 gradientVec{0, 0, 0};
-    for (gcs::Halfedge he : f.adjacentHalfedges()) {
-      gradientVec += quantities[he.next().tipVertex()] *
-                     gc::cross(normal, vecFromHalfedge(he, *vpg));
+  if ((quantities.raw().array() == quantities.raw()[0]).all()) {
+    gradient.fill({0, 0, 0});
+  } else {
+    for (gcs::Face f : mesh->faces()) {
+      gc::Vector3 normal = vpg->faceNormals[f];
+      gc::Vector3 gradientVec{0, 0, 0};
+      for (gcs::Halfedge he : f.adjacentHalfedges()) {
+        gradientVec += quantities[he.next().tipVertex()] *
+                       gc::cross(normal, vecFromHalfedge(he, *vpg));
+      }
+      gradient[f] = gradientVec / 2 / vpg->faceAreas[f];
     }
-    gradient[f] = gradientVec / 2 / vpg->faceAreas[f];
   }
 }
 

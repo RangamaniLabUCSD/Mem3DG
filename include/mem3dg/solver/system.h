@@ -137,7 +137,7 @@ struct Forces {
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
   double osmoticPressure;
-  
+
   /// Cached three fundamentals
   gcs::VertexData<gc::Vector3> vectorForces;
   /// Cached bending force
@@ -191,6 +191,35 @@ struct Forces {
   // ==========================================================
   // =============      Data interop helpers    ===============
   // ==========================================================
+  /**
+   * @brief Return colwise flattened vector of the matrix
+   */
+  inline auto flatten(EigenVectorX3D &matrix) {
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
+                                                                matrix.size());
+    return vector;
+  }
+  inline auto flatten(EigenVectorX3D &&matrix) {
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
+                                                                matrix.size());
+    return vector;
+  }
+
+  /**
+   * @brief Return colwise unflattened matrix of the vector
+   */
+  inline auto unflatten(EigenVectorX1D &vector) {
+    Eigen::Map<
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        matrix(vector.data(), vector.size() / 3, 3);
+    return matrix;
+  }
+  inline auto unflatten(EigenVectorX1D &&vector) {
+    Eigen::Map<
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        matrix(vector.data(), vector.size() / 3, 3);
+    return matrix;
+  }
 
   /**
    * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
@@ -365,12 +394,12 @@ struct Forces {
 struct Parameters {
   /// Bending modulus
   double Kb;
-  /// linear constant of bending modulus vs protein density
+  /// Constant of bending modulus vs protein density
   double Kbc;
-  /// Spontaneous curvature
-  double H0;
-  /// radius of heterogenous domain
-  std::vector<double> r_heter;
+  /// Constant of Spontaneous curvature vs protein density
+  double H0c;
+  /// (initial) protein density
+  EigenVectorX1D protein0;
   /// Global stretching modulus
   double Ksg;
   /// Area reservior
@@ -399,8 +428,8 @@ struct Parameters {
   double cam;
   /// Temperature
   double temp;
-  /// index of node with applied external force
-  std::vector<double> pt;
+  /// The point
+  EigenVectorX1D pt;
   /// Magnitude of external force
   double Kf;
   /// level of concentration of the external force
@@ -414,7 +443,7 @@ struct Parameters {
   /// augmented Lagrangian parameter for volume
   double lambdaV = 0;
   /// interior point parameter for protein density
-  double lambdaPhi = 1e-10;
+  double lambdaPhi = 1e-7;
   /// sharpness of tanh transition
   double sharpness = 20;
   /// type of relation between H0 and protein density
@@ -445,18 +474,18 @@ struct Energy {
 };
 
 struct Options {
-  /// Whether or not do vertex shift
-  bool isVertexShift = false;
   /// Whether or not consider protein binding
   bool isProteinVariation = false;
+  /// Whether or not consider shape evolution
+  bool isShapeVariation = true;
+  /// Whether or not do vertex shift
+  bool isVertexShift = false;
   /// Whether adopt reduced volume parametrization
   bool isReducedVolume = false;
   /// Whether adopt constant osmotic pressure
   bool isConstantOsmoticPressure = false;
   /// Whether adopt constant surface tension
   bool isConstantSurfaceTension = false;
-  /// Whether precribe hetergenous membrane by geodesic distance
-  bool isHeterogeneous = false;
   /// Whether edge flip
   bool isEdgeFlip = false;
   /// Whether split edge
@@ -467,14 +496,11 @@ struct Options {
   bool isRefMesh = false;
   /// Whether floating "the" vertex
   bool isFloatVertex = false;
-  /// Whether Laplacian mean curvature
-  bool isLaplacianMeanCurvature = false;
   /// Boundary condition: roller, pin, fixed, none
   std::string boundaryConditionType = "none";
+
   /// Whether open boundary mesh
   bool isOpenMesh = false;
-  /// Whether compute geodesic distance
-  bool isComputeGeodesics = false;
 };
 
 class DLL_PUBLIC System {
@@ -570,12 +596,13 @@ public:
    * @param isVertexShift Option of whether conducting vertex shift
    * regularization
    */
-  System(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
+  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix, size_t nSub,
          Parameters &p, Options &o)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
                p, o) {
+
     // Check confliciting parameters and options
     checkParametersAndOptions();
 
@@ -708,7 +735,7 @@ public:
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
-        proteinDensity(*mesh, 0.5), targetLcrs(*mesh), refEdgeLengths(*mesh),
+        proteinDensity(*mesh, 0), targetLcrs(*mesh), refEdgeLengths(*mesh),
         refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
         vel(*mesh, {0, 0, 0}), H0(*mesh),
@@ -775,7 +802,7 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> faceVertexMatrix,
+  readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> faceVertexMatrix,
              Eigen::Matrix<double, Eigen::Dynamic, 3> vertexPositionMatrix,
              Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexPositionMatrix,
              size_t nSub);

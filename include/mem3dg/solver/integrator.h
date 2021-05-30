@@ -71,6 +71,8 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1> physicalForce;
   /// numerical dissipative particle dynamics force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 1> DPDForce;
+  /// "velocity" of protein
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vel_protein;
 
   /// Starting time of the simulation
   double init_time;
@@ -124,7 +126,9 @@ public:
 
     // Initialize the initial maxForce
     getForces();
-    maxForce = physicalForce.cwiseAbs().maxCoeff();
+    maxForce = f.O.isShapeVariation
+                   ? physicalForce.cwiseAbs().maxCoeff()
+                   : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
     dArea = 1e10;
@@ -243,7 +247,10 @@ public:
    * @brief Backtracking algorithm that dynamically adjust step size based on
    * energy evaluation
    * @param potentialEnergy_pre, previous energy evaluation
-   * @param direction, direction, most likely some function of gradient
+   * @param positionDirection, direction of shape, most likely some function of
+   * gradient
+   * @param chemicalDirection, direction of protein density, most likely some
+   * function of gradient
    * @param rho, discount factor
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
@@ -251,35 +258,7 @@ public:
   double backtrack(const double energy_pre,
                    Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
                    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
-                   const bool isProteinAdsorption = false, double rho = 0.99,
-                   double c1 = 0.0001);
-
-  /**
-   * @brief Backtracking algorithm that dynamically adjust step size based on
-   * energy evaluation
-   * @param potentialEnergy_pre, previous energy evaluation
-   * @param direction, direction, most likely some function of gradient
-   * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
-   * @return alpha, line search step size
-   */
-  double
-  mechanicalBacktrack(const double potentialEnergy_pre,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &&direction,
-                      double rho = 0.99, double c1 = 0.0001);
-
-  /**
-   * @brief Backtracking algorithm that dynamically adjust step size based on
-   * energy evaluation
-   * @param chemicalEnergy_pre, previous energy evaluation
-   * @param direction, direction, most likely some function of gradient
-   * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
-   * @return alpha, line search step size
-   */
-  double chemicalBacktrack(const double chemicalEnergy_pre,
-                           Eigen::Matrix<double, Eigen::Dynamic, 1> &direction,
-                           double rho = 0.99, double c1 = 0.0001);
+                   double rho = 0.99, double c1 = 0.0001);
 
   /**
    * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure
@@ -555,13 +534,15 @@ public:
   const double c1;
   double ctol;
   const bool isAugmentedLagrangian;
-  double alpha;
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1> pastPhysicalForce;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> y;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> s;
+  bool ifRestart = false;
 
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> hess_inv;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> pastPhysicalForce;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> s;
+
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> hess_inv_protein;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> pastPhysicalForce_protein;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> s_protein;
 
   BFGS(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
        double tSave_, double tolerance_, std::string outputDir_,
@@ -577,14 +558,19 @@ public:
       std::cout << "Running BFGS propagator ..." << std::endl;
     }
 
-    hess_inv.resize(f.mesh->nVertices(), f.mesh->nVertices());
+    hess_inv.resize(f.mesh->nVertices() * 3, f.mesh->nVertices() * 3);
     hess_inv.setIdentity();
-    pastPhysicalForce.resize(f.mesh->nVertices(), 1);
+    pastPhysicalForce.resize(f.mesh->nVertices() * 3, 1);
     pastPhysicalForce.setZero();
-    s.resize(f.mesh->nVertices(), 1);
+    s.resize(f.mesh->nVertices() * 3, 1);
     s.setZero();
-    y.resize(f.mesh->nVertices(), 1);
-    y.setZero();
+
+    hess_inv_protein.resize(f.mesh->nVertices(), f.mesh->nVertices());
+    hess_inv_protein.setIdentity();
+    pastPhysicalForce_protein.resize(f.mesh->nVertices(), 1);
+    pastPhysicalForce_protein.setZero();
+    s_protein.resize(f.mesh->nVertices(), 1);
+    s_protein.setZero();
 
     // check the validity of parameter
     checkParameters();

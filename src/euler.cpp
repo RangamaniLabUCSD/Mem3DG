@@ -96,7 +96,7 @@ void Euler::status() {
   getForces();
 
   // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(f.F.ontoNormal(physicalForceVec));
+  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
 
   // compute the L1 chemical error norm
   f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
@@ -144,14 +144,15 @@ void Euler::march() {
     if (isAdaptiveStep) {
       double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
       dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-           physicalForce.cwiseAbs().maxCoeff();
+           (f.O.isShapeVariation
+                ? physicalForce.cwiseAbs().maxCoeff()
+                : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
     }
 
     // time stepping on vertex position
     previousE = f.E;
     if (isBacktrack) {
-      backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(),
-                f.O.isProteinVariation, rho, c1);
+      backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(), rho, c1);
     } else {
       pos_e += vel_e * dt;
       f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
