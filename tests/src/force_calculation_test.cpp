@@ -89,7 +89,7 @@ protected:
     o.isCollapseEdge = false;
 
     // Create mesh and geometry objects
-    std::tie(ptrMesh, ptrVpg) = icosphere(2, 1);
+    std::tie(ptrMesh, ptrVpg) = icosphere(1, 3);
   }
 };
 

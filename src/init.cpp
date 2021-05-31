@@ -59,7 +59,8 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
     throw std::logic_error(
         "protein0 has to be disabled (=[-1]) for continuing simulations!");
   }
-  gc::EigenMap<double, 3>(vel) = fd.getVelocity(startingFrame);
+  F.toMatrix(vel) = fd.getVelocity(startingFrame);
+  // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
@@ -208,6 +209,10 @@ void System::mapContinuationVariables(std::string plyFile) {
       proteinDensity =
           ptrRichData_local->getVertexProperty<double>("protein_density")
               .reinterpretTo(*mesh);
+      // vel_protein =
+      //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
+      //         .reinterpretTo(*mesh);
+      ;
     } else {
       throw std::logic_error(
           "protein0 has to be disabled (=[-1]) for continuing simulations!");

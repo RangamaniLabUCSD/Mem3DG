@@ -31,6 +31,7 @@
 #include "mem3dg/solver/meshops.h"
 #include "system.h"
 #include <csignal>
+#include <stdexcept>
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
 #endif
@@ -71,8 +72,6 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1> physicalForce;
   /// numerical dissipative particle dynamics force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 1> DPDForce;
-  /// "velocity" of protein
-  Eigen::Matrix<double, Eigen::Dynamic, 1> vel_protein;
 
   /// Starting time of the simulation
   double init_time;
@@ -141,15 +140,6 @@ public:
     regularizationForce.setZero();
     physicalForce.setZero();
     DPDForce.setZero();
-
-    // initialize netcdf traj file
-#ifdef MEM3DG_WITH_NETCDF
-    createNetcdfFile();
-#endif
-
-    // print to console
-    std::cout << "Initialized integrator and the output trajactory is "
-              << outputDir + trajFileName << std::endl;
   }
 
   // ==========================================================
@@ -299,7 +289,10 @@ public:
                 std::string outputDir_, std::string trajFileName_,
                 size_t verbosity_)
       : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
-                   outputDir_, trajFileName_, verbosity_) {}
+                   outputDir_, trajFileName_, verbosity_) {
+    throw std::runtime_error(
+        "StomerVerlet is currently not tested and maintained!");
+  }
 
   bool integrate();
 };
@@ -553,6 +546,8 @@ public:
         isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
         isAugmentedLagrangian(isAugmentedLagrangian_) {
 
+    throw std::runtime_error("BFGS is currently not tested and maintained!");
+
     // print to console
     if (verbosity > 1) {
       std::cout << "Running BFGS propagator ..." << std::endl;
@@ -631,7 +626,10 @@ public:
                           tolerance_, outputDir_, trajFileName_, verbosity_,
                           isBacktrack_, rho_, c1_, ctol_,
                           isAugmentedLagrangian_, restartNum_),
-        H_(H__), VP_(VP__) {}
+        H_(H__), VP_(VP__) {
+    throw std::runtime_error(
+        "FeedForwardSweep is currently not tested and maintained!");
+  }
   void sweep();
 };
 
