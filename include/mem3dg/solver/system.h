@@ -393,51 +393,51 @@ struct Forces {
 
 struct Parameters {
   /// Bending modulus
-  double Kb;
+  double Kb = 0;
   /// Constant of bending modulus vs protein density
-  double Kbc;
+  double Kbc = 0;
   /// Constant of Spontaneous curvature vs protein density
-  double H0c;
+  double H0c = 0;
   /// (initial) protein density
-  EigenVectorX1D protein0;
+  EigenVectorX1D protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
   /// Global stretching modulus
-  double Ksg;
+  double Ksg = 0;
   /// Area reservior
-  double A_res;
+  double A_res = 0;
   /// Vertex shifting constant
-  double Kst;
+  double Kst = 0;
   /// Local stretching modulus
-  double Ksl;
+  double Ksl = 0;
   /// Edge spring constant
-  double Kse;
+  double Kse = 0;
   /// pressure-volume modulus
-  double Kv;
+  double Kv = 0;
   /// volume reservoir
-  double V_res;
+  double V_res = 0;
   /// Line tension
-  double eta;
+  double eta = 0;
   /// binding energy per protein
-  double epsilon;
+  double epsilon = 0;
   /// binding constant
-  double Bc;
+  double Bc = 0;
   /// Dissipation coefficient
-  double gamma;
+  double gamma = 0;
   /// Reduced volume
-  double Vt;
+  double Vt = -1;
   /// Ambient Pressure
-  double cam;
+  double cam = 0;
   /// Temperature
-  double temp;
+  double temp = 0;
   /// The point
-  EigenVectorX1D pt;
+  EigenVectorX1D pt = Eigen::MatrixXd::Constant(1, 1, 1);
   /// Magnitude of external force
-  double Kf;
+  double Kf = 0;
   /// level of concentration of the external force
-  double conc;
+  double conc = -1;
   /// target height
-  double height;
+  double height = 0;
   /// domain of integration
-  double radius;
+  double radius = 0;
   /// augmented Lagrangian parameter for area
   double lambdaSG = 0;
   /// augmented Lagrangian parameter for volume
@@ -446,7 +446,7 @@ struct Parameters {
   double lambdaPhi = 1e-7;
   /// sharpness of tanh transition
   double sharpness = 20;
-  /// type of relation between H0 and protein density
+  /// type of relation between H0 and protein density, "linear" or "hill"
   std::string relation = "linear";
 };
 
@@ -562,6 +562,8 @@ public:
   gcs::FaceData<gc::Vector3> proteinDensityGradient;
   /// Cached vertex velocity
   gcs::VertexData<gc::Vector3> vel;
+  /// Cached vertex protein velocity
+  gcs::VertexData<double> vel_protein;
   /// Spontaneous curvature of the mesh
   gcs::VertexData<double> H0;
   /// Bending rigidity of the membrane
@@ -588,12 +590,29 @@ public:
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param refVertexMatrix, reference mesh coordinate matrix V x 3
    * @param nSub          Number of subdivision
+   */
+  System(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix, size_t nSub)
+      : System(
+            readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub)) {
+
+    // Initialize reference values
+    initConstants();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
+
+  /**
+   * @brief Construct a new Force object by reading topology and vertex matrices
+   *
+   * @param topologyMatrix,  topology matrix, F x 3
+   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
+   * @param refVertexMatrix, reference mesh coordinate matrix V x 3
+   * @param nSub          Number of subdivision
    * @param p             Parameter of simulation
-   * @param isReducedVolume Option of whether adopting reduced volume
-   * parametrization
-   * @param isProtein     Option of considering protein adsorption
-   * @param isLocalCurvature Option of whether membrane has local curvature
-   * @param isVertexShift Option of whether conducting vertex shift
+   * @param o             options of simulation
    * regularization
    */
   System(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
@@ -621,12 +640,27 @@ public:
    * @param inputMesh     Input Mesh
    * @param refMesh       Reference Mesh
    * @param nSub          Number of subdivision
+   */
+  System(std::string inputMesh, std::string refMesh, size_t nSub)
+      : System(readMeshes(inputMesh, refMesh, nSub)) {
+    // Check confliciting parameters and options
+    checkParametersAndOptions();
+
+    // Initialize reference values
+    initConstants();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
+
+  /**
+   * @brief Construct a new Force object by reading mesh file path
+   *
+   * @param inputMesh     Input Mesh
+   * @param refMesh       Reference Mesh
+   * @param nSub          Number of subdivision
    * @param p             Parameter of simulation
-   * @param isReducedVolume Option of whether adopting reduced volume
-   * parametrization
-   * @param isProtein     Option of considering protein adsorption
-   * @param isLocalCurvature Option of whether membrane has local curvature
-   * @param isVertexShift Option of whether conducting vertex shift
+   * @param o             options of simulation
    * regularization
    */
   System(std::string inputMesh, std::string refMesh, size_t nSub,
@@ -660,13 +694,25 @@ public:
    * @param trajFile      Netcdf trajectory file
    * @param startingFrame Starting frame for the input mesh
    * @param nSub          Number of subdivision
+   */
+  System(std::string trajFile, int startingFrame, size_t nSub)
+      : System(readTrajFile(trajFile, startingFrame, nSub)) {
+
+    // Initialize reference values
+    initConstants();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
+
+  /**
+   * @brief Construct a new System object by reading netcdf trajectory file path
+   *
+   * @param trajFile      Netcdf trajectory file
+   * @param startingFrame Starting frame for the input mesh
+   * @param nSub          Number of subdivision
    * @param p             Parameter of simulation
-   * @param isReducedVolume Option of whether adopting reduced volume
-   * parametrization
-   * @param isProtein     Option of considering protein adsorption
-   * @param isLocalCurvature Option of whether membrane has local curvature
-   * @param isVertexShift Option of whether conducting vertex shift
-   * regularization
+   * @param o             options of simulation
    */
   System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
          Parameters &p, Options &o)
@@ -696,13 +742,7 @@ public:
    * @param tuple        Mesh connectivity, Embedding and geometry
    * information, Mesh rich data
    * @param p             Parameter of simulation
-   * @param isReducedVolume Option of whether adopting reduced volume
-   * parametrization
-   * @param isProtein     Option of considering protein adsorption
-   * @param isLocalCurvature Option of whether membrane has local
-   * curvature
-   * @param isVertexShift Option of whether conducting vertex shift
-   * regularization
+   * @param o             options of simulation
    */
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>,
@@ -714,30 +754,54 @@ public:
                std::move(std::get<2>(meshVpgTuple)), p, o){};
 
   /**
+   * @brief Construct a new System object by reading tuple of unique_ptrs
+   *
+   * @param tuple        Mesh connectivity, Embedding and geometry
+   * information, Mesh rich data
+   */
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>>
+             meshVpgTuple)
+      : System(std::move(std::get<0>(meshVpgTuple)),
+               std::move(std::get<1>(meshVpgTuple)),
+               std::move(std::get<2>(meshVpgTuple))){};
+
+  /**
    * @brief Construct a new System object by reading unique_ptrs to mesh and
    * geometry objects
    * @param ptrmesh_         Mesh connectivity
    * @param ptrvpg_          Embedding and geometry information
    * @param ptrRefvpg_       Embedding and geometry information
    * @param p             Parameter of simulation
-   * @param isReducedVolume Option of whether adopting reduced volume
-   * parametrization
-   * @param isProtein     Option of considering protein adsorption
-   * @param isLocalCurvature Option of whether membrane has local curvature
-   * @param isVertexShift Option of whether conducting vertex shift
-   * regularization
+   * @param o             options of simulation
    */
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
          Options &o)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), std::move(ptrrefVpg_)) {
+    P = p;
+    O = o;
+  }
+
+  /**
+   * @brief Construct a new System object by reading unique_ptrs to mesh and
+   * geometry objects
+   * @param ptrmesh_         Mesh connectivity
+   * @param ptrvpg_          Embedding and geometry information
+   * @param ptrRefvpg_       Embedding and geometry information
+   */
+  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
-        refVpg(std::move(ptrrefVpg_)), P(p), O(o), time(0),
+        refVpg(std::move(ptrrefVpg_)), time(0),
         E({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
         proteinDensity(*mesh, 0), targetLcrs(*mesh), refEdgeLengths(*mesh),
         refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
         thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), H0(*mesh),
+        vel(*mesh, {0, 0, 0}), vel_protein(*mesh, 0), H0(*mesh),
         proteinDensityGradient(*mesh, {0, 0, 0}), Kb(*mesh), isSmooth(true),
         smoothingMask(*mesh, false) {
 

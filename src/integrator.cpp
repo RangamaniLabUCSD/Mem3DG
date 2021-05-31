@@ -329,9 +329,20 @@ void Integrator::lineSearchErrorBacktrack(
 
 void Integrator::finitenessErrorBacktrack() {
 
+  if (!std::isfinite(dt)) {
+    EXIT = true;
+    SUCCESS = false;
+    std::cout << "time step is not finite!" << std::endl;
+  }
+
   if (!std::isfinite(f.L1ErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
+
+    if (!std::isfinite(f.F.toMatrix(f.vel).norm())) {
+      std::cout << "Velocity is not finite!" << std::endl;
+    }
+
     if (!std::isfinite(f.F.toMatrix(f.F.vectorForces).norm())) {
       if (!std::isfinite(f.F.toMatrix(f.F.capillaryForceVec).norm())) {
         std::cout << "Capillary force is not finite!" << std::endl;
@@ -355,6 +366,11 @@ void Integrator::finitenessErrorBacktrack() {
   if (!std::isfinite(f.L1ChemErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
+
+    if (!std::isfinite(f.F.toMatrix(f.vel_protein).norm())) {
+      std::cout << "Protein velocity is not finite!" << std::endl;
+    }
+
     if (!std::isfinite(f.F.toMatrix(f.F.chemicalPotential).norm())) {
       if (!std::isfinite(f.F.toMatrix(f.F.bendingPotential).norm())) {
         std::cout << "Bending Potential is not finite!" << std::endl;
@@ -672,7 +688,7 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addVertexProperty("adsorption_potential", f.F.adsorptionPotential);
   richData.addVertexProperty("chemical_potential", f.F.chemicalPotential);
 
-  richData.write(outputDir + plyName);
+  richData.write(outputDir + "/" + plyName);
 }
 
 #ifdef MEM3DG_WITH_NETCDF

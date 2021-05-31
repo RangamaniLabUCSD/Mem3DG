@@ -40,6 +40,14 @@ bool Euler::integrate() {
   gettimeofday(&start, NULL);
 #endif
 
+  // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+  createNetcdfFile();
+  // print to console
+  std::cout << "Initialized NetCDF file at " << outputDir + trajFileName
+            << std::endl;
+#endif
+
   // time integration loop
   for (;;) {
 
@@ -137,8 +145,7 @@ void Euler::march() {
     auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
     // compute force, which is equivalent to velocity
-    vel_e = physicalForceVec; // rowwiseScaling(physicalForce,
-                              // vertexAngleNormal_e);
+    vel_e = physicalForceVec;
 
     // adjust time step if adopt adaptive time step based on mesh size
     if (isAdaptiveStep) {

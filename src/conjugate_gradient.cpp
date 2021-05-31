@@ -42,6 +42,14 @@ bool ConjugateGradient::integrate() {
   gettimeofday(&start, NULL);
 #endif
 
+  // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+  createNetcdfFile();
+  // print to console
+  std::cout << "Initialized NetCDF file at " << outputDir + trajFileName
+            << std::endl;
+#endif
+
   // time integration loop
   for (;;) {
 
@@ -143,9 +151,9 @@ void ConjugateGradient::march() {
     countCG = 0;
   } else {
     // map the raw eigen datatype for computation
-    auto vel_e = gc::EigenMap<double, 3>(f.vel);
-    auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
+    auto vel_e = f.F.toMatrix(f.vel);
+    auto vel_protein_e = f.F.toMatrix(f.vel_protein);
+    auto pos_e = f.F.toMatrix(f.vpg->inputVertexPositions);
     // typedef gc::EigenVectorMap_T<double, 3,
     // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3
     // Map3 = gc::EigenMap<double, 3>;
@@ -157,7 +165,7 @@ void ConjugateGradient::march() {
           (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
                                   : 0);
       vel_e = physicalForceVec;
-      vel_protein = f.F.chemicalPotential.raw();
+      vel_protein_e = f.F.chemicalPotential.raw();
       countCG = 1;
     } else {
       currentNormSq =
@@ -166,8 +174,8 @@ void ConjugateGradient::march() {
                                   : 0);
       vel_e *= currentNormSq / pastNormSq;
       vel_e += physicalForceVec;
-      vel_protein *= currentNormSq / pastNormSq;
-      vel_protein += f.F.chemicalPotential.raw();
+      vel_protein_e *= currentNormSq / pastNormSq;
+      vel_protein_e += f.F.chemicalPotential.raw();
       pastNormSq = currentNormSq;
       countCG++;
     }
@@ -184,10 +192,10 @@ void ConjugateGradient::march() {
     // time stepping on vertex position
     previousE = f.E;
     if (isBacktrack) {
-      backtrack(f.E.potE, vel_e, vel_protein, rho, c1);
+      backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
     } else {
       pos_e += vel_e * dt;
-      f.proteinDensity.raw() += f.P.Bc * vel_protein * dt;
+      f.proteinDensity.raw() += f.P.Bc * vel_protein_e * dt;
       f.time += dt;
     }
 

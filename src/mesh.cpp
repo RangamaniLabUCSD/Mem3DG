@@ -42,7 +42,6 @@ namespace gcs = ::geometrycentral::surface;
 void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
                    std::unique_ptr<gcs::VertexPositionGeometry> &ptrVpg,
                    std::size_t nSub) {
-
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
 
@@ -51,6 +50,20 @@ void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
 
   std::tie(ptrMesh, ptrVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
+}
+
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+loopSubdivide(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &faces,
+              Eigen::Matrix<double, Eigen::Dynamic, 3> &coords,
+              std::size_t nSub) {
+
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> newFaces;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> newCoords;
+
+  igl::loop(coords, faces, newCoords, newFaces, nSub);
+
+  return std::tie(newFaces, newCoords);
 }
 
 void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
@@ -95,10 +108,28 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
       mesh->flip(e);
     }
   }
-  // mesh->compress();
+  mesh->compress();
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       gc::EigenMap<double, 3, Eigen::RowMajor>(vpg->inputVertexPositions),
       mesh->getFaceVertexMatrix<size_t>());
+}
+
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+subdivide(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &faces,
+          Eigen::Matrix<double, Eigen::Dynamic, 3> &coords, std::size_t nSub) {
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> newCoords;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> newFaces;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::tie(ptrMesh, ptrVpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
+  subdivide(ptrMesh, ptrVpg, nSub);
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  meshMatrix = ptrMesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
 }
 
 std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
@@ -157,7 +188,7 @@ cylinder(double R, int nR, int nh) {
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-icosphere(int n, double R) {
+icosphere(double R, int nSub) {
 
   std::vector<gc::Vector3> coords;
   std::vector<std::vector<std::size_t>> polygons;
@@ -209,13 +240,13 @@ icosphere(int n, double R) {
   };
 
   // Preallocate space
-  std::size_t finalSize = polygons.size() * std::pow(4, n);
+  std::size_t finalSize = polygons.size() * std::pow(4, nSub);
   std::vector<std::vector<std::size_t>> polygons_new;
   polygons_new.reserve(finalSize);
   polygons.reserve(finalSize);
 
   // Subdivide n times by quadrisection
-  for (std::size_t iter = 0; iter < n; ++iter) {
+  for (std::size_t iter = 0; iter < nSub; ++iter) {
     std::size_t sz = polygons.size();
     polygons_new.clear();
     for (std::size_t f = 0; f < sz; ++f) {
@@ -246,10 +277,62 @@ icosphere(int n, double R) {
 
 std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
            Eigen::Matrix<double, Eigen::Dynamic, 3>>
-getIcosphereMatrix(int n, double R) {
+getIcosphereMatrix(double R, int nSub) {
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::tie(mesh, vpg) = icosphere(n, R);
+  std::tie(mesh, vpg) = icosphere(R, nSub);
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  meshMatrix = mesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+hexagon(double R, int nSub) {
+  std::vector<gc::Vector3> coords;
+  std::vector<std::vector<std::size_t>> polygons;
+
+  // Initialize vertex coordinates
+  auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
+    return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
+  };
+
+  for (size_t i = 0; i < 6; i++) {
+    coords.emplace_back(gc::Vector3{R * cos(constants::PI / 3 * i),
+                                    R * sin(constants::PI / 3 * i), 0});
+  }
+  coords.emplace_back(gc::Vector3{0, 0, 0});
+
+  // Initialize Faces
+  polygons.emplace_back(std::vector<std::size_t>{6, 0, 1});
+  polygons.emplace_back(std::vector<std::size_t>{6, 1, 2});
+  polygons.emplace_back(std::vector<std::size_t>{6, 2, 3});
+  polygons.emplace_back(std::vector<std::size_t>{6, 3, 4});
+  polygons.emplace_back(std::vector<std::size_t>{6, 4, 5});
+  polygons.emplace_back(std::vector<std::size_t>{6, 5, 0});
+
+  gcs::SimplePolygonMesh soup(polygons, coords);
+  soup.mergeIdenticalVertices();
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      soup.polygons, soup.vertexCoordinates);
+  subdivide(mesh, vpg, nSub);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg));
+}
+
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+getHexagonMatrix(double R, int nSub) {
+  // std::cout << "hello" << std::endl;
+  // Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  // Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::tie(mesh, vpg) = hexagon(R, nSub);
   Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
   meshMatrix = mesh->getFaceVertexMatrix<size_t>();
@@ -272,6 +355,7 @@ tetrahedron() {
   coords.emplace_back(makeNormedVertex(1.632993, -0.942809, -0.666667));
   coords.emplace_back(makeNormedVertex(0.000000, 1.885618, -0.666667));
   coords.emplace_back(makeNormedVertex(-1.632993, -0.942809, -0.666667));
+
   // Initialize Faces
   polygons.emplace_back(std::vector<std::size_t>{1, 0, 3});
   polygons.emplace_back(std::vector<std::size_t>{2, 0, 1});

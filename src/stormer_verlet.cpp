@@ -19,6 +19,15 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 bool StormerVerlet::integrate() {
+
+  // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+  createNetcdfFile();
+  // print to console
+  std::cout << "Initialized NetCDF file at " << outputDir + trajFileName
+            << std::endl;
+#endif
+
   gcs::FaceData<size_t> faceInd = f.vpg->faceIndices;
   gc::Vector3 totalForce;
   for (size_t i = 0; i < total_time / dt; i++) {
