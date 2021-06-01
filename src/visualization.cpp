@@ -107,7 +107,8 @@ void visualize(mem3dg::System &f) {
       ->addFaceCountQuantity("the point",
                              std::vector<std::pair<size_t, int>>{std::make_pair(
                                  f.thePoint.inSomeFace().face.getIndex(), 1)})
-      ->setPointRadius(f.meanTargetEdgeLength / 2, false);
+      ->setPointRadius(sqrt(f.surfaceArea / f.mesh->nFaces() * 4 / sqrt(3)) / 2,
+                       false);
 
   // polyscope::getSurfaceMesh("Membrane")
   //     ->addEdgeScalarQuantity("isFlip", isFlip.raw().cast<double>());

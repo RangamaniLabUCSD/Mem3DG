@@ -46,7 +46,7 @@ bool BFGS::integrate() {
   createNetcdfFile();
   // print to console
   std::cout << "Initialized integrator and the output trajactory is "
-            << outputDir + trajFileName << std::endl;
+            << outputDir + "/" + trajFileName << std::endl;
 #endif
 
   // time integration loop

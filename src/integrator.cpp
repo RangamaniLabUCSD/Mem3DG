@@ -525,7 +525,7 @@ void Integrator::createNetcdfFile() {
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
+    fd.createNewFile(outputDir + "/" + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.F.toMatrix(f.F.forceMask).rowwise().sum());
     if (!f.mesh->hasBoundary()) {

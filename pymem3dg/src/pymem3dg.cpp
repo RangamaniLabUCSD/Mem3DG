@@ -44,12 +44,12 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   py::class_<Integrator> integrator(pymem3dg, "Integrator", R"delim(
         The integrator
     )delim");
-  integrator.def(py::init<System &, double, bool, double, double, double,
-                          std::string, std::string, size_t>(),
-                 py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
-                 py::arg("total_time_"), py::arg("tSave_"),
-                 py::arg("tolerance_"), py::arg("outputDir_"),
-                 py::arg("trajFileName_"), py::arg("verbosity_"),
+  integrator.def(py::init<System &, double, double, double, double, std::string,
+                          bool, std::string, size_t>(),
+                 py::arg("f"), py::arg("dt"), py::arg("total_time"),
+                 py::arg("tSave"), py::arg("tolerance"), py::arg("outputDir"),
+                 py::arg("isAdaptiveStep") = true,
+                 py::arg("trajFileName") = "traj.nc", py::arg("verbosity") = 3,
                  R"delim(
         Integrator constructor
       )delim");
@@ -78,12 +78,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         Velocity Verlet integration
     )delim");
 
-  velocityverlet.def(py::init<System &, double, bool, double, double, double,
-                              std::string, std::string, size_t>(),
-                     py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
-                     py::arg("total_time_"), py::arg("tSave_"),
-                     py::arg("tolerance_"), py::arg("outputDir_"),
-                     py::arg("trajFileName_"), py::arg("verbosity_"),
+  velocityverlet.def(py::init<System &, double, double, double, double,
+                              std::string, bool, std::string, size_t>(),
+                     py::arg("f"), py::arg("dt"), py::arg("total_time"),
+                     py::arg("tSave"), py::arg("tolerance"),
+                     py::arg("outputDir"), py::arg("isAdaptiveStep") = true,
+                     py::arg("trajFileName") = "traj.nc",
+                     py::arg("verbosity") = 3,
                      R"delim(
         Velocity Verlet integrator constructor
       )delim");
@@ -119,13 +120,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         forward euler (gradient descent) integration
     )delim");
 
-  euler.def(py::init<System &, double, bool, double, double, double,
-                     std::string, std::string, size_t, bool, double, double>(),
-            py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
-            py::arg("total_time_"), py::arg("tSave_"), py::arg("tolerance_"),
-            py::arg("outputDir_"), py::arg("trajFileName_"),
-            py::arg("verbosity_"), py::arg("isBacktrack_"), py::arg("rho_"),
-            py::arg("c1_"),
+  euler.def(py::init<System &, double, double, double, double, std::string,
+                     bool, std::string, size_t, bool, double, double>(),
+            py::arg("f"), py::arg("dt"), py::arg("total_time"),
+            py::arg("tSave"), py::arg("tolerance"), py::arg("outputDir"),
+            py::arg("isAdaptiveStep") = true,
+            py::arg("trajFileName") = "traj.nc", py::arg("verbosity") = 3,
+            py::arg("isBacktrack") = true, py::arg("rho") = 0.99,
+            py::arg("c1") = 0.0001,
             R"delim(
         Euler integrator (steepest descent) constructor
       )delim");
@@ -164,14 +166,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
 
   conjugategradient.def(
-      py::init<System &, double, bool, double, double, double, std::string,
-               std::string, size_t, bool, double, double, double, bool,
-               size_t>(),
-      py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
-      py::arg("total_time_"), py::arg("tSave_"), py::arg("tolerance_"),
-      py::arg("outputDir_"), py::arg("trajFileName_"), py::arg("verbosity_"),
-      py::arg("isBacktrack_"), py::arg("rho_"), py::arg("c1_"), py::arg("ctol"),
-      py::arg("isAugmentedLagrangian_"), py::arg("restartNum_"),
+      py::init<System &, double, double, double, size_t, double, std::string,
+               bool, std::string, size_t, bool, double, double, double, bool>(),
+      py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+      py::arg("restartNum"), py::arg("tolerance"), py::arg("outputDir"),
+      py::arg("isAdaptiveStep") = true, py::arg("trajFileName") = "traj.nc",
+      py::arg("verbosity") = 3, py::arg("isBacktrack") = true,
+      py::arg("rho") = 0.99, py::arg("c1") = 0.0001, py::arg("ctol") = 0.001,
+      py::arg("isAugmentedLagrangian") = false,
       R"delim(
         Conjugate Gradient optimizer constructor
       )delim");
@@ -209,13 +211,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         conjugate Gradient propagator
     )delim");
 
-  bfgs.def(py::init<System &, double, bool, double, double, double, std::string,
+  bfgs.def(py::init<System &, double, double, double, double, std::string, bool,
                     std::string, size_t, bool, double, double, double, bool>(),
-           py::arg("f"), py::arg("dt_"), py::arg("isAdaptiveStep_"),
-           py::arg("total_time_"), py::arg("tSave_"), py::arg("tolerance_"),
-           py::arg("outputDir_"), py::arg("trajFileName_"),
-           py::arg("verbosity_"), py::arg("isBacktrack_"), py::arg("rho_"),
-           py::arg("c1_"), py::arg("ctol"), py::arg("isAugmentedLagrangian_"),
+           py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+           py::arg("tolerance"), py::arg("outputDir"),
+           py::arg("isAdaptiveStep") = true,
+           py::arg("trajFileName") = "traj.nc", py::arg("verbosity") = 3,
+           py::arg("isBacktrack") = true, py::arg("rho") = 0.99,
+           py::arg("c1") = 0.0001, py::arg("ctol") = 0.001,
+           py::arg("isAugmentedLagrangian") = false,
            R"delim(
         BFGS optimizer constructor
       )delim");
@@ -435,48 +439,80 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                             R"delim(
         The system
     )delim");
-  system.def(py::init<std::string, std::string, size_t, bool, Parameters &,
-                      Options &>(),
-             py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
-             py::arg("isContinue"), py::arg("p"), py::arg("o"),
+
+  /**
+   * @brief Constructors by .ply file
+   */
+  system.def(py::init<std::string, size_t>(), py::arg("inputMesh"),
+             py::arg("nSub") = 0,
              R"delim(
-        System constructor
+        System constructor with .ply files
+      )delim");
+  system.def(py::init<std::string, Parameters &, Options &, size_t, bool>(),
+             py::arg("inputMesh"), py::arg("p"), py::arg("o"),
+             py::arg("nSub") = 0, py::arg("isContinue") = false,
+             R"delim(
+        System constructor with .ply files. 
+        Implicitly refering to the inputMesh as the reference mesh.
+      )delim");
+  system.def(py::init<std::string, std::string, Parameters &, Options &, size_t,
+                      bool>(),
+             py::arg("inputMesh"), py::arg("refMesh"), py::arg("p"),
+             py::arg("o"), py::arg("nSub") = 0, py::arg("isContinue") = false,
+             R"delim(
+        System constructor with .ply files 
+      )delim");
+
+  /**
+   * @brief Constructors by matrices
+   */
+  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, size_t>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("nSub") = 0,
+             R"delim(
+        System constructor with Matrices. 
+        Implicitly refering to the inputMesh as the reference mesh.
+      )delim");
+
+  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
+                      Options &, size_t>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
+             py::arg("o"), py::arg("nSub") = 0,
+             R"delim(
+        System constructor with Matrices 
+      )delim");
+
+  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
+                      Options &, size_t>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("refVertexMatrix"), py::arg("p"), py::arg("o"),
+             py::arg("nSub") = 0,
+
+             R"delim(
+        System constructor with Matrices 
+      )delim");
+
+  /**
+   * @brief Constructors by NetCDF trajectory file
+   */
+#ifdef MEM3DG_WITH_NETCDF
+  system.def(py::init<std::string, int, size_t>(), py::arg("trajFile"),
+             py::arg("startingFrame"), py::arg("nSub") = 0,
+             R"delim(
+        System constructor with NetCDF trajectory file
       )delim");
   system.def(
-      py::init<std::string, int, size_t, bool, Parameters &, Options &>(),
-      py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
-      py::arg("isContinue"), py::arg("p"), py::arg("o"),
+      py::init<std::string, int, Parameters &, Options &, size_t, bool>(),
+      py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"), py::arg("o"),
+      py::arg("nSub") = 0, py::arg("isContinue") = false,
       R"delim(
-        System constructor
+        System constructor with NetCDF trajectory file
       )delim");
-  system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3>,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t,
-                      Parameters &, Options &>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("refVertexMatrix"), py::arg("nSub"), py::arg("p"),
-             py::arg("o"),
-             R"delim(
-        System constructor
-      )delim");
-  system.def(py::init<std::string, std::string, size_t>(), py::arg("inputMesh"),
-             py::arg("refMesh"), py::arg("nSub"),
-             R"delim(
-        System constructor
-      )delim");
-  system.def(py::init<std::string, int, size_t>(), py::arg("trajFile"),
-             py::arg("startingFrame"), py::arg("nSub"),
-             R"delim(
-        System constructor
-      )delim");
-  system.def(py::init<Eigen::Matrix<double, Eigen::Dynamic, 3>,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3>,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3>, size_t>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("refVertexMatrix"), py::arg("nSub"),
-             R"delim(
-        System constructor
-      )delim");
+#endif
 
   /**
    * @brief Initializing arguments
@@ -738,10 +774,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether Collapse edge to grow mesh
       )delim");
-  options.def_readwrite("isRefMesh", &Options::isRefMesh,
-                        R"delim(
-          get the option of whether have a reference mesh
-      )delim");
   options.def_readwrite("isFloatVertex", &Options::isFloatVertex,
                         R"delim(
           get the option of whether have "the" vertex floating in embedded space
@@ -951,7 +983,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                R"delim(
           visualization of the system object
       )delim");
-    
+
   pymem3dg.def(
       "snapshot_ply", &snapshot_ply,
       " Visualize .ply file in polysope with options of additional quantities",

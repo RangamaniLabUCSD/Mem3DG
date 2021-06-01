@@ -437,7 +437,7 @@ struct Parameters {
   /// target height
   double height = 0;
   /// domain of integration
-  double radius = 0;
+  double radius = -1;
   /// augmented Lagrangian parameter for area
   double lambdaSG = 0;
   /// augmented Lagrangian parameter for volume
@@ -492,18 +492,32 @@ struct Options {
   bool isSplitEdge = false;
   /// Whether collapse edge
   bool isCollapseEdge = false;
-  /// Whether need reference mesh
-  bool isRefMesh = false;
   /// Whether floating "the" vertex
   bool isFloatVertex = false;
   /// Boundary condition: roller, pin, fixed, none
   std::string boundaryConditionType = "none";
-
-  /// Whether open boundary mesh
-  bool isOpenMesh = false;
 };
 
 class DLL_PUBLIC System {
+protected:
+  /// Mean target area per face
+  double meanTargetFaceArea;
+  /// Mean target area per face
+  double meanTargetEdgeLength;
+  /// Target edge cross length ratio
+  gcs::EdgeData<double> targetLcrs;
+  /// Reference edge Length of reference mesh
+  gcs::EdgeData<double> refEdgeLengths;
+  /// Reference face Area of reference mesh
+  gcs::FaceData<double> refFaceAreas;
+  /// Cached geodesic distance
+  gcs::VertexData<double> geodesicDistanceFromPtInd;
+  // /// V-E distribution matrix
+  // Eigen::SparseMatrix<double> D;
+  /// Random number engine
+  pcg32 rng;
+  std::normal_distribution<double> normal_dist;
+
 public:
   /// Parameters
   Parameters P;
@@ -526,26 +540,6 @@ public:
   /// Forces of the system
   Forces F;
 
-  /// Mean target area per face
-  double meanTargetFaceArea;
-  /// Target total face area
-  double refSurfaceArea;
-  /// Maximal volume
-  double refVolume;
-  /// Mean target area per face
-  double meanTargetEdgeLength;
-  /// Target edge cross length ratio
-  gcs::EdgeData<double> targetLcrs;
-  /// Reference edge Length of reference mesh
-  gcs::EdgeData<double> refEdgeLengths;
-  /// Reference face Area of reference mesh
-  gcs::FaceData<double> refFaceAreas;
-
-  /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistanceFromPtInd;
-  /// V-E distribution matrix
-  Eigen::SparseMatrix<double> D;
-
   /// L1 mechanical error norm
   double L1ErrorNorm;
   /// L1 chemical error norm
@@ -554,8 +548,6 @@ public:
   double surfaceArea;
   /// Volume
   double volume;
-  /// Cached vertex positions from the previous step
-  gcs::VertexData<gc::Vector3> pastPositions;
   /// Cached protein surface density
   gcs::VertexData<double> proteinDensity;
   /// Spontaneous curvature gradient of the mesh
@@ -568,17 +560,20 @@ public:
   gcs::VertexData<double> H0;
   /// Bending rigidity of the membrane
   gcs::VertexData<double> Kb;
-  /// Random number engine
-  pcg32 rng;
-  std::normal_distribution<double> normal_dist;
+
+  /// Target total face area
+  double refSurfaceArea;
+  /// Maximal volume
+  double refVolume;
+
+  /// is Smooth
+  bool isSmooth;
+  gcs::VertexData<bool> smoothingMask;
+  /// if has boundary
+  bool isOpenMesh;
   /// "the vertex"
   gcs::SurfacePoint thePoint;
-  // "the vertex" tracker
   gcs::VertexData<bool> thePointTracker;
-  // is Smooth
-  bool isSmooth;
-  // is
-  gcs::VertexData<bool> smoothingMask;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -588,14 +583,11 @@ public:
    *
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
-   * @param refVertexMatrix, reference mesh coordinate matrix V x 3
    * @param nSub          Number of subdivision
    */
-  System(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix, size_t nSub)
-      : System(
-            readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub)) {
+  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, size_t nSub)
+      : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub)) {
 
     // Initialize reference values
     initConstants();
@@ -609,18 +601,46 @@ public:
    *
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
-   * @param refVertexMatrix, reference mesh coordinate matrix V x 3
-   * @param nSub          Number of subdivision
    * @param p             Parameter of simulation
    * @param o             options of simulation
+   * @param nSub          Number of subdivision
+   */
+  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
+         Options &o, size_t nSub)
+      : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub), p,
+               o) {
+    // Check confliciting parameters and options
+    checkParametersAndOptions();
+
+    // Initialize reference values
+    initConstants();
+
+    // Process the mesh by regularization and mutation
+    processMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
+
+  /**
+   * @brief Construct a new Force object by reading topology and vertex matrices
+   *
+   * @param topologyMatrix,  topology matrix, F x 3
+   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
+   * @param refVertexMatrix, reference mesh coordinate matrix V x 3
+   * @param p             Parameter of simulation
+   * @param o             options of simulation
+   * @param nSub          Number of subdivision
    * regularization
    */
-  System(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix, size_t nSub,
-         Parameters &p, Options &o)
+  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
+         Parameters &p, Options &o, size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
                p, o) {
+    std::cout << " after read" << std::endl;
     // Check confliciting parameters and options
     checkParametersAndOptions();
 
@@ -638,11 +658,11 @@ public:
    * @brief Construct a new Force object by reading mesh file path
    *
    * @param inputMesh     Input Mesh
-   * @param refMesh       Reference Mesh
    * @param nSub          Number of subdivision
    */
-  System(std::string inputMesh, std::string refMesh, size_t nSub)
-      : System(readMeshes(inputMesh, refMesh, nSub)) {
+  System(std::string inputMesh, size_t nSub)
+      : System(readMeshes(inputMesh, inputMesh, nSub)) {
+
     // Check confliciting parameters and options
     checkParametersAndOptions();
 
@@ -657,15 +677,51 @@ public:
    * @brief Construct a new Force object by reading mesh file path
    *
    * @param inputMesh     Input Mesh
-   * @param refMesh       Reference Mesh
-   * @param nSub          Number of subdivision
    * @param p             Parameter of simulation
    * @param o             options of simulation
+   * @param nSub          Number of subdivision
+   * @param isContinue    Wether continue simulation
+   */
+  System(std::string inputMesh, Parameters &p, Options &o, size_t nSub,
+         bool isContinue)
+      : System(readMeshes(inputMesh, inputMesh, nSub), p, o) {
+
+    // Check confliciting parameters and options
+    checkParametersAndOptions();
+
+    // Initialize reference values
+    initConstants();
+
+    // Map continuation variables
+    if (isContinue) {
+      std::cout << "\nWARNING: isContinue is on and make sure mesh file "
+                   "supports richData!"
+                << std::endl;
+      mapContinuationVariables(inputMesh);
+    }
+
+    // Process the mesh by regularization and mutation
+    processMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
+
+  /**
+   * @brief Construct a new Force object by reading mesh file path
+   *
+   * @param inputMesh     Input Mesh
+   * @param refMesh       Reference Mesh
+   * @param p             Parameter of simulation
+   * @param o             options of simulation
+   * @param nSub          Number of subdivision
+   * @param isContinue    Wether continue simulation
    * regularization
    */
-  System(std::string inputMesh, std::string refMesh, size_t nSub,
-         bool isContinue, Parameters &p, Options &o)
+  System(std::string inputMesh, std::string refMesh, Parameters &p, Options &o,
+         size_t nSub, bool isContinue)
       : System(readMeshes(inputMesh, refMesh, nSub), p, o) {
+
     // Check confliciting parameters and options
     checkParametersAndOptions();
 
@@ -710,13 +766,15 @@ public:
    *
    * @param trajFile      Netcdf trajectory file
    * @param startingFrame Starting frame for the input mesh
-   * @param nSub          Number of subdivision
    * @param p             Parameter of simulation
    * @param o             options of simulation
+   * @param nSub          Number of subdivision
+   * @param isContinue    Wether continue simulation
    */
-  System(std::string trajFile, int startingFrame, size_t nSub, bool isContinue,
-         Parameters &p, Options &o)
+  System(std::string trajFile, int startingFrame, Parameters &p, Options &o,
+         size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, o) {
+
     // Check confliciting parameters and options
     checkParametersAndOptions();
 
@@ -796,14 +854,26 @@ public:
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
-        refVpg(std::move(ptrrefVpg_)), time(0),
-        E({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}), F(*mesh, *vpg),
-        proteinDensity(*mesh, 0), targetLcrs(*mesh), refEdgeLengths(*mesh),
-        refFaceAreas(*mesh), D(), geodesicDistanceFromPtInd(*mesh, 0),
-        thePointTracker(*mesh, false), pastPositions(*mesh, {0, 0, 0}),
-        vel(*mesh, {0, 0, 0}), vel_protein(*mesh, 0), H0(*mesh),
-        proteinDensityGradient(*mesh, {0, 0, 0}), Kb(*mesh), isSmooth(true),
-        smoothingMask(*mesh, false) {
+        refVpg(std::move(ptrrefVpg_)), F(*mesh, *vpg) {
+
+    E = Energy({0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    time = 0;
+
+    proteinDensity = gc::VertexData<double>(*mesh, 0);
+    proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
+    vel = gcs::VertexData<gc::Vector3>(*mesh, {0, 0, 0});
+    vel_protein = gcs::VertexData<double>(*mesh, 0);
+    H0 = gcs::VertexData<double>(*mesh);
+    Kb = gcs::VertexData<double>(*mesh);
+
+    refEdgeLengths = gcs::EdgeData<double>(*mesh);
+    refFaceAreas = gcs::FaceData<double>(*mesh);
+    geodesicDistanceFromPtInd = gcs::VertexData<double>(*mesh, 0);
+    targetLcrs = gc::EdgeData<double>(*mesh);
+
+    isSmooth = true;
+    smoothingMask = gc::VertexData<bool>(*mesh, false);
+    thePointTracker = gc::VertexData<bool>(*mesh, false);
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -865,9 +935,9 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> faceVertexMatrix,
-             Eigen::Matrix<double, Eigen::Dynamic, 3> vertexPositionMatrix,
-             Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexPositionMatrix,
+  readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
+             Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexPositionMatrix,
+             Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexPositionMatrix,
              size_t nSub);
 
   /**

@@ -135,7 +135,7 @@ void System::computeKineticEnergy() {
 }
 
 void System::computePotentialEnergy() {
-  if (P.Kb != 0) {
+  if (P.Kb != 0 || P.Kbc != 0) {
     computeBendingEnergy();
   }
   if (P.Ksg != 0) {
