@@ -24,7 +24,7 @@ bool StormerVerlet::integrate() {
 #ifdef MEM3DG_WITH_NETCDF
   createNetcdfFile();
   // print to console
-  std::cout << "Initialized NetCDF file at " << outputDir + trajFileName
+  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
             << std::endl;
 #endif
 
@@ -37,7 +37,7 @@ bool StormerVerlet::integrate() {
     // polyscope::show();
     gc::EigenMap<double, 3>(f.vel) =
         (gc::EigenMap<double, 3>(f.vpg->inputVertexPositions) -
-         gc::EigenMap<double, 3>(f.pastPositions)) /
+         gc::EigenMap<double, 3>(pastPositions)) /
         dt;
     f.computeBendingForce();
     f.computeCapillaryForce();
@@ -60,17 +60,17 @@ bool StormerVerlet::integrate() {
                      f.F.vectorForces[v] + f.F.dampingForce[v] +
                      f.F.stochasticForce[v] + f.F.regularizationForce[v];
         f.vpg->inputVertexPositions[v] +=
-            totalForce * dt * dt - f.pastPositions[v];
+            totalForce * dt * dt - pastPositions[v];
       }
     }
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
     // process the mesh with regularization or mutation
     f.processMesh();
     f.updateVertexPositions();
-    f.pastPositions = temp;
+    pastPositions = temp;
     // initialize/update the vertex position of the last
     // iteration
-    f.pastPositions = f.vpg->inputVertexPositions;
+    pastPositions = f.vpg->inputVertexPositions;
     f.computeFreeEnergy();
 
     // std::cout << "energy: " << totalEnergy << std::endl;

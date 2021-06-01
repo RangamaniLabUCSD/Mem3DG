@@ -34,9 +34,6 @@ int main() {
   std::string inputMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
                           "examples//patch_bud//input-"
                           "file//patch.ply";
-  std::string refMesh =
-      "C://Users//Kieran//Dev//2020-Mem3DG-"
-      "Applications//examples//patch_bud//input-file//patch.ply";
 
   /// physical parameters
   double Kb = 8.22e-5, Kbc = 10 * 8.22e-5, H0 = 40, Kst = 0, Ksl = 0, Kse = 0,
@@ -59,17 +56,16 @@ int main() {
   o.isEdgeFlip = false;
   o.isSplitEdge = false;
   o.isCollapseEdge = false;
-  o.isRefMesh = true;
   o.isFloatVertex = false;
 
-  mem3dg::System f(inputMesh, refMesh, 0, false, p, o);
+  mem3dg::System f(inputMesh, p, o, 0, false);
 
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
 
-  mem3dg::Euler integrator(f, h, true, T, tSave, eps, outputDir, "/traj.nc",
+  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir, true, "/traj.nc",
                            verbosity, true, 0.5, 1e-4);
   integrator.integrate();
 

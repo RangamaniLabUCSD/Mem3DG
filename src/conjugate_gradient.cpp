@@ -46,7 +46,7 @@ bool ConjugateGradient::integrate() {
 #ifdef MEM3DG_WITH_NETCDF
   createNetcdfFile();
   // print to console
-  std::cout << "Initialized NetCDF file at " << outputDir + trajFileName
+  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
             << std::endl;
 #endif
 
@@ -246,7 +246,7 @@ void FeedForwardSweep::sweep() {
 
       // initialize trajectory file name
       char buffer[50];
-      sprintf(buffer, "/traj_H_%d_VP_%d.nc", int(H * 100), int(VP * 100));
+      sprintf(buffer, "traj_H_%d_VP_%d.nc", int(H * 100), int(VP * 100));
       trajFileName = buffer;
 
       // update sweeping paraemters

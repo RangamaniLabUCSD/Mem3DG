@@ -476,14 +476,15 @@ void System::globalUpdateAfterMutation() {
   //   D = vpg->d0.transpose().cwiseAbs() / 2;
   //   // D = vpg->d0.transpose();
   //   // for (int k = 0; k < D.outerSize(); ++k) {
-  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it) {
+  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
+  //   {
   //   //     it.valueRef() = 0.5;
   //   //   }
   //   // }
   // }
 
   // Update mask when topology changes (likely not necessary, just for safety)
-  if (O.isOpenMesh) {
+  if (isOpenMesh) {
     F.forceMask.fill({1, 1, 1});
     boundaryMask(*mesh, F.forceMask, O.boundaryConditionType);
     // for (gcs::Vertex v : mesh->vertices()) {

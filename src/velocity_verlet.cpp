@@ -44,7 +44,7 @@ bool VelocityVerlet::integrate() {
 #ifdef MEM3DG_WITH_NETCDF
   createNetcdfFile();
   // print to console
-  std::cout << "Initialized NetCDF file at " << outputDir + trajFileName
+  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
             << std::endl;
 #endif
 

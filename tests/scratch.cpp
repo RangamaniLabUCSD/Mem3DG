@@ -69,10 +69,9 @@ int main() {
   o.isSplitEdge = true;
   o.isCollapseEdge = true;
   o.isVertexShift = false;
-  o.isRefMesh = false;
   o.isFloatVertex = true;
 
-  mem3dg::System f(inputMesh, inputMesh, 0, false, p, o);
+  mem3dg::System f(inputMesh, p, o, 0, false);
 
   double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
          verbosity = 3, restartNum = 5;
@@ -81,8 +80,8 @@ int main() {
   std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
                           "results//bud//asymm//testTraj";
 
-  mem3dg::Euler integrator(f, h, isAdaptiveStep, T, tSave, eps, outputDir,
-                           outputDir, verbosity, isBacktrack, rho, c1);
+  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
+                           "traj.nc", verbosity, isBacktrack, rho, c1);
   integrator.integrate();
 
   return 0;

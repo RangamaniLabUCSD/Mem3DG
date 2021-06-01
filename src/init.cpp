@@ -152,9 +152,9 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(Eigen::Matrix<double, Eigen::Dynamic, 3> topologyMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix,
+System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+                   Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+                   Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
                    size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
@@ -263,8 +263,11 @@ void System::checkParametersAndOptions() {
   }
 
   // boundary related
+  if (P.radius <= 0 && P.radius != -1) {
+    throw std::logic_error("Radius > 0 or radius = 1 to disable!");
+  }
   if (mesh->hasBoundary()) {
-    O.isOpenMesh = true;
+    isOpenMesh = true;
     if (O.boundaryConditionType != "roller" &&
         O.boundaryConditionType != "pin" &&
         O.boundaryConditionType != "fixed") {
@@ -284,11 +287,7 @@ void System::checkParametersAndOptions() {
   }
 
   // regularization related
-  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) && O.isRefMesh) {
-    throw std::logic_error(
-        "Topology changes are not compatible with reference mesh!");
-  }
-  if (P.Kst != 0 && !O.isRefMesh) {
+  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) && P.Kst) {
     throw std::logic_error("For topology changing simulation, conformal mesh "
                            "regularization Kst cannot be applied!");
   }
@@ -395,9 +394,8 @@ void System::initConstants() {
   rng = pcg32(seed_source);
 
   // define local vpg
-  const auto &localVpg = O.isRefMesh ? refVpg : vpg;
-  localVpg->requireEdgeLengths();
-  localVpg->requireFaceAreas();
+  refVpg->requireEdgeLengths();
+  refVpg->requireFaceAreas();
 
   // // Initialize V-E distribution matrix for line tension calculation
   // if (P.eta != 0) {
@@ -411,17 +409,25 @@ void System::initConstants() {
   // }
 
   // Find "the" vertex
-  findThePoint(*localVpg, geodesicDistanceFromPtInd, 1e18);
+  findThePoint(*refVpg, geodesicDistanceFromPtInd, 1e18);
 
   // Initialize const geodesic distance
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
 
   // Initialize the constant mask based on distance from the point specified
-  for (gcs::Vertex v : mesh->vertices()) {
-    F.forceMask[v] = (geodesicDistanceFromPtInd[v] < P.radius)
-                         ? gc::Vector3{1, 1, 1}
-                         : gc::Vector3{0, 0, 0};
+  if (P.radius != -1) {
+    if (P.radius > geodesicDistanceFromPtInd.raw().maxCoeff() ||
+        P.radius < geodesicDistanceFromPtInd.raw().minCoeff()) {
+      throw std::runtime_error("initConstants: either all vertices or none is "
+                               "included within integration disk, "
+                               "set radius = -1 to disable!");
+    }
+    for (gcs::Vertex v : mesh->vertices()) {
+      F.forceMask[v] = (geodesicDistanceFromPtInd[v] < P.radius)
+                           ? gc::Vector3{1, 1, 1}
+                           : gc::Vector3{0, 0, 0};
+    }
   }
 
   // Initialize protein density
@@ -443,16 +449,16 @@ void System::initConstants() {
   }
 
   // Explicitly cached the reference face areas data
-  refFaceAreas = localVpg->faceAreas;
+  refFaceAreas = refVpg->faceAreas;
 
   // Explicitly cached the reference edge length data
-  refEdgeLengths = localVpg->edgeLengths;
+  refEdgeLengths = refVpg->edgeLengths;
 
   // Initialize the constant target surface (total mesh) area
-  if (O.isOpenMesh) {
+  if (isOpenMesh) {
     refSurfaceArea = P.A_res;
     for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-      refSurfaceArea += computePolygonArea(bl, localVpg->inputVertexPositions);
+      refSurfaceArea += computePolygonArea(bl, refVpg->inputVertexPositions);
     }
   } else {
     refSurfaceArea = refFaceAreas.raw().sum();
@@ -464,25 +470,23 @@ void System::initConstants() {
             << std::endl;
 
   // Initialize the constant target mean face area
-  if (!O.isRefMesh || O.isSplitEdge || O.isCollapseEdge) {
+  if (O.isSplitEdge || O.isCollapseEdge) {
     meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
     meshMutator.targetFaceArea = meanTargetFaceArea;
   }
 
   // Initialize the constant target mean edge length
-  if (!O.isRefMesh) {
-    meanTargetEdgeLength = refEdgeLengths.raw().sum() / mesh->nEdges();
-  }
+  meanTargetEdgeLength = refEdgeLengths.raw().sum() / mesh->nEdges();
 
   // Initialize the target constant cross length ration
-  if (O.isRefMesh) {
-    computeLengthCrossRatio(*localVpg, targetLcrs);
+  if (P.Kst) {
+    computeLengthCrossRatio(*refVpg, targetLcrs);
   }
 
   // Initialize the constant reference volume
-  refVolume = O.isOpenMesh ? P.V_res
-                           : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
-                                 (4 * constants::PI / 3);
+  refVolume = isOpenMesh ? P.V_res
+                         : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
+                               (4 * constants::PI / 3);
 
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;

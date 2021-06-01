@@ -364,15 +364,15 @@ EigenVectorX1D System::computeLineCapillaryForce() {
         "shouldn't be called!");
     // zeros out the nonpositive normal curvature to compensate the fact that d0
     // is ill-defined in low resolution
-    auto normalCurvature = vpg->edgeDihedralAngles.raw();
-    F.lineCapillaryForce.raw() =
-        -D * vpg->hodge1Inverse *
-        ((vpg->hodge1 *
-          (F.lineTension.raw().array() / vpg->edgeLengths.raw().array())
-              .matrix())
-             .array() *
-         normalCurvature.array().max(0))
-            .matrix();
+    // auto normalCurvature = vpg->edgeDihedralAngles.raw();
+    // F.lineCapillaryForce.raw() =
+    //     -D * vpg->hodge1Inverse *
+    //     ((vpg->hodge1 *
+    //       (F.lineTension.raw().array() / vpg->edgeLengths.raw().array())
+    //           .matrix())
+    //          .array() *
+    //      normalCurvature.array().max(0))
+    //         .matrix();
   }
   return F.lineCapillaryForce.raw();
 }
