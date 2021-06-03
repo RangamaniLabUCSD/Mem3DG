@@ -1,9 +1,10 @@
 
 
-name: Mem3DG
-name_long: Membrane Dynamics in 3D using Discrete Differential Geometry 
-url: https://rangamanilabucsd.github.io/Mem3DG/
-
+title: Mem3DG
+description: Membrane Dynamics in 3D using Discrete Differential Geometry 
+url: https://rangamanilabucsd.github.io/Mem3DG
+baseurl                  : / # the subpath of your site, e.g. "/blog"
+repository               : RangamaniLabUCSD/Mem3DG # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
 
 markdown: kramdown
 
