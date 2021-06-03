@@ -5,8 +5,8 @@
 <nav class="navbar navbar-expand-md navbar-light bg-navbar">
     <div class="container">
         {% if page.hide-name != true %}
-        <a class="navbar-brand" href="/">
-            <img class="logo navbar-brand d-inline-block align-top ms-0 me-1" src="/assets/images/logo.svg">
+        <a class="navbar-brand" href="{{ site.url }}{{ site.baseurl }}/">
+            <img class="logo navbar-brand d-inline-block align-top ms-0 me-1" src="{{ site.url }}{{ site.baseurl }}/assets/images/logo.svg">
             <b>{{ site.title }}</b>
         </a>
         {% endif %}
@@ -22,13 +22,13 @@
                         C++ API
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}{{ first_tag.tag }}/cpp/">latest: {{ first_tag.tag }}</a></li>
+                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}/{{ first_tag.tag }}/cpp/">latest: {{ first_tag.tag }}</a></li>
                         {% if old_tags.size > 0 %}
                         <li>
                             <hr class="dropdown-divider">
                         </li>
                         {% for tag in old_tags %}
-                        <li><a class="dropdown-item" href="{{ tag.tag }}/cpp/">{{ tag.tag }} </a></li>
+                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}/{{ tag.tag }}/cpp/">{{ tag.tag }} </a></li>
                         {% endfor %}
                         {% endif %}
                     </ul>
@@ -40,19 +40,19 @@
                         Python API
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}{{ first_tag.tag }}/py/">latest: {{ first_tag.tag }}</a></li>
+                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}/{{ first_tag.tag }}/py/">latest: {{ first_tag.tag }}</a></li>
                         {% if old_tags.size > 0 %}
                         <li>
                             <hr class="dropdown-divider">
                         </li>
                         {% for tag in old_tags %}
-                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}{{ tag.tag }}/py/">{{ tag.tag }} </a></li>
+                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}/{{ tag.tag }}/py/">{{ tag.tag }} </a></li>
                         {% endfor %}
                         {% endif %}
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link mx-1" href="/Tutorials/">Tutorials</a>
+                    <a class="nav-link mx-1" href="{{ site.url }}{{ site.baseurl }}/Tutorials/">Tutorials</a>
                 </li>
             </ul>
         </div>
