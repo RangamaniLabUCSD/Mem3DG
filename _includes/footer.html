@@ -1,0 +1,28 @@
+<div id="footer" class='fixed-bottom'>
+	<footer class="container mt-4">
+		<div class="row">
+			<div class="col-lg-12 reduced-gutter">
+				<div class="pad-left">
+					<ul class="list-inline">
+						{% if site.footer.links %}
+						{% for link in site.footer.links %}
+						{% if link.label and link.url %}
+						<li class="footernav list-inline-item">
+							<i class="{{ link.icon | default: 'fas fa-link' }}" aria-hidden="true"></i>&nbsp;<a class="" href="{{ link.url }}" rel="nofollow noopener noreferrer">{{ link.label }}</a>
+						</li>
+						{% endif %}
+						{% endfor %}
+						{% endif %}
+					</ul>
+				</div>
+			</div>
+		</div>
+		
+		<div class="row">
+			<p class="nav-brand">&copy; 2020-2021 Mem3DG Developers.
+			Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a>.
+				Style adapted from <a href="https://bedford.io/" rel="nofollow">Bedford Lab</a> and <a
+					href="https://mmistakes.github.io/minimal-mistakes/" rel="nofollow">Minimal Mistakes</a>.</p>
+		</div>
+	</footer>
+</div>

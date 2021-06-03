@@ -1,0 +1,61 @@
+{% assign tags = site.data.tags.main | reverse %}
+{% assign first_tag = tags.first %}
+{% assign old_tags = tags | shift %}
+<div id="header">
+<nav class="navbar navbar-expand-md navbar-light bg-navbar">
+    <div class="container">
+        {% if page.hide-name != true %}
+        <a class="navbar-brand" href="/">
+            <img class="logo navbar-brand d-inline-block align-top ms-0 me-1" src="/assets/images/logo.svg">
+            <b>{{ site.name }}</b>
+        </a>
+        {% endif %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav nav-pills ms-auto mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        C++ API
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{{ first_tag.tag }}/cpp/">latest: {{ first_tag.tag }}</a></li>
+                        {% if old_tags.size > 0 %}
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        {% for tag in old_tags %}
+                        <li><a class="dropdown-item" href="{{ tag.tag }}/cpp/">{{ tag.tag }} </a></li>
+                        {% endfor %}
+                        {% endif %}
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Python API
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{{ first_tag.tag }}/py/">latest: {{ first_tag.tag }}</a></li>
+                        {% if old_tags.size > 0 %}
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        {% for tag in old_tags %}
+                        <li><a class="dropdown-item" href="{{ tag.tag }}/py/">{{ tag.tag }} </a></li>
+                        {% endfor %}
+                        {% endif %}
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link mx-1" href="/Tutorials/">Tutorials</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+</div>

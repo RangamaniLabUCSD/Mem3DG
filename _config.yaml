@@ -1,0 +1,68 @@
+
+
+name: Mem3DG
+name_long: Membrane Dynamics in 3D using Discrete Differential Geometry 
+url: https://rangamanilabucsd.github.io/Mem3DG/
+
+
+markdown: kramdown
+
+# Reading Files
+include:
+  - .htaccess
+  - _pages
+  ### FOLDERS FROM SPHINX ###
+  # Normally sphinx ignores things starting with underscore. Care should be 
+  # taken that the jekyll side of things does not use these names.
+  - _static
+  - _pythonapi
+  - _sources
+  #-------------------------#
+
+exclude:
+  - "*.sublime-project"
+  - "*.sublime-workspace"
+  - .asset-cache
+  - .bundle
+  - .jekyll-assets-cache
+  - .sass-cache
+  - assets/js/plugins
+  - assets/js/_main.js
+  - assets/js/vendor
+  - Gemfile
+  - Gruntfile.js
+  - gulpfile.js
+  - README
+keep_files:
+  - .git
+  - .svn
+encoding: "utf-8"
+markdown_ext: "markdown,mkdown,mkdn,mkd,md"
+
+
+# Markdown Processing
+kramdown:
+  input: GFM
+  hard_wrap: false
+  auto_ids: true
+  footnote_nr: 1
+  entity_output: as_char
+  toc_levels: 1..6
+  smart_quotes: lsquo,rsquo,ldquo,rdquo
+  enable_coderay: false
+
+sass:
+  sass_dir: _sass
+  #style: compressed # https://sass-lang.com/documentation/file.SASS_REFERENCE.html#output_style
+
+permalink: /:categories/:title/
+
+# Site Footer
+footer:
+  links:
+    - label: "Fork on GitHub"
+      icon: "fab fa-fw fa-github"
+      url: https://github.com/RangamaniLabUCSD/Mem3DG
+    - label: "Rangamani Lab"
+      icon: "fa fa-fw fa-link"
+      url: https://sites.google.com/eng.ucsd.edu/prangamani/home
