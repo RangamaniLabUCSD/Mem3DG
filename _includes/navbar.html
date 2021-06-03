@@ -22,7 +22,7 @@
                         C++ API
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{{ first_tag.tag }}/cpp/">latest: {{ first_tag.tag }}</a></li>
+                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}{{ first_tag.tag }}/cpp/">latest: {{ first_tag.tag }}</a></li>
                         {% if old_tags.size > 0 %}
                         <li>
                             <hr class="dropdown-divider">
@@ -40,13 +40,13 @@
                         Python API
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{{ first_tag.tag }}/py/">latest: {{ first_tag.tag }}</a></li>
+                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}{{ first_tag.tag }}/py/">latest: {{ first_tag.tag }}</a></li>
                         {% if old_tags.size > 0 %}
                         <li>
                             <hr class="dropdown-divider">
                         </li>
                         {% for tag in old_tags %}
-                        <li><a class="dropdown-item" href="{{ tag.tag }}/py/">{{ tag.tag }} </a></li>
+                        <li><a class="dropdown-item" href="{{ site.url }}{{ site.baseurl }}{{ tag.tag }}/py/">{{ tag.tag }} </a></li>
                         {% endfor %}
                         {% endif %}
                     </ul>
