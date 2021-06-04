@@ -42,6 +42,10 @@ using EigenVectorX3D =
 using EigenTopVec =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
+
+// ==========================================================
+// =============        Viewers                ==============
+// ==========================================================
 void visualize(mem3dg::System &f) {
   signal(SIGINT, mem3dg::signalHandler);
   // Initialize visualization variables
@@ -457,6 +461,10 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
 
 #endif
 
+// ==========================================================
+// =============        Helper functions       ==============
+// ==========================================================
+
 #ifdef MEM3DG_WITH_NETCDF
 polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
                                             const Quantities &options) {
@@ -469,7 +477,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
   // mesh->updateVertexPositions(coords);
   polyscope::SurfaceMesh *polyscopeMesh =
       polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
-  polyscopeMesh->setEnabled(true);
+  // polyscopeMesh->setEnabled(true);
 
   if (options.ref_coord) {
     EigenVectorX3D refcoords = fd.getRefcoordinate();
@@ -587,7 +595,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
       ptrMesh->getFaceVertexList(), gcs::polyscopePermutations(*ptrMesh));
   polyscopeMesh->setSmoothShade(true);
   polyscopeMesh->setEnabled(true);
-  polyscopeMesh->setEdgeWidth(1);
+  // polyscopeMesh->setEdgeWidth(1);
 
   /// Read element data
   if (options.mean_curvature) {

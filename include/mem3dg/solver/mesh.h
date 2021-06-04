@@ -26,6 +26,19 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 /**
+ * @brief read vertex and face matrix from .ply file
+ */
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+readMesh(std::string &plyName);
+
+/**
+ * @brief read data in the format of matrix from .ply file
+ */
+DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
+readVertexData(std::string &plyName, std::string &vertexProperties);
+
+/**
  * @brief Construct an hexagon mesh in PolygonSoup form
  *
  * @param R         Radius of the the hexagon

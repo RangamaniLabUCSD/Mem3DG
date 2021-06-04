@@ -109,8 +109,6 @@ void BFGS::checkParameters() {
 }
 
 void BFGS::status() {
-  // recompute cached values
-  f.updateVertexPositions();
 
   // compute summerized forces
   getForces();
@@ -180,6 +178,8 @@ void BFGS::march() {
   if (f.time == lastSave && f.time != init_time) {
     // process the mesh with regularization or mutation
     f.processMesh();
+    f.updateVertexPositions(true);
+
     f.time += 1e-10 * dt;
     ifRestart = true;
     hess_inv.setIdentity();
@@ -212,6 +212,9 @@ void BFGS::march() {
       f.computeRegularizationForce();
       f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
     }
+
+    // recompute cached values
+    f.updateVertexPositions(false);
   }
 }
 

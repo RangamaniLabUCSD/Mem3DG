@@ -59,7 +59,7 @@ struct DLL_PUBLIC Quantities {
   bool bending_potential = false;
   /// diffusion chemical potential
   bool diffusion_potential = false;
-  /// adsorption chemical potential 
+  /// adsorption chemical potential
   bool adsorption_potential = false;
 };
 

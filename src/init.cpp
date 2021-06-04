@@ -96,8 +96,17 @@ System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
               << std::endl;
   }
 
-  // reinterpret referenceVpg to mesh instead of referenceMesh
-  refVpg = referenceVpg->reinterpretTo(*mesh);
+  // Check consistent topology
+  if ((mesh->nVertices() == referenceMesh->nVertices() &&
+       mesh->nEdges() == referenceMesh->nEdges() &&
+       mesh->nFaces() == referenceMesh->nFaces())) {
+    // reinterpret referenceVpg to mesh instead of referenceMesh.
+    refVpg = referenceVpg->reinterpretTo(*mesh);
+    // throw std::logic_error(
+    //     "Topology of input mesh and reference mesh is not consistent! If not
+    //     " "referencing a mesh, please have the option isRefMesh on and have "
+    //     "input mesh as the duplicated argument!");
+  }
 
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
@@ -123,16 +132,6 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
   std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
   std::cout << "Loaded reference mesh " << refMesh << std::endl;
 
-  // Check consistent topology
-  if (!(mesh->nVertices() == referenceMesh->nVertices() &&
-        mesh->nEdges() == referenceMesh->nEdges() &&
-        mesh->nFaces() == referenceMesh->nFaces())) {
-    throw std::logic_error(
-        "Topology of input mesh and reference mesh is not consistent! If not "
-        "referencing a mesh, please have the option isRefMesh on and have "
-        "input mesh as the duplicated argument!");
-  }
-
   // Subdivide the mesh and geometry objects
   if (nSub > 0) {
     // mem3dg::subdivide(mesh, vpg, nSub);
@@ -143,8 +142,17 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
               << std::endl;
   }
 
-  // reinterpret referenceVpg to mesh instead of referenceMesh.
-  refVpg = referenceVpg->reinterpretTo(*mesh);
+  // Check consistent topology
+  if ((mesh->nVertices() == referenceMesh->nVertices() &&
+       mesh->nEdges() == referenceMesh->nEdges() &&
+       mesh->nFaces() == referenceMesh->nFaces())) {
+    // reinterpret referenceVpg to mesh instead of referenceMesh.
+    refVpg = referenceVpg->reinterpretTo(*mesh);
+    // throw std::logic_error(
+    //     "Topology of input mesh and reference mesh is not consistent! If not
+    //     " "referencing a mesh, please have the option isRefMesh on and have "
+    //     "input mesh as the duplicated argument!");
+  }
 
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
@@ -184,8 +192,17 @@ System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
               << std::endl;
   }
 
-  // reinterpret referenceVpg to mesh instead of referenceMesh.
-  refVpg = referenceVpg->reinterpretTo(*mesh);
+  // Check consistent topology
+  if ((mesh->nVertices() == referenceMesh->nVertices() &&
+       mesh->nEdges() == referenceMesh->nEdges() &&
+       mesh->nFaces() == referenceMesh->nFaces())) {
+    // reinterpret referenceVpg to mesh instead of referenceMesh.
+    refVpg = referenceVpg->reinterpretTo(*mesh);
+    // throw std::logic_error(
+    //     "Topology of input mesh and reference mesh is not consistent! If not
+    //     " "referencing a mesh, please have the option isRefMesh on and have "
+    //     "input mesh as the duplicated argument!");
+  }
 
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
@@ -266,8 +283,8 @@ void System::checkParametersAndOptions() {
   if (P.radius <= 0 && P.radius != -1) {
     throw std::logic_error("Radius > 0 or radius = 1 to disable!");
   }
-  if (mesh->hasBoundary()) {
-    isOpenMesh = true;
+  isOpenMesh = mesh->hasBoundary();
+  if (isOpenMesh) {
     if (O.boundaryConditionType != "roller" &&
         O.boundaryConditionType != "pin" &&
         O.boundaryConditionType != "fixed") {
@@ -287,9 +304,17 @@ void System::checkParametersAndOptions() {
   }
 
   // regularization related
-  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) && P.Kst) {
-    throw std::logic_error("For topology changing simulation, conformal mesh "
-                           "regularization Kst cannot be applied!");
+  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) &&
+      (P.Kst != 0 || P.Kse != 0 || P.Ksl != 0)) {
+    throw std::logic_error("For topology changing simulation, mesh "
+                           "regularization cannot be applied!");
+  }
+  if ((P.Kst != 0 || P.Kse != 0 || P.Ksl != 0) &&
+      ((mesh->nVertices() != refVpg->mesh.nVertices() ||
+        mesh->nEdges() != refVpg->mesh.nEdges() ||
+        mesh->nFaces() != refVpg->mesh.nFaces()))) {
+    throw std::logic_error("For topologically different reference mesh, mesh "
+                           "regularization cannot be applied!");
   }
 
   // the vertex related
@@ -521,7 +546,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // update protein density
-  if (P.protein0.rows() == 3 && !O.isProteinVariation) {
+  if (P.protein0.rows() == 4 && !O.isProteinVariation) {
     if (isUpdateGeodesics) {
       std::vector<double> r_heter{P.protein0[0], P.protein0[1]};
       tanhDistribution(*vpg, proteinDensity.raw(),
