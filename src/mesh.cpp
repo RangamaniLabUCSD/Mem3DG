@@ -419,4 +419,30 @@ getDiamondMatrix(double dihedral) {
   vertexMatrix = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
   return std::tie(meshMatrix, vertexMatrix);
 }
+
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+readMesh(std::string &plyName) {
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
+  std::tie(ptrMesh, ptrVpg) = gcs::readManifoldSurfaceMesh(plyName);
+  meshMatrix = ptrMesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
+}
+
+DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
+readVertexData(std::string &plyName, std::string &vertexProperties) {
+  // Declare pointers to mesh, geometry and richdata objects
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> data;
+  std::tie(ptrMesh, ptrRichData) =
+      gcs::RichSurfaceMeshData::readMeshAndData(plyName);
+  data = ptrRichData->getVertexProperty<double>(vertexProperties).raw();
+  return data;
+}
 } // namespace mem3dg

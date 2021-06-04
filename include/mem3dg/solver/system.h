@@ -640,7 +640,6 @@ public:
          Parameters &p, Options &o, size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
                p, o) {
-    std::cout << " after read" << std::endl;
     // Check confliciting parameters and options
     checkParametersAndOptions();
 

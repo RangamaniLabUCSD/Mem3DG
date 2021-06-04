@@ -648,9 +648,11 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
     if (geodesicDistance[v] > range) {
       continue;
     }
-    if (geodesicDistance[v] <= 0 && isIntialized) {
+    if (geodesicDistance[v] < 0 && isIntialized) {
       std::cout
-          << "\nWARNING: closestVertexToPt: geodesicDistance <= 0, may be "
+          << "\nWARNING: closestVertexToPt: geodesicDistance of this vertex is "
+          << geodesicDistance[v]
+          << " which is less than 0, may be "
              "uninitialized/updated!"
           << std::endl;
     }

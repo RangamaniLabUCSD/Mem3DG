@@ -97,9 +97,6 @@ void Euler::checkParameters() {
 
 void Euler::status() {
 
-  // recompute cached values
-  f.updateVertexPositions();
-
   // compute summerized forces
   getForces();
 
@@ -138,6 +135,7 @@ void Euler::march() {
   if (f.time == lastSave) {
     // process the mesh with regularization or mutation
     f.processMesh();
+    f.updateVertexPositions(true);
     f.time += 1e-10 * dt;
   } else {
     // map the raw eigen datatype for computation
@@ -171,6 +169,9 @@ void Euler::march() {
       f.computeRegularizationForce();
       f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
     }
+
+    // recompute cached values
+    f.updateVertexPositions(false);
   }
 }
 } // namespace mem3dg

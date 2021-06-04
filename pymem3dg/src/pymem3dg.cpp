@@ -1139,6 +1139,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                "subdivide the mesh in Loop scheme", py::arg("faces"),
                py::arg("coords"), py::arg("nSub"));
 
+  pymem3dg.def("readMesh", &readMesh,
+               "read vertex and face matrix from .ply file",
+               py::arg("plyName"));
+
+  pymem3dg.def("readVertexData", &readVertexData,
+               "read data in the format of matrix from .ply file",
+               py::arg("plyName"), py::arg("vertexProperties"));
+
   // ==========================================================
   // =============   Simulation drivers         ===============
   // ==========================================================
