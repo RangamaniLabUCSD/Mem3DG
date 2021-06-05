@@ -654,11 +654,11 @@ void Integrator::saveRichData(std::string plyName) {
   gcs::VertexData<double> msk(*f.mesh);
   msk.fromVector(f.F.toMatrix(f.F.forceMask).rowwise().sum());
   richData.addVertexProperty("mask", msk);
-  gcs::VertexData<int> smthingMsk(*f.mesh);
-  smthingMsk.fromVector(f.smoothingMask.raw().cast<int>());
+  gcs::VertexData<double> smthingMsk(*f.mesh);
+  smthingMsk.fromVector(f.smoothingMask.raw().cast<double>());
   richData.addVertexProperty("smoothing_mask", smthingMsk);
-  gcs::VertexData<int> tkr(*f.mesh);
-  tkr.fromVector(f.thePointTracker.raw().cast<int>());
+  gcs::VertexData<double> tkr(*f.mesh);
+  tkr.fromVector(f.thePointTracker.raw().cast<double>());
   richData.addVertexProperty("the_point", tkr);
 
   // write geometry

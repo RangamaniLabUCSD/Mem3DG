@@ -1143,9 +1143,18 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                "read vertex and face matrix from .ply file",
                py::arg("plyName"));
 
-  pymem3dg.def("readVertexData", &readVertexData,
+  pymem3dg.def("readData", py::overload_cast<std::string &>(&readData),
                "read data in the format of matrix from .ply file",
-               py::arg("plyName"), py::arg("vertexProperties"));
+               py::arg("plyName"));
+  pymem3dg.def("readData",
+               py::overload_cast<std::string &, std::string &>(&readData),
+               "read data in the format of matrix from .ply file",
+               py::arg("plyName"), py::arg("elementName"));
+  pymem3dg.def(
+      "readData",
+      py::overload_cast<std::string &, std::string &, std::string &>(&readData),
+      "read data in the format of matrix from .ply file", py::arg("plyName"),
+      py::arg("elementName"), py::arg("propertyName"));
 
   // ==========================================================
   // =============   Simulation drivers         ===============

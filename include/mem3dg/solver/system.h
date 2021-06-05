@@ -429,7 +429,7 @@ struct Parameters {
   /// Temperature
   double temp = 0;
   /// The point
-  EigenVectorX1D pt = Eigen::MatrixXd::Constant(1, 1, 1);
+  EigenVectorX1D pt = Eigen::MatrixXd::Constant(1, 1, 0);
   /// Magnitude of external force
   double Kf = 0;
   /// level of concentration of the external force

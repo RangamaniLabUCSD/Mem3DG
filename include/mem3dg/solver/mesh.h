@@ -35,8 +35,12 @@ readMesh(std::string &plyName);
 /**
  * @brief read data in the format of matrix from .ply file
  */
+DLL_PUBLIC std::vector<std::string> readData(std::string &plyName);
+DLL_PUBLIC std::vector<std::string> readData(std::string &plyName,
+                                             std::string &elementName);
 DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
-readVertexData(std::string &plyName, std::string &vertexProperties);
+readData(std::string &plyName, std::string &elementName,
+         std::string &vertexProperties);
 
 /**
  * @brief Construct an hexagon mesh in PolygonSoup form

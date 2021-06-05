@@ -435,14 +435,49 @@ readMesh(std::string &plyName) {
 }
 
 DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
-readVertexData(std::string &plyName, std::string &vertexProperties) {
+readData(std::string &plyName, std::string &elementName,
+         std::string &propertyName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> data;
   std::tie(ptrMesh, ptrRichData) =
       gcs::RichSurfaceMeshData::readMeshAndData(plyName);
-  data = ptrRichData->getVertexProperty<double>(vertexProperties).raw();
-  return data;
+  // return ptrRichData->getVertexProperty<double>(propertyName).raw();
+  // This is part of RichSurfaceMeshData::getElementProperty
+  std::vector<double> rawData = ptrRichData->plyData.getElement(elementName)
+                                    .getProperty<double>(propertyName);
+  if (rawData.size() != ptrRichData->plyData.getElement(elementName).count) {
+    throw std::runtime_error("Property " + propertyName +
+                             " does not have size equal to number of " +
+                             elementName);
+  }
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> property;
+  property.resize(rawData.size(), 1);
+
+  for (std::size_t i = 0; i < rawData.size(); i++) {
+    property[i] = rawData[i];
+  }
+
+  return property;
+}
+
+DLL_PUBLIC std::vector<std::string> readData(std::string &plyName,
+                                             std::string &elementName) {
+  // Declare pointers to mesh, geometry and richdata objects
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
+  std::tie(ptrMesh, ptrRichData) =
+      gcs::RichSurfaceMeshData::readMeshAndData(plyName);
+  return ptrRichData->plyData.getElement(elementName).getPropertyNames();
+}
+
+DLL_PUBLIC std::vector<std::string> readData(std::string &plyName) {
+  // Declare pointers to mesh, geometry and richdata objects
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
+  std::tie(ptrMesh, ptrRichData) =
+      gcs::RichSurfaceMeshData::readMeshAndData(plyName);
+  return ptrRichData->plyData.getElementNames();
 }
 } // namespace mem3dg
