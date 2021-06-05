@@ -19,6 +19,7 @@
 find_package(Doxygen)
 set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/cpp")
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
+set(DOXYGEN_PROJECT_NUMBER ${VERSION})
 doxygen_add_docs(mem3dg_doxy_docs
     ${CMAKE_SOURCE_DIR}/README.md
     ${DDG_HEADERS}
