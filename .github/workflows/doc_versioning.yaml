@@ -1,0 +1,33 @@
+name: Tracking Documentation Versions 
+
+on:
+  push:
+    branches:
+      - development
+    tags:
+      - 'v[0-9].[0-9]+.[0-9]+*'
+
+jobs:
+  check_for_doc_versions:
+    name: Update documented versions
+    runs-on: ubuntu-latest
+    # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        ref: gh-pages
+
+   - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+
+    - run: |
+        echo "- tag: ${{ steps.get_version.outputs.VERSION }}" >> _data/tags.yml
+        cat _data/tags.yml
+
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add _data/tags.yml
+        git commit -m "Auto adding tag ${{ steps.get_version.outputs.VERSION }}"
+        git push
