@@ -12,6 +12,12 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
 
+# Use CMAKE_MSVC_RUNTIME_LIBRARY to control linked runtime
+cmake_policy(SET CMP0091 NEW)
+# Honor visibility for all target types
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Force globally
+cmake_policy(SET CMP0063 NEW)
+
 cmake_minimum_required(VERSION 3.11)
 
 # Add path to custom modules
@@ -24,6 +30,8 @@ get_version_from_git()
 project(
   Mem3DG
   VERSION ${VERSION_SHORT}
+  DESCRIPTION "Membrane Dynamics in 3D using Discrete Differential Geometry"
+  HOMEPAGE_URL "https://rangamanilabucsd.github.io/Mem3DG/"
   LANGUAGES CXX
 )
 message(STATUS "Mem3DG version: ${VERSION}")
@@ -61,7 +69,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(DDG_MASTER_PROJECT ON)
 endif()
 
-print_debug_messages()
+print_debug_messages(CXX)
 
 include(FetchContent)
 
