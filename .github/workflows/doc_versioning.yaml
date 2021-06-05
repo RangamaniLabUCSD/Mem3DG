@@ -18,7 +18,7 @@ jobs:
         fetch-depth: 0
         ref: gh-pages
 
-   - name: Get the version
+    - name: Get the version
       id: get_version
       run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
 
