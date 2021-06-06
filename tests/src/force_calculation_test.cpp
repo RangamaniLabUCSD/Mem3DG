@@ -27,7 +27,7 @@
 
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
 

@@ -23,7 +23,7 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {

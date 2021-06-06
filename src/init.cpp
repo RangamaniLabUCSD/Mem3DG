@@ -16,7 +16,7 @@
 #include "geometrycentral/surface/heat_method_distance.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include <cmath>
 #include <stdexcept>
 #include <vector>

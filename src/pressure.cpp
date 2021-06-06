@@ -29,9 +29,9 @@
 #include "Eigen/src/Core/util/Constants.h"
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/type_utilities.h"
 #include <Eigen/Core>
 #include <math.h>
 #include <pcg_random.hpp>

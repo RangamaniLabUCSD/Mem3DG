@@ -34,9 +34,8 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
-#include "mem3dg/solver/macros.h"
-#include "mem3dg/solver/meshops.h"
-#include "mem3dg/solver/typetraits.h"
+#include "mem3dg/macros.h"
+#include "mem3dg/meshops.h"
 
 namespace mem3dg {
 

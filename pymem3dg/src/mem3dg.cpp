@@ -29,12 +29,11 @@
 #include "polyscope/surface_mesh.h"
 
 #include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/mem3dg.h"
+#include "mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
-#include "mem3dg/solver/typetraits.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/type_utilities.h"
 
 // #include <pybind11/embed.h>
 

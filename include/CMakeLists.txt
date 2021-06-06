@@ -13,16 +13,19 @@
 # 
 
 set(DDG_HEADERS
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/constants.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mem3dg.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/visualization.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/visualization.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/error_handler.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/typetraits.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/macros.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/type_utilities.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/meshops.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/version.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/constants.h"
+    
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/system.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/typetraits.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/util.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/macros.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/meshops.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/version.h"
     PARENT_SCOPE)

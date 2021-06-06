@@ -14,11 +14,12 @@
 
 #pragma once
 
-#include "geometrycentral/utilities/vector3.h"
-#include "macros.h"
 #include <geometrycentral/surface/manifold_surface_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/utilities/vector3.h>
+
+#include "mem3dg/macros.h"
 
 namespace mem3dg {
 
@@ -33,11 +34,30 @@ DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
 readMesh(std::string &plyName);
 
 /**
- * @brief read data in the format of matrix from .ply file
+ * @brief Read data in the format of matrix from .ply file
+ * 
+ * @param plyName   PLY file to read
+ * @return Vector of
  */
 DLL_PUBLIC std::vector<std::string> readData(std::string &plyName);
+
+/**
+ * @brief 
+ * 
+ * @param plyName 
+ * @param elementName 
+ * @return 
+ */
 DLL_PUBLIC std::vector<std::string> readData(std::string &plyName,
                                              std::string &elementName);
+/**
+ * @brief 
+ * 
+ * @param plyName 
+ * @param elementName 
+ * @param vertexProperties 
+ * @return 
+ */
 DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
 readData(std::string &plyName, std::string &elementName,
          std::string &vertexProperties);
@@ -88,7 +108,7 @@ getCylinderMatrix(double R, int nR, int nh, double freq = 1, double amp = 0);
  * @brief Construct an icosphere mesh in PolygonSoup form
  *
  * @param R         Radius of the icosphere
- * @param nSub         Iterations of quadrisections to perform
+ * @param nSub      Iterations of quadrisections to perform
  */
 DLL_PUBLIC std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
@@ -98,7 +118,7 @@ icosphere(double R, int nSub);
  * @brief Construct an icosphere mesh
  *
  * @param R         Radius of the icosphere
- * @param nSub         Iterations of quadrisections to perform
+ * @param nSub      Iterations of quadrisections to perform
  */
 DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
@@ -146,6 +166,15 @@ getDiamondMatrix(double dihedral);
 DLL_PUBLIC void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
                           std::unique_ptr<gcs::VertexPositionGeometry> &vpg,
                           std::size_t nSub);
+
+/**
+ * @brief Subdivide a mesh in Polygon Soup form
+ * 
+ * @param faces 
+ * @param coords 
+ * @param nSub 
+ * @return 
+ */
 DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
 subdivide(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &faces,
@@ -162,6 +191,15 @@ DLL_PUBLIC void
 loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
               std::unique_ptr<gcs::VertexPositionGeometry> &ptrVpg,
               std::size_t nSub);
+
+/**
+ * @brief Perform loop subdivision on a Polygon Soup mesh
+ * 
+ * @param faces 
+ * @param coords 
+ * @param nSub 
+ * @return 
+ */
 DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
 loopSubdivide(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &faces,

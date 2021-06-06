@@ -25,7 +25,6 @@
 #include <netcdf>
 #include <vector>
 
-#include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/trajfile.h"
 
 namespace mem3dg {
