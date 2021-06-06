@@ -40,6 +40,14 @@ bool VelocityVerlet::integrate() {
   gettimeofday(&start, NULL);
 #endif
 
+  // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+  createNetcdfFile();
+  // print to console
+  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
+            << std::endl;
+#endif
+
   // time integration loop
   for (;;) {
 

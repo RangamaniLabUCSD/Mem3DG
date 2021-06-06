@@ -329,9 +329,20 @@ void Integrator::lineSearchErrorBacktrack(
 
 void Integrator::finitenessErrorBacktrack() {
 
+  if (!std::isfinite(dt)) {
+    EXIT = true;
+    SUCCESS = false;
+    std::cout << "time step is not finite!" << std::endl;
+  }
+
   if (!std::isfinite(f.L1ErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
+
+    if (!std::isfinite(f.F.toMatrix(f.vel).norm())) {
+      std::cout << "Velocity is not finite!" << std::endl;
+    }
+
     if (!std::isfinite(f.F.toMatrix(f.F.vectorForces).norm())) {
       if (!std::isfinite(f.F.toMatrix(f.F.capillaryForceVec).norm())) {
         std::cout << "Capillary force is not finite!" << std::endl;
@@ -355,6 +366,11 @@ void Integrator::finitenessErrorBacktrack() {
   if (!std::isfinite(f.L1ChemErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
+
+    if (!std::isfinite(f.F.toMatrix(f.vel_protein).norm())) {
+      std::cout << "Protein velocity is not finite!" << std::endl;
+    }
+
     if (!std::isfinite(f.F.toMatrix(f.F.chemicalPotential).norm())) {
       if (!std::isfinite(f.F.toMatrix(f.F.bendingPotential).norm())) {
         std::cout << "Bending Potential is not finite!" << std::endl;
@@ -509,7 +525,7 @@ void Integrator::createNetcdfFile() {
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (verbosity > 0) {
-    fd.createNewFile(outputDir + trajFileName, *f.mesh, *f.refVpg,
+    fd.createNewFile(outputDir + "/" + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
     fd.writeMask(f.F.toMatrix(f.F.forceMask).rowwise().sum());
     if (!f.mesh->hasBoundary()) {
@@ -638,11 +654,11 @@ void Integrator::saveRichData(std::string plyName) {
   gcs::VertexData<double> msk(*f.mesh);
   msk.fromVector(f.F.toMatrix(f.F.forceMask).rowwise().sum());
   richData.addVertexProperty("mask", msk);
-  gcs::VertexData<int> smthingMsk(*f.mesh);
-  smthingMsk.fromVector(f.smoothingMask.raw().cast<int>());
+  gcs::VertexData<double> smthingMsk(*f.mesh);
+  smthingMsk.fromVector(f.smoothingMask.raw().cast<double>());
   richData.addVertexProperty("smoothing_mask", smthingMsk);
-  gcs::VertexData<int> tkr(*f.mesh);
-  tkr.fromVector(f.thePointTracker.raw().cast<int>());
+  gcs::VertexData<double> tkr(*f.mesh);
+  tkr.fromVector(f.thePointTracker.raw().cast<double>());
   richData.addVertexProperty("the_point", tkr);
 
   // write geometry
@@ -672,7 +688,7 @@ void Integrator::saveRichData(std::string plyName) {
   richData.addVertexProperty("adsorption_potential", f.F.adsorptionPotential);
   richData.addVertexProperty("chemical_potential", f.F.chemicalPotential);
 
-  richData.write(outputDir + plyName);
+  richData.write(outputDir + "/" + plyName);
 }
 
 #ifdef MEM3DG_WITH_NETCDF

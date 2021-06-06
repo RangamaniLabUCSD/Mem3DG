@@ -56,7 +56,6 @@ protected:
     o.isConstantSurfaceTension = true;
     o.isProteinVariation = true;
     o.isShapeVariation = true;
-    o.isRefMesh = false;
     o.isFloatVertex = true;
     o.boundaryConditionType = "none";
 
@@ -97,12 +96,12 @@ protected:
     p.Kf = 0;
     p.conc = -1;
     p.height = 0;
-    p.radius = 100000;
+    p.radius = -1;
     p.lambdaSG = 0;
     p.lambdaV = 0;
 
     // Create mesh and geometry objects
-    std::tie(topologyMatrix, vertexMatrix) = getIcosphereMatrix(3, 1);
+    std::tie(topologyMatrix, vertexMatrix) = getIcosphereMatrix(1, 3);
   }
 };
 
@@ -114,7 +113,7 @@ protected:
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // Instantiate system object
   size_t nSub = 0;
-  mem3dg::System f(topologyMatrix, vertexMatrix, vertexMatrix, nSub, p, o);
+  mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
   // First time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
@@ -144,7 +143,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
   // initialize the system
   size_t nSub = 0;
-  mem3dg::System f(topologyMatrix, vertexMatrix, vertexMatrix, nSub, p, o);
+  mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.vel);

@@ -41,6 +41,14 @@ bool BFGS::integrate() {
   gettimeofday(&start, NULL);
 #endif
 
+  // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+  createNetcdfFile();
+  // print to console
+  std::cout << "Initialized integrator and the output trajactory is "
+            << outputDir + "/" + trajFileName << std::endl;
+#endif
+
   // time integration loop
   for (;;) {
 
@@ -101,8 +109,6 @@ void BFGS::checkParameters() {
 }
 
 void BFGS::status() {
-  // recompute cached values
-  f.updateVertexPositions();
 
   // compute summerized forces
   getForces();
@@ -172,18 +178,19 @@ void BFGS::march() {
   if (f.time == lastSave && f.time != init_time) {
     // process the mesh with regularization or mutation
     f.processMesh();
+    f.updateVertexPositions(true);
+
     f.time += 1e-10 * dt;
     ifRestart = true;
     hess_inv.setIdentity();
     hess_inv_protein.setIdentity();
   } else {
     // map the raw eigen datatype for computation
-    auto vel_e = gc::EigenMap<double, 3>(f.vel);
-    auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
+    auto vel_e = f.F.toMatrix(f.vel);
+    auto vel_protein_e = f.F.toMatrix(f.vel_protein);
 
     vel_e = f.F.unflatten(hess_inv * f.F.flatten(physicalForceVec));
-    vel_protein = hess_inv_protein * f.F.chemicalPotential.raw();
+    vel_protein_e = hess_inv_protein * f.F.chemicalPotential.raw();
 
     // adjust time step if adopt adaptive time step based on mesh size
     if (isAdaptiveStep) {
@@ -196,15 +203,18 @@ void BFGS::march() {
 
     // time stepping on vertex position
     previousE = f.E;
-    double alpha = backtrack(f.E.potE, vel_e, vel_protein, rho, c1);
+    double alpha = backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
     s = alpha * f.F.flatten(vel_e);
-    s_protein = alpha * vel_protein;
+    s_protein = alpha * vel_protein_e;
 
     // regularization
     if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
       f.computeRegularizationForce();
       f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
     }
+
+    // recompute cached values
+    f.updateVertexPositions(false);
   }
 }
 
