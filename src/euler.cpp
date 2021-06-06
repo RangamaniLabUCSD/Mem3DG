@@ -40,6 +40,14 @@ bool Euler::integrate() {
   gettimeofday(&start, NULL);
 #endif
 
+  // initialize netcdf traj file
+#ifdef MEM3DG_WITH_NETCDF
+  createNetcdfFile();
+  // print to console
+  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
+            << std::endl;
+#endif
+
   // time integration loop
   for (;;) {
 
@@ -89,9 +97,6 @@ void Euler::checkParameters() {
 
 void Euler::status() {
 
-  // recompute cached values
-  f.updateVertexPositions();
-
   // compute summerized forces
   getForces();
 
@@ -130,6 +135,7 @@ void Euler::march() {
   if (f.time == lastSave) {
     // process the mesh with regularization or mutation
     f.processMesh();
+    f.updateVertexPositions(true);
     f.time += 1e-10 * dt;
   } else {
     // map the raw eigen datatype for computation
@@ -137,8 +143,7 @@ void Euler::march() {
     auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
     // compute force, which is equivalent to velocity
-    vel_e = physicalForceVec; // rowwiseScaling(physicalForce,
-                              // vertexAngleNormal_e);
+    vel_e = physicalForceVec;
 
     // adjust time step if adopt adaptive time step based on mesh size
     if (isAdaptiveStep) {
@@ -164,6 +169,9 @@ void Euler::march() {
       f.computeRegularizationForce();
       f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
     }
+
+    // recompute cached values
+    f.updateVertexPositions(false);
   }
 }
 } // namespace mem3dg

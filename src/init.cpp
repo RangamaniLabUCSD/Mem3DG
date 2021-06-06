@@ -59,7 +59,8 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
     throw std::logic_error(
         "protein0 has to be disabled (=[-1]) for continuing simulations!");
   }
-  gc::EigenMap<double, 3>(vel) = fd.getVelocity(startingFrame);
+  F.toMatrix(vel) = fd.getVelocity(startingFrame);
+  // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
@@ -95,8 +96,17 @@ System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
               << std::endl;
   }
 
-  // reinterpret referenceVpg to mesh instead of referenceMesh
-  refVpg = referenceVpg->reinterpretTo(*mesh);
+  // Check consistent topology
+  if ((mesh->nVertices() == referenceMesh->nVertices() &&
+       mesh->nEdges() == referenceMesh->nEdges() &&
+       mesh->nFaces() == referenceMesh->nFaces())) {
+    // reinterpret referenceVpg to mesh instead of referenceMesh.
+    refVpg = referenceVpg->reinterpretTo(*mesh);
+    // throw std::logic_error(
+    //     "Topology of input mesh and reference mesh is not consistent! If not
+    //     " "referencing a mesh, please have the option isRefMesh on and have "
+    //     "input mesh as the duplicated argument!");
+  }
 
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
@@ -122,16 +132,6 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
   std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
   std::cout << "Loaded reference mesh " << refMesh << std::endl;
 
-  // Check consistent topology
-  if (!(mesh->nVertices() == referenceMesh->nVertices() &&
-        mesh->nEdges() == referenceMesh->nEdges() &&
-        mesh->nFaces() == referenceMesh->nFaces())) {
-    throw std::logic_error(
-        "Topology of input mesh and reference mesh is not consistent! If not "
-        "referencing a mesh, please have the option isRefMesh on and have "
-        "input mesh as the duplicated argument!");
-  }
-
   // Subdivide the mesh and geometry objects
   if (nSub > 0) {
     // mem3dg::subdivide(mesh, vpg, nSub);
@@ -142,8 +142,17 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
               << std::endl;
   }
 
-  // reinterpret referenceVpg to mesh instead of referenceMesh.
-  refVpg = referenceVpg->reinterpretTo(*mesh);
+  // Check consistent topology
+  if ((mesh->nVertices() == referenceMesh->nVertices() &&
+       mesh->nEdges() == referenceMesh->nEdges() &&
+       mesh->nFaces() == referenceMesh->nFaces())) {
+    // reinterpret referenceVpg to mesh instead of referenceMesh.
+    refVpg = referenceVpg->reinterpretTo(*mesh);
+    // throw std::logic_error(
+    //     "Topology of input mesh and reference mesh is not consistent! If not
+    //     " "referencing a mesh, please have the option isRefMesh on and have "
+    //     "input mesh as the duplicated argument!");
+  }
 
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
@@ -151,9 +160,9 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> topologyMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> refVertexMatrix,
+System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+                   Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+                   Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
                    size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
@@ -183,8 +192,17 @@ System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> topologyMatrix,
               << std::endl;
   }
 
-  // reinterpret referenceVpg to mesh instead of referenceMesh.
-  refVpg = referenceVpg->reinterpretTo(*mesh);
+  // Check consistent topology
+  if ((mesh->nVertices() == referenceMesh->nVertices() &&
+       mesh->nEdges() == referenceMesh->nEdges() &&
+       mesh->nFaces() == referenceMesh->nFaces())) {
+    // reinterpret referenceVpg to mesh instead of referenceMesh.
+    refVpg = referenceVpg->reinterpretTo(*mesh);
+    // throw std::logic_error(
+    //     "Topology of input mesh and reference mesh is not consistent! If not
+    //     " "referencing a mesh, please have the option isRefMesh on and have "
+    //     "input mesh as the duplicated argument!");
+  }
 
   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
@@ -208,6 +226,10 @@ void System::mapContinuationVariables(std::string plyFile) {
       proteinDensity =
           ptrRichData_local->getVertexProperty<double>("protein_density")
               .reinterpretTo(*mesh);
+      // vel_protein =
+      //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
+      //         .reinterpretTo(*mesh);
+      ;
     } else {
       throw std::logic_error(
           "protein0 has to be disabled (=[-1]) for continuing simulations!");
@@ -258,8 +280,11 @@ void System::checkParametersAndOptions() {
   }
 
   // boundary related
-  if (mesh->hasBoundary()) {
-    O.isOpenMesh = true;
+  if (P.radius <= 0 && P.radius != -1) {
+    throw std::logic_error("Radius > 0 or radius = 1 to disable!");
+  }
+  isOpenMesh = mesh->hasBoundary();
+  if (isOpenMesh) {
     if (O.boundaryConditionType != "roller" &&
         O.boundaryConditionType != "pin" &&
         O.boundaryConditionType != "fixed") {
@@ -279,13 +304,17 @@ void System::checkParametersAndOptions() {
   }
 
   // regularization related
-  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) && O.isRefMesh) {
-    throw std::logic_error(
-        "Topology changes are not compatible with reference mesh!");
+  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) &&
+      (P.Kst != 0 || P.Kse != 0 || P.Ksl != 0)) {
+    throw std::logic_error("For topology changing simulation, mesh "
+                           "regularization cannot be applied!");
   }
-  if (P.Kst != 0 && !O.isRefMesh) {
-    throw std::logic_error("For topology changing simulation, conformal mesh "
-                           "regularization Kst cannot be applied!");
+  if ((P.Kst != 0 || P.Kse != 0 || P.Ksl != 0) &&
+      ((mesh->nVertices() != refVpg->mesh.nVertices() ||
+        mesh->nEdges() != refVpg->mesh.nEdges() ||
+        mesh->nFaces() != refVpg->mesh.nFaces()))) {
+    throw std::logic_error("For topologically different reference mesh, mesh "
+                           "regularization cannot be applied!");
   }
 
   // the vertex related
@@ -390,9 +419,8 @@ void System::initConstants() {
   rng = pcg32(seed_source);
 
   // define local vpg
-  const auto &localVpg = O.isRefMesh ? refVpg : vpg;
-  localVpg->requireEdgeLengths();
-  localVpg->requireFaceAreas();
+  refVpg->requireEdgeLengths();
+  refVpg->requireFaceAreas();
 
   // // Initialize V-E distribution matrix for line tension calculation
   // if (P.eta != 0) {
@@ -406,17 +434,25 @@ void System::initConstants() {
   // }
 
   // Find "the" vertex
-  findThePoint(*localVpg, geodesicDistanceFromPtInd, 1e18);
+  findThePoint(*refVpg, geodesicDistanceFromPtInd, 1e18);
 
   // Initialize const geodesic distance
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
 
   // Initialize the constant mask based on distance from the point specified
-  for (gcs::Vertex v : mesh->vertices()) {
-    F.forceMask[v] = (geodesicDistanceFromPtInd[v] < P.radius)
-                         ? gc::Vector3{1, 1, 1}
-                         : gc::Vector3{0, 0, 0};
+  if (P.radius != -1) {
+    if (P.radius > geodesicDistanceFromPtInd.raw().maxCoeff() ||
+        P.radius < geodesicDistanceFromPtInd.raw().minCoeff()) {
+      throw std::runtime_error("initConstants: either all vertices or none is "
+                               "included within integration disk, "
+                               "set radius = -1 to disable!");
+    }
+    for (gcs::Vertex v : mesh->vertices()) {
+      F.forceMask[v] = (geodesicDistanceFromPtInd[v] < P.radius)
+                           ? gc::Vector3{1, 1, 1}
+                           : gc::Vector3{0, 0, 0};
+    }
   }
 
   // Initialize protein density
@@ -438,16 +474,16 @@ void System::initConstants() {
   }
 
   // Explicitly cached the reference face areas data
-  refFaceAreas = localVpg->faceAreas;
+  refFaceAreas = refVpg->faceAreas;
 
   // Explicitly cached the reference edge length data
-  refEdgeLengths = localVpg->edgeLengths;
+  refEdgeLengths = refVpg->edgeLengths;
 
   // Initialize the constant target surface (total mesh) area
-  if (O.isOpenMesh) {
+  if (isOpenMesh) {
     refSurfaceArea = P.A_res;
     for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-      refSurfaceArea += computePolygonArea(bl, localVpg->inputVertexPositions);
+      refSurfaceArea += computePolygonArea(bl, refVpg->inputVertexPositions);
     }
   } else {
     refSurfaceArea = refFaceAreas.raw().sum();
@@ -459,25 +495,23 @@ void System::initConstants() {
             << std::endl;
 
   // Initialize the constant target mean face area
-  if (!O.isRefMesh || O.isSplitEdge || O.isCollapseEdge) {
+  if (O.isSplitEdge || O.isCollapseEdge) {
     meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
     meshMutator.targetFaceArea = meanTargetFaceArea;
   }
 
   // Initialize the constant target mean edge length
-  if (!O.isRefMesh) {
-    meanTargetEdgeLength = refEdgeLengths.raw().sum() / mesh->nEdges();
-  }
+  meanTargetEdgeLength = refEdgeLengths.raw().sum() / mesh->nEdges();
 
   // Initialize the target constant cross length ration
-  if (O.isRefMesh) {
-    computeLengthCrossRatio(*localVpg, targetLcrs);
+  if (P.Kst) {
+    computeLengthCrossRatio(*refVpg, targetLcrs);
   }
 
   // Initialize the constant reference volume
-  refVolume = O.isOpenMesh ? P.V_res
-                           : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
-                                 (4 * constants::PI / 3);
+  refVolume = isOpenMesh ? P.V_res
+                         : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
+                               (4 * constants::PI / 3);
 
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
@@ -512,7 +546,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // update protein density
-  if (P.protein0.rows() == 3 && !O.isProteinVariation) {
+  if (P.protein0.rows() == 4 && !O.isProteinVariation) {
     if (isUpdateGeodesics) {
       std::vector<double> r_heter{P.protein0[0], P.protein0[1]};
       tanhDistribution(*vpg, proteinDensity.raw(),

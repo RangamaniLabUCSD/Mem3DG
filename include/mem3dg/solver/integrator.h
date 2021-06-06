@@ -31,6 +31,7 @@
 #include "mem3dg/solver/meshops.h"
 #include "system.h"
 #include <csignal>
+#include <stdexcept>
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/trajfile.h"
 #endif
@@ -41,29 +42,11 @@ namespace mem3dg {
 // =============        Integrator             ==============
 // ==========================================================
 class DLL_PUBLIC Integrator {
-public:
-  /// System object to be integrated
-  System &f;
+protected:
   /// Energy of the last time step
   Energy previousE;
-  /// time step
-  double dt;
-  // total simulation time
-  double total_time;
-  /// period of saving output data
-  double tSave;
   /// last time saving the data
   double lastSave;
-  /// verbosity level of integrator
-  size_t verbosity;
-  /// tolerance for termination
-  double tol;
-  /// path to the output directory
-  std::string outputDir;
-  /// option to scale time step according to mesh size
-  bool isAdaptiveStep;
-  /// name of the trajectory file
-  std::string trajFileName;
   /// regularization force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce;
   /// physical vertex pressure to the system
@@ -71,9 +54,6 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1> physicalForce;
   /// numerical dissipative particle dynamics force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 1> DPDForce;
-  /// "velocity" of protein
-  Eigen::Matrix<double, Eigen::Dynamic, 1> vel_protein;
-
   /// Starting time of the simulation
   double init_time;
   /// Flag of success of the simulation
@@ -90,10 +70,30 @@ public:
   double dt_size2_ratio;
   /// initial maximum force
   double maxForce;
-
+  /// TrajFile
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile fd;
 #endif
+
+public:
+  /// System object to be integrated
+  System &f;
+  /// time step
+  double dt;
+  // total simulation time
+  double total_time;
+  /// period of saving output data
+  double tSave;
+  /// tolerance for termination
+  double tol;
+  /// name of the trajectory file
+  std::string trajFileName;
+  /// option to scale time step according to mesh size
+  bool isAdaptiveStep;
+  /// path to the output directory
+  std::string outputDir;
+  /// verbosity level of integrator
+  size_t verbosity;
 
   // ==========================================================
   // =============        Constructor            ==============
@@ -111,13 +111,13 @@ public:
    * @param verbosity,   0: no output file 1: Traj.nc 2: All above + console
    * printing 3: All above + txt + .ply
    */
-  Integrator(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
-             double tSave_, double tolerance_, std::string outputDir_,
+  Integrator(System &f_, double dt_, double total_time_, double tSave_,
+             double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
              std::string trajFileName_, size_t verbosity_)
       : f(f_), previousE(f_.E), dt(dt_), isAdaptiveStep(isAdaptiveStep_),
         total_time(total_time_), tSave(tSave_), tol(tolerance_),
         verbosity(verbosity_), outputDir(outputDir_),
-        trajFileName(trajFileName_), init_time(f.time), SUCCESS(true),
+        trajFileName(trajFileName_), init_time(f_.time), SUCCESS(true),
         EXIT(false), frame(0) {
 
     // Initialize the timestep-meshsize ratio
@@ -141,15 +141,6 @@ public:
     regularizationForce.setZero();
     physicalForce.setZero();
     DPDForce.setZero();
-
-    // initialize netcdf traj file
-#ifdef MEM3DG_WITH_NETCDF
-    createNetcdfFile();
-#endif
-
-    // print to console
-    std::cout << "Initialized integrator and the output trajactory is "
-              << outputDir + trajFileName << std::endl;
   }
 
   // ==========================================================
@@ -293,13 +284,19 @@ public:
  * @brief Stomer Verlet time Integration
  */
 class DLL_PUBLIC StormerVerlet : public Integrator {
+private:
+  gcs::VertexData<gc::Vector3> pastPositions;
+
 public:
-  StormerVerlet(System &f_, double dt_, bool isAdaptiveStep_,
-                double total_time_, double tSave_, double tolerance_,
-                std::string outputDir_, std::string trajFileName_,
-                size_t verbosity_)
-      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
-                   outputDir_, trajFileName_, verbosity_) {}
+  StormerVerlet(System &f_, double dt_, double total_time_, double tSave_,
+                double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
+                std::string trajFileName_, size_t verbosity_)
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
+                   isAdaptiveStep_, trajFileName_, verbosity_),
+        pastPositions(*f.mesh, {0, 0, 0}) {
+    throw std::runtime_error(
+        "StomerVerlet is currently not tested and maintained!");
+  }
 
   bool integrate();
 };
@@ -311,7 +308,7 @@ public:
  * @brief Velocity Verlet time Integration
  */
 class DLL_PUBLIC VelocityVerlet : public Integrator {
-public:
+private:
   // total pressure
   Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
   // total pressure of new iteration
@@ -319,12 +316,13 @@ public:
   // total energy of the system
   double totalEnergy;
 
-  VelocityVerlet(System &f_, double dt_, bool isAdaptiveStep_,
-                 double total_time_, double tSave_, double tolerance_,
-                 std::string outputDir_, std::string trajFileName_,
+public:
+  VelocityVerlet(System &f_, double dt_, double total_time_, double tSave_,
+                 double tolerance_, std::string outputDir_,
+                 bool isAdaptiveStep_, std::string trajFileName_,
                  size_t verbosity_)
-      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
-                   outputDir_, trajFileName_, verbosity_) {
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
+                   isAdaptiveStep_, trajFileName_, verbosity_) {
 
     // print to console
     if (verbosity > 1) {
@@ -388,12 +386,12 @@ public:
   const bool isBacktrack;
   const double rho;
   const double c1;
-  Euler(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
-        double tSave_, double tolerance_, std::string outputDir_,
+  Euler(System &f_, double dt_, double total_time_, double tSave_,
+        double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
         std::string trajFileName_, size_t verbosity_, bool isBacktrack_,
         double rho_, double c1_)
-      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
-                   outputDir_, trajFileName_, verbosity_),
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
+                   isAdaptiveStep_, trajFileName_, verbosity_),
         isBacktrack(isBacktrack_), rho(rho_), c1(c1_) {
 
     // print to console
@@ -449,29 +447,30 @@ public:
  * @return Success, if simulation is sucessful
  */
 class DLL_PUBLIC ConjugateGradient : public Integrator {
-public:
-  const bool isBacktrack;
-  const double rho;
-  const double c1;
-  double ctol;
-  const bool isAugmentedLagrangian;
-
+private:
   double currentNormSq;
   double pastNormSq;
 
   size_t countCG = 0;
   size_t restartNum;
 
+public:
+  const bool isBacktrack;
+  const double rho;
+  const double c1;
+  const double ctol;
+  const bool isAugmentedLagrangian;
+
   // size_t countPM = 0;
 
-  ConjugateGradient(System &f_, double dt_, bool isAdaptiveStep_,
-                    double total_time_, double tSave_, double tolerance_,
-                    std::string outputDir_, std::string trajFileName_,
-                    size_t verbosity_, bool isBacktrack_, double rho_,
-                    double c1_, double ctol_, bool isAugmentedLagrangian_,
-                    size_t restartNum_)
-      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
-                   outputDir_, trajFileName_, verbosity_),
+  ConjugateGradient(System &f_, double dt_, double total_time_, double tSave_,
+                    size_t restartNum_, double tolerance_,
+                    std::string outputDir_, bool isAdaptiveStep_,
+                    std::string trajFileName_, size_t verbosity_,
+                    bool isBacktrack_, double rho_, double c1_, double ctol_,
+                    bool isAugmentedLagrangian_)
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
+                   isAdaptiveStep_, trajFileName_, verbosity_),
         isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
         isAugmentedLagrangian(isAugmentedLagrangian_), restartNum(restartNum_) {
 
@@ -528,14 +527,7 @@ public:
  * @return Success, if simulation is sucessful
  */
 class DLL_PUBLIC BFGS : public Integrator {
-public:
-  const bool isBacktrack;
-  const double rho;
-  const double c1;
-  double ctol;
-  const bool isAugmentedLagrangian;
-  bool ifRestart = false;
-
+private:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> hess_inv;
   Eigen::Matrix<double, Eigen::Dynamic, 1> pastPhysicalForce;
   Eigen::Matrix<double, Eigen::Dynamic, 1> s;
@@ -544,14 +536,24 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1> pastPhysicalForce_protein;
   Eigen::Matrix<double, Eigen::Dynamic, 1> s_protein;
 
-  BFGS(System &f_, double dt_, bool isAdaptiveStep_, double total_time_,
-       double tSave_, double tolerance_, std::string outputDir_,
+public:
+  const bool isBacktrack;
+  const double rho;
+  const double c1;
+  const double ctol;
+  const bool isAugmentedLagrangian;
+  bool ifRestart;
+
+  BFGS(System &f_, double dt_, double total_time_, double tSave_,
+       double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
        std::string trajFileName_, size_t verbosity_, bool isBacktrack_,
        double rho_, double c1_, double ctol_, bool isAugmentedLagrangian_)
-      : Integrator(f_, dt_, isAdaptiveStep_, total_time_, tSave_, tolerance_,
-                   outputDir_, trajFileName_, verbosity_),
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
+                   isAdaptiveStep_, trajFileName_, verbosity_),
         isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
-        isAugmentedLagrangian(isAugmentedLagrangian_) {
+        isAugmentedLagrangian(isAugmentedLagrangian_), ifRestart(false) {
+
+    throw std::runtime_error("BFGS is currently not tested and maintained!");
 
     // print to console
     if (verbosity > 1) {
@@ -620,18 +622,21 @@ class DLL_PUBLIC FeedForwardSweep : public ConjugateGradient {
 public:
   std::vector<double> H_;
   std::vector<double> VP_;
-  FeedForwardSweep(System &f_, double dt_, bool isAdaptiveStep_,
-                   double total_time_, double tSave_, double tolerance_,
-                   std::string outputDir_, std::string trajFileName_,
+  FeedForwardSweep(System &f_, double dt_, double total_time_, double tSave_,
+                   double tolerance_, std::string outputDir_,
+                   bool isAdaptiveStep_, std::string trajFileName_,
                    size_t verbosity_, bool isBacktrack_, double rho_,
                    double c1_, double ctol_, bool isAugmentedLagrangian_,
                    size_t restartNum_, std::vector<double> H__,
                    std::vector<double> VP__)
-      : ConjugateGradient(f_, dt_, isAdaptiveStep_, total_time_, tSave_,
-                          tolerance_, outputDir_, trajFileName_, verbosity_,
-                          isBacktrack_, rho_, c1_, ctol_,
-                          isAugmentedLagrangian_, restartNum_),
-        H_(H__), VP_(VP__) {}
+      : ConjugateGradient(f_, dt_, total_time_, tSave_, restartNum_, tolerance_,
+                          outputDir_, isAdaptiveStep_, trajFileName_,
+                          verbosity_, isBacktrack_, rho_, c1_, ctol_,
+                          isAugmentedLagrangian_),
+        H_(H__), VP_(VP__) {
+    throw std::runtime_error(
+        "FeedForwardSweep is currently not tested and maintained!");
+  }
   void sweep();
 };
 
