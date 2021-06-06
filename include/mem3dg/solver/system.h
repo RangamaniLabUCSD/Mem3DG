@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include <cassert>
+// #include <cassert>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/heat_method_distance.h>
@@ -38,18 +38,12 @@
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/utilities/vector2.h"
 #include "geometrycentral/utilities/vector3.h"
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/macros.h"
+#include "mem3dg/constants.h"
+#include "mem3dg/macros.h"
 #include "mem3dg/solver/mesh.h"
-#include "mem3dg/solver/meshops.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/type_utilities.h"
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
-    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
-    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;

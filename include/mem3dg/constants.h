@@ -1,20 +1,21 @@
 // Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// 
+//
 // Copyright (c) 2020:
 //     Laboratory for Computational Cellular Mechanobiology
 //     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
 //     Christopher T. Lee (ctlee@ucsd.edu)
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
-// 
-
-#include "mem3dg/version.h"
+//
+#pragma once
 
 namespace mem3dg {
-const std::string MEM3DG_VERSION = "@VERSION@";
-const std::string MEM3DG_VERSION_SHORT = "@VERSION_SHORT@";
-} // end namespace mem3dg
+namespace constants {
+const double kBoltzmann = 1.380649e-8; // nanonewton * micrometer / Kelvin
+const double PI = 3.14159265358979323846;
+} // namespace constants
+} // namespace mem3dg

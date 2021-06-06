@@ -25,7 +25,7 @@
 #include <geometrycentral/utilities/vector3.h>
 
 #include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {

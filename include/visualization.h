@@ -14,8 +14,8 @@
 
 #pragma once
 #include "mem3dg/mem3dg"
-#include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh.h"
+#include <polyscope/polyscope.h>
+#include <polyscope/surface_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
 /**

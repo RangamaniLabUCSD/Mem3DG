@@ -25,10 +25,10 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 #include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "system.h"
 #include <csignal>
 #include <stdexcept>

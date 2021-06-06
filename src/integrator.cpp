@@ -13,11 +13,10 @@
 //
 
 #include "mem3dg/solver/integrator.h"
-#include "Eigen/src/Core/util/Constants.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/solver/util.h"
-#include "mem3dg/solver/version.h"
+#include "mem3dg/type_utilities.h"
+#include "mem3dg/version.h"
 
 #include <cmath>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>

@@ -20,7 +20,9 @@
 #include <pybind11/stl.h>
 
 #include "Eigen/src/Core/util/Constants.h"
-#include "mem3dg/solver/mem3dg.h"
+
+#include "mem3dg.h"
+#include "visualization.h"
 #include "mem3dg/solver/mesh.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>

@@ -16,7 +16,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "mem3dg/solver/constants.h"
+#include "mem3dg/constants.h"
 #include "mem3dg/solver/mesh.h"
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/halfedge_mesh.h>

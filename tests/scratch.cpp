@@ -3,13 +3,13 @@
 #include <netcdf>
 #endif
 
-#include "mem3dg/solver/constants.h"
+#include "mem3dg/constants.h"
 #include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/mem3dg.h"
+#include "mem3dg.h"
 #include "mem3dg/solver/mesh.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/type_utilities.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>

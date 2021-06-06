@@ -29,6 +29,8 @@
 #include <ostream>
 #include <stdexcept>
 
+namespace mem3dg {
+
 #ifndef _MSC_VER
 #if __cplusplus < 201103
 #define CONSTEXPR11_TN
@@ -114,3 +116,5 @@ template <class T> CONSTEXPR14_TN static_string type_name() {
   return static_string(p.data() + 38, p.size() - 38 - 7);
 #endif
 }
+
+} // namespace mem3dg

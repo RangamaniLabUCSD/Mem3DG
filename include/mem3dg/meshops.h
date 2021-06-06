@@ -28,9 +28,10 @@
 #include <sys/time.h>
 #endif
 
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/macros.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/constants.h"
+#include "mem3dg/macros.h"
+#include "mem3dg/type_utilities.h"
+#include "mem3dg/error_handler.h"
 
 namespace mem3dg {
 
@@ -188,6 +189,19 @@ DLL_PUBLIC inline void signalHandler(int signum) {
 //   return gcs::makeManifoldSurfaceMeshAndGeometry(coords, newFaces);
 // }
 
+namespace detail {
+inline double signedVolumeFromFace(const gc::Vector3 (&p)[3]) {
+  double v321 = p[2].x * p[1].y * p[0].z;
+  double v231 = p[1].x * p[2].y * p[0].z;
+  double v312 = p[2].x * p[0].y * p[1].z;
+  double v132 = p[0].x * p[2].y * p[1].z;
+  double v213 = p[1].x * p[0].y * p[2].z;
+  double v123 = p[0].x * p[1].y * p[2].z;
+
+  return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+}
+} // namespace detail
+
 /**
  * @brief Get volume from a face
  *
@@ -197,20 +211,18 @@ DLL_PUBLIC inline void signalHandler(int signum) {
  */
 DLL_PUBLIC inline double
 signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg) {
+
+  if (!f.isTriangle()){
+    throw_runtime_error(__FILE__, __LINE__, "Cannot compute volume of non-triangular element");
+  }
+
   gc::Vector3 p[3];
   size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
     p[i] = vpg.inputVertexPositions[v];
-    i++;
+    ++i;
   }
-  double v321 = p[2].x * p[1].y * p[0].z;
-  double v231 = p[1].x * p[2].y * p[0].z;
-  double v312 = p[2].x * p[0].y * p[1].z;
-  double v132 = p[0].x * p[2].y * p[1].z;
-  double v213 = p[1].x * p[0].y * p[2].z;
-  double v123 = p[0].x * p[1].y * p[2].z;
-
-  return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+  return detail::signedVolumeFromFace(p);
 }
 
 /**
@@ -229,14 +241,7 @@ signedVolumeFromFace(std::vector<std::size_t> f,
     p[i] = vpg.inputVertexPositions[v];
     i++;
   }
-  double v321 = p[2].x * p[1].y * p[0].z;
-  double v231 = p[1].x * p[2].y * p[0].z;
-  double v312 = p[2].x * p[0].y * p[1].z;
-  double v132 = p[0].x * p[2].y * p[1].z;
-  double v213 = p[1].x * p[0].y * p[2].z;
-  double v123 = p[0].x * p[1].y * p[2].z;
-
-  return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+  return detail::signedVolumeFromFace(p);
 }
 
 /**
@@ -250,9 +255,6 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
                                        gcs::VertexPositionGeometry &vpg,
                                        bool isFillHole = true) {
   double volume = 0;
-  for (gcs::Face f : mesh.faces()) {
-    volume += signedVolumeFromFace(f, vpg);
-  }
 
   // fill hole for open mesh
   if (mesh.hasBoundary()) {
@@ -274,6 +276,11 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
                                "compute enclosed volume unless filled holes!");
     }
   }
+
+  for (gcs::Face f : mesh.faces()) {
+    volume += signedVolumeFromFace(f, vpg);
+  }
+
   return volume;
 }
 
@@ -318,7 +325,7 @@ DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
 }
 
 /**
- * @brief get coorresponding barycentric coordinate to a face
+ * @brief Get corresponding barycentric coordinate to a face
  *
  * @param baryCoords reference to Barycentric coordinate
  * @param firstHalfedge reference to the halfedge associated with the first
@@ -375,6 +382,14 @@ rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &A,
                   Eigen::Matrix<double, Eigen::Dynamic, 3> &B) {
   return ((A.array() * B.array()).rowwise().sum()).matrix();
 }
+
+/**
+ * @brief
+ *
+ * @param A
+ * @param B
+ * @return DLL_PUBLIC
+ */
 DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
 rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &&A,
                   Eigen::Matrix<double, Eigen::Dynamic, 3> &&B) {

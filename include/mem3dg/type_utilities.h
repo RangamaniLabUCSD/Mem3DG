@@ -29,6 +29,13 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3D =
+    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenTopVec =
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
 /// Type alias for aligned vectors
 template <typename T>
 using AlignedVector_T = std::vector<T, Eigen::aligned_allocator<T>>;
