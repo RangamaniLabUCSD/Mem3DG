@@ -12,6 +12,30 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#pragma once
+
+#include <exception>
+#include <sstream>
+
+namespace mem3dg {
+namespace internal {
+template <typename... T>
+void throw_runtime_error(const char *function, const char *file, const int line,
+                         T &&...ts) {
+  std::stringstream ss;
+  ss << "Error: ";
+  int dummy[] = {0, ((ss << std::forward<T>(ts)), 0)...};
+  static_cast<void>(dummy); // Avoid warning for unused variable
+  ss << " in function " << function << " at " << file << ":" << line;
+  throw std::runtime_error(ss.str());
+}
+} // namespace internal
+} // namespace mem3dg
+
+#define mem3dg_runtime_error(...)                                              \
+  mem3dg::internal::throw_runtime_error(__PRETTY_FUNCTION__, __FILE__,         \
+                                        __LINE__, __VA_ARGS__);
+
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef _DLL
 #ifdef __GNUC__
