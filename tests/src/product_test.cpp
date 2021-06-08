@@ -47,10 +47,10 @@ public:
   void SetUp() {}
   void TearDown() {}
 
-  static std::size_t const sz = 10;
-  Eigen::Array<double, sz, 3> A, B;
-  Eigen::Matrix<double, sz, 3> Am, Bm;
-  Eigen::Matrix<double, sz, 1> S;
+  static std::size_t const rows = 10;
+  Eigen::Array<double, rows, 3> A, B;
+  Eigen::Matrix<double, rows, 3> Am, Bm;
+  Eigen::Matrix<double, rows, 1> S;
 };
 
 TEST_F(ProductTest, RowwiseDotProductTest) {
@@ -73,7 +73,7 @@ TEST_F(ProductTest, RowwiseDotProductTest) {
   ASSERT_EQ(true, res.isApprox(resAM));
   ASSERT_EQ(true, res.isApprox(resMA));
 
-  Eigen::Matrix<double, sz, 1> manual;
+  Eigen::Matrix<double, rows, 1> manual;
   for (int i = 0; i < 10; ++i) {
     manual(i) = Am(i, 0) * Bm(i, 0) + Am(i, 1) * Bm(i, 1) + Am(i, 2) * Bm(i, 2);
   }
@@ -81,10 +81,12 @@ TEST_F(ProductTest, RowwiseDotProductTest) {
 }
 
 TEST_F(ProductTest, RowwiseScalarProductTest) {
+  // test vector--array
   auto resA = mem3dg::rowwiseScalarProduct(S, A);
   ASSERT_EQ(A.rows(), resA.rows());
   ASSERT_EQ(resA.cols(), 3);
 
+  // test vecotr--matrix
   auto resAm = mem3dg::rowwiseScalarProduct(S, Am);
   ASSERT_EQ(Am.rows(), resAm.rows());
   ASSERT_EQ(resAm.cols(), 3);
@@ -101,7 +103,8 @@ TEST_F(ProductTest, RowwiseScalarProductTest) {
 
   ASSERT_EQ(true, resB.isApprox(resBm));
 
-  Eigen::Matrix<double, sz, 3> manual;
+  // Check that the values are correct wrt to numerical benchmark
+  Eigen::Matrix<double, rows, 3> manual;
   for (std::size_t i = 0; i < 10; ++i) {
     for (std::size_t j = 0; j < 3; ++j)
       manual(i, j) = Am(i, j) * S(i);
@@ -110,7 +113,7 @@ TEST_F(ProductTest, RowwiseScalarProductTest) {
 
   // Check that runtime throws an error on mismatched size
   Eigen::Matrix<double, Eigen::Dynamic, 1> S_wrongsize;
-  S_wrongsize.resize(sz + 10, 1);
+  S_wrongsize.resize(rows + 10, 1);
   ASSERT_THROW(mem3dg::rowwiseScalarProduct(S_wrongsize, A),
                std::runtime_error);
 }
@@ -119,6 +122,12 @@ TEST_F(ProductTest, RowwiseCrossProductTest) {
   auto res = mem3dg::rowwiseCrossProduct(A, B);
   ASSERT_EQ(A.rows(), res.rows());
   ASSERT_EQ(res.cols(), 3);
+
+  for (std::size_t i = 0; i < rows; ++i) {
+    ASSERT_EQ(
+        true,
+        (res.row(i)).isApprox(A.row(i).matrix().cross(B.row(i).matrix())));
+  }
 
   auto res2 = mem3dg::rowwiseCrossProduct(Am, Bm);
   ASSERT_EQ(A.rows(), res2.rows());
