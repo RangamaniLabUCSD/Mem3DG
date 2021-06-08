@@ -86,17 +86,31 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 
   /// Time integration / optimization
   if (integrationMethod == "velocity verlet") {
-    mem3dg::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir,
-                                      isAdaptiveStep, "/traj.nc", verbosity);
+    mem3dg::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir);
+    integrator.isAdaptiveStep = isAdaptiveStep;
+    integrator.trajFileName = "traj.nc";
+    integrator.verbosity = verbosity;
     integrator.integrate();
   } else if (integrationMethod == "euler") {
-    mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
-                             "/traj.nc", verbosity, isBacktrack, rho, c1);
+    mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+    integrator.isAdaptiveStep = isAdaptiveStep;
+    integrator.trajFileName = "traj.nc";
+    integrator.verbosity = verbosity;
+    integrator.isBacktrack = isBacktrack;
+    integrator.rho = rho;
+    integrator.c1 = c1;
     integrator.integrate();
   } else if (integrationMethod == "conjugate gradient") {
-    mem3dg::ConjugateGradient integrator(
-        f, h, T, tSave, restartNum, eps, outputDir, isAdaptiveStep, "/traj.nc",
-        verbosity, isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
+    mem3dg::ConjugateGradient integrator(f, h, T, tSave, eps, outputDir);
+    integrator.restartNum = restartNum;
+    integrator.isAdaptiveStep = isAdaptiveStep;
+    integrator.trajFileName = "traj.nc";
+    integrator.verbosity = verbosity;
+    integrator.isBacktrack = isBacktrack;
+    integrator.rho = rho;
+    integrator.c1 = c1;
+    integrator.ctol = 0.01;
+    integrator.isAugmentedLagrangian = isAugmentedLagrangian;
     integrator.integrate();
   } else if (integrationMethod == "BFGS") {
     mem3dg::BFGS integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
@@ -182,17 +196,30 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
 
   /// Time integration / optimization
   if (integrationMethod == "velocity verlet") {
-    mem3dg::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir,
-                                      isAdaptiveStep, "/traj.nc", verbosity);
+    mem3dg::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir);
+    integrator.isAdaptiveStep = isAdaptiveStep;
+    integrator.trajFileName = "traj.nc";
+    integrator.verbosity = verbosity;
     integrator.integrate();
   } else if (integrationMethod == "euler") {
-    mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
-                             "/traj.nc", verbosity, isBacktrack, rho, c1);
+    mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+    integrator.trajFileName = "traj.nc";
+    integrator.verbosity = verbosity;
+    integrator.isBacktrack = isBacktrack;
+    integrator.rho = rho;
+    integrator.c1 = c1;
     integrator.integrate();
   } else if (integrationMethod == "conjugate gradient") {
-    mem3dg::ConjugateGradient integrator(
-        f, h, T, tSave, restartNum, eps, outputDir, isAdaptiveStep, "/traj.nc",
-        verbosity, isBacktrack, rho, c1, ctol, isAugmentedLagrangian);
+    mem3dg::ConjugateGradient integrator(f, h, T, tSave, eps, outputDir);
+    integrator.restartNum = restartNum;
+    integrator.isAdaptiveStep = isAdaptiveStep;
+    integrator.trajFileName = "traj.nc";
+    integrator.verbosity = verbosity;
+    integrator.isBacktrack = isBacktrack;
+    integrator.rho = rho;
+    integrator.c1 = c1;
+    integrator.ctol = 0.01;
+    integrator.isAugmentedLagrangian = isAugmentedLagrangian;
     integrator.integrate();
   } else if (integrationMethod == "BFGS") {
     mem3dg::BFGS integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,

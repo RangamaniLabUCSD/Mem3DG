@@ -101,7 +101,7 @@ void System::computeDirichletEnergy() {
     // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *
     // H0.raw()).cwiseAbs()).array(); auto dH0 = (vpg->d0 *
     // H0.raw()).cwiseAbs();
-    E.dE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
+    // E.dE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
   }
 
   // explicit dirichlet energy
@@ -165,41 +165,6 @@ void System::computeFreeEnergy() {
   computeKineticEnergy();
   computePotentialEnergy();
   E.totalE = E.kE + E.potE;
-}
-
-// double
-// System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> force) const {
-//   // return sqrt((rowwiseDotProduct(force, force)).sum() / surfaceArea);
-
-//   // L2 Norm
-//   // return sqrt(rowwiseDotProduct(force, force).sum()) / surfaceArea;
-
-//   // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg.vertexNormals);
-//   // return (M * rowwiseDotProduct(pressure,
-//   // vertexAngleNormal_e).cwiseAbs()).sum() / surfaceArea;
-
-//   // L1 Norm
-//   std::cout << "in compute error: " << force.cwiseAbs().sum() << std::endl;
-//   return force.cwiseAbs().sum() / surfaceArea;
-// }
-
-double
-System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &force) const {
-
-  return force.cwiseAbs().sum() / (surfaceArea - P.A_res);
-}
-
-double
-System::computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const {
-  // L1 Norm
-  return force.cwiseAbs().sum() / (surfaceArea - P.A_res);
-
-  // Mask the mutated (unsmooth) set of data
-  // return ((smoothingMask.raw().array() == false).cast<double>() *
-  // force.array())
-  //            .cwiseAbs()
-  //            .sum() /
-  //        (smoothingMask.raw().array() == false).cast<double>().sum();
 }
 
 void System::computeGradient(gcs::VertexData<double> &quantities,

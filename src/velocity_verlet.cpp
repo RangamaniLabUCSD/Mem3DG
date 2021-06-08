@@ -99,11 +99,12 @@ void VelocityVerlet::checkParameters() {
 }
 
 void VelocityVerlet::status() {
-
   // recompute cached values
   f.updateVertexPositions();
 
   // alias vpg quantities, which should follow the update
+  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   // compute summerized forces
@@ -120,12 +121,6 @@ void VelocityVerlet::status() {
        f.vpg->vertexDualAreas.raw().array())
           .matrix();
 
-  // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
-
-  // compute the L1 chemical error norm
-  f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
-
   // compute the area contraint error
   dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
@@ -138,8 +133,8 @@ void VelocityVerlet::status() {
   }
 
   // exit if under error tol
-  if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
-    std::cout << "\nL1 error norm smaller than tol." << std::endl;
+  if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
+    std::cout << "\nError norm smaller than tol." << std::endl;
     EXIT = true;
   }
 

@@ -121,19 +121,19 @@ struct Forces {
   gcs::VertexData<double> bendingForce;
   /// Cached tension-induced capillary force
   gcs::VertexData<double> capillaryForce;
-  /// Cached Surface tension
-  double surfaceTension;
   /// Cached interfacial line tension force
   gcs::VertexData<double> lineCapillaryForce;
-  gcs::EdgeData<double> lineTension;
   /// Cached externally-applied force
   gcs::VertexData<double> externalForce;
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
+  /// Cached mechanical force
+  gcs::VertexData<double> mechanicalForce;
+  /// Cached osmotic pressure
   double osmoticPressure;
+  /// Cached Surface tension
+  double surfaceTension;
 
-  /// Cached three fundamentals
-  gcs::VertexData<gc::Vector3> vectorForces;
   /// Cached bending force
   gcs::VertexData<gc::Vector3> bendingForceVec;
   /// Cached tension-induced capillary force
@@ -144,6 +144,8 @@ struct Forces {
   gcs::VertexData<gc::Vector3> lineCapillaryForceVec;
   /// Cached adsorption driven force
   gcs::VertexData<gc::Vector3> adsorptionForceVec;
+  /// Cached mechanical force
+  gcs::VertexData<gc::Vector3> mechanicalForceVec;
 
   /// Cached local stretching forces (in-plane regularization)
   gcs::VertexData<gc::Vector3> regularizationForce;
@@ -167,13 +169,13 @@ struct Forces {
   gcs::VertexData<gc::Vector3> forceMask;
 
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
-      : mesh(mesh_), vpg(vpg_), vectorForces(mesh, {0, 0, 0}),
-        bendingForceVec(mesh, {0, 0, 0}), capillaryForceVec(mesh, {0, 0, 0}),
-        osmoticForceVec(mesh, {0, 0, 0}), adsorptionForceVec(mesh, {0, 0, 0}),
+      : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
+        mechanicalForceVec(mesh, {0, 0, 0}), bendingForceVec(mesh, {0, 0, 0}),
+        capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
+        adsorptionForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
-        capillaryForce(mesh, 0), surfaceTension(0), lineTension(mesh, 0),
-        lineCapillaryForce(mesh, 0), externalForce(mesh, 0),
-        osmoticForce(mesh, 0), osmoticPressure(0),
+        capillaryForce(mesh, 0), surfaceTension(0), lineCapillaryForce(mesh, 0),
+        externalForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
         regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
         dampingForce(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
         bendingPotential(mesh, 0), adsorptionPotential(mesh, 0),
@@ -534,10 +536,10 @@ public:
   /// Forces of the system
   Forces F;
 
-  /// L1 mechanical error norm
-  double L1ErrorNorm;
-  /// L1 chemical error norm
-  double L1ChemErrorNorm;
+  /// mechanical error norm
+  double mechErrorNorm;
+  /// chemical error norm
+  double chemErrorNorm;
   /// surface area
   double surfaceArea;
   /// Volume
@@ -918,7 +920,7 @@ public:
   }
 
   // ==========================================================
-  // ================     Initialization     ==================
+  // ================          I/O           ==================
   // ==========================================================
 
   /**
@@ -949,6 +951,12 @@ public:
    */
   void mapContinuationVariables(std::string plyFile);
 
+  /**
+   * @brief Save RichData to .ply file
+   *
+   */
+  void saveRichData(std::string PathToSave);
+
 #ifdef MEM3DG_WITH_NETCDF
   /**
    * @brief Construct a tuple of unique_ptrs from netcdf path
@@ -964,6 +972,10 @@ public:
    */
   void mapContinuationVariables(std::string trajFile, int startingFrame);
 #endif
+
+  // ==========================================================
+  // ================     Initialization     ==================
+  // ==========================================================
   /**
    * @brief Check all conflicting parameters and options
    *
@@ -1015,9 +1027,9 @@ public:
   EigenVectorX1D computeOsmoticForce();
 
   /**
-   * @brief Compute fundamental three forces at the same time
+   * @brief Compute forces at the same time
    */
-  EigenVectorX3D computeVectorForces();
+  void computeVectorForces();
 
   /**
    * @brief Compute chemical potential of the system
@@ -1100,8 +1112,10 @@ public:
   /**
    * @brief Compute the L1 norm of the pressure
    */
-  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &force) const;
-  double computeL1Norm(Eigen::Matrix<double, Eigen::Dynamic, 1> &&force) const;
+  double computeNorm(
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &force) const;
+  double computeNorm(
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &&force) const;
 
   // ==========================================================
   // =============        Regularization        ===============

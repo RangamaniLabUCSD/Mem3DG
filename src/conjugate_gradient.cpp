@@ -22,6 +22,7 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
+#include <stdexcept>
 
 #include "Eigen/src/Core/util/Constants.h"
 #include "geometrycentral/surface/surface_mesh.h"
@@ -62,13 +63,31 @@ bool ConjugateGradient::integrate() {
       saveData();
     }
 
+    // Process mesh every tProcessMesh period
+    if (f.time - lastProcessMesh > tProcessMesh) {
+      lastProcessMesh = f.time;
+      f.processMesh();
+      f.updateVertexPositions(false);
+    }
+
+    // update geodesics every tUpdateGeodesics period
+    if (f.time - lastUpdateGeodesics > tUpdateGeodesics) {
+      lastUpdateGeodesics = f.time;
+      f.updateVertexPositions(true);
+    }
+
     // break loop if EXIT flag is on
     if (EXIT) {
       break;
     }
 
     // step forward
-    march();
+    if (f.time == lastProcessMesh || f.time == lastUpdateGeodesics) {
+      f.time += 1e-10 * dt;
+      countCG = 0;
+    } else {
+      march();
+    }
   }
 
   // return if optimization is sucessful
@@ -96,9 +115,17 @@ void ConjugateGradient::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
     throw std::runtime_error("DPD has to be turned off for CG integration!");
   }
-  if (f.P.Bc != 1) {
+  if (f.P.Bc != 1 && f.P.Bc != 0) {
     throw std::runtime_error(
         "Binding constant should be set to 1 for optimization!");
+  }
+  if (isBacktrack) {
+    if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
+      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+    }
+  }
+  if (restartNum < 1){
+    throw std::runtime_error("restartNum > 0!");
   }
   // if (f.O.isVertexShift) {
   //   throw std::runtime_error(
@@ -107,15 +134,10 @@ void ConjugateGradient::checkParameters() {
 }
 
 void ConjugateGradient::status() {
+  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
   // compute summerized forces
   getForces();
-
-  // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
-
-  // compute the L1 chemical error norm
-  f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
@@ -142,71 +164,65 @@ void ConjugateGradient::status() {
 }
 
 void ConjugateGradient::march() {
-  if (f.time == lastSave) {
-    // process the mesh with regularization or mutation
-    f.processMesh();
-    f.updateVertexPositions(true);
-    f.time += 1e-10 * dt;
-    countCG = 0;
+  // map the raw eigen datatype for computation
+  auto vel_e = f.F.toMatrix(f.vel);
+  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
+  auto pos_e = f.F.toMatrix(f.vpg->inputVertexPositions);
+  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  // typedef gc::EigenVectorMap_T<double, 3,
+  // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3
+  // Map3 = gc::EigenMap<double, 3>;
+
+  // determine conjugate gradient direction, restart after nVertices() cycles
+  if (countCG % restartNum == 0) {
+    pastNormSq =
+        (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
+        (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
+                                : 0);
+    vel_e = physicalForceVec;
+    vel_protein_e = f.F.chemicalPotential.raw();
+    countCG = 1;
   } else {
-    // map the raw eigen datatype for computation
-    auto vel_e = f.F.toMatrix(f.vel);
-    auto vel_protein_e = f.F.toMatrix(f.vel_protein);
-    auto pos_e = f.F.toMatrix(f.vpg->inputVertexPositions);
-    // typedef gc::EigenVectorMap_T<double, 3,
-    // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3
-    // Map3 = gc::EigenMap<double, 3>;
-
-    // determine conjugate gradient direction, restart after nVertices() cycles
-    if (countCG % restartNum == 0) {
-      pastNormSq =
-          (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
-          (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
-                                  : 0);
-      vel_e = physicalForceVec;
-      vel_protein_e = f.F.chemicalPotential.raw();
-      countCG = 1;
-    } else {
-      currentNormSq =
-          (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
-          (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
-                                  : 0);
-      vel_e *= currentNormSq / pastNormSq;
-      vel_e += physicalForceVec;
-      vel_protein_e *= currentNormSq / pastNormSq;
-      vel_protein_e += f.F.chemicalPotential.raw();
-      pastNormSq = currentNormSq;
-      countCG++;
-    }
-
-    // adjust time step if adopt adaptive time step based on mesh size
-    if (isAdaptiveStep) {
-      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-      dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-           (f.O.isShapeVariation
-                ? physicalForce.cwiseAbs().maxCoeff()
-                : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
-    }
-
-    // time stepping on vertex position
-    previousE = f.E;
-    if (isBacktrack) {
-      backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
-    } else {
-      pos_e += vel_e * dt;
-      f.proteinDensity.raw() += f.P.Bc * vel_protein_e * dt;
-      f.time += dt;
-    }
-
-    // regularization
-    if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
-      f.computeRegularizationForce();
-      f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
-    }
-
-    // recompute cached values
-    f.updateVertexPositions(false);
+    currentNormSq =
+        (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
+        (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
+                                : 0);
+    vel_e *= currentNormSq / pastNormSq;
+    vel_e += physicalForceVec;
+    vel_protein_e *= currentNormSq / pastNormSq;
+    vel_protein_e += f.F.chemicalPotential.raw();
+    pastNormSq = currentNormSq;
+    countCG++;
   }
+
+  // adjust time step if adopt adaptive time step based on mesh size
+  if (isAdaptiveStep) {
+    double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
+    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
+         (f.O.isShapeVariation
+              ? physicalForce.cwiseAbs().maxCoeff()
+              : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
+  }
+
+  // time stepping on vertex position
+  previousE = f.E;
+  if (isBacktrack) {
+    backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
+  } else {
+    pos_e += vel_e * dt;
+    f.proteinDensity.raw() += f.P.Bc * vel_protein_e * dt;
+    f.time += dt;
+  }
+
+  // regularization
+  if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
+    f.computeRegularizationForce();
+    f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+  }
+
+  // recompute cached values
+  f.updateVertexPositions(false);
 }
 
 void FeedForwardSweep::sweep() {

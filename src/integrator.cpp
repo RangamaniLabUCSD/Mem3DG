@@ -34,6 +34,8 @@ double Integrator::backtrack(
     Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
     double c1) {
 
+  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
+
   // validate the directions
   double positionProjection = 0;
   double chemicalProjection = 0;
@@ -127,8 +129,8 @@ double Integrator::backtrack(
   // report the backtracking if verbose
   if (alpha != dt && verbosity > 3) {
     std::cout << "alpha: " << dt << " -> " << alpha << std::endl;
-    std::cout << "L1 norm: " << f.L1ErrorNorm << std::endl;
-    std::cout << "L1 chem norm: " << f.L1ChemErrorNorm << std::endl;
+    std::cout << "mech norm: " << f.mechErrorNorm << std::endl;
+    std::cout << "chem norm: " << f.chemErrorNorm << std::endl;
   }
 
   // If needed to test force-energy test
@@ -159,11 +161,14 @@ void Integrator::lineSearchErrorBacktrack(
         std::cout << "With only bending force, BE has increased "
                   << f.E.BE - previousE.BE << " from " << previousE.BE << " to "
                   << f.E.BE << ", expected dBE: "
-                  << -alpha *
-                         (f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array() *
-                          f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array())
-                             .sum()
+                  << -alpha * f.F.mask(f.F.toMatrix(f.F.bendingForceVec))
+                                  .squaredNorm()
                   << std::endl;
+        // << -alpha *
+        //        (f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array() *
+        //         f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array())
+        //            .sum()
+        // << std::endl;
       }
 
       f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
@@ -175,10 +180,7 @@ void Integrator::lineSearchErrorBacktrack(
         std::cout << "With only bending potential, BE has increased "
                   << f.E.BE - previousE.BE << " from " << previousE.BE << " to "
                   << f.E.BE << ", expected dBE: "
-                  << -alpha * f.P.Bc *
-                         (f.F.bendingPotential.raw().array() *
-                          f.F.bendingPotential.raw().array())
-                             .sum()
+                  << -alpha * f.P.Bc * f.F.bendingPotential.raw().squaredNorm()
                   << std::endl;
       }
     }
@@ -192,14 +194,12 @@ void Integrator::lineSearchErrorBacktrack(
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.sE > previousE.sE) {
-        std::cout
-            << "With only capillary force, sE has increased "
-            << f.E.sE - previousE.sE << " from " << previousE.sE << " to "
-            << f.E.sE << ", expected dsE: "
-            << -alpha * (f.F.mask(f.F.toMatrix(f.F.capillaryForceVec)).array() *
-                         f.F.mask(f.F.toMatrix(f.F.capillaryForceVec)).array())
-                            .sum()
-            << std::endl;
+        std::cout << "With only capillary force, sE has increased "
+                  << f.E.sE - previousE.sE << " from " << previousE.sE << " to "
+                  << f.E.sE << ", expected dsE: "
+                  << -alpha * f.F.mask(f.F.toMatrix(f.F.capillaryForceVec))
+                                  .squaredNorm()
+                  << std::endl;
       }
     }
     if (runAll || f.E.pE > previousE.pE) {
@@ -215,10 +215,8 @@ void Integrator::lineSearchErrorBacktrack(
         std::cout << "With only osmotic force, pE has increased "
                   << f.E.pE - previousE.pE << " from " << previousE.pE << " to "
                   << f.E.pE << ", expected dpE: "
-                  << -alpha *
-                         (f.F.mask(f.F.toMatrix(f.F.osmoticForceVec)).array() *
-                          f.F.mask(f.F.toMatrix(f.F.osmoticForceVec)).array())
-                             .sum()
+                  << -alpha * f.F.mask(f.F.toMatrix(f.F.osmoticForceVec))
+                                  .squaredNorm()
                   << std::endl;
       }
     }
@@ -232,15 +230,12 @@ void Integrator::lineSearchErrorBacktrack(
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.aE > previousE.aE) {
-        std::cout
-            << "With only adsorption force, aE has increased "
-            << f.E.aE - previousE.aE << " from " << previousE.aE << " to "
-            << f.E.aE << ", expected daE: "
-            << -alpha *
-                   (f.F.mask(f.F.toMatrix(f.F.adsorptionForceVec)).array() *
-                    f.F.mask(f.F.toMatrix(f.F.adsorptionForceVec)).array())
-                       .sum()
-            << std::endl;
+        std::cout << "With only adsorption force, aE has increased "
+                  << f.E.aE - previousE.aE << " from " << previousE.aE << " to "
+                  << f.E.aE << ", expected daE: "
+                  << -alpha * f.F.mask(f.F.toMatrix(f.F.adsorptionForceVec))
+                                  .squaredNorm()
+                  << std::endl;
       }
 
       f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
@@ -253,9 +248,7 @@ void Integrator::lineSearchErrorBacktrack(
                   << f.E.aE - previousE.aE << " from " << previousE.aE << " to "
                   << f.E.aE << ", expected dBE: "
                   << -alpha * f.P.Bc *
-                         (f.F.adsorptionPotential.raw().array() *
-                          f.F.adsorptionPotential.raw().array())
-                             .sum()
+                         f.F.adsorptionPotential.raw().squaredNorm()
                   << std::endl;
       }
     }
@@ -270,15 +263,12 @@ void Integrator::lineSearchErrorBacktrack(
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.dE > previousE.dE) {
-        std::cout
-            << "With only line tension force, dE has increased "
-            << f.E.dE - previousE.dE << " from " << previousE.dE << " to "
-            << f.E.dE << ", expected ddE: "
-            << -alpha *
-                   (f.F.mask(f.F.toMatrix(f.F.lineCapillaryForceVec)).array() *
-                    f.F.mask(f.F.toMatrix(f.F.lineCapillaryForceVec)).array())
-                       .sum()
-            << std::endl;
+        std::cout << "With only line tension force, dE has increased "
+                  << f.E.dE - previousE.dE << " from " << previousE.dE << " to "
+                  << f.E.dE << ", expected ddE: "
+                  << -alpha * f.F.mask(f.F.toMatrix(f.F.lineCapillaryForceVec))
+                                  .squaredNorm()
+                  << std::endl;
       }
 
       f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
@@ -291,9 +281,7 @@ void Integrator::lineSearchErrorBacktrack(
                   << f.E.dE - previousE.dE << " from " << previousE.dE << " to "
                   << f.E.dE << ", expected ddE: "
                   << -alpha * f.P.Bc *
-                         (f.F.diffusionPotential.raw().array() *
-                          f.F.diffusionPotential.raw().array())
-                             .sum()
+                         f.F.diffusionPotential.raw().squaredNorm()
                   << std::endl;
       }
     }
@@ -308,15 +296,12 @@ void Integrator::lineSearchErrorBacktrack(
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.exE > previousE.exE) {
-        std::cout
-            << "With only external force, exE has increased "
-            << f.E.exE - previousE.exE << " from " << previousE.exE << " to "
-            << f.E.exE << ", expected dexE: "
-            << -alpha *
-                   (f.F.mask(f.F.addNormal(f.F.externalForce.raw())).array() *
-                    f.F.mask(f.F.addNormal(f.F.externalForce.raw())).array())
-                       .sum()
-            << std::endl;
+        std::cout << "With only external force, exE has increased "
+                  << f.E.exE - previousE.exE << " from " << previousE.exE
+                  << " to " << f.E.exE << ", expected dexE: "
+                  << -alpha * f.F.mask(f.F.addNormal(f.F.externalForce.raw()))
+                                  .squaredNorm()
+                  << std::endl;
       }
     }
   }
@@ -334,7 +319,7 @@ void Integrator::finitenessErrorBacktrack() {
     std::cout << "time step is not finite!" << std::endl;
   }
 
-  if (!std::isfinite(f.L1ErrorNorm)) {
+  if (!std::isfinite(f.mechErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
 
@@ -342,7 +327,7 @@ void Integrator::finitenessErrorBacktrack() {
       std::cout << "Velocity is not finite!" << std::endl;
     }
 
-    if (!std::isfinite(f.F.toMatrix(f.F.vectorForces).norm())) {
+    if (!std::isfinite(f.F.toMatrix(f.F.mechanicalForceVec).norm())) {
       if (!std::isfinite(f.F.toMatrix(f.F.capillaryForceVec).norm())) {
         std::cout << "Capillary force is not finite!" << std::endl;
       }
@@ -355,14 +340,13 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(f.F.toMatrix(f.F.lineCapillaryForceVec).norm())) {
         std::cout << "Line capillary force is not finite!" << std::endl;
       }
-    }
-
-    if (!std::isfinite(f.F.toMatrix(f.F.externalForce).norm())) {
-      std::cout << "External force is not finite!" << std::endl;
+      if (!std::isfinite(f.F.toMatrix(f.F.externalForce).norm())) {
+        std::cout << "External force is not finite!" << std::endl;
+      }
     }
   }
 
-  if (!std::isfinite(f.L1ChemErrorNorm)) {
+  if (!std::isfinite(f.chemErrorNorm)) {
     EXIT = true;
     SUCCESS = false;
 
@@ -425,12 +409,6 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
-  physicalForceVec.array() =
-      f.F.mask(rowwiseScalarProduct(f.F.externalForce.raw(), vertexAngleNormal_e) +
-               f.F.toMatrix(f.F.vectorForces));
-
-  physicalForce = f.F.ontoNormal(physicalForceVec);
-
   if ((f.P.gamma != 0) || (f.P.temp != 0)) {
     f.computeDPDForces(dt);
     DPDForce =
@@ -454,10 +432,10 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
                                              const double dArea,
                                              const double ctol,
                                              double increment) {
-  if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
+  if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
     if (isAugmentedLagrangian) { // augmented Lagrangian method
       if (dArea < ctol) {        // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
         std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
@@ -468,7 +446,7 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
       }
     } else {              // incremental harmonic penalty method
       if (dArea < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
         std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
@@ -484,10 +462,10 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
                                         const double dArea,
                                         const double dVolume, const double ctol,
                                         double increment) {
-  if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
+  if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
     if (isAugmentedLagrangian) {            // augmented Lagrangian method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
         std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
@@ -501,7 +479,7 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
       }
     } else { // incremental harmonic penalty method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       }
 
@@ -541,7 +519,7 @@ void Integrator::saveData() {
       (verbosity > 0 && (f.O.isSplitEdge || f.O.isCollapseEdge))) {
     char buffer[50];
     sprintf(buffer, "/frame%d.ply", (int)frame);
-    saveRichData(buffer);
+    f.saveRichData(outputDir + "/" + std::string(buffer));
   }
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -564,8 +542,8 @@ void Integrator::saveData() {
               << "\n"
               << "E_total: " << f.E.totalE << "\n"
               << "E_pot: " << f.E.potE << "\n"
-              << "|e|L1: " << f.L1ErrorNorm << "\n"
-              << "|e|L1Chem: " << f.L1ChemErrorNorm << "\n"
+              << "|e|Mech: " << f.mechErrorNorm << "\n"
+              << "|e|Chem: " << f.chemErrorNorm << "\n"
               << "H: ["
               << (f.vpg->vertexMeanCurvatures.raw().array() /
                   f.vpg->vertexDualAreas.raw().array())
@@ -597,7 +575,7 @@ void Integrator::saveData() {
       std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
                 << ", and data saved to " + outputDir << std::endl;
       if (verbosity > 2) {
-        saveRichData("/out.ply");
+        f.saveRichData(outputDir + "/out.ply");
       }
     }
   }
@@ -641,55 +619,6 @@ void Integrator::markFileName(std::string marker_str) {
   delete[] file;
 }
 
-void Integrator::saveRichData(std::string plyName) {
-  gcs::RichSurfaceMeshData richData(*f.mesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*f.vpg);
-
-  // write protein distribution
-  richData.addVertexProperty("protein_density", f.proteinDensity);
-
-  // write bool
-  gcs::VertexData<double> msk(*f.mesh);
-  msk.fromVector(f.F.toMatrix(f.F.forceMask).rowwise().sum());
-  richData.addVertexProperty("mask", msk);
-  gcs::VertexData<double> smthingMsk(*f.mesh);
-  smthingMsk.fromVector(f.smoothingMask.raw().cast<double>());
-  richData.addVertexProperty("smoothing_mask", smthingMsk);
-  gcs::VertexData<double> tkr(*f.mesh);
-  tkr.fromVector(f.thePointTracker.raw().cast<double>());
-  richData.addVertexProperty("the_point", tkr);
-
-  // write geometry
-  gcs::VertexData<double> meanCurv(*f.mesh);
-  meanCurv.fromVector(f.vpg->vertexMeanCurvatures.raw().array() /
-                      f.vpg->vertexDualAreas.raw().array());
-  richData.addVertexProperty("mean_curvature", meanCurv);
-  gcs::VertexData<double> gaussCurv(*f.mesh);
-  gaussCurv.fromVector(f.vpg->vertexGaussianCurvatures.raw().array() /
-                       f.vpg->vertexDualAreas.raw().array());
-  richData.addVertexProperty("gauss_curvature", gaussCurv);
-  richData.addVertexProperty("spon_curvature", f.H0);
-
-  // write pressures
-  gcs::VertexData<double> fn(*f.mesh);
-  fn.fromVector(physicalForce);
-  richData.addVertexProperty("bending_force", f.F.bendingForce);
-  richData.addVertexProperty("capillary_force", f.F.capillaryForce);
-  richData.addVertexProperty("line_tension_force", f.F.lineCapillaryForce);
-  richData.addVertexProperty("osmotic_force", f.F.osmoticForce);
-  richData.addVertexProperty("external_force", f.F.externalForce);
-  richData.addVertexProperty("physical_force", fn);
-
-  // write chemical potential
-  richData.addVertexProperty("diffusion_potential", f.F.diffusionPotential);
-  richData.addVertexProperty("bending_potential", f.F.bendingPotential);
-  richData.addVertexProperty("adsorption_potential", f.F.adsorptionPotential);
-  richData.addVertexProperty("chemical_potential", f.F.chemicalPotential);
-
-  richData.write(outputDir + "/" + plyName);
-}
-
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::saveNetcdfData() {
   std::size_t idx = fd.getNextFrameIndex();
@@ -713,12 +642,12 @@ void Integrator::saveNetcdfData() {
   fd.writeLineEnergy(idx, f.E.dE);
   fd.writeTotalEnergy(idx, f.E.totalE);
   // write Norms
-  fd.writeL1ErrorNorm(idx, f.L1ErrorNorm);
-  fd.writeL1ChemErrorNorm(idx, f.L1ChemErrorNorm);
-  fd.writeL1BendNorm(idx, f.computeL1Norm(f.F.bendingForce.raw()));
-  fd.writeL1SurfNorm(idx, f.computeL1Norm(f.F.capillaryForce.raw()));
-  fd.writeL1PressNorm(idx, f.computeL1Norm(f.F.osmoticForce.raw()));
-  fd.writeL1LineNorm(idx, f.computeL1Norm(f.F.lineCapillaryForce.raw()));
+  fd.writeErrorNorm(idx, f.mechErrorNorm);
+  fd.writeChemErrorNorm(idx, f.chemErrorNorm);
+  fd.writeBendNorm(idx, f.computeNorm(f.F.bendingForce.raw()));
+  fd.writeSurfNorm(idx, f.computeNorm(f.F.capillaryForce.raw()));
+  fd.writePressNorm(idx, f.computeNorm(f.F.osmoticForce.raw()));
+  fd.writeLineNorm(idx, f.computeNorm(f.F.lineCapillaryForce.raw()));
 
   // vector quantities
   if (!f.O.isSplitEdge && !f.O.isCollapseEdge) {
@@ -746,7 +675,7 @@ void Integrator::saveNetcdfData() {
     fd.writeLineForce(idx, f.F.lineCapillaryForce.raw());
     fd.writeOsmoticForce(idx, f.F.osmoticForce.raw());
     fd.writeExternalForce(idx, f.F.externalForce.raw());
-    fd.writePhysicalForce(idx, physicalForce);
+    fd.writePhysicalForce(idx, f.F.mechanicalForce.raw());
     fd.writeChemicalPotential(idx, f.F.chemicalPotential.raw());
   }
 }
@@ -827,8 +756,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Adsorption Energy:  " << f.E.aE << "\n"
            << "Line tension Energy:  " << f.E.dE << "\n"
            << "Total Energy:     " << f.E.totalE << "\n"
-           << "L1 error norm:    " << f.L1ErrorNorm << "\n"
-           << "L1 chem error norm:    " << f.L1ChemErrorNorm << "\n"
+           << "Mech error norm:    " << f.mechErrorNorm << "\n"
+           << "Chem error norm:    " << f.chemErrorNorm << "\n"
            << "Volume:           " << f.volume << " = "
            << f.volume / f.refVolume << " reduced volume"
            << "\n"
