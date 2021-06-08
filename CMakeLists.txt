@@ -12,6 +12,12 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
 
+# Use CMAKE_MSVC_RUNTIME_LIBRARY to control linked runtime
+cmake_policy(SET CMP0091 NEW)
+# Honor visibility for all target types
+set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Force globally
+cmake_policy(SET CMP0063 NEW)
+
 cmake_minimum_required(VERSION 3.11)
 
 # Add path to custom modules
@@ -24,12 +30,20 @@ get_version_from_git()
 project(
   Mem3DG
   VERSION ${VERSION_SHORT}
+  DESCRIPTION "Membrane Dynamics in 3D using Discrete Differential Geometry"
+  HOMEPAGE_URL "https://rangamanilabucsd.github.io/Mem3DG/"
   LANGUAGES CXX
 )
 message(STATUS "Mem3DG version: ${VERSION}")
 
 if(SKBUILD)
   message(STATUS "The project is being built using scikit-build")
+  # Currently, Scikit-build does not support FindPython, so we convert the
+  # provided hints ourselves.
+  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+  set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
+  set(Python_LIBRARY "${PYTHON_LIBRARY}")
+  set(Python_VERSION "${PYTHON_VERSION_STRING}")
 endif()
 
 # Configure version.cpp to give access to version in code
@@ -55,7 +69,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(DDG_MASTER_PROJECT ON)
 endif()
 
-print_debug_messages()
+print_debug_messages(CXX)
 
 include(FetchContent)
 
@@ -111,6 +125,7 @@ add_library(mem3dg SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
 target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
 
 if(BUILD_PYMEM3DG)
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
   add_subdirectory(pymem3dg)
 endif()
 
