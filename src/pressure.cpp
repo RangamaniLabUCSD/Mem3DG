@@ -42,7 +42,7 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-EigenVectorX3D System::computeVectorForces() {
+void System::computeVectorForces() {
 
   for (gc::Vertex v : mesh->vertices()) {
     gc::Vector3 bendForceVec{0, 0, 0};
@@ -207,8 +207,6 @@ EigenVectorX3D System::computeVectorForces() {
     F.bendingForceVec[v] = bendForceVec;
     F.lineCapillaryForceVec[v] = lineCapForceVec;
     F.adsorptionForceVec[v] = adsorptionForceVec;
-    F.vectorForces[v] = osmoticForceVec + capillaryForceVec + bendForceVec +
-                        lineCapForceVec + adsorptionForceVec;
 
     // Scalar force by projection to angle-weighted normal
     F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
@@ -221,8 +219,6 @@ EigenVectorX3D System::computeVectorForces() {
   if (O.isSplitEdge || O.isCollapseEdge) {
     isSmooth = !hasOutlier(F.bendingForce.raw());
   }
-
-  return gc::EigenMap<double, 3>(F.vectorForces);
 }
 
 EigenVectorX1D System::computeBendingForce() {
@@ -568,10 +564,34 @@ gc::Vector3 System::computeGradientNorm2Gradient(
   }
 }
 
+double System::computeNorm(
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &force) const {
+  // Eigen::Matrix<double, Eigen::Dynamic, 1> mask =
+  //     outlierMask(force).cast<double>();
+
+  // return rowwiseProduct(mask, force).cwiseAbs().sum() /
+  //        rowwiseProduct(mask, vpg->vertexDualAreas.raw()).sum();
+
+  // return force.lpNorm<1>();
+  return force.norm();
+}
+
+double System::computeNorm(
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &&force) const {
+  // Eigen::Matrix<double, Eigen::Dynamic, 1> mask =
+  //     outlierMask(force).cast<double>();
+
+  // return rowwiseProduct(mask, force).cwiseAbs().sum() /
+  //        rowwiseProduct(mask, vpg->vertexDualAreas.raw()).sum();
+  // L1 Norm
+  // return force.lpNorm<1>();
+
+  return force.norm();
+}
+
 void System::computePhysicalForces() {
 
   // zero all forces
-  F.vectorForces.fill({0, 0, 0});
   F.bendingForceVec.fill({0, 0, 0});
   F.capillaryForceVec.fill({0, 0, 0});
   F.osmoticForceVec.fill({0, 0, 0});
@@ -595,6 +615,11 @@ void System::computePhysicalForces() {
     if (P.Kf != 0) {
       computeExternalForce();
     }
+    F.mechanicalForceVec =
+        F.mask(F.osmoticForceVec + F.capillaryForceVec + F.bendingForceVec +
+               F.lineCapillaryForceVec + F.adsorptionForceVec +
+               F.addNormal(F.externalForce));
+    F.mechanicalForce = F.ontoNormal(F.mechanicalForceVec);
   }
 
   if (O.isProteinVariation) {
@@ -611,6 +636,14 @@ void System::computePhysicalForces() {
   // if (P.eta != 0) {
   //   computeLineCapillaryForce();
   // }
+
+  // compute the mechanical error norm
+  mechErrorNorm =
+      O.isShapeVariation ? computeNorm(F.toMatrix(F.mechanicalForceVec)) : 0;
+
+  // compute the chemical error norm
+  chemErrorNorm =
+      O.isProteinVariation ? computeNorm(F.chemicalPotential.raw()) : 0;
 }
 
 } // namespace mem3dg

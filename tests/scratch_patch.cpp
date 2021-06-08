@@ -65,8 +65,13 @@ int main() {
   std::string outputDir = "C://Users//Kieran//Desktop//";
   size_t verbosity = 2;
 
-  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir, true, "/traj.nc",
-                           verbosity, true, 0.5, 1e-4);
+  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+  integrator.isAdaptiveStep = true;
+  integrator.trajFileName = "traj.nc";
+  integrator.verbosity = verbosity;
+  integrator.isBacktrack = true;
+  integrator.rho = 0.5;
+  integrator.c1 = 1e-4;
   integrator.integrate();
 
   return 0;
