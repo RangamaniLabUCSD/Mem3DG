@@ -47,11 +47,12 @@ protected:
   Energy previousE;
   /// last time saving the data
   double lastSave;
+  /// last time updating geodesics
+  double lastUpdateGeodesics;
+  /// last time processing mesh
+  double lastProcessMesh;
   /// regularization force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce;
-  /// physical vertex pressure to the system
-  Eigen::Matrix<double, Eigen::Dynamic, 3> physicalForceVec;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> physicalForce;
   /// numerical dissipative particle dynamics force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 1> DPDForce;
   /// Starting time of the simulation
@@ -86,14 +87,19 @@ public:
   double tSave;
   /// tolerance for termination
   double tol;
-  /// name of the trajectory file
-  std::string trajFileName;
-  /// option to scale time step according to mesh size
-  bool isAdaptiveStep;
   /// path to the output directory
   std::string outputDir;
+
+  /// period of saving output data
+  double tUpdateGeodesics;
+  /// period of saving output data
+  double tProcessMesh;
+  /// name of the trajectory file
+  std::string trajFileName = "traj.nc";
+  /// option to scale time step according to mesh size
+  bool isAdaptiveStep = true;
   /// verbosity level of integrator
-  size_t verbosity;
+  size_t verbosity = 3;
 
   // ==========================================================
   // =============        Constructor            ==============
@@ -102,23 +108,18 @@ public:
    * @brief Construct a new integrator object
    * @param f, System object to be integrated
    * @param dt, time step
-   * @param isAdaptiveStep, option to scale time step according to mesh size
    * @param total_time, total simulation time
    * @param tSave, period of saving output data
    * @param tolerance, tolerance for termination
    * @param outputDir, path to the output directory
-   * @param trajFileName, name of the trajectory file
-   * @param verbosity,   0: no output file 1: Traj.nc 2: All above + console
-   * printing 3: All above + txt + .ply
    */
   Integrator(System &f_, double dt_, double total_time_, double tSave_,
-             double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
-             std::string trajFileName_, size_t verbosity_)
-      : f(f_), previousE(f_.E), dt(dt_), isAdaptiveStep(isAdaptiveStep_),
-        total_time(total_time_), tSave(tSave_), tol(tolerance_),
-        verbosity(verbosity_), outputDir(outputDir_),
-        trajFileName(trajFileName_), init_time(f_.time), SUCCESS(true),
-        EXIT(false), frame(0) {
+             double tolerance_, std::string outputDir_)
+      : f(f_), previousE(f_.E), dt(dt_), total_time(total_time_), tSave(tSave_),
+        tol(tolerance_), tUpdateGeodesics(total_time), tProcessMesh(total_time),
+        outputDir(outputDir_), init_time(f_.time), SUCCESS(true), EXIT(false),
+        frame(0), lastUpdateGeodesics(f_.time), lastProcessMesh(f_.time),
+        lastSave(f_.time) {
 
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
@@ -127,7 +128,7 @@ public:
     // Initialize the initial maxForce
     getForces();
     maxForce = f.O.isShapeVariation
-                   ? physicalForce.cwiseAbs().maxCoeff()
+                   ? f.F.toMatrix(f.F.mechanicalForce).cwiseAbs().maxCoeff()
                    : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
@@ -136,10 +137,8 @@ public:
 
     // Initialize system summarized forces
     regularizationForce.resize(f.mesh->nVertices(), 3);
-    physicalForce.resize(f.mesh->nVertices(), 1);
     DPDForce.resize(f.mesh->nVertices(), 1);
     regularizationForce.setZero();
-    physicalForce.setZero();
     DPDForce.setZero();
   }
 
@@ -163,11 +162,6 @@ public:
    * @brief Save trajectory, mesh and print to console
    */
   void saveData();
-
-  /**
-   * @brief Save data to richData and output ply file
-   */
-  void saveRichData(std::string plyName);
 
 #ifdef MEM3DG_WITH_NETCDF
   /**
@@ -289,10 +283,8 @@ private:
 
 public:
   StormerVerlet(System &f_, double dt_, double total_time_, double tSave_,
-                double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
-                std::string trajFileName_, size_t verbosity_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
-                   isAdaptiveStep_, trajFileName_, verbosity_),
+                double tolerance_, std::string outputDir_)
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_),
         pastPositions(*f.mesh, {0, 0, 0}) {
     throw std::runtime_error(
         "StomerVerlet is currently not tested and maintained!");
@@ -318,11 +310,8 @@ private:
 
 public:
   VelocityVerlet(System &f_, double dt_, double total_time_, double tSave_,
-                 double tolerance_, std::string outputDir_,
-                 bool isAdaptiveStep_, std::string trajFileName_,
-                 size_t verbosity_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
-                   isAdaptiveStep_, trajFileName_, verbosity_) {
+                 double tolerance_, std::string outputDir_)
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_) {
 
     // print to console
     if (verbosity > 1) {
@@ -383,16 +372,13 @@ public:
  */
 class DLL_PUBLIC Euler : public Integrator {
 public:
-  const bool isBacktrack;
-  const double rho;
-  const double c1;
+  bool isBacktrack = true;
+  double rho = 0.99;
+  double c1 = 0.0001;
+
   Euler(System &f_, double dt_, double total_time_, double tSave_,
-        double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
-        std::string trajFileName_, size_t verbosity_, bool isBacktrack_,
-        double rho_, double c1_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
-                   isAdaptiveStep_, trajFileName_, verbosity_),
-        isBacktrack(isBacktrack_), rho(rho_), c1(c1_) {
+        double tolerance_, std::string outputDir_)
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_) {
 
     // print to console
     if (verbosity > 1) {
@@ -452,27 +438,20 @@ private:
   double pastNormSq;
 
   size_t countCG = 0;
-  size_t restartNum;
 
 public:
-  const bool isBacktrack;
-  const double rho;
-  const double c1;
-  const double ctol;
-  const bool isAugmentedLagrangian;
+  size_t restartNum = 5;
+  bool isBacktrack = true;
+  double rho = 0.99;
+  double c1 = 0.001;
+  double ctol = 0.01;
+  bool isAugmentedLagrangian = false;
 
   // size_t countPM = 0;
 
   ConjugateGradient(System &f_, double dt_, double total_time_, double tSave_,
-                    size_t restartNum_, double tolerance_,
-                    std::string outputDir_, bool isAdaptiveStep_,
-                    std::string trajFileName_, size_t verbosity_,
-                    bool isBacktrack_, double rho_, double c1_, double ctol_,
-                    bool isAugmentedLagrangian_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
-                   isAdaptiveStep_, trajFileName_, verbosity_),
-        isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
-        isAugmentedLagrangian(isAugmentedLagrangian_), restartNum(restartNum_) {
+                    double tolerance_, std::string outputDir_)
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_) {
 
     // print to console
     if (verbosity > 1) {
@@ -548,8 +527,7 @@ public:
        double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
        std::string trajFileName_, size_t verbosity_, bool isBacktrack_,
        double rho_, double c1_, double ctol_, bool isAugmentedLagrangian_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_,
-                   isAdaptiveStep_, trajFileName_, verbosity_),
+      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_),
         isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
         isAugmentedLagrangian(isAugmentedLagrangian_), ifRestart(false) {
 
@@ -629,10 +607,7 @@ public:
                    double c1_, double ctol_, bool isAugmentedLagrangian_,
                    size_t restartNum_, std::vector<double> H__,
                    std::vector<double> VP__)
-      : ConjugateGradient(f_, dt_, total_time_, tSave_, restartNum_, tolerance_,
-                          outputDir_, isAdaptiveStep_, trajFileName_,
-                          verbosity_, isBacktrack_, rho_, c1_, ctol_,
-                          isAugmentedLagrangian_),
+      : ConjugateGradient(f_, dt_, total_time_, tSave_, tolerance_, outputDir_),
         H_(H__), VP_(VP__) {
     throw std::runtime_error(
         "FeedForwardSweep is currently not tested and maintained!");

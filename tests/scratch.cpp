@@ -80,8 +80,13 @@ int main() {
   std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
                           "results//bud//asymm//testTraj";
 
-  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
-                           "traj.nc", verbosity, isBacktrack, rho, c1);
+  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+  integrator.isAdaptiveStep = isAdaptiveStep;
+  integrator.trajFileName = "traj.nc";
+  integrator.verbosity = verbosity;
+  integrator.isBacktrack = isBacktrack;
+  integrator.rho = rho;
+  integrator.c1 = c1;
   integrator.integrate();
 
   return 0;

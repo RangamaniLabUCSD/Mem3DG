@@ -113,14 +113,14 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // First time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX3D vectorForces1 = f.F.toMatrix(f.F.vectorForces);
+  EigenVectorX3D vectorForces1 = f.F.toMatrix(f.F.mechanicalForceVec);
   EigenVectorX1D chemicalPotential1 = f.F.toMatrix(f.F.chemicalPotential);
   EigenVectorX3D regularizationForce1 = f.F.toMatrix(f.F.regularizationForce);
 
   // Second time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX3D vectorForces2 = f.F.toMatrix(f.F.vectorForces);
+  EigenVectorX3D vectorForces2 = f.F.toMatrix(f.F.mechanicalForceVec);
   EigenVectorX1D chemicalPotential2 = f.F.toMatrix(f.F.chemicalPotential);
   EigenVectorX3D regularizationForce2 = f.F.toMatrix(f.F.regularizationForce);
 

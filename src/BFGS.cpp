@@ -106,9 +106,16 @@ void BFGS::checkParameters() {
     throw std::runtime_error(
         "Binding constant should be set to 1 for optimization!");
   }
+  if (isBacktrack) {
+    if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
+      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+    }
+  }
 }
 
 void BFGS::status() {
+  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
   // compute summerized forces
   getForces();
@@ -138,12 +145,6 @@ void BFGS::status() {
   //           << (f.F.unflatten(f.F.flatten(physicalForceVec)).array() ==
   //               physicalForceVec.array())
   //           << std::endl;
-
-  // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
-
-  // compute the L1 chemical error norm
-  f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
 
   // compute the area contraint error
   dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
@@ -188,6 +189,8 @@ void BFGS::march() {
     // map the raw eigen datatype for computation
     auto vel_e = f.F.toMatrix(f.vel);
     auto vel_protein_e = f.F.toMatrix(f.vel_protein);
+    auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
+    auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
     vel_e = f.F.unflatten(hess_inv * f.F.flatten(physicalForceVec));
     vel_protein_e = hess_inv_protein * f.F.chemicalPotential.raw();

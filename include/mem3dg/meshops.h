@@ -149,6 +149,29 @@ DLL_PUBLIC inline bool hasOutlier(const Eigen::VectorXd &vec,
 }
 
 /**
+ * @brief test whether exist outliers to the set of data based range function
+ * @param vec data vector
+ * @param threshold coefficient used to bound the outlier.
+ * For example: (Outlier <--> r) < [threshold * (l <--> r)]
+ * @return
+ */
+DLL_PUBLIC inline Eigen::Matrix<bool, Eigen::Dynamic, 1>
+outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5) {
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
+  mask.resize(vec.rows(), 1);
+  Eigen::VectorXd sorted_vec;
+  sortVector(vec, sorted_vec);
+  double r, l, range;
+  findRange(sorted_vec.data(), sorted_vec.size(), r, l);
+  range = r - l;
+  for (size_t i = 0; i < vec.rows(); i++) {
+    mask[i] =
+        ((vec[i] - r < threshold * range) && (l - vec[i] < threshold * range));
+  }
+  return mask;
+}
+
+/**
  * @brief Signal handler for pybindf
  */
 DLL_PUBLIC inline void signalHandler(int signum) {
@@ -191,59 +214,39 @@ DLL_PUBLIC inline void signalHandler(int signum) {
 //   return gcs::makeManifoldSurfaceMeshAndGeometry(coords, newFaces);
 // }
 
-namespace detail {
-inline double signedVolumeFromFace(const gc::Vector3 (&p)[3]) {
-  double v321 = p[2].x * p[1].y * p[0].z;
-  double v231 = p[1].x * p[2].y * p[0].z;
-  double v312 = p[2].x * p[0].y * p[1].z;
-  double v132 = p[0].x * p[2].y * p[1].z;
-  double v213 = p[1].x * p[0].y * p[2].z;
-  double v123 = p[0].x * p[1].y * p[2].z;
-
-  return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
-}
-} // namespace detail
-
 /**
  * @brief Get volume from a face
- *
- * @param f
- * @param vpg
  * @return double
  */
+DLL_PUBLIC inline double signedVolumeFromFace(gc::Vector3 &p0, gc::Vector3 &p1,
+                                              gc::Vector3 &p2) {
+  double v321 = p2.x * p1.y * p0.z;
+  double v231 = p1.x * p2.y * p0.z;
+  double v312 = p2.x * p0.y * p1.z;
+  double v132 = p0.x * p2.y * p1.z;
+  double v213 = p1.x * p0.y * p2.z;
+  double v123 = p0.x * p1.y * p2.z;
+  return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+}
+
 DLL_PUBLIC inline double
-signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg) {
+signedVolumeFromFace(gcs::Vertex &&v0, gcs::Vertex &&v1, gcs::Vertex &v2,
+                     gcs::VertexPositionGeometry &vpg) {
+  return signedVolumeFromFace(vpg.inputVertexPositions[v0],
+                              vpg.inputVertexPositions[v1],
+                              vpg.inputVertexPositions[v2]);
+}
 
-  if (!f.isTriangle()) {
-    mem3dg_runtime_error("Cannot compute volume of non-triangular element");
-  }
-
+DLL_PUBLIC
+inline double signedVolumeFromFace(gcs::Face &f,
+                                   gcs::VertexPositionGeometry &vpg) {
   gc::Vector3 p[3];
   size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
     p[i] = vpg.inputVertexPositions[v];
     i++;
   }
-  return detail::signedVolumeFromFace(p);
-}
-
-/**
- * @brief Get volume from a face
- *
- * @param f
- * @param vpg
- * @return double
- */
-DLL_PUBLIC inline double
-signedVolumeFromFace(std::array<std::size_t, 3> f,
-                     gcs::VertexPositionGeometry &vpg) {
-  gc::Vector3 p[3];
-  size_t i = 0;
-  for (std::size_t v : f) {
-    p[i] = vpg.inputVertexPositions[v];
-    i++;
-  }
-  return detail::signedVolumeFromFace(p);
+  return signedVolumeFromFace(p[0], p[1], p[2]);
 }
 
 /**
@@ -265,11 +268,8 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
         gcs::Vertex theVertex = bl.halfedge().tailVertex();
         for (gcs::Halfedge e : bl.adjacentHalfedges()) {
           if (e.tailVertex() != theVertex && e.tipVertex() != theVertex) {
-            volume += signedVolumeFromFace(
-                std::array<std::size_t, 3>{e.tailVertex().getIndex(),
-                                           e.tipVertex().getIndex(),
-                                           theVertex.getIndex()},
-                vpg);
+            volume += signedVolumeFromFace(e.tailVertex(), e.tipVertex(),
+                                           theVertex, vpg);
           }
         }
       }
@@ -559,8 +559,8 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  * @param mesh mesh
  * @param vpg geometry
  * @param position position of the target space point
- * @param geodesicDistance geodesic distance from a particular point in order to
- * specify range of search
+ * @param geodesicDistance geodesic distance from a particular point in order
+ * to specify range of search
  * @param range range of search
  */
 DLL_PUBLIC inline gcs::Vertex
@@ -582,12 +582,12 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
       continue;
     }
     if (geodesicDistance[v] < 0 && isIntialized) {
-      std::cout
-          << "\nWARNING: closestVertexToPt: geodesicDistance of this vertex is "
-          << geodesicDistance[v]
-          << " which is less than 0, may be "
-             "uninitialized/updated!"
-          << std::endl;
+      std::cout << "\nWARNING: closestVertexToPt: geodesicDistance of this "
+                   "vertex is "
+                << geodesicDistance[v]
+                << " which is less than 0, may be "
+                   "uninitialized/updated!"
+                << std::endl;
     }
     double distance;
     if (position.rows() == 2) {

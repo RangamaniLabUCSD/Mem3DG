@@ -60,13 +60,30 @@ bool Euler::integrate() {
       saveData();
     }
 
+    // Process mesh every tProcessMesh period
+    if (f.time - lastProcessMesh > tProcessMesh) {
+      lastProcessMesh = f.time;
+      f.processMesh();
+      f.updateVertexPositions(false);
+    }
+
+    // update geodesics every tUpdateGeodesics period
+    if (f.time - lastUpdateGeodesics > tUpdateGeodesics) {
+      lastUpdateGeodesics = f.time;
+      f.updateVertexPositions(true);
+    }
+
     // break loop if EXIT flag is on
     if (EXIT) {
       break;
     }
 
     // step forward
-    march();
+    if (f.time == lastProcessMesh || f.time == lastUpdateGeodesics) {
+      f.time += 1e-10 * dt;
+    } else {
+      march();
+    }
   }
 
   // return if optimization is sucessful
@@ -93,18 +110,18 @@ void Euler::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
     throw std::runtime_error("DPD has to be turned off for euler integration!");
   }
+  if (isBacktrack) {
+    if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
+      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+    }
+  }
 }
 
 void Euler::status() {
+  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
   // compute summerized forces
   getForces();
-
-  // compute the L1 error norm
-  f.L1ErrorNorm = f.computeL1Norm(physicalForce);
-
-  // compute the L1 chemical error norm
-  f.L1ChemErrorNorm = f.computeL1Norm(f.F.chemicalPotential.raw());
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
@@ -112,8 +129,8 @@ void Euler::status() {
                               : abs(1.0 / f.volume / f.P.cam - 1);
 
   // exit if under error tolerance
-  if (f.L1ErrorNorm < tol && f.L1ChemErrorNorm < tol) {
-    std::cout << "\nL1 error norm smaller than tolerance." << std::endl;
+  if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
+    std::cout << "\nError norm smaller than tolerance." << std::endl;
     EXIT = true;
   }
 
@@ -132,46 +149,41 @@ void Euler::status() {
 }
 
 void Euler::march() {
-  if (f.time == lastSave) {
-    // process the mesh with regularization or mutation
-    f.processMesh();
-    f.updateVertexPositions(true);
-    f.time += 1e-10 * dt;
-  } else {
-    // map the raw eigen datatype for computation
-    auto vel_e = gc::EigenMap<double, 3>(f.vel);
-    auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  // map the raw eigen datatype for computation
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
-    // compute force, which is equivalent to velocity
-    vel_e = physicalForceVec;
+  // compute force, which is equivalent to velocity
+  vel_e = physicalForceVec;
 
-    // adjust time step if adopt adaptive time step based on mesh size
-    if (isAdaptiveStep) {
-      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-      dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-           (f.O.isShapeVariation
-                ? physicalForce.cwiseAbs().maxCoeff()
-                : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
-    }
-
-    // time stepping on vertex position
-    previousE = f.E;
-    if (isBacktrack) {
-      backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(), rho, c1);
-    } else {
-      pos_e += vel_e * dt;
-      f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
-      f.time += dt;
-    }
-
-    // regularization
-    if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
-      f.computeRegularizationForce();
-      f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
-    }
-
-    // recompute cached values
-    f.updateVertexPositions(false);
+  // adjust time step if adopt adaptive time step based on mesh size
+  if (isAdaptiveStep) {
+    double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
+    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
+         (f.O.isShapeVariation
+              ? physicalForce.cwiseAbs().maxCoeff()
+              : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
   }
+
+  // time stepping on vertex position
+  previousE = f.E;
+  if (isBacktrack) {
+    backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(), rho, c1);
+  } else {
+    pos_e += vel_e * dt;
+    f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
+    f.time += dt;
+  }
+
+  // regularization
+  if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
+    f.computeRegularizationForce();
+    f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+  }
+
+  // recompute cached values
+  f.updateVertexPositions(false);
 }
 } // namespace mem3dg

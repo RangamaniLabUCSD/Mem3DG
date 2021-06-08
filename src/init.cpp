@@ -237,6 +237,53 @@ void System::mapContinuationVariables(std::string plyFile) {
   }
 }
 
+void System::saveRichData(std::string PathToSave) {
+  gcs::RichSurfaceMeshData richData(*mesh);
+  richData.addMeshConnectivity();
+  richData.addGeometry(*vpg);
+
+  // write protein distribution
+  richData.addVertexProperty("protein_density", proteinDensity);
+
+  // write bool
+  gcs::VertexData<double> msk(*mesh);
+  msk.fromVector(F.toMatrix(F.forceMask).rowwise().sum());
+  richData.addVertexProperty("mask", msk);
+  gcs::VertexData<double> smthingMsk(*mesh);
+  smthingMsk.fromVector(smoothingMask.raw().cast<double>());
+  richData.addVertexProperty("smoothing_mask", smthingMsk);
+  gcs::VertexData<double> tkr(*mesh);
+  tkr.fromVector(thePointTracker.raw().cast<double>());
+  richData.addVertexProperty("the_point", tkr);
+
+  // write geometry
+  gcs::VertexData<double> meanCurv(*mesh);
+  meanCurv.fromVector(vpg->vertexMeanCurvatures.raw().array() /
+                      vpg->vertexDualAreas.raw().array());
+  richData.addVertexProperty("mean_curvature", meanCurv);
+  gcs::VertexData<double> gaussCurv(*mesh);
+  gaussCurv.fromVector(vpg->vertexGaussianCurvatures.raw().array() /
+                       vpg->vertexDualAreas.raw().array());
+  richData.addVertexProperty("gauss_curvature", gaussCurv);
+  richData.addVertexProperty("spon_curvature", H0);
+
+  // write pressures
+  richData.addVertexProperty("bending_force", F.bendingForce);
+  richData.addVertexProperty("capillary_force", F.capillaryForce);
+  richData.addVertexProperty("line_tension_force", F.lineCapillaryForce);
+  richData.addVertexProperty("osmotic_force", F.osmoticForce);
+  richData.addVertexProperty("external_force", F.externalForce);
+  richData.addVertexProperty("physical_force", F.mechanicalForce);
+
+  // write chemical potential
+  richData.addVertexProperty("diffusion_potential", F.diffusionPotential);
+  richData.addVertexProperty("bending_potential", F.bendingPotential);
+  richData.addVertexProperty("adsorption_potential", F.adsorptionPotential);
+  richData.addVertexProperty("chemical_potential", F.chemicalPotential);
+
+  richData.write(PathToSave);
+}
+
 void System::checkParametersAndOptions() {
 
   // check validity of parameters / options
@@ -611,8 +658,8 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
     // this is under the case where the resolution is low. This is where the
     // extra vpg->edgeLength comes from!!!
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
-    F.lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
-                          (vpg->d0 * H0.raw()).cwiseAbs().array();
+    // F.lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
+    //                       (vpg->d0 * H0.raw()).cwiseAbs().array();
     // lineTension.raw() = P.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
 }
