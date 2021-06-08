@@ -118,7 +118,7 @@ void System::computeDirichletEnergy() {
 
 void System::computeExternalForceEnergy() {
   E.exE = -rowwiseDotProduct(
-               rowwiseScaling(F.externalForce.raw(),
+               rowwiseScalarProduct(F.externalForce.raw(),
                               gc::EigenMap<double, 3>(vpg->vertexNormals)),
                gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();

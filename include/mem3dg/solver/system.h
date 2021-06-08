@@ -296,23 +296,23 @@ struct Forces {
   inline gcs::VertexData<gc::Vector3>
   addNormal(gcs::VertexData<double> &vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScalarProduct(
         vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
     return vertexData;
   }
   inline gcs::VertexData<gc::Vector3>
   addNormal(gcs::VertexData<double> &&vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScalarProduct(
         vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
     return vertexData;
   }
 
   inline EigenVectorX3D addNormal(EigenVectorX1D &vector) {
-    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return rowwiseScalarProduct(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
   inline EigenVectorX3D addNormal(EigenVectorX1D &&vector) {
-    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return rowwiseScalarProduct(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
 
   inline gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
@@ -328,14 +328,14 @@ struct Forces {
    */
   inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &vector) {
     return gc::EigenMap<double, 3>(vector) -
-           rowwiseScaling(
+           rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg.vertexNormals)),
                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
   inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &&vector) {
     return gc::EigenMap<double, 3>(vector) -
-           rowwiseScaling(
+           rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg.vertexNormals)),
                gc::EigenMap<double, 3>(vpg.vertexNormals));

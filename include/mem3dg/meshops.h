@@ -14,6 +14,9 @@
 
 #pragma once
 
+#include <array>
+#include <vector>
+
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/halfedge_factories.h"
 #include "geometrycentral/surface/tufted_laplacian.h"
@@ -31,7 +34,6 @@
 #include "mem3dg/constants.h"
 #include "mem3dg/macros.h"
 #include "mem3dg/type_utilities.h"
-#include "mem3dg/error_handler.h"
 
 namespace mem3dg {
 
@@ -212,15 +214,15 @@ inline double signedVolumeFromFace(const gc::Vector3 (&p)[3]) {
 DLL_PUBLIC inline double
 signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg) {
 
-  if (!f.isTriangle()){
-    throw_runtime_error(__FILE__, __LINE__, "Cannot compute volume of non-triangular element");
+  if (!f.isTriangle()) {
+    mem3dg_runtime_error("Cannot compute volume of non-triangular element");
   }
 
   gc::Vector3 p[3];
   size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
     p[i] = vpg.inputVertexPositions[v];
-    ++i;
+    i++;
   }
   return detail::signedVolumeFromFace(p);
 }
@@ -233,7 +235,7 @@ signedVolumeFromFace(gcs::Face &f, gcs::VertexPositionGeometry &vpg) {
  * @return double
  */
 DLL_PUBLIC inline double
-signedVolumeFromFace(std::vector<std::size_t> f,
+signedVolumeFromFace(std::array<std::size_t, 3> f,
                      gcs::VertexPositionGeometry &vpg) {
   gc::Vector3 p[3];
   size_t i = 0;
@@ -256,7 +258,7 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
                                        bool isFillHole = true) {
   double volume = 0;
 
-  // fill hole for open mesh
+  // Throw error or fill hole for open mesh
   if (mesh.hasBoundary()) {
     if (isFillHole) {
       for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
@@ -264,16 +266,17 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
         for (gcs::Halfedge e : bl.adjacentHalfedges()) {
           if (e.tailVertex() != theVertex && e.tipVertex() != theVertex) {
             volume += signedVolumeFromFace(
-                std::vector<std::size_t>{e.tailVertex().getIndex(),
-                                         e.tipVertex().getIndex(),
-                                         theVertex.getIndex()},
+                std::array<std::size_t, 3>{e.tailVertex().getIndex(),
+                                           e.tipVertex().getIndex(),
+                                           theVertex.getIndex()},
                 vpg);
           }
         }
       }
     } else {
-      throw std::runtime_error("getMeshVolume: mesh is opened, not able to "
-                               "compute enclosed volume unless filled holes!");
+      mem3dg_runtime_error(__FILE__, __LINE__,
+                           "getMeshVolume: mesh is opened, not able to ",
+                           "compute enclosed volume unless filled holes!");
     }
   }
 
@@ -301,24 +304,24 @@ DLL_PUBLIC inline void averageData(gc::MeshData<E, T> &meshData,
 }
 
 /**
- * @brief get barycentric coordinate from cartesian coordinate
+ * @brief Convert cartesian coordinates to barycentric coordinates
  *
- * @param meshData
- * @param element1
- * @param element2
- * @param newElement
- * @return
+ * @param v1 The first basis
+ * @param v2 The second basis
+ * @param v3 The third basis
+ * @param v
+ * @return DLL_PUBLIC
  */
 DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
                                                      gc::Vector2 &v2,
                                                      gc::Vector2 &v3,
                                                      gc::Vector2 &v) {
-  gc::Vector3 lambda;
-
-  lambda.x = ((v2.y - v3.y) * (v.x - v3.x) + (v3.x - v2.x) * (v.y - v3.y)) /
-             ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y));
-  lambda.y = ((v3.y - v1.y) * (v.x - v3.x) + (v1.x - v3.x) * (v.y - v3.y)) /
-             ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y));
+  gc::Vector3 lambda{
+      ((v2.y - v3.y) * (v.x - v3.x) + (v3.x - v2.x) * (v.y - v3.y)) /
+          ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y)), // X
+      ((v3.y - v1.y) * (v.x - v3.x) + (v1.x - v3.x) * (v.y - v3.y)) /
+          ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y)), // Y
+      0};
   lambda.z = 1 - lambda.x - lambda.y;
 
   return lambda;
@@ -345,11 +348,9 @@ correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
     } else if (v == firstHalfedge.next().next().vertex()) {
       baryCoords[vertexInd] = baryCoords_.z;
     } else if (firstHalfedge.face().isBoundaryLoop()) {
-      throw std::runtime_error(
-          "correspondBarycentricCoordinates: face is on boundary!");
+      mem3dg_runtime_error("Face is on boundary!");
     } else {
-      throw std::runtime_error(
-          "correspondBarycentricCoordinates: undefined behavior!");
+      mem3dg_runtime_error("Undefined behavior");
     }
     vertexInd++;
   }
@@ -371,55 +372,6 @@ vecFromHalfedge(const gcs::Halfedge &he,
 }
 
 /**
- * @brief helper function for taking rowwise dot product of two matrices
- *
- * @param Eigen matrix A
- * @param Eigen matrix B
- * @return Eigen matrix V
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
-rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &A,
-                  Eigen::Matrix<double, Eigen::Dynamic, 3> &B) {
-  return ((A.array() * B.array()).rowwise().sum()).matrix();
-}
-
-/**
- * @brief
- *
- * @param A
- * @param B
- * @return DLL_PUBLIC
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
-rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &&A,
-                  Eigen::Matrix<double, Eigen::Dynamic, 3> &&B) {
-  return ((A.array() * B.array()).rowwise().sum()).matrix();
-}
-
-/**
- * @brief helper function for taking rowwise cross product of two matrices
- *
- * @param Eigen matrix A
- * @param Eigen matrix B
- * @return Eigen matrix V
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
-rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &A,
-                    Eigen::Matrix<double, Eigen::Dynamic, 3> &B) {
-  Eigen::Matrix<double, Eigen::Dynamic, 3> C;
-  if (A.rows() != B.rows()) {
-    throw std::runtime_error("The input matrices must have same sizes!");
-    return C;
-  } else {
-    C.resize(A.rows(), 3);
-    for (size_t i = 0; i < A.rows(); i++) {
-      C.row(i) = A.row(i).cross(B.row(i));
-    }
-    return C;
-  }
-}
-
-/**
  * @brief helper function for computing the polygon area enclosed by a boundary
  * loop on a mesh
  * @param bl boundary loop on a mesh
@@ -435,34 +387,8 @@ computePolygonArea(const gcs::BoundaryLoop &bl,
                         inputVertexPositions[he.tipVertex()]);
   }
 
-  // could be used to poject onto other direction if needed
+  // could be used to project onto other direction if needed
   return 0.5 * signedArea.norm();
-}
-
-/**
- * @brief helper function for taking rowwise product of two vectors
- *
- * @param Eigen vector A
- * @param Eigen vector B
- * @return Eigen matrix V
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
-rowwiseProduct(Eigen::Matrix<double, Eigen::Dynamic, 1> A,
-               Eigen::Matrix<double, Eigen::Dynamic, 1> B) {
-  return (A.array() * B.array()).matrix();
-}
-
-/**
- * @brief helper function for rowwise scaling of a matrix using a vector s
- *
- * @param Eigen vector a
- * @param Eigen matrix B
- * @return Eigen matrix C
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
-rowwiseScaling(Eigen::Matrix<double, Eigen::Dynamic, 1> a,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
-  return (B.array().colwise() * a.array()).matrix();
 }
 
 /**

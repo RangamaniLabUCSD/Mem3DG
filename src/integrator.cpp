@@ -426,7 +426,7 @@ void Integrator::getForces() {
   f.computePhysicalForces();
 
   physicalForceVec.array() =
-      f.F.mask(rowwiseScaling(f.F.externalForce.raw(), vertexAngleNormal_e) +
+      f.F.mask(rowwiseScalarProduct(f.F.externalForce.raw(), vertexAngleNormal_e) +
                f.F.toMatrix(f.F.vectorForces));
 
   physicalForce = f.F.ontoNormal(physicalForceVec);

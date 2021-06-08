@@ -118,7 +118,7 @@ void System::computeRegularizationForce() {
   auto regularizationForce_e = gc::EigenMap<double, 3>(F.regularizationForce);
 
   // remove the normal component
-  regularizationForce_e -= rowwiseScaling(
+  regularizationForce_e -= rowwiseScalarProduct(
       rowwiseDotProduct(regularizationForce_e, vertexAngleNormal_e),
       vertexAngleNormal_e);
 
@@ -142,7 +142,7 @@ void System::computeRegularizationForce() {
 
   // // remove the masked components
   // regularizationForce_e =
-  //     rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
+  //     rowwiseScalarProduct(mask.raw().cast<double>(), regularizationForce_e);
   // // moving boundary
   // for (gcs::Vertex v : mesh->vertices()) {
   //   if (!mask[v]) {
@@ -399,7 +399,7 @@ void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
       //           << std::endl;
     }
     pos_e.array() +=
-        rowwiseScaling(gradient, vertexAngleNormal_e).array() * stepSize;
+        rowwiseScalarProduct(gradient, vertexAngleNormal_e).array() * stepSize;
     pastGradNorm = gradNorm;
     // std::cout << "gradient:  " << gradNorm << std::endl;
   } while (gradNorm > tol);
