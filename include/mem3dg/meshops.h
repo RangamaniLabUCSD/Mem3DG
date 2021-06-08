@@ -274,8 +274,7 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
         }
       }
     } else {
-      mem3dg_runtime_error(__FILE__, __LINE__,
-                           "getMeshVolume: mesh is opened, not able to ",
+      mem3dg_runtime_error("Mesh is opened, not able to ",
                            "compute enclosed volume unless filled holes!");
     }
   }
@@ -454,8 +453,7 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
   } else if (boundaryConditionType == "roller" ||
              boundaryConditionType == "none") {
   } else {
-    throw std::runtime_error(
-        "boundaryMask(bool): boundaryConditionType not defined!");
+    mem3dg_runtime_error("boundaryConditionType not defined!");
   }
 
   if (mask.raw().all() && boundaryConditionType != "roller" &&
@@ -497,33 +495,27 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
     }
   } else if (boundaryConditionType == "none") {
   } else {
-    throw std::runtime_error(
-        "boundaryMask(double): boundaryConditionType not defined!");
+    mem3dg_runtime_error("boundaryConditionType is not defined");
   }
   if (!(gc::EigenMap<double, 3>(mask).array() < 0.5).any() &&
       boundaryConditionType != "none") {
-    std::cout << "\nboundaryMask(double): WARNING: there is no boundary vertex "
-                 "in the mesh!"
+    std::cout << "\nboundaryMask(double): WARNING: there are no boundary "
+                 "vertices in the mesh!"
               << std::endl;
   }
   if (!(gc::EigenMap<double, 3>(mask).array() > 0.5).any()) {
-    std::cout << "\nboundaryMask(double): WARNING: there is no non-masked DOF "
+    std::cout << "\nboundaryMask(double): WARNING: there are no non-masked DOF "
                  "in the mesh!"
               << std::endl;
   }
 }
 
 /**
- * @brief Remove the rigid body translation
+ * @brief Remove rigid body translation
  *
- * @param Eigen force matrix
+ * @param force   Matrix of forces to process
  */
-DLL_PUBLIC inline void
-removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
-  force = force.rowwise() - ((force).colwise().sum() / force.rows());
-}
-DLL_PUBLIC inline void
-removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
+DLL_PUBLIC inline void removeTranslation(Eigen::Ref<EigenVectorX3D> &force) {
   force = force.rowwise() - ((force).colwise().sum() / force.rows());
 }
 
@@ -534,16 +526,16 @@ removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
  * @param Eigen position matrix
  */
 DLL_PUBLIC inline void
-removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
-  force = force.rowwise() -
-          (rowwiseCrossProduct(position, force).colwise().sum() / force.rows());
-}
-DLL_PUBLIC inline void
-removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
-  force = force.rowwise() -
-          (rowwiseCrossProduct(position, force).colwise().sum() / force.rows());
+removeRotation(const Eigen::Ref<const EigenVectorX3D> &position,
+               Eigen::Ref<EigenVectorX3D> &force) {
+
+  Eigen::Matrix<double, 1, 3> sum(0, 0, 0);
+
+  for (std::size_t i = 0; i < force.rows(); ++i) {
+    sum += position.row(i).cross(force.row(i));
+  }
+
+  force = force.rowwise() - (sum / force.rows());
 }
 
 /**

@@ -34,10 +34,6 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
-    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-
 class ForceCalculationTest : public testing::Test {
 protected:
   // initialize mesh and vpg

@@ -115,20 +115,36 @@ auto rowwiseScalarProduct(const Eigen::DenseBase<VectorType> &A,
  * Note that this function does not return a result of an intermediate Eigen
  * operation. Owing to some limitations, we return an evaluated temporary.
  *
+ * 
  * @tparam Derived  Template type value of the matrices
  * @param A         Matrix A
  * @param B         Matrix B
  * @return          Matrix of rowwise cross products
  */
-template <typename Derived>
-typename Derived::PlainMatrix
-rowwiseCrossProduct(const Eigen::DenseBase<Derived> &A,
-                    const Eigen::DenseBase<Derived> &B) {
+// template <typename Derived>
+// typename Derived::PlainMatrix
+// rowwiseCrossProduct(const Eigen::DenseBase<Derived> &A,
+//                     const Eigen::DenseBase<Derived> &B) {
+//   if (A.rows() != B.rows()) {
+//     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
+//                          " in B, for rowwise cross product");
+//   }
+//   typename Derived::PlainMatrix C;
+//   C.resize(A.rows(), 3);
+//   for (std::size_t i = 0; i < A.rows(); i++) {
+//     C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
+//   }
+//   return C;
+// }
+
+inline EigenVectorX3D
+rowwiseCrossProduct(const Eigen::Ref<const EigenVectorX3D> &A,
+                    const Eigen::Ref<const EigenVectorX3D> &B) {
   if (A.rows() != B.rows()) {
     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
                          " in B, for rowwise cross product");
   }
-  typename Derived::PlainMatrix C;
+  EigenVectorX3D C;
   C.resize(A.rows(), 3);
   for (std::size_t i = 0; i < A.rows(); i++) {
     C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
