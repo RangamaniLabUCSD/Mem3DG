@@ -24,6 +24,8 @@
 
 #include <geometrycentral/surface/surface_mesh.h>
 
+#include "mem3dg/macros.h"
+
 namespace mem3dg {
 
 namespace gc = ::geometrycentral;
@@ -72,16 +74,66 @@ using ConstAlignedEigenMap_T =
                Eigen::AlignedMax>;
 
 /**
- * @brief Compute the dot product between two Eigen Matrices
+ * @brief Compute the rowwise dot product between two Eigen Matrices
  *
- * @tparam Derived  Template type values of the matrices
+ * @tparam DerivedA  Template type value of matrix A
+ * @tparam DerivedB  Template type value of matrix B
  * @param A         the first matrix
  * @param B         The other matrix
  * @return auto     Intermediate return value for Eigen optimization
  */
+template <typename DerivedA, typename DerivedB>
+auto rowwiseDotProduct(const Eigen::DenseBase<DerivedA> &A,
+                       const Eigen::DenseBase<DerivedB> &B) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  return (A.derived().array() * B.derived().array()).rowwise().sum().matrix();
+}
+
+/**
+ * @brief Compute the rowwise scalar product between a matrix and scalar
+ *
+ * @tparam VectorType Template type of vector type
+ * @tparam Derived    Template type of matrix B
+ * @param A           The vector of scalar values
+ * @param B           The vector of matrix values
+ * @return auto
+ */
+template <typename VectorType, typename Derived>
+auto rowwiseScalarProduct(const Eigen::DenseBase<VectorType> &A,
+                          const Eigen::DenseBase<Derived> &B) {
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(VectorType);
+  if (A.rows() != B.rows()) {
+    mem3dg_runtime_error("Mismatched row size, ", A.rows(), " rows in vector ",
+                         B.rows(), " in matrix, for rowwise scalar product");
+  }
+  return (B.derived().array().colwise() * A.derived().array()).matrix();
+}
+
+/**
+ * @brief Compute the rowwise cross product between two matrices
+ *
+ * Note that this function does not return a result of an intermediate Eigen
+ * operation. Owing to some limitations, we return an evaluated temporary.
+ *
+ * @tparam Derived  Template type value of the matrices
+ * @param A         Matrix A
+ * @param B         Matrix B
+ * @return          Matrix of rowwise cross products
+ */
 template <typename Derived>
-auto dot(Eigen::DenseBase<Derived> &A, Eigen::DenseBase<Derived> &B) {
-  return A.derived().cwiseProduct(B.derived()).rowwise().sum();
+typename Derived::PlainMatrix
+rowwiseCrossProduct(const Eigen::DenseBase<Derived> &A,
+                    const Eigen::DenseBase<Derived> &B) {
+  if (A.rows() != B.rows()) {
+    mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
+                         " in B, for rowwise cross product");
+  }
+  typename Derived::PlainMatrix C;
+  C.resize(A.rows(), 3);
+  for (std::size_t i = 0; i < A.rows(); i++) {
+    C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
+  }
+  return C;
 }
 
 /**
@@ -203,4 +255,4 @@ ConstAlignedEigenMap_T<T, 1> FlattenedEigenMap(const AlignedVector_T<O> &vec) {
   return ConstAlignedEigenMap_T<T, 1>(reinterpret_cast<const T *>(vec.data()),
                                       k * vec.size());
 }
-} // end namespace ddgsolver
+} // namespace mem3dg

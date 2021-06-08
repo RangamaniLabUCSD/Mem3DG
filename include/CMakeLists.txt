@@ -16,7 +16,6 @@ set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/visualization.h"
 
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/error_handler.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/typetraits.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/macros.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/type_utilities.h"

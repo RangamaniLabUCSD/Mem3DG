@@ -252,13 +252,13 @@ EigenVectorX1D System::computeBendingForce() {
 
   // calculate the Laplacian of mean curvature H
   EigenVectorX1D lap_H =
-      -(vpg->cotanLaplacian * rowwiseProduct(Kb.raw(), ptwiseH - H0.raw()))
+      -(vpg->cotanLaplacian * Kb.raw().cwiseProduct( ptwiseH - H0.raw()))
            .array() /
       vpg->vertexDualAreas.raw().array();
 
   // initialize and calculate intermediary result scalerTerms
-  EigenVectorX1D scalerTerms = rowwiseProduct(ptwiseH, ptwiseH) +
-                               rowwiseProduct(ptwiseH, H0.raw()) -
+  EigenVectorX1D scalerTerms = ptwiseH.cwiseProduct(ptwiseH) +
+                               ptwiseH.cwiseProduct(H0.raw()) -
                                (vpg->vertexGaussianCurvatures.raw().array() /
                                 vpg->vertexDualAreas.raw().array())
                                    .matrix();
@@ -303,7 +303,7 @@ EigenVectorX1D System::computeBendingForce() {
 
   // bendingPressure_e =
   //     -2.0 * P.Kb *
-  //     rowwiseScaling(vpg->vertexLumpedMassMatrix.cwiseInverse() *
+  //     rowwiseScalarProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
   //     (productTerms_integrated + lap_H_integrated),
   //                    vertexAngleNormal_e);
 }

@@ -110,11 +110,11 @@ void VelocityVerlet::status() {
   getForces();
 
   // Compute total pressure
-  // newTotalPressure = rowwiseScaling((physicalForce + DPDForce).array() /
+  // newTotalPressure = rowwiseScalarProduct((physicalForce + DPDForce).array() /
   //                                       f.vpg->vertexDualAreas.raw().array(),
   //                                   vertexAngleNormal_e);
   newTotalPressure =
-      rowwiseScaling(DPDForce.array() / f.vpg->vertexDualAreas.raw().array(),
+      rowwiseScalarProduct(DPDForce.array() / f.vpg->vertexDualAreas.raw().array(),
                      vertexAngleNormal_e) +
       (physicalForceVec.array().colwise() /
        f.vpg->vertexDualAreas.raw().array())
