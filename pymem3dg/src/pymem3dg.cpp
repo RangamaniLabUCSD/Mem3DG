@@ -41,34 +41,36 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   // ==========================================================
   // =============     Integrator Template      ===============
   // ==========================================================
-  py::class_<Integrator> integrator(pymem3dg, "Integrator", R"delim(
-        The integrator
-    )delim");
-  integrator.def(py::init<System &, double, double, double, double, std::string,
-                          bool, std::string, size_t>(),
-                 py::arg("f"), py::arg("dt"), py::arg("total_time"),
-                 py::arg("tSave"), py::arg("tolerance"), py::arg("outputDir"),
-                 py::arg("isAdaptiveStep") = true,
-                 py::arg("trajFileName") = "traj.nc", py::arg("verbosity") = 3,
-                 R"delim(
-        Integrator constructor
-      )delim");
-  integrator.def("saveData", &Integrator::saveData,
-                 R"delim(
-          save data to output directory
-      )delim");
-  integrator.def("saveRichData", &Integrator::saveRichData, py::arg("plyName"),
-                 "save to richData and output .ply file to output directory",
-                 R"delim(
-          save data to output directory
-      )delim");
-#ifdef MEM3DG_WITH_NETCDF
-  integrator.def("saveNetcdfData", &Integrator::saveNetcdfData,
-                 "save to netcdf file in output directory",
-                 R"delim(
-          save data to output directory
-      )delim");
-#endif
+  //   py::class_<Integrator> integrator(pymem3dg, "Integrator", R"delim(
+  //         The integrator
+  //     )delim");
+  //   integrator.def(py::init<System &, double, double, double, double,
+  //   std::string,
+  //                           bool, std::string, size_t>(),
+  //                  py::arg("f"), py::arg("dt"), py::arg("total_time"),
+  //                  py::arg("tSave"), py::arg("tolerance"),
+  //                  py::arg("outputDir"), py::arg("isAdaptiveStep") = true,
+  //                  py::arg("trajFileName") = "traj.nc", py::arg("verbosity")
+  //                  = 3, R"delim(
+  //         Integrator constructor
+  //       )delim");
+  //   integrator.def("saveData", &Integrator::saveData,
+  //                  R"delim(
+  //           save data to output directory
+  //       )delim");
+  //   integrator.def("saveRichData", &Integrator::saveRichData,
+  //   py::arg("plyName"),
+  //                  "save to richData and output .ply file to output
+  //                  directory", R"delim(
+  //           save data to output directory
+  //       )delim");
+  // #ifdef MEM3DG_WITH_NETCDF
+  //   integrator.def("saveNetcdfData", &Integrator::saveNetcdfData,
+  //                  "save to netcdf file in output directory",
+  //                  R"delim(
+  //           save data to output directory
+  //       )delim");
+  // #endif
 
   // ==========================================================
   // =============     Velocity Verlet          ===============
@@ -78,14 +80,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         Velocity Verlet integration
     )delim");
 
-  velocityverlet.def(py::init<System &, double, double, double, double,
-                              std::string, bool, std::string, size_t>(),
-                     py::arg("f"), py::arg("dt"), py::arg("total_time"),
-                     py::arg("tSave"), py::arg("tolerance"),
-                     py::arg("outputDir"), py::arg("isAdaptiveStep") = true,
-                     py::arg("trajFileName") = "traj.nc",
-                     py::arg("verbosity") = 3,
-                     R"delim(
+  velocityverlet.def(
+      py::init<System &, double, double, double, double, std::string>(),
+      py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+      py::arg("tolerance"), py::arg("outputDir"),
+      R"delim(
         Velocity Verlet integrator constructor
       )delim");
   velocityverlet.def("integrate", &VelocityVerlet::integrate,
@@ -104,10 +103,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                      R"delim(
           save data to output directory
       )delim");
-  velocityverlet.def("saveRichData", &Euler::saveRichData, py::arg("plyName"),
-                     R"delim(
-          save data to output directory
-      )delim");
   velocityverlet.def("step", &VelocityVerlet::step, py::arg("n"),
                      R"delim(
           step for n iterations
@@ -120,17 +115,72 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         forward euler (gradient descent) integration
     )delim");
 
-  euler.def(py::init<System &, double, double, double, double, std::string,
-                     bool, std::string, size_t, bool, double, double>(),
+  euler.def(py::init<System &, double, double, double, double, std::string>(),
             py::arg("f"), py::arg("dt"), py::arg("total_time"),
             py::arg("tSave"), py::arg("tolerance"), py::arg("outputDir"),
-            py::arg("isAdaptiveStep") = true,
-            py::arg("trajFileName") = "traj.nc", py::arg("verbosity") = 3,
-            py::arg("isBacktrack") = true, py::arg("rho") = 0.99,
-            py::arg("c1") = 0.0001,
             R"delim(
         Euler integrator (steepest descent) constructor
       )delim");
+
+  /**
+   * @brief attributes, integration options
+   */
+  euler.def_readonly("dt", &Euler::dt,
+                     R"delim(
+          time step
+      )delim");
+  euler.def_readonly("total_time", &Euler::total_time,
+                     R"delim(
+          time limit
+      )delim");
+  euler.def_readonly("tSave", &Euler::tSave,
+                     R"delim(
+         period of saving output data
+      )delim");
+  euler.def_readonly("tol", &Euler::tol,
+                     R"delim(
+          tolerance for termination
+      )delim");
+  euler.def_readwrite("tUpdateGeodesics", &Euler::tUpdateGeodesics,
+                      R"delim(
+          period of update geodesics
+      )delim");
+  euler.def_readwrite("tProcessMesh", &Euler::tProcessMesh,
+                      R"delim(
+          period of processing mesh
+      )delim");
+  euler.def_readwrite("trajFileName", &Euler::trajFileName,
+                      R"delim(
+          name of the trajectory file 
+      )delim");
+  euler.def_readwrite("isAdaptiveStep", &Euler::isAdaptiveStep,
+                      R"delim(
+          option to scale time step according to mesh size
+      )delim");
+  euler.def_readwrite("outputDir", &Euler::outputDir,
+                      R"delim(
+        collapse small triangles
+      )delim");
+  euler.def_readwrite("verbosity", &Euler::verbosity,
+                      R"delim(
+           verbosity level of integrator
+      )delim");
+  euler.def_readwrite("isBacktrack", &Euler::isBacktrack,
+                      R"delim(
+         whether do backtracking line search
+      )delim");
+  euler.def_readwrite("rho", &Euler::rho,
+                      R"delim(
+          backtracking coefficient
+      )delim");
+  euler.def_readwrite("c1", &Euler::c1,
+                      R"delim(
+          Wolfe condition parameter
+      )delim");
+
+  /**
+   * @brief methods
+   */
   euler.def("integrate", &Euler::integrate,
             R"delim(
           integrate 
@@ -148,10 +198,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             R"delim(
           save data to output directory
       )delim");
-  euler.def("saveRichData", &Euler::saveRichData, py::arg("plyName"),
-            R"delim(
-          save data to output directory
-      )delim");
   euler.def("step", &Euler::step, py::arg("n"),
             R"delim(
           step for n iterations
@@ -166,17 +212,91 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
 
   conjugategradient.def(
-      py::init<System &, double, double, double, size_t, double, std::string,
-               bool, std::string, size_t, bool, double, double, double, bool>(),
+      py::init<System &, double, double, double, double, std::string>(),
       py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-      py::arg("restartNum"), py::arg("tolerance"), py::arg("outputDir"),
-      py::arg("isAdaptiveStep") = true, py::arg("trajFileName") = "traj.nc",
-      py::arg("verbosity") = 3, py::arg("isBacktrack") = true,
-      py::arg("rho") = 0.99, py::arg("c1") = 0.0001, py::arg("ctol") = 0.001,
-      py::arg("isAugmentedLagrangian") = false,
+      py::arg("tolerance"), py::arg("outputDir"),
       R"delim(
         Conjugate Gradient optimizer constructor
       )delim");
+
+  /**
+   * @brief attributes, integration options
+   */
+  conjugategradient.def_readonly("dt", &ConjugateGradient::dt,
+                                 R"delim(
+          time step
+      )delim");
+  conjugategradient.def_readonly("total_time", &ConjugateGradient::total_time,
+                                 R"delim(
+          time limit
+      )delim");
+  conjugategradient.def_readonly("tSave", &ConjugateGradient::tSave,
+                                 R"delim(
+         period of saving output data
+      )delim");
+  conjugategradient.def_readonly("tol", &ConjugateGradient::tol,
+                                 R"delim(
+          tolerance for termination
+      )delim");
+  conjugategradient.def_readwrite("tUpdateGeodesics",
+                                  &ConjugateGradient::tUpdateGeodesics,
+                                  R"delim(
+          period of update geodesics
+      )delim");
+  conjugategradient.def_readwrite("tProcessMesh",
+                                  &ConjugateGradient::tProcessMesh,
+                                  R"delim(
+          period of processing mesh
+      )delim");
+  conjugategradient.def_readwrite("trajFileName",
+                                  &ConjugateGradient::trajFileName,
+                                  R"delim(
+          name of the trajectory file 
+      )delim");
+  conjugategradient.def_readwrite("isAdaptiveStep",
+                                  &ConjugateGradient::isAdaptiveStep,
+                                  R"delim(
+          option to scale time step according to mesh size
+      )delim");
+  conjugategradient.def_readwrite("outputDir", &ConjugateGradient::outputDir,
+                                  R"delim(
+        collapse small triangles
+      )delim");
+  conjugategradient.def_readwrite("verbosity", &ConjugateGradient::verbosity,
+                                  R"delim(
+           verbosity level of integrator
+      )delim");
+  conjugategradient.def_readwrite("isBacktrack",
+                                  &ConjugateGradient::isBacktrack,
+                                  R"delim(
+         whether do backtracking line search
+      )delim");
+  conjugategradient.def_readwrite("rho", &ConjugateGradient::rho,
+                                  R"delim(
+          backtracking coefficient
+      )delim");
+  conjugategradient.def_readwrite("c1", &ConjugateGradient::c1,
+                                  R"delim(
+          Wolfe condition parameter
+      )delim");
+  conjugategradient.def_readwrite("restartNum", &ConjugateGradient::restartNum,
+                                  R"delim(
+          option to restart conjugate gradient using gradient descent 
+      )delim");
+
+  conjugategradient.def_readwrite("ctol", &ConjugateGradient::ctol,
+                                  R"delim(
+            tolerance for constraints
+      )delim");
+  conjugategradient.def_readwrite("isAugementedLagrangian",
+                                  &ConjugateGradient::isAugmentedLagrangian,
+                                  R"delim(
+            whether use augmented lagrangian method 
+      )delim");
+
+  /**
+   * @brief methods
+   */
   conjugategradient.def("integrate", &ConjugateGradient::integrate,
                         R"delim(
           integrate 
@@ -190,11 +310,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           stepping forward 
       )delim");
   conjugategradient.def("saveData", &ConjugateGradient::saveData,
-                        R"delim(
-          save data to output directory
-      )delim");
-  conjugategradient.def("saveRichData", &Euler::saveRichData,
-                        py::arg("plyName"),
                         R"delim(
           save data to output directory
       )delim");
@@ -236,10 +351,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           stepping forward 
       )delim");
   bfgs.def("saveData", &BFGS::saveData,
-           R"delim(
-          save data to output directory
-      )delim");
-  bfgs.def("saveRichData", &Euler::saveRichData, py::arg("plyName"),
            R"delim(
           save data to output directory
       )delim");
@@ -716,7 +827,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //       )delim");
 
   /**
-   * @brief Method: force computation
+   * @brief Method: Energy computation
    */
   system.def("computeFreeEnergy", &System::computeFreeEnergy,
              R"delim(
@@ -729,6 +840,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //                   force (:py:class:`list`): mesh vertex force
   //         )delim");
 
+  /**
+   * @brief Method: I/O
+   */
+  system.def("saveRichData", &System::saveRichData, py::arg("pathToSave"),
+             R"delim(
+          save snapshot data to directory
+      )delim");
   // ==========================================================
   // =============      Simulation options      ===============
   // ==========================================================
