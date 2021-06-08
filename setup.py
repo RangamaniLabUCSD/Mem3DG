@@ -145,6 +145,12 @@ Topic :: Scientific/Engineering :: Physics
 Topic :: Scientific/Engineering :: Visualization
 """
 
+# If building on readthedocs.io build with unix makefiles
+_on_rtd = os.environ.get("READTHEDOCS", None) == "True"
+if _on_rtd:
+    sys.argv.extend(["-G", "Unix Makefiles"])
+    cmake_args.append("-DBUILD_MEM3DG_DOCS=ON")
+
 try:
     from skbuild import setup
 except ImportError:

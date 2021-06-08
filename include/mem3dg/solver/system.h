@@ -642,6 +642,7 @@ public:
          Parameters &p, Options &o, size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
                p, o) {
+
     // Check confliciting parameters and options
     checkParametersAndOptions();
 

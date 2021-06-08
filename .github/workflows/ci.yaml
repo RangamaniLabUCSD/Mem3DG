@@ -1,0 +1,224 @@
+name: Testing and release
+
+on:
+  push:
+    branches:
+      - master
+      - development
+    tags:
+      # The regex: /^v?((\d+)(\.\d+)*)(-?(a|b|c|rc|alpha|beta)([0-9]+)?)?$
+      - 'v[0-9].[0-9]+.[0-9]+*'
+  pull_request:
+    branches: 
+      - master
+      - development
+
+jobs:
+  build_linux:
+    name: Build-Test Linux
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, ubuntu-20.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup python libs
+        id: pyexe
+        run: |
+          python --version
+          python -m pip install pytest
+          py_exe_path=$(which python)
+          echo ::set-output name=path::$py_exe_path
+
+      - name: Resolve dependencies
+        run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev
+
+      - name: Build and test
+        run: |
+          mkdir -p build && cd build;
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} ..
+          cmake --build . --config Release -j 4
+          ctest -C Release -V -j 4
+
+  build_macos:
+    name: Build-Test macOS
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-10.15]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup python libs
+        id: pyexe
+        run: |
+          python --version
+          python -m pip install pytest
+          py_exe_path=$(which python)
+          echo ::set-output name=path::$py_exe_path
+      
+      - name: Resolve dependencies
+        run: brew install netcdf eigen pybind11
+
+      - name: Build and test
+        run: |
+          mkdir -p build && cd build;
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} ..
+          cmake --build . --config Release -j 4
+          ctest -C Release -V -j 4
+
+
+  build_windows:
+    name: Build-Test Windows
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup python libs
+        id: pyexe
+        run: |
+          python --version
+          python -m pip install pytest
+          py_exe_path=$(which python)
+          echo ::set-output name=path::$py_exe_path
+
+      - name: Restore from cache and install vcpkg
+        # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
+        uses: lukka/run-vcpkg@v6
+        with:
+          vcpkgGitCommitId: 5568f110b509a9fd90711978a7cb76bae75bb092
+          setupOnly: true
+      
+      - name: Download libraries
+        run: $VCPKG_ROOT/vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
+
+      - name: Build and test
+        run: |
+          mkdir -p build && cd build;
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" ..
+          cmake --build . --config Release -j 4
+          ctest -C Release -V -j 4
+
+
+  deploy_documentation:
+    name: Deploy documentation to Github pages
+    runs-on: ubuntu-latest
+    # needs: [build_windows, build_linux, build_macos]
+    # if: github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Get Project Version
+      id: version
+      run: |
+        mem3dg_version=$(git describe --tags --always --dirty)
+        echo $mem3dg_version
+        echo ::set-output name=version::$mem3dg_version
+
+    - name: Configure python version
+      uses: actions/setup-python@v2
+      with: 
+        python-version: 3.8
+
+    - name: Setup python libs
+      id: pyexe
+      run: |
+        python --version
+        python -m pip install -r ./docs/rtd-requirements.txt
+        py_exe_path=$(which python)
+        echo ::set-output name=path::$py_exe_path
+
+    - name: Resolve dependencies
+      run: sudo apt install libnetcdf-c++4-dev libnetcdf-dev xorg-dev libeigen3-dev pybind11-dev ninja-build doxygen
+
+    - name: Build pymem3dg and install
+      run: |
+        ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON     
+
+    - name: Build docs
+      run: |
+        mkdir -p build && cd build;
+        cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_MEM3DG_DOCS=ON -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.path }} ..
+        cmake --build . --target mem3dg_doxy_docs --config Release -j 4
+        cmake --build . --target mem3dg_sphinx_docs --config Release -j 4
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        destination_dir: ${{ steps.version.outputs.version }}/cpp
+        publish_dir: ./build/docs/cpp/html
+    
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        destination_dir: ${{ steps.version.outputs.version }}/py
+        publish_dir: ./build/docs/py/html
+
+
+  deploy_to_pypi:
+    name: Deploy to PyPI
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: [build_windows, build_linux, build_macos]
+    defaults:
+      run:
+        shell: bash
+    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Update python libs
+      run: python -m pip install scikit-build pytest
+
+    - name: Configures source dist
+      run: python setup.py sdist
+
+    - name: Display structure of files
+      run: ls -R
+
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+    # - name: Publish package to TestPyPI
+    #   uses: pypa/gh-action-pypi-publish@release/v1
+    #   with:
+    #     user: __token__
+    #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+    #     repository_url: https://test.pypi.org/legacy/
