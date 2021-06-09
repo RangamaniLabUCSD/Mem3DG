@@ -77,7 +77,7 @@ double Integrator::backtrack(
 
   // declare variables used in backtracking iterations
   double alpha = dt;
-  size_t count = 0;
+  std::size_t count = 0;
 
   // zeroth iteration
   if (f.O.isShapeVariation) {

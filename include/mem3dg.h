@@ -25,8 +25,8 @@ namespace gcs = ::geometrycentral::surface;
  * @brief Run single simulation starting with .ply files
  *
  */
-int driver_ply(const size_t verbosity, std::string inputMesh,
-               std::string refMesh, size_t nSub, bool isReducedVolume,
+int driver_ply(const std::size_t verbosity, std::string inputMesh,
+               std::string refMesh, std::size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
                bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
                bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb,
@@ -38,7 +38,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
                double c1, double ctol, bool isAugmentedLagrangian,
-               size_t restartNum, bool isAdaptiveStep);
+               std::size_t restartNum, bool isAdaptiveStep);
 
 /**
  * @brief Run forward sweep simulation starting with .ply
@@ -46,7 +46,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
  *
  */
 int forwardsweep_ply(
-    std::string inputMesh, std::string refMesh, size_t nSub,
+    std::string inputMesh, std::string refMesh, std::size_t nSub,
     bool isReducedVolume, bool isProtein, bool isLocalCurvature,
     bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
     bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
@@ -56,14 +56,14 @@ int forwardsweep_ply(
     mem3dg::EigenVectorX1d pt, double Kf, double conc, double height,
     double radius, double h, double T, double eps, double tSave,
     std::string outputDir, bool isBacktrack, double rho, double c1, double ctol,
-    bool isAugmentedLagrangian, size_t restartNum, bool isAdaptiveStep);
+    bool isAugmentedLagrangian, std::size_t restartNum, bool isAdaptiveStep);
 
 #ifdef MEM3DG_WITH_NETCDF
 /**
  * @brief Run single simulation starting with netcdf files
  *
  */
-int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
+int driver_nc(const std::size_t verbosity, std::string trajFile, int startingFrame,
               int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
               bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
               bool isGrowMesh, bool isRefMesh, bool isFloatVertex,
@@ -75,7 +75,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
               bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian, size_t restartNum,
+              bool isAugmentedLagrangian, std::size_t restartNum,
               bool isAdaptiveStep);
 
 /**
@@ -94,6 +94,6 @@ int forwardsweep_nc(
     mem3dg::EigenVectorX1d pt, double Kf, double conc, double height,
     double radius, double h, double T, double eps, double tSave,
     std::string outputDir, bool isBacktrack, double rho, double c1, double ctol,
-    bool isAugmentedLagrangian, size_t restartNum, bool isAdaptiveStep);
+    bool isAugmentedLagrangian, std::size_t restartNum, bool isAdaptiveStep);
 
 #endif

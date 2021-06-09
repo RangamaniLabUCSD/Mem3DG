@@ -66,7 +66,7 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
+System::readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -115,7 +115,7 @@ System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
+System::readMeshes(std::string inputMesh, std::string refMesh, std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -160,10 +160,10 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+System::readMeshes(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
                    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
                    Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-                   size_t nSub) {
+                   std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;

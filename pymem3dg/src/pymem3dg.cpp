@@ -48,7 +48,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //     )delim");
   //   integrator.def(py::init<System &, double, double, double, double,
   //   std::string,
-  //                           bool, std::string, size_t>(),
+  //                           bool, std::string, std::size_t>(),
   //                  py::arg("f"), py::arg("dt"), py::arg("total_time"),
   //                  py::arg("tSave"), py::arg("tolerance"),
   //                  py::arg("outputDir"), py::arg("isAdaptiveStep") = true,
@@ -329,7 +329,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
 
   bfgs.def(py::init<System &, double, double, double, double, std::string, bool,
-                    std::string, size_t, bool, double, double, double, bool>(),
+                    std::string, std::size_t, bool, double, double, double, bool>(),
            py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
            py::arg("tolerance"), py::arg("outputDir"),
            py::arg("isAdaptiveStep") = true,
@@ -556,19 +556,19 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Constructors by .ply file
    */
-  system.def(py::init<std::string, size_t>(), py::arg("inputMesh"),
+  system.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
              py::arg("nSub") = 0,
              R"delim(
         System constructor with .ply files
       )delim");
-  system.def(py::init<std::string, Parameters &, Options &, size_t, bool>(),
+  system.def(py::init<std::string, Parameters &, Options &, std::size_t, bool>(),
              py::arg("inputMesh"), py::arg("p"), py::arg("o"),
              py::arg("nSub") = 0, py::arg("isContinue") = false,
              R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(py::init<std::string, std::string, Parameters &, Options &, size_t,
+  system.def(py::init<std::string, std::string, Parameters &, Options &, std::size_t,
                       bool>(),
              py::arg("inputMesh"), py::arg("refMesh"), py::arg("p"),
              py::arg("o"), py::arg("nSub") = 0, py::arg("isContinue") = false,
@@ -579,8 +579,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Constructors by matrices
    */
-  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, size_t>(),
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
              py::arg("nSub") = 0,
              R"delim(
@@ -588,19 +588,19 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
 
-  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      Options &, size_t>(),
+                      Options &, std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
              py::arg("o"), py::arg("nSub") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
 
-  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      Options &, size_t>(),
+                      Options &, std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
              py::arg("refVertexMatrix"), py::arg("p"), py::arg("o"),
              py::arg("nSub") = 0,
@@ -613,13 +613,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int, size_t>(), py::arg("trajFile"),
+  system.def(py::init<std::string, int, std::size_t>(), py::arg("trajFile"),
              py::arg("startingFrame"), py::arg("nSub") = 0,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
   system.def(
-      py::init<std::string, int, Parameters &, Options &, size_t, bool>(),
+      py::init<std::string, int, Parameters &, Options &, std::size_t, bool>(),
       py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"), py::arg("o"),
       py::arg("nSub") = 0, py::arg("isContinue") = false,
       R"delim(
@@ -695,7 +695,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   system.def(
       "getFaceVertexMatrix",
-      [](System &s) { return s.mesh->getFaceVertexMatrix<size_t>(); },
+      [](System &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the face vertex matrix
@@ -1246,14 +1246,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                py::arg("R"), py::arg("nSub") = 0);
 
   pymem3dg.def("subdivide",
-               py::overload_cast<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+               py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                                  Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                                  std::size_t>(&subdivide),
                "subdivide the mesh", py::arg("faces"), py::arg("coords"),
                py::arg("nSub"));
 
   pymem3dg.def("loopSubdivide",
-               py::overload_cast<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+               py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                                  Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                                  std::size_t>(&loopSubdivide),
                "subdivide the mesh in Loop scheme", py::arg("faces"),

@@ -39,7 +39,7 @@ protected:
   // initialize mesh and vpg
   // std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   // std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  Eigen::Matrix<size_t, Eigen::Dynamic, 3> topologyMatrix;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> topologyMatrix;
   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
   Parameters p;
   Options o;
@@ -108,7 +108,7 @@ protected:
  */
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // Instantiate system object
-  size_t nSub = 0;
+  std::size_t nSub = 0;
   mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
   // First time calculation of force
   f.computePhysicalForces();
@@ -138,7 +138,7 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
 TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
   // initialize the system
-  size_t nSub = 0;
+  std::size_t nSub = 0;
   mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
 
   // initialize variables
