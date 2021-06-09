@@ -234,7 +234,7 @@ void FeedForwardSweep::sweep() {
 
   // initialize variables
   const double KV = f.P.Kv, KSG = f.P.Ksg, init_time = 0.0;
-  const size_t verbosity = 2;
+  const std::size_t verbosity = 2;
 
   // initialize variables used if adopting adaptive time step based on mesh
   // size

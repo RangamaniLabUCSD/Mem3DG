@@ -62,7 +62,7 @@ protected:
   /// Flag for terminating the simulation
   bool EXIT;
   /// Frame index of the trajectory output
-  size_t frame;
+  std::size_t frame;
   /// Normalized area difference to reference mesh
   double dArea;
   /// Normalized volume/osmotic pressure difference
@@ -99,7 +99,7 @@ public:
   /// option to scale time step according to mesh size
   bool isAdaptiveStep = true;
   /// verbosity level of integrator
-  size_t verbosity = 3;
+  std::size_t verbosity = 3;
 
   // ==========================================================
   // =============        Constructor            ==============
@@ -352,8 +352,8 @@ public:
   /**
    * @brief step for n iterations
    */
-  void step(size_t n) {
-    for (size_t i = 0; i < n; i++) {
+  void step(std::size_t n) {
+    for (std::size_t i = 0; i < n; i++) {
       status();
       march();
     }
@@ -412,8 +412,8 @@ public:
   /**
    * @brief step for n iterations
    */
-  void step(size_t n) {
-    for (size_t i = 0; i < n; i++) {
+  void step(std::size_t n) {
+    for (std::size_t i = 0; i < n; i++) {
       status();
       march();
     }
@@ -437,17 +437,17 @@ private:
   double currentNormSq;
   double pastNormSq;
 
-  size_t countCG = 0;
+  std::size_t countCG = 0;
 
 public:
-  size_t restartNum = 5;
+  std::size_t restartNum = 5;
   bool isBacktrack = true;
   double rho = 0.99;
   double c1 = 0.001;
   double ctol = 0.01;
   bool isAugmentedLagrangian = false;
 
-  // size_t countPM = 0;
+  // std::size_t countPM = 0;
 
   ConjugateGradient(System &f_, double dt_, double total_time_, double tSave_,
                     double tolerance_, std::string outputDir_)
@@ -485,8 +485,8 @@ public:
   /**
    * @brief step for n iterations
    */
-  void step(size_t n) {
-    for (size_t i = 0; i < n; i++) {
+  void step(std::size_t n) {
+    for (std::size_t i = 0; i < n; i++) {
       status();
       march();
     }
@@ -525,7 +525,7 @@ public:
 
   BFGS(System &f_, double dt_, double total_time_, double tSave_,
        double tolerance_, std::string outputDir_, bool isAdaptiveStep_,
-       std::string trajFileName_, size_t verbosity_, bool isBacktrack_,
+       std::string trajFileName_, std::size_t verbosity_, bool isBacktrack_,
        double rho_, double c1_, double ctol_, bool isAugmentedLagrangian_)
       : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_),
         isBacktrack(isBacktrack_), rho(rho_), c1(c1_), ctol(ctol_),
@@ -579,8 +579,8 @@ public:
   /**
    * @brief step for n iterations
    */
-  void step(size_t n) {
-    for (size_t i = 0; i < n; i++) {
+  void step(std::size_t n) {
+    for (std::size_t i = 0; i < n; i++) {
       status();
       march();
     }
@@ -603,9 +603,9 @@ public:
   FeedForwardSweep(System &f_, double dt_, double total_time_, double tSave_,
                    double tolerance_, std::string outputDir_,
                    bool isAdaptiveStep_, std::string trajFileName_,
-                   size_t verbosity_, bool isBacktrack_, double rho_,
+                   std::size_t verbosity_, bool isBacktrack_, double rho_,
                    double c1_, double ctol_, bool isAugmentedLagrangian_,
-                   size_t restartNum_, std::vector<double> H__,
+                   std::size_t restartNum_, std::vector<double> H__,
                    std::vector<double> VP__)
       : ConjugateGradient(f_, dt_, total_time_, tSave_, tolerance_, outputDir_),
         H_(H__), VP_(VP__) {

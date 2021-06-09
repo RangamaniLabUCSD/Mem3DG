@@ -571,7 +571,7 @@ bool MeshMutator::ifCollapse(const gc::Edge e,
 
   if (collapseSmall) {
     double areaSum;
-    size_t num_neighbor;
+    std::size_t num_neighbor;
     neighborAreaSum(e, vpg, areaSum, num_neighbor);
     is2Small = (isBoundary) ? ((areaSum - vpg.faceArea(he.face()) -
                                 vpg.faceArea(he.twin().face())) <
@@ -682,7 +682,7 @@ void MeshMutator::maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
 
 void MeshMutator::neighborAreaSum(const gcs::Edge e,
                                   const gcs::VertexPositionGeometry &vpg,
-                                  double &area, size_t &num_neighbor) {
+                                  double &area, std::size_t &num_neighbor) {
   area = 0;
   num_neighbor = -2;
   for (gcs::Vertex v : e.adjacentVertices()) {

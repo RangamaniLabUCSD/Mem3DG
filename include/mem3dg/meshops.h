@@ -164,7 +164,7 @@ outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5) {
   double r, l, range;
   findRange(sorted_vec.data(), sorted_vec.size(), r, l);
   range = r - l;
-  for (size_t i = 0; i < vec.rows(); i++) {
+  for (std::size_t i = 0; i < vec.rows(); i++) {
     mask[i] =
         ((vec[i] - r < threshold * range) && (l - vec[i] < threshold * range));
   }
@@ -241,7 +241,7 @@ DLL_PUBLIC
 inline double signedVolumeFromFace(gcs::Face &f,
                                    gcs::VertexPositionGeometry &vpg) {
   gc::Vector3 p[3];
-  size_t i = 0;
+  std::size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
     p[i] = vpg.inputVertexPositions[v];
     i++;
@@ -337,7 +337,7 @@ DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
 DLL_PUBLIC inline gc::Vector3
 correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
                                  gcs::Halfedge &firstHalfedge) {
-  size_t vertexInd = 0;
+  std::size_t vertexInd = 0;
   gc::Vector3 baryCoords;
   for (gcs::Vertex v : firstHalfedge.face().adjacentVertices()) {
     if (v == firstHalfedge.vertex()) {
@@ -632,7 +632,7 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
         (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
   } else {
     double x, y, cos_t, radius;
-    for (size_t i = 0; i < distance.rows(); i++) {
+    for (std::size_t i = 0; i < distance.rows(); i++) {
       x = vpg.inputVertexPositions[i].x;
       y = vpg.inputVertexPositions[i].y;
       cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
@@ -663,7 +663,7 @@ ellipticDistribution(gcs::VertexPositionGeometry &vpg,
     distribution = (distance.array() < axes[0]).cast<double>();
   } else {
     double x, y, cos_t, radius;
-    for (size_t i = 0; i < distance.rows(); i++) {
+    for (std::size_t i = 0; i < distance.rows(); i++) {
       x = vpg.inputVertexPositions[i].x;
       y = vpg.inputVertexPositions[i].y;
       cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);

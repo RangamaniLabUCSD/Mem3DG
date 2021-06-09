@@ -63,7 +63,7 @@ int main() {
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
-  size_t verbosity = 2;
+  std::size_t verbosity = 2;
 
   mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
   integrator.isAdaptiveStep = true;

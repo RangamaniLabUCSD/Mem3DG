@@ -102,7 +102,7 @@ void visualize(mem3dg::System &f) {
       ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
   polyscope::getSurfaceMesh("Membrane")
       ->addFaceCountQuantity("the point",
-                             std::vector<std::pair<size_t, int>>{std::make_pair(
+                             std::vector<std::pair<std::size_t, int>>{std::make_pair(
                                  f.thePoint.inSomeFace().face.getIndex(), 1)})
       ->setPointRadius(sqrt(f.surfaceArea / f.mesh->nFaces() * 4 / sqrt(3)) / 2,
                        false);
@@ -184,7 +184,7 @@ int snapshot_ply(std::string fileName, const Quantities &option,
 }
 
 int animate_ply(std::string frameDir, const Quantities &options,
-                std::vector<size_t> frameNum, float transparency, float fov,
+                std::vector<std::size_t> frameNum, float transparency, float fov,
                 float edgeWidth) {
 
   // Activate signal handling
@@ -702,7 +702,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
 
 void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
           int &idx, int &waitTime, Quantities options, bool &toggle,
-          std::vector<size_t> frameNum) {
+          std::vector<std::size_t> frameNum) {
   char buffer[50];
   sprintf(buffer, "/frame%d.ply", (int)idx);
   std::string plyName(buffer);
@@ -716,9 +716,9 @@ void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
   wait(waitTime);
 }
 
-std::vector<std::pair<size_t, int>>
+std::vector<std::pair<std::size_t, int>>
 getCountQuantities(gc::VertexData<int> &&meshData) {
-  std::vector<std::pair<size_t, int>> values;
+  std::vector<std::pair<std::size_t, int>> values;
   for (gc::Vertex v : meshData.getMesh()->vertices()) {
     if (meshData[v] != 0) {
       values.push_back(std::make_pair(v.getIndex(), meshData[v]));

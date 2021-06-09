@@ -37,6 +37,8 @@ using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenVectorX3u =
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
 
 /// Type alias for aligned vectors
 template <typename T>
@@ -121,36 +123,36 @@ auto rowwiseScalarProduct(const Eigen::DenseBase<VectorType> &A,
  * @param B         Matrix B
  * @return          Matrix of rowwise cross products
  */
-// template <typename Derived>
-// typename Derived::PlainMatrix
-// rowwiseCrossProduct(const Eigen::DenseBase<Derived> &A,
-//                     const Eigen::DenseBase<Derived> &B) {
-//   if (A.rows() != B.rows()) {
-//     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
-//                          " in B, for rowwise cross product");
-//   }
-//   typename Derived::PlainMatrix C;
-//   C.resize(A.rows(), 3);
-//   for (std::size_t i = 0; i < A.rows(); i++) {
-//     C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
-//   }
-//   return C;
-// }
-
-inline EigenVectorX3dr
-rowwiseCrossProduct(const Eigen::Ref<const EigenVectorX3dr> &A,
-                    const Eigen::Ref<const EigenVectorX3dr> &B) {
+template <typename Derived>
+typename Derived::PlainMatrix
+rowwiseCrossProduct(const Eigen::DenseBase<Derived> &A,
+                    const Eigen::DenseBase<Derived> &B) {
   if (A.rows() != B.rows()) {
     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
                          " in B, for rowwise cross product");
   }
-  EigenVectorX3dr C;
+  typename Derived::PlainMatrix C;
   C.resize(A.rows(), 3);
   for (std::size_t i = 0; i < A.rows(); i++) {
     C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
   }
   return C;
 }
+
+// inline EigenVectorX3dr
+// rowwiseCrossProduct(const Eigen::Ref<const EigenVectorX3dr> &A,
+//                     const Eigen::Ref<const EigenVectorX3dr> &B) {
+//   if (A.rows() != B.rows()) {
+//     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
+//                          " in B, for rowwise cross product");
+//   }
+//   EigenVectorX3dr C;
+//   C.resize(A.rows(), 3);
+//   for (std::size_t i = 0; i < A.rows(); i++) {
+//     C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
+//   }
+//   return C;
+// }
 
 /**
  * @brief Generate an Eigen Map to an aligned raw buffer.

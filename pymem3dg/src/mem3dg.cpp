@@ -49,8 +49,8 @@
 
 using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
-int driver_ply(const size_t verbosity, std::string inputMesh,
-               std::string refMesh, size_t nSub, bool isReducedVolume,
+int driver_ply(const std::size_t verbosity, std::string inputMesh,
+               std::string refMesh, std::size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
                bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
                bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb,
@@ -62,7 +62,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
                double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
                double c1, double ctol, bool isAugmentedLagrangian,
-               size_t restartNum, bool isAdaptiveStep) {
+               std::size_t restartNum, bool isAdaptiveStep) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
@@ -123,7 +123,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 }
 
 int forwardsweep_ply(
-    std::string inputMesh, std::string refMesh, size_t nSub,
+    std::string inputMesh, std::string refMesh, std::size_t nSub,
     bool isReducedVolume, bool isProtein, bool isLocalCurvature,
     bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
     bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
@@ -133,7 +133,7 @@ int forwardsweep_ply(
     EigenVectorX1d pt, double Kf, double conc, double height, double radius,
     double h, double T, double eps, double tSave, std::string outputDir,
     bool isBacktrack, double rho, double c1, double ctol,
-    bool isAugmentedLagrangian, size_t restartNum, bool isAdaptiveStep) {
+    bool isAugmentedLagrangian, std::size_t restartNum, bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -162,7 +162,7 @@ int forwardsweep_ply(
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
+int driver_nc(const std::size_t verbosity, std::string trajFile, int startingFrame,
               int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
               bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
               bool isGrowMesh, bool isRefMesh, bool isFloatVertex,
@@ -174,7 +174,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
               bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian, size_t restartNum,
+              bool isAugmentedLagrangian, std::size_t restartNum,
               bool isAdaptiveStep) {
 
   // Activate signal handling
@@ -244,7 +244,7 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
                     double radius, double h, double T, double eps, double tSave,
                     std::string outputDir, bool isBacktrack, double rho,
                     double c1, double ctol, bool isAugmentedLagrangian,
-                    size_t restartNum, bool isAdaptiveStep) {
+                    std::size_t restartNum, bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);

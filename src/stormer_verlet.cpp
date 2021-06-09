@@ -28,9 +28,9 @@ bool StormerVerlet::integrate() {
             << std::endl;
 #endif
 
-  gcs::FaceData<size_t> faceInd = f.vpg->faceIndices;
+  gcs::FaceData<std::size_t> faceInd = f.vpg->faceIndices;
   gc::Vector3 totalForce;
-  for (size_t i = 0; i < total_time / dt; i++) {
+  for (std::size_t i = 0; i < total_time / dt; i++) {
     /*polyscope::registerSurfaceMesh("myMesh",
             ptrVpg->inputVertexPositions,
             ptrMesh->getFaceVertexList());*/

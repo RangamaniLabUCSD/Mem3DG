@@ -104,7 +104,7 @@ struct DLL_PUBLIC MeshMutator {
 
   void neighborAreaSum(const gcs::Edge e,
                        const gcs::VertexPositionGeometry &vpg, double &area,
-                       size_t &num_neighbor);
+                       std::size_t &num_neighbor);
 
   double
   computeCurvatureThresholdLength(const gcs::Edge e,
@@ -581,8 +581,8 @@ public:
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param nSub          Number of subdivision
    */
-  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, size_t nSub)
+  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub)) {
 
     // Initialize reference values
@@ -601,9 +601,9 @@ public:
    * @param o             options of simulation
    * @param nSub          Number of subdivision
    */
-  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         Options &o, size_t nSub)
+         Options &o, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub), p,
                o) {
     // Check confliciting parameters and options
@@ -630,10 +630,10 @@ public:
    * @param nSub          Number of subdivision
    * regularization
    */
-  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-         Parameters &p, Options &o, size_t nSub)
+         Parameters &p, Options &o, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
                p, o) {
 
@@ -656,7 +656,7 @@ public:
    * @param inputMesh     Input Mesh
    * @param nSub          Number of subdivision
    */
-  System(std::string inputMesh, size_t nSub)
+  System(std::string inputMesh, std::size_t nSub)
       : System(readMeshes(inputMesh, inputMesh, nSub)) {
 
     // Check confliciting parameters and options
@@ -678,7 +678,7 @@ public:
    * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    */
-  System(std::string inputMesh, Parameters &p, Options &o, size_t nSub,
+  System(std::string inputMesh, Parameters &p, Options &o, std::size_t nSub,
          bool isContinue)
       : System(readMeshes(inputMesh, inputMesh, nSub), p, o) {
 
@@ -715,7 +715,7 @@ public:
    * regularization
    */
   System(std::string inputMesh, std::string refMesh, Parameters &p, Options &o,
-         size_t nSub, bool isContinue)
+         std::size_t nSub, bool isContinue)
       : System(readMeshes(inputMesh, refMesh, nSub), p, o) {
 
     // Check confliciting parameters and options
@@ -747,7 +747,7 @@ public:
    * @param startingFrame Starting frame for the input mesh
    * @param nSub          Number of subdivision
    */
-  System(std::string trajFile, int startingFrame, size_t nSub)
+  System(std::string trajFile, int startingFrame, std::size_t nSub)
       : System(readTrajFile(trajFile, startingFrame, nSub)) {
 
     // Initialize reference values
@@ -768,7 +768,7 @@ public:
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p, Options &o,
-         size_t nSub, bool isContinue)
+         std::size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, o) {
 
     // Check confliciting parameters and options
@@ -931,10 +931,10 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
+  readMeshes(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
              Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexPositionMatrix,
              Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexPositionMatrix,
-             size_t nSub);
+             std::size_t nSub);
 
   /**
    * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
@@ -943,7 +943,7 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(std::string inputMesh, std::string refMesh, size_t nSub);
+  readMeshes(std::string inputMesh, std::string refMesh, std::size_t nSub);
 
   /**
    * @brief Map the continuation variables
@@ -965,7 +965,7 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readTrajFile(std::string trajFile, int startingFrame, size_t nSub);
+  readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub);
   /**
    * @brief Map the continuation variables
    *
