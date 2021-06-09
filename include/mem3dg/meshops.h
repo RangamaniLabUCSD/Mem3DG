@@ -468,6 +468,7 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
               << std::endl;
   }
 }
+
 DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
                                     gcs::VertexData<gc::Vector3> &mask,
                                     std::string boundaryConditionType) {
@@ -515,7 +516,7 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
  *
  * @param force   Matrix of forces to process
  */
-DLL_PUBLIC inline void removeTranslation(Eigen::Ref<EigenVectorX3D> &force) {
+DLL_PUBLIC inline void removeTranslation(Eigen::Ref<EigenVectorX3dr> force) {
   force = force.rowwise() - ((force).colwise().sum() / force.rows());
 }
 
@@ -526,31 +527,13 @@ DLL_PUBLIC inline void removeTranslation(Eigen::Ref<EigenVectorX3D> &force) {
  * @param Eigen position matrix
  */
 DLL_PUBLIC inline void
-removeRotation(const Eigen::Ref<const EigenVectorX3D> &position,
-               Eigen::Ref<EigenVectorX3D> &force) {
-
+removeRotation(const Eigen::Ref<const EigenVectorX3dr> &position,
+               Eigen::Ref<EigenVectorX3dr> force) {
   Eigen::Matrix<double, 1, 3> sum(0, 0, 0);
-
   for (std::size_t i = 0; i < force.rows(); ++i) {
     sum += position.row(i).cross(force.row(i));
   }
-
   force = force.rowwise() - (sum / force.rows());
-}
-
-/**
- * @brief Gaussian distribution
- *
- * @param distance vector
- * @param standard deviation
- */
-DLL_PUBLIC inline void
-gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                     Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
-                     double stdDev) {
-  distribution =
-      (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
-      (stdDev * pow(constants::PI * 2, 0.5));
 }
 
 /**
@@ -565,7 +548,7 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  */
 DLL_PUBLIC inline gcs::Vertex
 closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-                  Eigen::Matrix<double, Eigen::Dynamic, 1> &position,
+                  const Eigen::Ref<const EigenVectorX1d> &position,
                   gcs::VertexData<double> &geodesicDistance,
                   double range = 1e10) {
   gcs::Vertex theVertex;
@@ -600,7 +583,7 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
                   gc::Vector3{position[0], position[1], position[2]})
                      .norm();
     } else {
-      throw std::runtime_error(
+      mem3dg_runtime_error(
           "closestVertexToPt: does not support non-2d/3d position vector!");
     }
     if (distance < shorestDistance) {
@@ -612,18 +595,19 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
 }
 
 /**
- * @brief Calculate the line tension
+ * @brief Gaussian distribution
  *
- * @param vertexPositionGeometry
- * @param mean curvature H
- * @param vertex v
- * @param lineTensionPressure
+ * @param distance vector
+ * @param standard deviation
  */
 DLL_PUBLIC inline void
-findVertexLineTension(gcs::VertexPositionGeometry &vpg, double eta,
-                      Eigen::Matrix<double, Eigen::Dynamic, 1> &H,
-                      gcs::Vertex v, gcs::Halfedge isoHe, gc::Vector3 gradVec,
-                      gcs::VertexData<gc::Vector3> &lineTensionPressure) {}
+gaussianDistribution(Eigen::Ref<EigenVectorX1d> distribution,
+                     const Eigen::Ref<const EigenVectorX1d> &distance,
+                     const double stdDev) {
+  distribution =
+      (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
+      (stdDev * pow(constants::PI * 2, 0.5));
+}
 
 /**
  * @brief height = 1 tanh step function with radius r
@@ -636,9 +620,9 @@ findVertexLineTension(gcs::VertexPositionGeometry &vpg, double eta,
  */
 DLL_PUBLIC inline void
 tanhDistribution(gcs::VertexPositionGeometry &vpg,
-                 Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                 Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
-                 double sharpness, std::vector<double> &axes) {
+                 Eigen::Ref<EigenVectorX1d> distribution,
+                 const Eigen::Ref<const EigenVectorX1d> &distance,
+                 const double sharpness, const std::vector<double> &axes) {
   distribution.resize(distance.rows(), 1);
   if (axes[0] == axes[1]) {
     Eigen::MatrixXd radius_vec =
@@ -671,9 +655,9 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
  */
 DLL_PUBLIC inline void
 ellipticDistribution(gcs::VertexPositionGeometry &vpg,
-                     Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                     Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
-                     std::vector<double> &axes) {
+                     Eigen::Ref<EigenVectorX1d> distribution,
+                     const Eigen::Ref<const EigenVectorX1d> &distance,
+                     const std::vector<double> &axes) {
   distribution.resize(distance.rows(), 1);
   if (axes[0] == axes[1]) {
     distribution = (distance.array() < axes[0]).cast<double>();
@@ -713,28 +697,19 @@ DLL_PUBLIC inline double getDuration(timeval &start) {
  * @param mesh   Mesh of interest
  * @return Eigen matrix of uint32_t indices
  */
-DLL_PUBLIC inline Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3,
-                                Eigen::RowMajor>
-getFaceVertexMatrix(gcs::SurfaceMesh &mesh) {
+DLL_PUBLIC inline EigenVectorX3ur getFaceVertexMatrix(gcs::SurfaceMesh &mesh) {
   if (!mesh.isTriangular())
-    throw std::runtime_error("Mesh is not triangular.");
+    mem3dg_runtime_error("Mesh is not triangular.");
 
-  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> result(
-      mesh.nFaces(), 3);
-
+  EigenVectorX3ur result(mesh.nFaces(), 3);
   gcs::VertexData<std::size_t> vInd = mesh.getVertexIndices();
 
   std::size_t i = 0;
   for (gcs::Face f : mesh.faces()) {
-    std::uint32_t a, b, c;
-    gcs::Halfedge tmp = f.halfedge();
-    a = vInd[tmp.vertex()];
-    tmp = tmp.next();
-    b = vInd[tmp.vertex()];
-    tmp = tmp.next();
-    c = vInd[tmp.vertex()];
-
-    result.row(i++) << a, b, c;
+    for (gcs::Vertex v : f.adjacentVertices()) {
+      // Indexing works since the topology matrix is stored rowmajor order
+      result(i++) = vInd[v];
+    }
   }
   return result;
 }

@@ -25,7 +25,7 @@ namespace gcs = ::geometrycentral::surface;
 class ProductTest : public ::testing::Test {
 public:
   ProductTest() {
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < rows; ++i) {
       A(i, 0) = 3 * i;
       Am(i, 0) = 3 * i;
       A(i, 1) = 3 * i + 1;
@@ -35,7 +35,7 @@ public:
       S(i) = i;
     }
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < rows; ++i) {
       B(i, 0) = 10 * i;
       Bm(i, 0) = 10 * i;
       B(i, 1) = 10 * i + 1;

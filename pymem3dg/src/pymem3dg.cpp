@@ -912,10 +912,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   parameters.def(py::init<>());
   //   parameters.def(
-  //       py::init<double, double, double, EigenVectorX1D, double, double,
+  //       py::init<double, double, double, EigenVectorX1d, double, double,
   //       double,
   //                double, double, double, double, double, double, double,
-  //                double, double, double, double, EigenVectorX1D, double,
+  //                double, double, double, double, EigenVectorX1d, double,
   //                double, double, double, double, double, double, double,
   //                std::string>(),
   //       py::arg("Kb") = 0, py::arg("Kbc") = 0, py::arg("H0c") = 0,

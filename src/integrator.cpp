@@ -143,8 +143,8 @@ double Integrator::backtrack(
 }
 
 void Integrator::lineSearchErrorBacktrack(
-    const double &alpha, const EigenVectorX3D &current_pos,
-    const EigenVectorX1D &current_proteinDensity, bool runAll) {
+    const double &alpha, const EigenVectorX3dr &current_pos,
+    const EigenVectorX1d &current_proteinDensity, bool runAll) {
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
 
   if (runAll || f.E.potE > previousE.potE) {

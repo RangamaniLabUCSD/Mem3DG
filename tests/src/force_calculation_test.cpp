@@ -113,16 +113,16 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // First time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX3D vectorForces1 = f.F.toMatrix(f.F.mechanicalForceVec);
-  EigenVectorX1D chemicalPotential1 = f.F.toMatrix(f.F.chemicalPotential);
-  EigenVectorX3D regularizationForce1 = f.F.toMatrix(f.F.regularizationForce);
+  EigenVectorX3dr vectorForces1 = f.F.toMatrix(f.F.mechanicalForceVec);
+  EigenVectorX1d chemicalPotential1 = f.F.toMatrix(f.F.chemicalPotential);
+  EigenVectorX3dr regularizationForce1 = f.F.toMatrix(f.F.regularizationForce);
 
   // Second time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX3D vectorForces2 = f.F.toMatrix(f.F.mechanicalForceVec);
-  EigenVectorX1D chemicalPotential2 = f.F.toMatrix(f.F.chemicalPotential);
-  EigenVectorX3D regularizationForce2 = f.F.toMatrix(f.F.regularizationForce);
+  EigenVectorX3dr vectorForces2 = f.F.toMatrix(f.F.mechanicalForceVec);
+  EigenVectorX1d chemicalPotential2 = f.F.toMatrix(f.F.chemicalPotential);
+  EigenVectorX3dr regularizationForce2 = f.F.toMatrix(f.F.regularizationForce);
 
   // Comparison of 2 force calculations
   ASSERT_TRUE((vectorForces1 - vectorForces2).norm() < 1e-12);
@@ -144,8 +144,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  const EigenVectorX3D current_pos = f.F.toMatrix(f.vpg->inputVertexPositions);
-  const EigenVectorX1D current_proteinDensity = f.F.toMatrix(f.proteinDensity);
+  const EigenVectorX3dr current_pos = f.F.toMatrix(f.vpg->inputVertexPositions);
+  const EigenVectorX1d current_proteinDensity = f.F.toMatrix(f.proteinDensity);
   const double tolerance = 1e-4;
   double expectedEnergyDecrease = 0;
   double actualEnergyDecrease = 0;

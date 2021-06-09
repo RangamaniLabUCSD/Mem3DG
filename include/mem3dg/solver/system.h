@@ -190,12 +190,12 @@ struct Forces {
   /**
    * @brief Return colwise flattened vector of the matrix
    */
-  inline auto flatten(EigenVectorX3D &matrix) {
+  inline auto flatten(EigenVectorX3dr &matrix) {
     Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
                                                                 matrix.size());
     return vector;
   }
-  inline auto flatten(EigenVectorX3D &&matrix) {
+  inline auto flatten(EigenVectorX3dr &&matrix) {
     Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
                                                                 matrix.size());
     return vector;
@@ -204,13 +204,13 @@ struct Forces {
   /**
    * @brief Return colwise unflattened matrix of the vector
    */
-  inline auto unflatten(EigenVectorX1D &vector) {
+  inline auto unflatten(EigenVectorX1d &vector) {
     Eigen::Map<
         Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
         matrix(vector.data(), vector.size() / 3, 3);
     return matrix;
   }
-  inline auto unflatten(EigenVectorX1D &&vector) {
+  inline auto unflatten(EigenVectorX1d &&vector) {
     Eigen::Map<
         Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
         matrix(vector.data(), vector.size() / 3, 3);
@@ -236,19 +236,19 @@ struct Forces {
   /**
    * @brief Return constructed vertexData that from Eigen matrix or vector
    */
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &vector) {
+  inline gcs::VertexData<double> toVertexData(EigenVectorX1d &vector) {
     return gcs::VertexData<double>(mesh, vector);
   }
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &&vector) {
+  inline gcs::VertexData<double> toVertexData(EigenVectorX1d &&vector) {
     return gcs::VertexData<double>(mesh, vector);
   }
 
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &vector) {
+  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData) = vector;
     return vertexData;
   }
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &&vector) {
+  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &&vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData) = vector;
     return vertexData;
@@ -275,11 +275,11 @@ struct Forces {
                           gc::EigenMap<double, 3>(vpg.vertexNormals));
     return vertexData;
   }
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &vector) {
+  inline EigenVectorX1d ontoNormal(EigenVectorX3dr &vector) {
     return rowwiseDotProduct(vector,
                              gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &&vector) {
+  inline EigenVectorX1d ontoNormal(EigenVectorX3dr &&vector) {
     return rowwiseDotProduct(vector,
                              gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
@@ -310,10 +310,10 @@ struct Forces {
     return vertexData;
   }
 
-  inline EigenVectorX3D addNormal(EigenVectorX1D &vector) {
+  inline EigenVectorX3dr addNormal(EigenVectorX1d &vector) {
     return rowwiseScalarProduct(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX3D addNormal(EigenVectorX1D &&vector) {
+  inline EigenVectorX3dr addNormal(EigenVectorX1d &&vector) {
     return rowwiseScalarProduct(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
 
@@ -328,14 +328,14 @@ struct Forces {
    * @brief Project the vector onto tangent plane by removing the
    * angle-weighted normal component
    */
-  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &vector) {
+  inline EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &vector) {
     return gc::EigenMap<double, 3>(vector) -
            rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg.vertexNormals)),
                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &&vector) {
+  inline EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &&vector) {
     return gc::EigenMap<double, 3>(vector) -
            rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
@@ -371,10 +371,10 @@ struct Forces {
         gc::EigenMap<double, 3>(forceMask).array();
     return vertexData;
   }
-  inline EigenVectorX3D mask(EigenVectorX3D &vector) {
+  inline EigenVectorX3dr mask(EigenVectorX3dr &vector) {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
-  inline EigenVectorX3D mask(EigenVectorX3D &&vector) {
+  inline EigenVectorX3dr mask(EigenVectorX3dr &&vector) {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
   inline gc::Vector3 mask(gc::Vector3 &vector, gc::Vertex &v) {
@@ -395,7 +395,7 @@ struct Parameters {
   /// Constant of Spontaneous curvature vs protein density
   double H0c = 0;
   /// (initial) protein density
-  EigenVectorX1D protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
+  EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
   /// Global stretching modulus
   double Ksg = 0;
   /// Area reservior
@@ -425,7 +425,7 @@ struct Parameters {
   /// Temperature
   double temp = 0;
   /// The point
-  EigenVectorX1D pt = Eigen::MatrixXd::Constant(1, 1, 0);
+  EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
   /// Magnitude of external force
   double Kf = 0;
   /// level of concentration of the external force
@@ -1014,17 +1014,17 @@ public:
   /**
    * @brief Compute bending force component of the system
    */
-  EigenVectorX1D computeBendingForce();
+  EigenVectorX1d computeBendingForce();
 
   /**
    * @brief Compute capillary force component of the system
    */
-  EigenVectorX1D computeCapillaryForce();
+  EigenVectorX1d computeCapillaryForce();
 
   /**
    * @brief Compute osmotic force component of the system
    */
-  EigenVectorX1D computeOsmoticForce();
+  EigenVectorX1d computeOsmoticForce();
 
   /**
    * @brief Compute forces at the same time
@@ -1034,17 +1034,17 @@ public:
   /**
    * @brief Compute chemical potential of the system
    */
-  EigenVectorX1D computeChemicalPotential();
+  EigenVectorX1d computeChemicalPotential();
 
   /**
    * @brief Compute line tension force component of the system
    */
-  EigenVectorX1D computeLineCapillaryForce();
+  EigenVectorX1d computeLineCapillaryForce();
 
   /**
    * @brief Compute external force component of the system
    */
-  EigenVectorX1D computeExternalForce();
+  EigenVectorX1d computeExternalForce();
 
   /**
    * @brief Compute all forces of the system
@@ -1054,7 +1054,7 @@ public:
   /**
    * @brief Compute DPD forces of the system
    */
-  std::tuple<EigenVectorX3D, EigenVectorX3D> computeDPDForces(double dt);
+  std::tuple<EigenVectorX3dr, EigenVectorX3dr> computeDPDForces(double dt);
 
   // ==========================================================
   // ================        Energy          ==================
