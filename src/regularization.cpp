@@ -380,7 +380,7 @@ void System::processMesh() {
 
 void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
                              double stepSize) {
-  EigenVectorX1D gradient;
+  EigenVectorX1d gradient;
   double pastGradNorm = 1e10;
   double gradNorm;
   do {

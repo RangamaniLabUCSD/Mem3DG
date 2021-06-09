@@ -221,7 +221,7 @@ void System::computeVectorForces() {
   }
 }
 
-EigenVectorX1D System::computeBendingForce() {
+EigenVectorX1d System::computeBendingForce() {
   throw std::runtime_error("computeBendingForce: out of data implementation, "
                            "shouldn't be called!");
   // A. non-optimized version
@@ -229,10 +229,10 @@ EigenVectorX1D System::computeBendingForce() {
   //   // Split calculation for two domain
   //   bendingPressure.raw().setZero();
   //   auto subdomain = [&](double H0_temp) {
-  //     EigenVectorX1D lap_H = vpg->vertexLumpedMassMatrix.cwiseInverse() * L *
-  //     (H.raw().array() - H0_temp).matrix(); EigenVectorX1D scalerTerms =
+  //     EigenVectorX1d lap_H = vpg->vertexLumpedMassMatrix.cwiseInverse() * L *
+  //     (H.raw().array() - H0_temp).matrix(); EigenVectorX1d scalerTerms =
   //         rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
-  //     EigenVectorX1D productTerms =
+  //     EigenVectorX1d productTerms =
   //         2.0 *
   //         rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
   //     bendingPressure.raw().array() +=
@@ -243,17 +243,17 @@ EigenVectorX1D System::computeBendingForce() {
   //   subdomain(0);
   // } else {
 
-  EigenVectorX1D ptwiseH = vpg->vertexMeanCurvatures.raw().array() /
+  EigenVectorX1d ptwiseH = vpg->vertexMeanCurvatures.raw().array() /
                            vpg->vertexDualAreas.raw().array();
 
   // calculate the Laplacian of mean curvature H
-  EigenVectorX1D lap_H =
+  EigenVectorX1d lap_H =
       -(vpg->cotanLaplacian * Kb.raw().cwiseProduct( ptwiseH - H0.raw()))
            .array() /
       vpg->vertexDualAreas.raw().array();
 
   // initialize and calculate intermediary result scalerTerms
-  EigenVectorX1D scalerTerms = ptwiseH.cwiseProduct(ptwiseH) +
+  EigenVectorX1d scalerTerms = ptwiseH.cwiseProduct(ptwiseH) +
                                ptwiseH.cwiseProduct(H0.raw()) -
                                (vpg->vertexGaussianCurvatures.raw().array() /
                                 vpg->vertexDualAreas.raw().array())
@@ -261,7 +261,7 @@ EigenVectorX1D System::computeBendingForce() {
   // scalerTerms = scalerTerms.array().max(0);
 
   // initialize and calculate intermediary result productTerms
-  EigenVectorX1D productTerms =
+  EigenVectorX1d productTerms =
       -2.0 *
       (Kb.raw().array() * (ptwiseH - H0.raw()).array() * scalerTerms.array())
           .matrix();
@@ -276,23 +276,23 @@ EigenVectorX1D System::computeBendingForce() {
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
-  // EigenVectorX1D lap_H_integrated = L * (H - H0);
+  // EigenVectorX1d lap_H_integrated = L * (H - H0);
 
   // // initialize and calculate intermediary result scalarTerms_integrated
-  // EigenVectorX1D H_integrated = M * H;
-  // EigenVectorX1D scalarTerms_integrated =
+  // EigenVectorX1d H_integrated = M * H;
+  // EigenVectorX1d scalarTerms_integrated =
   //     M * rowwiseProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
   //     H_integrated, vpg->vertexLumpedMassMatrix.cwiseInverse() *
   //     H_integrated) + rowwiseProduct(H_integrated, H0) -
   //     vpg->vertexGaussianCurvatures.raw();
-  // EigenVectorX1D zeroMatrix;
+  // EigenVectorX1d zeroMatrix;
   // zeroMatrix.resize(n_vertices, 1);
   // zeroMatrix.setZero();
   // scalarTerms_integrated =
   //     scalarTerms_integrated.array().max(zeroMatrix.array());
 
   // // initialize and calculate intermediary result productTerms_integrated
-  // EigenVectorX1D productTerms_integrated;
+  // EigenVectorX1d productTerms_integrated;
   // productTerms_integrated.resize(n_vertices, 1);
   // productTerms_integrated =
   //     2.0 * rowwiseProduct(scalarTerms_integrated, H - H0);
@@ -304,7 +304,7 @@ EigenVectorX1D System::computeBendingForce() {
   //                    vertexAngleNormal_e);
 }
 
-EigenVectorX1D System::computeCapillaryForce() {
+EigenVectorX1d System::computeCapillaryForce() {
   throw std::runtime_error("computeCapillaryForce: out of data implementation, "
                            "shouldn't be called!");
   /// Geometric implementation
@@ -333,7 +333,7 @@ EigenVectorX1D System::computeCapillaryForce() {
   // }
 }
 
-EigenVectorX1D System::computeOsmoticForce() {
+EigenVectorX1d System::computeOsmoticForce() {
   throw std::runtime_error("computeOsmoticForce: out of data implementation, "
                            "shouldn't be called!");
   F.osmoticForce.raw().setConstant(F.osmoticPressure);
@@ -353,7 +353,7 @@ EigenVectorX1D System::computeOsmoticForce() {
   // }
 }
 
-EigenVectorX1D System::computeLineCapillaryForce() {
+EigenVectorX1d System::computeLineCapillaryForce() {
   if (false) {
     throw std::runtime_error(
         "computeLineCapillaryForce: out of data implementation, "
@@ -373,8 +373,8 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   return F.lineCapillaryForce.raw();
 }
 
-EigenVectorX1D System::computeExternalForce() {
-  EigenVectorX1D externalPressureMagnitude;
+EigenVectorX1d System::computeExternalForce() {
+  EigenVectorX1d externalPressureMagnitude;
 
   // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT
   // GEOMETRY
@@ -410,7 +410,7 @@ EigenVectorX1D System::computeExternalForce() {
   return F.externalForce.raw();
 }
 
-EigenVectorX1D System::computeChemicalPotential() {
+EigenVectorX1d System::computeChemicalPotential() {
   gcs::VertexData<double> dH0dphi(*mesh, 0);
   gcs::VertexData<double> dKbdphi(*mesh, 0);
   auto meanCurvDiff = (vpg->vertexMeanCurvatures.raw().array() /
@@ -421,7 +421,7 @@ EigenVectorX1D System::computeChemicalPotential() {
     dH0dphi.fill(P.H0c);
     dKbdphi.fill(P.Kbc);
   } else if (P.relation == "hill") {
-    EigenVectorX1D proteinDensitySq =
+    EigenVectorX1d proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
     dH0dphi.raw() =
         (2 * P.H0c * proteinDensity.raw().array() /
@@ -459,7 +459,7 @@ EigenVectorX1D System::computeChemicalPotential() {
   return F.chemicalPotential.raw();
 }
 
-std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
+std::tuple<EigenVectorX3dr, EigenVectorX3dr> System::computeDPDForces(double dt) {
 
   auto dampingForce_e = EigenMap<double, 3>(F.dampingForce);
   auto stochasticForce_e = EigenMap<double, 3>(F.stochasticForce);

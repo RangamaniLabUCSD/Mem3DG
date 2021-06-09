@@ -22,11 +22,11 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
+using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
+using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 int main() {
@@ -41,7 +41,7 @@ int main() {
          conc = 25, height = 0, radius = 100, temp = 0, h = 1e-5, Kv = 0,
          eta = 0, Ksg = 0.05, A_res = 0, V_res = 0;
 
-  EigenVectorX1D pt(3), r_H0(2);
+  EigenVectorX1d pt(3), r_H0(2);
   pt << 0, 0, 0;
   r_H0 << 0.15, 0.15;
 

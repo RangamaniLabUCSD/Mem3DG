@@ -31,11 +31,11 @@ namespace mem3dg {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
+using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
+using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 /// Type alias for aligned vectors
@@ -137,14 +137,14 @@ auto rowwiseScalarProduct(const Eigen::DenseBase<VectorType> &A,
 //   return C;
 // }
 
-inline EigenVectorX3D
-rowwiseCrossProduct(const Eigen::Ref<const EigenVectorX3D> &A,
-                    const Eigen::Ref<const EigenVectorX3D> &B) {
+inline EigenVectorX3dr
+rowwiseCrossProduct(const Eigen::Ref<const EigenVectorX3dr> &A,
+                    const Eigen::Ref<const EigenVectorX3dr> &B) {
   if (A.rows() != B.rows()) {
     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
                          " in B, for rowwise cross product");
   }
-  EigenVectorX3D C;
+  EigenVectorX3dr C;
   C.resize(A.rows(), 3);
   for (std::size_t i = 0; i < A.rows(); i++) {
     C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));

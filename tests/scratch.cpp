@@ -22,11 +22,11 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
+using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
+using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 int main() {
@@ -39,7 +39,7 @@ int main() {
   p.Kb = 8.22e-5;
   p.Kbc = 8.22e-4;
   p.H0c = 6;
-  p.protein0 = EigenVectorX1D(1);
+  p.protein0 = EigenVectorX1d(1);
   p.protein0 << 1;
   p.eta = 0;
   p.Ksg = 2e-2;
@@ -59,7 +59,7 @@ int main() {
   p.radius = 100000;
   p.gamma = 0;
   p.temp = 0;
-  p.pt = EigenVectorX1D(2);
+  p.pt = EigenVectorX1d(2);
   p.pt << 0, 0;
 
   mem3dg::Options o;

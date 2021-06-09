@@ -122,13 +122,13 @@ void BFGS::status() {
 
   // update
   if (f.time != init_time || ifRestart) {
-    EigenVectorX1D y = -f.F.flatten(physicalForceVec) + pastPhysicalForce;
+    EigenVectorX1d y = -f.F.flatten(physicalForceVec) + pastPhysicalForce;
     double sTy = (s.transpose() * y);
     hess_inv +=
         (s * s.transpose()) * (sTy + y.transpose() * hess_inv * y) / sTy / sTy -
         (hess_inv * y * s.transpose() + s * y.transpose() * hess_inv) / sTy;
 
-    EigenVectorX1D y_protein =
+    EigenVectorX1d y_protein =
         -f.F.chemicalPotential.raw() + pastPhysicalForce_protein;
     double sTy_protein = (s_protein.transpose() * y_protein);
     hess_inv_protein += (s_protein * s_protein.transpose()) *

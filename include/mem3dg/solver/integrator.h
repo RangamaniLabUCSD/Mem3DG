@@ -266,8 +266,8 @@ public:
    * @return
    */
   void lineSearchErrorBacktrack(const double &alpha,
-                                const EigenVectorX3D &initial_pos,
-                                const EigenVectorX1D &init_proteinDensity,
+                                const EigenVectorX3dr &initial_pos,
+                                const EigenVectorX1d &init_proteinDensity,
                                 bool runAll = false);
 };
 

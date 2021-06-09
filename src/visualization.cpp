@@ -465,15 +465,15 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
     idx = 0;
   }
 
-  mem3dg::EigenTopVec topo_frame = fd.getTopoFrame(idx);
-  mem3dg::EigenVectorX3D coords = fd.getCoords(idx);
+  mem3dg::EigenVectorX3ur topo_frame = fd.getTopoFrame(idx);
+  mem3dg::EigenVectorX3dr coords = fd.getCoords(idx);
   // mesh->updateVertexPositions(coords);
   polyscope::SurfaceMesh *polyscopeMesh =
       polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
   // polyscopeMesh->setEnabled(true);
 
   if (options.ref_coord) {
-    mem3dg::EigenVectorX3D refcoords = fd.getRefcoordinate();
+    mem3dg::EigenVectorX3dr refcoords = fd.getRefcoordinate();
     polyscopeMesh->addVertexVectorQuantity("ref_coordinate", refcoords);
 
     // Show quantities at the opening
@@ -684,9 +684,9 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
   ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
   gcs::VertexData<gc::Vector3> tangentialForce =
   ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
-  // mem3dg::EigenVectorX3D vertexVelocity_e =
+  // mem3dg::EigenVectorX3dr vertexVelocity_e =
   //    mem3dg::EigenMap<double, 3>(vertexVelocity);
-  /*mem3dg::EigenVectorX3D normalForce_e =
+  /*mem3dg::EigenVectorX3dr normalForce_e =
   gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
   Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
   3>(tangentialForce);*/
