@@ -961,7 +961,7 @@ public:
    * @brief Save RichData to .ply file
    *
    */
-  void saveRichData(std::string PathToSave);
+  void saveRichData(std::string PathToSave, bool isJustGeometry = false);
 
 #ifdef MEM3DG_WITH_NETCDF
   /**

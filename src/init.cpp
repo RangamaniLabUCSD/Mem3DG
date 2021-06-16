@@ -14,6 +14,7 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/heat_method_distance.h"
+#include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/solver/meshops.h"
@@ -237,51 +238,56 @@ void System::mapContinuationVariables(std::string plyFile) {
   }
 }
 
-void System::saveRichData(std::string PathToSave) {
-  gcs::RichSurfaceMeshData richData(*mesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*vpg);
+void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
-  // write protein distribution
-  richData.addVertexProperty("protein_density", proteinDensity);
+  if (isJustGeometry) {
+    gcs::writeSurfaceMesh(*mesh, *vpg, PathToSave);
+  } else {
+    gcs::RichSurfaceMeshData richData(*mesh);
+    richData.addMeshConnectivity();
+    richData.addGeometry(*vpg);
 
-  // write bool
-  gcs::VertexData<double> msk(*mesh);
-  msk.fromVector(F.toMatrix(F.forceMask).rowwise().sum());
-  richData.addVertexProperty("mask", msk);
-  gcs::VertexData<double> smthingMsk(*mesh);
-  smthingMsk.fromVector(smoothingMask.raw().cast<double>());
-  richData.addVertexProperty("smoothing_mask", smthingMsk);
-  gcs::VertexData<double> tkr(*mesh);
-  tkr.fromVector(thePointTracker.raw().cast<double>());
-  richData.addVertexProperty("the_point", tkr);
+    // write protein distribution
+    richData.addVertexProperty("protein_density", proteinDensity);
 
-  // write geometry
-  gcs::VertexData<double> meanCurv(*mesh);
-  meanCurv.fromVector(vpg->vertexMeanCurvatures.raw().array() /
-                      vpg->vertexDualAreas.raw().array());
-  richData.addVertexProperty("mean_curvature", meanCurv);
-  gcs::VertexData<double> gaussCurv(*mesh);
-  gaussCurv.fromVector(vpg->vertexGaussianCurvatures.raw().array() /
-                       vpg->vertexDualAreas.raw().array());
-  richData.addVertexProperty("gauss_curvature", gaussCurv);
-  richData.addVertexProperty("spon_curvature", H0);
+    // write bool
+    gcs::VertexData<double> msk(*mesh);
+    msk.fromVector(F.toMatrix(F.forceMask).rowwise().sum());
+    richData.addVertexProperty("mask", msk);
+    gcs::VertexData<double> smthingMsk(*mesh);
+    smthingMsk.fromVector(smoothingMask.raw().cast<double>());
+    richData.addVertexProperty("smoothing_mask", smthingMsk);
+    gcs::VertexData<double> tkr(*mesh);
+    tkr.fromVector(thePointTracker.raw().cast<double>());
+    richData.addVertexProperty("the_point", tkr);
 
-  // write pressures
-  richData.addVertexProperty("bending_force", F.bendingForce);
-  richData.addVertexProperty("capillary_force", F.capillaryForce);
-  richData.addVertexProperty("line_tension_force", F.lineCapillaryForce);
-  richData.addVertexProperty("osmotic_force", F.osmoticForce);
-  richData.addVertexProperty("external_force", F.externalForce);
-  richData.addVertexProperty("physical_force", F.mechanicalForce);
+    // write geometry
+    gcs::VertexData<double> meanCurv(*mesh);
+    meanCurv.fromVector(vpg->vertexMeanCurvatures.raw().array() /
+                        vpg->vertexDualAreas.raw().array());
+    richData.addVertexProperty("mean_curvature", meanCurv);
+    gcs::VertexData<double> gaussCurv(*mesh);
+    gaussCurv.fromVector(vpg->vertexGaussianCurvatures.raw().array() /
+                         vpg->vertexDualAreas.raw().array());
+    richData.addVertexProperty("gauss_curvature", gaussCurv);
+    richData.addVertexProperty("spon_curvature", H0);
 
-  // write chemical potential
-  richData.addVertexProperty("diffusion_potential", F.diffusionPotential);
-  richData.addVertexProperty("bending_potential", F.bendingPotential);
-  richData.addVertexProperty("adsorption_potential", F.adsorptionPotential);
-  richData.addVertexProperty("chemical_potential", F.chemicalPotential);
+    // write pressures
+    richData.addVertexProperty("bending_force", F.bendingForce);
+    richData.addVertexProperty("capillary_force", F.capillaryForce);
+    richData.addVertexProperty("line_tension_force", F.lineCapillaryForce);
+    richData.addVertexProperty("osmotic_force", F.osmoticForce);
+    richData.addVertexProperty("external_force", F.externalForce);
+    richData.addVertexProperty("physical_force", F.mechanicalForce);
 
-  richData.write(PathToSave);
+    // write chemical potential
+    richData.addVertexProperty("diffusion_potential", F.diffusionPotential);
+    richData.addVertexProperty("bending_potential", F.bendingPotential);
+    richData.addVertexProperty("adsorption_potential", F.adsorptionPotential);
+    richData.addVertexProperty("chemical_potential", F.chemicalPotential);
+
+    richData.write(PathToSave);
+  }
 }
 
 void System::checkParametersAndOptions() {
@@ -335,8 +341,9 @@ void System::checkParametersAndOptions() {
     if (O.boundaryConditionType != "roller" &&
         O.boundaryConditionType != "pin" &&
         O.boundaryConditionType != "fixed") {
-      throw std::logic_error("Boundary condition type (roller, pin or fixed) "
-                             "has not been specified for open boundary mesh!");
+      std::cout << "Boundary condition type (roller, pin or fixed) "
+                   "has not been specified for open boundary mesh!"
+                << std::endl;
     }
   } else {
     if (P.A_res != 0 || P.V_res != 0) {
