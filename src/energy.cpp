@@ -87,8 +87,8 @@ void System::computeAdsorptionEnergy() {
 void System::computeProteinInteriorPenaltyEnergy() {
   // interior method to constrain protein density to remain from 0 to 1
   E.inE =
-      -P.lambdaPhi * ((proteinDensity.raw().array() + 1e-4).log().sum() +
-                      (1 + 1e-4 - proteinDensity.raw().array()).log().sum());
+      -P.lambdaPhi * ((proteinDensity.raw().array()).log().sum() +
+                      (1 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeDirichletEnergy() {

@@ -203,11 +203,11 @@ void System::computeVectorForces() {
     }
 
     // masking
-    osmoticForceVec = F.mask(osmoticForceVec, v);
-    capillaryForceVec = F.mask(capillaryForceVec, v);
-    bendForceVec = F.mask(bendForceVec, v);
-    lineCapForceVec = F.mask(lineCapForceVec, v);
-    adsorptionForceVec = F.mask(adsorptionForceVec, v);
+    osmoticForceVec = F.maskForce(osmoticForceVec, v);
+    capillaryForceVec = F.maskForce(capillaryForceVec, v);
+    bendForceVec = F.maskForce(bendForceVec, v);
+    lineCapForceVec = F.maskForce(lineCapForceVec, v);
+    adsorptionForceVec = F.maskForce(adsorptionForceVec, v);
 
     // Combine to one
     F.osmoticForceVec[v] = osmoticForceVec;
@@ -441,16 +441,17 @@ EigenVectorX1D System::computeChemicalPotential() {
             .matrix();
   }
 
-  F.adsorptionPotential.raw() = -P.epsilon * vpg->vertexDualAreas.raw().array();
-  F.bendingPotential.raw() =
+  F.adsorptionPotential.raw() =
+      F.maskProtein(-P.epsilon * vpg->vertexDualAreas.raw().array());
+  F.bendingPotential.raw() = F.maskProtein(
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
-       2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array());
+       2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
   F.diffusionPotential.raw() =
-      -P.eta * vpg->cotanLaplacian * proteinDensity.raw();
+      F.maskProtein(-P.eta * vpg->cotanLaplacian * proteinDensity.raw());
   F.interiorPenaltyPotential.raw() =
-      P.lambdaPhi * (1 / (proteinDensity.raw().array() + 1e-4) -
-                     1 / (1 + 1e-4 - proteinDensity.raw().array()));
+      F.maskProtein(P.lambdaPhi * (1 / proteinDensity.raw().array() -
+                                   1 / (1 - proteinDensity.raw().array())));
   F.chemicalPotential.raw() =
       F.adsorptionPotential.raw() + F.bendingPotential.raw() +
       F.diffusionPotential.raw() + F.interiorPenaltyPotential.raw();
