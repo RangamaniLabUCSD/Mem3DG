@@ -906,10 +906,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether have "the" vertex floating in embedded space
       )delim");
-  options.def_readwrite("boundaryConditionType",
-                        &Options::boundaryConditionType,
+  options.def_readwrite("shapeBoundaryCondition",
+                        &Options::shapeBoundaryCondition,
                         R"delim(
-          get the option of "roller", "pin", "fixed", or "none" to specify boundary condition.
+          get the option of "roller", "pin", "fixed", or "none" to specify shape boundary condition.
+      )delim");
+  options.def_readwrite("proteinBoundaryCondition",
+                        &Options::proteinBoundaryCondition,
+                        R"delim(
+          get the option of "pin", or "none" to specify protein boundary condition.
       )delim");
 
   // ==========================================================

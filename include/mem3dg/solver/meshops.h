@@ -485,9 +485,9 @@ DLL_PUBLIC inline void getTuftedLaplacianAndMass(
  * @param boundaryConditionType: dirichlet or neumann
  *
  */
-DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
-                                    gcs::VertexData<bool> &mask,
-                                    std::string boundaryConditionType) {
+DLL_PUBLIC inline void boundaryProteinMask(gcs::SurfaceMesh &mesh,
+                                           gcs::VertexData<double> &mask,
+                                           std::string boundaryConditionType) {
   // for (gcs::Vertex v : mesh.vertices()) {
   //   if (v.isBoundary()) {
   //     mask[v.getIndex()] = 0;
@@ -496,44 +496,31 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
   //     }
   //   }
   // }
-  if (boundaryConditionType == "fixed") {
+  if (boundaryConditionType == "pin") {
     for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
-        for (gcs::Vertex v01 : v0.adjacentVertices()) {
-          for (gcs::Vertex v012 : v01.adjacentVertices()) {
-            mask[v012] = false;
-          }
-        }
+        mask[v0] = 0;
       }
     }
-  } else if (boundaryConditionType == "pin") {
-    for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
-      for (gcs::Vertex v0 : bl.adjacentVertices()) {
-        mask[v0] = false;
-      }
-    }
-  } else if (boundaryConditionType == "roller" ||
-             boundaryConditionType == "none") {
+  } else if (boundaryConditionType == "none") {
   } else {
     throw std::runtime_error(
-        "boundaryMask(bool): boundaryConditionType not defined!");
+        "boundaryProteinMask: boundaryConditionType not defined!");
   }
-
-  if (mask.raw().all() && boundaryConditionType != "roller" &&
-      boundaryConditionType != "none") {
-    std::cout << "\nboundaryMask(bool): WARNING: there is no boundary vertex "
+  if (!(mask.raw().array() < 0.5).any() && boundaryConditionType != "none") {
+    std::cout << "\nboundaryProteinMask: WARNING: there is no boundary vertex "
                  "in the mesh!"
               << std::endl;
   }
-  if (!mask.raw().any()) {
-    std::cout << "\nboundaryMask(bool): WARNING: there is no non-masked DOF in "
-                 "the mesh!"
+  if (!(mask.raw().array() > 0.5).any()) {
+    std::cout << "\nboundaryProteinMask: WARNING: there is no non-masked DOF "
+                 "in the mesh!"
               << std::endl;
   }
 }
-DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
-                                    gcs::VertexData<gc::Vector3> &mask,
-                                    std::string boundaryConditionType) {
+DLL_PUBLIC inline void boundaryForceMask(gcs::SurfaceMesh &mesh,
+                                         gcs::VertexData<gc::Vector3> &mask,
+                                         std::string boundaryConditionType) {
   if (boundaryConditionType == "fixed") {
     for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
@@ -559,18 +546,20 @@ DLL_PUBLIC inline void boundaryMask(gcs::SurfaceMesh &mesh,
   } else if (boundaryConditionType == "none") {
   } else {
     throw std::runtime_error(
-        "boundaryMask(double): boundaryConditionType not defined!");
+        "boundaryForceMask(double): boundaryConditionType not defined!");
   }
   if (!(gc::EigenMap<double, 3>(mask).array() < 0.5).any() &&
       boundaryConditionType != "none") {
-    std::cout << "\nboundaryMask(double): WARNING: there is no boundary vertex "
-                 "in the mesh!"
-              << std::endl;
+    std::cout
+        << "\nboundaryForceMask(double): WARNING: there is no boundary vertex "
+           "in the mesh!"
+        << std::endl;
   }
   if (!(gc::EigenMap<double, 3>(mask).array() > 0.5).any()) {
-    std::cout << "\nboundaryMask(double): WARNING: there is no non-masked DOF "
-                 "in the mesh!"
-              << std::endl;
+    std::cout
+        << "\nboundaryForceMask(double): WARNING: there is no non-masked DOF "
+           "in the mesh!"
+        << std::endl;
   }
 }
 

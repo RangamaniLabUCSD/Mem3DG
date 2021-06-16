@@ -486,7 +486,9 @@ void System::globalUpdateAfterMutation() {
   // Update mask when topology changes (likely not necessary, just for safety)
   if (isOpenMesh) {
     F.forceMask.fill({1, 1, 1});
-    boundaryMask(*mesh, F.forceMask, O.boundaryConditionType);
+    boundaryForceMask(*mesh, F.forceMask, O.shapeBoundaryCondition);
+    F.proteinMask.fill(1);
+    boundaryProteinMask(*mesh, F.proteinMask, O.proteinBoundaryCondition);
     // for (gcs::Vertex v : mesh->vertices()) {
     //   if (!mask[v]) {
     //     vpg->inputVertexPositions[v].z = 0;
