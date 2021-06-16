@@ -201,6 +201,14 @@ void System::computeVectorForces() {
       //                    vpg->vertexDualAreas[v]
       //             << std::endl;
     }
+
+    // masking
+    osmoticForceVec = F.mask(osmoticForceVec, v);
+    capillaryForceVec = F.mask(capillaryForceVec, v);
+    bendForceVec = F.mask(bendForceVec, v);
+    lineCapForceVec = F.mask(lineCapForceVec, v);
+    adsorptionForceVec = F.mask(adsorptionForceVec, v);
+
     // Combine to one
     F.osmoticForceVec[v] = osmoticForceVec;
     F.capillaryForceVec[v] = capillaryForceVec;
@@ -433,7 +441,7 @@ EigenVectorX1D System::computeChemicalPotential() {
             .matrix();
   }
 
-  F.adsorptionPotential.raw() = -vpg->vertexDualAreas.raw().array() * P.epsilon;
+  F.adsorptionPotential.raw() = -P.epsilon * vpg->vertexDualAreas.raw().array();
   F.bendingPotential.raw() =
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
@@ -615,10 +623,9 @@ void System::computePhysicalForces() {
     if (P.Kf != 0) {
       computeExternalForce();
     }
-    F.mechanicalForceVec =
-        F.mask(F.osmoticForceVec + F.capillaryForceVec + F.bendingForceVec +
-               F.lineCapillaryForceVec + F.adsorptionForceVec +
-               F.addNormal(F.externalForce));
+    F.mechanicalForceVec = F.osmoticForceVec + F.capillaryForceVec +
+                           F.bendingForceVec + F.lineCapillaryForceVec +
+                           F.adsorptionForceVec + F.addNormal(F.externalForce);
     F.mechanicalForce = F.ontoNormal(F.mechanicalForceVec);
   }
 

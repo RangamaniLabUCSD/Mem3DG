@@ -102,9 +102,9 @@ void BFGS::checkParameters() {
   if (!isBacktrack) {
     throw std::runtime_error("Backtracking is required for BFGS integration");
   }
-  if (f.P.Bc != 1) {
-    throw std::runtime_error(
-        "Binding constant should be set to 1 for optimization!");
+  if (f.P.Bc != 1 && f.P.Bc != 0) {
+    throw std::runtime_error("Protein mobility constant should "
+                             "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {

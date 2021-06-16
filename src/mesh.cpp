@@ -480,4 +480,22 @@ DLL_PUBLIC std::vector<std::string> readData(std::string &plyName) {
       gcs::RichSurfaceMeshData::readMeshAndData(plyName);
   return ptrRichData->plyData.getElementNames();
 }
+
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+processSoup(std::string &plyName) {
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  gcs::SimplePolygonMesh soup(plyName);
+  soup.mergeIdenticalVertices();
+  soup.stripFacesWithDuplicateVertices();
+  soup.triangulate();
+  std::tie(ptrMesh, ptrVpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      soup.polygons, soup.vertexCoordinates);
+  meshMatrix = ptrMesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
+}
 } // namespace mem3dg

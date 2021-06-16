@@ -117,19 +117,19 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // First time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX3D vectorForces1 = f.F.toMatrix(f.F.vectorForces);
+  EigenVectorX3D mechanicalForceVec1 = f.F.toMatrix(f.F.mechanicalForceVec);
   EigenVectorX1D chemicalPotential1 = f.F.toMatrix(f.F.chemicalPotential);
   EigenVectorX3D regularizationForce1 = f.F.toMatrix(f.F.regularizationForce);
 
   // Second time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
-  EigenVectorX3D vectorForces2 = f.F.toMatrix(f.F.vectorForces);
+  EigenVectorX3D mechanicalForceVec2 = f.F.toMatrix(f.F.mechanicalForceVec);
   EigenVectorX1D chemicalPotential2 = f.F.toMatrix(f.F.chemicalPotential);
   EigenVectorX3D regularizationForce2 = f.F.toMatrix(f.F.regularizationForce);
 
   // Comparison of 2 force calculations
-  ASSERT_TRUE((vectorForces1 - vectorForces2).norm() < 1e-12);
+  ASSERT_TRUE((mechanicalForceVec1 - mechanicalForceVec2).norm() < 1e-12);
   ASSERT_TRUE((chemicalPotential1 - chemicalPotential2).norm() < 1e-12);
   ASSERT_TRUE((regularizationForce1 - regularizationForce2).norm() < 1e-12);
 };

@@ -85,7 +85,7 @@ double Integrator::backtrack(
     f.F.toMatrix(f.vpg->inputVertexPositions) += alpha * positionDirection;
   }
   if (f.O.isProteinVariation) {
-    f.proteinDensity.raw() += alpha * f.P.Bc * chemicalDirection;
+    f.proteinDensity.raw() += alpha * chemicalDirection;
   }
   f.time += alpha;
   f.updateVertexPositions(false);
@@ -116,8 +116,7 @@ double Integrator::backtrack(
           initial_pos + alpha * positionDirection;
     }
     if (f.O.isProteinVariation) {
-      f.proteinDensity.raw() =
-          initial_protein + alpha * f.P.Bc * chemicalDirection;
+      f.proteinDensity.raw() = initial_protein + alpha * chemicalDirection;
     }
     f.time = init_time + alpha;
     f.updateVertexPositions(false);
@@ -519,8 +518,12 @@ void Integrator::saveData() {
   if ((verbosity > 3 && !f.O.isSplitEdge && !f.O.isCollapseEdge) ||
       (verbosity > 0 && (f.O.isSplitEdge || f.O.isCollapseEdge))) {
     char buffer[50];
-    sprintf(buffer, "/frame%d.ply", (int)frame);
-    f.saveRichData(outputDir + "/" + std::string(buffer));
+    if (isJustGeometryPly) {
+      sprintf(buffer, "/frame%d.obj", (int)frame);
+    } else {
+      sprintf(buffer, "/frame%d.ply", (int)frame);
+    }
+    f.saveRichData(outputDir + "/" + std::string(buffer), isJustGeometryPly);
   }
 
 #ifdef MEM3DG_WITH_NETCDF

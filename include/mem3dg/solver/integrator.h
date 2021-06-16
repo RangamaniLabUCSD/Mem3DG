@@ -100,7 +100,9 @@ public:
   bool isAdaptiveStep = true;
   /// verbosity level of integrator
   size_t verbosity = 3;
-
+  /// just save geometry .ply file
+  bool isJustGeometryPly = false;
+  
   // ==========================================================
   // =============        Constructor            ==============
   // ==========================================================
