@@ -24,11 +24,12 @@
 #include <geometrycentral/utilities/vector3.h>
 #include <stdexcept>
 
-#include "mem3dg/solver/integrator.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
 namespace gc = ::geometrycentral;
 
 bool BFGS::integrate() {
@@ -221,4 +222,5 @@ void BFGS::march() {
   }
 }
 
+} // namespace solver
 } // namespace mem3dg

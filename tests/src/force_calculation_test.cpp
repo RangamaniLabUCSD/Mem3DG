@@ -25,12 +25,12 @@
 
 #include <Eigen/Core>
 
-#include "mem3dg/solver/mesh.h"
+#include "mem3dg/mesh_io.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
-
+namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
@@ -109,7 +109,7 @@ protected:
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   // Instantiate system object
   std::size_t nSub = 0;
-  mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, o, nSub);
   // First time calculation of force
   f.computePhysicalForces();
   f.computeRegularizationForce();
@@ -139,7 +139,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
   // initialize the system
   std::size_t nSub = 0;
-  mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, o, nSub);
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
@@ -290,6 +290,6 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   ASSERT_TRUE(f.E.dE <= previousE.dE);
   ASSERT_TRUE(difference < tolerance)
       << "Relative error of diffusion potential: " << difference;
-
-}; // namespace ddgsolver
+};
+} // namespace solver
 } // namespace mem3dg

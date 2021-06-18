@@ -22,8 +22,8 @@
 #include "Eigen/src/Core/util/Constants.h"
 
 #include "mem3dg.h"
+#include "mem3dg/mesh_io.h"
 #include "visualization.h"
-#include "mem3dg/solver/mesh.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
@@ -34,6 +34,7 @@
 
 namespace gc = ::geometrycentral;
 namespace mem3dg {
+namespace solver {
 namespace py = pybind11;
 
 // Initialize the `pymem3dg` module
@@ -328,16 +329,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         conjugate Gradient propagator
     )delim");
 
-  bfgs.def(py::init<System &, double, double, double, double, std::string, bool,
-                    std::string, std::size_t, bool, double, double, double, bool>(),
-           py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-           py::arg("tolerance"), py::arg("outputDir"),
-           py::arg("isAdaptiveStep") = true,
-           py::arg("trajFileName") = "traj.nc", py::arg("verbosity") = 3,
-           py::arg("isBacktrack") = true, py::arg("rho") = 0.99,
-           py::arg("c1") = 0.0001, py::arg("ctol") = 0.001,
-           py::arg("isAugmentedLagrangian") = false,
-           R"delim(
+  bfgs.def(
+      py::init<System &, double, double, double, double, std::string, bool,
+               std::string, std::size_t, bool, double, double, double, bool>(),
+      py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+      py::arg("tolerance"), py::arg("outputDir"),
+      py::arg("isAdaptiveStep") = true, py::arg("trajFileName") = "traj.nc",
+      py::arg("verbosity") = 3, py::arg("isBacktrack") = true,
+      py::arg("rho") = 0.99, py::arg("c1") = 0.0001, py::arg("ctol") = 0.001,
+      py::arg("isAugmentedLagrangian") = false,
+      R"delim(
         BFGS optimizer constructor
       )delim");
   bfgs.def("integrate", &BFGS::integrate,
@@ -561,15 +562,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
         System constructor with .ply files
       )delim");
-  system.def(py::init<std::string, Parameters &, Options &, std::size_t, bool>(),
-             py::arg("inputMesh"), py::arg("p"), py::arg("o"),
-             py::arg("nSub") = 0, py::arg("isContinue") = false,
-             R"delim(
+  system.def(
+      py::init<std::string, Parameters &, Options &, std::size_t, bool>(),
+      py::arg("inputMesh"), py::arg("p"), py::arg("o"), py::arg("nSub") = 0,
+      py::arg("isContinue") = false,
+      R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(py::init<std::string, std::string, Parameters &, Options &, std::size_t,
-                      bool>(),
+  system.def(py::init<std::string, std::string, Parameters &, Options &,
+                      std::size_t, bool>(),
              py::arg("inputMesh"), py::arg("refMesh"), py::arg("p"),
              py::arg("o"), py::arg("nSub") = 0, py::arg("isContinue") = false,
              R"delim(
@@ -579,11 +581,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Constructors by matrices
    */
-  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("nSub") = 0,
-             R"delim(
+  system.def(
+      py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t>(),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("nSub") = 0,
+      R"delim(
         System constructor with Matrices. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
@@ -1245,19 +1247,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                "get topology and vertex position matrix of Hexagon",
                py::arg("R"), py::arg("nSub") = 0);
 
-  pymem3dg.def("subdivide",
-               py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                                 Eigen::Matrix<double, Eigen::Dynamic, 3> &,
-                                 std::size_t>(&subdivide),
-               "subdivide the mesh", py::arg("faces"), py::arg("coords"),
-               py::arg("nSub"));
+  pymem3dg.def(
+      "subdivide",
+      py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                        Eigen::Matrix<double, Eigen::Dynamic, 3> &,
+                        std::size_t>(&subdivide),
+      "subdivide the mesh", py::arg("faces"), py::arg("coords"),
+      py::arg("nSub"));
 
-  pymem3dg.def("loopSubdivide",
-               py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                                 Eigen::Matrix<double, Eigen::Dynamic, 3> &,
-                                 std::size_t>(&loopSubdivide),
-               "subdivide the mesh in Loop scheme", py::arg("faces"),
-               py::arg("coords"), py::arg("nSub"));
+  pymem3dg.def(
+      "loopSubdivide",
+      py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                        Eigen::Matrix<double, Eigen::Dynamic, 3> &,
+                        std::size_t>(&loopSubdivide),
+      "subdivide the mesh in Loop scheme", py::arg("faces"), py::arg("coords"),
+      py::arg("nSub"));
 
   pymem3dg.def("readMesh", &readMesh,
                "read vertex and face matrix from .ply file",
@@ -1564,4 +1568,5 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             )delim");
 #endif
 };
+} // namespace solver
 } // namespace mem3dg

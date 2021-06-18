@@ -22,9 +22,10 @@ set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/meshops.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/version.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/constants.h"
-    
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/mesh_io.h"
+
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/system.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh_mutator.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile.h"
     PARENT_SCOPE)

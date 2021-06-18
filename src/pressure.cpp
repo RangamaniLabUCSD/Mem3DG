@@ -38,6 +38,7 @@
 #include <stdexcept>
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -248,7 +249,7 @@ EigenVectorX1d System::computeBendingForce() {
 
   // calculate the Laplacian of mean curvature H
   EigenVectorX1d lap_H =
-      -(vpg->cotanLaplacian * Kb.raw().cwiseProduct( ptwiseH - H0.raw()))
+      -(vpg->cotanLaplacian * Kb.raw().cwiseProduct(ptwiseH - H0.raw()))
            .array() /
       vpg->vertexDualAreas.raw().array();
 
@@ -459,7 +460,8 @@ EigenVectorX1d System::computeChemicalPotential() {
   return F.chemicalPotential.raw();
 }
 
-std::tuple<EigenVectorX3dr, EigenVectorX3dr> System::computeDPDForces(double dt) {
+std::tuple<EigenVectorX3dr, EigenVectorX3dr>
+System::computeDPDForces(double dt) {
 
   auto dampingForce_e = EigenMap<double, 3>(F.dampingForce);
   auto stochasticForce_e = EigenMap<double, 3>(F.stochasticForce);
@@ -646,4 +648,5 @@ void System::computePhysicalForces() {
       O.isProteinVariation ? computeNorm(F.chemicalPotential.raw()) : 0;
 }
 
+} // namespace solver
 } // namespace mem3dg

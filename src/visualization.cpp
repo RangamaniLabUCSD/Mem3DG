@@ -39,7 +39,7 @@ namespace gcs = ::geometrycentral::surface;
 // ==========================================================
 // =============        Viewers                ==============
 // ==========================================================
-void visualize(mem3dg::System &f) {
+void visualize(mem3dg::solver::System &f) {
   signal(SIGINT, mem3dg::signalHandler);
   // Initialize visualization variables
   float transparency = 1;
@@ -289,7 +289,7 @@ int animate_nc(std::string &filename, const Quantities &options,
   signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
+  mem3dg::solver::TrajFile fd = mem3dg::solver::TrajFile::openReadOnly(filename);
 
   // Initialize visualization variables
   int prevFrame = 0;
@@ -381,7 +381,7 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
   signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
+  mem3dg::solver::TrajFile fd = mem3dg::solver::TrajFile::openReadOnly(filename);
   fd.getNcFrame(frame);
 
   // Set preference for polyscope
@@ -459,7 +459,7 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
 // ==========================================================
 
 #ifdef MEM3DG_WITH_NETCDF
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd, int idx,
                                             const Quantities &options) {
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
@@ -531,7 +531,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
   return polyscopeMesh;
 }
 
-void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::TrajFile &fd,
+void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::TrajFile &fd,
           int &idx, int &waitTime, Quantities options, bool &toggle) {
 
   polyscopeMesh = registerSurfaceMesh(fd, idx, options);

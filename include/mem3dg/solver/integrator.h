@@ -24,8 +24,8 @@
 #include <geometrycentral/utilities/vector3.h>
 
 #include "Eigen/src/Core/util/Constants.h"
-#include "mem3dg/solver/integrator.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/system.h"
 
 #include "mem3dg/meshops.h"
@@ -37,6 +37,7 @@
 #endif
 
 namespace mem3dg {
+namespace solver {
 
 // ==========================================================
 // =============        Integrator             ==============
@@ -615,4 +616,5 @@ public:
   void sweep();
 };
 
+} // namespace solver
 } // namespace mem3dg

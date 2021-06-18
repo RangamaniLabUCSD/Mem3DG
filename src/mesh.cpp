@@ -17,7 +17,7 @@
 #include <iostream>
 
 #include "mem3dg/constants.h"
-#include "mem3dg/solver/mesh.h"
+#include "mem3dg/mesh_io.h"
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/meshio.h>
@@ -52,8 +52,8 @@ void loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
 }
 
-DLL_PUBLIC std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
 loopSubdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
               Eigen::Matrix<double, Eigen::Dynamic, 3> &coords,
               std::size_t nSub) {
@@ -114,8 +114,8 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
       mesh->getFaceVertexMatrix<std::size_t>());
 }
 
-DLL_PUBLIC std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
+std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
 subdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
           Eigen::Matrix<double, Eigen::Dynamic, 3> &coords, std::size_t nSub) {
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> newCoords;
@@ -435,9 +435,9 @@ readMesh(std::string &plyName) {
   return std::tie(meshMatrix, vertexMatrix);
 }
 
-DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
-readData(std::string &plyName, std::string &elementName,
-         std::string &propertyName) {
+Eigen::Matrix<double, Eigen::Dynamic, 1> readData(std::string &plyName,
+                                                  std::string &elementName,
+                                                  std::string &propertyName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -463,8 +463,8 @@ readData(std::string &plyName, std::string &elementName,
   return property;
 }
 
-DLL_PUBLIC std::vector<std::string> readData(std::string &plyName,
-                                             std::string &elementName) {
+std::vector<std::string> readData(std::string &plyName,
+                                  std::string &elementName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -473,7 +473,7 @@ DLL_PUBLIC std::vector<std::string> readData(std::string &plyName,
   return ptrRichData->plyData.getElement(elementName).getPropertyNames();
 }
 
-DLL_PUBLIC std::vector<std::string> readData(std::string &plyName) {
+std::vector<std::string> readData(std::string &plyName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
