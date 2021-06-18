@@ -36,12 +36,13 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
+namespace solver {
 #ifdef MEM3DG_WITH_NETCDF
 
 void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Open netcdf file
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  TrajFile fd = TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
 
   // Check consistent topology for continuation
@@ -66,7 +67,8 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub) {
+System::readTrajFile(std::string trajFile, int startingFrame,
+                     std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -75,7 +77,7 @@ System::readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub) 
   std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  TrajFile fd = TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology());
@@ -115,7 +117,8 @@ System::readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub) 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(std::string inputMesh, std::string refMesh, std::size_t nSub) {
+System::readMeshes(std::string inputMesh, std::string refMesh,
+                   std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -160,10 +163,11 @@ System::readMeshes(std::string inputMesh, std::string refMesh, std::size_t nSub)
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-                   std::size_t nSub) {
+System::readMeshes(
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
+    std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -828,8 +832,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
   }
 
   if (!isUpdated) {
-    throw std::runtime_error("findTheVertex: surface point is no updated!");
+    mem3dg_runtime_error("Surface point is not updated!");
   }
 }
-
+} // namespace solver
 } // namespace mem3dg

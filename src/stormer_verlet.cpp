@@ -15,6 +15,8 @@
 #include <iostream>
 
 namespace mem3dg {
+namespace solver {
+
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
@@ -79,4 +81,5 @@ bool StormerVerlet::integrate() {
 
   return true;
 }
+} // namespace solver
 } // namespace mem3dg

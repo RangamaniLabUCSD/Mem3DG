@@ -22,6 +22,7 @@
 #include <cmath>
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -709,4 +710,5 @@ double MeshMutator::computeCurvatureThresholdLength(
   return std::sqrt(6 * curvTol / ((k1 > k2) ? k1 : k2) - 3 * curvTol * curvTol);
 }
 
+} // namespace solver
 } // namespace mem3dg

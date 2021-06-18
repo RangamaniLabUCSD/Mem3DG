@@ -38,6 +38,7 @@
 #include "mem3dg/meshops.h"
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -363,8 +364,7 @@ public:
         fd->addVar(CHEMERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     chemerrornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-1)");
 
-    errornorm_var =
-        fd->addVar(ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
+    errornorm_var = fd->addVar(ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     errornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     bendnorm_var = fd->addVar(BENDNORM_VAR, netCDF::ncDouble, {frame_dim});
@@ -373,8 +373,7 @@ public:
     surfnorm_var = fd->addVar(SURFNORM_VAR, netCDF::ncDouble, {frame_dim});
     surfnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    pressnorm_var =
-        fd->addVar(PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
+    pressnorm_var = fd->addVar(PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
     pressnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     linenorm_var = fd->addVar(LINENORM_VAR, netCDF::ncDouble, {frame_dim});
@@ -764,5 +763,6 @@ private:
   /// Writeable status
   bool writeable;
 };
+} // namespace solver
 } // namespace mem3dg
 #endif

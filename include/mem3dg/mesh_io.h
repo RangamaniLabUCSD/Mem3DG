@@ -22,7 +22,6 @@
 #include "mem3dg/macros.h"
 
 namespace mem3dg {
-
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
@@ -35,28 +34,28 @@ readMesh(std::string &plyName);
 
 /**
  * @brief Read data in the format of matrix from .ply file
- * 
+ *
  * @param plyName   PLY file to read
  * @return Vector of
  */
 DLL_PUBLIC std::vector<std::string> readData(std::string &plyName);
 
 /**
- * @brief 
- * 
- * @param plyName 
- * @param elementName 
- * @return 
+ * @brief
+ *
+ * @param plyName
+ * @param elementName
+ * @return
  */
 DLL_PUBLIC std::vector<std::string> readData(std::string &plyName,
                                              std::string &elementName);
 /**
- * @brief 
- * 
- * @param plyName 
- * @param elementName 
- * @param vertexProperties 
- * @return 
+ * @brief
+ *
+ * @param plyName
+ * @param elementName
+ * @param vertexProperties
+ * @return
  */
 DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
 readData(std::string &plyName, std::string &elementName,
@@ -170,11 +169,11 @@ DLL_PUBLIC void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
 
 /**
  * @brief Subdivide a mesh in Polygon Soup form
- * 
- * @param faces 
- * @param coords 
- * @param nSub 
- * @return 
+ *
+ * @param faces
+ * @param coords
+ * @param nSub
+ * @return
  */
 DLL_PUBLIC std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
@@ -195,11 +194,11 @@ loopSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &ptrMesh,
 
 /**
  * @brief Perform loop subdivision on a Polygon Soup mesh
- * 
- * @param faces 
- * @param coords 
- * @param nSub 
- * @return 
+ *
+ * @param faces
+ * @param coords
+ * @param nSub
+ * @return
  */
 DLL_PUBLIC std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>

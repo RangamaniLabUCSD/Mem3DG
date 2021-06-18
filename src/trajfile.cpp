@@ -28,7 +28,7 @@
 #include "mem3dg/solver/trajfile.h"
 
 namespace mem3dg {
-
+namespace solver {
 namespace nc = ::netCDF;
 using NcException = nc::exceptions::NcException;
 using NcFile = nc::NcFile;
@@ -572,7 +572,7 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
 
 //  chem error norm
 void TrajFile::writeChemErrorNorm(const std::size_t idx,
-                                const double ChemErrorNorm) {
+                                  const double ChemErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   chemerrornorm_var.putVar({idx}, &ChemErrorNorm);
@@ -587,8 +587,7 @@ double TrajFile::getChemErrorNorm(const std::size_t idx) const {
 }
 
 //  error norm
-void TrajFile::writeErrorNorm(const std::size_t idx,
-                                const double ErrorNorm) {
+void TrajFile::writeErrorNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   errornorm_var.putVar({idx}, &ErrorNorm);
@@ -618,8 +617,7 @@ double TrajFile::getBendNorm(const std::size_t idx) const {
 }
 
 //  capillary pressure norm
-void TrajFile::writeSurfNorm(const std::size_t idx,
-                               const double ErrorNorm) {
+void TrajFile::writeSurfNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   surfnorm_var.putVar({idx}, &ErrorNorm);
@@ -634,8 +632,7 @@ double TrajFile::getSurfNorm(const std::size_t idx) const {
 }
 
 //  inside pressure norm
-void TrajFile::writePressNorm(const std::size_t idx,
-                                const double ErrorNorm) {
+void TrajFile::writePressNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   pressnorm_var.putVar({idx}, &ErrorNorm);
@@ -650,8 +647,7 @@ double TrajFile::getPressNorm(const std::size_t idx) const {
 }
 
 //  line capillary pressure norm
-void TrajFile::writeLineNorm(const std::size_t idx,
-                               const double ErrorNorm) {
+void TrajFile::writeLineNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
     throw std::runtime_error("Cannot write to read only file.");
   linenorm_var.putVar({idx}, &ErrorNorm);
@@ -736,6 +732,7 @@ double TrajFile::getRefSurfArea() const {
   return value;
 }
 
+} // namespace solver
 } // namespace mem3dg
 
 #endif

@@ -27,6 +27,7 @@
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -117,10 +118,10 @@ void System::computeDirichletEnergy() {
 }
 
 void System::computeExternalForceEnergy() {
-  E.exE = -rowwiseDotProduct(
-               rowwiseScalarProduct(F.externalForce.raw(),
-                              gc::EigenMap<double, 3>(vpg->vertexNormals)),
-               gc::EigenMap<double, 3>(vpg->inputVertexPositions))
+  E.exE = -rowwiseDotProduct(rowwiseScalarProduct(
+                                 F.externalForce.raw(),
+                                 gc::EigenMap<double, 3>(vpg->vertexNormals)),
+                             gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();
 }
 
@@ -184,4 +185,5 @@ void System::computeGradient(gcs::VertexData<double> &quantities,
   }
 }
 
+} // namespace solver
 } // namespace mem3dg

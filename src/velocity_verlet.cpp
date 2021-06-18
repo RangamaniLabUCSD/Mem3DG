@@ -24,11 +24,12 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/integrator.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
 namespace gc = ::geometrycentral;
 
 bool VelocityVerlet::integrate() {
@@ -111,12 +112,14 @@ void VelocityVerlet::status() {
   getForces();
 
   // Compute total pressure
-  // newTotalPressure = rowwiseScalarProduct((physicalForce + DPDForce).array() /
+  // newTotalPressure = rowwiseScalarProduct((physicalForce + DPDForce).array()
+  // /
   //                                       f.vpg->vertexDualAreas.raw().array(),
   //                                   vertexAngleNormal_e);
   newTotalPressure =
-      rowwiseScalarProduct(DPDForce.array() / f.vpg->vertexDualAreas.raw().array(),
-                     vertexAngleNormal_e) +
+      rowwiseScalarProduct(DPDForce.array() /
+                               f.vpg->vertexDualAreas.raw().array(),
+                           vertexAngleNormal_e) +
       (physicalForceVec.array().colwise() /
        f.vpg->vertexDualAreas.raw().array())
           .matrix();
@@ -187,5 +190,5 @@ void VelocityVerlet::march() {
   // process the mesh with regularization or mutation
   f.processMesh();
 }
-
+} // namespace solver
 } // namespace mem3dg

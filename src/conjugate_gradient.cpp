@@ -31,6 +31,7 @@
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
 namespace gc = ::geometrycentral;
 
 bool ConjugateGradient::integrate() {
@@ -293,4 +294,5 @@ void FeedForwardSweep::sweep() {
 #endif
 }
 
+}
 } // namespace mem3dg

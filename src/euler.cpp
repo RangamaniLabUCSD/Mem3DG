@@ -28,6 +28,7 @@
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
 namespace gc = ::geometrycentral;
 
 bool Euler::integrate() {
@@ -185,5 +186,6 @@ void Euler::march() {
 
   // recompute cached values
   f.updateVertexPositions(false);
+}
 }
 } // namespace mem3dg

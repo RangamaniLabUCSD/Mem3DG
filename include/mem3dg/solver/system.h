@@ -38,78 +38,20 @@
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/utilities/vector2.h"
 #include "geometrycentral/utilities/vector3.h"
+
 #include "mem3dg/constants.h"
 #include "mem3dg/macros.h"
-#include "mem3dg/solver/mesh.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/mesh_io.h"
+#include "mem3dg/solver/mesh_mutator.h"
 #include "mem3dg/type_utilities.h"
-
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
 
-struct DLL_PUBLIC MeshMutator {
-  /// flip non-delaunay edge
-  bool flipNonDelaunay = false;
-  /// whether require flatness condition when flipping non-Delaunay edge
-  bool flipNonDelaunayRequireFlat = false;
-
-  /// split edge with large faces
-  bool splitLarge = false;
-  /// split long edge
-  bool splitLong = false;
-  /// split edge on high curvature domain
-  bool splitCurved = false;
-  /// split edge with sharp membrane property change
-  bool splitSharp = false;
-  /// split obtuse triangle
-  bool splitFat = false;
-  /// split poor aspected triangle that is still Delaunay
-  bool splitSkinnyDelaunay = false;
-
-  /// collapse skinny triangles
-  bool collapseSkinny = false;
-  /// collapse small triangles
-  bool collapseSmall = false;
-  /// whether require flatness condition when collapsing small edge
-  bool collapseSmallNeedFlat = false;
-
-  /// tolerance for curvature approximation
-  double curvTol = 0.0012;
-  /// target face area
-  double targetFaceArea = 0.001;
-
-  MeshMutator() {}
-  ~MeshMutator() {}
-
-  /**
-   * @brief return condition of edge flip
-   */
-  bool ifFlip(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  /**
-   * @brief return condition of edge split
-   */
-  bool ifSplit(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  /**
-   * @brief return condition of edge collapse
-   */
-  bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  void maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
-                          const gcs::Vertex v);
-
-  void neighborAreaSum(const gcs::Edge e,
-                       const gcs::VertexPositionGeometry &vpg, double &area,
-                       std::size_t &num_neighbor);
-
-  double
-  computeCurvatureThresholdLength(const gcs::Edge e,
-                                  const gcs::VertexPositionGeometry &vpg);
-};
+namespace solver {
 
 struct Forces {
   /// Cached mesh of interest
@@ -311,10 +253,12 @@ struct Forces {
   }
 
   inline EigenVectorX3dr addNormal(EigenVectorX1d &vector) {
-    return rowwiseScalarProduct(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return rowwiseScalarProduct(vector,
+                                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
   inline EigenVectorX3dr addNormal(EigenVectorX1d &&vector) {
-    return rowwiseScalarProduct(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+    return rowwiseScalarProduct(vector,
+                                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
 
   inline gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
@@ -582,7 +526,8 @@ public:
    * @param nSub          Number of subdivision
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, std::size_t nSub)
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+         std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub)) {
 
     // Initialize reference values
@@ -1194,4 +1139,5 @@ public:
   void globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
                        double stepSize = 1);
 };
+} // namespace solver
 } // namespace mem3dg

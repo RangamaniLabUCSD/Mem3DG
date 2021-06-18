@@ -70,7 +70,7 @@ struct DLL_PUBLIC Quantities {
 /**
  * @brief visualize system object
  */
-DLL_PUBLIC void visualize(mem3dg::System &f);
+DLL_PUBLIC void visualize(mem3dg::solver::System &f);
 
 /**
  * @brief Visualize .ply file in polysope with options of additional quantities
@@ -140,13 +140,13 @@ getCountQuantities(gc::VertexData<int> &&meshData);
 /**
  * @brief Play the next frame of the NetCDF trajectory file
  */
-void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::TrajFile &fd,
+void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::TrajFile &fd,
           int &idx, int &waitTime, const Quantities options, bool &toggle);
 
 /**
  * @brief Register Polyscope surface mesh from certain frame of the NetCDF
  * trajectory file with options of data quantities
  */
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd, int idx,
                                             const Quantities &options);
 #endif

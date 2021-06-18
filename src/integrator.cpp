@@ -24,9 +24,9 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
-using namespace std;
 
 namespace mem3dg {
+namespace solver {
 
 double Integrator::backtrack(
     const double energy_pre,
@@ -601,18 +601,18 @@ void Integrator::markFileName(std::string marker_str) {
   const char *ext = strchr(file, '.');
 
   // name fileMarked to be the file name
-  strncpy(fileMarked, file, ext - file);
+  std::strncpy(fileMarked, file, ext - file);
 
   // name fileMarked to be file name + the marker + extension
-  strcat(fileMarked, marker);
-  strcat(fileMarked, ext);
+  std::strcat(fileMarked, marker);
+  std::strcat(fileMarked, ext);
   fileMarked[ext - file + sizeof(marker) + sizeof(ext)] = '\0';
 
   // append the directory path and copy to oldNC and newNC
-  strcpy(oldNC, dirPath.c_str());
-  strcpy(newNC, dirPath.c_str());
-  strcat(oldNC, file);
-  strcat(newNC, fileMarked);
+  std::strcpy(oldNC, dirPath.c_str());
+  std::strcpy(newNC, dirPath.c_str());
+  std::strcat(oldNC, file);
+  std::strcat(newNC, fileMarked);
 
   // rename file
   rename(oldNC, newNC);
@@ -682,7 +682,7 @@ void Integrator::saveNetcdfData() {
 #endif
 
 void Integrator::getParameterLog(std::string inputMesh) {
-  ofstream myfile(outputDir + "/parameter.txt");
+  std::ofstream myfile(outputDir + "/parameter.txt");
   if (myfile.is_open()) {
     myfile << "Mem3DG Version: " << MEM3DG_VERSION << "\n";
     myfile << "Input Mesh:     " << inputMesh << "\n";
@@ -713,14 +713,14 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile.close();
 
   } else
-    cout << "Unable to open file";
+    std::cout << "Unable to open file";
 }
 
 void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
                               double areaError, double volumeError,
                               double bendingError, double faceError,
                               std::string inputMesh) {
-  ofstream myfile(nameOfFile);
+  std::ofstream myfile(nameOfFile);
   if (myfile.is_open()) {
     myfile << "Input Mesh: " << inputMesh << "\n";
     myfile << "Final parameter: \n";
@@ -791,7 +791,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
 
     myfile.close();
   } else
-    cout << "Unable to open file";
+    std::cout << "Unable to open file";
 }
 
+} // namespace solver
 } // namespace mem3dg
