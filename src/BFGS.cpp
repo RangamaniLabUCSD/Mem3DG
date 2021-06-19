@@ -123,7 +123,7 @@ void BFGS::status() {
 
   // update
   if (f.time != init_time || ifRestart) {
-    EigenVectorX1d y = -f.F.flatten(physicalForceVec) + pastPhysicalForce;
+    EigenVectorX1d y = -flatten(physicalForceVec) + pastPhysicalForce;
     double sTy = (s.transpose() * y);
     hess_inv +=
         (s * s.transpose()) * (sTy + y.transpose() * hess_inv * y) / sTy / sTy -
@@ -140,10 +140,10 @@ void BFGS::status() {
                          s_protein * y_protein.transpose() * hess_inv_protein) /
                             sTy_protein;
   }
-  pastPhysicalForce = f.F.flatten(physicalForceVec);
+  pastPhysicalForce = flatten(physicalForceVec);
   pastPhysicalForce_protein = f.F.chemicalPotential.raw();
   // std::cout << "if equal: "
-  //           << (f.F.unflatten(f.F.flatten(physicalForceVec)).array() ==
+  //           << (f.F.unflatten(flatten(physicalForceVec)).array() ==
   //               physicalForceVec.array())
   //           << std::endl;
 
@@ -193,7 +193,7 @@ void BFGS::march() {
     auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
     auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
-    vel_e = f.F.unflatten(hess_inv * f.F.flatten(physicalForceVec));
+    vel_e = f.F.unflatten(hess_inv * flatten(physicalForceVec));
     vel_protein_e = hess_inv_protein * f.F.chemicalPotential.raw();
 
     // adjust time step if adopt adaptive time step based on mesh size
@@ -208,7 +208,7 @@ void BFGS::march() {
     // time stepping on vertex position
     previousE = f.E;
     double alpha = backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
-    s = alpha * f.F.flatten(vel_e);
+    s = alpha * flatten(vel_e);
     s_protein = alpha * vel_protein_e;
 
     // regularization
