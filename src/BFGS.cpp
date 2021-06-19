@@ -143,7 +143,7 @@ void BFGS::status() {
   pastPhysicalForce = flatten(physicalForceVec);
   pastPhysicalForce_protein = f.F.chemicalPotential.raw();
   // std::cout << "if equal: "
-  //           << (f.F.unflatten(flatten(physicalForceVec)).array() ==
+  //           << (unflatten<3>(flatten(physicalForceVec)).array() ==
   //               physicalForceVec.array())
   //           << std::endl;
 
@@ -193,7 +193,7 @@ void BFGS::march() {
     auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
     auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
-    vel_e = f.F.unflatten(hess_inv * flatten(physicalForceVec));
+    vel_e = unflatten<3>((hess_inv * flatten(physicalForceVec)).eval());
     vel_protein_e = hess_inv_protein * f.F.chemicalPotential.raw();
 
     // adjust time step if adopt adaptive time step based on mesh size

@@ -130,22 +130,6 @@ struct Forces {
   // =============      Data interop helpers    ===============
   // ==========================================================
   /**
-   * @brief Return colwise unflattened matrix of the vector
-   */
-  inline auto unflatten(EigenVectorX1d &vector) {
-    Eigen::Map<
-        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        matrix(vector.data(), vector.size() / 3, 3);
-    return matrix;
-  }
-  inline auto unflatten(EigenVectorX1d &&vector) {
-    Eigen::Map<
-        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        matrix(vector.data(), vector.size() / 3, 3);
-    return matrix;
-  }
-
-  /**
    * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
    * scaler values
    */
