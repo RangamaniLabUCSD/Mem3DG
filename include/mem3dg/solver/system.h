@@ -130,20 +130,6 @@ struct Forces {
   // =============      Data interop helpers    ===============
   // ==========================================================
   /**
-   * @brief Return colwise flattened vector of the matrix
-   */
-  inline auto flatten(EigenVectorX3dr &matrix) {
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
-                                                                matrix.size());
-    return vector;
-  }
-  inline auto flatten(EigenVectorX3dr &&matrix) {
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
-                                                                matrix.size());
-    return vector;
-  }
-
-  /**
    * @brief Return colwise unflattened matrix of the vector
    */
   inline auto unflatten(EigenVectorX1d &vector) {

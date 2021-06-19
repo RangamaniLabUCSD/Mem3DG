@@ -37,8 +37,7 @@ using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenVectorX3u =
-    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
+using EigenVectorX3u = Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
 
 /// Type alias for aligned vectors
 template <typename T>
@@ -117,7 +116,7 @@ auto rowwiseScalarProduct(const Eigen::DenseBase<VectorType> &A,
  * Note that this function does not return a result of an intermediate Eigen
  * operation. Owing to some limitations, we return an evaluated temporary.
  *
- * 
+ *
  * @tparam Derived  Template type value of the matrices
  * @param A         Matrix A
  * @param B         Matrix B
@@ -143,13 +142,15 @@ rowwiseCrossProduct(const Eigen::DenseBase<Derived> &A,
 // rowwiseCrossProduct(const Eigen::Ref<const EigenVectorX3dr> &A,
 //                     const Eigen::Ref<const EigenVectorX3dr> &B) {
 //   if (A.rows() != B.rows()) {
-//     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A", B.rows(),
+//     mem3dg_runtime_error("Mismatched rows, ", A.rows(), " rows in A",
+//     B.rows(),
 //                          " in B, for rowwise cross product");
 //   }
 //   EigenVectorX3dr C;
 //   C.resize(A.rows(), 3);
 //   for (std::size_t i = 0; i < A.rows(); i++) {
-//     C.row(i) = (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
+//     C.row(i) =
+//     (A.derived().matrix().row(i)).cross(B.derived().matrix().row(i));
 //   }
 //   return C;
 // }
@@ -273,4 +274,38 @@ ConstAlignedEigenMap_T<T, 1> FlattenedEigenMap(const AlignedVector_T<O> &vec) {
   return ConstAlignedEigenMap_T<T, 1>(reinterpret_cast<const T *>(vec.data()),
                                       k * vec.size());
 }
+
+/**
+ * @brief Flatten a NxK row matrix into KNx1
+ *
+ * @tparam Derived Typename of the Eigen dense type
+ * @param matrix   The data
+ * @return AlignedEigenMap_T<typename Derived::Scalar, 1> Flattened result
+ */
+template <typename Derived>
+AlignedEigenMap_T<typename Derived::Scalar, 1, Eigen::ColMajor>
+flatten(Eigen::DenseBase<Derived> &matrix) {
+  static_assert((Derived::PlainMatrix::Options & Eigen::RowMajor) == 1,
+                "Input must be in row-major order");
+  return AlignedEigenMap_T<typename Derived::Scalar, 1, Eigen::ColMajor>(
+      matrix.derived().data(), matrix.derived().size());
+}
+
+/**
+ * @brief  Flatten a NxK row matrix into KNx1
+ *
+ * @tparam Derived  Typename of the Eigen dense type
+ * @param matrix    The data
+ * @return ConstAlignedEigenMap_T<typename Derived::Scalar, 1, Eigen::ColMajor>
+ * Flattened result
+ */
+template <typename Derived>
+ConstAlignedEigenMap_T<typename Derived::Scalar, 1, Eigen::ColMajor>
+flatten(const Eigen::DenseBase<const Derived> &matrix) {
+  static_assert((Derived::PlainMatrix::Options & Eigen::RowMajor) == 1,
+                "Input must be in row-major order");
+  return ConstAlignedEigenMap_T<typename Derived::Scalar, 1, Eigen::ColMajor>(
+      matrix.derived().data(), matrix.derived().size());
+}
+
 } // namespace mem3dg
