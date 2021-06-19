@@ -119,8 +119,6 @@ void Euler::checkParameters() {
 }
 
 void Euler::status() {
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
-
   // compute summerized forces
   getForces();
 
@@ -152,29 +150,30 @@ void Euler::status() {
 void Euler::march() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
   auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
 
   // compute force, which is equivalent to velocity
   vel_e = physicalForceVec;
+  vel_protein_e = f.P.Bc * f.F.chemicalPotential.raw();
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
     dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.O.isShapeVariation
-              ? physicalForce.cwiseAbs().maxCoeff()
-              : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
+         (f.O.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
+                               : vel_protein_e.cwiseAbs().maxCoeff());
   }
 
   // time stepping on vertex position
   previousE = f.E;
   if (isBacktrack) {
-    backtrack(f.E.potE, vel_e, f.F.chemicalPotential.raw(), rho, c1);
+    backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
   } else {
     pos_e += vel_e * dt;
-    f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
+    f.proteinDensity.raw() += vel_protein_e * dt;
     f.time += dt;
   }
 

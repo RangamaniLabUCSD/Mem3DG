@@ -164,6 +164,7 @@ void VelocityVerlet::march() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
   // adjust time step if adopt adaptive time step based on mesh size
@@ -184,7 +185,8 @@ void VelocityVerlet::march() {
 
   // time stepping on protein density
   if (f.O.isProteinVariation) {
-    f.proteinDensity.raw() += f.P.Bc * f.F.chemicalPotential.raw() * dt;
+    vel_protein_e = f.P.Bc * f.F.chemicalPotential.raw();
+    f.proteinDensity.raw() += vel_protein_e * dt;
   }
 
   // process the mesh with regularization or mutation
