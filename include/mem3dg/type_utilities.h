@@ -23,6 +23,8 @@
 #include <Eigen/Core>
 
 #include <geometrycentral/surface/surface_mesh.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector3.h>
 
 #include "mem3dg/macros.h"
 
@@ -325,4 +327,11 @@ unflatten(const Eigen::DenseBase<Derived> &matrix) {
   return ConstAlignedEigenMap_T<typename Derived::Scalar, k, Eigen::RowMajor>(
       matrix.derived().data(), matrix.derived().size() / k, k);
 }
+
+inline auto toMatrix(gcs::VertexData<gc::Vector3> &vector) {
+  return gc::EigenMap<double, 3>(vector);
+}
+
+inline auto toMatrix(gcs::VertexData<double> &vector) { return vector.raw(); }
+
 } // namespace mem3dg

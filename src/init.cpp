@@ -61,7 +61,7 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
     throw std::logic_error(
         "protein0 has to be disabled (=[-1]) for continuing simulations!");
   }
-  F.toMatrix(vel) = fd.getVelocity(startingFrame);
+  toMatrix(vel) = fd.getVelocity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 }
 
@@ -256,7 +256,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
     // write bool
     gcs::VertexData<double> msk(*mesh);
-    msk.fromVector(F.toMatrix(F.forceMask).rowwise().sum());
+    msk.fromVector(toMatrix(F.forceMask).rowwise().sum());
     richData.addVertexProperty("force_mask", msk);
     richData.addVertexProperty("protein_mask", F.proteinMask);
     gcs::VertexData<double> smthingMsk(*mesh);

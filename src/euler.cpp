@@ -150,10 +150,10 @@ void Euler::status() {
 void Euler::march() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
+  auto vel_protein_e = toMatrix(f.vel_protein);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
 
   // compute force, which is equivalent to velocity
   vel_e = physicalForceVec;

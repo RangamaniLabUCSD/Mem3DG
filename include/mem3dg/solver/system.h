@@ -131,21 +131,6 @@ struct Forces {
   // ==========================================================
   // =============      Data interop helpers    ===============
   // ==========================================================
-  /**
-   * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
-   * scaler values
-   */
-  inline auto toMatrix(gcs::VertexData<gc::Vector3> &vector) {
-    return gc::EigenMap<double, 3>(vector);
-  }
-  inline auto toMatrix(gcs::VertexData<gc::Vector3> &&vector) {
-    return gc::EigenMap<double, 3>(vector);
-  }
-
-  inline auto toMatrix(gcs::VertexData<double> &vector) { return vector.raw(); }
-  inline auto toMatrix(gcs::VertexData<double> &&vector) {
-    return vector.raw();
-  }
 
   /**
    * @brief Return constructed vertexData that from Eigen matrix or vector
