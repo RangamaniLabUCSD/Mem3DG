@@ -135,7 +135,7 @@ void ConjugateGradient::checkParameters() {
 }
 
 void ConjugateGradient::status() {
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
 
   // compute summerized forces
   getForces();
@@ -166,11 +166,11 @@ void ConjugateGradient::status() {
 
 void ConjugateGradient::march() {
   // map the raw eigen datatype for computation
-  auto vel_e = f.F.toMatrix(f.vel);
-  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
-  auto pos_e = f.F.toMatrix(f.vpg->inputVertexPositions);
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto vel_e = toMatrix(f.vel);
+  auto vel_protein_e = toMatrix(f.vel_protein);
+  auto pos_e = toMatrix(f.vpg->inputVertexPositions);
+  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
   // typedef gc::EigenVectorMap_T<double, 3,
   // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3
   // Map3 = gc::EigenMap<double, 3>;

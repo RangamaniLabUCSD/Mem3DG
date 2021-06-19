@@ -396,41 +396,41 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    */
   forces.def(
       "getBendingForce",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec); },
+      [](Forces &s) { return toMatrix(s.bendingForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the bending force of the system
       )delim");
   forces.def(
       "getCapillaryForce",
-      [](Forces &s) { return s.toMatrix(s.capillaryForceVec); },
+      [](Forces &s) { return toMatrix(s.capillaryForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the tension-induced capillary Force
       )delim");
   forces.def(
       "getLineCapillaryForce",
-      [](Forces &s) { return s.toMatrix(s.lineCapillaryForceVec); },
+      [](Forces &s) { return toMatrix(s.lineCapillaryForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interfacial line tension
       )delim");
   forces.def(
-      "getExternalForce", [](Forces &s) { return s.toMatrix(s.externalForce); },
+      "getExternalForce", [](Forces &s) { return toMatrix(s.externalForce); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the externally-applied Force
       )delim");
   forces.def(
       "getOsmoticForce",
-      [](Forces &s) { return s.toMatrix(s.osmoticForceVec); },
+      [](Forces &s) { return toMatrix(s.osmoticForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the osmotic force
       )delim");
   forces.def(
       "getAdsorptionForce",
-      [](Forces &s) { return s.toMatrix(s.adsorptionForceVec); },
+      [](Forces &s) { return toMatrix(s.adsorptionForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the adsorption force
@@ -441,35 +441,35 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    */
   forces.def(
       "getBendingPotential",
-      [](Forces &s) { return s.toMatrix(s.bendingPotential); },
+      [](Forces &s) { return toMatrix(s.bendingPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the bending potential
       )delim");
   forces.def(
       "getInteriorPenaltyPotential",
-      [](Forces &s) { return s.toMatrix(s.interiorPenaltyPotential); },
+      [](Forces &s) { return toMatrix(s.interiorPenaltyPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interior point potential
       )delim");
   forces.def(
       "getAdsorptionPotential",
-      [](Forces &s) { return s.toMatrix(s.adsorptionPotential); },
+      [](Forces &s) { return toMatrix(s.adsorptionPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the adsorption potential
       )delim");
   forces.def(
       "getDiffusionPotential",
-      [](Forces &s) { return s.toMatrix(s.diffusionPotential); },
+      [](Forces &s) { return toMatrix(s.diffusionPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the diffusion Potential
       )delim");
   forces.def(
       "getChemicalPotential",
-      [](Forces &s) { return s.toMatrix(s.chemicalPotential); },
+      [](Forces &s) { return toMatrix(s.chemicalPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the chemical Potential

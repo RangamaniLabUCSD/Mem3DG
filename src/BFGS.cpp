@@ -115,8 +115,8 @@ void BFGS::checkParameters() {
 }
 
 void BFGS::status() {
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
 
   // compute summerized forces
   getForces();
@@ -188,10 +188,10 @@ void BFGS::march() {
     hess_inv_protein.setIdentity();
   } else {
     // map the raw eigen datatype for computation
-    auto vel_e = f.F.toMatrix(f.vel);
-    auto vel_protein_e = f.F.toMatrix(f.vel_protein);
-    auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-    auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+    auto vel_e = toMatrix(f.vel);
+    auto vel_protein_e = toMatrix(f.vel_protein);
+    auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
+    auto physicalForce = toMatrix(f.F.mechanicalForce);
 
     vel_e = unflatten<3>((hess_inv * flatten(physicalForceVec)).eval());
     vel_protein_e = hess_inv_protein * f.F.chemicalPotential.raw();

@@ -649,7 +649,7 @@ void System::computePhysicalForces() {
 
   // compute the mechanical error norm
   mechErrorNorm =
-      O.isShapeVariation ? computeNorm(F.toMatrix(F.mechanicalForceVec)) : 0;
+      O.isShapeVariation ? computeNorm(toMatrix(F.mechanicalForceVec)) : 0;
 
   // compute the chemical error norm
   chemErrorNorm =

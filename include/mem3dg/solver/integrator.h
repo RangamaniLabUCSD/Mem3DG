@@ -131,7 +131,7 @@ public:
     // Initialize the initial maxForce
     getForces();
     maxForce = f.O.isShapeVariation
-                   ? f.F.toMatrix(f.F.mechanicalForce).cwiseAbs().maxCoeff()
+                   ? toMatrix(f.F.mechanicalForce).cwiseAbs().maxCoeff()
                    : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
