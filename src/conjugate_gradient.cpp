@@ -117,15 +117,15 @@ void ConjugateGradient::checkParameters() {
     throw std::runtime_error("DPD has to be turned off for CG integration!");
   }
   if (f.P.Bc != 1 && f.P.Bc != 0) {
-    throw std::runtime_error(
-        "Binding constant should be set to 1 for optimization!");
+    throw std::runtime_error("Protein mobility constant should "
+                             "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
       throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
   }
-  if (restartNum < 1){
+  if (restartNum < 1) {
     throw std::runtime_error("restartNum > 0!");
   }
   // if (f.O.isVertexShift) {
@@ -182,7 +182,7 @@ void ConjugateGradient::march() {
         (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
                                 : 0);
     vel_e = physicalForceVec;
-    vel_protein_e = f.F.chemicalPotential.raw();
+    vel_protein_e = f.P.Bc * f.F.chemicalPotential.raw();
     countCG = 1;
   } else {
     currentNormSq =
@@ -192,7 +192,7 @@ void ConjugateGradient::march() {
     vel_e *= currentNormSq / pastNormSq;
     vel_e += physicalForceVec;
     vel_protein_e *= currentNormSq / pastNormSq;
-    vel_protein_e += f.F.chemicalPotential.raw();
+    vel_protein_e += f.P.Bc * f.F.chemicalPotential.raw();
     pastNormSq = currentNormSq;
     countCG++;
   }
@@ -201,9 +201,8 @@ void ConjugateGradient::march() {
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
     dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.O.isShapeVariation
-              ? physicalForce.cwiseAbs().maxCoeff()
-              : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
+         (f.O.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
+                               : vel_protein_e.cwiseAbs().maxCoeff());
   }
 
   // time stepping on vertex position
@@ -212,7 +211,7 @@ void ConjugateGradient::march() {
     backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
   } else {
     pos_e += vel_e * dt;
-    f.proteinDensity.raw() += f.P.Bc * vel_protein_e * dt;
+    f.proteinDensity.raw() += vel_protein_e * dt;
     f.time += dt;
   }
 

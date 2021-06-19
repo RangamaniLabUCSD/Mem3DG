@@ -109,6 +109,8 @@ struct Forces {
 
   /// force mask
   gcs::VertexData<gc::Vector3> forceMask;
+  /// protein mask
+  gcs::VertexData<double> proteinMask;
 
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
       : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
@@ -122,7 +124,7 @@ struct Forces {
         dampingForce(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
         bendingPotential(mesh, 0), adsorptionPotential(mesh, 0),
         diffusionPotential(mesh, 0), chemicalPotential(mesh, 0),
-        forceMask(mesh, {1.0, 1.0, 1.0}) {}
+        forceMask(mesh, {1.0, 1.0, 1.0}), proteinMask(mesh, 1) {}
 
   ~Forces() {}
 
@@ -270,7 +272,7 @@ struct Forces {
    * @brief Find the masked force
    */
   inline gcs::VertexData<gc::Vector3>
-  mask(gcs::VertexData<gc::Vector3> &vector) {
+  maskForce(gcs::VertexData<gc::Vector3> &vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData).array() =
         gc::EigenMap<double, 3>(vector).array() *
@@ -278,26 +280,54 @@ struct Forces {
     return vertexData;
   }
   inline gcs::VertexData<gc::Vector3>
-  mask(gcs::VertexData<gc::Vector3> &&vector) {
+  maskForce(gcs::VertexData<gc::Vector3> &&vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData).array() =
         gc::EigenMap<double, 3>(vector).array() *
         gc::EigenMap<double, 3>(forceMask).array();
     return vertexData;
   }
-  inline EigenVectorX3dr mask(EigenVectorX3dr &vector) {
+  inline EigenVectorX3dr maskForce(EigenVectorX3dr &vector) {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
-  inline EigenVectorX3dr mask(EigenVectorX3dr &&vector) {
+  inline EigenVectorX3dr maskForce(EigenVectorX3dr &&vector) {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
-  inline gc::Vector3 mask(gc::Vector3 &vector, gc::Vertex &v) {
+  inline gc::Vector3 maskForce(gc::Vector3 &vector, gc::Vertex &v) {
     return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
                        vector.z * forceMask[v].z};
   }
-  inline gc::Vector3 mask(gc::Vector3 &&vector, gc::Vertex &v) {
+  inline gc::Vector3 maskForce(gc::Vector3 &&vector, gc::Vertex &v) {
     return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
                        vector.z * forceMask[v].z};
+  }
+
+  /**
+   * @brief Find the masked chemical potential
+   */
+  inline gcs::VertexData<double> maskProtein(gcs::VertexData<double> &potential) {
+    gcs::VertexData<double> vertexData(mesh);
+    toMatrix(vertexData).array() =
+        toMatrix(potential).array() * toMatrix(proteinMask).array();
+    return vertexData;
+  }
+  inline gcs::VertexData<double> maskProtein(gcs::VertexData<double> &&potential) {
+    gcs::VertexData<double> vertexData(mesh);
+    toMatrix(vertexData).array() =
+        toMatrix(potential).array() * toMatrix(proteinMask).array();
+    return vertexData;
+  }
+  inline EigenVectorX1d maskProtein(EigenVectorX1d &potential) {
+    return potential.array() * toMatrix(proteinMask).array();
+  }
+  inline EigenVectorX1d maskProtein(EigenVectorX1d &&potential) {
+    return potential.array() * toMatrix(proteinMask).array();
+  }
+  inline double maskProtein(double &potential, gc::Vertex &v) {
+    return potential * proteinMask[v];
+  }
+  inline double maskProtein(double &&potential, gc::Vertex &v) {
+    return potential * proteinMask[v];
   }
 };
 
@@ -353,7 +383,7 @@ struct Parameters {
   /// augmented Lagrangian parameter for volume
   double lambdaV = 0;
   /// interior point parameter for protein density
-  double lambdaPhi = 1e-7;
+  double lambdaPhi = 1e-9;
   /// sharpness of tanh transition
   double sharpness = 20;
   /// type of relation between H0 and protein density, "linear" or "hill"
@@ -404,8 +434,10 @@ struct Options {
   bool isCollapseEdge = false;
   /// Whether floating "the" vertex
   bool isFloatVertex = false;
-  /// Boundary condition: roller, pin, fixed, none
-  std::string boundaryConditionType = "none";
+  /// shape boundary condition: roller, pin, fixed, none
+  std::string shapeBoundaryCondition = "none";
+  /// protein boundary condition: pin
+  std::string proteinBoundaryCondition = "none";
 };
 
 class DLL_PUBLIC System {
@@ -870,7 +902,7 @@ public:
    * @brief Save RichData to .ply file
    *
    */
-  void saveRichData(std::string PathToSave);
+  void saveRichData(std::string PathToSave, bool isJustGeometry = false);
 
 #ifdef MEM3DG_WITH_NETCDF
   /**

@@ -30,6 +30,13 @@ namespace gcs = ::geometrycentral::surface;
  */
 DLL_PUBLIC std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
                       Eigen::Matrix<double, Eigen::Dynamic, 3>>
+processSoup(std::string &plyName);
+
+/**
+ * @brief read vertex and face matrix from .ply file
+ */
+DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3>>
 readMesh(std::string &plyName);
 
 /**

@@ -48,7 +48,7 @@ int main() {
   p.Ksl = 1e-7;
   p.Kse = 1e-7;
   p.epsilon = -1;
-  p.Bc = -1;
+  p.Bc = 0;
   p.Kv = 1;
   p.V_res = 0;
   p.Vt = -1;

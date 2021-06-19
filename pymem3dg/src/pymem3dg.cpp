@@ -168,6 +168,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                       R"delim(
            verbosity level of integrator
       )delim");
+  euler.def_readwrite("isJustGeometryPly", &Euler::isJustGeometryPly,
+                      R"delim(
+           save .ply with just geometry
+      )delim");
   euler.def_readwrite("isBacktrack", &Euler::isBacktrack,
                       R"delim(
          whether do backtracking line search
@@ -268,6 +272,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   conjugategradient.def_readwrite("verbosity", &ConjugateGradient::verbosity,
                                   R"delim(
            verbosity level of integrator
+      )delim");
+  conjugategradient.def_readwrite("isJustGeometryPly",
+                                  &ConjugateGradient::isJustGeometryPly,
+                                  R"delim(
+           save .ply with just geometry
       )delim");
   conjugategradient.def_readwrite("isBacktrack",
                                   &ConjugateGradient::isBacktrack,
@@ -848,6 +857,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    * @brief Method: I/O
    */
   system.def("saveRichData", &System::saveRichData, py::arg("pathToSave"),
+             py::arg("isJustGeometry") = false,
              R"delim(
           save snapshot data to directory
       )delim");
@@ -900,10 +910,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether have "the" vertex floating in embedded space
       )delim");
-  options.def_readwrite("boundaryConditionType",
-                        &Options::boundaryConditionType,
+  options.def_readwrite("shapeBoundaryCondition",
+                        &Options::shapeBoundaryCondition,
                         R"delim(
-          get the option of "roller", "pin", "fixed", or "none" to specify boundary condition.
+          get the option of "roller", "pin", "fixed", or "none" to specify shape boundary condition.
+      )delim");
+  options.def_readwrite("proteinBoundaryCondition",
+                        &Options::proteinBoundaryCondition,
+                        R"delim(
+          get the option of "pin", or "none" to specify protein boundary condition.
       )delim");
 
   // ==========================================================
@@ -982,11 +997,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   parameters.def_readwrite("epsilon", &Parameters::epsilon,
                            R"delim(
-          get binding energy per protein
+          get adsorption energy per protein
       )delim");
   parameters.def_readwrite("Bc", &Parameters::Bc,
                            R"delim(
-          get binding constant 
+          get protein mobility constant 
       )delim");
   parameters.def_readwrite("gamma", &Parameters::gamma,
                            R"delim(
@@ -1279,6 +1294,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::overload_cast<std::string &, std::string &, std::string &>(&readData),
       "read data in the format of matrix from .ply file", py::arg("plyName"),
       py::arg("elementName"), py::arg("propertyName"));
+
+  pymem3dg.def("processSoup", &processSoup, "process polygon soup",
+               py::arg("meshName"));
 
   // ==========================================================
   // =============   Simulation drivers         ===============

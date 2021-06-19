@@ -14,6 +14,7 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/heat_method_distance.h"
+#include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/meshops.h"
@@ -241,51 +242,57 @@ void System::mapContinuationVariables(std::string plyFile) {
   }
 }
 
-void System::saveRichData(std::string PathToSave) {
-  gcs::RichSurfaceMeshData richData(*mesh);
-  richData.addMeshConnectivity();
-  richData.addGeometry(*vpg);
+void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
-  // write protein distribution
-  richData.addVertexProperty("protein_density", proteinDensity);
+  if (isJustGeometry) {
+    gcs::writeSurfaceMesh(*mesh, *vpg, PathToSave);
+  } else {
+    gcs::RichSurfaceMeshData richData(*mesh);
+    richData.addMeshConnectivity();
+    richData.addGeometry(*vpg);
 
-  // write bool
-  gcs::VertexData<double> msk(*mesh);
-  msk.fromVector(F.toMatrix(F.forceMask).rowwise().sum());
-  richData.addVertexProperty("mask", msk);
-  gcs::VertexData<double> smthingMsk(*mesh);
-  smthingMsk.fromVector(smoothingMask.raw().cast<double>());
-  richData.addVertexProperty("smoothing_mask", smthingMsk);
-  gcs::VertexData<double> tkr(*mesh);
-  tkr.fromVector(thePointTracker.raw().cast<double>());
-  richData.addVertexProperty("the_point", tkr);
+    // write protein distribution
+    richData.addVertexProperty("protein_density", proteinDensity);
 
-  // write geometry
-  gcs::VertexData<double> meanCurv(*mesh);
-  meanCurv.fromVector(vpg->vertexMeanCurvatures.raw().array() /
-                      vpg->vertexDualAreas.raw().array());
-  richData.addVertexProperty("mean_curvature", meanCurv);
-  gcs::VertexData<double> gaussCurv(*mesh);
-  gaussCurv.fromVector(vpg->vertexGaussianCurvatures.raw().array() /
-                       vpg->vertexDualAreas.raw().array());
-  richData.addVertexProperty("gauss_curvature", gaussCurv);
-  richData.addVertexProperty("spon_curvature", H0);
+    // write bool
+    gcs::VertexData<double> msk(*mesh);
+    msk.fromVector(F.toMatrix(F.forceMask).rowwise().sum());
+    richData.addVertexProperty("force_mask", msk);
+    richData.addVertexProperty("protein_mask", F.proteinMask);
+    gcs::VertexData<double> smthingMsk(*mesh);
+    smthingMsk.fromVector(smoothingMask.raw().cast<double>());
+    richData.addVertexProperty("smoothing_mask", smthingMsk);
+    gcs::VertexData<double> tkr(*mesh);
+    tkr.fromVector(thePointTracker.raw().cast<double>());
+    richData.addVertexProperty("the_point", tkr);
 
-  // write pressures
-  richData.addVertexProperty("bending_force", F.bendingForce);
-  richData.addVertexProperty("capillary_force", F.capillaryForce);
-  richData.addVertexProperty("line_tension_force", F.lineCapillaryForce);
-  richData.addVertexProperty("osmotic_force", F.osmoticForce);
-  richData.addVertexProperty("external_force", F.externalForce);
-  richData.addVertexProperty("physical_force", F.mechanicalForce);
+    // write geometry
+    gcs::VertexData<double> meanCurv(*mesh);
+    meanCurv.fromVector(vpg->vertexMeanCurvatures.raw().array() /
+                        vpg->vertexDualAreas.raw().array());
+    richData.addVertexProperty("mean_curvature", meanCurv);
+    gcs::VertexData<double> gaussCurv(*mesh);
+    gaussCurv.fromVector(vpg->vertexGaussianCurvatures.raw().array() /
+                         vpg->vertexDualAreas.raw().array());
+    richData.addVertexProperty("gauss_curvature", gaussCurv);
+    richData.addVertexProperty("spon_curvature", H0);
 
-  // write chemical potential
-  richData.addVertexProperty("diffusion_potential", F.diffusionPotential);
-  richData.addVertexProperty("bending_potential", F.bendingPotential);
-  richData.addVertexProperty("adsorption_potential", F.adsorptionPotential);
-  richData.addVertexProperty("chemical_potential", F.chemicalPotential);
+    // write pressures
+    richData.addVertexProperty("bending_force", F.bendingForce);
+    richData.addVertexProperty("capillary_force", F.capillaryForce);
+    richData.addVertexProperty("line_tension_force", F.lineCapillaryForce);
+    richData.addVertexProperty("osmotic_force", F.osmoticForce);
+    richData.addVertexProperty("external_force", F.externalForce);
+    richData.addVertexProperty("physical_force", F.mechanicalForce);
 
-  richData.write(PathToSave);
+    // write chemical potential
+    richData.addVertexProperty("diffusion_potential", F.diffusionPotential);
+    richData.addVertexProperty("bending_potential", F.bendingPotential);
+    richData.addVertexProperty("adsorption_potential", F.adsorptionPotential);
+    richData.addVertexProperty("chemical_potential", F.chemicalPotential);
+
+    richData.write(PathToSave);
+  }
 }
 
 void System::checkParametersAndOptions() {
@@ -296,8 +303,7 @@ void System::checkParametersAndOptions() {
   if (P.protein0.rows() == 1 && P.protein0[0] == -1) {
     std::cout << "Disable protein init, expect continuation simulation."
               << std::endl;
-  } else if (P.protein0.rows() == 1 && P.protein0[0] >= 0 &&
-             P.protein0[0] <= 1) {
+  } else if (P.protein0.rows() == 1 && P.protein0[0] > 0 && P.protein0[0] < 1) {
     if (!O.isProteinVariation) {
       if (P.protein0[0] != 1 || P.Kb != 0 || P.eta != 0 || P.epsilon != 0) {
         throw std::logic_error(
@@ -308,26 +314,28 @@ void System::checkParametersAndOptions() {
       }
     }
   } else if (P.protein0.rows() == 4 &&
-             (P.protein0[2] >= 0 && P.protein0[2] <= 1) &&
-             (P.protein0[3] >= 0 && P.protein0[3] <= 1) &&
+             (P.protein0[2] > 0 && P.protein0[2] < 1) &&
+             (P.protein0[3] > 0 && P.protein0[3] < 1) &&
              (P.protein0[0] > 0 && P.protein0[1] > 0)) {
     if (P.protein0[2] == P.protein0[3]) {
       throw std::logic_error(
           "Please switch to {phi} for homogeneous membrane!");
     }
   } else if (P.protein0.rows() == proteinDensity.raw().rows() &&
-             (P.protein0.array() >= 0).all() &&
-             (P.protein0.array() <= 1).all()) {
+             (P.protein0.array() > 0).all() && (P.protein0.array() < 1).all()) {
   } else {
     throw std::logic_error("protein 0 can only be specified in three ways: 1. "
-                           "length = 1, uniform {0<=phi<=1} 2. "
+                           "length = 1, uniform {0<phi<1} 2. "
                            "length = 4, geodesic disk, {r1>0, r2>0, "
-                           "0<=phi_in<=1, 0<=phi_out<=1} 3. length "
+                           "0<phi_in<1, 0<phi_out<1} 3. length "
                            "= nVertices, user defined. To disable use {-1}");
   }
   if (O.isProteinVariation != (P.Bc > 0)) {
     throw std::logic_error("Binding constant Bc has to be consistent with the "
                            "protein variation option!");
+  }
+  if (O.isProteinVariation && P.Kbc != 0){
+    std::logic_error("Kbc != 0 is currently not expected for protein variation!");
   }
 
   // boundary related
@@ -336,20 +344,31 @@ void System::checkParametersAndOptions() {
   }
   isOpenMesh = mesh->hasBoundary();
   if (isOpenMesh) {
-    if (O.boundaryConditionType != "roller" &&
-        O.boundaryConditionType != "pin" &&
-        O.boundaryConditionType != "fixed") {
-      throw std::logic_error("Boundary condition type (roller, pin or fixed) "
-                             "has not been specified for open boundary mesh!");
+    if (O.shapeBoundaryCondition != "roller" &&
+        O.shapeBoundaryCondition != "pin" &&
+        O.shapeBoundaryCondition != "fixed") {
+      std::cout << "Shape boundary condition type (roller, pin or fixed) "
+                   "has not been specified for open boundary mesh!"
+                << std::endl;
+    }
+    if (O.proteinBoundaryCondition != "pin") {
+      std::cout << "Protein boundary condition type (pin) "
+                   "has not been specified for open boundary mesh!"
+                << std::endl;
     }
   } else {
     if (P.A_res != 0 || P.V_res != 0) {
       throw std::logic_error(
           "Closed mesh can not have area and volume reservior!");
     }
-    if (O.boundaryConditionType != "none") {
+    if (O.shapeBoundaryCondition != "none") {
       throw std::logic_error(
-          "boundary condition type should be disable (= \"none\") "
+          "Shape boundary condition type should be disable (= \"none\") "
+          "for closed boundary mesh!");
+    }
+    if (O.proteinBoundaryCondition != "none") {
+      throw std::logic_error(
+          "Protein boundary condition type should be disable (= \"none\") "
           "for closed boundary mesh!");
     }
   }
@@ -503,6 +522,7 @@ void System::initConstants() {
       F.forceMask[v] = (geodesicDistanceFromPtInd[v] < P.radius)
                            ? gc::Vector3{1, 1, 1}
                            : gc::Vector3{0, 0, 0};
+      F.proteinMask[v] = (geodesicDistanceFromPtInd[v] < P.radius) ? 1 : 0;
     }
   }
 
@@ -521,7 +541,8 @@ void System::initConstants() {
 
   // Mask boundary element
   if (mesh->hasBoundary()) {
-    boundaryMask(*mesh, F.forceMask, O.boundaryConditionType);
+    boundaryForceMask(*mesh, F.forceMask, O.shapeBoundaryCondition);
+    boundaryProteinMask(*mesh, F.proteinMask, O.proteinBoundaryCondition);
   }
 
   // Explicitly cached the reference face areas data

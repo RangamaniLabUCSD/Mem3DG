@@ -100,8 +100,10 @@ public:
   /// option to scale time step according to mesh size
   bool isAdaptiveStep = true;
   /// verbosity level of integrator
-  std::size_t verbosity = 3;
-
+  size_t verbosity = 3;
+  /// just save geometry .ply file
+  bool isJustGeometryPly = false;
+  
   // ==========================================================
   // =============        Constructor            ==============
   // ==========================================================

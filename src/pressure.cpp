@@ -202,6 +202,14 @@ void System::computeVectorForces() {
       //                    vpg->vertexDualAreas[v]
       //             << std::endl;
     }
+
+    // masking
+    osmoticForceVec = F.maskForce(osmoticForceVec, v);
+    capillaryForceVec = F.maskForce(capillaryForceVec, v);
+    bendForceVec = F.maskForce(bendForceVec, v);
+    lineCapForceVec = F.maskForce(lineCapForceVec, v);
+    adsorptionForceVec = F.maskForce(adsorptionForceVec, v);
+
     // Combine to one
     F.osmoticForceVec[v] = osmoticForceVec;
     F.capillaryForceVec[v] = capillaryForceVec;
@@ -434,16 +442,17 @@ EigenVectorX1d System::computeChemicalPotential() {
             .matrix();
   }
 
-  F.adsorptionPotential.raw() = -vpg->vertexDualAreas.raw().array() * P.epsilon;
-  F.bendingPotential.raw() =
+  F.adsorptionPotential.raw() =
+      F.maskProtein(-P.epsilon * vpg->vertexDualAreas.raw().array());
+  F.bendingPotential.raw() = F.maskProtein(
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
-       2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array());
+       2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
   F.diffusionPotential.raw() =
-      -P.eta * vpg->cotanLaplacian * proteinDensity.raw();
+      F.maskProtein(-P.eta * vpg->cotanLaplacian * proteinDensity.raw());
   F.interiorPenaltyPotential.raw() =
-      P.lambdaPhi * (1 / (proteinDensity.raw().array() + 1e-4) -
-                     1 / (1 + 1e-4 - proteinDensity.raw().array()));
+      F.maskProtein(P.lambdaPhi * (1 / proteinDensity.raw().array() -
+                                   1 / (1 - proteinDensity.raw().array())));
   F.chemicalPotential.raw() =
       F.adsorptionPotential.raw() + F.bendingPotential.raw() +
       F.diffusionPotential.raw() + F.interiorPenaltyPotential.raw();
@@ -617,10 +626,9 @@ void System::computePhysicalForces() {
     if (P.Kf != 0) {
       computeExternalForce();
     }
-    F.mechanicalForceVec =
-        F.mask(F.osmoticForceVec + F.capillaryForceVec + F.bendingForceVec +
-               F.lineCapillaryForceVec + F.adsorptionForceVec +
-               F.addNormal(F.externalForce));
+    F.mechanicalForceVec = F.osmoticForceVec + F.capillaryForceVec +
+                           F.bendingForceVec + F.lineCapillaryForceVec +
+                           F.adsorptionForceVec + F.addNormal(F.externalForce);
     F.mechanicalForce = F.ontoNormal(F.mechanicalForceVec);
   }
 
