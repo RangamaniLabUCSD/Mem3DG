@@ -308,4 +308,21 @@ flatten(const Eigen::DenseBase<const Derived> &matrix) {
       matrix.derived().data(), matrix.derived().size());
 }
 
+template <std::size_t k, typename Derived>
+AlignedEigenMap_T<typename Derived::Scalar, k, Eigen::RowMajor>
+unflatten(Eigen::DenseBase<Derived> &matrix) {
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+  assert(matrix.derived().size() % k == 0);
+  return AlignedEigenMap_T<typename Derived::Scalar, k, Eigen::RowMajor>(
+      matrix.derived().data(), matrix.derived().size() / k, k);
+}
+
+template <std::size_t k, typename Derived>
+ConstAlignedEigenMap_T<typename Derived::Scalar, k, Eigen::RowMajor>
+unflatten(const Eigen::DenseBase<Derived> &matrix) {
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+  assert(matrix.derived().size() % k == 0);
+  return ConstAlignedEigenMap_T<typename Derived::Scalar, k, Eigen::RowMajor>(
+      matrix.derived().data(), matrix.derived().size() / k, k);
+}
 } // namespace mem3dg
