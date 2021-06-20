@@ -32,6 +32,10 @@ void throw_runtime_error(const char *function, const char *file, const int line,
 } // namespace internal
 } // namespace mem3dg
 
+#ifdef _MSC_VER 
+  #define __PRETTY_FUNCTION__ __FUNCSIG__ 
+#endif
+
 #define mem3dg_runtime_error(...)                                              \
   mem3dg::internal::throw_runtime_error(__PRETTY_FUNCTION__, __FILE__,         \
                                         __LINE__, __VA_ARGS__);
