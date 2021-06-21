@@ -192,7 +192,7 @@ struct Forces {
   }
 
   double ontoNormal(const gc::Vector3 &&vector, gc::Vertex &v) const {
-    return dot(vector, vpg.vertexNormals[v]);
+    return gc::dot(vector, vpg.vertexNormals[v]);
   }
 
   /**
