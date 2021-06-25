@@ -78,6 +78,13 @@ struct Forces {
 
   /// Cached bending force
   gcs::VertexData<gc::Vector3> bendingForceVec;
+  /// Cached bending force areaGrad component
+  gcs::VertexData<gc::Vector3> bendingForceVec_areaGrad;
+  /// Cached bending force gaussVec component
+  gcs::VertexData<gc::Vector3> bendingForceVec_gaussVec;
+  /// Cached bending force schlafliVec component
+  gcs::VertexData<gc::Vector3> bendingForceVec_schlafliVec;
+
   /// Cached tension-induced capillary force
   gcs::VertexData<gc::Vector3> capillaryForceVec;
   /// Cached osmotic force
@@ -115,6 +122,9 @@ struct Forces {
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
       : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
         mechanicalForceVec(mesh, {0, 0, 0}), bendingForceVec(mesh, {0, 0, 0}),
+        bendingForceVec_areaGrad(mesh, {0, 0, 0}),
+        bendingForceVec_gaussVec(mesh, {0, 0, 0}),
+        bendingForceVec_schlafliVec(mesh, {0, 0, 0}),
         capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
         adsorptionForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
