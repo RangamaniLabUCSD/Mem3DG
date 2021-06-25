@@ -402,6 +402,27 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the bending force of the system
       )delim");
   forces.def(
+      "getBendingForce_areaGrad",
+      [](Forces &s) { return s.toMatrix(s.bendingForceVec_areaGrad); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the area gradient component of the bending force of the system
+      )delim");
+  forces.def(
+      "getBendingForce_gaussVec",
+      [](Forces &s) { return s.toMatrix(s.bendingForceVec_gaussVec); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the the gaussian curvature vector component of the bending force of the system
+      )delim");
+  forces.def(
+      "getBendingForce_schlafliVec",
+      [](Forces &s) { return s.toMatrix(s.bendingForceVec_schlafliVec); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the Schlaflic (smoothing) component of the bending force of the system
+      )delim");
+  forces.def(
       "getCapillaryForce",
       [](Forces &s) { return toMatrix(s.capillaryForceVec); },
       py::return_value_policy::reference_internal,
@@ -434,6 +455,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::return_value_policy::reference_internal,
       R"delim(
           get the adsorption force
+      )delim");
+  forces.def(
+      "getMechanicalForce",
+      [](Forces &s) { return s.toMatrix(s.mechanicalForceVec); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the the total mechanical force
       )delim");
 
   /**
@@ -852,6 +880,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //             Args:
   //                   force (:py:class:`list`): mesh vertex force
   //         )delim");
+
+  /**
+   * @brief Method: updateVertexPosition
+   */
+  system.def("updateVertexPositions", &System::updateVertexPositions,
+             py::arg("isUpdateGeodesics") = false,
+             R"delim(
+          compute the free energy of the system
+      )delim");
 
   /**
    * @brief Method: I/O
