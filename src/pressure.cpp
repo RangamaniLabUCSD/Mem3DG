@@ -101,12 +101,14 @@ void System::computeVectorForces() {
         dirichletVec = computeGradientNorm2Gradient(he, proteinDensity) /
                        vpg->faceAreas[fID];
 
-        areaGrad = 0.25 * gc::cross(vpg->faceNormals[fID],
+        areaGrad += 0.25 * gc::cross(vpg->faceNormals[fID],
                                     vecFromHalfedge(he.next(), *vpg));
-        if (interiorTwinHalfedge)
-          areaGrad +=
-              0.25 * gc::cross(vpg->faceNormals[fID_he_twin],
-                               vecFromHalfedge(he.twin().next().next(), *vpg));
+      }
+
+      if (interiorTwinHalfedge) {
+        areaGrad +=
+            0.25 * gc::cross(vpg->faceNormals[fID_he_twin],
+                             vecFromHalfedge(he.twin().next().next(), *vpg));
       }
 
       gc::Vector3 gaussVec{0, 0, 0};
@@ -138,12 +140,12 @@ void System::computeVectorForces() {
                            vpg->faceNormals[fID_he_twin];
 
         if (!he.next().edge().isBoundary())
-          schlafliVec2 += -(vpg->halfedgeCotanWeights[he] +
+          schlafliVec2 -= (vpg->halfedgeCotanWeights[he] +
                             vpg->halfedgeCotanWeights[heID_he_next_next]) *
                           vpg->faceNormals[fID];
 
         if (!he.twin().next().next().edge().isBoundary())
-          schlafliVec2 += -(vpg->halfedgeCotanWeights[heID_twin] +
+          schlafliVec2 -= (vpg->halfedgeCotanWeights[heID_twin] +
                             vpg->halfedgeCotanWeights[heID_twin_next]) *
                           vpg->faceNormals[fID_he_twin];
       } else {
