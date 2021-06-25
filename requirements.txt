@@ -1,11 +1,7 @@
   
 # Required for building
-cmake >= 3.10
+cmake >= 3.12
 scikit-build
-setuptools
-wheel
-numpy
 pybind11
-
-ninja
 pytest
+numpy

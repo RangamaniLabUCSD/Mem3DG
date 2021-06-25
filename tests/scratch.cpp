@@ -1,7 +1,13 @@
 #include <iostream>
+#ifdef MEM3DG_WITH_NETCDF
 #include <netcdf>
+#endif
 
-#include "mem3dg/solver/icosphere.h"
+#include "mem3dg/solver/constants.h"
+#include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/mem3dg.h"
+#include "mem3dg/solver/mesh.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/util.h"
 
@@ -10,130 +16,78 @@
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/simple_polygon_mesh.h>
 #include <geometrycentral/surface/surface_mesh.h>
-#include <geometrycentral/utilities/vector3.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector3.h>
 
-// We are writing 2D data, a 6 x 12 grid
-constexpr int nx = 6;
-constexpr int ny = 12;
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
 
-// Return this in event of a problem
-constexpr int nc_err = 2;
+using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3D =
+    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenTopVec =
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 int main() {
-  namespace gc = ::geometrycentral;
-  namespace gcs = ::geometrycentral::surface;
+  // pybind11::scoped_interpreter guard{};
+  std::string inputMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
+                          "results//bud//asymm//testTraj//frame360.ply";
 
-  std::vector<gc::Vector3> coords;
-  std::vector<std::vector<std::size_t>> polygons;
+  /// physical parameters
+  mem3dg::Parameters p;
+  p.Kb = 8.22e-5;
+  p.Kbc = 8.22e-4;
+  p.H0c = 6;
+  p.protein0 = EigenVectorX1D(1);
+  p.protein0 << 1;
+  p.eta = 0;
+  p.Ksg = 2e-2;
+  p.A_res = 0;
+  p.Kst = 0; // 2e-6;
+  p.Ksl = 1e-7;
+  p.Kse = 1e-7;
+  p.epsilon = -1;
+  p.Bc = 0;
+  p.Kv = 1;
+  p.V_res = 0;
+  p.Vt = -1;
+  p.cam = 0;
+  p.Kf = 0;
+  p.conc = -1;
+  p.height = 0;
+  p.radius = 100000;
+  p.gamma = 0;
+  p.temp = 0;
+  p.pt = EigenVectorX1D(2);
+  p.pt << 0, 0;
 
-  ddgsolver::tetrahedron(coords, polygons);
+  mem3dg::Options o;
+  o.isProteinVariation = false;
+  o.isReducedVolume = false;
+  o.isEdgeFlip = true;
+  o.isSplitEdge = true;
+  o.isCollapseEdge = true;
+  o.isVertexShift = false;
+  o.isFloatVertex = true;
 
-  gcs::SimplePolygonMesh soup(polygons, coords);
-  soup.mergeIdenticalVertices();
+  mem3dg::System f(inputMesh, p, o, 0, false);
 
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  std::tie(ptrMesh, ptrVpg) =
-      gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
+  double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
+         verbosity = 3, restartNum = 5;
+  bool isAdaptiveStep = true, isAugmentedLagrangian = false,
+       isBacktrack = false;
+  std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
+                          "results//bud//asymm//testTraj";
 
-  auto file = ddgsolver::TrajFile::newFile("test.nc", *ptrMesh, true);
+  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+  integrator.isAdaptiveStep = isAdaptiveStep;
+  integrator.trajFileName = "traj.nc";
+  integrator.verbosity = verbosity;
+  integrator.isBacktrack = isBacktrack;
+  integrator.rho = rho;
+  integrator.c1 = c1;
+  integrator.integrate();
 
-  file.writeTime(file.getNextFrameIndex(), 1);
-  file.writeTime(file.getNextFrameIndex(), 2);
-
-  file.writeCoords(
-      0, gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions));
-  file.writeCoords(
-      3, gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions));
-
-  double x, y;
-  ddgsolver::TrajFile::EigenVector vec1, vec2;
-
-  std::tie(x, vec1) = file.getTimeAndCoords(0);
-  std::cout << "Time " << x << std::endl << vec1 << std::endl;
-  
-  auto file2 = ddgsolver::TrajFile::openReadOnly("test.nc");
-  std::tie(y, vec2) = file2.getTimeAndCoords(1);
-  std::cout << "Time " << y << std::endl << vec2 << std::endl;
-
-  std::cout << "EOF" << std::endl;
   return 0;
-
-  // The default behavior of the C++ API is to throw an exception if
-  // an error occurs
-  try {
-    // This is the data array we will write. It will just be filled
-    // with a progression of numbers for this example.
-    int dataOut[nx][ny];
-
-    // Create some pretend data. If this wasn't an example program, we
-    // would have some real data to write, for example, model output.
-    for (int i = 0; i < nx; i++) {
-      for (int j = 0; j < ny; j++) {
-        dataOut[i][j] = i * ny + j;
-      }
-    }
-
-    // Create the file. The Replace parameter tells netCDF to overwrite
-    // this file, if it already exists.
-    netCDF::NcFile dataFile("simple_xy.nc", netCDF::NcFile::replace);
-
-    // Create netCDF dimensions
-    auto framesDim = dataFile.addDim("frame");
-    auto xDim = dataFile.addDim("x", nx);
-    auto yDim = dataFile.addDim("y", ny);
-
-    // Define the variable. The type of the variable in this case is
-    // ncInt (32-bit integer)
-    auto data =
-        dataFile.addVar("coordinates", netCDF::ncInt, {framesDim, xDim, yDim});
-
-    dataFile.putAtt("TestAttribute", "FOO");
-
-    data.putAtt("units", "angstroms");
-
-    // Write the data to the file. Although netCDF supports reading
-    // and writing subsets of data, in this case we write all the data
-    // in one operation.
-    data.putVar({0, 0, 0}, {1, 6, 12}, &dataOut);
-    data.putVar({2, 0, 0}, {1, 6, 12}, &dataOut);
-    
-    // The file will be automatically close when the NcFile object goes
-    // out of scope. This frees up any internal netCDF resources
-    // associated with the file, and flushes any buffers.
-  } catch (netCDF::exceptions::NcException &e) {
-    std::cout << e.what() << std::endl;
-    return nc_err;
-  }
-
-  // Now read the data back in
-  try {
-    // This is the array we will read into
-    int dataIn[nx][ny];
-
-    // Open the file for read access
-    netCDF::NcFile dataFile("simple_xy.nc", netCDF::NcFile::read);
-
-    // Retrieve the variable named "data"
-    auto data = dataFile.getVar("coordinates");
-    if (data.isNull()){
-      std::cout << "Null data" << std::endl;
-      return nc_err;
-    }
-    data.getVar(dataIn);
-
-    // Check the values.
-    for (int i = 0; i < nx; i++) {
-      for (int j = 0; j < ny; j++) {
-        if (dataIn[i][j] != i * ny + j) {
-          std::cout << "Data mismatch" << std::endl;
-          return nc_err;
-        }
-      }
-    }
-  } catch (netCDF::exceptions::NcException &e) {
-    std::cout << e.what() << std::endl;
-    return nc_err;
-  }
 }

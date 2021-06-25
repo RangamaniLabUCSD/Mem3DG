@@ -21,7 +21,7 @@ if(M3DG_GET_OWN_PYBIND11)
   FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
-    GIT_TAG v2.5.0
+    GIT_TAG v2.6.2
     GIT_SHALLOW TRUE
     SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
@@ -46,14 +46,15 @@ set_target_properties(
 )
 
 set(PYMEM3DG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/pyddg.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/ddgsolver.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/visualization.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/pymem3dg.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/mem3dg.cpp"
 )
 
 pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})
-target_link_libraries(pymem3dg PRIVATE mem3dg_static polyscope)
-
+target_link_libraries(pymem3dg PRIVATE mem3dg_static polyscope igl::core)
+if(WITH_NETCDF)
+  target_compile_definitions(pymem3dg PUBLIC -DMEM3DG_WITH_NETCDF)
+endif()
 
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
              INPUT ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)

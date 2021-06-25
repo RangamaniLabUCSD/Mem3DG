@@ -18,7 +18,7 @@
 
 #include "mem3dg/solver/util.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -48,11 +48,11 @@ TEST_F(DotProductTest, DotProductTest) {
     Bm(i, 2) = 10 * i + 2;
   }
 
-  auto res = ddgsolver::dot(A, B);
+  auto res = mem3dg::dot(A, B);
   ASSERT_EQ(A.rows(), res.rows());
   ASSERT_EQ(res.cols(), 1);
 
-  auto resm = ddgsolver::dot(Am, Bm);
+  auto resm = mem3dg::dot(Am, Bm);
   ASSERT_EQ(Am.rows(), resm.rows());
   ASSERT_EQ(resm.cols(), 1);
   ASSERT_EQ(true, res.matrix().isApprox(resm));
@@ -63,4 +63,4 @@ TEST_F(DotProductTest, DotProductTest) {
   }
   ASSERT_EQ(true, manual.isApprox(resm));
 }
-} // end namespace ddgsolver
+} // namespace mem3dg

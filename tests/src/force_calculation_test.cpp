@@ -25,98 +25,265 @@
 
 #include <Eigen/Core>
 
-#include "mem3dg/solver/force.h"
-#include "mem3dg/solver/icosphere.h"
+#include "mem3dg/solver/mesh.h"
+#include "mem3dg/solver/system.h"
 #include "mem3dg/solver/util.h"
 
-namespace ddgsolver {
+namespace mem3dg {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX3D =
+    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+
 class ForceCalculationTest : public testing::Test {
 protected:
-  /// initialize mesh and vpg
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  // initialize mesh and vpg
+  // std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  // std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> topologyMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
   Parameters p;
+  Options o;
+  double h = 1;
 
   ForceCalculationTest() {
-    /// physical parameters
-    p.Kb = 0.02;    // Kb
-    p.H0 = 2;       // H0
-    p.Kse = 1;      // Kse
-    p.Ksl = 3;      // Ksl
-    p.Ksg = 1;      // Ksg
-    p.Kv = 2;       // Kv
-    p.gamma = 1;    // gamma
-    p.Vt = 1 * 0.5; // Vt
-    p.kt = 0.0001;  // Kt
-    p.ptInd = 1;
-    p.Kf = 2 * 0;
-    p.conc = 25;
-    p.sharpness = 1;
-    p.r_H0 = 1;
 
-    std::vector<gc::Vector3> coords;
-    std::vector<std::vector<std::size_t>> polygons;
+    o.isReducedVolume = true;
+    o.isConstantOsmoticPressure = false;
+    o.isConstantSurfaceTension = true;
+    o.isProteinVariation = true;
+    o.isShapeVariation = true;
+    o.isFloatVertex = true;
+    o.shapeBoundaryCondition = "none";
+    o.proteinBoundaryCondition = "none";
 
-    icosphere(coords, polygons, 2);
+    o.isEdgeFlip = false;
+    o.isSplitEdge = false;
+    o.isCollapseEdge = false;
+    o.isVertexShift = false;
 
-    gcs::PolygonSoupMesh soup(polygons, coords);
-    soup.mergeIdenticalVertices();
-    std::tie(ptrMesh, ptrVpg) =
-        gcs::makeHalfedgeAndGeometry(soup.polygons, soup.vertexCoordinates);
+    p.pt.resize(3, 1);
+    p.pt << 0, 0, 1;
+    p.protein0.resize(4, 1);
+    p.protein0 << 1, 1, 0.7, 0.2;
+
+    p.Kb = 8.22e-5;
+    p.Kbc = 0;
+    p.H0c = -1;
+
+    p.Ksg = 1e-4;
+    p.A_res = 0;
+    p.epsilon = -1e-5;
+
+    p.Kv = 0.02;
+    p.V_res = 0;
+    p.Vt = 0.6;
+    p.cam = -1;
+
+    p.Bc = 1;
+
+    p.eta = 0.001;
+
+    p.gamma = 0;
+    p.temp = 0;
+
+    p.Kst = 0;
+    p.Ksl = 0;
+    p.Kse = 0;
+
+    p.Kf = 0;
+    p.conc = -1;
+    p.height = 0;
+    p.radius = -1;
+    p.lambdaSG = 0;
+    p.lambdaV = 0;
+
+    // Create mesh and geometry objects
+    std::tie(topologyMatrix, vertexMatrix) = getIcosphereMatrix(1, 3);
   }
 };
 
+/**
+ * @brief Test whether passive force is conservative: result need to be the same
+ * when computed twice
+ *
+ */
 TEST_F(ForceCalculationTest, ConsistentForcesTest) {
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
+  // Instantiate system object
+  size_t nSub = 0;
+  mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
+  // First time calculation of force
+  f.computePhysicalForces();
+  f.computeRegularizationForce();
+  EigenVectorX3D mechanicalForceVec1 = f.F.toMatrix(f.F.mechanicalForceVec);
+  EigenVectorX1D chemicalPotential1 = f.F.toMatrix(f.F.chemicalPotential);
+  EigenVectorX3D regularizationForce1 = f.F.toMatrix(f.F.regularizationForce);
 
-  f.getVesicleForces();
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =
-      gc::EigenMap<double, 3>(f.bendingPressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure1 =
-      gc::EigenMap<double, 3>(f.insidePressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure1 =
-      gc::EigenMap<double, 3>(f.capillaryPressure);
+  // Second time calculation of force
+  f.computePhysicalForces();
+  f.computeRegularizationForce();
+  EigenVectorX3D mechanicalForceVec2 = f.F.toMatrix(f.F.mechanicalForceVec);
+  EigenVectorX1D chemicalPotential2 = f.F.toMatrix(f.F.chemicalPotential);
+  EigenVectorX3D regularizationForce2 = f.F.toMatrix(f.F.regularizationForce);
 
-  f.getVesicleForces();
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure2 =
-      gc::EigenMap<double, 3>(f.bendingPressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure2 =
-      gc::EigenMap<double, 3>(f.insidePressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure2 =
-      gc::EigenMap<double, 3>(f.capillaryPressure);
-
-  ASSERT_TRUE((bendingPressure1 - bendingPressure2).norm() < 1e-12);
-  ASSERT_TRUE((capillaryPressure1 - capillaryPressure2).norm() < 1e-12);
-  ASSERT_TRUE((insidePressure1 - insidePressure2).norm() < 1e-12);
+  // Comparison of 2 force calculations
+  ASSERT_TRUE((mechanicalForceVec1 - mechanicalForceVec2).norm() < 1e-12);
+  ASSERT_TRUE((chemicalPotential1 - chemicalPotential2).norm() < 1e-12);
+  ASSERT_TRUE((regularizationForce1 - regularizationForce2).norm() < 1e-12);
 };
 
-TEST_F(ForceCalculationTest, OnePassVsReferenceForce) {
-  gcs::RichSurfaceMeshData richData(*ptrMesh);
-  ddgsolver::Force f(*ptrMesh, *ptrVpg, *ptrVpg, richData, p);
+/**
+ * @brief Test whether integrating with the force will lead to decrease in
+ * energy
+ *
+ */
+TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
-  f.getVesicleForces();
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure1 =
-      gc::EigenMap<double, 3>(f.bendingPressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure1 =
-      gc::EigenMap<double, 3>(f.insidePressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure1 =
-      gc::EigenMap<double, 3>(f.capillaryPressure);
+  // initialize the system
+  size_t nSub = 0;
+  mem3dg::System f(topologyMatrix, vertexMatrix, p, o, nSub);
 
-  f.getBendingForces();
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> bendingPressure2 =
-      gc::EigenMap<double, 3>(f.bendingPressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> insidePressure2 =
-      gc::EigenMap<double, 3>(f.insidePressure);
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> capillaryPressure2 =
-      gc::EigenMap<double, 3>(f.capillaryPressure);
+  // initialize variables
+  auto vel_e = gc::EigenMap<double, 3>(f.vel);
+  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
+  const EigenVectorX3D current_pos = f.F.toMatrix(f.vpg->inputVertexPositions);
+  const EigenVectorX1D current_proteinDensity = f.F.toMatrix(f.proteinDensity);
+  const double tolerance = 1e-3;
+  double expectedEnergyDecrease = 0;
+  double actualEnergyDecrease = 0;
+  double difference = 0;
 
-  ASSERT_TRUE((bendingPressure1 - bendingPressure2).norm() < 1e-12);
-  ASSERT_TRUE((capillaryPressure1 - capillaryPressure2).norm() < 1e-12);
-  ASSERT_TRUE((insidePressure1 - insidePressure2).norm() < 1e-12);
-};
-} // namespace ddgsolver
+  f.updateVertexPositions();
+  f.computeFreeEnergy();
+  Energy previousE{f.E};
+
+  f.computePhysicalForces();
+
+  // bending force
+  f.proteinDensity.raw() = current_proteinDensity;
+  f.F.toMatrix(f.vpg->inputVertexPositions) =
+      current_pos + h * f.F.maskForce(f.F.toMatrix(f.F.bendingForceVec));
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.F.maskForce(f.F.toMatrix(f.F.bendingForceVec)).squaredNorm();
+  actualEnergyDecrease = -f.E.BE + previousE.BE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.BE <= previousE.BE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of bending force: " << difference;
+
+  // bending potential
+  f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.P.Bc * f.F.maskProtein(f.F.bendingPotential.raw());
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.P.Bc * f.F.maskProtein(f.F.bendingPotential.raw()).squaredNorm();
+  actualEnergyDecrease = -f.E.BE + previousE.BE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.BE <= previousE.BE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of bending potential: " << difference;
+
+  // capillary force
+  f.proteinDensity.raw() = current_proteinDensity;
+  f.F.toMatrix(f.vpg->inputVertexPositions) =
+      current_pos + h * f.F.maskForce(f.F.toMatrix(f.F.capillaryForceVec));
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.F.maskForce(f.F.toMatrix(f.F.capillaryForceVec)).squaredNorm();
+  actualEnergyDecrease = -f.E.sE + previousE.sE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.sE <= previousE.sE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of capillary force: " << difference;
+
+  // osmotic force
+  f.proteinDensity.raw() = current_proteinDensity;
+  f.F.toMatrix(f.vpg->inputVertexPositions) =
+      current_pos + h * f.F.maskForce(f.F.toMatrix(f.F.osmoticForceVec));
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.F.maskForce(f.F.toMatrix(f.F.osmoticForceVec)).squaredNorm();
+  actualEnergyDecrease = -f.E.pE + previousE.pE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.pE <= previousE.pE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of osmotic force: " << difference;
+
+  // adsorption force
+  f.proteinDensity.raw() = current_proteinDensity;
+  f.F.toMatrix(f.vpg->inputVertexPositions) =
+      current_pos + h * f.F.maskForce(f.F.toMatrix(f.F.adsorptionForceVec));
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.F.maskForce(f.F.toMatrix(f.F.adsorptionForceVec)).squaredNorm();
+  actualEnergyDecrease = -f.E.aE + previousE.aE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.aE <= previousE.aE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of adsorption force: " << difference;
+
+  // adsorption potential
+  f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.P.Bc * f.F.maskProtein(f.F.adsorptionPotential.raw());
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.F.maskProtein(f.F.adsorptionPotential.raw()).squaredNorm();
+  actualEnergyDecrease = -f.E.aE + previousE.aE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.aE <= previousE.aE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of adsorption potential: " << difference;
+
+  // line tension force
+  f.proteinDensity.raw() = current_proteinDensity;
+  f.F.toMatrix(f.vpg->inputVertexPositions) =
+      current_pos + h * f.F.maskForce(f.F.toMatrix(f.F.lineCapillaryForceVec));
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.F.maskForce(f.F.toMatrix(f.F.lineCapillaryForceVec)).squaredNorm();
+  actualEnergyDecrease = -f.E.dE + previousE.dE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.dE <= previousE.dE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of line tension force: " << difference;
+
+  // diffusion potential
+  f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.P.Bc * f.F.maskProtein(f.F.diffusionPotential.raw());
+  f.updateVertexPositions(false);
+  f.computeFreeEnergy();
+  expectedEnergyDecrease =
+      h * f.F.maskProtein(f.F.diffusionPotential.raw()).squaredNorm();
+  actualEnergyDecrease = -f.E.dE + previousE.dE;
+  difference = abs((expectedEnergyDecrease - actualEnergyDecrease) /
+                   actualEnergyDecrease);
+  ASSERT_TRUE(f.E.dE <= previousE.dE);
+  ASSERT_TRUE(difference < tolerance)
+      << "Relative error of diffusion potential: " << difference;
+
+}; // namespace ddgsolver
+} // namespace mem3dg

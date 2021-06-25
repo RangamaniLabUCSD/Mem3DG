@@ -4,3 +4,6 @@
 [submodule "libraries/polyscope"]
 	path = libraries/polyscope
 	url = https://github.com/nmwsharp/polyscope.git
+[submodule "libraries/libigl"]
+	path = libraries/libigl
+	url = https://github.com/libigl/libigl.git
