@@ -41,8 +41,8 @@
 
 #include "mem3dg/constants.h"
 #include "mem3dg/macros.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/mesh_io.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/mesh_mutator.h"
 #include "mem3dg/type_utilities.h"
 
@@ -132,61 +132,67 @@ struct Forces {
   // =============      Data interop helpers    ===============
   // ==========================================================
 
-  /**
-   * @brief Return constructed vertexData that from Eigen matrix or vector
-   */
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1d &vector) {
-    return gcs::VertexData<double>(mesh, vector);
-  }
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1d &&vector) {
-    return gcs::VertexData<double>(mesh, vector);
-  }
+  // /**
+  //  * @brief Return constructed vertexData that from Eigen matrix or vector
+  //  */
+  // gcs::VertexData<double> toVertexData(EigenVectorX1d &vector) {
+  //   return gcs::VertexData<double>(mesh, vector);
+  // }
 
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &vector) {
-    gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = vector;
-    return vertexData;
-  }
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &&vector) {
-    gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = vector;
-    return vertexData;
-  }
+  // gcs::VertexData<double> toVertexData(EigenVectorX1d &&vector) {
+  //   return gcs::VertexData<double>(mesh, vector);
+  // }
+
+  // gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &vector) {
+  //   gcs::VertexData<gc::Vector3> vertexData(mesh);
+  //   gc::EigenMap<double, 3>(vertexData) = vector;
+  //   return vertexData;
+  // }
+
+  // gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &&vector) {
+  //   gcs::VertexData<gc::Vector3> vertexData(mesh);
+  //   gc::EigenMap<double, 3>(vertexData) = vector;
+  //   return vertexData;
+  // }
 
   /**
    * @brief Find the corresponding scalar vector (vertexData) by rowwise
    * (vertexwise) projecting matrix (vector vertexData) onto angle-weighted
    * normal vector
    */
-  inline gcs::VertexData<double>
-  ontoNormal(gcs::VertexData<gc::Vector3> &vector) {
-    gcs::VertexData<double> vertexData(mesh);
-    vertexData.raw() =
-        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                          gc::EigenMap<double, 3>(vpg.vertexNormals));
+  gcs::VertexData<double>
+  ontoNormal(const gcs::VertexData<gc::Vector3> &vector) const {
+    gcs::VertexData<double> vertexData(
+        mesh, rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                gc::EigenMap<double, 3>(vpg.vertexNormals)));
     return vertexData;
   }
-  inline gcs::VertexData<double>
-  ontoNormal(gcs::VertexData<gc::Vector3> &&vector) {
-    gcs::VertexData<double> vertexData(mesh);
-    vertexData.raw() =
-        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                          gc::EigenMap<double, 3>(vpg.vertexNormals));
+  gcs::VertexData<double>
+  ontoNormal(const gcs::VertexData<gc::Vector3> &&vector) const {
+    gcs::VertexData<double> vertexData(
+        mesh, rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                gc::EigenMap<double, 3>(vpg.vertexNormals)));
     return vertexData;
   }
-  inline EigenVectorX1d ontoNormal(EigenVectorX3dr &vector) {
+
+  EigenVectorX1d ontoNormal(const EigenVectorX3dr &vector) const {
     return rowwiseDotProduct(vector,
                              gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX1d ontoNormal(EigenVectorX3dr &&vector) {
+  EigenVectorX1d ontoNormal(const EigenVectorX3dr &&vector) const {
     return rowwiseDotProduct(vector,
                              gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline double ontoNormal(gc::Vector3 &vector, gc::Vertex &v) {
-    return dot(vector, vpg.vertexNormals[v]);
+  double ontoNormal(const gc::Vector3 &vector, const gc::Vertex &v) const {
+    return gc::dot(vector, vpg.vertexNormals[v]);
   }
-  inline double ontoNormal(gc::Vector3 &&vector, gc::Vertex &v) {
-    return dot(vector, vpg.vertexNormals[v]);
+
+  double ontoNormal(const gc::Vector3 &vector, const std::size_t i) const {
+    return gc::dot(vector, vpg.vertexNormals[i]);
+  }
+
+  double ontoNormal(const gc::Vector3 &&vector, gc::Vertex &v) const {
+    return gc::dot(vector, vpg.vertexNormals[v]);
   }
 
   /**
@@ -194,34 +200,32 @@ struct Forces {
    * (vertexwise) appending angle-weighted normal vector to the scalar vector
    * (vertexData)
    */
-  inline gcs::VertexData<gc::Vector3>
-  addNormal(gcs::VertexData<double> &vector) {
+  gcs::VertexData<gc::Vector3> addNormal(gcs::VertexData<double> &vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData) = rowwiseScalarProduct(
         vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
     return vertexData;
   }
-  inline gcs::VertexData<gc::Vector3>
-  addNormal(gcs::VertexData<double> &&vector) {
+  gcs::VertexData<gc::Vector3> addNormal(gcs::VertexData<double> &&vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData) = rowwiseScalarProduct(
         vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
     return vertexData;
   }
 
-  inline EigenVectorX3dr addNormal(EigenVectorX1d &vector) {
+  EigenVectorX3dr addNormal(EigenVectorX1d &vector) {
     return rowwiseScalarProduct(vector,
                                 gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX3dr addNormal(EigenVectorX1d &&vector) {
+  EigenVectorX3dr addNormal(EigenVectorX1d &&vector) {
     return rowwiseScalarProduct(vector,
                                 gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
 
-  inline gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
+  gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
     return vector * vpg.vertexNormals[v];
   }
-  inline gc::Vector3 addNormal(double &&vector, gc::Vertex &v) {
+  gc::Vector3 addNormal(double &&vector, gc::Vertex &v) {
     return vector * vpg.vertexNormals[v];
   }
 
@@ -229,14 +233,14 @@ struct Forces {
    * @brief Project the vector onto tangent plane by removing the
    * angle-weighted normal component
    */
-  inline EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &vector) {
+  EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &vector) {
     return gc::EigenMap<double, 3>(vector) -
            rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg.vertexNormals)),
                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &&vector) {
+  EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &&vector) {
     return gc::EigenMap<double, 3>(vector) -
            rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
@@ -244,11 +248,11 @@ struct Forces {
                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
 
-  inline gc::Vector3 toTangent(gc::Vector3 &vector, gc::Vertex &v) {
+  gc::Vector3 toTangent(gc::Vector3 &vector, gc::Vertex &v) {
     return vector -
            gc::dot(vector, vpg.vertexNormals[v]) * vpg.vertexNormals[v];
   }
-  inline gc::Vector3 toTangent(gc::Vector3 &&vector, gc::Vertex &v) {
+  gc::Vector3 toTangent(gc::Vector3 &&vector, gc::Vertex &v) {
     return vector -
            gc::dot(vector, vpg.vertexNormals[v]) * vpg.vertexNormals[v];
   }
@@ -256,15 +260,15 @@ struct Forces {
   /**
    * @brief Find the masked force
    */
-  inline gcs::VertexData<gc::Vector3>
-  maskForce(gcs::VertexData<gc::Vector3> &vector) {
+  gcs::VertexData<gc::Vector3> maskForce(gcs::VertexData<gc::Vector3> &vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData).array() =
         gc::EigenMap<double, 3>(vector).array() *
         gc::EigenMap<double, 3>(forceMask).array();
     return vertexData;
   }
-  inline gcs::VertexData<gc::Vector3>
+
+  gcs::VertexData<gc::Vector3>
   maskForce(gcs::VertexData<gc::Vector3> &&vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData).array() =
@@ -272,17 +276,26 @@ struct Forces {
         gc::EigenMap<double, 3>(forceMask).array();
     return vertexData;
   }
-  inline EigenVectorX3dr maskForce(EigenVectorX3dr &vector) {
+
+  EigenVectorX3dr maskForce(const EigenVectorX3dr &vector) const {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
-  inline EigenVectorX3dr maskForce(EigenVectorX3dr &&vector) {
+
+  EigenVectorX3dr maskForce(const EigenVectorX3dr &&vector) const {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
-  inline gc::Vector3 maskForce(gc::Vector3 &vector, gc::Vertex &v) {
+
+  gc::Vector3 maskForce(const gc::Vector3 &vector, const gc::Vertex &v) const {
     return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
                        vector.z * forceMask[v].z};
   }
-  inline gc::Vector3 maskForce(gc::Vector3 &&vector, gc::Vertex &v) {
+
+  gc::Vector3 maskForce(const gc::Vector3 &vector, const std::size_t i) const {
+    return gc::Vector3{vector.x * forceMask[i].x, vector.y * forceMask[i].y,
+                       vector.z * forceMask[i].z};
+  }
+
+  gc::Vector3 maskForce(const gc::Vector3 &&vector, const gc::Vertex &v) const {
     return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
                        vector.z * forceMask[v].z};
   }
@@ -290,28 +303,33 @@ struct Forces {
   /**
    * @brief Find the masked chemical potential
    */
-  inline gcs::VertexData<double> maskProtein(gcs::VertexData<double> &potential) {
+  gcs::VertexData<double> maskProtein(gcs::VertexData<double> &potential) {
     gcs::VertexData<double> vertexData(mesh);
     toMatrix(vertexData).array() =
         toMatrix(potential).array() * toMatrix(proteinMask).array();
     return vertexData;
   }
-  inline gcs::VertexData<double> maskProtein(gcs::VertexData<double> &&potential) {
+
+  gcs::VertexData<double> maskProtein(gcs::VertexData<double> &&potential) {
     gcs::VertexData<double> vertexData(mesh);
     toMatrix(vertexData).array() =
         toMatrix(potential).array() * toMatrix(proteinMask).array();
     return vertexData;
   }
-  inline EigenVectorX1d maskProtein(EigenVectorX1d &potential) {
+
+  EigenVectorX1d maskProtein(EigenVectorX1d &potential) {
     return potential.array() * toMatrix(proteinMask).array();
   }
-  inline EigenVectorX1d maskProtein(EigenVectorX1d &&potential) {
+
+  EigenVectorX1d maskProtein(EigenVectorX1d &&potential) {
     return potential.array() * toMatrix(proteinMask).array();
   }
-  inline double maskProtein(double &potential, gc::Vertex &v) {
+
+  double maskProtein(double &potential, gc::Vertex &v) {
     return potential * proteinMask[v];
   }
-  inline double maskProtein(double &&potential, gc::Vertex &v) {
+
+  double maskProtein(double &&potential, gc::Vertex &v) {
     return potential * proteinMask[v];
   }
 };
