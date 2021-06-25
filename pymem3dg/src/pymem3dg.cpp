@@ -403,21 +403,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   forces.def(
       "getBendingForce_areaGrad",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec_areaGrad); },
+      [](Forces &s) { return toMatrix(s.bendingForceVec_areaGrad); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the area gradient component of the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_gaussVec",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec_gaussVec); },
+      [](Forces &s) { return toMatrix(s.bendingForceVec_gaussVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the the gaussian curvature vector component of the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_schlafliVec",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec_schlafliVec); },
+      [](Forces &s) { return toMatrix(s.bendingForceVec_schlafliVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the Schlaflic (smoothing) component of the bending force of the system
@@ -458,7 +458,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   forces.def(
       "getMechanicalForce",
-      [](Forces &s) { return s.toMatrix(s.mechanicalForceVec); },
+      [](Forces &s) { return toMatrix(s.mechanicalForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the the total mechanical force
