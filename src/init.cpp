@@ -299,8 +299,13 @@ void System::checkParametersAndOptions() {
   if (P.protein0.rows() == 1 && P.protein0[0] == -1) {
     std::cout << "Disable protein init, expect continuation simulation."
               << std::endl;
-  } else if (P.protein0.rows() == 1 && P.protein0[0] > 0 && P.protein0[0] < 1) {
-    if (!O.isProteinVariation) {
+  } else if (P.protein0.rows() == 1 && P.protein0[0] >= 0 &&
+             P.protein0[0] <= 1) {
+    if (O.isProteinVariation) {
+      if (P.protein0[0] == 0 || P.protein0[0] == 1) {
+        throw std::logic_error("{0<phi<1}");
+      }
+    } else {
       if (P.protein0[0] != 1 || P.Kb != 0 || P.eta != 0 || P.epsilon != 0) {
         throw std::logic_error(
             "For homogenous membrane simulation, good "
@@ -330,8 +335,9 @@ void System::checkParametersAndOptions() {
     throw std::logic_error("Binding constant Bc has to be consistent with the "
                            "protein variation option!");
   }
-  if (O.isProteinVariation && P.Kbc != 0){
-    std::logic_error("Kbc != 0 is currently not expected for protein variation!");
+  if (O.isProteinVariation && P.Kbc != 0) {
+    std::logic_error(
+        "Kbc != 0 is currently not expected for protein variation!");
   }
 
   // boundary related
