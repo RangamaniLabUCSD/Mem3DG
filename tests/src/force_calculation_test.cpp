@@ -47,7 +47,7 @@ protected:
   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
   Parameters p;
   Options o;
-  double h = 0.0001;
+  double h = 1;
 
   ForceCalculationTest() {
 
@@ -151,7 +151,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
   const EigenVectorX3D current_pos = f.F.toMatrix(f.vpg->inputVertexPositions);
   const EigenVectorX1D current_proteinDensity = f.F.toMatrix(f.proteinDensity);
-  const double tolerance = 1e-4;
+  const double tolerance = 1e-3;
   double expectedEnergyDecrease = 0;
   double actualEnergyDecrease = 0;
   double difference = 0;

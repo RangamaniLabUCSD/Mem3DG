@@ -46,6 +46,10 @@ void System::computeVectorForces() {
 
   for (gc::Vertex v : mesh->vertices()) {
     gc::Vector3 bendForceVec{0, 0, 0};
+    gc::Vector3 bendForceVec_areaGrad{0, 0, 0};
+    gc::Vector3 bendForceVec_gaussVec{0, 0, 0};
+    gc::Vector3 bendForceVec_schlafliVec{0, 0, 0};
+
     gc::Vector3 capillaryForceVec{0, 0, 0};
     gc::Vector3 osmoticForceVec{0, 0, 0};
     gc::Vector3 lineCapForceVec{0, 0, 0};
@@ -148,6 +152,13 @@ void System::computeVectorForces() {
                             P.epsilon * areaGrad;
       lineCapForceVec -= P.eta * (0.125 * dirichletVec -
                                   0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
+
+      bendForceVec_schlafliVec -=
+          (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
+      bendForceVec_areaGrad -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
+                                Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
+                               areaGrad;
+      bendForceVec_gaussVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
       bendForceVec -=
           (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec +
           (Kbi * (H0i * H0i - Hi * Hi) / 3 +
@@ -205,16 +216,22 @@ void System::computeVectorForces() {
     // masking
     osmoticForceVec = F.maskForce(osmoticForceVec, v);
     capillaryForceVec = F.maskForce(capillaryForceVec, v);
-    bendForceVec = F.maskForce(bendForceVec, v);
     lineCapForceVec = F.maskForce(lineCapForceVec, v);
     adsorptionForceVec = F.maskForce(adsorptionForceVec, v);
+    bendForceVec = F.maskForce(bendForceVec, v);
+    bendForceVec_areaGrad = F.maskForce(bendForceVec_areaGrad, v);
+    bendForceVec_gaussVec = F.maskForce(bendForceVec_gaussVec, v);
+    bendForceVec_schlafliVec = F.maskForce(bendForceVec_schlafliVec, v);
 
     // Combine to one
     F.osmoticForceVec[v] = osmoticForceVec;
     F.capillaryForceVec[v] = capillaryForceVec;
-    F.bendingForceVec[v] = bendForceVec;
     F.lineCapillaryForceVec[v] = lineCapForceVec;
     F.adsorptionForceVec[v] = adsorptionForceVec;
+    F.bendingForceVec[v] = bendForceVec;
+    F.bendingForceVec_areaGrad[v] = bendForceVec_areaGrad;
+    F.bendingForceVec_gaussVec[v] = bendForceVec_gaussVec;
+    F.bendingForceVec_schlafliVec[v] = bendForceVec_schlafliVec;
 
     // Scalar force by projection to angle-weighted normal
     F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
@@ -602,6 +619,10 @@ void System::computePhysicalForces() {
 
   // zero all forces
   F.bendingForceVec.fill({0, 0, 0});
+  F.bendingForceVec_areaGrad.fill({0, 0, 0});
+  F.bendingForceVec_gaussVec.fill({0, 0, 0});
+  F.bendingForceVec_schlafliVec.fill({0, 0, 0});
+
   F.capillaryForceVec.fill({0, 0, 0});
   F.osmoticForceVec.fill({0, 0, 0});
   F.lineCapillaryForceVec.fill({0, 0, 0});
