@@ -73,7 +73,7 @@ protected:
 
     p.Ksg = 1e-2;
     p.A_res = 0;
-    p.epsilon = -1e-5;
+    p.epsilon = -1e-2;
 
     p.Kv = 1e-2;
     p.V_res = 0;
