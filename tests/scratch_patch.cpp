@@ -3,13 +3,8 @@
 #include <netcdf>
 #endif
 
-#include "mem3dg/constants.h"
-#include "mem3dg/solver/integrator.h"
+#include "mem3dg/mem3dg"
 #include "mem3dg.h"
-#include "mem3dg/mesh_io.h"
-#include "mem3dg/solver/system.h"
-#include "mem3dg/solver/trajfile.h"
-#include "mem3dg/type_utilities.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -65,7 +60,7 @@ int main() {
   std::string outputDir = "C://Users//Kieran//Desktop//";
   std::size_t verbosity = 2;
 
-  mem3dg::solver:: Euler integrator(f, h, T, tSave, eps, outputDir);
+  mem3dg::solver::integrator::Euler integrator(f, h, T, tSave, eps, outputDir);
   integrator.isAdaptiveStep = true;
   integrator.trajFileName = "traj.nc";
   integrator.verbosity = verbosity;

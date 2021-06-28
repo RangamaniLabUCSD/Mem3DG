@@ -192,7 +192,7 @@ void System::vertexShift() {
           }
         }
         if (n_vAdj != 2) {
-          throw std::runtime_error(
+          mem3dg_runtime_error(
               "vertexShift: number of neighbor vertices on boundary is not 2!");
         }
         baryCenter =
@@ -512,7 +512,7 @@ void System::globalUpdateAfterMutation() {
       }
     }
     if (thePointTracker.raw().cast<int>().sum() != 1) {
-      throw std::runtime_error("globalUpdateAfterMutation: there is no "
+      mem3dg_runtime_error("globalUpdateAfterMutation: there is no "
                                "unique/existing \"the\" point!");
     }
   }

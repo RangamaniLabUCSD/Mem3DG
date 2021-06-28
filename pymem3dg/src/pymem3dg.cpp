@@ -22,19 +22,18 @@
 #include "Eigen/src/Core/util/Constants.h"
 
 #include "mem3dg.h"
-#include "mem3dg/mesh_io.h"
 #include "visualization.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/system.h"
+#include "mem3dg/mem3dg"
 #include "pybind11/cast.h"
 
 namespace gc = ::geometrycentral;
 namespace mem3dg {
 namespace solver {
+namespace integrator {
 namespace py = pybind11;
 
 // Initialize the `pymem3dg` module
@@ -395,8 +394,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    * @brief Mechanical force
    */
   forces.def(
-      "getBendingForce",
-      [](Forces &s) { return toMatrix(s.bendingForceVec); },
+      "getBendingForce", [](Forces &s) { return toMatrix(s.bendingForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the bending force of the system
@@ -443,8 +441,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the externally-applied Force
       )delim");
   forces.def(
-      "getOsmoticForce",
-      [](Forces &s) { return toMatrix(s.osmoticForceVec); },
+      "getOsmoticForce", [](Forces &s) { return toMatrix(s.osmoticForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the osmotic force
@@ -1623,5 +1620,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             )delim");
 #endif
 };
+} // namespace integrator
 } // namespace solver
 } // namespace mem3dg

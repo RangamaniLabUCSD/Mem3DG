@@ -12,7 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 #include "mem3dg/type_utilities.h"
@@ -27,6 +27,7 @@
 
 namespace mem3dg {
 namespace solver {
+namespace integrator {
 
 double Integrator::backtrack(
     const double energy_pre,
@@ -153,8 +154,7 @@ void Integrator::lineSearchErrorBacktrack(
 
       f.proteinDensity.raw() = current_proteinDensity;
       toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(toMatrix(f.F.bendingForceVec));
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.bendingForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.BE > previousE.BE) {
@@ -193,8 +193,7 @@ void Integrator::lineSearchErrorBacktrack(
 
       f.proteinDensity.raw() = current_proteinDensity;
       toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(toMatrix(f.F.capillaryForceVec));
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.capillaryForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.sE > previousE.sE) {
@@ -212,8 +211,7 @@ void Integrator::lineSearchErrorBacktrack(
 
       f.proteinDensity.raw() = current_proteinDensity;
       toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(toMatrix(f.F.osmoticForceVec));
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.osmoticForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.pE > previousE.pE) {
@@ -231,17 +229,15 @@ void Integrator::lineSearchErrorBacktrack(
 
       f.proteinDensity.raw() = current_proteinDensity;
       toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(toMatrix(f.F.adsorptionForceVec));
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.adsorptionForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.aE > previousE.aE) {
         std::cout << "With only adsorption force, aE has increased "
                   << f.E.aE - previousE.aE << " from " << previousE.aE << " to "
                   << f.E.aE << ", expected daE: "
-                  << -alpha *
-                         f.F.maskForce(toMatrix(f.F.adsorptionForceVec))
-                             .squaredNorm()
+                  << -alpha * f.F.maskForce(toMatrix(f.F.adsorptionForceVec))
+                                  .squaredNorm()
                   << std::endl;
       }
 
@@ -275,9 +271,8 @@ void Integrator::lineSearchErrorBacktrack(
         std::cout << "With only line tension force, dE has increased "
                   << f.E.dE - previousE.dE << " from " << previousE.dE << " to "
                   << f.E.dE << ", expected ddE: "
-                  << -alpha *
-                         f.F.maskForce(toMatrix(f.F.lineCapillaryForceVec))
-                             .squaredNorm()
+                  << -alpha * f.F.maskForce(toMatrix(f.F.lineCapillaryForceVec))
+                                  .squaredNorm()
                   << std::endl;
       }
 
@@ -555,8 +550,7 @@ void Integrator::saveData() {
               << "dA/Area: " << dArea << "/" << f.surfaceArea << ", "
               << "dVP/Volume: " << dVP << "/" << f.volume << ", "
               << "h: "
-              << toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff()
-              << "\n"
+              << toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff() << "\n"
               << "E_total: " << f.E.totalE << "\n"
               << "E_pot: " << f.E.potE << "\n"
               << "|e|Mech: " << f.mechErrorNorm << "\n"
@@ -648,8 +642,7 @@ void Integrator::saveNetcdfData() {
   fd.writeVolume(idx, f.volume);
   fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.refSurfaceArea
                                               : f.surfaceArea);
-  fd.writeHeight(idx,
-                 toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
+  fd.writeHeight(idx, toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
   fd.writeBendEnergy(idx, f.E.BE);
   fd.writeSurfEnergy(idx, f.E.sE);
@@ -810,6 +803,6 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
   } else
     std::cout << "Unable to open file";
 }
-
+} // namespace integrator
 } // namespace solver
 } // namespace mem3dg

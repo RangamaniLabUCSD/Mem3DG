@@ -26,12 +26,14 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 #include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/solver/integrator.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator/conjugate_gradient.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
 namespace solver {
+namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool ConjugateGradient::integrate() {
@@ -114,22 +116,22 @@ bool ConjugateGradient::integrate() {
 
 void ConjugateGradient::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
-    throw std::runtime_error("DPD has to be turned off for CG integration!");
+    mem3dg_runtime_error("DPD has to be turned off for CG integration!");
   }
   if (f.P.Bc != 1 && f.P.Bc != 0) {
-    throw std::runtime_error("Protein mobility constant should "
+    mem3dg_runtime_error("Protein mobility constant should "
                              "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
-      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+      mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
   }
   if (restartNum < 1) {
-    throw std::runtime_error("restartNum > 0!");
+    mem3dg_runtime_error("restartNum > 0!");
   }
   // if (f.O.isVertexShift) {
-  //   throw std::runtime_error(
+  //   mem3dg_runtime_error(
   //       "Vertex shift is not supported for CG integration!");
   // }
 }
@@ -292,6 +294,6 @@ void FeedForwardSweep::sweep() {
   }
 #endif
 }
-
-}
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg

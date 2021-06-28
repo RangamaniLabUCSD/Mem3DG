@@ -184,7 +184,7 @@ public:
 
   void open(const std::string &filename, const NcFile::FileMode fMode) {
     if ((fd != nullptr) && (fMode != NcFile::read)) {
-      throw std::runtime_error("Cannot open an already opened ...");
+      mem3dg_runtime_error("Cannot open an already opened ...");
     }
 
     fd = new NcFile(filename, fMode);
@@ -237,7 +237,7 @@ public:
                      gcs::VertexPositionGeometry &refVpg,
                      const NcFile::FileMode fMode) {
     if (fd != nullptr) {
-      throw std::runtime_error("Cannot open an already open ...");
+      mem3dg_runtime_error("Cannot open an already open ...");
     }
 
     writeable = true;
@@ -459,7 +459,7 @@ public:
   void getNcFrame(int &frame) const {
     int maxFrame = getNextFrameIndex() - 1;
     if (frame > maxFrame || frame < -(maxFrame + 1)) {
-      throw std::runtime_error("Snapshot frame exceed limiting frame index!");
+      mem3dg_runtime_error("Snapshot frame exceed limiting frame index!");
     } else if (frame < 0) {
       frame = frame + maxFrame + 1;
     }

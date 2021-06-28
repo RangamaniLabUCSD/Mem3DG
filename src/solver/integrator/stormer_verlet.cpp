@@ -4,7 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/integrator/stormer_verlet.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/system.h"
 
 #include <geometrycentral/surface/halfedge_mesh.h>
@@ -16,7 +17,7 @@
 
 namespace mem3dg {
 namespace solver {
-
+namespace integrator {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
@@ -81,5 +82,6 @@ bool StormerVerlet::integrate() {
 
   return true;
 }
+} // namespace integrator
 } // namespace solver
 } // namespace mem3dg
