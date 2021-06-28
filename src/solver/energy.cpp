@@ -94,7 +94,7 @@ void System::computeProteinInteriorPenaltyEnergy() {
 
 void System::computeDirichletEnergy() {
   if (false) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "computeDirichletEnergy: out of date implementation, "
         "shouldn't be called!");
     // scale the dH0 such that it is integrated over the edge

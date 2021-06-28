@@ -25,11 +25,13 @@
 #include <stdexcept>
 
 #include "mem3dg/meshops.h"
-#include "mem3dg/solver/integrator.h"
+#include "mem3dg/solver/integrator/bfgs.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
 namespace solver {
+namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool BFGS::integrate() {
@@ -94,22 +96,22 @@ bool BFGS::integrate() {
 
 void BFGS::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
-    throw std::runtime_error("DPD has to be turned off for BFGS integration!");
+    mem3dg_runtime_error("DPD has to be turned off for BFGS integration!");
   }
   // if (f.O.isVertexShift) {
-  //   throw std::runtime_error(
+  //   mem3dg_runtime_error(
   //       "Vertex shift is not supported for BFGS integration!");
   // }
   if (!isBacktrack) {
-    throw std::runtime_error("Backtracking is required for BFGS integration");
+    mem3dg_runtime_error("Backtracking is required for BFGS integration");
   }
   if (f.P.Bc != 1 && f.P.Bc != 0) {
-    throw std::runtime_error("Protein mobility constant should "
+    mem3dg_runtime_error("Protein mobility constant should "
                              "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
-      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+      mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
   }
 }
@@ -221,6 +223,6 @@ void BFGS::march() {
     f.updateVertexPositions(false);
   }
 }
-
+} // namespace integrator
 } // namespace solver
 } // namespace mem3dg

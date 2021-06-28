@@ -344,7 +344,7 @@ EigenVectorX1d System::computeBendingForce() {
 }
 
 EigenVectorX1d System::computeCapillaryForce() {
-  throw std::runtime_error("computeCapillaryForce: out of data implementation, "
+  mem3dg_runtime_error("computeCapillaryForce: out of data implementation, "
                            "shouldn't be called!");
   /// Geometric implementation
   F.surfaceTension =
@@ -373,7 +373,7 @@ EigenVectorX1d System::computeCapillaryForce() {
 }
 
 EigenVectorX1d System::computeOsmoticForce() {
-  throw std::runtime_error("computeOsmoticForce: out of data implementation, "
+  mem3dg_runtime_error("computeOsmoticForce: out of data implementation, "
                            "shouldn't be called!");
   F.osmoticForce.raw().setConstant(F.osmoticPressure);
   F.osmoticForce.raw().array() *= vpg->vertexDualAreas.raw().array();
@@ -394,7 +394,7 @@ EigenVectorX1d System::computeOsmoticForce() {
 
 EigenVectorX1d System::computeLineCapillaryForce() {
   if (false) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "computeLineCapillaryForce: out of data implementation, "
         "shouldn't be called!");
     // zeros out the nonpositive normal curvature to compensate the fact that d0
@@ -553,7 +553,7 @@ System::computeDPDForces(double dt) {
 gc::Vector3 System::computeGradientNorm2Gradient(
     const gcs::Halfedge &he, const gcs::VertexData<double> &quantities) {
   if (!he.isInterior()) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "computeGradientNormGradient: halfedge is not interior!");
   }
 

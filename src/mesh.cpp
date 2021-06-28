@@ -136,7 +136,7 @@ std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
            Eigen::Matrix<double, Eigen::Dynamic, 3>>
 getCylinderMatrix(double R, int nR, int nh, double freq, double amp) {
   if (nR < 3 || nR < 2) {
-    throw std::runtime_error("getCylinderMatrix: nR > 2 and nh > 1!");
+    mem3dg_runtime_error("getCylinderMatrix: nR > 2 and nh > 1!");
   }
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coords;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> faces;
@@ -172,7 +172,7 @@ getCylinderMatrix(double R, int nR, int nh, double freq, double amp) {
   }
 
   if (faceIndex != faces.rows()) {
-    throw std::runtime_error("getCylinderMatrix: faceIndex not agree!");
+    mem3dg_runtime_error("getCylinderMatrix: faceIndex not agree!");
   }
   return std::tie(faces, coords);
 }
@@ -448,7 +448,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> readData(std::string &plyName,
   std::vector<double> rawData = ptrRichData->plyData.getElement(elementName)
                                     .getProperty<double>(propertyName);
   if (rawData.size() != ptrRichData->plyData.getElement(elementName).count) {
-    throw std::runtime_error("Property " + propertyName +
+    mem3dg_runtime_error("Property " + propertyName +
                              " does not have size equal to number of " +
                              elementName);
   }
