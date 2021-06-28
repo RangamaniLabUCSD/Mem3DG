@@ -17,7 +17,7 @@
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -37,12 +37,13 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
+namespace solver {
 #ifdef MEM3DG_WITH_NETCDF
 
 void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Open netcdf file
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  TrajFile fd = TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
 
   // Check consistent topology for continuation
@@ -60,14 +61,15 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
     throw std::logic_error(
         "protein0 has to be disabled (=[-1]) for continuing simulations!");
   }
-  F.toMatrix(vel) = fd.getVelocity(startingFrame);
+  toMatrix(vel) = fd.getVelocity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
+System::readTrajFile(std::string trajFile, int startingFrame,
+                     std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -76,7 +78,7 @@ System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
   std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(trajFile);
+  TrajFile fd = TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology());
@@ -116,7 +118,8 @@ System::readTrajFile(std::string trajFile, int startingFrame, size_t nSub) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
+System::readMeshes(std::string inputMesh, std::string refMesh,
+                   std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -161,10 +164,11 @@ System::readMeshes(std::string inputMesh, std::string refMesh, size_t nSub) {
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-                   size_t nSub) {
+System::readMeshes(
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
+    std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -252,7 +256,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
     // write bool
     gcs::VertexData<double> msk(*mesh);
-    msk.fromVector(F.toMatrix(F.forceMask).rowwise().sum());
+    msk.fromVector(toMatrix(F.forceMask).rowwise().sum());
     richData.addVertexProperty("force_mask", msk);
     richData.addVertexProperty("protein_mask", F.proteinMask);
     gcs::VertexData<double> smthingMsk(*mesh);
@@ -855,8 +859,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
   }
 
   if (!isUpdated) {
-    throw std::runtime_error("findTheVertex: surface point is no updated!");
+    mem3dg_runtime_error("Surface point is not updated!");
   }
 }
-
+} // namespace solver
 } // namespace mem3dg

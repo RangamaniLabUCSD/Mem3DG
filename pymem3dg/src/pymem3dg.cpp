@@ -20,18 +20,20 @@
 #include <pybind11/stl.h>
 
 #include "Eigen/src/Core/util/Constants.h"
-#include "mem3dg/solver/mem3dg.h"
-#include "mem3dg/solver/mesh.h"
+
+#include "mem3dg.h"
+#include "visualization.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/system.h"
+#include "mem3dg/mem3dg"
 #include "pybind11/cast.h"
 
 namespace gc = ::geometrycentral;
 namespace mem3dg {
+namespace solver {
+namespace integrator {
 namespace py = pybind11;
 
 // Initialize the `pymem3dg` module
@@ -46,7 +48,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //     )delim");
   //   integrator.def(py::init<System &, double, double, double, double,
   //   std::string,
-  //                           bool, std::string, size_t>(),
+  //                           bool, std::string, std::size_t>(),
   //                  py::arg("f"), py::arg("dt"), py::arg("total_time"),
   //                  py::arg("tSave"), py::arg("tolerance"),
   //                  py::arg("outputDir"), py::arg("isAdaptiveStep") = true,
@@ -335,16 +337,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         conjugate Gradient propagator
     )delim");
 
-  bfgs.def(py::init<System &, double, double, double, double, std::string, bool,
-                    std::string, size_t, bool, double, double, double, bool>(),
-           py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-           py::arg("tolerance"), py::arg("outputDir"),
-           py::arg("isAdaptiveStep") = true,
-           py::arg("trajFileName") = "traj.nc", py::arg("verbosity") = 3,
-           py::arg("isBacktrack") = true, py::arg("rho") = 0.99,
-           py::arg("c1") = 0.0001, py::arg("ctol") = 0.001,
-           py::arg("isAugmentedLagrangian") = false,
-           R"delim(
+  bfgs.def(
+      py::init<System &, double, double, double, double, std::string, bool,
+               std::string, std::size_t, bool, double, double, double, bool>(),
+      py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
+      py::arg("tolerance"), py::arg("outputDir"),
+      py::arg("isAdaptiveStep") = true, py::arg("trajFileName") = "traj.nc",
+      py::arg("verbosity") = 3, py::arg("isBacktrack") = true,
+      py::arg("rho") = 0.99, py::arg("c1") = 0.0001, py::arg("ctol") = 0.001,
+      py::arg("isAugmentedLagrangian") = false,
+      R"delim(
         BFGS optimizer constructor
       )delim");
   bfgs.def("integrate", &BFGS::integrate,
@@ -392,70 +394,68 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    * @brief Mechanical force
    */
   forces.def(
-      "getBendingForce",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec); },
+      "getBendingForce", [](Forces &s) { return toMatrix(s.bendingForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_areaGrad",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec_areaGrad); },
+      [](Forces &s) { return toMatrix(s.bendingForceVec_areaGrad); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the area gradient component of the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_gaussVec",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec_gaussVec); },
+      [](Forces &s) { return toMatrix(s.bendingForceVec_gaussVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the the gaussian curvature vector component of the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_schlafliVec",
-      [](Forces &s) { return s.toMatrix(s.bendingForceVec_schlafliVec); },
+      [](Forces &s) { return toMatrix(s.bendingForceVec_schlafliVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the Schlaflic (smoothing) component of the bending force of the system
       )delim");
   forces.def(
       "getCapillaryForce",
-      [](Forces &s) { return s.toMatrix(s.capillaryForceVec); },
+      [](Forces &s) { return toMatrix(s.capillaryForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the tension-induced capillary Force
       )delim");
   forces.def(
       "getLineCapillaryForce",
-      [](Forces &s) { return s.toMatrix(s.lineCapillaryForceVec); },
+      [](Forces &s) { return toMatrix(s.lineCapillaryForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interfacial line tension
       )delim");
   forces.def(
-      "getExternalForce", [](Forces &s) { return s.toMatrix(s.externalForce); },
+      "getExternalForce", [](Forces &s) { return toMatrix(s.externalForce); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the externally-applied Force
       )delim");
   forces.def(
-      "getOsmoticForce",
-      [](Forces &s) { return s.toMatrix(s.osmoticForceVec); },
+      "getOsmoticForce", [](Forces &s) { return toMatrix(s.osmoticForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the osmotic force
       )delim");
   forces.def(
       "getAdsorptionForce",
-      [](Forces &s) { return s.toMatrix(s.adsorptionForceVec); },
+      [](Forces &s) { return toMatrix(s.adsorptionForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the adsorption force
       )delim");
   forces.def(
       "getMechanicalForce",
-      [](Forces &s) { return s.toMatrix(s.mechanicalForceVec); },
+      [](Forces &s) { return toMatrix(s.mechanicalForceVec); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the the total mechanical force
@@ -466,35 +466,35 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    */
   forces.def(
       "getBendingPotential",
-      [](Forces &s) { return s.toMatrix(s.bendingPotential); },
+      [](Forces &s) { return toMatrix(s.bendingPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the bending potential
       )delim");
   forces.def(
       "getInteriorPenaltyPotential",
-      [](Forces &s) { return s.toMatrix(s.interiorPenaltyPotential); },
+      [](Forces &s) { return toMatrix(s.interiorPenaltyPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the interior point potential
       )delim");
   forces.def(
       "getAdsorptionPotential",
-      [](Forces &s) { return s.toMatrix(s.adsorptionPotential); },
+      [](Forces &s) { return toMatrix(s.adsorptionPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the adsorption potential
       )delim");
   forces.def(
       "getDiffusionPotential",
-      [](Forces &s) { return s.toMatrix(s.diffusionPotential); },
+      [](Forces &s) { return toMatrix(s.diffusionPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the diffusion Potential
       )delim");
   forces.def(
       "getChemicalPotential",
-      [](Forces &s) { return s.toMatrix(s.chemicalPotential); },
+      [](Forces &s) { return toMatrix(s.chemicalPotential); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the chemical Potential
@@ -591,20 +591,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Constructors by .ply file
    */
-  system.def(py::init<std::string, size_t>(), py::arg("inputMesh"),
+  system.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
              py::arg("nSub") = 0,
              R"delim(
         System constructor with .ply files
       )delim");
-  system.def(py::init<std::string, Parameters &, Options &, size_t, bool>(),
-             py::arg("inputMesh"), py::arg("p"), py::arg("o"),
-             py::arg("nSub") = 0, py::arg("isContinue") = false,
-             R"delim(
+  system.def(
+      py::init<std::string, Parameters &, Options &, std::size_t, bool>(),
+      py::arg("inputMesh"), py::arg("p"), py::arg("o"), py::arg("nSub") = 0,
+      py::arg("isContinue") = false,
+      R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(py::init<std::string, std::string, Parameters &, Options &, size_t,
-                      bool>(),
+  system.def(py::init<std::string, std::string, Parameters &, Options &,
+                      std::size_t, bool>(),
              py::arg("inputMesh"), py::arg("refMesh"), py::arg("p"),
              py::arg("o"), py::arg("nSub") = 0, py::arg("isContinue") = false,
              R"delim(
@@ -614,28 +615,28 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Constructors by matrices
    */
-  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, size_t>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("nSub") = 0,
-             R"delim(
+  system.def(
+      py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t>(),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("nSub") = 0,
+      R"delim(
         System constructor with Matrices. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
 
-  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      Options &, size_t>(),
+                      Options &, std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
              py::arg("o"), py::arg("nSub") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
 
-  system.def(py::init<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      Options &, size_t>(),
+                      Options &, std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
              py::arg("refVertexMatrix"), py::arg("p"), py::arg("o"),
              py::arg("nSub") = 0,
@@ -648,13 +649,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int, size_t>(), py::arg("trajFile"),
+  system.def(py::init<std::string, int, std::size_t>(), py::arg("trajFile"),
              py::arg("startingFrame"), py::arg("nSub") = 0,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
   system.def(
-      py::init<std::string, int, Parameters &, Options &, size_t, bool>(),
+      py::init<std::string, int, Parameters &, Options &, std::size_t, bool>(),
       py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"), py::arg("o"),
       py::arg("nSub") = 0, py::arg("isContinue") = false,
       R"delim(
@@ -730,7 +731,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   system.def(
       "getFaceVertexMatrix",
-      [](System &s) { return s.mesh->getFaceVertexMatrix<size_t>(); },
+      [](System &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the face vertex matrix
@@ -962,10 +963,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   parameters.def(py::init<>());
   //   parameters.def(
-  //       py::init<double, double, double, EigenVectorX1D, double, double,
+  //       py::init<double, double, double, EigenVectorX1d, double, double,
   //       double,
   //                double, double, double, double, double, double, double,
-  //                double, double, double, double, EigenVectorX1D, double,
+  //                double, double, double, double, EigenVectorX1d, double,
   //                double, double, double, double, double, double, double,
   //                std::string>(),
   //       py::arg("Kb") = 0, py::arg("Kbc") = 0, py::arg("H0c") = 0,
@@ -1295,19 +1296,21 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                "get topology and vertex position matrix of Hexagon",
                py::arg("R"), py::arg("nSub") = 0);
 
-  pymem3dg.def("subdivide",
-               py::overload_cast<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
-                                 Eigen::Matrix<double, Eigen::Dynamic, 3> &,
-                                 std::size_t>(&subdivide),
-               "subdivide the mesh", py::arg("faces"), py::arg("coords"),
-               py::arg("nSub"));
+  pymem3dg.def(
+      "subdivide",
+      py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                        Eigen::Matrix<double, Eigen::Dynamic, 3> &,
+                        std::size_t>(&subdivide),
+      "subdivide the mesh", py::arg("faces"), py::arg("coords"),
+      py::arg("nSub"));
 
-  pymem3dg.def("loopSubdivide",
-               py::overload_cast<Eigen::Matrix<size_t, Eigen::Dynamic, 3> &,
-                                 Eigen::Matrix<double, Eigen::Dynamic, 3> &,
-                                 std::size_t>(&loopSubdivide),
-               "subdivide the mesh in Loop scheme", py::arg("faces"),
-               py::arg("coords"), py::arg("nSub"));
+  pymem3dg.def(
+      "loopSubdivide",
+      py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                        Eigen::Matrix<double, Eigen::Dynamic, 3> &,
+                        std::size_t>(&loopSubdivide),
+      "subdivide the mesh in Loop scheme", py::arg("faces"), py::arg("coords"),
+      py::arg("nSub"));
 
   pymem3dg.def("readMesh", &readMesh,
                "read vertex and face matrix from .ply file",
@@ -1617,4 +1620,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             )delim");
 #endif
 };
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg

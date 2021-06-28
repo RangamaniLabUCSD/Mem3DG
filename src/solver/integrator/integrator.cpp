@@ -12,12 +12,11 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "mem3dg/solver/integrator.h"
-#include "Eigen/src/Core/util/Constants.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/solver/integrator/integrator.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/solver/util.h"
-#include "mem3dg/solver/version.h"
+#include "mem3dg/type_utilities.h"
+#include "mem3dg/version.h"
 
 #include <cmath>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
@@ -25,9 +24,10 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
-using namespace std;
 
 namespace mem3dg {
+namespace solver {
+namespace integrator {
 
 double Integrator::backtrack(
     const double energy_pre,
@@ -35,7 +35,7 @@ double Integrator::backtrack(
     Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
     double c1) {
 
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
+  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
 
   // validate the directions
   double positionProjection = 0;
@@ -78,11 +78,11 @@ double Integrator::backtrack(
 
   // declare variables used in backtracking iterations
   double alpha = dt;
-  size_t count = 0;
+  std::size_t count = 0;
 
   // zeroth iteration
   if (f.O.isShapeVariation) {
-    f.F.toMatrix(f.vpg->inputVertexPositions) += alpha * positionDirection;
+    toMatrix(f.vpg->inputVertexPositions) += alpha * positionDirection;
   }
   if (f.O.isProteinVariation) {
     f.proteinDensity.raw() += alpha * chemicalDirection;
@@ -112,7 +112,7 @@ double Integrator::backtrack(
     // backtracking time step
     alpha *= rho;
     if (f.O.isShapeVariation) {
-      f.F.toMatrix(f.vpg->inputVertexPositions) =
+      toMatrix(f.vpg->inputVertexPositions) =
           initial_pos + alpha * positionDirection;
     }
     if (f.O.isProteinVariation) {
@@ -143,8 +143,8 @@ double Integrator::backtrack(
 }
 
 void Integrator::lineSearchErrorBacktrack(
-    const double &alpha, const EigenVectorX3D &current_pos,
-    const EigenVectorX1D &current_proteinDensity, bool runAll) {
+    const double &alpha, const EigenVectorX3dr &current_pos,
+    const EigenVectorX1d &current_proteinDensity, bool runAll) {
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
 
   if (runAll || f.E.potE > previousE.potE) {
@@ -153,26 +153,25 @@ void Integrator::lineSearchErrorBacktrack(
                 << " from " << previousE.BE << " to " << f.E.BE << std::endl;
 
       f.proteinDensity.raw() = current_proteinDensity;
-      f.F.toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(f.F.toMatrix(f.F.bendingForceVec));
+      toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.bendingForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.BE > previousE.BE) {
         std::cout << "With only bending force, BE has increased "
                   << f.E.BE - previousE.BE << " from " << previousE.BE << " to "
                   << f.E.BE << ", expected dBE: "
-                  << -alpha * f.F.maskForce(f.F.toMatrix(f.F.bendingForceVec))
+                  << -alpha * f.F.maskForce(toMatrix(f.F.bendingForceVec))
                                   .squaredNorm()
                   << std::endl;
         // << -alpha *
-        //        (f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array() *
-        //         f.F.mask(f.F.toMatrix(f.F.bendingForceVec)).array())
+        //        (f.F.mask(toMatrix(f.F.bendingForceVec)).array() *
+        //         f.F.mask(toMatrix(f.F.bendingForceVec)).array())
         //            .sum()
         // << std::endl;
       }
 
-      f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+      toMatrix(f.vpg->inputVertexPositions) = current_pos;
       f.proteinDensity.raw() =
           current_proteinDensity +
           alpha * f.P.Bc * f.F.maskProtein(f.F.bendingPotential.raw());
@@ -193,16 +192,15 @@ void Integrator::lineSearchErrorBacktrack(
                 << " from " << previousE.sE << " to " << f.E.sE << std::endl;
 
       f.proteinDensity.raw() = current_proteinDensity;
-      f.F.toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(f.F.toMatrix(f.F.capillaryForceVec));
+      toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.capillaryForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.sE > previousE.sE) {
         std::cout << "With only capillary force, sE has increased "
                   << f.E.sE - previousE.sE << " from " << previousE.sE << " to "
                   << f.E.sE << ", expected dsE: "
-                  << -alpha * f.F.maskForce(f.F.toMatrix(f.F.capillaryForceVec))
+                  << -alpha * f.F.maskForce(toMatrix(f.F.capillaryForceVec))
                                   .squaredNorm()
                   << std::endl;
       }
@@ -212,16 +210,15 @@ void Integrator::lineSearchErrorBacktrack(
                 << " from " << previousE.pE << " to " << f.E.pE << std::endl;
 
       f.proteinDensity.raw() = current_proteinDensity;
-      f.F.toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(f.F.toMatrix(f.F.osmoticForceVec));
+      toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.osmoticForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.pE > previousE.pE) {
         std::cout << "With only osmotic force, pE has increased "
                   << f.E.pE - previousE.pE << " from " << previousE.pE << " to "
                   << f.E.pE << ", expected dpE: "
-                  << -alpha * f.F.maskForce(f.F.toMatrix(f.F.osmoticForceVec))
+                  << -alpha * f.F.maskForce(toMatrix(f.F.osmoticForceVec))
                                   .squaredNorm()
                   << std::endl;
       }
@@ -231,22 +228,20 @@ void Integrator::lineSearchErrorBacktrack(
                 << " from " << previousE.aE << " to " << f.E.aE << std::endl;
 
       f.proteinDensity.raw() = current_proteinDensity;
-      f.F.toMatrix(f.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * f.F.maskForce(f.F.toMatrix(f.F.adsorptionForceVec));
+      toMatrix(f.vpg->inputVertexPositions) =
+          current_pos + alpha * f.F.maskForce(toMatrix(f.F.adsorptionForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.aE > previousE.aE) {
         std::cout << "With only adsorption force, aE has increased "
                   << f.E.aE - previousE.aE << " from " << previousE.aE << " to "
                   << f.E.aE << ", expected daE: "
-                  << -alpha *
-                         f.F.maskForce(f.F.toMatrix(f.F.adsorptionForceVec))
-                             .squaredNorm()
+                  << -alpha * f.F.maskForce(toMatrix(f.F.adsorptionForceVec))
+                                  .squaredNorm()
                   << std::endl;
       }
 
-      f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+      toMatrix(f.vpg->inputVertexPositions) = current_pos;
       f.proteinDensity.raw() =
           current_proteinDensity +
           alpha * f.P.Bc * f.F.maskProtein(f.F.adsorptionPotential.raw());
@@ -267,22 +262,21 @@ void Integrator::lineSearchErrorBacktrack(
                 << " from " << previousE.dE << " to " << f.E.dE << std::endl;
 
       f.proteinDensity.raw() = current_proteinDensity;
-      f.F.toMatrix(f.vpg->inputVertexPositions) =
+      toMatrix(f.vpg->inputVertexPositions) =
           current_pos +
-          alpha * f.F.maskForce(f.F.toMatrix(f.F.lineCapillaryForceVec));
+          alpha * f.F.maskForce(toMatrix(f.F.lineCapillaryForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.E.dE > previousE.dE) {
         std::cout << "With only line tension force, dE has increased "
                   << f.E.dE - previousE.dE << " from " << previousE.dE << " to "
                   << f.E.dE << ", expected ddE: "
-                  << -alpha *
-                         f.F.maskForce(f.F.toMatrix(f.F.lineCapillaryForceVec))
-                             .squaredNorm()
+                  << -alpha * f.F.maskForce(toMatrix(f.F.lineCapillaryForceVec))
+                                  .squaredNorm()
                   << std::endl;
       }
 
-      f.F.toMatrix(f.vpg->inputVertexPositions) = current_pos;
+      toMatrix(f.vpg->inputVertexPositions) = current_pos;
       f.proteinDensity.raw() =
           current_proteinDensity +
           alpha * f.P.Bc * f.F.maskProtein(f.F.diffusionPotential.raw());
@@ -303,7 +297,7 @@ void Integrator::lineSearchErrorBacktrack(
                 << " from " << previousE.exE << " to " << f.E.exE << std::endl;
 
       f.proteinDensity.raw() = current_proteinDensity;
-      f.F.toMatrix(f.vpg->inputVertexPositions) =
+      toMatrix(f.vpg->inputVertexPositions) =
           current_pos +
           alpha * f.F.maskForce(f.F.addNormal(f.F.externalForce.raw()));
       f.updateVertexPositions(false);
@@ -337,24 +331,24 @@ void Integrator::finitenessErrorBacktrack() {
     EXIT = true;
     SUCCESS = false;
 
-    if (!std::isfinite(f.F.toMatrix(f.vel).norm())) {
+    if (!std::isfinite(toMatrix(f.vel).norm())) {
       std::cout << "Velocity is not finite!" << std::endl;
     }
 
-    if (!std::isfinite(f.F.toMatrix(f.F.mechanicalForceVec).norm())) {
-      if (!std::isfinite(f.F.toMatrix(f.F.capillaryForceVec).norm())) {
+    if (!std::isfinite(toMatrix(f.F.mechanicalForceVec).norm())) {
+      if (!std::isfinite(toMatrix(f.F.capillaryForceVec).norm())) {
         std::cout << "Capillary force is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.F.toMatrix(f.F.bendingForceVec).norm())) {
+      if (!std::isfinite(toMatrix(f.F.bendingForceVec).norm())) {
         std::cout << "Bending force is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.F.toMatrix(f.F.osmoticForceVec).norm())) {
+      if (!std::isfinite(toMatrix(f.F.osmoticForceVec).norm())) {
         std::cout << "Osmotic force is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.F.toMatrix(f.F.lineCapillaryForceVec).norm())) {
+      if (!std::isfinite(toMatrix(f.F.lineCapillaryForceVec).norm())) {
         std::cout << "Line capillary force is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.F.toMatrix(f.F.externalForce).norm())) {
+      if (!std::isfinite(toMatrix(f.F.externalForce).norm())) {
         std::cout << "External force is not finite!" << std::endl;
       }
     }
@@ -364,22 +358,22 @@ void Integrator::finitenessErrorBacktrack() {
     EXIT = true;
     SUCCESS = false;
 
-    if (!std::isfinite(f.F.toMatrix(f.vel_protein).norm())) {
+    if (!std::isfinite(toMatrix(f.vel_protein).norm())) {
       std::cout << "Protein velocity is not finite!" << std::endl;
     }
 
-    if (!std::isfinite(f.F.toMatrix(f.F.chemicalPotential).norm())) {
-      if (!std::isfinite(f.F.toMatrix(f.F.bendingPotential).norm())) {
+    if (!std::isfinite(toMatrix(f.F.chemicalPotential).norm())) {
+      if (!std::isfinite(toMatrix(f.F.bendingPotential).norm())) {
         std::cout << "Bending Potential is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.F.toMatrix(f.F.interiorPenaltyPotential).norm())) {
+      if (!std::isfinite(toMatrix(f.F.interiorPenaltyPotential).norm())) {
         std::cout << "Protein interior penalty potential is not finite!"
                   << std::endl;
       }
-      if (!std::isfinite(f.F.toMatrix(f.F.diffusionPotential).norm())) {
+      if (!std::isfinite(toMatrix(f.F.diffusionPotential).norm())) {
         std::cout << "Diffusion potential is not finite!" << std::endl;
       }
-      if (!std::isfinite(f.F.toMatrix(f.F.adsorptionPotential).norm())) {
+      if (!std::isfinite(toMatrix(f.F.adsorptionPotential).norm())) {
         std::cout << "Adsorption potential is not finite!" << std::endl;
       }
     }
@@ -518,7 +512,7 @@ void Integrator::createNetcdfFile() {
   if (verbosity > 0) {
     fd.createNewFile(outputDir + "/" + trajFileName, *f.mesh, *f.refVpg,
                      TrajFile::NcFile::replace);
-    fd.writeMask(f.F.toMatrix(f.F.forceMask).rowwise().sum());
+    fd.writeMask(toMatrix(f.F.forceMask).rowwise().sum());
     if (!f.mesh->hasBoundary()) {
       fd.writeRefVolume(f.refVolume);
       fd.writeRefSurfArea(f.refSurfaceArea);
@@ -556,8 +550,7 @@ void Integrator::saveData() {
               << "dA/Area: " << dArea << "/" << f.surfaceArea << ", "
               << "dVP/Volume: " << dVP << "/" << f.volume << ", "
               << "h: "
-              << f.F.toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff()
-              << "\n"
+              << toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff() << "\n"
               << "E_total: " << f.E.totalE << "\n"
               << "E_pot: " << f.E.potE << "\n"
               << "|e|Mech: " << f.mechErrorNorm << "\n"
@@ -619,18 +612,18 @@ void Integrator::markFileName(std::string marker_str) {
   const char *ext = strchr(file, '.');
 
   // name fileMarked to be the file name
-  strncpy(fileMarked, file, ext - file);
+  std::strncpy(fileMarked, file, ext - file);
 
   // name fileMarked to be file name + the marker + extension
-  strcat(fileMarked, marker);
-  strcat(fileMarked, ext);
+  std::strcat(fileMarked, marker);
+  std::strcat(fileMarked, ext);
   fileMarked[ext - file + sizeof(marker) + sizeof(ext)] = '\0';
 
   // append the directory path and copy to oldNC and newNC
-  strcpy(oldNC, dirPath.c_str());
-  strcpy(newNC, dirPath.c_str());
-  strcat(oldNC, file);
-  strcat(newNC, fileMarked);
+  std::strcpy(oldNC, dirPath.c_str());
+  std::strcpy(newNC, dirPath.c_str());
+  std::strcat(oldNC, file);
+  std::strcat(newNC, fileMarked);
 
   // rename file
   rename(oldNC, newNC);
@@ -649,8 +642,7 @@ void Integrator::saveNetcdfData() {
   fd.writeVolume(idx, f.volume);
   fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.refSurfaceArea
                                               : f.surfaceArea);
-  fd.writeHeight(idx,
-                 f.F.toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
+  fd.writeHeight(idx, toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
   fd.writeBendEnergy(idx, f.E.BE);
   fd.writeSurfEnergy(idx, f.E.sE);
@@ -700,7 +692,7 @@ void Integrator::saveNetcdfData() {
 #endif
 
 void Integrator::getParameterLog(std::string inputMesh) {
-  ofstream myfile(outputDir + "/parameter.txt");
+  std::ofstream myfile(outputDir + "/parameter.txt");
   if (myfile.is_open()) {
     myfile << "Mem3DG Version: " << MEM3DG_VERSION << "\n";
     myfile << "Input Mesh:     " << inputMesh << "\n";
@@ -731,14 +723,14 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile.close();
 
   } else
-    cout << "Unable to open file";
+    std::cout << "Unable to open file";
 }
 
 void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
                               double areaError, double volumeError,
                               double bendingError, double faceError,
                               std::string inputMesh) {
-  ofstream myfile(nameOfFile);
+  std::ofstream myfile(nameOfFile);
   if (myfile.is_open()) {
     myfile << "Input Mesh: " << inputMesh << "\n";
     myfile << "Final parameter: \n";
@@ -809,7 +801,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
 
     myfile.close();
   } else
-    cout << "Unable to open file";
+    std::cout << "Unable to open file";
 }
-
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg

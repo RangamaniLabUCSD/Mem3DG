@@ -23,10 +23,11 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -93,7 +94,7 @@ void System::computeProteinInteriorPenaltyEnergy() {
 
 void System::computeDirichletEnergy() {
   if (false) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "computeDirichletEnergy: out of date implementation, "
         "shouldn't be called!");
     // scale the dH0 such that it is integrated over the edge
@@ -117,10 +118,10 @@ void System::computeDirichletEnergy() {
 }
 
 void System::computeExternalForceEnergy() {
-  E.exE = -rowwiseDotProduct(
-               rowwiseScaling(F.externalForce.raw(),
-                              gc::EigenMap<double, 3>(vpg->vertexNormals)),
-               gc::EigenMap<double, 3>(vpg->inputVertexPositions))
+  E.exE = -rowwiseDotProduct(rowwiseScalarProduct(
+                                 F.externalForce.raw(),
+                                 gc::EigenMap<double, 3>(vpg->vertexNormals)),
+                             gc::EigenMap<double, 3>(vpg->inputVertexPositions))
                .sum();
 }
 
@@ -184,4 +185,5 @@ void System::computeGradient(gcs::VertexData<double> &quantities,
   }
 }
 
+} // namespace solver
 } // namespace mem3dg

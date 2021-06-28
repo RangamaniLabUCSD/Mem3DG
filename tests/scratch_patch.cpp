@@ -3,13 +3,8 @@
 #include <netcdf>
 #endif
 
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/mem3dg.h"
-#include "mem3dg/solver/mesh.h"
-#include "mem3dg/solver/system.h"
-#include "mem3dg/solver/trajfile.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/mem3dg"
+#include "mem3dg.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -22,11 +17,11 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
+using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
+using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 int main() {
@@ -41,15 +36,15 @@ int main() {
          conc = 25, height = 0, radius = 100, temp = 0, h = 1e-5, Kv = 0,
          eta = 0, Ksg = 0.05, A_res = 0, V_res = 0;
 
-  EigenVectorX1D pt(3), r_H0(2);
+  EigenVectorX1d pt(3), r_H0(2);
   pt << 0, 0, 0;
   r_H0 << 0.15, 0.15;
 
-  mem3dg::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
+  mem3dg::solver::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
                        Pam, temp, pt,    Kf,   conc,    height, radius};
 
-  mem3dg::Options o;
+  mem3dg::solver::Options o;
   o.isProteinVariation = false;
   o.isVertexShift = false;
   o.isReducedVolume = true;
@@ -58,14 +53,14 @@ int main() {
   o.isCollapseEdge = false;
   o.isFloatVertex = false;
 
-  mem3dg::System f(inputMesh, p, o, 0, false);
+  mem3dg::solver::System f(inputMesh, p, o, 0, false);
 
   double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
          tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
-  size_t verbosity = 2;
+  std::size_t verbosity = 2;
 
-  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+  mem3dg::solver::integrator::Euler integrator(f, h, T, tSave, eps, outputDir);
   integrator.isAdaptiveStep = true;
   integrator.trajFileName = "traj.nc";
   integrator.verbosity = verbosity;

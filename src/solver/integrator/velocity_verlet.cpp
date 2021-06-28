@@ -24,11 +24,14 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator/integrator.h"
+#include "mem3dg/solver/integrator/velocity_verlet.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
+namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool VelocityVerlet::integrate() {
@@ -89,11 +92,11 @@ bool VelocityVerlet::integrate() {
 
 void VelocityVerlet::checkParameters() {
   if (f.O.isVertexShift) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "Vertex shift is not supported for Velocity Verlet!");
   }
   if (f.O.isSplitEdge || f.O.isEdgeFlip || f.O.isCollapseEdge) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "Mesh mutations are currently not supported for Velocity Verlet!");
   }
 }
@@ -103,20 +106,22 @@ void VelocityVerlet::status() {
   f.updateVertexPositions();
 
   // alias vpg quantities, which should follow the update
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   // compute summerized forces
   getForces();
 
   // Compute total pressure
-  // newTotalPressure = rowwiseScaling((physicalForce + DPDForce).array() /
+  // newTotalPressure = rowwiseScalarProduct((physicalForce + DPDForce).array()
+  // /
   //                                       f.vpg->vertexDualAreas.raw().array(),
   //                                   vertexAngleNormal_e);
   newTotalPressure =
-      rowwiseScaling(DPDForce.array() / f.vpg->vertexDualAreas.raw().array(),
-                     vertexAngleNormal_e) +
+      rowwiseScalarProduct(DPDForce.array() /
+                               f.vpg->vertexDualAreas.raw().array(),
+                           vertexAngleNormal_e) +
       (physicalForceVec.array().colwise() /
        f.vpg->vertexDualAreas.raw().array())
           .matrix();
@@ -161,7 +166,7 @@ void VelocityVerlet::march() {
 
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
+  auto vel_protein_e = toMatrix(f.vel_protein);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
   // adjust time step if adopt adaptive time step based on mesh size
@@ -189,5 +194,6 @@ void VelocityVerlet::march() {
   // process the mesh with regularization or mutation
   f.processMesh();
 }
-
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg

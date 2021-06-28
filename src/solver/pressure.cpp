@@ -29,22 +29,29 @@
 #include "Eigen/src/Core/util/Constants.h"
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/type_utilities.h"
 #include <Eigen/Core>
 #include <math.h>
 #include <pcg_random.hpp>
 #include <stdexcept>
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void System::computeVectorForces() {
+  assert(mesh->isCompressed());
+  // if(!mesh->isCompressed()){
+  //   mem3dg_runtime_error("Mesh must be compressed to compute forces!");
+  // }
 
-  for (gc::Vertex v : mesh->vertices()) {
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    gc::Vertex v{mesh->vertex(i)};
+
     gc::Vector3 bendForceVec{0, 0, 0};
     gc::Vector3 bendForceVec_areaGrad{0, 0, 0};
     gc::Vector3 bendForceVec_gaussVec{0, 0, 0};
@@ -54,95 +61,101 @@ void System::computeVectorForces() {
     gc::Vector3 osmoticForceVec{0, 0, 0};
     gc::Vector3 lineCapForceVec{0, 0, 0};
     gc::Vector3 adsorptionForceVec{0, 0, 0};
-    double Hi = vpg->vertexMeanCurvatures[v] / vpg->vertexDualAreas[v];
-    double H0i = H0[v];
-    double Kbi = Kb[v];
-    double proteinDensityi = proteinDensity[v];
+    double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
+    double H0i = H0[i];
+    double Kbi = Kb[i];
+    double proteinDensityi = proteinDensity[i];
     bool boundaryVertex = v.isBoundary();
 
     for (gc::Halfedge he : v.outgoingHalfedges()) {
+      std::size_t fID = he.face().getIndex();
+      std::size_t fID_he_twin = he.twin().face().getIndex();
+      std::size_t heID_twin = he.twin().getIndex();
+      std::size_t heID_twin_next = he.twin().next().getIndex();
+      std::size_t heID_he_next_next = he.next().next().getIndex();
+
       // Initialize local variables for computation
       gc::Vertex vj = he.tipVertex();
-      gc::Vector3 eji = -vecFromHalfedge(he, *vpg);
-      gc::Vector3 dphi_ijk = (he.isInterior())
-                                 ? proteinDensityGradient[he.face()]
-                                 : gc::Vector3{0, 0, 0};
-      double Hj = vpg->vertexMeanCurvatures[vj] / vpg->vertexDualAreas[vj];
-      double H0j = H0[vj];
-      double Kbj = Kb[vj];
-      double proteinDensityj = proteinDensity[vj];
-      gc::Vector3 volGrad{0, 0, 0};
-      gc::Vector3 areaGrad{0, 0, 0};
-      gc::Vector3 gaussVec{0, 0, 0};
-      gc::Vector3 schlafliVec1{0, 0, 0};
-      gc::Vector3 schlafliVec2{0, 0, 0};
-      gc::Vector3 oneSidedAreaGrad{0, 0, 0};
-      gc::Vector3 dirichletVec{0, 0, 0};
+      std::size_t i_vj = vj.getIndex();
+
+      gc::Vector3 dphi_ijk{he.isInterior() ? proteinDensityGradient[fID]
+                                           : gc::Vector3{0, 0, 0}};
+      double Hj = vpg->vertexMeanCurvatures[i_vj] / vpg->vertexDualAreas[i_vj];
+      double H0j = H0[i_vj];
+      double Kbj = Kb[i_vj];
+      double proteinDensityj = proteinDensity[i_vj];
+
       bool boundaryEdge = he.edge().isBoundary();
       bool interiorHalfedge = he.isInterior();
       bool interiorTwinHalfedge = he.twin().isInterior();
 
       // Note: the missing contribution from faces only contributes to z -
       // axis forces
-      // volGrad = vpg->faceNormals[he.face()] * vpg->faceAreas[he.face()] /
+      // volGrad = vpg->faceNormals[fID] * vpg->faceAreas[fID] /
       // 3;
-      volGrad = interiorHalfedge ? vpg->faceNormals[he.face()] *
-                                       vpg->faceAreas[he.face()] / 3
-                                 : gc::Vector3{0, 0, 0};
-      areaGrad =
-          (interiorHalfedge ? 0.25 * gc::cross(vpg->faceNormals[he.face()],
-                                               vecFromHalfedge(he.next(), *vpg))
-                            : gc::Vector3{0, 0, 0}) +
-          (interiorTwinHalfedge
-               ? 0.25 *
-                     gc::cross(vpg->faceNormals[he.twin().face()],
-                               vecFromHalfedge(he.twin().next().next(), *vpg))
-               : gc::Vector3{0, 0, 0});
-      oneSidedAreaGrad = interiorHalfedge
-                             ? 0.5 * gc::cross(vpg->faceNormals[he.face()],
-                                               vecFromHalfedge(he.next(), *vpg))
-                             : gc::Vector3{0, 0, 0};
-      dirichletVec = interiorHalfedge
-                         ? computeGradientNorm2Gradient(he, proteinDensity) /
-                               vpg->faceAreas[he.face()]
-                         : gc::Vector3{0, 0, 0};
-      gaussVec = boundaryEdge
-                     ? gc::Vector3{0, 0, 0}
-                     : 0.5 * vpg->edgeDihedralAngles[he.edge()] * eji.unit();
-      schlafliVec1 = boundaryEdge
-                         ? gc::Vector3{0, 0, 0}
-                         : vpg->halfedgeCotanWeights[he.next().next()] *
-                                   vpg->faceNormals[he.face()] +
-                               vpg->halfedgeCotanWeights[he.twin().next()] *
-                                   vpg->faceNormals[he.twin().face()];
+      gc::Vector3 volGrad{0, 0, 0};
+      gc::Vector3 oneSidedAreaGrad{0, 0, 0};
+      gc::Vector3 dirichletVec{0, 0, 0};
+      gc::Vector3 areaGrad{0, 0, 0};
+
+      if (interiorHalfedge) {
+        volGrad = vpg->faceNormals[fID] * vpg->faceAreas[fID] / 3;
+        oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[fID],
+                                           vecFromHalfedge(he.next(), *vpg));
+        dirichletVec = computeGradientNorm2Gradient(he, proteinDensity) /
+                       vpg->faceAreas[fID];
+
+        areaGrad += 0.25 * gc::cross(vpg->faceNormals[fID],
+                                    vecFromHalfedge(he.next(), *vpg));
+      }
+
+      if (interiorTwinHalfedge) {
+        areaGrad +=
+            0.25 * gc::cross(vpg->faceNormals[fID_he_twin],
+                             vecFromHalfedge(he.twin().next().next(), *vpg));
+      }
+
+      gc::Vector3 gaussVec{0, 0, 0};
+      gc::Vector3 schlafliVec1{0, 0, 0};
+      gc::Vector3 schlafliVec2{0, 0, 0};
+
+      if (!boundaryEdge) {
+        // gc::Vector3 eji{} = -vecFromHalfedge(he, *vpg);
+        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] *
+                   (-vecFromHalfedge(he, *vpg)).unit();
+        schlafliVec1 = vpg->halfedgeCotanWeights[heID_he_next_next] *
+                           vpg->faceNormals[fID] +
+                       vpg->halfedgeCotanWeights[heID_twin_next] *
+                           vpg->faceNormals[fID_he_twin];
+      }
+
       if (boundaryVertex && boundaryEdge) {
         schlafliVec2 = interiorHalfedge
                            ? (-(vpg->halfedgeCotanWeights[he] +
-                                vpg->halfedgeCotanWeights[he.next().next()]) *
-                              vpg->faceNormals[he.face()])
-                           : (-(vpg->halfedgeCotanWeights[he.twin()] +
-                                vpg->halfedgeCotanWeights[he.twin().next()]) *
-                              vpg->faceNormals[he.twin().face()]);
+                                vpg->halfedgeCotanWeights[heID_he_next_next]) *
+                              vpg->faceNormals[fID])
+                           : (-(vpg->halfedgeCotanWeights[heID_twin] +
+                                vpg->halfedgeCotanWeights[heID_twin_next]) *
+                              vpg->faceNormals[fID_he_twin]);
       } else if (!boundaryVertex && vj.isBoundary()) {
-        schlafliVec2 = (vpg->halfedgeCotanWeights[he.next().next()] *
-                            vpg->faceNormals[he.face()] +
-                        vpg->halfedgeCotanWeights[he.twin().next()] *
-                            vpg->faceNormals[he.twin().face()]) +
-                       (he.next().edge().isBoundary()
-                            ? gc::Vector3{0, 0, 0}
-                            : -(vpg->halfedgeCotanWeights[he] +
-                                vpg->halfedgeCotanWeights[he.next().next()]) *
-                                  vpg->faceNormals[he.face()]) +
-                       (he.twin().next().next().edge().isBoundary()
-                            ? gc::Vector3{0, 0, 0}
-                            : -(vpg->halfedgeCotanWeights[he.twin()] +
-                                vpg->halfedgeCotanWeights[he.twin().next()]) *
-                                  vpg->faceNormals[he.twin().face()]);
+        schlafliVec2 = vpg->halfedgeCotanWeights[heID_he_next_next] *
+                           vpg->faceNormals[fID] +
+                       vpg->halfedgeCotanWeights[heID_twin_next] *
+                           vpg->faceNormals[fID_he_twin];
+
+        if (!he.next().edge().isBoundary())
+          schlafliVec2 -= (vpg->halfedgeCotanWeights[he] +
+                            vpg->halfedgeCotanWeights[heID_he_next_next]) *
+                          vpg->faceNormals[fID];
+
+        if (!he.twin().next().next().edge().isBoundary())
+          schlafliVec2 -= (vpg->halfedgeCotanWeights[heID_twin] +
+                            vpg->halfedgeCotanWeights[heID_twin_next]) *
+                          vpg->faceNormals[fID_he_twin];
       } else {
-        schlafliVec2 =
-            -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[he.face()] +
-              vpg->halfedgeCotanWeights[he.twin()] *
-                  vpg->faceNormals[he.twin().face()]);
+        schlafliVec2 = -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[fID] +
+                         vpg->halfedgeCotanWeights[heID_twin] *
+                             vpg->faceNormals[fID_he_twin]);
       }
 
       // Assemble to forces
@@ -182,10 +195,10 @@ void System::computeVectorForces() {
       // inside of loop
       //   if (isinterface) {
       //     truncatedCurv +=
-      //         oneSidedAreaGrad - gc::dot(oneSidedAreaGrad, dH0[he.face()])
+      //         oneSidedAreaGrad - gc::dot(oneSidedAreaGrad, dH0[fID])
       //         *
-      //                                dH0[he.face()] /
-      //                                dH0[he.face()].norm2();
+      //                                dH0[fID] /
+      //                                dH0[fID].norm2();
       //     curvature += oneSidedAreaGrad;
       //   }
       // }
@@ -214,30 +227,32 @@ void System::computeVectorForces() {
     }
 
     // masking
-    osmoticForceVec = F.maskForce(osmoticForceVec, v);
-    capillaryForceVec = F.maskForce(capillaryForceVec, v);
-    lineCapForceVec = F.maskForce(lineCapForceVec, v);
-    adsorptionForceVec = F.maskForce(adsorptionForceVec, v);
-    bendForceVec = F.maskForce(bendForceVec, v);
-    bendForceVec_areaGrad = F.maskForce(bendForceVec_areaGrad, v);
-    bendForceVec_gaussVec = F.maskForce(bendForceVec_gaussVec, v);
-    bendForceVec_schlafliVec = F.maskForce(bendForceVec_schlafliVec, v);
+    osmoticForceVec = F.maskForce(osmoticForceVec, i);
+    capillaryForceVec = F.maskForce(capillaryForceVec, i);
+    bendForceVec = F.maskForce(bendForceVec, i);
+    lineCapForceVec = F.maskForce(lineCapForceVec, i);
+    adsorptionForceVec = F.maskForce(adsorptionForceVec, i);
+    bendForceVec = F.maskForce(bendForceVec, i);
+    bendForceVec_areaGrad = F.maskForce(bendForceVec_areaGrad, i);
+    bendForceVec_gaussVec = F.maskForce(bendForceVec_gaussVec, i);
+    bendForceVec_schlafliVec = F.maskForce(bendForceVec_schlafliVec, i);
 
     // Combine to one
-    F.osmoticForceVec[v] = osmoticForceVec;
-    F.capillaryForceVec[v] = capillaryForceVec;
-    F.lineCapillaryForceVec[v] = lineCapForceVec;
-    F.adsorptionForceVec[v] = adsorptionForceVec;
-    F.bendingForceVec[v] = bendForceVec;
-    F.bendingForceVec_areaGrad[v] = bendForceVec_areaGrad;
-    F.bendingForceVec_gaussVec[v] = bendForceVec_gaussVec;
-    F.bendingForceVec_schlafliVec[v] = bendForceVec_schlafliVec;
+    F.osmoticForceVec[i] = osmoticForceVec;
+    F.capillaryForceVec[i] = capillaryForceVec;
+    F.bendingForceVec[i] = bendForceVec;
+    F.lineCapillaryForceVec[i] = lineCapForceVec;
+    F.adsorptionForceVec[i] = adsorptionForceVec;
+    F.bendingForceVec[i] = bendForceVec;
+    F.bendingForceVec_areaGrad[i] = bendForceVec_areaGrad;
+    F.bendingForceVec_gaussVec[i] = bendForceVec_gaussVec;
+    F.bendingForceVec_schlafliVec[i] = bendForceVec_schlafliVec;
 
     // Scalar force by projection to angle-weighted normal
-    F.bendingForce[v] = F.ontoNormal(bendForceVec, v);
-    F.capillaryForce[v] = F.ontoNormal(capillaryForceVec, v);
-    F.osmoticForce[v] = F.ontoNormal(osmoticForceVec, v);
-    F.lineCapillaryForce[v] = F.ontoNormal(lineCapForceVec, v);
+    F.bendingForce[i] = F.ontoNormal(bendForceVec, i);
+    F.capillaryForce[i] = F.ontoNormal(capillaryForceVec, i);
+    F.osmoticForce[i] = F.ontoNormal(osmoticForceVec, i);
+    F.lineCapillaryForce[i] = F.ontoNormal(lineCapForceVec, i);
   }
 
   // measure smoothness
@@ -246,18 +261,17 @@ void System::computeVectorForces() {
   }
 }
 
-EigenVectorX1D System::computeBendingForce() {
-  throw std::runtime_error("computeBendingForce: out of data implementation, "
-                           "shouldn't be called!");
+EigenVectorX1d System::computeBendingForce() {
+  mem3dg_runtime_error("Out of data implementation, shouldn't be called!");
   // A. non-optimized version
   // if (O.isLocalCurvature) {
   //   // Split calculation for two domain
   //   bendingPressure.raw().setZero();
   //   auto subdomain = [&](double H0_temp) {
-  //     EigenVectorX1D lap_H = vpg->vertexLumpedMassMatrix.cwiseInverse() * L *
-  //     (H.raw().array() - H0_temp).matrix(); EigenVectorX1D scalerTerms =
+  //     EigenVectorX1d lap_H = vpg->vertexLumpedMassMatrix.cwiseInverse() * L *
+  //     (H.raw().array() - H0_temp).matrix(); EigenVectorX1d scalerTerms =
   //         rowwiseProduct(H.raw(), H.raw()) + H.raw() * H0_temp - K.raw();
-  //     EigenVectorX1D productTerms =
+  //     EigenVectorX1d productTerms =
   //         2.0 *
   //         rowwiseProduct(scalerTerms, (H.raw().array() - H0_temp).matrix());
   //     bendingPressure.raw().array() +=
@@ -268,25 +282,25 @@ EigenVectorX1D System::computeBendingForce() {
   //   subdomain(0);
   // } else {
 
-  EigenVectorX1D ptwiseH = vpg->vertexMeanCurvatures.raw().array() /
+  EigenVectorX1d ptwiseH = vpg->vertexMeanCurvatures.raw().array() /
                            vpg->vertexDualAreas.raw().array();
 
   // calculate the Laplacian of mean curvature H
-  EigenVectorX1D lap_H =
-      -(vpg->cotanLaplacian * rowwiseProduct(Kb.raw(), ptwiseH - H0.raw()))
+  EigenVectorX1d lap_H =
+      -(vpg->cotanLaplacian * Kb.raw().cwiseProduct(ptwiseH - H0.raw()))
            .array() /
       vpg->vertexDualAreas.raw().array();
 
   // initialize and calculate intermediary result scalerTerms
-  EigenVectorX1D scalerTerms = rowwiseProduct(ptwiseH, ptwiseH) +
-                               rowwiseProduct(ptwiseH, H0.raw()) -
+  EigenVectorX1d scalerTerms = ptwiseH.cwiseProduct(ptwiseH) +
+                               ptwiseH.cwiseProduct(H0.raw()) -
                                (vpg->vertexGaussianCurvatures.raw().array() /
                                 vpg->vertexDualAreas.raw().array())
                                    .matrix();
   // scalerTerms = scalerTerms.array().max(0);
 
   // initialize and calculate intermediary result productTerms
-  EigenVectorX1D productTerms =
+  EigenVectorX1d productTerms =
       -2.0 *
       (Kb.raw().array() * (ptwiseH - H0.raw()).array() * scalerTerms.array())
           .matrix();
@@ -301,36 +315,36 @@ EigenVectorX1D System::computeBendingForce() {
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
-  // EigenVectorX1D lap_H_integrated = L * (H - H0);
+  // EigenVectorX1d lap_H_integrated = L * (H - H0);
 
   // // initialize and calculate intermediary result scalarTerms_integrated
-  // EigenVectorX1D H_integrated = M * H;
-  // EigenVectorX1D scalarTerms_integrated =
+  // EigenVectorX1d H_integrated = M * H;
+  // EigenVectorX1d scalarTerms_integrated =
   //     M * rowwiseProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
   //     H_integrated, vpg->vertexLumpedMassMatrix.cwiseInverse() *
   //     H_integrated) + rowwiseProduct(H_integrated, H0) -
   //     vpg->vertexGaussianCurvatures.raw();
-  // EigenVectorX1D zeroMatrix;
+  // EigenVectorX1d zeroMatrix;
   // zeroMatrix.resize(n_vertices, 1);
   // zeroMatrix.setZero();
   // scalarTerms_integrated =
   //     scalarTerms_integrated.array().max(zeroMatrix.array());
 
   // // initialize and calculate intermediary result productTerms_integrated
-  // EigenVectorX1D productTerms_integrated;
+  // EigenVectorX1d productTerms_integrated;
   // productTerms_integrated.resize(n_vertices, 1);
   // productTerms_integrated =
   //     2.0 * rowwiseProduct(scalarTerms_integrated, H - H0);
 
   // bendingPressure_e =
   //     -2.0 * P.Kb *
-  //     rowwiseScaling(vpg->vertexLumpedMassMatrix.cwiseInverse() *
+  //     rowwiseScalarProduct(vpg->vertexLumpedMassMatrix.cwiseInverse() *
   //     (productTerms_integrated + lap_H_integrated),
   //                    vertexAngleNormal_e);
 }
 
-EigenVectorX1D System::computeCapillaryForce() {
-  throw std::runtime_error("computeCapillaryForce: out of data implementation, "
+EigenVectorX1d System::computeCapillaryForce() {
+  mem3dg_runtime_error("computeCapillaryForce: out of data implementation, "
                            "shouldn't be called!");
   /// Geometric implementation
   F.surfaceTension =
@@ -358,8 +372,8 @@ EigenVectorX1D System::computeCapillaryForce() {
   // }
 }
 
-EigenVectorX1D System::computeOsmoticForce() {
-  throw std::runtime_error("computeOsmoticForce: out of data implementation, "
+EigenVectorX1d System::computeOsmoticForce() {
+  mem3dg_runtime_error("computeOsmoticForce: out of data implementation, "
                            "shouldn't be called!");
   F.osmoticForce.raw().setConstant(F.osmoticPressure);
   F.osmoticForce.raw().array() *= vpg->vertexDualAreas.raw().array();
@@ -378,9 +392,9 @@ EigenVectorX1D System::computeOsmoticForce() {
   // }
 }
 
-EigenVectorX1D System::computeLineCapillaryForce() {
+EigenVectorX1d System::computeLineCapillaryForce() {
   if (false) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "computeLineCapillaryForce: out of data implementation, "
         "shouldn't be called!");
     // zeros out the nonpositive normal curvature to compensate the fact that d0
@@ -398,8 +412,8 @@ EigenVectorX1D System::computeLineCapillaryForce() {
   return F.lineCapillaryForce.raw();
 }
 
-EigenVectorX1D System::computeExternalForce() {
-  EigenVectorX1D externalPressureMagnitude;
+EigenVectorX1d System::computeExternalForce() {
+  EigenVectorX1d externalPressureMagnitude;
 
   // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT
   // GEOMETRY
@@ -435,7 +449,7 @@ EigenVectorX1D System::computeExternalForce() {
   return F.externalForce.raw();
 }
 
-EigenVectorX1D System::computeChemicalPotential() {
+EigenVectorX1d System::computeChemicalPotential() {
   gcs::VertexData<double> dH0dphi(*mesh, 0);
   gcs::VertexData<double> dKbdphi(*mesh, 0);
   auto meanCurvDiff = (vpg->vertexMeanCurvatures.raw().array() /
@@ -446,7 +460,7 @@ EigenVectorX1D System::computeChemicalPotential() {
     dH0dphi.fill(P.H0c);
     dKbdphi.fill(P.Kbc);
   } else if (P.relation == "hill") {
-    EigenVectorX1D proteinDensitySq =
+    EigenVectorX1d proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
     dH0dphi.raw() =
         (2 * P.H0c * proteinDensity.raw().array() /
@@ -485,7 +499,8 @@ EigenVectorX1D System::computeChemicalPotential() {
   return F.chemicalPotential.raw();
 }
 
-std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
+std::tuple<EigenVectorX3dr, EigenVectorX3dr>
+System::computeDPDForces(double dt) {
 
   auto dampingForce_e = EigenMap<double, 3>(F.dampingForce);
   auto stochasticForce_e = EigenMap<double, 3>(F.stochasticForce);
@@ -538,7 +553,7 @@ std::tuple<EigenVectorX3D, EigenVectorX3D> System::computeDPDForces(double dt) {
 gc::Vector3 System::computeGradientNorm2Gradient(
     const gcs::Halfedge &he, const gcs::VertexData<double> &quantities) {
   if (!he.isInterior()) {
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "computeGradientNormGradient: halfedge is not interior!");
   }
 
@@ -668,11 +683,12 @@ void System::computePhysicalForces() {
 
   // compute the mechanical error norm
   mechErrorNorm =
-      O.isShapeVariation ? computeNorm(F.toMatrix(F.mechanicalForceVec)) : 0;
+      O.isShapeVariation ? computeNorm(toMatrix(F.mechanicalForceVec)) : 0;
 
   // compute the chemical error norm
   chemErrorNorm =
       O.isProteinVariation ? computeNorm(F.chemicalPotential.raw()) : 0;
 }
 
+} // namespace solver
 } // namespace mem3dg

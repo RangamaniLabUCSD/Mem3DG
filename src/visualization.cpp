@@ -23,6 +23,7 @@
 
 #include <geometrycentral/surface/meshio.h>
 
+#include "visualization.h"
 #include "mem3dg/mem3dg"
 //#include <pybind11/embed.h>
 
@@ -35,18 +36,10 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
-    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
-    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
-
-
 // ==========================================================
 // =============        Viewers                ==============
 // ==========================================================
-void visualize(mem3dg::System &f) {
+void visualize(mem3dg::solver::System &f) {
   signal(SIGINT, mem3dg::signalHandler);
   // Initialize visualization variables
   float transparency = 1;
@@ -109,7 +102,7 @@ void visualize(mem3dg::System &f) {
       ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
   polyscope::getSurfaceMesh("Membrane")
       ->addFaceCountQuantity("the point",
-                             std::vector<std::pair<size_t, int>>{std::make_pair(
+                             std::vector<std::pair<std::size_t, int>>{std::make_pair(
                                  f.thePoint.inSomeFace().face.getIndex(), 1)})
       ->setPointRadius(sqrt(f.surfaceArea / f.mesh->nFaces() * 4 / sqrt(3)) / 2,
                        false);
@@ -191,7 +184,7 @@ int snapshot_ply(std::string fileName, const Quantities &option,
 }
 
 int animate_ply(std::string frameDir, const Quantities &options,
-                std::vector<size_t> frameNum, float transparency, float fov,
+                std::vector<std::size_t> frameNum, float transparency, float fov,
                 float edgeWidth) {
 
   // Activate signal handling
@@ -296,7 +289,7 @@ int animate_nc(std::string &filename, const Quantities &options,
   signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
+  mem3dg::solver::TrajFile fd = mem3dg::solver::TrajFile::openReadOnly(filename);
 
   // Initialize visualization variables
   int prevFrame = 0;
@@ -388,7 +381,7 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
   signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
-  mem3dg::TrajFile fd = mem3dg::TrajFile::openReadOnly(filename);
+  mem3dg::solver::TrajFile fd = mem3dg::solver::TrajFile::openReadOnly(filename);
   fd.getNcFrame(frame);
 
   // Set preference for polyscope
@@ -466,21 +459,21 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
 // ==========================================================
 
 #ifdef MEM3DG_WITH_NETCDF
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd, int idx,
                                             const Quantities &options) {
   if (idx >= fd.getNextFrameIndex()) {
     idx = 0;
   }
 
-  EigenTopVec topo_frame = fd.getTopoFrame(idx);
-  EigenVectorX3D coords = fd.getCoords(idx);
+  mem3dg::EigenVectorX3ur topo_frame = fd.getTopoFrame(idx);
+  mem3dg::EigenVectorX3dr coords = fd.getCoords(idx);
   // mesh->updateVertexPositions(coords);
   polyscope::SurfaceMesh *polyscopeMesh =
       polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
   // polyscopeMesh->setEnabled(true);
 
   if (options.ref_coord) {
-    EigenVectorX3D refcoords = fd.getRefcoordinate();
+    mem3dg::EigenVectorX3dr refcoords = fd.getRefcoordinate();
     polyscopeMesh->addVertexVectorQuantity("ref_coordinate", refcoords);
 
     // Show quantities at the opening
@@ -538,7 +531,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::TrajFile &fd, int idx,
   return polyscopeMesh;
 }
 
-void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::TrajFile &fd,
+void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::TrajFile &fd,
           int &idx, int &waitTime, Quantities options, bool &toggle) {
 
   polyscopeMesh = registerSurfaceMesh(fd, idx, options);
@@ -691,9 +684,9 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
   ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
   gcs::VertexData<gc::Vector3> tangentialForce =
   ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
-  // EigenVectorX3D vertexVelocity_e =
+  // mem3dg::EigenVectorX3dr vertexVelocity_e =
   //    mem3dg::EigenMap<double, 3>(vertexVelocity);
-  /*EigenVectorX3D normalForce_e =
+  /*mem3dg::EigenVectorX3dr normalForce_e =
   gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
   Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
   3>(tangentialForce);*/
@@ -709,7 +702,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
 
 void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
           int &idx, int &waitTime, Quantities options, bool &toggle,
-          std::vector<size_t> frameNum) {
+          std::vector<std::size_t> frameNum) {
   char buffer[50];
   sprintf(buffer, "/frame%d.ply", (int)idx);
   std::string plyName(buffer);
@@ -723,9 +716,9 @@ void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
   wait(waitTime);
 }
 
-std::vector<std::pair<size_t, int>>
+std::vector<std::pair<std::size_t, int>>
 getCountQuantities(gc::VertexData<int> &&meshData) {
-  std::vector<std::pair<size_t, int>> values;
+  std::vector<std::pair<std::size_t, int>> values;
   for (gc::Vertex v : meshData.getMesh()->vertices()) {
     if (meshData[v] != 0) {
       values.push_back(std::make_pair(v.getIndex(), meshData[v]));

@@ -27,7 +27,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Build the tests
-set(MEM3DG_TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
+set(MEM3DG_TEST_SRCS src/main_test.cpp src/product_test.cpp
               src/force_calculation_test.cpp
 )
 

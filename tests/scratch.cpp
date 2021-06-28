@@ -3,13 +3,8 @@
 #include <netcdf>
 #endif
 
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/mem3dg.h"
-#include "mem3dg/solver/mesh.h"
-#include "mem3dg/solver/system.h"
-#include "mem3dg/solver/trajfile.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/mem3dg"
+#include "mem3dg.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -22,11 +17,11 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
+using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
+using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 int main() {
@@ -35,11 +30,11 @@ int main() {
                           "results//bud//asymm//testTraj//frame360.ply";
 
   /// physical parameters
-  mem3dg::Parameters p;
+  mem3dg::solver::Parameters p;
   p.Kb = 8.22e-5;
   p.Kbc = 8.22e-4;
   p.H0c = 6;
-  p.protein0 = EigenVectorX1D(1);
+  p.protein0 = EigenVectorX1d(1);
   p.protein0 << 1;
   p.eta = 0;
   p.Ksg = 2e-2;
@@ -59,10 +54,10 @@ int main() {
   p.radius = 100000;
   p.gamma = 0;
   p.temp = 0;
-  p.pt = EigenVectorX1D(2);
+  p.pt = EigenVectorX1d(2);
   p.pt << 0, 0;
 
-  mem3dg::Options o;
+  mem3dg::solver::Options o;
   o.isProteinVariation = false;
   o.isReducedVolume = false;
   o.isEdgeFlip = true;
@@ -71,7 +66,7 @@ int main() {
   o.isVertexShift = false;
   o.isFloatVertex = true;
 
-  mem3dg::System f(inputMesh, p, o, 0, false);
+  mem3dg::solver::System f(inputMesh, p, o, 0, false);
 
   double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
          verbosity = 3, restartNum = 5;
@@ -80,7 +75,7 @@ int main() {
   std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
                           "results//bud//asymm//testTraj";
 
-  mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+  mem3dg::solver::integrator::Euler integrator(f, h, T, tSave, eps, outputDir);
   integrator.isAdaptiveStep = isAdaptiveStep;
   integrator.trajFileName = "traj.nc";
   integrator.verbosity = verbosity;

@@ -28,13 +28,8 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/mem3dg.h"
-#include "mem3dg/solver/mesh.h"
-#include "mem3dg/solver/system.h"
-#include "mem3dg/solver/trajfile.h"
-#include "mem3dg/solver/typetraits.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/mem3dg"
+#include "mem3dg.h"
 
 // #include <pybind11/embed.h>
 
@@ -48,22 +43,22 @@
 #include <unistd.h>
 #endif
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
-int driver_ply(const size_t verbosity, std::string inputMesh,
-               std::string refMesh, size_t nSub, bool isReducedVolume,
+int driver_ply(const std::size_t verbosity, std::string inputMesh,
+               std::string refMesh, std::size_t nSub, bool isReducedVolume,
                bool isProtein, bool isLocalCurvature, bool isVertexShift,
                bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
                bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb,
-               double Kbc, double H0, EigenVectorX1D r_H0, double Kse,
+               double Kbc, double H0, EigenVectorX1d r_H0, double Kse,
                double Kst, double Ksl, double Ksg, double Kv, double eta,
                double epsilon, double Bc, double Vt, double cam, double gamma,
-               double temp, EigenVectorX1D pt, double Kf, double conc,
+               double temp, EigenVectorX1d pt, double Kf, double conc,
                double height, double radius, double h, double T, double eps,
                double tSave, std::string outputDir,
                std::string integrationMethod, bool isBacktrack, double rho,
                double c1, double ctol, bool isAugmentedLagrangian,
-               size_t restartNum, bool isAdaptiveStep) {
+               std::size_t restartNum, bool isAdaptiveStep) {
   /*std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
   std::tie(ptrMesh, ptrRichData) =
   gcs::RichSurfaceMeshData::readMeshAndData(inputMesh); <- this returns no
@@ -74,26 +69,26 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
   // pybind11::scoped_interpreter guard{};
 
   double V_res = 0, A_res = 0;
-  mem3dg::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
+  mem3dg::solver::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
                        cam, temp, pt,    Kf,   conc,    height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+  mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
                     isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
-  mem3dg::System f(inputMesh, refMesh, p, o, nSub, false);
+  mem3dg::solver::System f(inputMesh, refMesh, p, o, nSub, false);
 
   /// Time integration / optimization
   if (integrationMethod == "velocity verlet") {
-    mem3dg::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir);
+    mem3dg::solver::integrator::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir);
     integrator.isAdaptiveStep = isAdaptiveStep;
     integrator.trajFileName = "traj.nc";
     integrator.verbosity = verbosity;
     integrator.integrate();
   } else if (integrationMethod == "euler") {
-    mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+    mem3dg::solver::integrator::Euler integrator(f, h, T, tSave, eps, outputDir);
     integrator.isAdaptiveStep = isAdaptiveStep;
     integrator.trajFileName = "traj.nc";
     integrator.verbosity = verbosity;
@@ -102,7 +97,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     integrator.c1 = c1;
     integrator.integrate();
   } else if (integrationMethod == "conjugate gradient") {
-    mem3dg::ConjugateGradient integrator(f, h, T, tSave, eps, outputDir);
+    mem3dg::solver::integrator::ConjugateGradient integrator(f, h, T, tSave, eps, outputDir);
     integrator.restartNum = restartNum;
     integrator.isAdaptiveStep = isAdaptiveStep;
     integrator.trajFileName = "traj.nc";
@@ -114,7 +109,7 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
     integrator.isAugmentedLagrangian = isAugmentedLagrangian;
     integrator.integrate();
   } else if (integrationMethod == "BFGS") {
-    mem3dg::BFGS integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
+    mem3dg::solver::integrator::BFGS integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
                             "/traj.nc", verbosity, isBacktrack, rho, c1, ctol,
                             isAugmentedLagrangian);
     integrator.integrate();
@@ -124,36 +119,36 @@ int driver_ply(const size_t verbosity, std::string inputMesh,
 }
 
 int forwardsweep_ply(
-    std::string inputMesh, std::string refMesh, size_t nSub,
+    std::string inputMesh, std::string refMesh, std::size_t nSub,
     bool isReducedVolume, bool isProtein, bool isLocalCurvature,
     bool isVertexShift, bool isEdgeFlip, bool isGrowMesh, bool isRefMesh,
     bool isFloatVertex, bool isLaplacianMeanCurvature, double Kb, double Kbc,
-    std::vector<double> H0, EigenVectorX1D r_H0, double Kse, double Kst,
+    std::vector<double> H0, EigenVectorX1d r_H0, double Kse, double Kst,
     double Ksl, double Ksg, double Kv, double eta, double epsilon, double Bc,
     std::vector<double> Vt, std::vector<double> cam, double gamma, double temp,
-    EigenVectorX1D pt, double Kf, double conc, double height, double radius,
+    EigenVectorX1d pt, double Kf, double conc, double height, double radius,
     double h, double T, double eps, double tSave, std::string outputDir,
     bool isBacktrack, double rho, double c1, double ctol,
-    bool isAugmentedLagrangian, size_t restartNum, bool isAdaptiveStep) {
+    bool isAugmentedLagrangian, std::size_t restartNum, bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
 
   /// Initialize parameter struct
   double V_res = 0, A_res = 0;
-  mem3dg::Parameters p{Kb,     Kbc,  H0[0], r_H0, Ksg,     A_res,  Kst,   Ksl,
+  mem3dg::solver::Parameters p{Kb,     Kbc,  H0[0], r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse,    Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt[0],
                        cam[0], temp, pt,    Kf,   conc,    height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+  mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
                     isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
-  mem3dg::System f(inputMesh, refMesh, p, o, nSub, false);
+  mem3dg::solver::System f(inputMesh, refMesh, p, o, nSub, false);
 
   /// Time integration / optimization
-  mem3dg::FeedForwardSweep integrator(
+  mem3dg::solver::integrator::FeedForwardSweep integrator(
       f, h, T, tSave, eps, outputDir, isAdaptiveStep, "/traj.nc", 3,
       isBacktrack, rho, c1, ctol, isAugmentedLagrangian, restartNum, H0,
       (isReducedVolume) ? Vt : cam);
@@ -163,19 +158,19 @@ int forwardsweep_ply(
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
+int driver_nc(const std::size_t verbosity, std::string trajFile, int startingFrame,
               int nSub, bool isContinue, bool isReducedVolume, bool isProtein,
               bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
               bool isGrowMesh, bool isRefMesh, bool isFloatVertex,
               bool isLaplacianMeanCurvature, double Kb, double Kbc, double H0,
-              EigenVectorX1D r_H0, double Kse, double Kst, double Ksl,
+              EigenVectorX1d r_H0, double Kse, double Kst, double Ksl,
               double Ksg, double Kv, double eta, double epsilon, double Bc,
               double Vt, double cam, double gamma, double temp,
-              EigenVectorX1D pt, double Kf, double conc, double height,
+              EigenVectorX1d pt, double Kf, double conc, double height,
               double radius, double h, double T, double eps, double tSave,
               std::string outputDir, std::string integrationMethod,
               bool isBacktrack, double rho, double c1, double ctol,
-              bool isAugmentedLagrangian, size_t restartNum,
+              bool isAugmentedLagrangian, std::size_t restartNum,
               bool isAdaptiveStep) {
 
   // Activate signal handling
@@ -184,26 +179,26 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
 
   // Initialize parameter struct
   double V_res = 0, A_res = 0;
-  mem3dg::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
+  mem3dg::solver::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
                        cam, temp, pt,    Kf,   conc,    height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+  mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
                     isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   // Initialize the system
-  mem3dg::System f(trajFile, startingFrame, p, o, nSub, isContinue);
+  mem3dg::solver::System f(trajFile, startingFrame, p, o, nSub, isContinue);
 
   /// Time integration / optimization
   if (integrationMethod == "velocity verlet") {
-    mem3dg::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir);
+    mem3dg::solver::integrator::VelocityVerlet integrator(f, h, T, tSave, eps, outputDir);
     integrator.isAdaptiveStep = isAdaptiveStep;
     integrator.trajFileName = "traj.nc";
     integrator.verbosity = verbosity;
     integrator.integrate();
   } else if (integrationMethod == "euler") {
-    mem3dg::Euler integrator(f, h, T, tSave, eps, outputDir);
+    mem3dg::solver::integrator::Euler integrator(f, h, T, tSave, eps, outputDir);
     integrator.trajFileName = "traj.nc";
     integrator.verbosity = verbosity;
     integrator.isBacktrack = isBacktrack;
@@ -211,7 +206,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
     integrator.c1 = c1;
     integrator.integrate();
   } else if (integrationMethod == "conjugate gradient") {
-    mem3dg::ConjugateGradient integrator(f, h, T, tSave, eps, outputDir);
+    mem3dg::solver::integrator::ConjugateGradient integrator(f, h, T, tSave, eps, outputDir);
     integrator.restartNum = restartNum;
     integrator.isAdaptiveStep = isAdaptiveStep;
     integrator.trajFileName = "traj.nc";
@@ -223,7 +218,7 @@ int driver_nc(const size_t verbosity, std::string trajFile, int startingFrame,
     integrator.isAugmentedLagrangian = isAugmentedLagrangian;
     integrator.integrate();
   } else if (integrationMethod == "BFGS") {
-    mem3dg::BFGS integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
+    mem3dg::solver::integrator::BFGS integrator(f, h, T, tSave, eps, outputDir, isAdaptiveStep,
                             "/traj.nc", verbosity, isBacktrack, rho, c1, ctol,
                             isAugmentedLagrangian);
     integrator.integrate();
@@ -237,15 +232,15 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
                     bool isLocalCurvature, bool isVertexShift, bool isEdgeFlip,
                     bool isGrowMesh, bool isRefMesh, bool isFloatVertex,
                     bool isLaplacianMeanCurvature, double Kb, double Kbc,
-                    std::vector<double> H0, EigenVectorX1D r_H0, double Kse,
+                    std::vector<double> H0, EigenVectorX1d r_H0, double Kse,
                     double Kst, double Ksl, double Ksg, double Kv, double eta,
                     double epsilon, double Bc, std::vector<double> Vt,
                     std::vector<double> cam, double gamma, double temp,
-                    EigenVectorX1D pt, double Kf, double conc, double height,
+                    EigenVectorX1d pt, double Kf, double conc, double height,
                     double radius, double h, double T, double eps, double tSave,
                     std::string outputDir, bool isBacktrack, double rho,
                     double c1, double ctol, bool isAugmentedLagrangian,
-                    size_t restartNum, bool isAdaptiveStep) {
+                    std::size_t restartNum, bool isAdaptiveStep) {
 
   /// Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -253,19 +248,19 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
 
   /// Initialize parameter struct
   double V_res = 0, A_res = 0;
-  mem3dg::Parameters p{Kb,     Kbc,  H0[0], r_H0, Ksg,     A_res,  Kst,   Ksl,
+  mem3dg::solver::Parameters p{Kb,     Kbc,  H0[0], r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse,    Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt[0],
                        cam[0], temp, pt,    Kf,   conc,    height, radius};
 
-  mem3dg::Options o{isVertexShift,    isProtein,     isReducedVolume,
+  mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
                     isRefMesh,        isFloatVertex, isLaplacianMeanCurvature};
 
   /// Initialize the system
-  mem3dg::System f(trajFile, startingFrame, p, o, nSub, isContinue);
+  mem3dg::solver::System f(trajFile, startingFrame, p, o, nSub, isContinue);
 
   /// Time integration / optimization
-  mem3dg::FeedForwardSweep integrator(
+  mem3dg::solver::integrator::FeedForwardSweep integrator(
       f, h, T, tSave, eps, outputDir, isAdaptiveStep, "/traj.nc", 3,
       isBacktrack, rho, c1, ctol, isAugmentedLagrangian, restartNum, H0,
       (isReducedVolume) ? Vt : cam);

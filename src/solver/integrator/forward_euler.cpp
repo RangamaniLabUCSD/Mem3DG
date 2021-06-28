@@ -23,11 +23,14 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator/forward_euler.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
+namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool Euler::integrate() {
@@ -108,11 +111,11 @@ bool Euler::integrate() {
 
 void Euler::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
-    throw std::runtime_error("DPD has to be turned off for euler integration!");
+    mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
-      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+      mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
   }
 }
@@ -149,10 +152,10 @@ void Euler::status() {
 void Euler::march() {
   // map the raw eigen datatype for computation
   auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
+  auto vel_protein_e = toMatrix(f.vel_protein);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
 
   // compute force, which is equivalent to velocity
   vel_e = physicalForceVec;
@@ -185,4 +188,6 @@ void Euler::march() {
   // recompute cached values
   f.updateVertexPositions(false);
 }
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg

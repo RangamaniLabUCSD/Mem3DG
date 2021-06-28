@@ -25,11 +25,10 @@
 #include <netcdf>
 #include <vector>
 
-#include "mem3dg/solver/macros.h"
 #include "mem3dg/solver/trajfile.h"
 
 namespace mem3dg {
-
+namespace solver {
 namespace nc = ::netCDF;
 using NcException = nc::exceptions::NcException;
 using NcFile = nc::NcFile;
@@ -39,12 +38,12 @@ bool TrajFile::check_metadata() {
   std::string tmp;
   fd->getAtt(CONVENTIONS_NAME).getValues(tmp);
   if (tmp != CONVENTIONS_VALUE)
-    throw std::runtime_error("NetCDF convention mismatch. This file does "
+    mem3dg_runtime_error("NetCDF convention mismatch. This file does "
                              "not appear to be a valid Mem3DG trajectory.");
 
   fd->getAtt(CONVENTIONS_VERSION_NAME).getValues(tmp);
   if (tmp != CONVENTIONS_VERSION_VALUE)
-    throw std::runtime_error(
+    mem3dg_runtime_error(
         "Trajectory version mismatch. This file was generated with a "
         "different convention version.");
 
@@ -54,13 +53,13 @@ bool TrajFile::check_metadata() {
 // time & coordinate
 void TrajFile::writeTime(const std::size_t idx, const double time) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   time_var.putVar({idx}, &time);
 }
 
 void TrajFile::writeIsSmooth(const std::size_t idx, const bool isSmooth) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   issmooth_var.putVar({idx}, &isSmooth);
 }
 
@@ -69,7 +68,7 @@ void TrajFile::writeCoords(
     const Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
         &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -81,7 +80,7 @@ void TrajFile::writeTopoFrame(const std::size_t idx,
                               const Eigen::Matrix<std::uint32_t, Eigen::Dynamic,
                                                   3, Eigen::RowMajor> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == npolygons_dim.getSize());
 
@@ -147,7 +146,7 @@ void TrajFile::writeAngles(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == ncorners_dim.getSize());
 
@@ -167,7 +166,7 @@ TrajFile::getAngles(const std::size_t idx) const {
 // Mask
 void TrajFile::writeMask(const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   assert(data.rows() == nvertices_dim.getSize());
   mask_var.putVar({0}, {nvertices_dim.getSize()}, data.data());
 }
@@ -184,7 +183,7 @@ void TrajFile::writeVelocity(
     const Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>
         &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -207,7 +206,7 @@ void TrajFile::writeProteinDensity(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -229,7 +228,7 @@ void TrajFile::writeMeanCurvature(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -251,7 +250,7 @@ void TrajFile::writeGaussCurvature(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -273,7 +272,7 @@ void TrajFile::writeSponCurvature(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -295,7 +294,7 @@ void TrajFile::writeH_H0_diff(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -317,7 +316,7 @@ void TrajFile::writeExternalForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -339,7 +338,7 @@ void TrajFile::writeChemicalPotential(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -361,7 +360,7 @@ void TrajFile::writePhysicalForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -383,7 +382,7 @@ void TrajFile::writeCapillaryForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -405,7 +404,7 @@ void TrajFile::writeBendingForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -427,7 +426,7 @@ void TrajFile::writeOsmoticForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -449,7 +448,7 @@ void TrajFile::writeLineForce(
     const std::size_t idx,
     const Eigen::Matrix<double, Eigen::Dynamic, 1> &data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
 
   assert(data.rows() == nvertices_dim.getSize());
 
@@ -469,7 +468,7 @@ TrajFile::getLineForce(const std::size_t idx) const {
 // bending energy
 void TrajFile::writeBendEnergy(const std::size_t idx, const double bendEnergy) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   bendener_var.putVar({idx}, &bendEnergy);
 }
 
@@ -484,7 +483,7 @@ double TrajFile::getBendEnergy(const std::size_t idx) const {
 // surface energy
 void TrajFile::writeSurfEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   surfener_var.putVar({idx}, &Energy);
 }
 
@@ -499,7 +498,7 @@ double TrajFile::getSurfEnergy(const std::size_t idx) const {
 // pressure energy
 void TrajFile::writePressEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   pressener_var.putVar({idx}, &Energy);
 }
 
@@ -514,7 +513,7 @@ double TrajFile::getPressEnergy(const std::size_t idx) const {
 // kinetic energy
 void TrajFile::writeKineEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   kineener_var.putVar({idx}, &Energy);
 }
 
@@ -529,7 +528,7 @@ double TrajFile::getKineEnergy(const std::size_t idx) const {
 // chemical energy
 void TrajFile::writeAdspEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   adspener_var.putVar({idx}, &Energy);
 }
 
@@ -544,7 +543,7 @@ double TrajFile::getAdspEnergy(const std::size_t idx) const {
 // line tension energy
 void TrajFile::writeLineEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   lineener_var.putVar({idx}, &Energy);
 }
 
@@ -559,7 +558,7 @@ double TrajFile::getLineEnergy(const std::size_t idx) const {
 // total energy
 void TrajFile::writeTotalEnergy(const std::size_t idx, const double Energy) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   totalener_var.putVar({idx}, &Energy);
 }
 
@@ -573,9 +572,9 @@ double TrajFile::getTotalEnergy(const std::size_t idx) const {
 
 //  chem error norm
 void TrajFile::writeChemErrorNorm(const std::size_t idx,
-                                const double ChemErrorNorm) {
+                                  const double ChemErrorNorm) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   chemerrornorm_var.putVar({idx}, &ChemErrorNorm);
 }
 
@@ -588,10 +587,9 @@ double TrajFile::getChemErrorNorm(const std::size_t idx) const {
 }
 
 //  error norm
-void TrajFile::writeErrorNorm(const std::size_t idx,
-                                const double ErrorNorm) {
+void TrajFile::writeErrorNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   errornorm_var.putVar({idx}, &ErrorNorm);
 }
 
@@ -606,7 +604,7 @@ double TrajFile::getErrorNorm(const std::size_t idx) const {
 //  bending pressure norm
 void TrajFile::writeBendNorm(const std::size_t idx, const double BendNorm) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   bendnorm_var.putVar({idx}, &BendNorm);
 }
 
@@ -619,10 +617,9 @@ double TrajFile::getBendNorm(const std::size_t idx) const {
 }
 
 //  capillary pressure norm
-void TrajFile::writeSurfNorm(const std::size_t idx,
-                               const double ErrorNorm) {
+void TrajFile::writeSurfNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   surfnorm_var.putVar({idx}, &ErrorNorm);
 }
 
@@ -635,10 +632,9 @@ double TrajFile::getSurfNorm(const std::size_t idx) const {
 }
 
 //  inside pressure norm
-void TrajFile::writePressNorm(const std::size_t idx,
-                                const double ErrorNorm) {
+void TrajFile::writePressNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   pressnorm_var.putVar({idx}, &ErrorNorm);
 }
 
@@ -651,10 +647,9 @@ double TrajFile::getPressNorm(const std::size_t idx) const {
 }
 
 //  line capillary pressure norm
-void TrajFile::writeLineNorm(const std::size_t idx,
-                               const double ErrorNorm) {
+void TrajFile::writeLineNorm(const std::size_t idx, const double ErrorNorm) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   linenorm_var.putVar({idx}, &ErrorNorm);
 }
 
@@ -669,7 +664,7 @@ double TrajFile::getLineNorm(const std::size_t idx) const {
 // volume
 void TrajFile::writeVolume(const std::size_t idx, const double volume) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   volume_var.putVar({idx}, &volume);
 }
 
@@ -684,7 +679,7 @@ double TrajFile::getVolume(const std::size_t idx) const {
 // height
 void TrajFile::writeHeight(const std::size_t idx, const double height) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   height_var.putVar({idx}, &height);
 }
 
@@ -699,7 +694,7 @@ double TrajFile::getHeight(const std::size_t idx) const {
 // surface area
 void TrajFile::writeSurfArea(const std::size_t idx, const double surfArea) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   surfarea_var.putVar({idx}, &surfArea);
 }
 
@@ -714,7 +709,7 @@ double TrajFile::getSurfArea(const std::size_t idx) const {
 // reference volume
 void TrajFile::writeRefVolume(const double data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   refvolume.putVar({0}, &data);
 }
 
@@ -727,7 +722,7 @@ double TrajFile::getRefVolume() const {
 // reference surface area
 void TrajFile::writeRefSurfArea(const double data) {
   if (!writeable)
-    throw std::runtime_error("Cannot write to read only file.");
+    mem3dg_runtime_error("Cannot write to read only file.");
   refsurfarea.putVar({0}, &data);
 }
 
@@ -737,6 +732,7 @@ double TrajFile::getRefSurfArea() const {
   return value;
 }
 
+} // namespace solver
 } // namespace mem3dg
 
 #endif

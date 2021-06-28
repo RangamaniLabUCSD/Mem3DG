@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include <cassert>
+// #include <cassert>
 
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/heat_method_distance.h>
@@ -38,84 +38,20 @@
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/utilities/vector2.h"
 #include "geometrycentral/utilities/vector3.h"
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/macros.h"
-#include "mem3dg/solver/mesh.h"
-#include "mem3dg/solver/meshops.h"
-#include "mem3dg/solver/util.h"
 
-using EigenVectorX1D = Eigen::Matrix<double, Eigen::Dynamic, 1>;
-using EigenVectorX1D_i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
-using EigenVectorX3D =
-    Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using EigenTopVec =
-    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+#include "mem3dg/constants.h"
+#include "mem3dg/macros.h"
+#include "mem3dg/mesh_io.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/solver/mesh_mutator.h"
+#include "mem3dg/type_utilities.h"
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
 
-struct DLL_PUBLIC MeshMutator {
-  /// flip non-delaunay edge
-  bool flipNonDelaunay = false;
-  /// whether require flatness condition when flipping non-Delaunay edge
-  bool flipNonDelaunayRequireFlat = false;
-
-  /// split edge with large faces
-  bool splitLarge = false;
-  /// split long edge
-  bool splitLong = false;
-  /// split edge on high curvature domain
-  bool splitCurved = false;
-  /// split edge with sharp membrane property change
-  bool splitSharp = false;
-  /// split obtuse triangle
-  bool splitFat = false;
-  /// split poor aspected triangle that is still Delaunay
-  bool splitSkinnyDelaunay = false;
-
-  /// collapse skinny triangles
-  bool collapseSkinny = false;
-  /// collapse small triangles
-  bool collapseSmall = false;
-  /// whether require flatness condition when collapsing small edge
-  bool collapseSmallNeedFlat = false;
-
-  /// tolerance for curvature approximation
-  double curvTol = 0.0012;
-  /// target face area
-  double targetFaceArea = 0.001;
-
-  MeshMutator() {}
-  ~MeshMutator() {}
-
-  /**
-   * @brief return condition of edge flip
-   */
-  bool ifFlip(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  /**
-   * @brief return condition of edge split
-   */
-  bool ifSplit(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  /**
-   * @brief return condition of edge collapse
-   */
-  bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  void maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
-                          const gcs::Vertex v);
-
-  void neighborAreaSum(const gcs::Edge e,
-                       const gcs::VertexPositionGeometry &vpg, double &area,
-                       size_t &num_neighbor);
-
-  double
-  computeCurvatureThresholdLength(const gcs::Edge e,
-                                  const gcs::VertexPositionGeometry &vpg);
-};
+namespace solver {
 
 struct Forces {
   /// Cached mesh of interest
@@ -205,107 +141,68 @@ struct Forces {
   // ==========================================================
   // =============      Data interop helpers    ===============
   // ==========================================================
-  /**
-   * @brief Return colwise flattened vector of the matrix
-   */
-  inline auto flatten(EigenVectorX3D &matrix) {
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
-                                                                matrix.size());
-    return vector;
-  }
-  inline auto flatten(EigenVectorX3D &&matrix) {
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector(matrix.data(),
-                                                                matrix.size());
-    return vector;
-  }
 
-  /**
-   * @brief Return colwise unflattened matrix of the vector
-   */
-  inline auto unflatten(EigenVectorX1D &vector) {
-    Eigen::Map<
-        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        matrix(vector.data(), vector.size() / 3, 3);
-    return matrix;
-  }
-  inline auto unflatten(EigenVectorX1D &&vector) {
-    Eigen::Map<
-        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        matrix(vector.data(), vector.size() / 3, 3);
-    return matrix;
-  }
+  // /**
+  //  * @brief Return constructed vertexData that from Eigen matrix or vector
+  //  */
+  // gcs::VertexData<double> toVertexData(EigenVectorX1d &vector) {
+  //   return gcs::VertexData<double>(mesh, vector);
+  // }
 
-  /**
-   * @brief Return raw buffer of a vertexData that contains gc::Vector3 or
-   * scaler values
-   */
-  inline auto toMatrix(gcs::VertexData<gc::Vector3> &vector) {
-    return gc::EigenMap<double, 3>(vector);
-  }
-  inline auto toMatrix(gcs::VertexData<gc::Vector3> &&vector) {
-    return gc::EigenMap<double, 3>(vector);
-  }
+  // gcs::VertexData<double> toVertexData(EigenVectorX1d &&vector) {
+  //   return gcs::VertexData<double>(mesh, vector);
+  // }
 
-  inline auto toMatrix(gcs::VertexData<double> &vector) { return vector.raw(); }
-  inline auto toMatrix(gcs::VertexData<double> &&vector) {
-    return vector.raw();
-  }
+  // gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &vector) {
+  //   gcs::VertexData<gc::Vector3> vertexData(mesh);
+  //   gc::EigenMap<double, 3>(vertexData) = vector;
+  //   return vertexData;
+  // }
 
-  /**
-   * @brief Return constructed vertexData that from Eigen matrix or vector
-   */
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &vector) {
-    return gcs::VertexData<double>(mesh, vector);
-  }
-  inline gcs::VertexData<double> toVertexData(EigenVectorX1D &&vector) {
-    return gcs::VertexData<double>(mesh, vector);
-  }
-
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &vector) {
-    gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = vector;
-    return vertexData;
-  }
-  inline gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3D &&vector) {
-    gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = vector;
-    return vertexData;
-  }
+  // gcs::VertexData<gc::Vector3> toVertexData(EigenVectorX3dr &&vector) {
+  //   gcs::VertexData<gc::Vector3> vertexData(mesh);
+  //   gc::EigenMap<double, 3>(vertexData) = vector;
+  //   return vertexData;
+  // }
 
   /**
    * @brief Find the corresponding scalar vector (vertexData) by rowwise
    * (vertexwise) projecting matrix (vector vertexData) onto angle-weighted
    * normal vector
    */
-  inline gcs::VertexData<double>
-  ontoNormal(gcs::VertexData<gc::Vector3> &vector) {
-    gcs::VertexData<double> vertexData(mesh);
-    vertexData.raw() =
-        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                          gc::EigenMap<double, 3>(vpg.vertexNormals));
+  gcs::VertexData<double>
+  ontoNormal(const gcs::VertexData<gc::Vector3> &vector) const {
+    gcs::VertexData<double> vertexData(
+        mesh, rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                gc::EigenMap<double, 3>(vpg.vertexNormals)));
     return vertexData;
   }
-  inline gcs::VertexData<double>
-  ontoNormal(gcs::VertexData<gc::Vector3> &&vector) {
-    gcs::VertexData<double> vertexData(mesh);
-    vertexData.raw() =
-        rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
-                          gc::EigenMap<double, 3>(vpg.vertexNormals));
+  gcs::VertexData<double>
+  ontoNormal(const gcs::VertexData<gc::Vector3> &&vector) const {
+    gcs::VertexData<double> vertexData(
+        mesh, rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
+                                gc::EigenMap<double, 3>(vpg.vertexNormals)));
     return vertexData;
   }
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &vector) {
+
+  EigenVectorX1d ontoNormal(const EigenVectorX3dr &vector) const {
     return rowwiseDotProduct(vector,
                              gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX1D ontoNormal(EigenVectorX3D &&vector) {
+  EigenVectorX1d ontoNormal(const EigenVectorX3dr &&vector) const {
     return rowwiseDotProduct(vector,
                              gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline double ontoNormal(gc::Vector3 &vector, gc::Vertex &v) {
-    return dot(vector, vpg.vertexNormals[v]);
+  double ontoNormal(const gc::Vector3 &vector, const gc::Vertex &v) const {
+    return gc::dot(vector, vpg.vertexNormals[v]);
   }
-  inline double ontoNormal(gc::Vector3 &&vector, gc::Vertex &v) {
-    return dot(vector, vpg.vertexNormals[v]);
+
+  double ontoNormal(const gc::Vector3 &vector, const std::size_t i) const {
+    return gc::dot(vector, vpg.vertexNormals[i]);
+  }
+
+  double ontoNormal(const gc::Vector3 &&vector, gc::Vertex &v) const {
+    return gc::dot(vector, vpg.vertexNormals[v]);
   }
 
   /**
@@ -313,32 +210,32 @@ struct Forces {
    * (vertexwise) appending angle-weighted normal vector to the scalar vector
    * (vertexData)
    */
-  inline gcs::VertexData<gc::Vector3>
-  addNormal(gcs::VertexData<double> &vector) {
+  gcs::VertexData<gc::Vector3> addNormal(gcs::VertexData<double> &vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScalarProduct(
         vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
     return vertexData;
   }
-  inline gcs::VertexData<gc::Vector3>
-  addNormal(gcs::VertexData<double> &&vector) {
+  gcs::VertexData<gc::Vector3> addNormal(gcs::VertexData<double> &&vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
-    gc::EigenMap<double, 3>(vertexData) = rowwiseScaling(
+    gc::EigenMap<double, 3>(vertexData) = rowwiseScalarProduct(
         vector.raw(), gc::EigenMap<double, 3>(vpg.vertexNormals));
     return vertexData;
   }
 
-  inline EigenVectorX3D addNormal(EigenVectorX1D &vector) {
-    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+  EigenVectorX3dr addNormal(EigenVectorX1d &vector) {
+    return rowwiseScalarProduct(vector,
+                                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX3D addNormal(EigenVectorX1D &&vector) {
-    return rowwiseScaling(vector, gc::EigenMap<double, 3>(vpg.vertexNormals));
+  EigenVectorX3dr addNormal(EigenVectorX1d &&vector) {
+    return rowwiseScalarProduct(vector,
+                                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
 
-  inline gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
+  gc::Vector3 addNormal(double &vector, gc::Vertex &v) {
     return vector * vpg.vertexNormals[v];
   }
-  inline gc::Vector3 addNormal(double &&vector, gc::Vertex &v) {
+  gc::Vector3 addNormal(double &&vector, gc::Vertex &v) {
     return vector * vpg.vertexNormals[v];
   }
 
@@ -346,26 +243,26 @@ struct Forces {
    * @brief Project the vector onto tangent plane by removing the
    * angle-weighted normal component
    */
-  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &vector) {
+  EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &vector) {
     return gc::EigenMap<double, 3>(vector) -
-           rowwiseScaling(
+           rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg.vertexNormals)),
                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
-  inline EigenVectorX3D toTangent(gcs::VertexData<gc::Vector3> &&vector) {
+  EigenVectorX3dr toTangent(gcs::VertexData<gc::Vector3> &&vector) {
     return gc::EigenMap<double, 3>(vector) -
-           rowwiseScaling(
+           rowwiseScalarProduct(
                rowwiseDotProduct(gc::EigenMap<double, 3>(vector),
                                  gc::EigenMap<double, 3>(vpg.vertexNormals)),
                gc::EigenMap<double, 3>(vpg.vertexNormals));
   }
 
-  inline gc::Vector3 toTangent(gc::Vector3 &vector, gc::Vertex &v) {
+  gc::Vector3 toTangent(gc::Vector3 &vector, gc::Vertex &v) {
     return vector -
            gc::dot(vector, vpg.vertexNormals[v]) * vpg.vertexNormals[v];
   }
-  inline gc::Vector3 toTangent(gc::Vector3 &&vector, gc::Vertex &v) {
+  gc::Vector3 toTangent(gc::Vector3 &&vector, gc::Vertex &v) {
     return vector -
            gc::dot(vector, vpg.vertexNormals[v]) * vpg.vertexNormals[v];
   }
@@ -373,15 +270,15 @@ struct Forces {
   /**
    * @brief Find the masked force
    */
-  inline gcs::VertexData<gc::Vector3>
-  maskForce(gcs::VertexData<gc::Vector3> &vector) {
+  gcs::VertexData<gc::Vector3> maskForce(gcs::VertexData<gc::Vector3> &vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData).array() =
         gc::EigenMap<double, 3>(vector).array() *
         gc::EigenMap<double, 3>(forceMask).array();
     return vertexData;
   }
-  inline gcs::VertexData<gc::Vector3>
+
+  gcs::VertexData<gc::Vector3>
   maskForce(gcs::VertexData<gc::Vector3> &&vector) {
     gcs::VertexData<gc::Vector3> vertexData(mesh);
     gc::EigenMap<double, 3>(vertexData).array() =
@@ -389,17 +286,26 @@ struct Forces {
         gc::EigenMap<double, 3>(forceMask).array();
     return vertexData;
   }
-  inline EigenVectorX3D maskForce(EigenVectorX3D &vector) {
+
+  EigenVectorX3dr maskForce(const EigenVectorX3dr &vector) const {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
-  inline EigenVectorX3D maskForce(EigenVectorX3D &&vector) {
+
+  EigenVectorX3dr maskForce(const EigenVectorX3dr &&vector) const {
     return vector.array() * gc::EigenMap<double, 3>(forceMask).array();
   }
-  inline gc::Vector3 maskForce(gc::Vector3 &vector, gc::Vertex &v) {
+
+  gc::Vector3 maskForce(const gc::Vector3 &vector, const gc::Vertex &v) const {
     return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
                        vector.z * forceMask[v].z};
   }
-  inline gc::Vector3 maskForce(gc::Vector3 &&vector, gc::Vertex &v) {
+
+  gc::Vector3 maskForce(const gc::Vector3 &vector, const std::size_t i) const {
+    return gc::Vector3{vector.x * forceMask[i].x, vector.y * forceMask[i].y,
+                       vector.z * forceMask[i].z};
+  }
+
+  gc::Vector3 maskForce(const gc::Vector3 &&vector, const gc::Vertex &v) const {
     return gc::Vector3{vector.x * forceMask[v].x, vector.y * forceMask[v].y,
                        vector.z * forceMask[v].z};
   }
@@ -407,30 +313,33 @@ struct Forces {
   /**
    * @brief Find the masked chemical potential
    */
-  inline gcs::VertexData<double>
-  maskProtein(gcs::VertexData<double> &potential) {
+  gcs::VertexData<double> maskProtein(gcs::VertexData<double> &potential) {
     gcs::VertexData<double> vertexData(mesh);
     toMatrix(vertexData).array() =
         toMatrix(potential).array() * toMatrix(proteinMask).array();
     return vertexData;
   }
-  inline gcs::VertexData<double>
-  maskProtein(gcs::VertexData<double> &&potential) {
+
+  gcs::VertexData<double> maskProtein(gcs::VertexData<double> &&potential) {
     gcs::VertexData<double> vertexData(mesh);
     toMatrix(vertexData).array() =
         toMatrix(potential).array() * toMatrix(proteinMask).array();
     return vertexData;
   }
-  inline EigenVectorX1D maskProtein(EigenVectorX1D &potential) {
+
+  EigenVectorX1d maskProtein(EigenVectorX1d &potential) {
     return potential.array() * toMatrix(proteinMask).array();
   }
-  inline EigenVectorX1D maskProtein(EigenVectorX1D &&potential) {
+
+  EigenVectorX1d maskProtein(EigenVectorX1d &&potential) {
     return potential.array() * toMatrix(proteinMask).array();
   }
-  inline double maskProtein(double &potential, gc::Vertex &v) {
+
+  double maskProtein(double &potential, gc::Vertex &v) {
     return potential * proteinMask[v];
   }
-  inline double maskProtein(double &&potential, gc::Vertex &v) {
+
+  double maskProtein(double &&potential, gc::Vertex &v) {
     return potential * proteinMask[v];
   }
 };
@@ -443,7 +352,7 @@ struct Parameters {
   /// Constant of Spontaneous curvature vs protein density
   double H0c = 0;
   /// (initial) protein density
-  EigenVectorX1D protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
+  EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
   /// Global stretching modulus
   double Ksg = 0;
   /// Area reservior
@@ -473,7 +382,7 @@ struct Parameters {
   /// Temperature
   double temp = 0;
   /// The point
-  EigenVectorX1D pt = Eigen::MatrixXd::Constant(1, 1, 0);
+  EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
   /// Magnitude of external force
   double Kf = 0;
   /// level of concentration of the external force
@@ -631,8 +540,9 @@ public:
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param nSub          Number of subdivision
    */
-  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, size_t nSub)
+  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+         std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub)) {
 
     // Initialize reference values
@@ -651,9 +561,9 @@ public:
    * @param o             options of simulation
    * @param nSub          Number of subdivision
    */
-  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         Options &o, size_t nSub)
+         Options &o, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub), p,
                o) {
     // Check confliciting parameters and options
@@ -680,10 +590,10 @@ public:
    * @param nSub          Number of subdivision
    * regularization
    */
-  System(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &topologyMatrix,
+  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-         Parameters &p, Options &o, size_t nSub)
+         Parameters &p, Options &o, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
                p, o) {
 
@@ -706,7 +616,7 @@ public:
    * @param inputMesh     Input Mesh
    * @param nSub          Number of subdivision
    */
-  System(std::string inputMesh, size_t nSub)
+  System(std::string inputMesh, std::size_t nSub)
       : System(readMeshes(inputMesh, inputMesh, nSub)) {
 
     // Check confliciting parameters and options
@@ -728,7 +638,7 @@ public:
    * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    */
-  System(std::string inputMesh, Parameters &p, Options &o, size_t nSub,
+  System(std::string inputMesh, Parameters &p, Options &o, std::size_t nSub,
          bool isContinue)
       : System(readMeshes(inputMesh, inputMesh, nSub), p, o) {
 
@@ -765,7 +675,7 @@ public:
    * regularization
    */
   System(std::string inputMesh, std::string refMesh, Parameters &p, Options &o,
-         size_t nSub, bool isContinue)
+         std::size_t nSub, bool isContinue)
       : System(readMeshes(inputMesh, refMesh, nSub), p, o) {
 
     // Check confliciting parameters and options
@@ -797,7 +707,7 @@ public:
    * @param startingFrame Starting frame for the input mesh
    * @param nSub          Number of subdivision
    */
-  System(std::string trajFile, int startingFrame, size_t nSub)
+  System(std::string trajFile, int startingFrame, std::size_t nSub)
       : System(readTrajFile(trajFile, startingFrame, nSub)) {
 
     // Initialize reference values
@@ -818,7 +728,7 @@ public:
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p, Options &o,
-         size_t nSub, bool isContinue)
+         std::size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, o) {
 
     // Check confliciting parameters and options
@@ -981,10 +891,10 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(Eigen::Matrix<size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
+  readMeshes(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
              Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexPositionMatrix,
              Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexPositionMatrix,
-             size_t nSub);
+             std::size_t nSub);
 
   /**
    * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
@@ -993,7 +903,7 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(std::string inputMesh, std::string refMesh, size_t nSub);
+  readMeshes(std::string inputMesh, std::string refMesh, std::size_t nSub);
 
   /**
    * @brief Map the continuation variables
@@ -1015,7 +925,7 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readTrajFile(std::string trajFile, int startingFrame, size_t nSub);
+  readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub);
   /**
    * @brief Map the continuation variables
    *
@@ -1064,17 +974,17 @@ public:
   /**
    * @brief Compute bending force component of the system
    */
-  EigenVectorX1D computeBendingForce();
+  EigenVectorX1d computeBendingForce();
 
   /**
    * @brief Compute capillary force component of the system
    */
-  EigenVectorX1D computeCapillaryForce();
+  EigenVectorX1d computeCapillaryForce();
 
   /**
    * @brief Compute osmotic force component of the system
    */
-  EigenVectorX1D computeOsmoticForce();
+  EigenVectorX1d computeOsmoticForce();
 
   /**
    * @brief Compute forces at the same time
@@ -1084,17 +994,17 @@ public:
   /**
    * @brief Compute chemical potential of the system
    */
-  EigenVectorX1D computeChemicalPotential();
+  EigenVectorX1d computeChemicalPotential();
 
   /**
    * @brief Compute line tension force component of the system
    */
-  EigenVectorX1D computeLineCapillaryForce();
+  EigenVectorX1d computeLineCapillaryForce();
 
   /**
    * @brief Compute external force component of the system
    */
-  EigenVectorX1D computeExternalForce();
+  EigenVectorX1d computeExternalForce();
 
   /**
    * @brief Compute all forces of the system
@@ -1104,7 +1014,7 @@ public:
   /**
    * @brief Compute DPD forces of the system
    */
-  std::tuple<EigenVectorX3D, EigenVectorX3D> computeDPDForces(double dt);
+  std::tuple<EigenVectorX3dr, EigenVectorX3dr> computeDPDForces(double dt);
 
   // ==========================================================
   // ================        Energy          ==================
@@ -1244,4 +1154,5 @@ public:
   void globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
                        double stepSize = 1);
 };
+} // namespace solver
 } // namespace mem3dg

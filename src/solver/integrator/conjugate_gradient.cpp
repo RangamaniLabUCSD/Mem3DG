@@ -26,11 +26,14 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 #include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator/conjugate_gradient.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
+namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool ConjugateGradient::integrate() {
@@ -113,28 +116,28 @@ bool ConjugateGradient::integrate() {
 
 void ConjugateGradient::checkParameters() {
   if (f.P.gamma != 0 || f.P.temp != 0) {
-    throw std::runtime_error("DPD has to be turned off for CG integration!");
+    mem3dg_runtime_error("DPD has to be turned off for CG integration!");
   }
   if (f.P.Bc != 1 && f.P.Bc != 0) {
-    throw std::runtime_error("Protein mobility constant should "
+    mem3dg_runtime_error("Protein mobility constant should "
                              "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
-      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+      mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
   }
   if (restartNum < 1) {
-    throw std::runtime_error("restartNum > 0!");
+    mem3dg_runtime_error("restartNum > 0!");
   }
   // if (f.O.isVertexShift) {
-  //   throw std::runtime_error(
+  //   mem3dg_runtime_error(
   //       "Vertex shift is not supported for CG integration!");
   // }
 }
 
 void ConjugateGradient::status() {
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
 
   // compute summerized forces
   getForces();
@@ -165,11 +168,11 @@ void ConjugateGradient::status() {
 
 void ConjugateGradient::march() {
   // map the raw eigen datatype for computation
-  auto vel_e = f.F.toMatrix(f.vel);
-  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
-  auto pos_e = f.F.toMatrix(f.vpg->inputVertexPositions);
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto vel_e = toMatrix(f.vel);
+  auto vel_protein_e = toMatrix(f.vel_protein);
+  auto pos_e = toMatrix(f.vpg->inputVertexPositions);
+  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.F.mechanicalForce);
   // typedef gc::EigenVectorMap_T<double, 3,
   // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3
   // Map3 = gc::EigenMap<double, 3>;
@@ -233,7 +236,7 @@ void FeedForwardSweep::sweep() {
 
   // initialize variables
   const double KV = f.P.Kv, KSG = f.P.Ksg, init_time = 0.0;
-  const size_t verbosity = 2;
+  const std::size_t verbosity = 2;
 
   // initialize variables used if adopting adaptive time step based on mesh
   // size
@@ -291,5 +294,6 @@ void FeedForwardSweep::sweep() {
   }
 #endif
 }
-
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg

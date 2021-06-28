@@ -34,11 +34,11 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
-#include "mem3dg/solver/macros.h"
-#include "mem3dg/solver/meshops.h"
-#include "mem3dg/solver/typetraits.h"
+#include "mem3dg/macros.h"
+#include "mem3dg/meshops.h"
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -184,7 +184,7 @@ public:
 
   void open(const std::string &filename, const NcFile::FileMode fMode) {
     if ((fd != nullptr) && (fMode != NcFile::read)) {
-      throw std::runtime_error("Cannot open an already opened ...");
+      mem3dg_runtime_error("Cannot open an already opened ...");
     }
 
     fd = new NcFile(filename, fMode);
@@ -237,7 +237,7 @@ public:
                      gcs::VertexPositionGeometry &refVpg,
                      const NcFile::FileMode fMode) {
     if (fd != nullptr) {
-      throw std::runtime_error("Cannot open an already open ...");
+      mem3dg_runtime_error("Cannot open an already open ...");
     }
 
     writeable = true;
@@ -364,8 +364,7 @@ public:
         fd->addVar(CHEMERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     chemerrornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-1)");
 
-    errornorm_var =
-        fd->addVar(ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
+    errornorm_var = fd->addVar(ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     errornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     bendnorm_var = fd->addVar(BENDNORM_VAR, netCDF::ncDouble, {frame_dim});
@@ -374,8 +373,7 @@ public:
     surfnorm_var = fd->addVar(SURFNORM_VAR, netCDF::ncDouble, {frame_dim});
     surfnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    pressnorm_var =
-        fd->addVar(PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
+    pressnorm_var = fd->addVar(PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
     pressnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     linenorm_var = fd->addVar(LINENORM_VAR, netCDF::ncDouble, {frame_dim});
@@ -461,7 +459,7 @@ public:
   void getNcFrame(int &frame) const {
     int maxFrame = getNextFrameIndex() - 1;
     if (frame > maxFrame || frame < -(maxFrame + 1)) {
-      throw std::runtime_error("Snapshot frame exceed limiting frame index!");
+      mem3dg_runtime_error("Snapshot frame exceed limiting frame index!");
     } else if (frame < 0) {
       frame = frame + maxFrame + 1;
     }
@@ -765,5 +763,6 @@ private:
   /// Writeable status
   bool writeable;
 };
+} // namespace solver
 } // namespace mem3dg
 #endif

@@ -15,13 +15,14 @@
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "geometrycentral/utilities/vector3.h"
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/constants.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 #include <Eigen/Core>
 #include <cmath>
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -118,7 +119,7 @@ void System::computeRegularizationForce() {
   auto regularizationForce_e = gc::EigenMap<double, 3>(F.regularizationForce);
 
   // remove the normal component
-  regularizationForce_e -= rowwiseScaling(
+  regularizationForce_e -= rowwiseScalarProduct(
       rowwiseDotProduct(regularizationForce_e, vertexAngleNormal_e),
       vertexAngleNormal_e);
 
@@ -142,7 +143,7 @@ void System::computeRegularizationForce() {
 
   // // remove the masked components
   // regularizationForce_e =
-  //     rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
+  //     rowwiseScalarProduct(mask.raw().cast<double>(), regularizationForce_e);
   // // moving boundary
   // for (gcs::Vertex v : mesh->vertices()) {
   //   if (!mask[v]) {
@@ -191,7 +192,7 @@ void System::vertexShift() {
           }
         }
         if (n_vAdj != 2) {
-          throw std::runtime_error(
+          mem3dg_runtime_error(
               "vertexShift: number of neighbor vertices on boundary is not 2!");
         }
         baryCenter =
@@ -380,7 +381,7 @@ void System::processMesh() {
 
 void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
                              double stepSize) {
-  EigenVectorX1D gradient;
+  EigenVectorX1d gradient;
   double pastGradNorm = 1e10;
   double gradNorm;
   do {
@@ -399,7 +400,7 @@ void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
       //           << std::endl;
     }
     pos_e.array() +=
-        rowwiseScaling(gradient, vertexAngleNormal_e).array() * stepSize;
+        rowwiseScalarProduct(gradient, vertexAngleNormal_e).array() * stepSize;
     pastGradNorm = gradNorm;
     // std::cout << "gradient:  " << gradNorm << std::endl;
   } while (gradNorm > tol);
@@ -511,7 +512,7 @@ void System::globalUpdateAfterMutation() {
       }
     }
     if (thePointTracker.raw().cast<int>().sum() != 1) {
-      throw std::runtime_error("globalUpdateAfterMutation: there is no "
+      mem3dg_runtime_error("globalUpdateAfterMutation: there is no "
                                "unique/existing \"the\" point!");
     }
   }
@@ -573,7 +574,7 @@ bool MeshMutator::ifCollapse(const gc::Edge e,
 
   if (collapseSmall) {
     double areaSum;
-    size_t num_neighbor;
+    std::size_t num_neighbor;
     neighborAreaSum(e, vpg, areaSum, num_neighbor);
     is2Small = (isBoundary) ? ((areaSum - vpg.faceArea(he.face()) -
                                 vpg.faceArea(he.twin().face())) <
@@ -684,7 +685,7 @@ void MeshMutator::maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
 
 void MeshMutator::neighborAreaSum(const gcs::Edge e,
                                   const gcs::VertexPositionGeometry &vpg,
-                                  double &area, size_t &num_neighbor) {
+                                  double &area, std::size_t &num_neighbor) {
   area = 0;
   num_neighbor = -2;
   for (gcs::Vertex v : e.adjacentVertices()) {
@@ -711,4 +712,5 @@ double MeshMutator::computeCurvatureThresholdLength(
   return std::sqrt(6 * curvTol / ((k1 > k2) ? k1 : k2) - 3 * curvTol * curvTol);
 }
 
+} // namespace solver
 } // namespace mem3dg
