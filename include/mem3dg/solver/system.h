@@ -750,6 +750,7 @@ public:
   };
 #endif
 
+private:
   /**
    * @brief Construct a new System object by reading tuple of unique_ptrs
    *
@@ -852,6 +853,7 @@ public:
     // vpg->requireVertexTangentBasis();
   }
 
+  public: 
   /**
    * @brief Destroy the Force object
    *
