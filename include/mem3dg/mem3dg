@@ -22,6 +22,7 @@
 
 
 #include "solver/system.h"
+#include "solver/forces.h"
 #include "solver/mesh_mutator.h"
 #include "solver/trajfile.h"
 
