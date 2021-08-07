@@ -40,9 +40,9 @@ add_library(
   mem3dg_static STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:mem3dg_objlib>
 )
 target_link_libraries(mem3dg_static PUBLIC mem3dg_objlib)
-set_target_properties(
-  mem3dg_static PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET
-                                                        hidden
+set_target_properties(mem3dg_static 
+    PROPERTIES POSITION_INDEPENDENT_CODE ON 
+    CXX_VISIBILITY_PRESET hidden
 )
 
 set(PYMEM3DG_SOURCES
