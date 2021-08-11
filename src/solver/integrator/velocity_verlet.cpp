@@ -129,12 +129,12 @@ void VelocityVerlet::status() {
   // compute the area contraint error
   dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
-  if (f.O.isReducedVolume) {
+  if (f.O.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.P.Kv != 0) ? abs(f.volume / f.refVolume / f.P.Vt - 1) : 0.0;
+    dVP = (f.P.Kv != 0) ? abs(f.volume / f.P.Vt - 1) : 0.0;
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(1.0 / f.volume / f.P.cam - 1) : 1.0;
+    dVP = (!f.mesh->hasBoundary()) ? abs(f.P.n / f.volume / f.P.cam - 1.0) : 1.0;
   }
 
   // exit if under error tol

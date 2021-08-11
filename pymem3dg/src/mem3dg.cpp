@@ -68,10 +68,10 @@ int driver_ply(const std::size_t verbosity, std::string inputMesh,
   signal(SIGINT, mem3dg::signalHandler);
   // pybind11::scoped_interpreter guard{};
 
-  double V_res = 0, A_res = 0;
+  double V_res = 0, A_res = 0, n = 1;
   mem3dg::solver::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
-                       cam, temp, pt,    Kf,   conc,    height, radius};
+                       cam, n,  temp, pt,    Kf,   conc,    height, radius};
 
   mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
@@ -135,10 +135,10 @@ int forwardsweep_ply(
   signal(SIGINT, mem3dg::signalHandler);
 
   /// Initialize parameter struct
-  double V_res = 0, A_res = 0;
+  double V_res = 0, A_res = 0, n = 1;
   mem3dg::solver::Parameters p{Kb,     Kbc,  H0[0], r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse,    Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt[0],
-                       cam[0], temp, pt,    Kf,   conc,    height, radius};
+                       cam[0], n, temp, pt,    Kf,   conc,    height, radius};
 
   mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
@@ -178,10 +178,10 @@ int driver_nc(const std::size_t verbosity, std::string trajFile, int startingFra
   // pybind11::scoped_interpreter guard{};
 
   // Initialize parameter struct
-  double V_res = 0, A_res = 0;
+  double V_res = 0, A_res = 0, n = 1;
   mem3dg::solver::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
-                       cam, temp, pt,    Kf,   conc,    height, radius};
+                       cam, n, temp, pt,    Kf,   conc,    height, radius};
 
   mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,
@@ -247,10 +247,10 @@ int forwardsweep_nc(std::string trajFile, int startingFrame, int nSub,
   // pybind11::scoped_interpreter guard{};
 
   /// Initialize parameter struct
-  double V_res = 0, A_res = 0;
+  double V_res = 0, A_res = 0, n = 1;
   mem3dg::solver::Parameters p{Kb,     Kbc,  H0[0], r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse,    Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt[0],
-                       cam[0], temp, pt,    Kf,   conc,    height, radius};
+                       cam[0], n, temp, pt,    Kf,   conc,    height, radius};
 
   mem3dg::solver::Options o{isVertexShift,    isProtein,     isReducedVolume,
                     isLocalCurvature, isEdgeFlip,    isGrowMesh,

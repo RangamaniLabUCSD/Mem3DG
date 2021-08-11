@@ -32,9 +32,9 @@ int main() {
 
   /// physical parameters
   double Kb = 8.22e-5, Kbc = 10 * 8.22e-5, H0 = 40, Kst = 0, Ksl = 0, Kse = 0,
-         epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, Pam = 0, Kf = 0,
+         epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, cam = 0, Kf = 0,
          conc = 25, height = 0, radius = 100, temp = 0, h = 1e-5, Kv = 0,
-         eta = 0, Ksg = 0.05, A_res = 0, V_res = 0;
+         eta = 0, Ksg = 0.05, A_res = 0, V_res = 0, n = 1;
 
   EigenVectorX1d pt(3), r_H0(2);
   pt << 0, 0, 0;
@@ -42,12 +42,12 @@ int main() {
 
   mem3dg::solver::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
                        Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
-                       Pam, temp, pt,    Kf,   conc,    height, radius};
+                       cam, n, temp, pt,    Kf,   conc,    height, radius};
 
   mem3dg::solver::Options o;
   o.isProteinVariation = false;
   o.isVertexShift = false;
-  o.isReducedVolume = true;
+  o.isPreferredVolume = true;
   o.isEdgeFlip = false;
   o.isSplitEdge = false;
   o.isCollapseEdge = false;

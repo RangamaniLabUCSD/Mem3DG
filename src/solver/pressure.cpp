@@ -553,55 +553,55 @@ System::computeDPDForces(double dt) {
 gc::Vector3 System::computeGradientNorm2Gradient(
     const gcs::Halfedge &he, const gcs::VertexData<double> &quantities) {
   if (!he.isInterior()) {
-    mem3dg_runtime_error(
+    throw std::runtime_error(
         "computeGradientNormGradient: halfedge is not interior!");
   }
 
   // quantities
-  double q1 = quantities[he.next().next().vertex()];
-  double q2 = quantities[he.vertex()];
-  double q3 = quantities[he.next().vertex()];
+  double qj = quantities[he.next().next().vertex()];
+  double qi = quantities[he.vertex()];
+  double qk = quantities[he.next().vertex()];
 
-  if (q1 == q2 && q1 == q3) {
+  if (qj == qi && qj == qk) {
     return gc::Vector3({0, 0, 0});
   } else {
     // Edge and normal vector
     gc::Vector3 n = vpg->faceNormals[he.face()];
-    gc::Vector3 e1 = vecFromHalfedge(he, *vpg);
-    gc::Vector3 e2 = vecFromHalfedge(he.next(), *vpg);
-    gc::Vector3 e3 = vecFromHalfedge(he.next().next(), *vpg);
+    gc::Vector3 ej = vecFromHalfedge(he, *vpg);
+    gc::Vector3 ei = vecFromHalfedge(he.next(), *vpg);
+    gc::Vector3 ek = vecFromHalfedge(he.next().next(), *vpg);
 
     // exterior angle of triangles (angles formed by e_perp)
-    double theta3 = gc::angle(e1, e2);
-    double theta1 = gc::angle(e2, e3);
-    double theta2 = gc::angle(e3, e1);
+    double anglek = gc::angle(ej, ei);
+    double anglej = gc::angle(ei, ek);
+    double anglei = gc::angle(ek, ej);
 
     // gradient of edge length wrt he.vertex()
-    gc::Vector3 grad_e1norm = -e1.normalize();
-    gc::Vector3 grad_e3norm = e3.normalize();
+    gc::Vector3 grad_ejnorm = -ej.normalize();
+    gc::Vector3 grad_eknorm = ek.normalize();
 
     // gradient of exterior angle wrt he.vertex()
-    gc::Vector3 grad_theta3 = gc::cross(n, e1).normalize() / gc::norm(e1);
-    gc::Vector3 grad_theta1 = gc::cross(n, e3).normalize() / gc::norm(e3);
-    gc::Vector3 grad_theta2 = -(grad_theta3 + grad_theta1);
+    gc::Vector3 grad_anglek = gc::cross(n, ej).normalize() / gc::norm(ej);
+    gc::Vector3 grad_anglej = gc::cross(n, ek).normalize() / gc::norm(ek);
+    gc::Vector3 grad_anglei = -(grad_anglek + grad_anglej);
 
     // chain rule
-    gc::Vector3 grad_costheta3 = -sin(theta3) * grad_theta3;
-    gc::Vector3 grad_costheta2 = -sin(theta2) * grad_theta2;
-    gc::Vector3 grad_costheta1 = -sin(theta1) * grad_theta1;
+    gc::Vector3 grad_cosanglek = -sin(anglek) * grad_anglek;
+    gc::Vector3 grad_cosanglei = -sin(anglei) * grad_anglei;
+    gc::Vector3 grad_cosanglej = -sin(anglej) * grad_anglej;
 
-    // g = q1 * e1_perp +  q2 * e2_perp +  q2 * e2_perp
+    // g = qj * ej_perp +  qi * ei_perp +  qk * ek_perp
     // gradient of |g|^2
-    return 2 * q1 * q1 * gc::norm(e1) * grad_e1norm +
-           2 * q3 * q3 * gc::norm(e3) * grad_e3norm +
-           2 * q1 * q2 * gc::norm(e2) *
-               (grad_e1norm * cos(theta3) + gc::norm(e1) * grad_costheta3) +
-           2 * q2 * q3 * gc::norm(e2) *
-               (grad_e3norm * cos(theta1) + gc::norm(e3) * grad_costheta1) +
-           2 * q1 * q3 *
-               (grad_e1norm * gc::norm(e3) * cos(theta2) +
-                gc::norm(e1) * grad_e3norm * cos(theta2) +
-                gc::norm(e1) * gc::norm(e3) * grad_costheta2);
+    return 2 * qj * qj * gc::norm(ej) * grad_ejnorm +
+           2 * qk * qk * gc::norm(ek) * grad_eknorm +
+           2 * qj * qi * gc::norm(ei) *
+               (grad_ejnorm * cos(anglek) + gc::norm(ej) * grad_cosanglek) +
+           2 * qi * qk * gc::norm(ei) *
+               (grad_eknorm * cos(anglej) + gc::norm(ek) * grad_cosanglej) +
+           2 * qj * qk *
+               (grad_ejnorm * gc::norm(ek) * cos(anglei) +
+                gc::norm(ej) * grad_eknorm * cos(anglei) +
+                gc::norm(ej) * gc::norm(ek) * grad_cosanglei);
   }
 }
 
