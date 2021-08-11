@@ -28,7 +28,7 @@ FetchContent_MakeAvailable(googletest)
 
 # Build the tests
 set(MEM3DG_TEST_SRCS src/main_test.cpp src/product_test.cpp
-        src/force_calculation_test.cpp src/integrator_test.cpp
+        src/force_calculation_test.cpp src/integrator_test.cpp src/mutable_trajfile_test.cpp
 )
 
 add_executable(Mem3DG-tests "${MEM3DG_TEST_SRCS}")
@@ -56,3 +56,6 @@ target_link_libraries(ddg PRIVATE mem3dg)
 
 add_executable(ddg_patch scratch_patch.cpp) 
 target_link_libraries(ddg_patch PRIVATE mem3dg) 
+
+add_executable(scratch_ctl scratch_ctl.cpp) 
+target_link_libraries(scratch_ctl PRIVATE mem3dg) 

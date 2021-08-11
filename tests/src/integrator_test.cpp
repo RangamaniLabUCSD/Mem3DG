@@ -77,7 +77,7 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
 
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
   mem3dg::solver::System f(mesh, vpg, p, o, 0);
-  mem3dg::solver::integrator::VelocityVerlet integrator{f,     dt,  T,
+  mem3dg::solver::integrator::VelocityVerlet integrator{f,     dt,  1,
                                                         tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
   integrator.verbosity = verbosity;
