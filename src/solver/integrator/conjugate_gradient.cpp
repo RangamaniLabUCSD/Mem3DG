@@ -144,11 +144,11 @@ void ConjugateGradient::status() {
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
-  if (f.O.isReducedVolume) {
-    dVP = abs(f.volume / f.refVolume / f.P.Vt - 1);
+  if (f.O.isPreferredVolume) {
+    dVP = abs(f.volume / f.P.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
-    dVP = abs(1 / f.volume / f.P.cam - 1);
+    dVP = abs(f.P.n / f.volume / f.P.cam - 1.0);
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
 
@@ -271,7 +271,7 @@ void FeedForwardSweep::sweep() {
 
       // update sweeping paraemters
       f.P.H0c = H;
-      (f.O.isReducedVolume ? f.P.Vt : f.P.cam) = VP;
+      (f.O.isPreferredVolume ? f.P.Vt : f.P.cam) = VP;
       std::cout << "\nH0c: " << f.P.H0c << std::endl;
       std::cout << "VP: " << VP << std::endl;
 

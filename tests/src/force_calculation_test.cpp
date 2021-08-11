@@ -47,7 +47,7 @@ protected:
 
   ForceCalculationTest() {
 
-    o.isReducedVolume = false;
+    o.isPreferredVolume = false;
     o.isConstantOsmoticPressure = true;
     o.isConstantSurfaceTension = true;
     o.isProteinVariation = true;
@@ -79,6 +79,7 @@ protected:
     p.V_res = 0;
     p.Vt = -1;
     p.cam = -1;
+    p.n = 1;
 
     p.Bc = 1;
 

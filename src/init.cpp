@@ -17,6 +17,7 @@
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
+#include "mem3dg/constants.h"
 #include "mem3dg/meshops.h"
 #include <cmath>
 #include <stdexcept>
@@ -372,6 +373,10 @@ void System::checkParametersAndOptions() {
     mem3dg_runtime_error("Radius > 0 or radius = 1 to disable!");
   }
   isOpenMesh = mesh->hasBoundary();
+  if (!isOpenMesh && mesh->genus() != 0) {
+    mem3dg_runtime_error(
+        "Do not support closed mesh with nonzero number of genus!")
+  }
   if (isOpenMesh) {
     if (O.shapeBoundaryCondition != "roller" &&
         O.shapeBoundaryCondition != "pin" &&
@@ -442,25 +447,24 @@ void System::checkParametersAndOptions() {
   }
 
   // Osmotic pressure related
-  if (O.isReducedVolume) {
+  if (O.isPreferredVolume) {
     if (P.cam != -1) {
       mem3dg_runtime_error("ambient concentration cam has to be -1 for "
-                           "reduced volume parametrized simulation!");
+                           "preferred volume parametrized simulation!");
     }
     if (O.isConstantOsmoticPressure) {
-      mem3dg_runtime_error("reduced volume and constant osmotic pressure "
+      mem3dg_runtime_error("preferred volume and constant osmotic pressure "
                            "cannot be simultaneously turned on!");
     }
   } else {
     if (P.Vt != -1 && !O.isConstantOsmoticPressure) {
-      mem3dg_runtime_error("reduced volume Vt has to be -1 for "
-                           "ambient pressure parametrized simulation! Note "
-                           "Kv now has the unit of energy!");
+      mem3dg_runtime_error("preferred volume Vt has to be -1 for "
+                           "ambient pressure parametrized simulation!");
     }
   }
   if (O.isConstantOsmoticPressure) {
-    if (O.isReducedVolume) {
-      mem3dg_runtime_error("reduced volume and constant osmotic pressure "
+    if (O.isPreferredVolume) {
+      mem3dg_runtime_error("preferred volume and constant osmotic pressure "
                            "cannot be simultaneously turned on!");
     }
     if (P.Vt != -1 || P.V_res != 0 || P.cam != -1) {
@@ -610,13 +614,15 @@ void System::initConstants() {
   }
 
   // Initialize the constant reference volume
-  refVolume = isOpenMesh ? P.V_res
-                         : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
-                               (4 * constants::PI / 3);
+  std::cout << "vol_ref = "
+            << (isOpenMesh ? P.V_res
+                           : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
+                                 (4 * constants::PI / 3))
+            << std::endl;
 
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
-  std::cout << "vol_init/vol_ref = " << volume / refVolume << std::endl;
+  std::cout << "vol_init = " << volume << std::endl;
 }
 
 void System::updateVertexPositions(bool isUpdateGeodesics) {
@@ -683,13 +689,13 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
 
   // update global osmotic pressure
-  if (O.isReducedVolume) {
-    F.osmoticPressure =
-        -(P.Kv * (volume - refVolume * P.Vt) / (refVolume * P.Vt) + P.lambdaV);
+  if (O.isPreferredVolume) {
+    F.osmoticPressure = -(P.Kv * (volume - P.Vt) / P.Vt / P.Vt + P.lambdaV);
   } else if (O.isConstantOsmoticPressure) {
     F.osmoticPressure = P.Kv;
   } else {
-    F.osmoticPressure = P.Kv / volume - P.Kv * P.cam;
+    F.osmoticPressure = mem3dg::constants::i * mem3dg::constants::R * P.temp *
+                        (P.n / volume - P.cam);
   }
 
   // initialize/update total surface area

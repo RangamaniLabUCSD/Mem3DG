@@ -47,6 +47,7 @@ int main() {
   p.Kv = 1;
   p.V_res = 0;
   p.Vt = -1;
+  p.n = 1;
   p.cam = 0;
   p.Kf = 0;
   p.conc = -1;
@@ -59,7 +60,7 @@ int main() {
 
   mem3dg::solver::Options o;
   o.isProteinVariation = false;
-  o.isReducedVolume = false;
+  o.isPreferredVolume = false;
   o.isEdgeFlip = true;
   o.isSplitEdge = true;
   o.isCollapseEdge = true;

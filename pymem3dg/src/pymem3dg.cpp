@@ -694,10 +694,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                        R"delim(
           get the enclosed volume of the mesh
       )delim");
-  system.def_readwrite("refVolume", &System::refVolume,
-                       R"delim(
-          get the reference enclosed volume of the mesh
-      )delim");
   system.def(
       "getLumpedMassMatrix",
       [](System &s) { return s.vpg->vertexLumpedMassMatrix; },
@@ -914,9 +910,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether simulate shape variation
       )delim");
-  options.def_readwrite("isReducedVolume", &Options::isReducedVolume,
+  options.def_readwrite("isPreferredVolume", &Options::isPreferredVolume,
                         R"delim(
-          get the option of whether adopt reduced volume  
+          get the option of whether adopt the preferred volume parametrization  
       )delim");
   options.def_readwrite("isConstantOsmoticPressure",
                         &Options::isConstantOsmoticPressure,
@@ -1043,11 +1039,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   parameters.def_readwrite("Vt", &Parameters::Vt,
                            R"delim(
-          get Reduced volume 
+          get the preferred volume
       )delim");
   parameters.def_readwrite("cam", &Parameters::cam,
                            R"delim(
-          get Ambient Pressure 
+          get the ambient concentration 
+      )delim");
+  parameters.def_readwrite("n", &Parameters::n,
+                           R"delim(
+          get the enclosed solute amount
       )delim");
   parameters.def_readwrite("temp", &Parameters::temp,
                            R"delim(

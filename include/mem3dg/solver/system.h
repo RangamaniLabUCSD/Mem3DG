@@ -85,10 +85,12 @@ struct Parameters {
   double Bc = 0;
   /// Dissipation coefficient
   double gamma = 0;
-  /// Reduced volume
+  /// preferred volume
   double Vt = -1;
   /// Ambient Pressure
   double cam = 0;
+  /// Enclosed solute (atto-mol)
+  double n = 1;
   /// Temperature
   double temp = 0;
   /// The point
@@ -143,8 +145,8 @@ struct Options {
   bool isShapeVariation = true;
   /// Whether or not do vertex shift
   bool isVertexShift = false;
-  /// Whether adopt reduced volume parametrization
-  bool isReducedVolume = false;
+  /// Whether adopt preferred volume parametrization
+  bool isPreferredVolume = false;
   /// Whether adopt constant osmotic pressure
   bool isConstantOsmoticPressure = false;
   /// Whether adopt constant surface tension
@@ -226,8 +228,6 @@ public:
 
   /// Target total face area
   double refSurfaceArea;
-  /// Maximal volume
-  double refVolume;
 
   /// is Smooth
   bool isSmooth;
@@ -458,6 +458,7 @@ public:
   };
 #endif
 
+private:
   /**
    * @brief Construct a new System object by reading tuple of unique_ptrs
    *
@@ -560,6 +561,7 @@ public:
     // vpg->requireVertexTangentBasis();
   }
 
+  public: 
   /**
    * @brief Destroy the Force object
    *
