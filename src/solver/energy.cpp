@@ -23,6 +23,7 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/surface_mesh.h"
+#include "mem3dg/constants.h"
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 
@@ -69,13 +70,15 @@ void System::computeSurfaceEnergy() {
 
 void System::computePressureEnergy() {
   // Note: area weighted normal is exact volume variation
-  if (O.isReducedVolume) {
-    double V_difference = volume - refVolume * P.Vt;
+  if (O.isPreferredVolume) {
+    double V_difference = volume - P.Vt;
     E.pE = -F.osmoticPressure * V_difference / 2 + P.lambdaV * V_difference / 2;
   } else if (O.isConstantOsmoticPressure) {
     E.pE = -F.osmoticPressure * volume;
   } else {
-    E.pE = P.Kv * (P.cam * volume - log(P.cam * volume) - 1);
+    double ratio = P.cam * volume / P.n;
+    E.pE = mem3dg::constants::i * mem3dg::constants::R * P.temp * P.n *
+           (ratio - log(ratio) - 1);
   }
 }
 
@@ -87,16 +90,14 @@ void System::computeAdsorptionEnergy() {
 
 void System::computeProteinInteriorPenaltyEnergy() {
   // interior method to constrain protein density to remain from 0 to 1
-  E.inE =
-      -P.lambdaPhi * ((proteinDensity.raw().array()).log().sum() +
-                      (1 - proteinDensity.raw().array()).log().sum());
+  E.inE = -P.lambdaPhi * ((proteinDensity.raw().array()).log().sum() +
+                          (1 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeDirichletEnergy() {
   if (false) {
-    mem3dg_runtime_error(
-        "computeDirichletEnergy: out of date implementation, "
-        "shouldn't be called!");
+    mem3dg_runtime_error("computeDirichletEnergy: out of date implementation, "
+                         "shouldn't be called!");
     // scale the dH0 such that it is integrated over the edge
     // this is under the case where the resolution is low, WIP
     // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *

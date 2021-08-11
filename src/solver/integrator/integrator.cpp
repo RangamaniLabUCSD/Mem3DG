@@ -481,7 +481,7 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
         f.P.lambdaSG +=
             f.P.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
         f.P.lambdaV +=
-            f.P.Kv * (f.volume - f.refVolume * f.P.Vt) / (f.refVolume * f.P.Vt);
+            f.P.Kv * (f.volume - f.P.Vt) / f.P.Vt;
         std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
                   << std::endl;
       }
@@ -514,7 +514,6 @@ void Integrator::createNetcdfFile() {
                      TrajFile::NcFile::replace);
     fd.writeMask(toMatrix(f.F.forceMask).rowwise().sum());
     if (!f.mesh->hasBoundary()) {
-      fd.writeRefVolume(f.refVolume);
       fd.writeRefSurfArea(f.refSurfaceArea);
     }
   }
@@ -768,8 +767,6 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Total Energy:     " << f.E.totalE << "\n"
            << "Mech error norm:    " << f.mechErrorNorm << "\n"
            << "Chem error norm:    " << f.chemErrorNorm << "\n"
-           << "Volume:           " << f.volume << " = "
-           << f.volume / f.refVolume << " reduced volume"
            << "\n"
            << "Surface area:     " << f.surfaceArea << " = "
            << f.surfaceArea / f.refSurfaceArea << " target surface area"
