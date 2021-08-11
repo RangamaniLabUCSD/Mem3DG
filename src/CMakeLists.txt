@@ -19,6 +19,7 @@ set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/energy.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/regularization.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/trajfile.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/mutable_trajfile.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/integrator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/stormer_verlet.cpp"

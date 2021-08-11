@@ -27,8 +27,10 @@ set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/system.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/forces.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh_mutator.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile_constants.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile.h"
-    
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mutable_trajfile.h"
+
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/integrator.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/forward_euler.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/conjugate_gradient.h"

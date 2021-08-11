@@ -25,6 +25,7 @@
 #include "solver/forces.h"
 #include "solver/mesh_mutator.h"
 #include "solver/trajfile.h"
+#include "solver/mutable_trajfile.h"
 
 #include "solver/integrator/integrator.h"
 #include "solver/integrator/velocity_verlet.h"
