@@ -126,8 +126,8 @@ void Euler::status() {
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
-  dVP = (f.O.isReducedVolume) ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-                              : abs(1.0 / f.volume / f.P.cam - 1);
+  dVP = (f.O.isPreferredVolume) ? abs(f.volume / f.P.Vt - 1)
+                              : abs(f.P.n / f.volume / f.P.cam - 1.0);
 
   // exit if under error tolerance
   if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
