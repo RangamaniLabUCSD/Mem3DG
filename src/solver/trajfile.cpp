@@ -39,7 +39,7 @@ bool TrajFile::check_metadata() {
   fd->getAtt(CONVENTIONS_NAME).getValues(tmp);
   if (tmp != CONVENTIONS_VALUE)
     mem3dg_runtime_error("NetCDF convention mismatch. This file does "
-                             "not appear to be a valid Mem3DG trajectory.");
+                         "not appear to be a valid Mem3DG trajectory.");
 
   fd->getAtt(CONVENTIONS_VERSION_NAME).getValues(tmp);
   if (tmp != CONVENTIONS_VERSION_VALUE)
@@ -89,7 +89,7 @@ void TrajFile::writeTopoFrame(const std::size_t idx,
 }
 
 double TrajFile::getTime(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double time;
   time_var.getVar({idx}, &time);
@@ -98,7 +98,7 @@ double TrajFile::getTime(const std::size_t idx) const {
 }
 
 double TrajFile::getIsSmooth(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   bool isSmooth;
   issmooth_var.getVar({idx}, &isSmooth);
@@ -106,10 +106,10 @@ double TrajFile::getIsSmooth(const std::size_t idx) const {
   return isSmooth;
 }
 
-TrajFile::EigenVector TrajFile::getCoords(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+EigenVectorX3dr TrajFile::getCoords(const std::size_t idx) const {
+  assert(idx < nFrames());
 
-  EigenVector vec(nvertices_dim.getSize(), SPATIAL_DIMS);
+  EigenVectorX3dr vec(nvertices_dim.getSize(), SPATIAL_DIMS);
   coord_var.getVar({idx, 0, 0}, {1, nvertices_dim.getSize(), SPATIAL_DIMS},
                    vec.data());
   return vec;
@@ -135,8 +135,8 @@ TrajFile::getTopology() const {
 }
 
 // reference coordinate
-TrajFile::EigenVector TrajFile::getRefcoordinate() const {
-  EigenVector vec(nvertices_dim.getSize(), SPATIAL_DIMS);
+EigenVectorX3dr TrajFile::getRefcoordinate() const {
+  EigenVectorX3dr vec(nvertices_dim.getSize(), SPATIAL_DIMS);
   refcoord.getVar({0, 0}, {nvertices_dim.getSize(), SPATIAL_DIMS}, vec.data());
   return vec;
 }
@@ -155,7 +155,7 @@ void TrajFile::writeAngles(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getAngles(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(ncorners_dim.getSize(), 1);
 
@@ -193,9 +193,9 @@ void TrajFile::writeVelocity(
 
 Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
 TrajFile::getVelocity(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
-  EigenVector vec(nvertices_dim.getSize(), SPATIAL_DIMS);
+  EigenVectorX3dr vec(nvertices_dim.getSize(), SPATIAL_DIMS);
   vel_var.getVar({idx, 0, 0}, {1, nvertices_dim.getSize(), SPATIAL_DIMS},
                  vec.data());
   return vec;
@@ -215,7 +215,7 @@ void TrajFile::writeProteinDensity(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getProteinDensity(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -237,7 +237,7 @@ void TrajFile::writeMeanCurvature(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getMeanCurvature(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -259,7 +259,7 @@ void TrajFile::writeGaussCurvature(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getGaussCurvature(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -281,7 +281,7 @@ void TrajFile::writeSponCurvature(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getSponCurvature(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -303,7 +303,7 @@ void TrajFile::writeH_H0_diff(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getH_H0_diff(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -325,7 +325,7 @@ void TrajFile::writeExternalForce(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getExternalForce(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -347,7 +347,7 @@ void TrajFile::writeChemicalPotential(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getChemicalPotential(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -369,7 +369,7 @@ void TrajFile::writePhysicalForce(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getPhysicalForce(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -391,7 +391,7 @@ void TrajFile::writeCapillaryForce(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getCapillaryForce(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -413,7 +413,7 @@ void TrajFile::writeBendingForce(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getBendingForce(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -435,7 +435,7 @@ void TrajFile::writeOsmoticForce(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getOsmoticForce(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -457,7 +457,7 @@ void TrajFile::writeLineForce(
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
 TrajFile::getLineForce(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
@@ -473,7 +473,7 @@ void TrajFile::writeBendEnergy(const std::size_t idx, const double bendEnergy) {
 }
 
 double TrajFile::getBendEnergy(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double bendEnergy;
   bendener_var.getVar({idx}, &bendEnergy);
@@ -488,7 +488,7 @@ void TrajFile::writeSurfEnergy(const std::size_t idx, const double Energy) {
 }
 
 double TrajFile::getSurfEnergy(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double Energy;
   surfener_var.getVar({idx}, &Energy);
@@ -503,7 +503,7 @@ void TrajFile::writePressEnergy(const std::size_t idx, const double Energy) {
 }
 
 double TrajFile::getPressEnergy(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double Energy;
   pressener_var.getVar({idx}, &Energy);
@@ -518,7 +518,7 @@ void TrajFile::writeKineEnergy(const std::size_t idx, const double Energy) {
 }
 
 double TrajFile::getKineEnergy(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double Energy;
   kineener_var.getVar({idx}, &Energy);
@@ -533,7 +533,7 @@ void TrajFile::writeAdspEnergy(const std::size_t idx, const double Energy) {
 }
 
 double TrajFile::getAdspEnergy(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double Energy;
   adspener_var.getVar({idx}, &Energy);
@@ -548,7 +548,7 @@ void TrajFile::writeLineEnergy(const std::size_t idx, const double Energy) {
 }
 
 double TrajFile::getLineEnergy(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double Energy;
   lineener_var.getVar({idx}, &Energy);
@@ -563,7 +563,7 @@ void TrajFile::writeTotalEnergy(const std::size_t idx, const double Energy) {
 }
 
 double TrajFile::getTotalEnergy(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double Energy;
   totalener_var.getVar({idx}, &Energy);
@@ -579,7 +579,7 @@ void TrajFile::writeChemErrorNorm(const std::size_t idx,
 }
 
 double TrajFile::getChemErrorNorm(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double ChemErrorNorm;
   chemerrornorm_var.getVar({idx}, &ChemErrorNorm);
@@ -594,7 +594,7 @@ void TrajFile::writeErrorNorm(const std::size_t idx, const double ErrorNorm) {
 }
 
 double TrajFile::getErrorNorm(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double ErrorNorm;
   errornorm_var.getVar({idx}, &ErrorNorm);
@@ -609,7 +609,7 @@ void TrajFile::writeBendNorm(const std::size_t idx, const double BendNorm) {
 }
 
 double TrajFile::getBendNorm(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double BendNorm;
   bendnorm_var.getVar({idx}, &BendNorm);
@@ -624,7 +624,7 @@ void TrajFile::writeSurfNorm(const std::size_t idx, const double ErrorNorm) {
 }
 
 double TrajFile::getSurfNorm(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double ErrorNorm;
   surfnorm_var.getVar({idx}, &ErrorNorm);
@@ -639,7 +639,7 @@ void TrajFile::writePressNorm(const std::size_t idx, const double ErrorNorm) {
 }
 
 double TrajFile::getPressNorm(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double ErrorNorm;
   pressnorm_var.getVar({idx}, &ErrorNorm);
@@ -654,7 +654,7 @@ void TrajFile::writeLineNorm(const std::size_t idx, const double ErrorNorm) {
 }
 
 double TrajFile::getLineNorm(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double ErrorNorm;
   linenorm_var.getVar({idx}, &ErrorNorm);
@@ -669,7 +669,7 @@ void TrajFile::writeVolume(const std::size_t idx, const double volume) {
 }
 
 double TrajFile::getVolume(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double volume;
   volume_var.getVar({idx}, &volume);
@@ -684,7 +684,7 @@ void TrajFile::writeHeight(const std::size_t idx, const double height) {
 }
 
 double TrajFile::getHeight(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double height;
   height_var.getVar({idx}, &height);
@@ -699,7 +699,7 @@ void TrajFile::writeSurfArea(const std::size_t idx, const double surfArea) {
 }
 
 double TrajFile::getSurfArea(const std::size_t idx) const {
-  assert(idx < getNextFrameIndex());
+  assert(idx < nFrames());
 
   double surfArea;
   surfarea_var.getVar({idx}, &surfArea);

@@ -138,7 +138,10 @@ public:
   /**
    * @brief Destructor frees the bound NcFile
    */
-  ~MutableTrajFile() { delete fd; };
+  ~MutableTrajFile() {
+    fd->close();
+    delete fd;
+  };
 
 #pragma region initialization_helpers
   /**
@@ -157,6 +160,14 @@ public:
     check_metadata();
 
     frame_dim = fd->getDim(FRAME_NAME);
+
+    // uint_array_t = fd->getType(UINT_ARR);
+    // double_array_t = fd->getType(DOUBLE_ARR);
+
+    time_var = fd->getVar(TIME_VAR);
+    topo_var = fd->getVar(TOPO_VAR);
+    coord_var = fd->getVar(COORD_VAR);
+    vel_var = fd->getVar(VEL_VAR);
   }
 
   /**
@@ -196,19 +207,28 @@ public:
   }
 #pragma endregion initialization_helpers
 
+  inline void sync() { fd->sync(); }
+
   /**
-   * @brief Netcdf file frame reader
-   *
-   * @param frame reference to the frame index
+   * @brief Close
    *
    */
-  void getNcFrame(int &frame) const {
-    int maxFrame = getNextFrameIndex() - 1;
-    if (frame > maxFrame || frame < -(maxFrame + 1)) {
-      mem3dg_runtime_error("Snapshot frame exceed limiting frame index!");
-    } else if (frame < 0) {
-      frame = frame + maxFrame + 1;
-    }
+  inline void close() {
+    fd->sync();
+    fd->close();
+
+    // Reset object state
+    fd = nullptr;
+    writeable = false;
+
+    frame_dim = nc::NcDim{};
+    uint_array_t = nc::NcVlenType{};
+    double_array_t = nc::NcVlenType{};
+    time_var = nc::NcVar{};
+    topo_var = nc::NcVar{};
+    coord_var = nc::NcVar{};
+    vel_var = nc::NcVar{};
+    filename = "";
   }
 
   /**
@@ -218,14 +238,105 @@ public:
    */
   inline bool isWriteable() { return writeable; };
 
-  inline std::size_t getNextFrameIndex() const { return frame_dim.getSize(); };
+  /**
+   * @brief Get the max number of frames in the trajectory
+   *
+   * @return std::size_t Total number of frames
+   */
+  inline std::size_t nFrames() const { return frame_dim.getSize(); };
 
-  void writeTopoFrame(const std::size_t idx, const EigenVectorX3ur &data);
+#pragma region read_write
+  /**
+   * @brief Write the topology for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Topology matrix
+   */
+  void writeTopology(const std::size_t idx, const EigenVectorX3ur &data);
 
-  EigenVectorX3ur readTopoFrame(const std::size_t idx);
+  /**
+   * @brief Write the topology for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Surface mesh
+   */
+  void writeTopology(const std::size_t idx, gc::SurfaceMesh &mesh);
 
+  /**
+   * @brief Get the Topology object
+   *
+   * @param idx
+   * @return EigenVectorX3ur
+   */
+  EigenVectorX3ur getTopology(const std::size_t idx);
+
+  /**
+   * @brief Write the coordinates for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Coordinate matrix
+   */
+  void writeCoords(const std::size_t idx, const EigenVectorX3dr &data);
+
+  /**
+   * @brief Write the coordinates for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex position geometry
+   */
+  void writeCoords(const std::size_t idx,
+                   const gc::VertexPositionGeometry &data);
+
+  /**
+   * @brief Get the coordinates of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return EigenVectorX3dr  Coordinates data
+   */
+  EigenVectorX3dr getCoords(const std::size_t idx);
+
+  /**
+   * @brief Write the velocities for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Velocity matrix
+   */
+  void writeVelocity(const std::size_t idx, const EigenVectorX3dr &data);
+
+  /**
+   * @brief Write the velocities for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex velocities
+   */
+  void writeVelocity(const std::size_t idx,
+                     const gcs::VertexData<gc::Vector3> &data);
+
+  /**
+   * @brief Get the velocities of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return EigenVectorX3dr  Velocity data
+   */
+  EigenVectorX3dr getVelocity(const std::size_t idx);
+
+  /**
+   * @brief Write the time of the trajectory
+   *
+   * @param idx     Index of the frame
+   * @param time    Time
+   */
   void writeTime(const std::size_t idx, const double time);
 
+  /**
+   * @brief Get the time
+   *
+   * @param idx      Index
+   * @return double  Time
+   */
+  double getTime(const std::size_t idx) const;
+
+#pragma endregion read_write
   /**
    * @brief Validate whether or not the metadata follows convention
    *
@@ -267,6 +378,9 @@ private:
    * @brief Initialize a new file with the given conventions
    */
   void initializeConventions() {
+
+    const int compression_level = 5;
+
     // initialize data
     fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
     fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
@@ -275,11 +389,17 @@ private:
 
     time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
     time_var.putAtt(UNITS, TIME_UNITS);
+    time_var.setCompression(true, true, compression_level);
 
     uint_array_t = fd->addVlenType(UINT_ARR, nc::ncUint);
     double_array_t = fd->addVlenType(DOUBLE_ARR, nc::ncDouble);
 
     topo_var = fd->addVar(TOPO_VAR, uint_array_t, {frame_dim});
+    topo_var.setCompression(true, true, compression_level);
+    coord_var = fd->addVar(COORD_VAR, double_array_t, {frame_dim});
+    coord_var.setCompression(true, true, compression_level);
+    vel_var = fd->addVar(VEL_VAR, double_array_t, {frame_dim});
+    vel_var.setCompression(true, true, compression_level);
   }
 
   /// Bound NcFile
@@ -296,6 +416,10 @@ private:
   nc::NcVar time_var;
   /// Vlen variable for topology
   nc::NcVar topo_var;
+  /// Vlen variable for coordinates
+  nc::NcVar coord_var;
+  /// Vlen variable for velocities
+  nc::NcVar vel_var;
 
   /// Filepath to file
   std::string filename;

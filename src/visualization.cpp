@@ -296,7 +296,7 @@ int animate_nc(std::string &filename, const Quantities &options,
   int currFrame = 0;
   bool isStart = false;
   bool isRecord = false;
-  int maxFrame = fd.getNextFrameIndex() - 1;
+  int maxFrame = fd.nFrames() - 1;
   int maxWaitTime = 500;
   int waitTime = 0;
 
@@ -461,7 +461,7 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
 #ifdef MEM3DG_WITH_NETCDF
 polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd, int idx,
                                             const Quantities &options) {
-  if (idx >= fd.getNextFrameIndex()) {
+  if (idx >= fd.nFrames()) {
     idx = 0;
   }
 
@@ -536,7 +536,7 @@ void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::TrajFile &fd,
 
   polyscopeMesh = registerSurfaceMesh(fd, idx, options);
   idx++;
-  if (idx >= fd.getNextFrameIndex()) {
+  if (idx >= fd.nFrames()) {
     idx = 0;
     toggle = !toggle;
   }

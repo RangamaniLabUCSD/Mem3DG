@@ -480,8 +480,7 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
                   << f.P.lambdaV << "]";
         f.P.lambdaSG +=
             f.P.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
-        f.P.lambdaV +=
-            f.P.Kv * (f.volume - f.P.Vt) / f.P.Vt;
+        f.P.lambdaV += f.P.Kv * (f.volume - f.P.Vt) / f.P.Vt;
         std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
                   << std::endl;
       }
@@ -631,7 +630,7 @@ void Integrator::markFileName(std::string marker_str) {
 
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::saveNetcdfData() {
-  std::size_t idx = fd.getNextFrameIndex();
+  std::size_t idx = fd.nFrames();
 
   // scalar quantities
   // write time
@@ -667,7 +666,7 @@ void Integrator::saveNetcdfData() {
 
     // write geometry
     fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
-    fd.writeTopoFrame(idx, getFaceVertexMatrix(*f.mesh));
+    fd.writeTopoFrame(idx, f.mesh->getFaceVertexMatrix<std::uint32_t>());
     fd.writeMeanCurvature(idx, f.vpg->vertexMeanCurvatures.raw().array() /
                                    f.vpg->vertexDualAreas.raw().array());
     fd.writeGaussCurvature(idx, f.vpg->vertexGaussianCurvatures.raw().array() /
