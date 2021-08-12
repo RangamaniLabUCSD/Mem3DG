@@ -37,6 +37,7 @@
 #include "mem3dg/macros.h"
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/trajfile_constants.h"
+#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
 namespace solver {
@@ -59,12 +60,6 @@ private:
 public:
   using NcFile = nc::NcFile;
   using NcException = nc::exceptions::NcException;
-  using EigenVector =
-      Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>;
-
-  // template <typename T>
-  // using EigenVector_T = Eigen::Matrix<T, Eigen::Dynamic, SPATIAL_DIMS,
-  // Eigen::RowMajor>;
 
   TrajFile() : writeable(false), fd(nullptr){};
 
@@ -145,8 +140,8 @@ public:
         fd->addVar(TOPO_VAR, nc::ncUint, {npolygons_dim, polygon_order_dim});
 
     // Populate topology data
-    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
-        faceMatrix = getFaceVertexMatrix(mesh);
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> faceMatrix{
+        mesh.getFaceVertexMatrix<std::uint32_t>()};
     std::uint32_t *topodata = faceMatrix.data();
     topology.putVar(topodata);
 
@@ -343,7 +338,7 @@ public:
    *
    */
   void getNcFrame(int &frame) const {
-    int maxFrame = getNextFrameIndex() - 1;
+    int maxFrame = nFrames() - 1;
     if (frame > maxFrame || frame < -(maxFrame + 1)) {
       mem3dg_runtime_error("Snapshot frame exceed limiting frame index!");
     } else if (frame < 0) {
@@ -363,7 +358,7 @@ public:
    */
   inline bool isWriteable() { return writeable; };
 
-  inline std::size_t getNextFrameIndex() const { return frame_dim.getSize(); };
+  inline std::size_t nFrames() const { return frame_dim.getSize(); };
 
   /**
    * @brief Validate whether or not the metadata follows convention
@@ -376,7 +371,7 @@ public:
 
   void writeIsSmooth(const std::size_t idx, const bool isSmooth);
 
-  void writeCoords(const std::size_t idx, const EigenVector &data);
+  void writeCoords(const std::size_t idx, const EigenVectorX3dr &data);
 
   void writeTopoFrame(const std::size_t idx,
                       const Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3,
@@ -386,7 +381,7 @@ public:
 
   double getIsSmooth(const std::size_t idx) const;
 
-  EigenVector getCoords(const std::size_t idx) const;
+  EigenVectorX3dr getCoords(const std::size_t idx) const;
 
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
   getTopoFrame(const std::size_t idx) const;
@@ -407,7 +402,7 @@ public:
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> getMask() const;
 
-  void writeVelocity(const std::size_t idx, const EigenVector &data);
+  void writeVelocity(const std::size_t idx, const EigenVectorX3dr &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
   getVelocity(const std::size_t idx) const;

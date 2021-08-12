@@ -679,27 +679,4 @@ DLL_PUBLIC inline double getDuration(timeval &start) {
 }
 #endif
 
-/**
- * @brief Get the Face Vertex Matrix object
- *
- * @param mesh   Mesh of interest
- * @return Eigen matrix of uint32_t indices
- */
-DLL_PUBLIC inline EigenVectorX3ur getFaceVertexMatrix(gcs::SurfaceMesh &mesh) {
-  if (!mesh.isTriangular())
-    mem3dg_runtime_error("Mesh is not triangular.");
-
-  EigenVectorX3ur result(mesh.nFaces(), 3);
-  gcs::VertexData<std::size_t> vInd = mesh.getVertexIndices();
-
-  std::size_t i = 0;
-  for (gcs::Face f : mesh.faces()) {
-    for (gcs::Vertex v : f.adjacentVertices()) {
-      // Indexing works since the topology matrix is stored rowmajor order
-      result(i++) = vInd[v];
-    }
-  }
-  return result;
-}
-
 } // namespace mem3dg
