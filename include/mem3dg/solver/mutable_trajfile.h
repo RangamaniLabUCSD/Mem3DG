@@ -273,7 +273,7 @@ public:
    * @param data  Topology matrix
    */
   void writeTopology(const std::size_t idx, const EigenVectorX3ur &data) {
-    writeVar(topo_var, idx, data);
+    writeVar<std::uint32_t, 3>(topo_var, idx, data);
   }
 
   /**
@@ -283,7 +283,7 @@ public:
    * @param data  Surface mesh
    */
   void writeTopology(const std::size_t idx, gc::SurfaceMesh &mesh) {
-    writeVar(topo_var, idx,
+    writeVar<std::uint32_t, 3>(topo_var, idx,
              EigenVectorX3ur{mesh.getFaceVertexMatrix<std::uint32_t>()});
   }
 
@@ -304,7 +304,7 @@ public:
    * @param data  Coordinate matrix
    */
   void writeCoords(const std::size_t idx, const EigenVectorX3dr &data) {
-    writeVar(coord_var, idx, data);
+    writeVar<double, 3>(coord_var, idx, data);
   }
 
   /**
@@ -315,7 +315,7 @@ public:
    */
   void writeCoords(const std::size_t idx,
                    const gc::VertexPositionGeometry &data) {
-    writeVar(coord_var, idx, data.inputVertexPositions);
+    writeVar<gc::Vertex>(coord_var, idx, data.inputVertexPositions);
   }
 
   /**
@@ -335,7 +335,7 @@ public:
    * @param data  Velocity matrix
    */
   void writeVelocity(const std::size_t idx, const EigenVectorX3dr &data) {
-    writeVar(vel_var, idx, data);
+    writeVar<double, 3>(vel_var, idx, data);
   }
 
   /**
@@ -346,7 +346,7 @@ public:
    */
   void writeVelocity(const std::size_t idx,
                      const gcs::VertexData<gc::Vector3> &data) {
-    writeVar(vel_var, idx, data);
+    writeVar<gc::Vertex>(vel_var, idx, data);
   }
 
   /**
