@@ -95,7 +95,7 @@ bool BFGS::integrate() {
 }
 
 void BFGS::checkParameters() {
-  if (f.P.gamma != 0 || f.P.temp != 0) {
+  if (f.P.dpd.gamma != 0 || f.P.temp != 0) {
     mem3dg_runtime_error("DPD has to be turned off for BFGS integration!");
   }
   // if (f.O.isVertexShift) {
@@ -150,16 +150,16 @@ void BFGS::status() {
   //           << std::endl;
 
   // compute the area contraint error
-  dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  dArea = (f.P.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
   if (f.O.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.P.Kv != 0) ? abs(f.volume / f.P.Vt - 1) : 0.0;
+    dVP = (f.P.osmotic.Kv != 0) ? abs(f.volume / f.P.osmotic.Vt - 1) : 0.0;
     // thresholding, exit if fulfilled and iterate if not
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(f.P.n / f.volume / f.P.cam - 1.0) : 1.0;
+    dVP = (!f.mesh->hasBoundary()) ? abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0) : 1.0;
     // thresholding, exit if fulfilled and iterate if not
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }

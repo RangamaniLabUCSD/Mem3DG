@@ -39,7 +39,7 @@
 #include "mem3dg/macros.h"
 #include "mem3dg/mesh_io.h"
 #include "mem3dg/meshops.h"
-#include "mem3dg/solver/mesh_mutator.h"
+#include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/type_utilities.h"
 
 namespace gc = ::geometrycentral;

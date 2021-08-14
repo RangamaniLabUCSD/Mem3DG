@@ -127,14 +127,14 @@ void VelocityVerlet::status() {
           .matrix();
 
   // compute the area contraint error
-  dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  dArea = (f.P.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
   if (f.O.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.P.Kv != 0) ? abs(f.volume / f.P.Vt - 1) : 0.0;
+    dVP = (f.P.osmotic.Kv != 0) ? abs(f.volume / f.P.osmotic.Vt - 1) : 0.0;
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(f.P.n / f.volume / f.P.cam - 1.0) : 1.0;
+    dVP = (!f.mesh->hasBoundary()) ? abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0) : 1.0;
   }
 
   // exit if under error tol

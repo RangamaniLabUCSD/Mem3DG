@@ -4,7 +4,6 @@
 #endif
 
 #include "mem3dg/mem3dg"
-#include "mem3dg.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -40,9 +39,31 @@ int main() {
   pt << 0, 0, 0;
   r_H0 << 0.15, 0.15;
 
-  mem3dg::solver::Parameters p{Kb,  Kbc,  H0,    r_H0, Ksg,     A_res,  Kst,   Ksl,
-                       Kse, Kv,   V_res, eta,  epsilon, Bc,     gamma, Vt,
-                       cam, n, temp, pt,    Kf,   conc,    height, radius};
+  mem3dg::solver::Parameters p;
+  p.bending.Kb = Kb;
+  p.bending.Kbc = Kbc;
+  p.bending.H0c = H0;
+  p.protein0 = r_H0;
+  p.tension.Ksg = Ksg;
+  p.tension.A_res = A_res;
+  p.Kst = Kst;
+  p.Ksl = Ksl;
+  p.Kse = Kse;
+  p.osmotic.Kv = Kv;
+  p.osmotic.V_res = V_res;
+  p.osmotic.Vt = Vt;
+  p.osmotic.cam = cam;
+  p.osmotic.n = n;
+  p.dirichlet.eta = eta;
+  p.adsorption.epsilon = epsilon;
+  p.Bc = Bc;
+  p.dpd.gamma = gamma;
+  p.temp = temp;
+  p.pt = pt;
+  p.external.Kf = Kf;
+  p.external.conc = conc;
+  p.external.height = height;
+  p.radius = radius;
 
   mem3dg::solver::Options o;
   o.isProteinVariation = false;

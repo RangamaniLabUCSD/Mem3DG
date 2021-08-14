@@ -13,7 +13,6 @@
 # 
 
 set(DDG_HEADERS
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/visualization.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/typetraits.h"
@@ -26,7 +25,7 @@ set(DDG_HEADERS
 
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/system.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/forces.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh_mutator.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh_process.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile_constants.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mutable_trajfile.h"

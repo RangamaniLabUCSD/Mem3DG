@@ -4,7 +4,6 @@
 #endif
 
 #include "mem3dg/mem3dg"
-#include "mem3dg.h"
 
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/meshio.h>
@@ -31,29 +30,29 @@ int main() {
 
   /// physical parameters
   mem3dg::solver::Parameters p;
-  p.Kb = 8.22e-5;
-  p.Kbc = 8.22e-4;
-  p.H0c = 6;
+  p.bending.Kb = 8.22e-5;
+  p.bending.Kbc = 8.22e-4;
+  p.bending.H0c = 6;
   p.protein0 = EigenVectorX1d(1);
   p.protein0 << 1;
-  p.eta = 0;
-  p.Ksg = 2e-2;
-  p.A_res = 0;
+  p.dirichlet.eta = 0;
+  p.tension.Ksg = 2e-2;
+  p.tension.A_res = 0;
   p.Kst = 0; // 2e-6;
   p.Ksl = 1e-7;
   p.Kse = 1e-7;
-  p.epsilon = -1;
+  p.adsorption.epsilon = -1;
   p.Bc = 0;
-  p.Kv = 1;
-  p.V_res = 0;
-  p.Vt = -1;
-  p.n = 1;
-  p.cam = 0;
-  p.Kf = 0;
-  p.conc = -1;
-  p.height = 0;
+  p.osmotic.Kv = 1;
+  p.osmotic.V_res = 0;
+  p.osmotic.Vt = -1;
+  p.osmotic.n = 1;
+  p.osmotic.cam = 0;
+  p.external.Kf = 0;
+  p.external.conc = -1;
+  p.external.height = 0;
   p.radius = 100000;
-  p.gamma = 0;
+  p.dpd.gamma = 0;
   p.temp = 0;
   p.pt = EigenVectorX1d(2);
   p.pt << 0, 0;

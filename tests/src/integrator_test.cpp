@@ -28,10 +28,10 @@ public:
     std::tie(mesh, vpg) = mem3dg::getIcosphereMatrix(1, 3);
 
     /// physical parameters
-    p.Kbc = 8.22e-5;
-    p.Ksg = 0.1;
-    p.Kv = 0.01;
-    p.cam = 0.40;
+    p.bending.Kbc = 8.22e-5;
+    p.tension.Ksg = 0.1;
+    p.osmotic.Kv = 0.01;
+    p.osmotic.cam = 0.40;
   }
   void SetUp() override {}
   void TearDown() override {}
