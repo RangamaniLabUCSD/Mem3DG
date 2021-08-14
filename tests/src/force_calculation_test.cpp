@@ -67,34 +67,36 @@ protected:
     p.protein0 << 1, 1, 0.7, 0.2;
     p.sharpness = 3;
 
-    p.Kb = 8.22e-5;
-    p.Kbc = 0;
-    p.H0c = -1;
+    p.bending.Kb = 8.22e-5;
+    p.bending.Kbc = 0;
+    p.bending.H0c = -1;
 
-    p.Ksg = 1e-2;
-    p.A_res = 0;
-    p.epsilon = -1e-2;
+    p.tension.Ksg = 1e-2;
+    p.tension.A_res = 0;
 
-    p.Kv = 1e-2;
-    p.V_res = 0;
-    p.Vt = -1;
-    p.cam = -1;
-    p.n = 1;
+    p.adsorption.epsilon = -1e-2;
+
+    p.osmotic.Kv = 1e-2;
+    p.osmotic.V_res = 0;
+    p.osmotic.Vt = -1;
+    p.osmotic.cam = -1;
+    p.osmotic.n = 1;
 
     p.Bc = 1;
 
-    p.eta = 0.001;
+    p.dirichlet.eta = 0.001;
 
-    p.gamma = 0;
+    p.dpd.gamma = 0;
+    
     p.temp = 0;
 
     p.Kst = 0;
     p.Ksl = 0;
     p.Kse = 0;
 
-    p.Kf = 0;
-    p.conc = -1;
-    p.height = 0;
+    p.external.Kf = 0;
+    p.external.conc = -1;
+    p.external.height = 0;
     p.radius = -1;
     p.lambdaSG = 0;
     p.lambdaV = 0;

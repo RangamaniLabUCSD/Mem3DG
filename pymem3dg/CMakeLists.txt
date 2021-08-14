@@ -47,7 +47,6 @@ set_target_properties(mem3dg_static
 
 set(PYMEM3DG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/pymem3dg.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/mem3dg.cpp"
 )
 
 pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})

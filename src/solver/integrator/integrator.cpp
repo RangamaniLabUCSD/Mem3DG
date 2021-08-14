@@ -417,7 +417,7 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
-  if ((f.P.gamma != 0) || (f.P.temp != 0)) {
+  if ((f.P.dpd.gamma != 0) || (f.P.temp != 0)) {
     f.computeDPDForces(dt);
     DPDForce = rowwiseDotProduct(
         f.F.maskForce(EigenMap<double, 3>(f.F.dampingForce) +
@@ -449,7 +449,7 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
         std::cout << "\n[lambdaSG] = [" << f.P.lambdaSG << ", "
                   << "]";
         f.P.lambdaSG +=
-            f.P.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
+            f.P.tension.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
         std::cout << " -> [" << f.P.lambdaSG << "]" << std::endl;
       }
     } else {              // incremental harmonic penalty method
@@ -457,9 +457,9 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
         std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
-        f.P.Ksg *= increment;
-        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+        std::cout << "\n[Ksg] = [" << f.P.tension.Ksg << "]";
+        f.P.tension.Ksg *= increment;
+        std::cout << " -> [" << f.P.tension.Ksg << "]" << std::endl;
       }
     }
   }
@@ -479,8 +479,8 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
         std::cout << "\n[lambdaSG, lambdaV] = [" << f.P.lambdaSG << ", "
                   << f.P.lambdaV << "]";
         f.P.lambdaSG +=
-            f.P.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
-        f.P.lambdaV += f.P.Kv * (f.volume - f.P.Vt) / f.P.Vt;
+            f.P.tension.Ksg * (f.surfaceArea - f.refSurfaceArea) / f.refSurfaceArea;
+        f.P.lambdaV += f.P.osmotic.Kv * (f.volume - f.P.osmotic.Vt) / f.P.osmotic.Vt;
         std::cout << " -> [" << f.P.lambdaSG << ", " << f.P.lambdaV << "]"
                   << std::endl;
       }
@@ -492,14 +492,14 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
 
       // iterate if not
       if (dArea > ctol) {
-        std::cout << "\n[Ksg] = [" << f.P.Ksg << "]";
-        f.P.Ksg *= 1.3;
-        std::cout << " -> [" << f.P.Ksg << "]" << std::endl;
+        std::cout << "\n[Ksg] = [" << f.P.tension.Ksg << "]";
+        f.P.tension.Ksg *= 1.3;
+        std::cout << " -> [" << f.P.tension.Ksg << "]" << std::endl;
       }
       if (dVolume > ctol) {
-        std::cout << "\n[Kv] = [" << f.P.Kv << "]";
-        f.P.Kv *= 1.3;
-        std::cout << " -> [" << f.P.Kv << "]" << std::endl;
+        std::cout << "\n[Kv] = [" << f.P.osmotic.Kv << "]";
+        f.P.osmotic.Kv *= 1.3;
+        std::cout << " -> [" << f.P.osmotic.Kv << "]" << std::endl;
       }
     }
   }
@@ -696,20 +696,20 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile << "Input Mesh:     " << inputMesh << "\n";
     myfile << "Physical parameters used: \n";
     myfile << "\n";
-    myfile << "Kb:     " << f.P.Kb << "\n"
-           << "Kbc:   " << f.P.Kbc << "\n"
-           << "H0c:     " << f.P.H0c << "\n"
+    myfile << "Kb:     " << f.P.bending.Kb << "\n"
+           << "Kbc:   " << f.P.bending.Kbc << "\n"
+           << "H0c:     " << f.P.bending.H0c << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
            << "Kst:    " << f.P.Kst << "\n"
-           << "Ksg:    " << f.P.Ksg << "\n"
-           << "Kv:     " << f.P.Kv << "\n"
-           << "gamma:  " << f.P.gamma << "\n"
-           << "Vt:     " << f.P.Vt << "\n"
+           << "Ksg:    " << f.P.tension.Ksg << "\n"
+           << "Kv:     " << f.P.osmotic.Kv << "\n"
+           << "gamma:  " << f.P.dpd.gamma << "\n"
+           << "Vt:     " << f.P.osmotic.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
-           << "Kf:     " << f.P.Kf << "\n"
-           << "conc:   " << f.P.conc << "\n"
-           << "height: " << f.P.height << "\n";
+           << "Kf:     " << f.P.external.Kf << "\n"
+           << "conc:   " << f.P.external.conc << "\n"
+           << "height: " << f.P.external.height << "\n";
 
     myfile << "\n";
     myfile << "Integration parameters used: \n";
@@ -733,19 +733,19 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "Input Mesh: " << inputMesh << "\n";
     myfile << "Final parameter: \n";
     myfile << "\n";
-    myfile << "Kb:     " << f.P.Kb << "\n"
-           << "Kbc:   " << f.P.Kbc << "\n"
-           << "H0c:     " << f.P.H0c << "\n"
+    myfile << "Kb:     " << f.P.bending.Kb << "\n"
+           << "Kbc:   " << f.P.bending.Kbc << "\n"
+           << "H0c:     " << f.P.bending.H0c << "\n"
            << "Kse:    " << f.P.Kse << "\n"
            << "Ksl:    " << f.P.Ksl << "\n"
            << "Kst:    " << f.P.Kst << "\n"
-           << "Ksg:    " << f.P.Ksg << "\n"
-           << "Kv:     " << f.P.Kv << "\n"
-           << "gamma:  " << f.P.gamma << "\n"
-           << "Vt:     " << f.P.Vt << "\n"
+           << "Ksg:    " << f.P.tension.Ksg << "\n"
+           << "Kv:     " << f.P.osmotic.Kv << "\n"
+           << "gamma:  " << f.P.dpd.gamma << "\n"
+           << "Vt:     " << f.P.osmotic.Vt << "\n"
            << "kt:     " << f.P.temp << "\n"
-           << "Kf:   " << f.P.Kf << "\n"
-           << "conc:   " << f.P.conc << "\n";
+           << "Kf:   " << f.P.external.Kf << "\n"
+           << "conc:   " << f.P.external.conc << "\n";
 
     myfile << "\n";
     myfile << "Integration: \n";

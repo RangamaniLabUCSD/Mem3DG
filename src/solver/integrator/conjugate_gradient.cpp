@@ -115,7 +115,7 @@ bool ConjugateGradient::integrate() {
 }
 
 void ConjugateGradient::checkParameters() {
-  if (f.P.gamma != 0 || f.P.temp != 0) {
+  if (f.P.dpd.gamma != 0 || f.P.temp != 0) {
     mem3dg_runtime_error("DPD has to be turned off for CG integration!");
   }
   if (f.P.Bc != 1 && f.P.Bc != 0) {
@@ -145,10 +145,10 @@ void ConjugateGradient::status() {
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
   if (f.O.isPreferredVolume) {
-    dVP = abs(f.volume / f.P.Vt - 1);
+    dVP = abs(f.volume / f.P.osmotic.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
-    dVP = abs(f.P.n / f.volume / f.P.cam - 1.0);
+    dVP = abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0);
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
 
@@ -235,7 +235,7 @@ void FeedForwardSweep::sweep() {
 #endif
 
   // initialize variables
-  const double KV = f.P.Kv, KSG = f.P.Ksg, init_time = 0.0;
+  const double KV = f.P.osmotic.Kv, KSG = f.P.tension.Ksg, init_time = 0.0;
   const std::size_t verbosity = 2;
 
   // initialize variables used if adopting adaptive time step based on mesh
@@ -254,8 +254,8 @@ void FeedForwardSweep::sweep() {
         f.P.lambdaSG = 0;
         f.P.lambdaV = 0;
       } else {
-        f.P.Kv = KV;
-        f.P.Ksg = KSG;
+        f.P.osmotic.Kv = KV;
+        f.P.tension.Ksg = KSG;
       }
 
       // adjust time step if adopt adaptive time step based on mesh size
@@ -270,9 +270,9 @@ void FeedForwardSweep::sweep() {
       trajFileName = buffer;
 
       // update sweeping paraemters
-      f.P.H0c = H;
-      (f.O.isPreferredVolume ? f.P.Vt : f.P.cam) = VP;
-      std::cout << "\nH0c: " << f.P.H0c << std::endl;
+      f.P.bending.H0c = H;
+      (f.O.isPreferredVolume ? f.P.osmotic.Vt : f.P.osmotic.cam) = VP;
+      std::cout << "\nH0c: " << f.P.bending.H0c << std::endl;
       std::cout << "VP: " << VP << std::endl;
 
       // recalculate cached values

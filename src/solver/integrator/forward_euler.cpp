@@ -110,7 +110,7 @@ bool Euler::integrate() {
 }
 
 void Euler::checkParameters() {
-  if (f.P.gamma != 0 || f.P.temp != 0) {
+  if (f.P.dpd.gamma != 0 || f.P.temp != 0) {
     mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
   if (isBacktrack) {
@@ -126,8 +126,8 @@ void Euler::status() {
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
-  dVP = (f.O.isPreferredVolume) ? abs(f.volume / f.P.Vt - 1)
-                              : abs(f.P.n / f.volume / f.P.cam - 1.0);
+  dVP = (f.O.isPreferredVolume) ? abs(f.volume / f.P.osmotic.Vt - 1)
+                              : abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0);
 
   // exit if under error tolerance
   if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {

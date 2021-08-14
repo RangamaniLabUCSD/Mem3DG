@@ -2,7 +2,6 @@
 
 #include <netcdf>
 
-#include "mem3dg.h"
 #include "mem3dg/mem3dg"
 
 namespace gc = ::geometrycentral;

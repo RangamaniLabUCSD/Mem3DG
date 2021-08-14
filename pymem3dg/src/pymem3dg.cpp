@@ -21,7 +21,6 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 
-#include "mem3dg.h"
 #include "visualization.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
@@ -954,6 +953,108 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   // ==========================================================
   // =============   Simulation parameters      ===============
   // ==========================================================
+  py::class_<Parameters::Bending> bending(pymem3dg, "Bending", R"delim(
+        The bending parameters
+    )delim");
+  bending.def(py::init<>());
+  bending.def_readwrite("Kb", &Parameters::Bending::Kb,
+                        R"delim(
+          get Bending rigidity of the bare membrane 
+      )delim");
+  bending.def_readwrite("Kbc", &Parameters::Bending::Kbc,
+                        R"delim(
+          get constant of bending modulus vs protein density
+      )delim");
+  bending.def_readwrite("H0c", &Parameters::Bending::H0c,
+                        R"delim(
+          get constant of spontaneous curvature vs protein density
+      )delim");
+  bending.def_readwrite("relation", &Parameters::Bending::relation,
+                        R"delim(
+          get relation between H0 and protein densit, "linear" or "hill"
+      )delim");
+
+  py::class_<Parameters::Tension> tension(pymem3dg, "Tension", R"delim(
+        The surface tension parameters
+    )delim");
+  tension.def(py::init<>());
+  tension.def_readwrite("Ksg", &Parameters::Tension::Ksg,
+                        R"delim(
+          get Global stretching modulus 
+      )delim");
+  tension.def_readwrite("A_res", &Parameters::Tension::A_res,
+                        R"delim(
+          get area reservoir
+      )delim");
+
+  py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(
+        The osmotic pressure parameters
+    )delim");
+  osmotic.def_readwrite("Kv", &Parameters::Osmotic::Kv,
+                        R"delim(
+          get Volume regularization 
+      )delim");
+  osmotic.def_readwrite("V_res", &Parameters::Osmotic::V_res,
+                        R"delim(
+          get volume reservoir
+      )delim");
+  osmotic.def_readwrite("Vt", &Parameters::Osmotic::Vt,
+                        R"delim(
+          get the preferred volume
+      )delim");
+  osmotic.def_readwrite("cam", &Parameters::Osmotic::cam,
+                        R"delim(
+          get the ambient concentration 
+      )delim");
+  osmotic.def_readwrite("n", &Parameters::Osmotic::n,
+                        R"delim(
+          get the enclosed solute amount
+      )delim");
+
+  py::class_<Parameters::Adsorption> adsorption(pymem3dg, "Adsorption",
+                                                R"delim(
+        The adsorption parameters
+    )delim");
+  adsorption.def_readwrite("epsilon", &Parameters::Adsorption::epsilon,
+                           R"delim(
+          get adsorption energy per protein
+      )delim");
+
+  py::class_<Parameters::External> external(pymem3dg, "External",
+                                            R"delim(
+        The external force parameters
+    )delim");
+  external.def_readwrite("Kf", &Parameters::External::Kf,
+                         R"delim(
+          get Magnitude of external force 
+      )delim");
+  external.def_readwrite("conc", &Parameters::External::conc,
+                         R"delim(
+          get level of concentration of the external force 
+      )delim");
+  external.def_readwrite("height", &Parameters::External::height,
+                         R"delim(
+          get target height 
+      )delim");
+
+  py::class_<Parameters::DPD> dpd(pymem3dg, "DPD",
+                                  R"delim(
+        The DPD parameters
+    )delim");
+  dpd.def_readwrite("gamma", &Parameters::DPD::gamma,
+                    R"delim(
+          get Dissipation coefficient 
+      )delim");
+
+  py::class_<Parameters::Dirichlet> dirichlet(pymem3dg, "Dirichlet",
+                                              R"delim(
+        The Dirichlet energy parameters
+    )delim");
+  dirichlet.def_readwrite("eta", &Parameters::Dirichlet::eta,
+                           R"delim(
+          get coefficient
+      )delim");
+
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
         The parameters
     )delim");
@@ -977,29 +1078,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //       0, py::arg("lambdaSG") = 0, py::arg("lambdaV") = 0,
   //       py::arg("lambdaPhi") = 1e-7, py::arg("sharpness") = 20,
   //       py::arg("relation") = "linear");
-  parameters.def_readwrite("Kb", &Parameters::Kb,
+  parameters.def_readwrite("bending", &Parameters::bending,
                            R"delim(
-          get Bending rigidity of the bare membrane 
-      )delim");
-  parameters.def_readwrite("Kbc", &Parameters::Kbc,
-                           R"delim(
-          get constant of bending modulus vs protein density
-      )delim");
-  parameters.def_readwrite("H0c", &Parameters::H0c,
-                           R"delim(
-          get constant of spontaneous curvature vs protein density
+          bending parameters
       )delim");
   parameters.def_readwrite("protein0", &Parameters::protein0,
                            R"delim(
           get setting of initial protein density
-      )delim");
-  parameters.def_readwrite("Ksg", &Parameters::Ksg,
-                           R"delim(
-          get Global stretching modulus 
-      )delim");
-  parameters.def_readwrite("A_res", &Parameters::A_res,
-                           R"delim(
-          get area reservoir
       )delim");
   parameters.def_readwrite("Kst", &Parameters::Kst,
                            R"delim(
@@ -1013,61 +1098,17 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
           get Edge spring constant 
       )delim");
-  parameters.def_readwrite("Kv", &Parameters::Kv,
+  parameters.def_readwrite("temp", &Parameters::temp,
                            R"delim(
-          get Volume regularization 
-      )delim");
-  parameters.def_readwrite("V_res", &Parameters::V_res,
-                           R"delim(
-          get volume reservoir
-      )delim");
-  parameters.def_readwrite("eta", &Parameters::eta,
-                           R"delim(
-          get Line tension 
-      )delim");
-  parameters.def_readwrite("epsilon", &Parameters::epsilon,
-                           R"delim(
-          get adsorption energy per protein
+          get Temperature 
       )delim");
   parameters.def_readwrite("Bc", &Parameters::Bc,
                            R"delim(
           get protein mobility constant 
       )delim");
-  parameters.def_readwrite("gamma", &Parameters::gamma,
-                           R"delim(
-          get Dissipation coefficient 
-      )delim");
-  parameters.def_readwrite("Vt", &Parameters::Vt,
-                           R"delim(
-          get the preferred volume
-      )delim");
-  parameters.def_readwrite("cam", &Parameters::cam,
-                           R"delim(
-          get the ambient concentration 
-      )delim");
-  parameters.def_readwrite("n", &Parameters::n,
-                           R"delim(
-          get the enclosed solute amount
-      )delim");
-  parameters.def_readwrite("temp", &Parameters::temp,
-                           R"delim(
-          get Temperature 
-      )delim");
   parameters.def_readwrite("pt", &Parameters::pt,
                            R"delim(
           get specification for the point
-      )delim");
-  parameters.def_readwrite("Kf", &Parameters::Kf,
-                           R"delim(
-          get Magnitude of external force 
-      )delim");
-  parameters.def_readwrite("conc", &Parameters::conc,
-                           R"delim(
-          get level of concentration of the external force 
-      )delim");
-  parameters.def_readwrite("height", &Parameters::height,
-                           R"delim(
-          get target height 
       )delim");
   parameters.def_readwrite("radius", &Parameters::radius,
                            R"delim(
@@ -1088,10 +1129,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("sharpness", &Parameters::sharpness,
                            R"delim(
           get sharpness of tanh transition
-      )delim");
-  parameters.def_readwrite("relation", &Parameters::relation,
-                           R"delim(
-          get relation between H0 and protein densit, "linear" or "hill"
       )delim");
 
   // ==========================================================
@@ -1331,294 +1368,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   pymem3dg.def("processSoup", &processSoup, "process polygon soup",
                py::arg("meshName"));
-
-  // ==========================================================
-  // =============   Simulation drivers         ===============
-  // ==========================================================
-  pymem3dg.def("driver_ply", &driver_ply,
-               "Run single simulation starting with .ply files",
-               py::arg("verbosity"), py::arg("inputMesh"), py::arg("refMesh"),
-               py::arg("nSub"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isLocalCurvature"),
-               py::arg("isVertexShift"), py::arg("isEdgeFlip"),
-               py::arg("isGrowMesh"), py::arg("isRefMesh"),
-               py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
-               py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
-               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
-               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
-               py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"),
-               py::arg("ctol"), py::arg("isAugmentedLagrangian"),
-               py::arg("restartNum"), py::arg("isAdaptiveStep"),
-               R"delim(
-                    Run single simulation starting with .ply files
-               Args:
-                   verbosity (:py:class:`int`): verbosity of output data
-                   inputMesh (:py:class:`str`): input mesh path
-                   refMesh (:py:class:`str`): reference mesh path
-                   nSub (:py:class:`int`): number of subdivision 
-                   isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
-                   isProtein (:py:class:`bool`): whether consider protein binding
-                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
-                   isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
-                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
-                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
-                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
-                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
-                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
-                   Kb (:py:class:`double`): bending modulus of the bare membrane 
-                   Kbc (:py:class:`double`): bending modulus of the coated membrane 
-                   H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
-                   Kse (:py:class:`double`): edge modulus for mesh regularization
-                   Kst (:py:class:`double`): modulus for conformal regularization 
-                   Ksl (:py:class:`double`): local area mesh regularization
-                   Ksg (:py:class:`double`): global stretching modulus of membrane
-                   Kv (:py:class:`double`): pressure modulus 
-                   eta (:py:class:`double`): interfacial linetension
-                   epsilon (:py:class:`double`): adsorption energy per unit of protein 
-                   Bc (:py:class:`double`): binding constant of the protein
-                   Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
-                   gamma (:py:class:`double`): dissipation coefficient of DPD force
-                   kt (:py:class:`double`): stochastic coeffcient of DPD force 
-                   pt (:py:class:`list`): 3-D spatial coordinate of a point 
-                   Kf (:py:class:`double`): "spring" constant of external force 
-                   conc (:py:class:`double`): extent of local concentration of external force 
-                   height (:py:class:`double`): targeted height of the external force
-                   radius (:py:class:`double`): radius of integration 
-                   h (:py:class:`double`): (time) step size
-                   T (:py:class:`double`): maximum duration of integration
-                   eps (:py:class:`double`): tolerance of convergence 
-                   tSave (:py:class:`double`): time period for saving data 
-                   outputDir (:py:class:`str`): output directory path
-                   integration (:py:class:`str`): method of integration (optimization)
-                   isBacktrack (:py:class:`bool`): whether conduct backtracking 
-                   rho (:py:class:`double`): discount of step size when backtracking
-                   c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
-                   ctol (:py:class:`double`): tolerance of constraints
-                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
-                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
-               Returns:
-                   :py:class:`int`: success.
-            )delim");
-
-  pymem3dg.def("forwardsweep_ply", &forwardsweep_ply,
-               "Run forward sweep simulation starting with .ply files",
-               py::arg("inputMesh"), py::arg("refMesh"), py::arg("nSub"),
-               py::arg("isReducedVolume"), py::arg("isProtein"),
-               py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-               py::arg("isEdgeFlip"), py::arg("isGrowMesh"),
-               py::arg("isRefMesh"), py::arg("isFloatVertex"),
-               py::arg("isLaplacianMeanCurvature"), py::arg("Kb"),
-               py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"), py::arg("Kse"),
-               py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"), py::arg("Kv"),
-               py::arg("eta"), py::arg("epsilon"), py::arg("Bc"), py::arg("Vt"),
-               py::arg("cam"), py::arg("gamma"), py::arg("temp"), py::arg("pt"),
-               py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
-               py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-               py::arg("isAugmentedLagrangian"), py::arg("restartNum"),
-               py::arg("isAdaptiveStep"),
-               R"delim(
-                    Run forward sweep simulation starting with .ply files
-               Args:
-                   inputMesh (:py:class:`str`): input mesh path
-                   refMesh (:py:class:`str`): reference mesh path
-                   nSub (:py:class:`int`): number of subdivision 
-                   isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
-                   isProtein (:py:class:`bool`): whether consider protein binding
-                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
-                   isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
-                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
-                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
-                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
-                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
-                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
-                   Kb (:py:class:`double`): bending modulus of the bare membrane 
-                   Kbc (:py:class:`double`): bending modulus of the coated membrane 
-                   H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
-                   Kse (:py:class:`double`): edge modulus for mesh regularization
-                   Kst (:py:class:`double`): modulus for conformal regularization 
-                   Ksl (:py:class:`double`): local area mesh regularization
-                   Ksg (:py:class:`double`): global stretching modulus of membrane
-                   Kv (:py:class:`double`): pressure modulus 
-                   eta (:py:class:`double`): interfacial linetension
-                   epsilon (:py:class:`double`): adsorption energy per unit of protein 
-                   Bc (:py:class:`double`): binding constant of the protein
-                   Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
-                   gamma (:py:class:`double`): dissipation coefficient of DPD force
-                   temp (:py:class:`double`): stochastic coeffcient of DPD force 
-                   pt (:py:class:`list`): 3-D spatial coordinate of a point 
-                   Kf (:py:class:`double`): "spring" constant of external force 
-                   conc (:py:class:`double`): extent of local concentration of external force 
-                   height (:py:class:`double`): targeted height of the external force
-                   radius (:py:class:`double`): radius of integration 
-                   h (:py:class:`double`): (time) step size
-                   T (:py:class:`double`): maximum duration of integration
-                   eps (:py:class:`double`): tolerance of convergence 
-                   tSave (:py:class:`double`): time period for saving data 
-                   outputDir (:py:class:`str`): output directory path
-                   isBacktrack (:py:class:`bool`): whether conduct backtracking 
-                   rho (:py:class:`double`): discount of step size when backtracking
-                   c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
-                   ctol (:py:class:`double`): tolerance of constraints
-                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
-                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
-               Returns:
-                   :py:class:`int`: success.
-            )delim");
-
-#ifdef MEM3DG_WITH_NETCDF
-
-  pymem3dg.def(
-      "driver_nc", &driver_nc,
-      "Run single simulation starting with netcdf files", py::arg("verbosity"),
-      py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
-      py::arg("isContinue"), py::arg("isReducedVolume"), py::arg("isProtein"),
-      py::arg("isLocalCurvature"), py::arg("isVertexShift"),
-      py::arg("isEdgeFlip"), py::arg("isGrowMesh"), py::arg("isRefMesh"),
-      py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
-      py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
-      py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-      py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-      py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
-      py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
-      py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-      py::arg("tSave"), py::arg("outputDir"), py::arg("integration"),
-      py::arg("isBacktrack"), py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-      py::arg("isAugmentedLagrangian"), py::arg("restartNum"),
-      py::arg("isAdaptiveStep"),
-      R"delim(
-                   Run single simulation starting with netcdf files
-               Args:
-                   verbosity (:py:class:`int`): verbosity of output data
-                   trajFile (:py:class:`str`): input trajectory file path
-                   startingFrame (:py:class:`int`): starting frame of continuation
-                   nSub (:py:class:`int`): number of loop subdivision
-                   isContinue (:py:class:`bool`): whether continue the simulation from trajectory
-                   isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
-                   isProtein (:py:class:`bool`): whether consider protein binding
-                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
-                   isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
-                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
-                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
-                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
-                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
-                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
-                   Kb (:py:class:`double`): bending modulus of the bare membrane 
-                   Kbc (:py:class:`double`): bending modulus of the coated membrane 
-                   H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
-                   Kse (:py:class:`double`): edge modulus for mesh regularization
-                   Kst (:py:class:`double`): modulus for conformal regularization 
-                   Ksl (:py:class:`double`): local area mesh regularization
-                   Ksg (:py:class:`double`): global stretching modulus of membrane
-                   Kv (:py:class:`double`): pressure modulus 
-                   eta (:py:class:`double`): interfacial linetension
-                   epsilon (:py:class:`double`): adsorption energy per unit of protein 
-                   Bc (:py:class:`double`): binding constant of the protein
-                   Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
-                   gamma (:py:class:`double`): dissipation coefficient of DPD force
-                   temp (:py:class:`double`): stochastic coeffcient of DPD force 
-                   pt (:py:class:`list`): 3-D spatial coordinate of a point 
-                   Kf (:py:class:`double`): "spring" constant of external force 
-                   conc (:py:class:`double`): extent of local concentration of external force 
-                   height (:py:class:`double`): targeted height of the external force
-                   radius (:py:class:`double`): radius of integration 
-                   h (:py:class:`double`): (time) step size
-                   T (:py:class:`double`): maximum duration of integration
-                   eps (:py:class:`double`): tolerance of convergence 
-                   tSave (:py:class:`double`): time period for saving data 
-                   outputDir (:py:class:`str`): output directory path
-                   integration (:py:class:`str`): method of integration (optimization)
-                   isBacktrack (:py:class:`bool`): whether conduct backtracking 
-                   rho (:py:class:`double`): discount of step size when backtracking
-                   c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
-                   ctol (:py:class:`double`): tolerance of constraints
-                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
-                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
-               Returns:
-                   :py:class:`int`: success.
-            )delim");
-
-  pymem3dg.def("forwardsweep_nc", &forwardsweep_nc,
-               "Run forward sweep simulation starting with netcdf files",
-               py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub"),
-               py::arg("isContinue"), py::arg("isReducedVolume"),
-               py::arg("isProtein"), py::arg("isLocalCurvature"),
-               py::arg("isVertexShift"), py::arg("isEdgeFlip"),
-               py::arg("isGrowMesh"), py::arg("isRefMesh"),
-               py::arg("isFloatVertex"), py::arg("isLaplacianMeanCurvature"),
-               py::arg("Kb"), py::arg("Kbc"), py::arg("H0"), py::arg("r_H0"),
-               py::arg("Kse"), py::arg("Kst"), py::arg("Ksl"), py::arg("Ksg"),
-               py::arg("Kv"), py::arg("eta"), py::arg("epsilon"), py::arg("Bc"),
-               py::arg("Vt"), py::arg("cam"), py::arg("gamma"), py::arg("temp"),
-               py::arg("pt"), py::arg("Kf"), py::arg("conc"), py::arg("height"),
-               py::arg("radius"), py::arg("h"), py::arg("T"), py::arg("eps"),
-               py::arg("tSave"), py::arg("outputDir"), py::arg("isBacktrack"),
-               py::arg("rho"), py::arg("c1"), py::arg("ctol"),
-               py::arg("isAugmentedLagrangian"), py::arg("restartNum"),
-               py::arg("isAdaptiveStep"),
-               R"delim(
-                   Run forward sweep simulation starting with netcdf files
-               Args:
-                   trajFile (:py:class:`str`): input trajectory file path
-                   startingFrame (:py:class:`int`): starting frame of continuation
-                   nSub (:py:class:`int`): number of loop subdivision
-                   isContinue (:py:class:`bool`): whether continue the simulation from trajectory
-                   isReducedVolume (:py:class:`bool`): whether adopt reduced volume parametrization
-                   isProtein (:py:class:`bool`): whether consider protein binding
-                   isLocalCurvature (:py:class:`bool`): whether has local spontaneous curvature profile
-                   isVertexShfit (:py:class:`bool`): whether conduct vertex shift during integration
-                   isEdgeFlip (:py:class:`bool`): whether conduct edge flip during integration
-                   isGrowMesh (:py:class:`bool`): whether conduct mesh growth during integration
-                   isRefMesh (:py:class:`bool`): whether whether have a reference mesh
-                   isFloatVertex (:py:class:`bool`): whether have "the" vertex floating in embedded space
-                   isLaplacianMeanCurvature (:py:class:`bool`): whether adopt Laplacian mean curvature definition, otherwise dihedral angle definition
-                   Kb (:py:class:`double`): bending modulus of the bare membrane 
-                   Kbc (:py:class:`double`): bending modulus of the coated membrane 
-                   H0 (:py:class:`double`): spontaneous curvature of the membrane
-                   r_H0 (:py:class:`list`): principal axis of elliptical domain of H0
-                   Kse (:py:class:`double`): edge modulus for mesh regularization
-                   Kst (:py:class:`double`): modulus for conformal regularization 
-                   Ksl (:py:class:`double`): local area mesh regularization
-                   Ksg (:py:class:`double`): global stretching modulus of membrane
-                   Kv (:py:class:`double`): pressure modulus 
-                   eta (:py:class:`double`): interfacial linetension
-                   epsilon (:py:class:`double`): adsorption energy per unit of protein 
-                   Bc (:py:class:`double`): binding constant of the protein
-                   Vt (:py:class:`double`): targeted reduced volume of closed membrane 
-                   cam (:py:class:`double`): anbient "concentration" outside closed membrane
-                   gamma (:py:class:`double`): dissipation coefficient of DPD force
-                   temp (:py:class:`double`): stochastic coeffcient of DPD force 
-                   pt (:py:class:`list`): 3-D spatial coordinate of a point 
-                   Kf (:py:class:`double`): "spring" constant of external force 
-                   conc (:py:class:`double`): extent of local concentration of external force 
-                   height (:py:class:`double`): targeted height of the external force
-                   radius (:py:class:`double`): radius of integration 
-                   h (:py:class:`double`): (time) step size
-                   T (:py:class:`double`): maximum duration of integration
-                   eps (:py:class:`double`): tolerance of convergence 
-                   tSave (:py:class:`double`): time period for saving data 
-                   outputDir (:py:class:`str`): output directory path
-                   isBacktrack (:py:class:`bool`): whether conduct backtracking 
-                   rho (:py:class:`double`): discount of step size when backtracking
-                   c1 (:py:class:`double`): const of Wolfe condition 0 < c1 < 1, usually ~ 1e-4
-                   ctol (:py:class:`double`): tolerance of constraints
-                   isAugmentedLagrangian (:py:class:`bool`): whether use augmented lagrangian method
-                   restartNum (:py::class:`int`): number of iteration to restart conjugate gradient with steepest descent
-               Returns:
-                   :py:class:`int`: success.
-            )delim");
-#endif
 };
 } // namespace integrator
 } // namespace solver

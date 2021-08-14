@@ -300,11 +300,11 @@ void System::checkParametersAndOptions() {
 
   // check validity of parameters / options
   if (!O.isShapeVariation) {
-    if (P.Ksg != 0) {
+    if (P.tension.Ksg != 0) {
       mem3dg_runtime_error("Stretching modulus Ksg has to be zero for non "
                            "shape variation simulation!");
     }
-    if (P.Kv != 0) {
+    if (P.osmotic.Kv != 0) {
       mem3dg_runtime_error("Pressure-volume modulus Kv has to be zero for non "
                            "shape variation simulation!");
     }
@@ -323,7 +323,7 @@ void System::checkParametersAndOptions() {
     mem3dg_runtime_error("Binding constant Bc has to be consistent with the "
                          "protein variation option!");
   }
-  if (O.isProteinVariation && P.Kbc != 0) {
+  if (O.isProteinVariation && P.bending.Kbc != 0) {
     mem3dg_runtime_error(
         "Kbc != 0 is currently not expected for protein variation!");
   }
@@ -337,7 +337,8 @@ void System::checkParametersAndOptions() {
         mem3dg_runtime_error("{0<phi<1}");
       }
     } else {
-      if (P.protein0[0] != 1 || P.Kb != 0 || P.eta != 0 || P.epsilon != 0) {
+      if (P.protein0[0] != 1 || P.bending.Kb != 0 || P.dirichlet.eta != 0 ||
+          P.adsorption.epsilon != 0) {
         mem3dg_runtime_error(
             "For homogenous membrane simulation, good "
             "practice is "
@@ -391,7 +392,7 @@ void System::checkParametersAndOptions() {
                 << std::endl;
     }
   } else {
-    if (P.A_res != 0 || P.V_res != 0) {
+    if (P.tension.A_res != 0 || P.osmotic.V_res != 0) {
       mem3dg_runtime_error(
           "Closed mesh can not have area and volume reservior!");
     }
@@ -448,7 +449,7 @@ void System::checkParametersAndOptions() {
 
   // Osmotic pressure related
   if (O.isPreferredVolume) {
-    if (P.cam != -1) {
+    if (P.osmotic.cam != -1) {
       mem3dg_runtime_error("ambient concentration cam has to be -1 for "
                            "preferred volume parametrized simulation!");
     }
@@ -457,7 +458,7 @@ void System::checkParametersAndOptions() {
                            "cannot be simultaneously turned on!");
     }
   } else {
-    if (P.Vt != -1 && !O.isConstantOsmoticPressure) {
+    if (P.osmotic.Vt != -1 && !O.isConstantOsmoticPressure) {
       mem3dg_runtime_error("preferred volume Vt has to be -1 for "
                            "ambient pressure parametrized simulation!");
     }
@@ -467,7 +468,7 @@ void System::checkParametersAndOptions() {
       mem3dg_runtime_error("preferred volume and constant osmotic pressure "
                            "cannot be simultaneously turned on!");
     }
-    if (P.Vt != -1 || P.V_res != 0 || P.cam != -1) {
+    if (P.osmotic.Vt != -1 || P.osmotic.V_res != 0 || P.osmotic.cam != -1) {
       mem3dg_runtime_error(
           "Vt and cam have to be set to -1 and V_res to be 0 to "
           "enable constant omostic pressure! Note Kv is the "
@@ -477,7 +478,7 @@ void System::checkParametersAndOptions() {
 
   // surface tension related
   if (O.isConstantSurfaceTension) {
-    if (P.A_res != 0) {
+    if (P.tension.A_res != 0) {
       mem3dg_runtime_error(
           "A_res has to be set to 0 to "
           "enable constant surface! Note Ksg is the surface tension directly!");
@@ -485,8 +486,8 @@ void System::checkParametersAndOptions() {
   }
 
   // external force related
-  if (P.Kf == 0) {
-    if (P.conc != -1 || P.height != 0) {
+  if (P.external.Kf == 0) {
+    if (P.external.conc != -1 || P.external.height != 0) {
       mem3dg_runtime_error("With no external force, its concentration "
                            "should be disabled (=-1) "
                            "and prescribed height should be set to 0!");
@@ -526,7 +527,7 @@ void System::initConstants() {
   refVpg->requireFaceAreas();
 
   // // Initialize V-E distribution matrix for line tension calculation
-  // if (P.eta != 0) {
+  // if (P.dirichlet.eta != 0) {
   //   D = localVpg->d0.transpose().cwiseAbs() / 2;
   //   // for (int k = 0; k < D.outerSize(); ++k) {
   //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
@@ -586,7 +587,7 @@ void System::initConstants() {
 
   // Initialize the constant target surface (total mesh) area
   if (isOpenMesh) {
-    refSurfaceArea = P.A_res;
+    refSurfaceArea = P.tension.A_res;
     for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
       refSurfaceArea += computePolygonArea(bl, refVpg->inputVertexPositions);
     }
@@ -595,7 +596,7 @@ void System::initConstants() {
   }
 
   // initialize/update total surface area
-  surfaceArea = vpg->faceAreas.raw().sum() + P.A_res;
+  surfaceArea = vpg->faceAreas.raw().sum() + P.tension.A_res;
   std::cout << "area_init/area_ref = " << surfaceArea / refSurfaceArea
             << std::endl;
 
@@ -615,13 +616,13 @@ void System::initConstants() {
 
   // Initialize the constant reference volume
   std::cout << "vol_ref = "
-            << (isOpenMesh ? P.V_res
+            << (isOpenMesh ? P.osmotic.V_res
                            : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
                                  (4 * constants::PI / 3))
             << std::endl;
 
   /// initialize/update enclosed volume
-  volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
+  volume = getMeshVolume(*mesh, *vpg, true) + P.osmotic.V_res;
   std::cout << "vol_init = " << volume << std::endl;
 }
 
@@ -648,7 +649,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // initialize/update external force
-  if (P.Kf != 0 && isUpdateGeodesics) {
+  if (P.external.Kf != 0 && isUpdateGeodesics) {
     computeExternalForce();
   }
 
@@ -664,52 +665,54 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // compute face gradient of spontaneous curvature
-  if (P.eta != 0) {
+  if (P.dirichlet.eta != 0) {
     computeGradient(proteinDensity, proteinDensityGradient);
   }
 
   // Update protein density dependent quantities
-  if (P.relation == "linear") {
-    H0.raw() = proteinDensity.raw() * P.H0c;
-    Kb.raw() = P.Kb + P.Kbc * proteinDensity.raw().array();
-  } else if (P.relation == "hill") {
+  if (P.bending.relation == "linear") {
+    H0.raw() = proteinDensity.raw() * P.bending.H0c;
+    Kb.raw() = P.bending.Kb + P.bending.Kbc * proteinDensity.raw().array();
+  } else if (P.bending.relation == "hill") {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
-    H0.raw() =
-        (P.H0c * proteinDensitySq.array() / (1 + proteinDensitySq.array()))
-            .matrix();
-    Kb.raw() = (P.Kb + P.Kbc * proteinDensitySq.array() /
-                           (1 + proteinDensitySq.array()))
+    H0.raw() = (P.bending.H0c * proteinDensitySq.array() /
+                (1 + proteinDensitySq.array()))
+                   .matrix();
+    Kb.raw() = (P.bending.Kb + P.bending.Kbc * proteinDensitySq.array() /
+                                   (1 + proteinDensitySq.array()))
                    .matrix();
   } else {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }
 
   /// initialize/update enclosed volume
-  volume = getMeshVolume(*mesh, *vpg, true) + P.V_res;
+  volume = getMeshVolume(*mesh, *vpg, true) + P.osmotic.V_res;
 
   // update global osmotic pressure
   if (O.isPreferredVolume) {
-    F.osmoticPressure = -(P.Kv * (volume - P.Vt) / P.Vt / P.Vt + P.lambdaV);
+    F.osmoticPressure =
+        -(P.osmotic.Kv * (volume - P.osmotic.Vt) / P.osmotic.Vt / P.osmotic.Vt +
+          P.lambdaV);
   } else if (O.isConstantOsmoticPressure) {
-    F.osmoticPressure = P.Kv;
+    F.osmoticPressure = P.osmotic.Kv;
   } else {
     F.osmoticPressure = mem3dg::constants::i * mem3dg::constants::R * P.temp *
-                        (P.n / volume - P.cam);
+                        (P.osmotic.n / volume - P.osmotic.cam);
   }
 
   // initialize/update total surface area
-  surfaceArea = vpg->faceAreas.raw().sum() + P.A_res;
+  surfaceArea = vpg->faceAreas.raw().sum() + P.tension.A_res;
 
   // update global surface tension
   F.surfaceTension =
       O.isConstantSurfaceTension
-          ? P.Ksg
-          : P.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
+          ? P.tension.Ksg
+          : P.tension.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
                 P.lambdaSG;
 
   // initialize/update line tension (on dual edge)
-  if (P.eta != 0 && false) {
+  if (P.dirichlet.eta != 0 && false) {
     mem3dg_runtime_error(
         "updateVertexPosition: out of data implementation on line tension, "
         "shouldn't be called!");
@@ -717,9 +720,9 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
     // this is under the case where the resolution is low. This is where the
     // extra vpg->edgeLength comes from!!!
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
-    // F.lineTension.raw() = P.eta * vpg->edgeLengths.raw().array() *
+    // F.lineTension.raw() = P.dirichlet.eta * vpg->edgeLengths.raw().array() *
     //                       (vpg->d0 * H0.raw()).cwiseAbs().array();
-    // lineTension.raw() = P.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
+    // lineTension.raw() = P.dirichlet.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
   }
 }
 

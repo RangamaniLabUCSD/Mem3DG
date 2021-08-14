@@ -71,20 +71,20 @@ void System::computeSurfaceEnergy() {
 void System::computePressureEnergy() {
   // Note: area weighted normal is exact volume variation
   if (O.isPreferredVolume) {
-    double V_difference = volume - P.Vt;
+    double V_difference = volume - P.osmotic.Vt;
     E.pE = -F.osmoticPressure * V_difference / 2 + P.lambdaV * V_difference / 2;
   } else if (O.isConstantOsmoticPressure) {
     E.pE = -F.osmoticPressure * volume;
   } else {
-    double ratio = P.cam * volume / P.n;
-    E.pE = mem3dg::constants::i * mem3dg::constants::R * P.temp * P.n *
+    double ratio = P.osmotic.cam * volume / P.osmotic.n;
+    E.pE = mem3dg::constants::i * mem3dg::constants::R * P.temp * P.osmotic.n *
            (ratio - log(ratio) - 1);
   }
 }
 
 void System::computeAdsorptionEnergy() {
   E.aE =
-      P.epsilon *
+      P.adsorption.epsilon *
       (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
 }
 
@@ -109,7 +109,7 @@ void System::computeDirichletEnergy() {
   // explicit dirichlet energy
   E.dE = 0;
   for (gcs::Face f : mesh->faces()) {
-    E.dE += 0.5 * P.eta * proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
+    E.dE += 0.5 * P.dirichlet.eta * proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
   }
 
   // alternative dirichlet energy after integration by part
@@ -137,22 +137,22 @@ void System::computeKineticEnergy() {
 }
 
 void System::computePotentialEnergy() {
-  if (P.Kb != 0 || P.Kbc != 0) {
+  if (P.bending.Kb != 0 || P.bending.Kbc != 0) {
     computeBendingEnergy();
   }
-  if (P.Ksg != 0) {
+  if (P.tension.Ksg != 0) {
     computeSurfaceEnergy();
   }
-  if (P.Kv != 0) {
+  if (P.osmotic.Kv != 0) {
     computePressureEnergy();
   }
-  if (P.epsilon != 0) {
+  if (P.adsorption.epsilon != 0) {
     computeAdsorptionEnergy();
   }
-  if (P.eta != 0) {
+  if (P.dirichlet.eta != 0) {
     computeDirichletEnergy();
   }
-  if (P.Kf != 0) {
+  if (P.external.Kf != 0) {
     computeExternalForceEnergy();
   }
   if (O.isProteinVariation) {
