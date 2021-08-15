@@ -91,7 +91,7 @@ struct MeshProcessor {
     bool isChangeTopology = false;
 
     /// whether vertex shift
-    bool shiftVertex = true;
+    bool shiftVertex = false;
 
     /// flip non-delaunay edge
     bool flipNonDelaunay = false;
