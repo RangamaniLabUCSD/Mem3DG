@@ -60,9 +60,9 @@ int main() {
   p.variation.isProteinVariation = false;
 
   mem3dg::solver::Options o;
-  o.isEdgeFlip = true;
-  o.isSplitEdge = true;
-  o.isCollapseEdge = true;
+  // o.isEdgeFlip = true;
+  // o.isSplitEdge = true;
+  // o.isCollapseEdge = true;
   o.isVertexShift = false;
   o.isFloatVertex = true;
 

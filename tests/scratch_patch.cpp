@@ -69,9 +69,9 @@ int main() {
 
   mem3dg::solver::Options o;
   o.isVertexShift = false;
-  o.isEdgeFlip = false;
-  o.isSplitEdge = false;
-  o.isCollapseEdge = false;
+  // o.isEdgeFlip = false;
+  // o.isSplitEdge = false;
+  // o.isCollapseEdge = false;
   o.isFloatVertex = false;
 
   mem3dg::solver::System f(inputMesh, p, o, 0, false);

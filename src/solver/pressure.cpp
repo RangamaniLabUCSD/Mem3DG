@@ -106,7 +106,7 @@ void System::computeVectorForces() {
                        vpg->faceAreas[fID];
 
         areaGrad += 0.25 * gc::cross(vpg->faceNormals[fID],
-                                    vecFromHalfedge(he.next(), *vpg));
+                                     vecFromHalfedge(he.next(), *vpg));
       }
 
       if (interiorTwinHalfedge) {
@@ -145,12 +145,12 @@ void System::computeVectorForces() {
 
         if (!he.next().edge().isBoundary())
           schlafliVec2 -= (vpg->halfedgeCotanWeights[he] +
-                            vpg->halfedgeCotanWeights[heID_he_next_next]) *
+                           vpg->halfedgeCotanWeights[heID_he_next_next]) *
                           vpg->faceNormals[fID];
 
         if (!he.twin().next().next().edge().isBoundary())
           schlafliVec2 -= (vpg->halfedgeCotanWeights[heID_twin] +
-                            vpg->halfedgeCotanWeights[heID_twin_next]) *
+                           vpg->halfedgeCotanWeights[heID_twin_next]) *
                           vpg->faceNormals[fID_he_twin];
       } else {
         schlafliVec2 = -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[fID] +
@@ -163,8 +163,9 @@ void System::computeVectorForces() {
       capillaryForceVec -= forces.surfaceTension * areaGrad;
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
                             parameters.adsorption.epsilon * areaGrad;
-      lineCapForceVec -= parameters.dirichlet.eta * (0.125 * dirichletVec -
-                                  0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
+      lineCapForceVec -=
+          parameters.dirichlet.eta *
+          (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
 
       bendForceVec_schlafliVec -=
           (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
@@ -256,7 +257,7 @@ void System::computeVectorForces() {
   }
 
   // measure smoothness
-  if (O.isSplitEdge || O.isCollapseEdge) {
+  if (meshMutator.isSplitEdge || meshMutator.isCollapseEdge) {
     isSmooth = !hasOutlier(forces.bendingForce.raw());
   }
 }
@@ -306,7 +307,8 @@ EigenVectorX1d System::computeBendingForce() {
           .matrix();
 
   // calculate bendingForce
-  forces.bendingForce.raw() = vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
+  forces.bendingForce.raw() =
+      vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
   // }
 
   isSmooth = !hasOutlier(forces.bendingForce.raw());
@@ -345,10 +347,11 @@ EigenVectorX1d System::computeBendingForce() {
 
 EigenVectorX1d System::computeCapillaryForce() {
   mem3dg_runtime_error("computeCapillaryForce: out of data implementation, "
-                           "shouldn't be called!");
+                       "shouldn't be called!");
   /// Geometric implementation
   forces.surfaceTension =
-      parameters.tension.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea + parameters.lambdaSG;
+      parameters.tension.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
+      parameters.lambdaSG;
   forces.capillaryForce.raw() =
       -forces.surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
 
@@ -374,7 +377,7 @@ EigenVectorX1d System::computeCapillaryForce() {
 
 EigenVectorX1d System::computeOsmoticForce() {
   mem3dg_runtime_error("computeOsmoticForce: out of data implementation, "
-                           "shouldn't be called!");
+                       "shouldn't be called!");
   forces.osmoticForce.raw().setConstant(forces.osmoticPressure);
   forces.osmoticForce.raw().array() *= vpg->vertexDualAreas.raw().array();
 
@@ -434,9 +437,9 @@ EigenVectorX1d System::computeExternalForce() {
   // DIRECTION, E.G. NEGATIVE Z DIRECTION
 
   // initialize/update the external pressure magnitude distribution
-  gaussianDistribution(externalPressureMagnitude,
-                       geodesicDistanceFromPtInd.raw(),
-                       geodesicDistanceFromPtInd.raw().maxCoeff() / parameters.external.conc);
+  gaussianDistribution(
+      externalPressureMagnitude, geodesicDistanceFromPtInd.raw(),
+      geodesicDistanceFromPtInd.raw().maxCoeff() / parameters.external.conc);
   externalPressureMagnitude *= parameters.external.Kf;
 
   Eigen::Matrix<double, 1, 3> zDir;
@@ -472,17 +475,17 @@ EigenVectorX1d System::computeChemicalPotential() {
             .matrix();
   }
 
-  forces.adsorptionPotential.raw() =
-      forces.maskProtein(-parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
+  forces.adsorptionPotential.raw() = forces.maskProtein(
+      -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
   forces.bendingPotential.raw() = forces.maskProtein(
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
        2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
-  forces.diffusionPotential.raw() =
-      forces.maskProtein(-parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
-  forces.interiorPenaltyPotential.raw() =
-      forces.maskProtein(parameters.lambdaPhi * (1 / proteinDensity.raw().array() -
-                                   1 / (1 - proteinDensity.raw().array())));
+  forces.diffusionPotential.raw() = forces.maskProtein(
+      -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
+  forces.interiorPenaltyPotential.raw() = forces.maskProtein(
+      parameters.lambdaPhi * (1 / proteinDensity.raw().array() -
+                              1 / (1 - proteinDensity.raw().array())));
   forces.chemicalPotential.raw() =
       forces.adsorptionPotential.raw() + forces.bendingPotential.raw() +
       forces.diffusionPotential.raw() + forces.interiorPenaltyPotential.raw();
@@ -514,8 +517,8 @@ System::computeDPDForces(double dt) {
 
   // std::default_random_engine random_generator;
   // gcs::EdgeData<double> random_var(mesh);
-  double sigma =
-      sqrt(2 * parameters.dpd.gamma * mem3dg::constants::kBoltzmann * parameters.temp / dt);
+  double sigma = sqrt(2 * parameters.dpd.gamma * mem3dg::constants::kBoltzmann *
+                      parameters.temp / dt);
   std::normal_distribution<double> normal_dist(0, sigma);
 
   for (gcs::Edge e : mesh->edges()) {
@@ -527,7 +530,8 @@ System::computeDPDForces(double dt) {
     gc::Vector3 dPos12_n = (pos[v1] - pos[v2]).normalize();
 
     if (parameters.dpd.gamma != 0) {
-      gc::Vector3 df = parameters.dpd.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
+      gc::Vector3 df =
+          parameters.dpd.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
       forces.dampingForce[v1] -= df;
       forces.dampingForce[v2] += df;
     }
@@ -660,9 +664,10 @@ void System::computePhysicalForces() {
     if (parameters.external.Kf != 0) {
       computeExternalForce();
     }
-    forces.mechanicalForceVec = forces.osmoticForceVec + forces.capillaryForceVec +
-                           forces.bendingForceVec + forces.lineCapillaryForceVec +
-                           forces.adsorptionForceVec + forces.addNormal(forces.externalForce);
+    forces.mechanicalForceVec =
+        forces.osmoticForceVec + forces.capillaryForceVec +
+        forces.bendingForceVec + forces.lineCapillaryForceVec +
+        forces.adsorptionForceVec + forces.addNormal(forces.externalForce);
     forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
   }
 
@@ -682,12 +687,14 @@ void System::computePhysicalForces() {
   // }
 
   // compute the mechanical error norm
-  mechErrorNorm =
-      parameters.variation.isShapeVariation ? computeNorm(toMatrix(forces.mechanicalForceVec)) : 0;
+  mechErrorNorm = parameters.variation.isShapeVariation
+                      ? computeNorm(toMatrix(forces.mechanicalForceVec))
+                      : 0;
 
   // compute the chemical error norm
-  chemErrorNorm =
-      parameters.variation.isProteinVariation ? computeNorm(forces.chemicalPotential.raw()) : 0;
+  chemErrorNorm = parameters.variation.isProteinVariation
+                      ? computeNorm(forces.chemicalPotential.raw())
+                      : 0;
 }
 
 } // namespace solver

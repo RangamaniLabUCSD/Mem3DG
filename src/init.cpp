@@ -287,9 +287,11 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("physical_force", forces.mechanicalForce);
 
     // write chemical potential
-    richData.addVertexProperty("diffusion_potential", forces.diffusionPotential);
+    richData.addVertexProperty("diffusion_potential",
+                               forces.diffusionPotential);
     richData.addVertexProperty("bending_potential", forces.bendingPotential);
-    richData.addVertexProperty("adsorption_potential", forces.adsorptionPotential);
+    richData.addVertexProperty("adsorption_potential",
+                               forces.adsorptionPotential);
     richData.addVertexProperty("chemical_potential", forces.chemicalPotential);
 
     richData.write(PathToSave);
@@ -308,7 +310,8 @@ void System::checkParametersAndOptions() {
       mem3dg_runtime_error("Pressure-volume modulus Kv has to be zero for non "
                            "shape variation simulation!");
     }
-    if (O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge || O.isVertexShift) {
+    meshMutator.summarizeStatus();
+    if (meshMutator.isMeshMutate || O.isVertexShift) {
       mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
                            "variation simulation");
     }
@@ -337,8 +340,8 @@ void System::checkParametersAndOptions() {
         mem3dg_runtime_error("{0<phi<1}");
       }
     } else {
-      if (parameters.protein0[0] != 1 || parameters.bending.Kb != 0 || parameters.dirichlet.eta != 0 ||
-          parameters.adsorption.epsilon != 0) {
+      if (parameters.protein0[0] != 1 || parameters.bending.Kb != 0 ||
+          parameters.dirichlet.eta != 0 || parameters.adsorption.epsilon != 0) {
         mem3dg_runtime_error(
             "For homogenous membrane simulation, good "
             "practice is "
@@ -354,13 +357,14 @@ void System::checkParametersAndOptions() {
       mem3dg_runtime_error("Please switch to {phi} for homogeneous membrane!");
     }
     if (parameters.variation.isProteinVariation) {
-      if (parameters.protein0[2] == 0 || parameters.protein0[2] == 1 || parameters.protein0[3] == 0 ||
-          parameters.protein0[3] == 1) {
+      if (parameters.protein0[2] == 0 || parameters.protein0[2] == 1 ||
+          parameters.protein0[3] == 0 || parameters.protein0[3] == 1) {
         mem3dg_runtime_error("{0<phi<1}");
       }
     }
   } else if (parameters.protein0.rows() == proteinDensity.raw().rows() &&
-             (parameters.protein0.array() > 0).all() && (parameters.protein0.array() < 1).all()) {
+             (parameters.protein0.array() > 0).all() &&
+             (parameters.protein0.array() < 1).all()) {
   } else {
     mem3dg_runtime_error("protein 0 can only be specified in three ways: 1. "
                          "length = 1, uniform {0<phi<1} 2. "
@@ -381,12 +385,14 @@ void System::checkParametersAndOptions() {
   if (isOpenMesh) {
     if (parameters.boundary.shapeBoundaryCondition != "roller" &&
         parameters.boundary.shapeBoundaryCondition != "pin" &&
-        parameters.boundary.shapeBoundaryCondition != "fixed" && parameters.variation.isShapeVariation) {
+        parameters.boundary.shapeBoundaryCondition != "fixed" &&
+        parameters.variation.isShapeVariation) {
       std::cout << "Shape boundary condition type (roller, pin or fixed) "
                    "has not been specified for open boundary mesh!"
                 << std::endl;
     }
-    if (parameters.boundary.proteinBoundaryCondition != "pin" && parameters.variation.isProteinVariation) {
+    if (parameters.boundary.proteinBoundaryCondition != "pin" &&
+        parameters.variation.isProteinVariation) {
       std::cout << "Protein boundary condition type (pin) "
                    "has not been specified for open boundary mesh!"
                 << std::endl;
@@ -409,7 +415,8 @@ void System::checkParametersAndOptions() {
   }
 
   // regularization related
-  if ((O.isEdgeFlip || O.isSplitEdge || O.isCollapseEdge) &&
+  meshMutator.summarizeStatus();
+  if (meshMutator.isMeshMutate &&
       (parameters.Kst != 0 || parameters.Kse != 0 || parameters.Ksl != 0)) {
     mem3dg_runtime_error("For topology changing simulation, mesh "
                          "regularization cannot be applied!");
@@ -458,7 +465,8 @@ void System::checkParametersAndOptions() {
                            "cannot be simultaneously turned on!");
     }
   } else {
-    if (parameters.osmotic.Vt != -1 && !parameters.osmotic.isConstantOsmoticPressure) {
+    if (parameters.osmotic.Vt != -1 &&
+        !parameters.osmotic.isConstantOsmoticPressure) {
       mem3dg_runtime_error("preferred volume Vt has to be -1 for "
                            "ambient pressure parametrized simulation!");
     }
@@ -468,7 +476,8 @@ void System::checkParametersAndOptions() {
       mem3dg_runtime_error("preferred volume and constant osmotic pressure "
                            "cannot be simultaneously turned on!");
     }
-    if (parameters.osmotic.Vt != -1 || parameters.osmotic.V_res != 0 || parameters.osmotic.cam != -1) {
+    if (parameters.osmotic.Vt != -1 || parameters.osmotic.V_res != 0 ||
+        parameters.osmotic.cam != -1) {
       mem3dg_runtime_error(
           "Vt and cam have to be set to -1 and V_res to be 0 to "
           "enable constant omostic pressure! Note Kv is the "
@@ -554,29 +563,34 @@ void System::initConstants() {
     }
     for (gcs::Vertex v : mesh->vertices()) {
       forces.forceMask[v] = (geodesicDistanceFromPtInd[v] < parameters.radius)
-                           ? gc::Vector3{1, 1, 1}
-                           : gc::Vector3{0, 0, 0};
-      forces.proteinMask[v] = (geodesicDistanceFromPtInd[v] < parameters.radius) ? 1 : 0;
+                                ? gc::Vector3{1, 1, 1}
+                                : gc::Vector3{0, 0, 0};
+      forces.proteinMask[v] =
+          (geodesicDistanceFromPtInd[v] < parameters.radius) ? 1 : 0;
     }
   }
 
   // Initialize protein density
   if (parameters.protein0.size() == 1) {
-    proteinDensity.raw().setConstant(mesh->nVertices(), 1, parameters.protein0[0]);
+    proteinDensity.raw().setConstant(mesh->nVertices(), 1,
+                                     parameters.protein0[0]);
   } else if (parameters.protein0.rows() == proteinDensity.raw().rows()) {
     proteinDensity.raw() = parameters.protein0;
   } else if (parameters.protein0.size() == 4) {
     std::vector<double> r_heter{parameters.protein0[0], parameters.protein0[1]};
     tanhDistribution(*vpg, proteinDensity.raw(),
-                     geodesicDistanceFromPtInd.raw(), parameters.sharpness, r_heter);
+                     geodesicDistanceFromPtInd.raw(), parameters.sharpness,
+                     r_heter);
     proteinDensity.raw() *= parameters.protein0[2] - parameters.protein0[3];
     proteinDensity.raw().array() += parameters.protein0[3];
   }
 
   // Mask boundary element
   if (mesh->hasBoundary()) {
-    boundaryForceMask(*mesh, forces.forceMask, parameters.boundary.shapeBoundaryCondition);
-    boundaryProteinMask(*mesh, forces.proteinMask, parameters.boundary.proteinBoundaryCondition);
+    boundaryForceMask(*mesh, forces.forceMask,
+                      parameters.boundary.shapeBoundaryCondition);
+    boundaryProteinMask(*mesh, forces.proteinMask,
+                        parameters.boundary.proteinBoundaryCondition);
   }
 
   // Explicitly cached the reference face areas data
@@ -601,7 +615,7 @@ void System::initConstants() {
             << std::endl;
 
   // Initialize the constant target mean face area
-  if (O.isSplitEdge || O.isCollapseEdge) {
+  if (meshMutator.isSplitEdge || meshMutator.isCollapseEdge) {
     meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
     meshMutator.targetFaceArea = meanTargetFaceArea;
   }
@@ -654,11 +668,14 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // update protein density
-  if (parameters.protein0.rows() == 4 && !parameters.variation.isProteinVariation) {
+  if (parameters.protein0.rows() == 4 &&
+      !parameters.variation.isProteinVariation) {
     if (isUpdateGeodesics) {
-      std::vector<double> r_heter{parameters.protein0[0], parameters.protein0[1]};
+      std::vector<double> r_heter{parameters.protein0[0],
+                                  parameters.protein0[1]};
       tanhDistribution(*vpg, proteinDensity.raw(),
-                       geodesicDistanceFromPtInd.raw(), parameters.sharpness, r_heter);
+                       geodesicDistanceFromPtInd.raw(), parameters.sharpness,
+                       r_heter);
       proteinDensity.raw() *= parameters.protein0[2] - parameters.protein0[3];
       proteinDensity.raw().array() += parameters.protein0[3];
     }
@@ -672,15 +689,17 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   // Update protein density dependent quantities
   if (parameters.bending.relation == "linear") {
     H0.raw() = proteinDensity.raw() * parameters.bending.H0c;
-    Kb.raw() = parameters.bending.Kb + parameters.bending.Kbc * proteinDensity.raw().array();
+    Kb.raw() = parameters.bending.Kb +
+               parameters.bending.Kbc * proteinDensity.raw().array();
   } else if (parameters.bending.relation == "hill") {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
     H0.raw() = (parameters.bending.H0c * proteinDensitySq.array() /
                 (1 + proteinDensitySq.array()))
                    .matrix();
-    Kb.raw() = (parameters.bending.Kb + parameters.bending.Kbc * proteinDensitySq.array() /
-                                   (1 + proteinDensitySq.array()))
+    Kb.raw() = (parameters.bending.Kb + parameters.bending.Kbc *
+                                            proteinDensitySq.array() /
+                                            (1 + proteinDensitySq.array()))
                    .matrix();
   } else {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
@@ -692,24 +711,27 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   // update global osmotic pressure
   if (parameters.osmotic.isPreferredVolume) {
     forces.osmoticPressure =
-        -(parameters.osmotic.Kv * (volume - parameters.osmotic.Vt) / parameters.osmotic.Vt / parameters.osmotic.Vt +
+        -(parameters.osmotic.Kv * (volume - parameters.osmotic.Vt) /
+              parameters.osmotic.Vt / parameters.osmotic.Vt +
           parameters.lambdaV);
   } else if (parameters.osmotic.isConstantOsmoticPressure) {
     forces.osmoticPressure = parameters.osmotic.Kv;
   } else {
-    forces.osmoticPressure = mem3dg::constants::i * mem3dg::constants::R * parameters.temp *
-                        (parameters.osmotic.n / volume - parameters.osmotic.cam);
+    forces.osmoticPressure =
+        mem3dg::constants::i * mem3dg::constants::R * parameters.temp *
+        (parameters.osmotic.n / volume - parameters.osmotic.cam);
   }
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
 
   // update global surface tension
-  forces.surfaceTension =
-      parameters.tension.isConstantSurfaceTension
-          ? parameters.tension.Ksg
-          : parameters.tension.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
-                parameters.lambdaSG;
+  forces.surfaceTension = parameters.tension.isConstantSurfaceTension
+                              ? parameters.tension.Ksg
+                              : parameters.tension.Ksg *
+                                        (surfaceArea - refSurfaceArea) /
+                                        refSurfaceArea +
+                                    parameters.lambdaSG;
 
   // initialize/update line tension (on dual edge)
   if (parameters.dirichlet.eta != 0 && false) {
@@ -722,7 +744,8 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
     // F.lineTension.raw() = P.dirichlet.eta * vpg->edgeLengths.raw().array() *
     //                       (vpg->d0 * H0.raw()).cwiseAbs().array();
-    // lineTension.raw() = P.dirichlet.eta * (vpg->d0 * H0.raw()).cwiseAbs().array();
+    // lineTension.raw() = P.dirichlet.eta * (vpg->d0 *
+    // H0.raw()).cwiseAbs().array();
   }
 }
 
@@ -789,7 +812,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     }
     case 3: {
       // initialize embedded point and the closest vertex
-      gc::Vector3 embeddedPoint{parameters.pt[0], parameters.pt[1], parameters.pt[2]};
+      gc::Vector3 embeddedPoint{parameters.pt[0], parameters.pt[1],
+                                parameters.pt[2]};
       gcs::Vertex closestVertex =
           closestVertexToPt(*mesh, vpg, parameters.pt, geodesicDistance, range);
       gc::Vector3 vertexToPoint =
@@ -874,14 +898,14 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
-      thePoint = gc::SurfacePoint(
-          closestVertexToPt(*mesh, vpg, parameters.pt, geodesicDistance, range));
+      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.pt,
+                                                    geodesicDistance, range));
       isUpdated = true;
       break;
     }
     case 3: {
-      thePoint = gc::SurfacePoint(
-          closestVertexToPt(*mesh, vpg, parameters.pt, geodesicDistance, range));
+      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.pt,
+                                                    geodesicDistance, range));
       isUpdated = true;
       break;
     }

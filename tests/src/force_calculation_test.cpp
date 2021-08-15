@@ -48,9 +48,9 @@ protected:
   ForceCalculationTest() {
     o.isFloatVertex = true;
 
-    o.isEdgeFlip = false;
-    o.isSplitEdge = false;
-    o.isCollapseEdge = false;
+    // o.isEdgeFlip = false;
+    // o.isSplitEdge = false;
+    // o.isCollapseEdge = false;
     o.isVertexShift = false;
 
     p.variation.isShapeVariation = true;
