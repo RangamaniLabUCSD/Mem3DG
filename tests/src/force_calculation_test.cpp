@@ -48,12 +48,13 @@ protected:
 
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;
+    p.variation.radius = -1;
     p.point.isFloatVertex = false;
     p.point.pt.resize(3, 1);
     p.point.pt << 0, 0, 1;
-    p.protein0.resize(4, 1);
-    p.protein0 << 1, 1, 0.7, 0.2;
-    p.sharpness = 3;
+    p.proteinDistribution.protein0.resize(4, 1);
+    p.proteinDistribution.protein0 << 1, 1, 0.7, 0.2;
+    p.proteinDistribution.sharpness = 3;
 
     p.bending.Kb = 8.22e-5;
     p.bending.Kbc = 0;
@@ -62,6 +63,7 @@ protected:
     p.tension.isConstantSurfaceTension = true;
     p.tension.Ksg = 1e-2;
     p.tension.A_res = 0;
+    p.tension.lambdaSG = 0;
 
     p.adsorption.epsilon = -1e-2;
 
@@ -72,24 +74,22 @@ protected:
     p.osmotic.Vt = -1;
     p.osmotic.cam = -1;
     p.osmotic.n = 1;
+    p.osmotic.lambdaV = 0;
 
     p.boundary.shapeBoundaryCondition = "roller";
     p.boundary.proteinBoundaryCondition = "pin";
 
-    p.Bc = 1;
+    p.proteinMobility = 1;
 
     p.dirichlet.eta = 0.001;
 
     p.dpd.gamma = 0;
 
-    p.temp = 0;
+    p.temperature = 0;
 
     p.external.Kf = 0;
     p.external.conc = -1;
     p.external.height = 0;
-    p.radius = -1;
-    p.lambdaSG = 0;
-    p.lambdaV = 0;
 
     // Create mesh and geometry objects
     std::tie(topologyMatrix, vertexMatrix) = getCylinderMatrix(1, 10, 10);

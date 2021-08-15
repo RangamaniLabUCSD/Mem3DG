@@ -27,6 +27,17 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+void MeshProcessor::summarizeStatus() {
+  isMeshRegularize = (meshRegularizer.Kst != 0) || (meshRegularizer.Ksl != 0) ||
+                     (meshRegularizer.Kse != 0);
+  meshMutator.summarizeStatus();
+  isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
+  if (meshMutator.isChangeTopology && isMeshRegularize) {
+    mem3dg_runtime_error("For topology changing simulation, mesh "
+                         "regularization cannot be applied!");
+  }
+};
+
 void MeshProcessor::MeshRegularizer::readReferenceData(std::string refMesh,
                                                        std::size_t nSub) {
 
@@ -128,6 +139,14 @@ bool MeshProcessor::MeshMutator::ifFlip(
 
   return condition;
 }
+
+void MeshProcessor::MeshMutator::summarizeStatus() {
+  isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
+  isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
+                 splitSkinnyDelaunay);
+  isCollapseEdge = (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
+  isChangeTopology = isEdgeFlip || isSplitEdge || isCollapseEdge;
+};
 
 bool MeshProcessor::MeshMutator::ifCollapse(
     const gc::Edge e, const gcs::VertexPositionGeometry &vpg) {

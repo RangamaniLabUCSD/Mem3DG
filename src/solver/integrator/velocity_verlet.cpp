@@ -193,7 +193,7 @@ void VelocityVerlet::march() {
 
   // time stepping on protein density
   if (f.parameters.variation.isProteinVariation) {
-    vel_protein_e = f.parameters.Bc * f.forces.chemicalPotential.raw();
+    vel_protein_e = f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
     f.proteinDensity.raw() += vel_protein_e * dt;
   }
 
