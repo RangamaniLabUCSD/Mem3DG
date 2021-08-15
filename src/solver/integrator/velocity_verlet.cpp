@@ -27,6 +27,7 @@
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/integrator/velocity_verlet.h"
+#include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
@@ -92,10 +93,10 @@ bool VelocityVerlet::integrate() {
 
 void VelocityVerlet::checkParameters() {
   if (f.O.isVertexShift) {
-    mem3dg_runtime_error(
-        "Vertex shift is not supported for Velocity Verlet!");
+    mem3dg_runtime_error("Vertex shift is not supported for Velocity Verlet!");
   }
-  if (f.O.isSplitEdge || f.O.isEdgeFlip || f.O.isCollapseEdge) {
+  f.meshMutator.summarizeStatus();
+  if (f.meshMutator.isMeshMutate) {
     mem3dg_runtime_error(
         "Mesh mutations are currently not supported for Velocity Verlet!");
   }
@@ -127,14 +128,22 @@ void VelocityVerlet::status() {
           .matrix();
 
   // compute the area contraint error
-  dArea = (f.parameters.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  dArea = (f.parameters.tension.Ksg != 0)
+              ? abs(f.surfaceArea / f.refSurfaceArea - 1)
+              : 0.0;
 
   if (f.parameters.osmotic.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.parameters.osmotic.Kv != 0) ? abs(f.volume / f.parameters.osmotic.Vt - 1) : 0.0;
+    dVP = (f.parameters.osmotic.Kv != 0)
+              ? abs(f.volume / f.parameters.osmotic.Vt - 1)
+              : 0.0;
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0) : 1.0;
+    dVP =
+        (!f.mesh->hasBoundary())
+            ? abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam -
+                  1.0)
+            : 1.0;
   }
 
   // exit if under error tol

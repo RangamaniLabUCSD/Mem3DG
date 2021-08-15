@@ -512,6 +512,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                   R"delim(
        meshmutator constructor
       )delim");
+  meshmutator.def_readonly("isMeshMutate", &MeshMutator::isMeshMutate,
+                           R"delim(
+          get the option of whether do mesh mutation
+      )delim");
+  meshmutator.def_readonly("isEdgeFlip", &MeshMutator::isEdgeFlip,
+                           R"delim(
+          get the option of whether do edge flip
+      )delim");
+  meshmutator.def_readonly("isSplitEdge", &MeshMutator::isSplitEdge,
+                           R"delim(
+          get the option of whether split edge to grow mesh
+      )delim");
+  meshmutator.def_readonly("isCollapseEdge", &MeshMutator::isCollapseEdge,
+                           R"delim(
+          get the option of whether Collapse edge to grow mesh
+      )delim");
 
   /**
    * @brief flipping criterion
@@ -901,18 +917,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   options.def_readwrite("isVertexShift", &Options::isVertexShift,
                         R"delim(
           get the option of whether do vertex shift  
-      )delim");
-  options.def_readwrite("isEdgeFlip", &Options::isEdgeFlip,
-                        R"delim(
-          get the option of whether do edge flip
-      )delim");
-  options.def_readwrite("isSplitEdge", &Options::isSplitEdge,
-                        R"delim(
-          get the option of whether split edge to grow mesh
-      )delim");
-  options.def_readwrite("isCollapseEdge", &Options::isCollapseEdge,
-                        R"delim(
-          get the option of whether Collapse edge to grow mesh
       )delim");
   options.def_readwrite("isFloatVertex", &Options::isFloatVertex,
                         R"delim(

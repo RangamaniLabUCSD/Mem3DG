@@ -38,8 +38,8 @@
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/constants.h"
 #include "mem3dg/macros.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/mesh_io.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/type_utilities.h"
 
 namespace gc = ::geometrycentral;
@@ -49,6 +49,15 @@ namespace mem3dg {
 namespace solver {
 
 struct DLL_PUBLIC MeshMutator {
+  /// Whether edge flip
+  bool isMeshMutate = false;
+  /// Whether edge flip
+  bool isEdgeFlip = false;
+  /// Whether split edge
+  bool isSplitEdge = false;
+  /// Whether collapse edge
+  bool isCollapseEdge = false;
+
   /// flip non-delaunay edge
   bool flipNonDelaunay = false;
   /// whether require flatness condition when flipping non-Delaunay edge
@@ -81,6 +90,17 @@ struct DLL_PUBLIC MeshMutator {
 
   MeshMutator() {}
   ~MeshMutator() {}
+
+  /**
+   * @brief summarizeStatus
+   */
+  void summarizeStatus() {
+    isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
+    isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
+                   splitSkinnyDelaunay);
+    isCollapseEdge = (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
+    isMeshMutate = isEdgeFlip || isSplitEdge || isCollapseEdge;
+  };
 
   /**
    * @brief return condition of edge flip

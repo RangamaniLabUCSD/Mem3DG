@@ -116,7 +116,8 @@ void System::computeRegularizationForce() {
 
   // post processing regularization force
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto regularizationForce_e = gc::EigenMap<double, 3>(forces.regularizationForce);
+  auto regularizationForce_e =
+      gc::EigenMap<double, 3>(forces.regularizationForce);
 
   // remove the normal component
   regularizationForce_e -= rowwiseScalarProduct(
@@ -239,8 +240,8 @@ bool System::edgeFlip() {
       continue;
     }
     gcs::Halfedge he = e.halfedge();
-    if (gc::sum(forces.forceMask[he.vertex()] + forces.forceMask[he.twin().vertex()]) <
-        0.5) {
+    if (gc::sum(forces.forceMask[he.vertex()] +
+                forces.forceMask[he.twin().vertex()]) < 0.5) {
       continue;
     }
 
@@ -282,7 +283,7 @@ bool System::growMesh() {
     }
 
     // Spltting
-    if (meshMutator.ifSplit(e, *vpg) && O.isSplitEdge) {
+    if (meshMutator.ifSplit(e, *vpg)) {
       count++;
       // split the edge
       const auto &newVertex = mesh->splitEdgeTriangular(e).vertex();
@@ -353,12 +354,12 @@ void System::processMesh() {
   }
 
   // split edge and collapse edge
-  if (O.isSplitEdge || O.isCollapseEdge) {
+  if (meshMutator.isSplitEdge || meshMutator.isCollapseEdge) {
     isGrown = growMesh();
   }
 
   // linear edge flip for non-Delauney triangles
-  if (O.isEdgeFlip) {
+  if (meshMutator.isEdgeFlip) {
     isFlipped = edgeFlip();
     edgeFlip();
     edgeFlip();
@@ -487,9 +488,11 @@ void System::globalUpdateAfterMutation() {
   // Update mask when topology changes (likely not necessary, just for safety)
   if (isOpenMesh) {
     forces.forceMask.fill({1, 1, 1});
-    boundaryForceMask(*mesh, forces.forceMask, parameters.boundary.shapeBoundaryCondition);
+    boundaryForceMask(*mesh, forces.forceMask,
+                      parameters.boundary.shapeBoundaryCondition);
     forces.proteinMask.fill(1);
-    boundaryProteinMask(*mesh, forces.proteinMask, parameters.boundary.proteinBoundaryCondition);
+    boundaryProteinMask(*mesh, forces.proteinMask,
+                        parameters.boundary.proteinBoundaryCondition);
     // for (gcs::Vertex v : mesh->vertices()) {
     //   if (!mask[v]) {
     //     vpg->inputVertexPositions[v].z = 0;
@@ -513,7 +516,7 @@ void System::globalUpdateAfterMutation() {
     }
     if (thePointTracker.raw().cast<int>().sum() != 1) {
       mem3dg_runtime_error("globalUpdateAfterMutation: there is no "
-                               "unique/existing \"the\" point!");
+                           "unique/existing \"the\" point!");
     }
   }
 }
