@@ -43,7 +43,7 @@ int main() {
   p.bending.Kb = Kb;
   p.bending.Kbc = Kbc;
   p.bending.H0c = H0;
-  p.protein0 = r_H0;
+  p.proteinDistribution.protein0 = r_H0;
   p.tension.Ksg = Ksg;
   p.tension.A_res = A_res;
   p.osmotic.Kv = Kv;
@@ -54,14 +54,14 @@ int main() {
   p.osmotic.isPreferredVolume = true;
   p.dirichlet.eta = eta;
   p.adsorption.epsilon = epsilon;
-  p.Bc = Bc;
+  p.proteinMobility = Bc;
   p.dpd.gamma = gamma;
-  p.temp = temp;
+  p.temperature = temp;
   p.point.pt = pt;
   p.external.Kf = Kf;
   p.external.conc = conc;
   p.external.height = height;
-  p.radius = radius;
+  p.variation.radius = radius;
   p.variation.isProteinVariation = false;
   p.point.isFloatVertex = false;
 

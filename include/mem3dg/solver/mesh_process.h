@@ -56,6 +56,7 @@ struct MeshProcessor {
     double Ksl = 0;
     /// Edge spring constant
     double Kse = 0;
+    
     /// Reference face area
     EigenVectorX1d refFaceAreas;
     /// Reference edge length
@@ -66,9 +67,11 @@ struct MeshProcessor {
     double meanTargetFaceArea;
     /// Mean target area per face
     double meanTargetEdgeLength;
-
+    /// number of edges of reference mesh
     size_t nEdge;
+    /// number of vertices of the reference mesh
     size_t nVertex;
+    /// number of faces of the reference face
     size_t nFace;
 
     void readReferenceData(std::string refMesh, std::size_t nSub);
@@ -126,14 +129,7 @@ struct MeshProcessor {
     /**
      * @brief summarizeStatus
      */
-    void summarizeStatus() {
-      isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
-      isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
-                     splitSkinnyDelaunay);
-      isCollapseEdge =
-          (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
-      isChangeTopology = isEdgeFlip || isSplitEdge || isCollapseEdge;
-    };
+    void summarizeStatus();
 
     /**
      * @brief return condition of edge flip
@@ -174,16 +170,7 @@ struct MeshProcessor {
   /**
    * @brief summarizeStatus
    */
-  void summarizeStatus() {
-    isMeshRegularize = (meshRegularizer.Kst != 0) ||
-                       (meshRegularizer.Ksl != 0) || (meshRegularizer.Kse != 0);
-    meshMutator.summarizeStatus();
-    isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
-    if (meshMutator.isChangeTopology && isMeshRegularize) {
-      mem3dg_runtime_error("For topology changing simulation, mesh "
-                           "regularization cannot be applied!");
-    }
-  };
+  void summarizeStatus();
 };
 
 } // namespace solver

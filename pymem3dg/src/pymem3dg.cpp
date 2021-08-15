@@ -11,8 +11,6 @@
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
-
-#include <bits/c++config.h>
 #include <cstdarg>
 #include <cstddef>
 #include <pybind11/eigen.h>
@@ -728,7 +726,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         System constructor with Matrices. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-      
+
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
                       std::size_t>(),
@@ -1018,6 +1016,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                           R"delim(
           get the option of whether simulate shape variation
       )delim");
+  variation.def_readwrite("radius", &Parameters::Variation::radius,
+                           R"delim(
+          get domain of shape variation
+      )delim");
 
   py::class_<Parameters::Bending> bending(pymem3dg, "Bending", R"delim(
         The bending parameters
@@ -1061,6 +1063,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get preferred surface area
       )delim");
+  tension.def_readwrite("lambdaSG", &Parameters::Tension::lambdaSG,
+                        R"delim(
+          get augmented Lagrangian parameter for area
+      )delim");
 
   py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(
         The osmotic pressure parameters
@@ -1094,6 +1100,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         &Parameters::Osmotic::isConstantOsmoticPressure,
                         R"delim(
           get the option of whether adopt constant osmotic pressure
+      )delim");
+  osmotic.def_readwrite("lambdaV", &Parameters::Osmotic::lambdaV,
+                        R"delim(
+          get augmented Lagrangian parameter for volume
       )delim");
 
   py::class_<Parameters::Adsorption> adsorption(pymem3dg, "Adsorption",
@@ -1151,6 +1161,24 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   point.def_readwrite("isFloatVertex", &Parameters::Point::isFloatVertex,
                       R"delim(
           whether use floating vertex option
+      )delim");
+
+  py::class_<Parameters::ProteinDistribution> proteindistribution(
+      pymem3dg, "ProteinDistribution",
+      R"delim(
+        The protein distribution parameters
+    )delim");
+  proteindistribution.def_readwrite(
+      "protein0", &Parameters::ProteinDistribution::protein0, R"delim(
+          get (initial) protein density
+      )delim");
+  proteindistribution.def_readwrite(
+      "sharpness", &Parameters::ProteinDistribution::sharpness, R"delim(
+          get protein density sharpness of tanh transition
+      )delim");
+  proteindistribution.def_readwrite(
+      "lambdaPhi", &Parameters::ProteinDistribution::lambdaPhi, R"delim(
+          get interior point parameter for protein density
       )delim");
 
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
@@ -1212,41 +1240,22 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
           point parameters
       )delim");
+  parameters.def_readwrite("proteinDistribution",
+                           &Parameters::proteinDistribution,
+                           R"delim(
+          proteinDistribution parameters
+      )delim");
   parameters.def_readwrite("variation", &Parameters::variation,
                            R"delim(
           variation parameters
       )delim");
-  parameters.def_readwrite("protein0", &Parameters::protein0,
-                           R"delim(
-          get setting of initial protein density
-      )delim");
-  parameters.def_readwrite("temp", &Parameters::temp,
+  parameters.def_readwrite("temperature", &Parameters::temperature,
                            R"delim(
           get Temperature 
       )delim");
-  parameters.def_readwrite("Bc", &Parameters::Bc,
+  parameters.def_readwrite("proteinMobility", &Parameters::proteinMobility,
                            R"delim(
           get protein mobility constant 
-      )delim");
-  parameters.def_readwrite("radius", &Parameters::radius,
-                           R"delim(
-          get domain of integration 
-      )delim");
-  parameters.def_readwrite("lambdaSG", &Parameters::lambdaSG,
-                           R"delim(
-          get augmented Lagrangian parameter for area 
-      )delim");
-  parameters.def_readwrite("lambdaV", &Parameters::lambdaV,
-                           R"delim(
-          get augmented Lagrangian parameter for volume 
-      )delim");
-  parameters.def_readwrite("lambdaPhi", &Parameters::lambdaPhi,
-                           R"delim(
-          get  interior point parameter for protein density
-      )delim");
-  parameters.def_readwrite("sharpness", &Parameters::sharpness,
-                           R"delim(
-          get sharpness of tanh transition
       )delim");
 
   // ==========================================================

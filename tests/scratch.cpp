@@ -33,13 +33,13 @@ int main() {
   p.bending.Kb = 8.22e-5;
   p.bending.Kbc = 8.22e-4;
   p.bending.H0c = 6;
-  p.protein0 = EigenVectorX1d(1);
-  p.protein0 << 1;
+  p.proteinDistribution.protein0 = EigenVectorX1d(1);
+  p.proteinDistribution.protein0 << 1;
   p.dirichlet.eta = 0;
   p.tension.Ksg = 2e-2;
   p.tension.A_res = 0;
   p.adsorption.epsilon = -1;
-  p.Bc = 0;
+  p.proteinMobility = 0;
   p.osmotic.Kv = 1;
   p.osmotic.V_res = 0;
   p.osmotic.Vt = -1;
@@ -49,12 +49,12 @@ int main() {
   p.external.Kf = 0;
   p.external.conc = -1;
   p.external.height = 0;
-  p.radius = 100000;
   p.dpd.gamma = 0;
-  p.temp = 0;
+  p.temperature = 0;
   p.point.pt = EigenVectorX1d(2);
   p.point.pt << 0, 0;
   p.variation.isProteinVariation = false;
+  p.variation.radius = 100000;
 
   p.point.isFloatVertex = true;
 

@@ -56,7 +56,8 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Map continuation variables
   time = fd.getTime(startingFrame);
-  if (parameters.protein0.rows() == 1 && parameters.protein0[0] == -1) {
+  if (parameters.proteinDistribution.protein0.rows() == 1 &&
+      parameters.proteinDistribution.protein0[0] == -1) {
     proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   } else {
     throw std::logic_error(
@@ -155,7 +156,8 @@ void System::mapContinuationVariables(std::string plyFile) {
         "Topology for continuation parameters mapping is not consistent!");
   } else {
     // Map continuation variables
-    if (parameters.protein0.rows() == 1 && parameters.protein0[0] == -1) {
+    if (parameters.proteinDistribution.protein0.rows() == 1 &&
+        parameters.proteinDistribution.protein0[0] == -1) {
       proteinDensity =
           ptrRichData_local->getVertexProperty<double>("protein_density")
               .reinterpretTo(*mesh);
@@ -164,8 +166,8 @@ void System::mapContinuationVariables(std::string plyFile) {
       //         .reinterpretTo(*mesh);
       ;
     } else {
-      throw std::logic_error(
-          "protein0 has to be disabled (=[-1]) for continuing simulations!");
+      throw std::logic_error("proteinDensity.protein0 has to be disabled "
+                             "(=[-1]) for continuing simulations!");
     }
   }
 }
@@ -249,7 +251,7 @@ void System::checkParameters() {
   }
 
   // protein related
-  if (parameters.variation.isProteinVariation != (parameters.Bc > 0)) {
+  if (parameters.variation.isProteinVariation != (parameters.proteinMobility > 0)) {
     mem3dg_runtime_error("Binding constant Bc has to be consistent with the "
                          "protein variation option!");
   }
@@ -257,41 +259,52 @@ void System::checkParameters() {
     mem3dg_runtime_error(
         "Kbc != 0 is currently not expected for protein variation!");
   }
-  if (parameters.protein0.rows() == 1 && parameters.protein0[0] == -1) {
+  if (parameters.proteinDistribution.protein0.rows() == 1 &&
+      parameters.proteinDistribution.protein0[0] == -1) {
     std::cout << "Disable protein init, expect continuation simulation."
               << std::endl;
-  } else if (parameters.protein0.rows() == 1 && parameters.protein0[0] >= 0 &&
-             parameters.protein0[0] <= 1) {
+  } else if (parameters.proteinDistribution.protein0.rows() == 1 &&
+             parameters.proteinDistribution.protein0[0] >= 0 &&
+             parameters.proteinDistribution.protein0[0] <= 1) {
     if (parameters.variation.isProteinVariation) {
-      if (parameters.protein0[0] == 0 || parameters.protein0[0] == 1) {
+      if (parameters.proteinDistribution.protein0[0] == 0 ||
+          parameters.proteinDistribution.protein0[0] == 1) {
         mem3dg_runtime_error("{0<phi<1}");
       }
     } else {
-      if (parameters.protein0[0] != 1 || parameters.bending.Kb != 0 ||
-          parameters.dirichlet.eta != 0 || parameters.adsorption.epsilon != 0) {
-        mem3dg_runtime_error(
-            "For homogenous membrane simulation, good "
-            "practice is "
-            "to set protein0 = 1, Kb = 0, eta = 0, epsilon = 0 to "
-            "avoid ambiguity & save computation!");
+      if (parameters.proteinDistribution.protein0[0] != 1 ||
+          parameters.bending.Kb != 0 || parameters.dirichlet.eta != 0 ||
+          parameters.adsorption.epsilon != 0) {
+        mem3dg_runtime_error("For homogenous membrane simulation, good "
+                             "practice is "
+                             "to set proteinDensity.protein0 = 1, Kb = 0, eta "
+                             "= 0, epsilon = 0 to "
+                             "avoid ambiguity & save computation!");
       }
     }
-  } else if (parameters.protein0.rows() == 4 &&
-             (parameters.protein0[2] >= 0 && parameters.protein0[2] <= 1) &&
-             (parameters.protein0[3] >= 0 && parameters.protein0[3] <= 1) &&
-             (parameters.protein0[0] > 0 && parameters.protein0[1] > 0)) {
-    if (parameters.protein0[2] == parameters.protein0[3]) {
+  } else if (parameters.proteinDistribution.protein0.rows() == 4 &&
+             (parameters.proteinDistribution.protein0[2] >= 0 &&
+              parameters.proteinDistribution.protein0[2] <= 1) &&
+             (parameters.proteinDistribution.protein0[3] >= 0 &&
+              parameters.proteinDistribution.protein0[3] <= 1) &&
+             (parameters.proteinDistribution.protein0[0] > 0 &&
+              parameters.proteinDistribution.protein0[1] > 0)) {
+    if (parameters.proteinDistribution.protein0[2] ==
+        parameters.proteinDistribution.protein0[3]) {
       mem3dg_runtime_error("Please switch to {phi} for homogeneous membrane!");
     }
     if (parameters.variation.isProteinVariation) {
-      if (parameters.protein0[2] == 0 || parameters.protein0[2] == 1 ||
-          parameters.protein0[3] == 0 || parameters.protein0[3] == 1) {
+      if (parameters.proteinDistribution.protein0[2] == 0 ||
+          parameters.proteinDistribution.protein0[2] == 1 ||
+          parameters.proteinDistribution.protein0[3] == 0 ||
+          parameters.proteinDistribution.protein0[3] == 1) {
         mem3dg_runtime_error("{0<phi<1}");
       }
     }
-  } else if (parameters.protein0.rows() == proteinDensity.raw().rows() &&
-             (parameters.protein0.array() > 0).all() &&
-             (parameters.protein0.array() < 1).all()) {
+  } else if (parameters.proteinDistribution.protein0.rows() ==
+                 proteinDensity.raw().rows() &&
+             (parameters.proteinDistribution.protein0.array() > 0).all() &&
+             (parameters.proteinDistribution.protein0.array() < 1).all()) {
   } else {
     mem3dg_runtime_error("protein 0 can only be specified in three ways: 1. "
                          "length = 1, uniform {0<phi<1} 2. "
@@ -301,7 +314,7 @@ void System::checkParameters() {
   }
 
   // boundary related
-  if (parameters.radius <= 0 && parameters.radius != -1) {
+  if (parameters.variation.radius <= 0 && parameters.variation.radius != -1) {
     mem3dg_runtime_error("Radius > 0 or radius = 1 to disable!");
   }
   isOpenMesh = mesh->hasBoundary();
@@ -472,35 +485,38 @@ void System::initConstants() {
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
 
   // Initialize the constant mask based on distance from the point specified
-  if (parameters.radius != -1) {
-    if (parameters.radius > geodesicDistanceFromPtInd.raw().maxCoeff() ||
-        parameters.radius < geodesicDistanceFromPtInd.raw().minCoeff()) {
+  if (parameters.variation.radius != -1) {
+    if (parameters.variation.radius > geodesicDistanceFromPtInd.raw().maxCoeff() ||
+        parameters.variation.radius < geodesicDistanceFromPtInd.raw().minCoeff()) {
       mem3dg_runtime_error("initConstants: either all vertices or none is "
                            "included within integration disk, "
                            "set radius = -1 to disable!");
     }
     for (gcs::Vertex v : mesh->vertices()) {
-      forces.forceMask[v] = (geodesicDistanceFromPtInd[v] < parameters.radius)
+      forces.forceMask[v] = (geodesicDistanceFromPtInd[v] < parameters.variation.radius)
                                 ? gc::Vector3{1, 1, 1}
                                 : gc::Vector3{0, 0, 0};
       forces.proteinMask[v] =
-          (geodesicDistanceFromPtInd[v] < parameters.radius) ? 1 : 0;
+          (geodesicDistanceFromPtInd[v] < parameters.variation.radius) ? 1 : 0;
     }
   }
 
   // Initialize protein density
-  if (parameters.protein0.size() == 1) {
-    proteinDensity.raw().setConstant(mesh->nVertices(), 1,
-                                     parameters.protein0[0]);
-  } else if (parameters.protein0.rows() == proteinDensity.raw().rows()) {
-    proteinDensity.raw() = parameters.protein0;
-  } else if (parameters.protein0.size() == 4) {
-    std::vector<double> r_heter{parameters.protein0[0], parameters.protein0[1]};
+  if (parameters.proteinDistribution.protein0.size() == 1) {
+    proteinDensity.raw().setConstant(
+        mesh->nVertices(), 1, parameters.proteinDistribution.protein0[0]);
+  } else if (parameters.proteinDistribution.protein0.rows() ==
+             proteinDensity.raw().rows()) {
+    proteinDensity.raw() = parameters.proteinDistribution.protein0;
+  } else if (parameters.proteinDistribution.protein0.size() == 4) {
+    std::vector<double> r_heter{parameters.proteinDistribution.protein0[0],
+                                parameters.proteinDistribution.protein0[1]};
     tanhDistribution(*vpg, proteinDensity.raw(),
-                     geodesicDistanceFromPtInd.raw(), parameters.sharpness,
-                     r_heter);
-    proteinDensity.raw() *= parameters.protein0[2] - parameters.protein0[3];
-    proteinDensity.raw().array() += parameters.protein0[3];
+                     geodesicDistanceFromPtInd.raw(),
+                     parameters.proteinDistribution.sharpness, r_heter);
+    proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
+                            parameters.proteinDistribution.protein0[3];
+    proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
   }
 
   // Mask boundary element
@@ -570,16 +586,18 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   }
 
   // update protein density
-  if (parameters.protein0.rows() == 4 &&
+  if (parameters.proteinDistribution.protein0.rows() == 4 &&
       !parameters.variation.isProteinVariation) {
     if (isUpdateGeodesics) {
-      std::vector<double> r_heter{parameters.protein0[0],
-                                  parameters.protein0[1]};
+      std::vector<double> r_heter{parameters.proteinDistribution.protein0[0],
+                                  parameters.proteinDistribution.protein0[1]};
       tanhDistribution(*vpg, proteinDensity.raw(),
-                       geodesicDistanceFromPtInd.raw(), parameters.sharpness,
-                       r_heter);
-      proteinDensity.raw() *= parameters.protein0[2] - parameters.protein0[3];
-      proteinDensity.raw().array() += parameters.protein0[3];
+                       geodesicDistanceFromPtInd.raw(),
+                       parameters.proteinDistribution.sharpness, r_heter);
+      proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
+                              parameters.proteinDistribution.protein0[3];
+      proteinDensity.raw().array() +=
+          parameters.proteinDistribution.protein0[3];
     }
   }
 
@@ -615,12 +633,12 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
     forces.osmoticPressure =
         -(parameters.osmotic.Kv * (volume - parameters.osmotic.Vt) /
               parameters.osmotic.Vt / parameters.osmotic.Vt +
-          parameters.lambdaV);
+          parameters.osmotic.lambdaV);
   } else if (parameters.osmotic.isConstantOsmoticPressure) {
     forces.osmoticPressure = parameters.osmotic.Kv;
   } else {
     forces.osmoticPressure =
-        mem3dg::constants::i * mem3dg::constants::R * parameters.temp *
+        mem3dg::constants::i * mem3dg::constants::R * parameters.temperature *
         (parameters.osmotic.n / volume - parameters.osmotic.cam);
   }
 
@@ -633,7 +651,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
                               : parameters.tension.Ksg *
                                         (surfaceArea - parameters.tension.At) /
                                         parameters.tension.At +
-                                    parameters.lambdaSG;
+                                    parameters.tension.lambdaSG;
 
   // initialize/update line tension (on dual edge)
   if (parameters.dirichlet.eta != 0 && false) {

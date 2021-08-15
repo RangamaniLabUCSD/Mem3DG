@@ -110,7 +110,7 @@ bool Euler::integrate() {
 }
 
 void Euler::checkParameters() {
-  if (f.parameters.dpd.gamma != 0 || f.parameters.temp != 0) {
+  if (f.parameters.dpd.gamma != 0 || f.parameters.temperature != 0) {
     mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
   if (isBacktrack) {
@@ -161,7 +161,7 @@ void Euler::march() {
 
   // compute force, which is equivalent to velocity
   vel_e = physicalForceVec;
-  vel_protein_e = f.parameters.Bc * f.forces.chemicalPotential.raw();
+  vel_protein_e = f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {

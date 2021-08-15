@@ -115,10 +115,10 @@ bool ConjugateGradient::integrate() {
 }
 
 void ConjugateGradient::checkParameters() {
-  if (f.parameters.dpd.gamma != 0 || f.parameters.temp != 0) {
+  if (f.parameters.dpd.gamma != 0 || f.parameters.temperature != 0) {
     mem3dg_runtime_error("DPD has to be turned off for CG integration!");
   }
-  if (f.parameters.Bc != 1 && f.parameters.Bc != 0) {
+  if (f.parameters.proteinMobility != 1 && f.parameters.proteinMobility != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
                          "be set to 1 for optimization!");
   }
@@ -187,7 +187,7 @@ void ConjugateGradient::march() {
                       ? f.forces.chemicalPotential.raw().squaredNorm()
                       : 0);
     vel_e = physicalForceVec;
-    vel_protein_e = f.parameters.Bc * f.forces.chemicalPotential.raw();
+    vel_protein_e = f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
     countCG = 1;
   } else {
     currentNormSq = (f.parameters.variation.isShapeVariation
@@ -199,7 +199,7 @@ void ConjugateGradient::march() {
     vel_e *= currentNormSq / pastNormSq;
     vel_e += physicalForceVec;
     vel_protein_e *= currentNormSq / pastNormSq;
-    vel_protein_e += f.parameters.Bc * f.forces.chemicalPotential.raw();
+    vel_protein_e += f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
     pastNormSq = currentNormSq;
     countCG++;
   }
@@ -258,8 +258,8 @@ void FeedForwardSweep::sweep() {
     for (double VP : VP_) {
       // reset parameters
       if (isAugmentedLagrangian) {
-        f.parameters.lambdaSG = 0;
-        f.parameters.lambdaV = 0;
+        f.parameters.tension.lambdaSG = 0;
+        f.parameters.osmotic.lambdaV = 0;
       } else {
         f.parameters.osmotic.Kv = KV;
         f.parameters.tension.Ksg = KSG;

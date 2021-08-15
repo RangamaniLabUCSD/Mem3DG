@@ -178,7 +178,7 @@ void Integrator::lineSearchErrorBacktrack(
       toMatrix(f.vpg->inputVertexPositions) = current_pos;
       f.proteinDensity.raw() =
           current_proteinDensity +
-          alpha * f.parameters.Bc *
+          alpha * f.parameters.proteinMobility *
               f.forces.maskProtein(f.forces.bendingPotential.raw());
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
@@ -186,7 +186,7 @@ void Integrator::lineSearchErrorBacktrack(
         std::cout << "With only bending potential, BE has increased "
                   << f.energy.BE - previousE.BE << " from " << previousE.BE
                   << " to " << f.energy.BE << ", expected dBE: "
-                  << -alpha * f.parameters.Bc *
+                  << -alpha * f.parameters.proteinMobility *
                          f.forces.maskProtein(f.forces.bendingPotential.raw())
                              .squaredNorm()
                   << std::endl;
@@ -260,7 +260,7 @@ void Integrator::lineSearchErrorBacktrack(
       toMatrix(f.vpg->inputVertexPositions) = current_pos;
       f.proteinDensity.raw() =
           current_proteinDensity +
-          alpha * f.parameters.Bc *
+          alpha * f.parameters.proteinMobility *
               f.forces.maskProtein(f.forces.adsorptionPotential.raw());
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
@@ -268,7 +268,7 @@ void Integrator::lineSearchErrorBacktrack(
         std::cout << "With only adsorption potential, aE has increased "
                   << f.energy.aE - previousE.aE << " from " << previousE.aE
                   << " to " << f.energy.aE << ", expected dBE: "
-                  << -alpha * f.parameters.Bc *
+                  << -alpha * f.parameters.proteinMobility *
                          f.forces
                              .maskProtein(f.forces.adsorptionPotential.raw())
                              .squaredNorm()
@@ -300,7 +300,7 @@ void Integrator::lineSearchErrorBacktrack(
       toMatrix(f.vpg->inputVertexPositions) = current_pos;
       f.proteinDensity.raw() =
           current_proteinDensity +
-          alpha * f.parameters.Bc *
+          alpha * f.parameters.proteinMobility *
               f.forces.maskProtein(f.forces.diffusionPotential.raw());
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
@@ -308,7 +308,7 @@ void Integrator::lineSearchErrorBacktrack(
         std::cout << "With only diffusion potential, dE has increased "
                   << f.energy.dE - previousE.dE << " from " << previousE.dE
                   << " to " << f.energy.dE << ", expected ddE: "
-                  << -alpha * f.parameters.Bc *
+                  << -alpha * f.parameters.proteinMobility *
                          f.forces.maskProtein(f.forces.diffusionPotential.raw())
                              .squaredNorm()
                   << std::endl;
@@ -441,7 +441,7 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
-  if ((f.parameters.dpd.gamma != 0) || (f.parameters.temp != 0)) {
+  if ((f.parameters.dpd.gamma != 0) || (f.parameters.temperature != 0)) {
     f.computeDPDForces(dt);
     DPDForce = rowwiseDotProduct(
         f.forces.maskForce(EigenMap<double, 3>(f.forces.dampingForce) +
@@ -470,12 +470,12 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
         std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n[lambdaSG] = [" << f.parameters.lambdaSG << ", "
+        std::cout << "\n[lambdaSG] = [" << f.parameters.tension.lambdaSG << ", "
                   << "]";
-        f.parameters.lambdaSG += f.parameters.tension.Ksg *
+        f.parameters.tension.lambdaSG += f.parameters.tension.Ksg *
                                  (f.surfaceArea - f.parameters.tension.At) /
                                  f.parameters.tension.At;
-        std::cout << " -> [" << f.parameters.lambdaSG << "]" << std::endl;
+        std::cout << " -> [" << f.parameters.tension.lambdaSG << "]" << std::endl;
       }
     } else {              // incremental harmonic penalty method
       if (dArea < ctol) { // exit if fulfilled all constraints
@@ -501,16 +501,16 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
         std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n[lambdaSG, lambdaV] = [" << f.parameters.lambdaSG
-                  << ", " << f.parameters.lambdaV << "]";
-        f.parameters.lambdaSG += f.parameters.tension.Ksg *
+        std::cout << "\n.tension[lambdaSG, lambdaV] = [" << f.parameters.tension.lambdaSG
+                  << ", " << f.parameters.osmotic.lambdaV << "]";
+        f.parameters.tension.lambdaSG += f.parameters.tension.Ksg *
                                  (f.surfaceArea - f.parameters.tension.At) /
                                  f.parameters.tension.At;
-        f.parameters.lambdaV += f.parameters.osmotic.Kv *
+        f.parameters.osmotic.lambdaV += f.parameters.osmotic.Kv *
                                 (f.volume - f.parameters.osmotic.Vt) /
                                 f.parameters.osmotic.Vt;
-        std::cout << " -> [" << f.parameters.lambdaSG << ", "
-                  << f.parameters.lambdaV << "]" << std::endl;
+        std::cout << " -> [" << f.parameters.tension.lambdaSG << ", "
+                  << f.parameters.osmotic.lambdaV << "]" << std::endl;
       }
     } else { // incremental harmonic penalty method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
@@ -737,7 +737,7 @@ void Integrator::getParameterLog(std::string inputMesh) {
            << "Kv:     " << f.parameters.osmotic.Kv << "\n"
            << "gamma:  " << f.parameters.dpd.gamma << "\n"
            << "Vt:     " << f.parameters.osmotic.Vt << "\n"
-           << "kt:     " << f.parameters.temp << "\n"
+           << "kt:     " << f.parameters.temperature << "\n"
            << "Kf:     " << f.parameters.external.Kf << "\n"
            << "conc:   " << f.parameters.external.conc << "\n"
            << "height: " << f.parameters.external.height << "\n";
@@ -774,7 +774,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Kv:     " << f.parameters.osmotic.Kv << "\n"
            << "gamma:  " << f.parameters.dpd.gamma << "\n"
            << "Vt:     " << f.parameters.osmotic.Vt << "\n"
-           << "kt:     " << f.parameters.temp << "\n"
+           << "kt:     " << f.parameters.temperature << "\n"
            << "Kf:   " << f.parameters.external.Kf << "\n"
            << "conc:   " << f.parameters.external.conc << "\n";
 

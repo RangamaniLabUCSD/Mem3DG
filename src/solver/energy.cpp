@@ -66,7 +66,7 @@ void System::computeSurfaceEnergy() {
   energy.sE = parameters.tension.isConstantSurfaceTension
                   ? forces.surfaceTension * surfaceArea
                   : forces.surfaceTension * A_difference / 2 +
-                        parameters.lambdaSG * A_difference / 2;
+                        parameters.tension.lambdaSG * A_difference / 2;
 }
 
 void System::computePressureEnergy() {
@@ -74,12 +74,12 @@ void System::computePressureEnergy() {
   if (parameters.osmotic.isPreferredVolume) {
     double V_difference = volume - parameters.osmotic.Vt;
     energy.pE = -forces.osmoticPressure * V_difference / 2 +
-                parameters.lambdaV * V_difference / 2;
+                parameters.osmotic.lambdaV * V_difference / 2;
   } else if (parameters.osmotic.isConstantOsmoticPressure) {
     energy.pE = -forces.osmoticPressure * volume;
   } else {
     double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
-    energy.pE = mem3dg::constants::i * mem3dg::constants::R * parameters.temp *
+    energy.pE = mem3dg::constants::i * mem3dg::constants::R * parameters.temperature *
                 parameters.osmotic.n * (ratio - log(ratio) - 1);
   }
 }
@@ -92,9 +92,9 @@ void System::computeAdsorptionEnergy() {
 
 void System::computeProteinInteriorPenaltyEnergy() {
   // interior method to constrain protein density to remain from 0 to 1
-  energy.inE =
-      -parameters.lambdaPhi * ((proteinDensity.raw().array()).log().sum() +
-                               (1 - proteinDensity.raw().array()).log().sum());
+  energy.inE = -parameters.proteinDistribution.lambdaPhi *
+               ((proteinDensity.raw().array()).log().sum() +
+                (1 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeDirichletEnergy() {

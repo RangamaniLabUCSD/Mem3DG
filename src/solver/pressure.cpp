@@ -350,11 +350,10 @@ EigenVectorX1d System::computeCapillaryForce() {
   mem3dg_runtime_error("computeCapillaryForce: out of data implementation, "
                        "shouldn't be called!");
   /// Geometric implementation
-  forces.surfaceTension =
-      parameters.tension.Ksg *
-          (surfaceArea - parameters.tension.At) /
-          parameters.tension.At +
-      parameters.lambdaSG;
+  forces.surfaceTension = parameters.tension.Ksg *
+                              (surfaceArea - parameters.tension.At) /
+                              parameters.tension.At +
+                          parameters.tension.lambdaSG;
   forces.capillaryForce.raw() =
       -forces.surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
 
@@ -486,9 +485,10 @@ EigenVectorX1d System::computeChemicalPotential() {
        2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
   forces.diffusionPotential.raw() = forces.maskProtein(
       -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
-  forces.interiorPenaltyPotential.raw() = forces.maskProtein(
-      parameters.lambdaPhi * (1 / proteinDensity.raw().array() -
-                              1 / (1 - proteinDensity.raw().array())));
+  forces.interiorPenaltyPotential.raw() =
+      forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
+                         (1 / proteinDensity.raw().array() -
+                          1 / (1 - proteinDensity.raw().array())));
   forces.chemicalPotential.raw() =
       forces.adsorptionPotential.raw() + forces.bendingPotential.raw() +
       forces.diffusionPotential.raw() + forces.interiorPenaltyPotential.raw();
@@ -499,7 +499,7 @@ EigenVectorX1d System::computeChemicalPotential() {
   //     dH0dphi.raw().array() +
   //      meanCurvDiff * meanCurvDiff * dKbdphi.raw().array());
   // F.chemicalPotential.raw().array() +=
-  //     P.lambdaPhi * (1 / proteinDensity.raw().array() -
+  //     P.proteinDistribution.lambdaPhi * (1 / proteinDensity.raw().array() -
   //                    1 / (1 - proteinDensity.raw().array()));
 
   return forces.chemicalPotential.raw();
@@ -521,7 +521,7 @@ System::computeDPDForces(double dt) {
   // std::default_random_engine random_generator;
   // gcs::EdgeData<double> random_var(mesh);
   double sigma = sqrt(2 * parameters.dpd.gamma * mem3dg::constants::kBoltzmann *
-                      parameters.temp / dt);
+                      parameters.temperature / dt);
   std::normal_distribution<double> normal_dist(0, sigma);
 
   for (gcs::Edge e : mesh->edges()) {

@@ -95,7 +95,7 @@ bool BFGS::integrate() {
 }
 
 void BFGS::checkParameters() {
-  if (f.parameters.dpd.gamma != 0 || f.parameters.temp != 0) {
+  if (f.parameters.dpd.gamma != 0 || f.parameters.temperature != 0) {
     mem3dg_runtime_error("DPD has to be turned off for BFGS integration!");
   }
   // if (f.O.isVertexShift) {
@@ -105,7 +105,7 @@ void BFGS::checkParameters() {
   if (!isBacktrack) {
     mem3dg_runtime_error("Backtracking is required for BFGS integration");
   }
-  if (f.parameters.Bc != 1 && f.parameters.Bc != 0) {
+  if (f.parameters.proteinMobility != 1 && f.parameters.proteinMobility != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
                          "be set to 1 for optimization!");
   }

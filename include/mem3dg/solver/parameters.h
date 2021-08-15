@@ -75,6 +75,8 @@ struct Parameters {
     double A_res = 0;
     /// preferred  total face area
     double At = -1;
+    /// augmented Lagrangian parameter for area
+    double lambdaSG = 0;
   };
 
   struct Osmotic {
@@ -92,6 +94,8 @@ struct Parameters {
     double V_res = 0;
     /// Enclosed solute (atto-mol)
     double n = 1;
+    /// augmented Lagrangian parameter for volume
+    double lambdaV = 0;
   };
 
   struct Adsorption {
@@ -130,6 +134,8 @@ struct Parameters {
     bool isProteinVariation = false;
     /// Whether or not consider shape evolution
     bool isShapeVariation = true;
+    /// domain of shape variation
+    double radius = -1;
   };
 
   struct Point {
@@ -137,6 +143,15 @@ struct Parameters {
     EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
     /// Whether floating "the" vertex
     bool isFloatVertex = false;
+  };
+
+  struct ProteinDistribution {
+    /// (initial) protein density
+    EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
+    /// sharpness of tanh transition
+    double sharpness = 20;
+    /// interior point parameter for protein density
+    double lambdaPhi = 1e-9;
   };
 
   /// bending parameters
@@ -159,24 +174,13 @@ struct Parameters {
   Variation variation;
   /// reference point
   Point point;
+  /// protein distribution
+  ProteinDistribution proteinDistribution;
 
-  /// (initial) protein density
-  EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
   /// mobility constant
-  double Bc = 0;
+  double proteinMobility = 0;
   /// Temperature
-  double temp = 0;
-
-  /// domain of integration
-  double radius = -1;
-  /// augmented Lagrangian parameter for area
-  double lambdaSG = 0;
-  /// augmented Lagrangian parameter for volume
-  double lambdaV = 0;
-  /// interior point parameter for protein density
-  double lambdaPhi = 1e-9;
-  /// sharpness of tanh transition
-  double sharpness = 20;
+  double temperature = 0;
 };
 
 } // namespace solver
