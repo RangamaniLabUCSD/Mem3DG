@@ -30,6 +30,7 @@
 
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/trajfile.h"
+#include "mem3dg/solver/mutable_trajfile.h"
 
 #include <csignal>
 #include <stdexcept>
