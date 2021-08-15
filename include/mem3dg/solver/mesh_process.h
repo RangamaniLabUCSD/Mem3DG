@@ -50,36 +50,26 @@ namespace solver {
 
 struct MeshProcessor {
   struct MeshRegularizer {
-    /// Whether regularize mesh
-    bool isMeshRegularize = false;
-
     /// triangle ratio constant
     double Kst = 0;
     /// Local stretching modulus
     double Ksl = 0;
     /// Edge spring constant
     double Kse = 0;
-    /// whether vertex shift
-    bool shiftVertex = true;
-
-    /**
-     * @brief summarizeStatus
-     */
-    void summarizeStatus() {
-      isMeshRegularize = (Kst != 0) || (Ksl != 0) || (Kse != 0);
-    };
   };
 
   struct MeshMutator {
-    /// Whether mutate mesh
-    bool isMeshMutate = false;
-
     /// Whether edge flip
     bool isEdgeFlip = false;
     /// Whether split edge
     bool isSplitEdge = false;
     /// Whether collapse edge
     bool isCollapseEdge = false;
+    /// Whether change topology
+    bool isChangeTopology = false;
+
+    /// whether vertex shift
+    bool shiftVertex = true;
 
     /// flip non-delaunay edge
     bool flipNonDelaunay = false;
@@ -120,7 +110,7 @@ struct MeshProcessor {
                      splitSkinnyDelaunay);
       isCollapseEdge =
           (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
-      isMeshMutate = isEdgeFlip || isSplitEdge || isCollapseEdge;
+      isChangeTopology = isEdgeFlip || isSplitEdge || isCollapseEdge;
     };
 
     /**
@@ -150,17 +140,24 @@ struct MeshProcessor {
                                     const gcs::VertexPositionGeometry &vpg);
   };
 
+  /// mesh mutator
   MeshMutator meshMutator;
+  /// mesh regularizer
   MeshRegularizer meshRegularizer;
+  /// Whether regularize mesh
+  bool isMeshRegularize = false;
+  /// Whether mutate mesh
+  bool isMeshMutate = false;
 
   /**
    * @brief summarizeStatus
    */
   void summarizeStatus() {
+    isMeshRegularize = (meshRegularizer.Kst != 0) ||
+                       (meshRegularizer.Ksl != 0) || (meshRegularizer.Kse != 0);
     meshMutator.summarizeStatus();
-    meshRegularizer.summarizeStatus();
-    std::cout << " and " << (meshMutator.isMeshMutate && meshRegularizer.isMeshRegularize) << std::endl;
-    if (meshMutator.isMeshMutate && meshRegularizer.isMeshRegularize) {
+    isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
+    if (isMeshMutate && isMeshRegularize) {
       mem3dg_runtime_error("For topology changing simulation, mesh "
                            "regularization cannot be applied!");
     }

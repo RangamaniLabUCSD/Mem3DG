@@ -92,11 +92,8 @@ bool VelocityVerlet::integrate() {
 }
 
 void VelocityVerlet::checkParameters() {
-  if (f.meshProcessor.meshRegularizer.shiftVertex) {
-    mem3dg_runtime_error("Vertex shift is not supported for Velocity Verlet!");
-  }
   f.meshProcessor.meshMutator.summarizeStatus();
-  if (f.meshProcessor.meshMutator.isMeshMutate) {
+  if (f.meshProcessor.isMeshMutate) {
     mem3dg_runtime_error(
         "Mesh mutations are currently not supported for Velocity Verlet!");
   }

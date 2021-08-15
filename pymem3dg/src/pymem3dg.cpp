@@ -525,10 +525,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                                 R"delim(
           get Edge spring constant 
       )delim");
-  meshregularizer.def_readwrite("shiftVertex", &MeshProcessor::MeshRegularizer::shiftVertex,
-                        R"delim(
-          get the option of whether do vertex shift  
-      )delim");
 
   py::class_<MeshProcessor::MeshMutator> meshmutator(pymem3dg, "MeshMutator",
                                                      R"delim(
@@ -537,11 +533,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   meshmutator.def(py::init<>(),
                   R"delim(
        meshmutator constructor
-      )delim");
-  meshmutator.def_readonly("isMeshMutate",
-                           &MeshProcessor::MeshMutator::isMeshMutate,
-                           R"delim(
-          get the option of whether do mesh mutation
       )delim");
   meshmutator.def_readonly("isEdgeFlip",
                            &MeshProcessor::MeshMutator::isEdgeFlip,
@@ -557,6 +548,20 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            &MeshProcessor::MeshMutator::isCollapseEdge,
                            R"delim(
           get the option of whether Collapse edge to grow mesh
+      )delim");
+  meshmutator.def_readonly("isChangeTopology",
+                           &MeshProcessor::MeshMutator::isChangeTopology,
+                           R"delim(
+          get the option of change topology
+      )delim");
+
+  /**
+   * @brief vertex shifting
+   */
+  meshmutator.def_readwrite("shiftVertex",
+                            &MeshProcessor::MeshMutator::shiftVertex,
+                            R"delim(
+          get the option of whether do vertex shift  
       )delim");
 
   /**
@@ -651,6 +656,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                               R"delim(
           meshRegularizer struct
       )delim");
+  meshprocessor.def_readonly("isMeshMutate", &MeshProcessor::isMeshMutate,
+                             R"delim(
+          get the option of whether do mesh mutation
+      )delim");
+  meshprocessor.def_readonly("isMeshRegularize",
+                             &MeshProcessor::isMeshRegularize,
+                             R"delim(
+          get the option of whether do mesh regularization
+      )delim");
 
   // ==========================================================
   // =============          System              ===============
@@ -668,19 +682,18 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
         System constructor with .ply files
       )delim");
-  system.def(
-      py::init<std::string, Parameters &, Options &, std::size_t, bool>(),
-      py::arg("inputMesh"), py::arg("p"), py::arg("o"), py::arg("nSub") = 0,
-      py::arg("isContinue") = false,
-      R"delim(
+  system.def(py::init<std::string, Parameters &, std::size_t, bool>(),
+             py::arg("inputMesh"), py::arg("p"), py::arg("nSub") = 0,
+             py::arg("isContinue") = false,
+             R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(py::init<std::string, std::string, Parameters &, Options &,
-                      std::size_t, bool>(),
-             py::arg("inputMesh"), py::arg("refMesh"), py::arg("p"),
-             py::arg("o"), py::arg("nSub") = 0, py::arg("isContinue") = false,
-             R"delim(
+  system.def(
+      py::init<std::string, std::string, Parameters &, std::size_t, bool>(),
+      py::arg("inputMesh"), py::arg("refMesh"), py::arg("p"),
+      py::arg("nSub") = 0, py::arg("isContinue") = false,
+      R"delim(
         System constructor with .ply files 
       )delim");
 
@@ -698,9 +711,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      Options &, std::size_t>(),
+                      std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
-             py::arg("o"), py::arg("nSub") = 0,
+             py::arg("nSub") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -708,10 +721,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      Options &, std::size_t>(),
+                      std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("refVertexMatrix"), py::arg("p"), py::arg("o"),
-             py::arg("nSub") = 0,
+             py::arg("refVertexMatrix"), py::arg("p"), py::arg("nSub") = 0,
 
              R"delim(
         System constructor with Matrices 
@@ -726,11 +738,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
-  system.def(
-      py::init<std::string, int, Parameters &, Options &, std::size_t, bool>(),
-      py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"), py::arg("o"),
-      py::arg("nSub") = 0, py::arg("isContinue") = false,
-      R"delim(
+  system.def(py::init<std::string, int, Parameters &, std::size_t, bool>(),
+             py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
+             py::arg("nSub") = 0, py::arg("isContinue") = false,
+             R"delim(
         System constructor with NetCDF trajectory file
       )delim");
 #endif
@@ -745,10 +756,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def_readwrite("meshProcessor", &System::meshProcessor,
                        R"delim(
           get the mesh processor object
-      )delim");
-  system.def_readonly("O", &System::O,
-                      R"delim(
-          get the Options struct
       )delim");
   system.def_readwrite("time", &System::time,
                        R"delim(
@@ -963,17 +970,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           save snapshot data to directory
       )delim");
-  // ==========================================================
-  // =============      Simulation options      ===============
-  // ==========================================================
-  py::class_<Options> options(pymem3dg, "Options", R"delim(
-        The options
-    )delim");
-  options.def(py::init<>());
-  options.def_readwrite("isFloatVertex", &Options::isFloatVertex,
-                        R"delim(
-          get the option of whether have "the" vertex floating in embedded space
-      )delim");
 
   // ==========================================================
   // =============   Simulation parameters      ===============
@@ -1125,6 +1121,19 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get coefficient
       )delim");
 
+  py::class_<Parameters::Point> point(pymem3dg, "Point",
+                                      R"delim(
+        The Point energy parameters
+    )delim");
+  point.def_readwrite("pt", &Parameters::Point::pt,
+                      R"delim(
+          get the point
+      )delim");
+  point.def_readwrite("isFloatVertex", &Parameters::Point::isFloatVertex,
+                      R"delim(
+          whether use floating vertex option
+      )delim");
+
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
         The parameters
     )delim");
@@ -1180,6 +1189,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
           boundary parameters
       )delim");
+  parameters.def_readwrite("point", &Parameters::point,
+                           R"delim(
+          point parameters
+      )delim");
   parameters.def_readwrite("variation", &Parameters::variation,
                            R"delim(
           variation parameters
@@ -1195,10 +1208,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("Bc", &Parameters::Bc,
                            R"delim(
           get protein mobility constant 
-      )delim");
-  parameters.def_readwrite("pt", &Parameters::pt,
-                           R"delim(
-          get specification for the point
       )delim");
   parameters.def_readwrite("radius", &Parameters::radius,
                            R"delim(

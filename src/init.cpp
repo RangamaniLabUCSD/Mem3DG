@@ -311,7 +311,7 @@ void System::checkParametersAndOptions() {
                            "shape variation simulation!");
     }
     meshProcessor.meshMutator.summarizeStatus();
-    if (meshProcessor.meshMutator.isMeshMutate || meshProcessor.meshRegularizer.shiftVertex) {
+    if (meshProcessor.isMeshMutate) {
       mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
                            "variation simulation");
     }
@@ -416,7 +416,7 @@ void System::checkParametersAndOptions() {
 
   // regularization related
   meshProcessor.summarizeStatus();
-  if (meshProcessor.meshRegularizer.isMeshRegularize &&
+  if (meshProcessor.isMeshRegularize &&
       ((mesh->nVertices() != refVpg->mesh.nVertices() ||
         mesh->nEdges() != refVpg->mesh.nEdges() ||
         mesh->nFaces() != refVpg->mesh.nFaces()))) {
@@ -425,19 +425,19 @@ void System::checkParametersAndOptions() {
   }
 
   // the vertex related
-  if (parameters.pt.rows() > 3) {
+  if (parameters.point.pt.rows() > 3) {
     mem3dg_runtime_error(
         "Length of p.pt cannnot exceed 3! Instruction: (Length=1) => (vertex "
         "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
         "coordinate)");
   }
-  if (parameters.pt.rows() == 2 && !mesh->hasBoundary()) {
+  if (parameters.point.pt.rows() == 2 && !mesh->hasBoundary()) {
     std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
                  "lead to ambiguity! Please check by visualizing it first!\n"
               << std::endl;
   }
-  if (O.isFloatVertex) {
-    if (parameters.pt.rows() == 1) {
+  if (parameters.point.isFloatVertex) {
+    if (parameters.point.pt.rows() == 1) {
       mem3dg_runtime_error(
           "To have Floating vertex, one must specify vertex by coordinate!");
     }
@@ -646,7 +646,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
 
   // recompute floating "the vertex"
-  if (O.isFloatVertex && isUpdateGeodesics) {
+  if (parameters.point.isFloatVertex && isUpdateGeodesics) {
     findThePoint(
         *vpg, geodesicDistanceFromPtInd,
         3 * vpg->edgeLength(thePoint.nearestVertex().halfedge().edge()));
@@ -749,8 +749,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
                           gcs::VertexData<double> &geodesicDistance,
                           double range) {
   bool isUpdated = false;
-  if (O.isFloatVertex) {
-    switch (parameters.pt.rows()) {
+  if (parameters.point.isFloatVertex) {
+    switch (parameters.point.pt.rows()) {
     case 1: {
       throw std::logic_error(
           "To have Floating vertex, one must specify vertex by coordinate!");
@@ -759,7 +759,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
       gcs::Vertex closestVertex =
-          closestVertexToPt(*mesh, vpg, parameters.pt, geodesicDistance, range);
+          closestVertexToPt(*mesh, vpg, parameters.point.pt, geodesicDistance, range);
       double shortestDistance = 1e18;
       // loop over every faces around the vertex
       for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
@@ -771,7 +771,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
                          vpg.inputVertexPositions[he.next().vertex()].y};
           gc::Vector2 v3{vpg.inputVertexPositions[he.next().next().vertex()].x,
                          vpg.inputVertexPositions[he.next().next().vertex()].y};
-          gc::Vector2 v{parameters.pt[0], parameters.pt[1]};
+          gc::Vector2 v{parameters.point.pt[0], parameters.point.pt[1]};
           // find the inverse barycentric mapping based on the cartesian vertex
           // coordinates
           gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
@@ -791,7 +791,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
             gcs::SurfacePoint someSurfacePoint(
                 he.face(), correspondBarycentricCoordinates(baryCoords_, he));
             double distance =
-                (gc::Vector2{parameters.pt[0], parameters.pt[1]} -
+                (gc::Vector2{parameters.point.pt[0], parameters.point.pt[1]} -
                  gc::Vector2{
                      someSurfacePoint.interpolate(vpg.inputVertexPositions).x,
                      someSurfacePoint.interpolate(vpg.inputVertexPositions).y})
@@ -808,10 +808,10 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     }
     case 3: {
       // initialize embedded point and the closest vertex
-      gc::Vector3 embeddedPoint{parameters.pt[0], parameters.pt[1],
-                                parameters.pt[2]};
+      gc::Vector3 embeddedPoint{parameters.point.pt[0], parameters.point.pt[1],
+                                parameters.point.pt[2]};
       gcs::Vertex closestVertex =
-          closestVertexToPt(*mesh, vpg, parameters.pt, geodesicDistance, range);
+          closestVertexToPt(*mesh, vpg, parameters.point.pt, geodesicDistance, range);
       gc::Vector3 vertexToPoint =
           embeddedPoint - vpg.inputVertexPositions[closestVertex];
       // initialize the surface point as the closest vertex
@@ -885,22 +885,22 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     thePointTracker[thePoint.face.halfedge().next().vertex()] = true;
     thePointTracker[thePoint.face.halfedge().next().next().vertex()] = true;
   } else {
-    switch (parameters.pt.rows()) {
+    switch (parameters.point.pt.rows()) {
     case 1: {
       // Assign surface point as the indexed vertex
-      thePoint = gc::SurfacePoint(mesh->vertex((std::size_t)parameters.pt[0]));
+      thePoint = gc::SurfacePoint(mesh->vertex((std::size_t)parameters.point.pt[0]));
       isUpdated = true;
       break;
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
-      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.pt,
+      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.point.pt,
                                                     geodesicDistance, range));
       isUpdated = true;
       break;
     }
     case 3: {
-      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.pt,
+      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.point.pt,
                                                     geodesicDistance, range));
       isUpdated = true;
       break;

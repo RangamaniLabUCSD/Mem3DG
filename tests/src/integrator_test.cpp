@@ -40,7 +40,6 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 3> vpg;
 
   mem3dg::solver::Parameters p;
-  mem3dg::solver::Options o{};
 
   const double dt = 0.5, T = 50, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
                verbosity = 0;
@@ -51,7 +50,7 @@ public:
 };
 
 TEST_F(IntegratorTest, EulerIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, o, 0);
+  mem3dg::solver::System f(mesh, vpg, p, 0);
   mem3dg::solver::integrator::Euler integrator{f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
   integrator.verbosity = verbosity;
@@ -59,7 +58,7 @@ TEST_F(IntegratorTest, EulerIntegratorTest) {
 }
 
 TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, o, 0);
+  mem3dg::solver::System f(mesh, vpg, p, 0);
   mem3dg::solver::integrator::ConjugateGradient integrator{
       f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
@@ -76,7 +75,7 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
 // }
 
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, o, 0);
+  mem3dg::solver::System f(mesh, vpg, p, 0);
   mem3dg::solver::integrator::VelocityVerlet integrator{f,     dt,  1,
                                                         tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";

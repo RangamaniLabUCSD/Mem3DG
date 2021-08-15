@@ -130,6 +130,13 @@ struct Parameters {
     bool isShapeVariation = true;
   };
 
+  struct Point {
+    /// The point
+    EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
+    /// Whether floating "the" vertex
+    bool isFloatVertex = false;
+  };
+
   /// bending parameters
   Bending bending;
   /// surface tension parameters
@@ -148,12 +155,11 @@ struct Parameters {
   Boundary boundary;
   /// variation
   Variation variation;
+  /// reference point
+  Point point;
 
-  
   /// (initial) protein density
   EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
-  /// The point
-  EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
   /// mobility constant
   double Bc = 0;
   /// Temperature
@@ -169,11 +175,6 @@ struct Parameters {
   double lambdaPhi = 1e-9;
   /// sharpness of tanh transition
   double sharpness = 20;
-};
-
-struct Options {
-  /// Whether floating "the" vertex
-  bool isFloatVertex = false;
 };
 
 } // namespace solver

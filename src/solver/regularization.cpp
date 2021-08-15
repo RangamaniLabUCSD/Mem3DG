@@ -350,7 +350,7 @@ void System::processMesh() {
   smoothingMask.fill(false);
 
   // vertex shift for regularization
-  if (meshProcessor.meshRegularizer.shiftVertex) {
+  if (meshProcessor.meshMutator.shiftVertex) {
     vertexShift();
   }
 
@@ -368,7 +368,7 @@ void System::processMesh() {
   }
 
   // regularization
-  if (meshProcessor.meshMutator.isMeshMutate) {
+  if (meshProcessor.isMeshRegularize) {
     computeRegularizationForce();
     vpg->inputVertexPositions.raw() += forces.regularizationForce.raw();
     computeRegularizationForce();
@@ -510,7 +510,7 @@ void System::globalUpdateAfterMutation() {
   // }
 
   // Update the vertex when topology changes
-  if (!O.isFloatVertex) {
+  if (!parameters.point.isFloatVertex) {
     for (gcs::Vertex v : mesh->vertices()) {
       if (thePointTracker[v]) {
         thePoint = gcs::SurfacePoint(v);
