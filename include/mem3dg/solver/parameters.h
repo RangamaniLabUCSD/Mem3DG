@@ -73,6 +73,8 @@ struct Parameters {
     double Ksg = 0;
     /// Area reservior
     double A_res = 0;
+    /// preferred  total face area
+    double At = -1;
   };
 
   struct Osmotic {

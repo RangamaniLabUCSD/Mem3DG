@@ -473,8 +473,8 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
         std::cout << "\n[lambdaSG] = [" << f.parameters.lambdaSG << ", "
                   << "]";
         f.parameters.lambdaSG += f.parameters.tension.Ksg *
-                                 (f.surfaceArea - f.refSurfaceArea) /
-                                 f.refSurfaceArea;
+                                 (f.surfaceArea - f.parameters.tension.At) /
+                                 f.parameters.tension.At;
         std::cout << " -> [" << f.parameters.lambdaSG << "]" << std::endl;
       }
     } else {              // incremental harmonic penalty method
@@ -504,8 +504,8 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
         std::cout << "\n[lambdaSG, lambdaV] = [" << f.parameters.lambdaSG
                   << ", " << f.parameters.lambdaV << "]";
         f.parameters.lambdaSG += f.parameters.tension.Ksg *
-                                 (f.surfaceArea - f.refSurfaceArea) /
-                                 f.refSurfaceArea;
+                                 (f.surfaceArea - f.parameters.tension.At) /
+                                 f.parameters.tension.At;
         f.parameters.lambdaV += f.parameters.osmotic.Kv *
                                 (f.volume - f.parameters.osmotic.Vt) /
                                 f.parameters.osmotic.Vt;
@@ -541,7 +541,7 @@ void Integrator::createNetcdfFile() {
                      TrajFile::NcFile::replace);
     fd.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
     if (!f.mesh->hasBoundary()) {
-      fd.writeRefSurfArea(f.refSurfaceArea);
+      fd.writeRefSurfArea(f.parameters.tension.At);
     }
   }
 #endif
@@ -668,7 +668,7 @@ void Integrator::saveNetcdfData() {
   fd.writeIsSmooth(idx, f.isSmooth);
   // write geometry
   fd.writeVolume(idx, f.volume);
-  fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.refSurfaceArea
+  fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.parameters.tension.At
                                               : f.surfaceArea);
   fd.writeHeight(idx, toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
@@ -799,7 +799,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Chem error norm:    " << f.chemErrorNorm << "\n"
            << "\n"
            << "Surface area:     " << f.surfaceArea << " = "
-           << f.surfaceArea / f.refSurfaceArea << " target surface area"
+           << f.surfaceArea / f.parameters.tension.At << " target surface area"
            << "\n"
            << "COM (x, y, z):		 "
            << gc::EigenMap<double, 3>(f.vpg->inputVertexPositions)

@@ -125,9 +125,6 @@ public:
   /// Bending rigidity of the membrane
   gcs::VertexData<double> Kb;
 
-  /// Target total face area
-  double refSurfaceArea;
-
   /// is Smooth
   bool isSmooth;
   gcs::VertexData<bool> smoothingMask;
@@ -185,6 +182,32 @@ public:
   };
 
   /**
+   * @brief Construct a new Force object by reading topology and vertex matrices
+   *
+   * @param topologyMatrix,  topology matrix, F x 3
+   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
+   * @param p             Parameter of simulation
+   * @param mp         Setting for mesh processing
+   * @param nSub          Number of subdivision
+   */
+  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
+         MeshProcessor &mp, std::size_t nSub)
+      : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p, mp) {
+    // Check confliciting parameters and options
+    checkParameters();
+
+    // Initialize reference values
+    initConstants();
+
+    // Process the mesh by regularization and mutation
+    mutateMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
+
+  /**
    * @brief Construct a new Force object by reading mesh file path
    *
    * @param inputMesh     Input Mesh
@@ -214,6 +237,40 @@ public:
   System(std::string inputMesh, Parameters &p, std::size_t nSub,
          bool isContinue)
       : System(readMeshes(inputMesh, nSub), p) {
+
+    // Check confliciting parameters and options
+    checkParameters();
+
+    // Initialize reference values
+    initConstants();
+
+    // Map continuation variables
+    if (isContinue) {
+      std::cout << "\nWARNING: isContinue is on and make sure mesh file "
+                   "supports richData!"
+                << std::endl;
+      mapContinuationVariables(inputMesh);
+    }
+
+    // Process the mesh by regularization and mutation
+    mutateMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
+
+  /**
+   * @brief Construct a new Force object by reading mesh file path
+   *
+   * @param inputMesh     Input Mesh
+   * @param p             Parameter of simulation
+   * @param mp         Setting for mesh processing
+   * @param nSub          Number of subdivision
+   * @param isContinue    Wether continue simulation
+   */
+  System(std::string inputMesh, Parameters &p, MeshProcessor &mp,
+         std::size_t nSub, bool isContinue)
+      : System(readMeshes(inputMesh, nSub), p, mp) {
 
     // Check confliciting parameters and options
     checkParameters();
@@ -284,9 +341,56 @@ public:
     /// compute nonconstant values during simulation
     updateVertexPositions();
   };
+
+  /**
+   * @brief Construct a new System object by reading netcdf trajectory file path
+   *
+   * @param trajFile      Netcdf trajectory file
+   * @param startingFrame Starting frame for the input mesh
+   * @param p             Parameter of simulation
+   * @param mp         Setting for mesh processing
+   * @param nSub          Number of subdivision
+   * @param isContinue    Wether continue simulation
+   */
+  System(std::string trajFile, int startingFrame, Parameters &p,
+         MeshProcessor &mp, std::size_t nSub, bool isContinue)
+      : System(readTrajFile(trajFile, startingFrame, nSub), p, mp) {
+
+    // Check confliciting parameters and options
+    checkParameters();
+
+    // Initialize reference values
+    initConstants();
+
+    // Map continuation variables
+    if (isContinue) {
+      mapContinuationVariables(trajFile, startingFrame);
+    }
+
+    // Process the mesh by regularization and mutation
+    mutateMesh();
+
+    /// compute nonconstant values during simulation
+    updateVertexPositions();
+  };
 #endif
 
 private:
+  /**
+   * @brief Construct a new System object by reading tuple of unique_ptrs
+   *
+   * @param tuple        Mesh connectivity, Embedding and geometry
+   * information, Mesh rich data
+   * @param p             Parameter of simulation
+   * @param mp         Setting for mesh processing
+   */
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>>
+             meshVpgTuple,
+         Parameters &p, MeshProcessor &mp)
+      : System(std::move(std::get<0>(meshVpgTuple)),
+               std::move(std::get<1>(meshVpgTuple)), p, mp){};
+
   /**
    * @brief Construct a new System object by reading tuple of unique_ptrs
    *
@@ -312,6 +416,22 @@ private:
              meshVpgTuple)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple))){};
+
+  /**
+   * @brief Construct a new System object by reading unique_ptrs to mesh and
+   * geometry objects
+   * @param ptrmesh_         Mesh connectivity
+   * @param ptrvpg_          Embedding and geometry information
+   * @param p             Parameter of simulation
+   * @param mp         Setting for mesh processing
+   */
+  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, Parameters &p,
+         MeshProcessor &mp)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_)) {
+    parameters = p;
+    meshProcessor = mp;
+  }
 
   /**
    * @brief Construct a new System object by reading unique_ptrs to mesh and

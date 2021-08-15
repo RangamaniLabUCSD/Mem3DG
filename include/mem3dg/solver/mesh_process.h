@@ -179,7 +179,7 @@ struct MeshProcessor {
                        (meshRegularizer.Ksl != 0) || (meshRegularizer.Kse != 0);
     meshMutator.summarizeStatus();
     isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
-    if (isMeshMutate && isMeshRegularize) {
+    if (meshMutator.isChangeTopology && isMeshRegularize) {
       mem3dg_runtime_error("For topology changing simulation, mesh "
                            "regularization cannot be applied!");
     }

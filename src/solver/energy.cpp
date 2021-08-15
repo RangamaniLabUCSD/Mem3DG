@@ -62,7 +62,7 @@ void System::computeBendingEnergy() {
 
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
-  double A_difference = surfaceArea - refSurfaceArea;
+  double A_difference = surfaceArea - parameters.tension.At;
   energy.sE = parameters.tension.isConstantSurfaceTension
                   ? forces.surfaceTension * surfaceArea
                   : forces.surfaceTension * A_difference / 2 +
