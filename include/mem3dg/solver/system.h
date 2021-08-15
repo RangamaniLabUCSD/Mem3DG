@@ -99,8 +99,6 @@ protected:
 public:
   /// Parameters
   Parameters parameters;
-  /// Options
-  Options O;
   /// Mesh processor
   MeshProcessor meshProcessor;
 
@@ -179,14 +177,13 @@ public:
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param p             Parameter of simulation
-   * @param o             options of simulation
    * @param nSub          Number of subdivision
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         Options &o, std::size_t nSub)
-      : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub), p,
-               o) {
+         std::size_t nSub)
+      : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub),
+               p) {
     // Check confliciting parameters and options
     checkParametersAndOptions();
 
@@ -207,16 +204,15 @@ public:
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param refVertexMatrix, reference mesh coordinate matrix V x 3
    * @param p             Parameter of simulation
-   * @param o             options of simulation
    * @param nSub          Number of subdivision
    * regularization
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-         Parameters &p, Options &o, std::size_t nSub)
+         Parameters &p, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
-               p, o) {
+               p) {
 
     // Check confliciting parameters and options
     checkParametersAndOptions();
@@ -255,13 +251,12 @@ public:
    *
    * @param inputMesh     Input Mesh
    * @param p             Parameter of simulation
-   * @param o             options of simulation
    * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    */
-  System(std::string inputMesh, Parameters &p, Options &o, std::size_t nSub,
+  System(std::string inputMesh, Parameters &p, std::size_t nSub,
          bool isContinue)
-      : System(readMeshes(inputMesh, inputMesh, nSub), p, o) {
+      : System(readMeshes(inputMesh, inputMesh, nSub), p) {
 
     // Check confliciting parameters and options
     checkParametersAndOptions();
@@ -290,14 +285,13 @@ public:
    * @param inputMesh     Input Mesh
    * @param refMesh       Reference Mesh
    * @param p             Parameter of simulation
-   * @param o             options of simulation
    * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    * regularization
    */
-  System(std::string inputMesh, std::string refMesh, Parameters &p, Options &o,
+  System(std::string inputMesh, std::string refMesh, Parameters &p,
          std::size_t nSub, bool isContinue)
-      : System(readMeshes(inputMesh, refMesh, nSub), p, o) {
+      : System(readMeshes(inputMesh, refMesh, nSub), p) {
 
     // Check confliciting parameters and options
     checkParametersAndOptions();
@@ -344,13 +338,12 @@ public:
    * @param trajFile      Netcdf trajectory file
    * @param startingFrame Starting frame for the input mesh
    * @param p             Parameter of simulation
-   * @param o             options of simulation
    * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    */
-  System(std::string trajFile, int startingFrame, Parameters &p, Options &o,
+  System(std::string trajFile, int startingFrame, Parameters &p, 
          std::size_t nSub, bool isContinue)
-      : System(readTrajFile(trajFile, startingFrame, nSub), p, o) {
+      : System(readTrajFile(trajFile, startingFrame, nSub), p) {
 
     // Check confliciting parameters and options
     checkParametersAndOptions();
@@ -378,16 +371,15 @@ private:
    * @param tuple        Mesh connectivity, Embedding and geometry
    * information, Mesh rich data
    * @param p             Parameter of simulation
-   * @param o             options of simulation
    */
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
-         Parameters &p, Options &o)
+         Parameters &p)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)),
-               std::move(std::get<2>(meshVpgTuple)), p, o){};
+               std::move(std::get<2>(meshVpgTuple)), p){};
 
   /**
    * @brief Construct a new System object by reading tuple of unique_ptrs
@@ -410,15 +402,12 @@ private:
    * @param ptrvpg_          Embedding and geometry information
    * @param ptrRefvpg_       Embedding and geometry information
    * @param p             Parameter of simulation
-   * @param o             options of simulation
    */
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
-         Options &o)
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p)
       : System(std::move(ptrmesh_), std::move(ptrvpg_), std::move(ptrrefVpg_)) {
     parameters = p;
-    O = o;
   }
 
   /**
@@ -474,7 +463,7 @@ private:
     // vpg->requireVertexTangentBasis();
   }
 
-  public: 
+public:
   /**
    * @brief Destroy the Force object
    *

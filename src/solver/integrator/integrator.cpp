@@ -825,7 +825,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Is considering protein: "
            << f.parameters.variation.isProteinVariation << "\n"
-           << "Is vertex shift: " << f.meshProcessor.meshRegularizer.shiftVertex << "\n";
+           << "Is vertex shift: " << f.meshProcessor.meshMutator.shiftVertex << "\n";
 
     myfile.close();
   } else

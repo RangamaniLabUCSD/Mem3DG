@@ -52,14 +52,13 @@ int main() {
   p.radius = 100000;
   p.dpd.gamma = 0;
   p.temp = 0;
-  p.pt = EigenVectorX1d(2);
-  p.pt << 0, 0;
+  p.point.pt = EigenVectorX1d(2);
+  p.point.pt << 0, 0;
   p.variation.isProteinVariation = false;
 
-  mem3dg::solver::Options o;
-  o.isFloatVertex = true;
+  p.point.isFloatVertex = true;
 
-  mem3dg::solver::System f(inputMesh, p, o, 0, false);
+  mem3dg::solver::System f(inputMesh, p, 0, false);
 
   double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
          verbosity = 3, restartNum = 5;

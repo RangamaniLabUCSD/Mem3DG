@@ -183,7 +183,7 @@ void Euler::march() {
   }
 
   // regularization
-  if (f.meshProcessor.meshRegularizer.isMeshRegularize) {
+  if (f.meshProcessor.isMeshRegularize) {
     f.computeRegularizationForce();
     f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
   }
