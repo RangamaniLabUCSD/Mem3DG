@@ -708,6 +708,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
+  system.def(
+      py::init<std::string, Parameters &, MeshProcessor &, std::size_t, bool>(),
+      py::arg("inputMesh"), py::arg("p"), py::arg("mp"), py::arg("nSub") = 0,
+      py::arg("isContinue") = false,
+      R"delim(
+        System constructor with .ply files. 
+        Implicitly refering to the inputMesh as the reference mesh.
+      )delim");
 
   /**
    * @brief Constructors by matrices
@@ -720,12 +728,20 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         System constructor with Matrices. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-
+      
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
                       std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
              py::arg("nSub") = 0,
+             R"delim(
+        System constructor with Matrices 
+      )delim");
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
+                      MeshProcessor &, std::size_t>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
+             py::arg("mp"), py::arg("nSub") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -742,6 +758,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def(py::init<std::string, int, Parameters &, std::size_t, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
              py::arg("nSub") = 0, py::arg("isContinue") = false,
+             R"delim(
+        System constructor with NetCDF trajectory file
+      )delim");
+  system.def(py::init<std::string, int, Parameters &, MeshProcessor &,
+                      std::size_t, bool>(),
+             py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
+             py::arg("mp"), py::arg("nSub") = 0, py::arg("isContinue") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
@@ -1033,6 +1056,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   tension.def_readwrite("A_res", &Parameters::Tension::A_res,
                         R"delim(
           get area reservoir
+      )delim");
+  tension.def_readwrite("At", &Parameters::Tension::At,
+                        R"delim(
+          get preferred surface area
       )delim");
 
   py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(

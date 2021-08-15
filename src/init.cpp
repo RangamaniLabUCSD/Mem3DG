@@ -511,26 +511,30 @@ void System::initConstants() {
                         parameters.boundary.proteinBoundaryCondition);
   }
 
-  // Initialize the constant target surface (total mesh) area
-  if (isOpenMesh) {
-    refSurfaceArea = parameters.tension.A_res;
-    for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-      refSurfaceArea += computePolygonArea(bl, vpg->inputVertexPositions);
+  // Infer the target surface (total mesh) area if not specified
+  if (parameters.tension.At == -1) {
+    if (isOpenMesh) {
+      parameters.tension.At = parameters.tension.A_res;
+      for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
+        parameters.tension.At +=
+            computePolygonArea(bl, vpg->inputVertexPositions);
+      }
+    } else {
+      parameters.tension.At = vpg->faceAreas.raw().sum();
     }
-  } else {
-    refSurfaceArea = meshProcessor.meshRegularizer.refFaceAreas.sum();
   }
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
-  std::cout << "area_init/area_ref = " << surfaceArea / refSurfaceArea
+  std::cout << "area_init/area_ref = " << surfaceArea / parameters.tension.At
             << std::endl;
 
   // Initialize the constant reference volume
   std::cout << "vol_ref = "
-            << (isOpenMesh ? parameters.osmotic.V_res
-                           : std::pow(refSurfaceArea / constants::PI / 4, 1.5) *
-                                 (4 * constants::PI / 3))
+            << (isOpenMesh
+                    ? parameters.osmotic.V_res
+                    : std::pow(parameters.tension.At / constants::PI / 4, 1.5) *
+                          (4 * constants::PI / 3))
             << std::endl;
 
   /// initialize/update enclosed volume
@@ -627,8 +631,8 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   forces.surfaceTension = parameters.tension.isConstantSurfaceTension
                               ? parameters.tension.Ksg
                               : parameters.tension.Ksg *
-                                        (surfaceArea - refSurfaceArea) /
-                                        refSurfaceArea +
+                                        (surfaceArea - parameters.tension.At) /
+                                        parameters.tension.At +
                                     parameters.lambdaSG;
 
   // initialize/update line tension (on dual edge)

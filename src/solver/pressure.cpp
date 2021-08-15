@@ -351,7 +351,9 @@ EigenVectorX1d System::computeCapillaryForce() {
                        "shouldn't be called!");
   /// Geometric implementation
   forces.surfaceTension =
-      parameters.tension.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea +
+      parameters.tension.Ksg *
+          (surfaceArea - parameters.tension.At) /
+          parameters.tension.At +
       parameters.lambdaSG;
   forces.capillaryForce.raw() =
       -forces.surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();

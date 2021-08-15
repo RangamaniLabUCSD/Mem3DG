@@ -143,7 +143,7 @@ void ConjugateGradient::status() {
   getForces();
 
   // compute the area contraint error
-  dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
+  dArea = abs(f.surfaceArea / f.parameters.tension.At - 1);
   if (f.parameters.osmotic.isPreferredVolume) {
     dVP = abs(f.volume / f.parameters.osmotic.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);

@@ -125,7 +125,7 @@ void Euler::status() {
   getForces();
 
   // compute the area contraint error
-  dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
+  dArea = abs(f.surfaceArea / f.parameters.tension.At - 1);
   dVP = (f.parameters.osmotic.isPreferredVolume)
             ? abs(f.volume / f.parameters.osmotic.Vt - 1)
             : abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam -

@@ -126,7 +126,7 @@ void VelocityVerlet::status() {
 
   // compute the area contraint error
   dArea = (f.parameters.tension.Ksg != 0)
-              ? abs(f.surfaceArea / f.refSurfaceArea - 1)
+              ? abs(f.surfaceArea / f.parameters.tension.At - 1)
               : 0.0;
 
   if (f.parameters.osmotic.isPreferredVolume) {
