@@ -66,7 +66,7 @@ bool Euler::integrate() {
     // Process mesh every tProcessMesh period
     if (f.time - lastProcessMesh > tProcessMesh) {
       lastProcessMesh = f.time;
-      f.processMesh();
+      f.mutateMesh();
       f.updateVertexPositions(false);
     }
 

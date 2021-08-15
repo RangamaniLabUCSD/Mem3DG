@@ -298,7 +298,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
   }
 }
 
-void System::checkParametersAndOptions() {
+void System::checkParameters() {
 
   // check validity of parameters / options
   if (!parameters.variation.isShapeVariation) {
@@ -417,9 +417,9 @@ void System::checkParametersAndOptions() {
   // regularization related
   meshProcessor.summarizeStatus();
   if (meshProcessor.isMeshRegularize &&
-      ((mesh->nVertices() != refVpg->mesh.nVertices() ||
-        mesh->nEdges() != refVpg->mesh.nEdges() ||
-        mesh->nFaces() != refVpg->mesh.nFaces()))) {
+      ((mesh->nVertices() != meshProcessor.meshRegularizer.nVertex ||
+        mesh->nEdges() != meshProcessor.meshRegularizer.nEdge ||
+        mesh->nFaces() != meshProcessor.meshRegularizer.nFace))) {
     mem3dg_runtime_error("For topologically different reference mesh, mesh "
                          "regularization cannot be applied!");
   }
@@ -526,10 +526,6 @@ void System::initConstants() {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
-  // define local vpg
-  refVpg->requireEdgeLengths();
-  refVpg->requireFaceAreas();
-
   // // Initialize V-E distribution matrix for line tension calculation
   // if (P.dirichlet.eta != 0) {
   //   D = localVpg->d0.transpose().cwiseAbs() / 2;
@@ -542,7 +538,7 @@ void System::initConstants() {
   // }
 
   // Find "the" vertex
-  findThePoint(*refVpg, geodesicDistanceFromPtInd, 1e18);
+  findThePoint(*vpg, geodesicDistanceFromPtInd, 1e18);
 
   // Initialize const geodesic distance
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
@@ -588,41 +584,20 @@ void System::initConstants() {
                         parameters.boundary.proteinBoundaryCondition);
   }
 
-  // Explicitly cached the reference face areas data
-  refFaceAreas = refVpg->faceAreas;
-
-  // Explicitly cached the reference edge length data
-  refEdgeLengths = refVpg->edgeLengths;
-
   // Initialize the constant target surface (total mesh) area
   if (isOpenMesh) {
     refSurfaceArea = parameters.tension.A_res;
     for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-      refSurfaceArea += computePolygonArea(bl, refVpg->inputVertexPositions);
+      refSurfaceArea += computePolygonArea(bl, vpg->inputVertexPositions);
     }
   } else {
-    refSurfaceArea = refFaceAreas.raw().sum();
+    refSurfaceArea = meshProcessor.meshRegularizer.refFaceAreas.sum();
   }
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
   std::cout << "area_init/area_ref = " << surfaceArea / refSurfaceArea
             << std::endl;
-
-  // Initialize the constant target mean face area
-  if (meshProcessor.meshMutator.isSplitEdge ||
-      meshProcessor.meshMutator.isCollapseEdge) {
-    meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
-    meshProcessor.meshMutator.targetFaceArea = meanTargetFaceArea;
-  }
-
-  // Initialize the constant target mean edge length
-  meanTargetEdgeLength = refEdgeLengths.raw().sum() / mesh->nEdges();
-
-  // Initialize the target constant cross length ration
-  if (meshProcessor.meshRegularizer.Kst) {
-    computeLengthCrossRatio(*refVpg, targetLcrs);
-  }
 
   // Initialize the constant reference volume
   std::cout << "vol_ref = "
@@ -758,8 +733,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
-      gcs::Vertex closestVertex =
-          closestVertexToPt(*mesh, vpg, parameters.point.pt, geodesicDistance, range);
+      gcs::Vertex closestVertex = closestVertexToPt(
+          *mesh, vpg, parameters.point.pt, geodesicDistance, range);
       double shortestDistance = 1e18;
       // loop over every faces around the vertex
       for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
@@ -810,8 +785,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
       // initialize embedded point and the closest vertex
       gc::Vector3 embeddedPoint{parameters.point.pt[0], parameters.point.pt[1],
                                 parameters.point.pt[2]};
-      gcs::Vertex closestVertex =
-          closestVertexToPt(*mesh, vpg, parameters.point.pt, geodesicDistance, range);
+      gcs::Vertex closestVertex = closestVertexToPt(
+          *mesh, vpg, parameters.point.pt, geodesicDistance, range);
       gc::Vector3 vertexToPoint =
           embeddedPoint - vpg.inputVertexPositions[closestVertex];
       // initialize the surface point as the closest vertex
@@ -888,20 +863,21 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     switch (parameters.point.pt.rows()) {
     case 1: {
       // Assign surface point as the indexed vertex
-      thePoint = gc::SurfacePoint(mesh->vertex((std::size_t)parameters.point.pt[0]));
+      thePoint =
+          gc::SurfacePoint(mesh->vertex((std::size_t)parameters.point.pt[0]));
       isUpdated = true;
       break;
     }
     case 2: {
       // Find the cloest vertex to the point in the x-y plane
-      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.point.pt,
-                                                    geodesicDistance, range));
+      thePoint = gc::SurfacePoint(closestVertexToPt(
+          *mesh, vpg, parameters.point.pt, geodesicDistance, range));
       isUpdated = true;
       break;
     }
     case 3: {
-      thePoint = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.point.pt,
-                                                    geodesicDistance, range));
+      thePoint = gc::SurfacePoint(closestVertexToPt(
+          *mesh, vpg, parameters.point.pt, geodesicDistance, range));
       isUpdated = true;
       break;
     }

@@ -189,7 +189,7 @@ void BFGS::status() {
 void BFGS::march() {
   if (f.time == lastSave && f.time != init_time) {
     // process the mesh with regularization or mutation
-    f.processMesh();
+    f.mutateMesh();
     f.updateVertexPositions(true);
 
     f.time += 1e-10 * dt;

@@ -27,49 +27,15 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                     gcs::EdgeData<double> &lcr) {
-  for (gcs::Edge e : mesh->edges()) {
-    gcs::Edge lj = e.halfedge().next().edge();
-    gcs::Edge ki = e.halfedge().twin().next().edge();
-    gcs::Edge il = e.halfedge().next().next().edge();
-    gcs::Edge jk = e.halfedge().twin().next().next().edge();
-    lcr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-             vpg.edgeLengths[lj];
-  }
-}
-
-double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                       gcs::Edge &e) const {
-
-  gcs::Edge lj = e.halfedge().next().edge();
-  gcs::Edge ki = e.halfedge().twin().next().edge();
-  gcs::Edge il = e.halfedge().next().next().edge();
-  gcs::Edge jk = e.halfedge().twin().next().next().edge();
-  return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-         vpg.edgeLengths[lj];
-}
-
-double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                       gcs::Edge &&e) const {
-
-  gcs::Edge lj = e.halfedge().next().edge();
-  gcs::Edge ki = e.halfedge().twin().next().edge();
-  gcs::Edge il = e.halfedge().next().next().edge();
-  gcs::Edge jk = e.halfedge().twin().next().next().edge();
-  return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-         vpg.edgeLengths[lj];
-}
-
 void System::computeRegularizationForce() {
   // Note in regularization, it is preferred to use immediate calculation rather
   // than cached one
   for (gcs::Vertex v : mesh->vertices()) {
     if (!v.isBoundary()) {
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
-
+        gcs::Edge e = he.edge();
         // Conformal regularization
-        if (meshProcessor.meshRegularizer.Kst != 0 && !he.edge().isBoundary()) {
+        if (meshProcessor.meshRegularizer.Kst != 0 && !e.isBoundary()) {
           gcs::Halfedge jl = he.next();
           gcs::Halfedge li = jl.next();
           gcs::Halfedge ik = he.twin().next();
@@ -79,9 +45,9 @@ void System::computeRegularizationForce() {
           gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
           forces.regularizationForce[v] +=
               -meshProcessor.meshRegularizer.Kst *
-              (computeLengthCrossRatio(*vpg, he.edge()) -
-               targetLcrs[he.edge()]) /
-              targetLcrs[he.edge()] *
+              (meshProcessor.meshRegularizer.computeLengthCrossRatio(*vpg, e) -
+               meshProcessor.meshRegularizer.refLcrs[e.getIndex()]) /
+              meshProcessor.meshRegularizer.refLcrs[e.getIndex()] *
               (vpg->edgeLength(kj.edge()) / vpg->edgeLength(jl.edge())) *
               (grad_li * vpg->edgeLength(ik.edge()) -
                grad_ik * vpg->edgeLength(li.edge())) /
@@ -94,8 +60,11 @@ void System::computeRegularizationForce() {
           gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
           gc::Vector3 localAreaGradient =
               -gc::cross(base_vec, vpg->faceNormal(he.face()));
-          auto &referenceArea = (v.isBoundary() ? refFaceAreas[base_he.face()]
-                                                : meanTargetFaceArea);
+          auto &referenceArea =
+              (v.isBoundary()
+                   ? meshProcessor.meshRegularizer
+                         .refFaceAreas[base_he.face().getIndex()]
+                   : meshProcessor.meshRegularizer.meanTargetFaceArea);
           forces.regularizationForce[v] +=
               -meshProcessor.meshRegularizer.Ksl * localAreaGradient *
               (vpg->faceArea(base_he.face()) - referenceArea);
@@ -104,11 +73,13 @@ void System::computeRegularizationForce() {
         // local edge regularization
         if (meshProcessor.meshRegularizer.Kse != 0) {
           gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-          auto &referenceLength = (v.isBoundary() ? refEdgeLengths[he.edge()]
-                                                  : meanTargetEdgeLength);
+          auto &referenceLength =
+              (v.isBoundary()
+                   ? meshProcessor.meshRegularizer.refEdgeLengths[e.getIndex()]
+                   : meshProcessor.meshRegularizer.meanTargetEdgeLength);
           forces.regularizationForce[v] +=
               -meshProcessor.meshRegularizer.Kse * edgeGradient *
-              (vpg->edgeLength(he.edge()) - referenceLength);
+              (vpg->edgeLength(e) - referenceLength);
         }
       }
     }
@@ -308,7 +279,7 @@ bool System::growMesh() {
 
       isGrown = true;
     } else if (meshProcessor.meshMutator.ifCollapse(e, *vpg)) { // Collapsing
-                                   // precached pre-mutation values or flag
+      // precached pre-mutation values or flag
       gc::Vector3 collapsedPosition =
           gc::sum(forces.forceMask[vertex1]) < 2.5
               ? vpg->inputVertexPositions[vertex1]
@@ -344,7 +315,7 @@ bool System::growMesh() {
   return isGrown;
 }
 
-void System::processMesh() {
+void System::mutateMesh() {
 
   bool isGrown = false, isFlipped = false;
   smoothingMask.fill(false);
@@ -365,14 +336,6 @@ void System::processMesh() {
     isFlipped = edgeFlip();
     edgeFlip();
     edgeFlip();
-  }
-
-  // regularization
-  if (meshProcessor.isMeshRegularize) {
-    computeRegularizationForce();
-    vpg->inputVertexPositions.raw() += forces.regularizationForce.raw();
-    computeRegularizationForce();
-    vpg->inputVertexPositions.raw() += forces.regularizationForce.raw();
   }
 
   // globally update quantities
@@ -521,200 +484,6 @@ void System::globalUpdateAfterMutation() {
                            "unique/existing \"the\" point!");
     }
   }
-}
-
-bool MeshProcessor::MeshMutator::ifFlip(
-    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  bool condition = false;
-
-  if (flipNonDelaunay && !e.isBoundary()) {
-    bool nonDelaunay =
-        (vpg.cornerAngle(he.next().next().corner()) +
-         vpg.cornerAngle(he.twin().next().next().corner())) > (constants::PI);
-    if (flipNonDelaunayRequireFlat) {
-      bool flat = abs(vpg.edgeDihedralAngle(he.edge())) < (constants::PI / 36);
-      nonDelaunay = nonDelaunay && flat;
-    }
-    condition = condition || nonDelaunay;
-  }
-
-  return condition;
-}
-
-bool MeshProcessor::MeshMutator::ifCollapse(
-    const gc::Edge e, const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  bool isBoundary = e.isBoundary();
-  if (!he.isInterior()) {
-    he = he.twin();
-  }
-  bool condition = false;
-
-  bool is2Small = false;
-  bool is2Skinny = false;
-  bool isFlat = false;
-  bool isSmooth = true;
-  bool isCollapse = false;
-
-  // conditions for collapsing
-  if (collapseSkinny) {
-    // is2Skinny = (vpg.cornerAngle(he.next().next().corner()) +
-    //              vpg.cornerAngle(he.twin().next().next().corner())) <
-    //             constants::PI / 3;
-    is2Skinny =
-        (isBoundary)
-            ? (vpg.cornerAngle(he.next().next().corner()) < constants::PI / 6)
-            : (vpg.cornerAngle(he.next().next().corner()) +
-               vpg.cornerAngle(he.twin().next().next().corner())) <
-                      constants::PI / 3 ||
-                  (vpg.cornerAngle(he.next().corner()) +
-                   vpg.cornerAngle(he.twin().corner())) >
-                      (constants::PI * 1.333) ||
-                  (vpg.cornerAngle(he.corner()) +
-                   vpg.cornerAngle(he.twin().next().corner())) >
-                      (constants::PI * 1.333);
-    condition = is2Skinny;
-  }
-
-  if (collapseSmall) {
-    double areaSum;
-    std::size_t num_neighbor;
-    neighborAreaSum(e, vpg, areaSum, num_neighbor);
-    is2Small = (isBoundary) ? ((areaSum - vpg.faceArea(he.face()) -
-                                vpg.faceArea(he.twin().face())) <
-                               (num_neighbor - 1) * targetFaceArea)
-                            : ((areaSum - vpg.faceArea(he.face()) -
-                                vpg.faceArea(he.twin().face())) <
-                               (num_neighbor - 2) * targetFaceArea);
-    if (collapseSmallNeedFlat) {
-      isFlat =
-          vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
-      is2Small = is2Small && isFlat;
-    }
-    // isSmooth =
-    //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
-    //     targetdH0);
-    condition = condition || is2Small;
-  }
-
-  // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
-
-  return condition;
-}
-
-bool MeshProcessor::MeshMutator::ifSplit(
-    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  bool isBoundary = e.isBoundary();
-  if (!he.isInterior()) {
-    he = he.twin();
-  }
-
-  bool condition = false;
-
-  bool is2Large = false;
-  bool is2Long = false;
-  bool is2Curved = false;
-  bool is2Sharp = false;
-  bool is2Fat = false;
-  bool is2Skinny = false;
-  bool isDelaunay = false;
-
-  // const double targetdH0 = 0.5;
-
-  // Conditions for splitting
-  if (splitLarge) {
-    is2Large = (isBoundary)
-                   ? vpg.faceArea(he.face()) > (2 * targetFaceArea)
-                   : (vpg.faceArea(he.face()) +
-                      vpg.faceArea(he.twin().face())) > (4 * targetFaceArea);
-    condition = condition || is2Large;
-  }
-
-  if (splitLong) {
-    is2Long =
-        (isBoundary)
-            ? (vpg.edgeLength(e) > (2 * vpg.edgeLength(he.next().edge())))
-            : (vpg.edgeLength(e) > (vpg.edgeLength(he.next().edge()) +
-                                    vpg.edgeLength(he.twin().next().edge())));
-    condition = is2Long || condition;
-  }
-
-  if (splitCurved) {
-    is2Curved =
-        vpg.edgeLength(e) > (2 * computeCurvatureThresholdLength(e, vpg));
-    condition = is2Curved || condition;
-  }
-
-  if (splitSharp) {
-    // is2Sharp = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 *
-    // targetdH0);
-  }
-
-  if (splitSkinnyDelaunay && !isBoundary) {
-    isDelaunay = (vpg.cornerAngle(e.halfedge().next().next().corner()) +
-                  vpg.cornerAngle(e.halfedge().twin().next().next().corner())) <
-                 (constants::PI);
-    is2Skinny =
-        (vpg.cornerAngle(he.next().corner()) +
-         vpg.cornerAngle(he.twin().next().corner())) < constants::PI / 3;
-    condition = (isDelaunay && is2Skinny) || condition;
-  }
-
-  if (splitFat) {
-    is2Fat = (isBoundary) ? (vpg.cornerAngle(he.next().next().corner()) >
-                             constants::PI * 0.667)
-                          : (vpg.cornerAngle(he.next().next().corner()) >
-                                 constants::PI * 0.667 ||
-                             vpg.cornerAngle(he.twin().next().next().corner()) >
-                                 constants::PI * 0.667);
-    condition = is2Fat || condition;
-  }
-
-  // bool flat = abs(vpg.edgeDihedralAngle(e)) < (constants::PI
-  // / 36);
-  // isSplit =
-  //     is2Large || is2Curved || is2Fat || is2Sharp || (is2Skinny &&
-  //     isDelaunay);
-  return condition;
-}
-
-void MeshProcessor::MeshMutator::maskAllNeighboring(
-    gcs::VertexData<bool> &smoothingMask, const gcs::Vertex v) {
-  smoothingMask[v] = true;
-  for (gc::Vertex nv : v.adjacentVertices()) {
-    smoothingMask[nv] = true;
-  }
-}
-
-void MeshProcessor::MeshMutator::neighborAreaSum(
-    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg, double &area,
-    std::size_t &num_neighbor) {
-  area = 0;
-  num_neighbor = -2;
-  for (gcs::Vertex v : e.adjacentVertices()) {
-    for (gcs::Face f : v.adjacentFaces()) {
-      area += vpg.faceArea(f);
-      num_neighbor++;
-    }
-  }
-}
-
-double MeshProcessor::MeshMutator::computeCurvatureThresholdLength(
-    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  // curvature based remeshing:
-  // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
-  double k1 = (abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tipVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tipVertex()));
-  double k2 = (abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tailVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tailVertex()));
-  return std::sqrt(6 * curvTol / ((k1 > k2) ? k1 : k2) - 3 * curvTol * curvTol);
 }
 
 } // namespace solver

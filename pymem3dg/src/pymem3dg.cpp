@@ -12,6 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include <bits/c++config.h>
 #include <cstdarg>
 #include <cstddef>
 #include <pybind11/eigen.h>
@@ -524,6 +525,24 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   meshregularizer.def_readwrite("Kse", &MeshProcessor::MeshRegularizer::Kse,
                                 R"delim(
           get Edge spring constant 
+      )delim");
+  meshregularizer.def("readReferenceData",
+                      static_cast<void (MeshProcessor::MeshRegularizer::*)(
+                          std::string, std::size_t)>(
+                          &MeshProcessor::MeshRegularizer::readReferenceData),
+                      py::arg("referenceMesh"), py::arg("nSub"),
+                      R"delim(
+          read data from reference mesh
+      )delim");
+  meshregularizer.def(
+      "readReferenceData",
+      static_cast<void (MeshProcessor::MeshRegularizer::*)(
+          Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+          Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t)>(
+          &MeshProcessor::MeshRegularizer::readReferenceData),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("nSub"),
+      R"delim(
+          read data from reference mesh
       )delim");
 
   py::class_<MeshProcessor::MeshMutator> meshmutator(pymem3dg, "MeshMutator",
