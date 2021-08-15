@@ -120,7 +120,7 @@ void ConjugateGradient::checkParameters() {
   }
   if (f.parameters.Bc != 1 && f.parameters.Bc != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
-                             "be set to 1 for optimization!");
+                         "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
@@ -148,7 +148,8 @@ void ConjugateGradient::status() {
     dVP = abs(f.volume / f.parameters.osmotic.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
-    dVP = abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0);
+    dVP =
+        abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0);
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
 
@@ -179,18 +180,22 @@ void ConjugateGradient::march() {
 
   // determine conjugate gradient direction, restart after nVertices() cycles
   if (countCG % restartNum == 0) {
-    pastNormSq =
-        (f.parameters.variation.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
-        (f.parameters.variation.isProteinVariation ? f.forces.chemicalPotential.raw().squaredNorm()
-                                : 0);
+    pastNormSq = (f.parameters.variation.isShapeVariation
+                      ? physicalForceVec.squaredNorm()
+                      : 0) +
+                 (f.parameters.variation.isProteinVariation
+                      ? f.forces.chemicalPotential.raw().squaredNorm()
+                      : 0);
     vel_e = physicalForceVec;
     vel_protein_e = f.parameters.Bc * f.forces.chemicalPotential.raw();
     countCG = 1;
   } else {
-    currentNormSq =
-        (f.parameters.variation.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
-        (f.parameters.variation.isProteinVariation ? f.forces.chemicalPotential.raw().squaredNorm()
-                                : 0);
+    currentNormSq = (f.parameters.variation.isShapeVariation
+                         ? physicalForceVec.squaredNorm()
+                         : 0) +
+                    (f.parameters.variation.isProteinVariation
+                         ? f.forces.chemicalPotential.raw().squaredNorm()
+                         : 0);
     vel_e *= currentNormSq / pastNormSq;
     vel_e += physicalForceVec;
     vel_protein_e *= currentNormSq / pastNormSq;
@@ -203,8 +208,9 @@ void ConjugateGradient::march() {
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
     dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.parameters.variation.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
-                               : vel_protein_e.cwiseAbs().maxCoeff());
+         (f.parameters.variation.isShapeVariation
+              ? physicalForce.cwiseAbs().maxCoeff()
+              : vel_protein_e.cwiseAbs().maxCoeff());
   }
 
   // time stepping on vertex position
@@ -218,7 +224,7 @@ void ConjugateGradient::march() {
   }
 
   // regularization
-  if ((f.parameters.Kse != 0) || (f.parameters.Ksl != 0) || (f.parameters.Kst != 0)) {
+  if (f.meshProcessor.meshRegularizer.isMeshRegularize) {
     f.computeRegularizationForce();
     f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
   }
@@ -235,7 +241,8 @@ void FeedForwardSweep::sweep() {
 #endif
 
   // initialize variables
-  const double KV = f.parameters.osmotic.Kv, KSG = f.parameters.tension.Ksg, init_time = 0.0;
+  const double KV = f.parameters.osmotic.Kv, KSG = f.parameters.tension.Ksg,
+               init_time = 0.0;
   const std::size_t verbosity = 2;
 
   // initialize variables used if adopting adaptive time step based on mesh
@@ -271,7 +278,8 @@ void FeedForwardSweep::sweep() {
 
       // update sweeping paraemters
       f.parameters.bending.H0c = H;
-      (f.parameters.osmotic.isPreferredVolume ? f.parameters.osmotic.Vt : f.parameters.osmotic.cam) = VP;
+      (f.parameters.osmotic.isPreferredVolume ? f.parameters.osmotic.Vt
+                                              : f.parameters.osmotic.cam) = VP;
       std::cout << "\nH0c: " << f.parameters.bending.H0c << std::endl;
       std::cout << "VP: " << VP << std::endl;
 

@@ -310,8 +310,8 @@ void System::checkParametersAndOptions() {
       mem3dg_runtime_error("Pressure-volume modulus Kv has to be zero for non "
                            "shape variation simulation!");
     }
-    meshMutator.summarizeStatus();
-    if (meshMutator.isMeshMutate || O.isVertexShift) {
+    meshProcessor.meshMutator.summarizeStatus();
+    if (meshProcessor.meshMutator.isMeshMutate || meshProcessor.meshRegularizer.shiftVertex) {
       mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
                            "variation simulation");
     }
@@ -415,13 +415,8 @@ void System::checkParametersAndOptions() {
   }
 
   // regularization related
-  meshMutator.summarizeStatus();
-  if (meshMutator.isMeshMutate &&
-      (parameters.Kst != 0 || parameters.Kse != 0 || parameters.Ksl != 0)) {
-    mem3dg_runtime_error("For topology changing simulation, mesh "
-                         "regularization cannot be applied!");
-  }
-  if ((parameters.Kst != 0 || parameters.Kse != 0 || parameters.Ksl != 0) &&
+  meshProcessor.summarizeStatus();
+  if (meshProcessor.meshRegularizer.isMeshRegularize &&
       ((mesh->nVertices() != refVpg->mesh.nVertices() ||
         mesh->nEdges() != refVpg->mesh.nEdges() ||
         mesh->nFaces() != refVpg->mesh.nFaces()))) {
@@ -615,16 +610,17 @@ void System::initConstants() {
             << std::endl;
 
   // Initialize the constant target mean face area
-  if (meshMutator.isSplitEdge || meshMutator.isCollapseEdge) {
+  if (meshProcessor.meshMutator.isSplitEdge ||
+      meshProcessor.meshMutator.isCollapseEdge) {
     meanTargetFaceArea = refFaceAreas.raw().sum() / mesh->nFaces();
-    meshMutator.targetFaceArea = meanTargetFaceArea;
+    meshProcessor.meshMutator.targetFaceArea = meanTargetFaceArea;
   }
 
   // Initialize the constant target mean edge length
   meanTargetEdgeLength = refEdgeLengths.raw().sum() / mesh->nEdges();
 
   // Initialize the target constant cross length ration
-  if (parameters.Kst) {
+  if (meshProcessor.meshRegularizer.Kst) {
     computeLengthCrossRatio(*refVpg, targetLcrs);
   }
 

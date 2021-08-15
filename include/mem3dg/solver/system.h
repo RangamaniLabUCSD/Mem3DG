@@ -101,8 +101,8 @@ public:
   Parameters parameters;
   /// Options
   Options O;
-  /// Mesh mutator;
-  MeshMutator meshMutator;
+  /// Mesh processor
+  MeshProcessor meshProcessor;
 
   /// Cached mesh of interest
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;

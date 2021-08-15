@@ -46,9 +46,6 @@ int main() {
   p.protein0 = r_H0;
   p.tension.Ksg = Ksg;
   p.tension.A_res = A_res;
-  p.Kst = Kst;
-  p.Ksl = Ksl;
-  p.Kse = Kse;
   p.osmotic.Kv = Kv;
   p.osmotic.V_res = V_res;
   p.osmotic.Vt = Vt;
@@ -68,10 +65,6 @@ int main() {
   p.variation.isProteinVariation = false;
 
   mem3dg::solver::Options o;
-  o.isVertexShift = false;
-  // o.isEdgeFlip = false;
-  // o.isSplitEdge = false;
-  // o.isCollapseEdge = false;
   o.isFloatVertex = false;
 
   mem3dg::solver::System f(inputMesh, p, o, 0, false);

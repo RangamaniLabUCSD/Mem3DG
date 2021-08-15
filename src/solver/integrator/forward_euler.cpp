@@ -126,8 +126,10 @@ void Euler::status() {
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
-  dVP = (f.parameters.osmotic.isPreferredVolume) ? abs(f.volume / f.parameters.osmotic.Vt - 1)
-                              : abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0);
+  dVP = (f.parameters.osmotic.isPreferredVolume)
+            ? abs(f.volume / f.parameters.osmotic.Vt - 1)
+            : abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam -
+                  1.0);
 
   // exit if under error tolerance
   if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
@@ -165,8 +167,9 @@ void Euler::march() {
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
     dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.parameters.variation.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
-                               : vel_protein_e.cwiseAbs().maxCoeff());
+         (f.parameters.variation.isShapeVariation
+              ? physicalForce.cwiseAbs().maxCoeff()
+              : vel_protein_e.cwiseAbs().maxCoeff());
   }
 
   // time stepping on vertex position
@@ -180,7 +183,7 @@ void Euler::march() {
   }
 
   // regularization
-  if ((f.parameters.Kse != 0) || (f.parameters.Ksl != 0) || (f.parameters.Kst != 0)) {
+  if (f.meshProcessor.meshRegularizer.isMeshRegularize) {
     f.computeRegularizationForce();
     f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
   }

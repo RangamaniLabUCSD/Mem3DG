@@ -38,9 +38,6 @@ int main() {
   p.dirichlet.eta = 0;
   p.tension.Ksg = 2e-2;
   p.tension.A_res = 0;
-  p.Kst = 0; // 2e-6;
-  p.Ksl = 1e-7;
-  p.Kse = 1e-7;
   p.adsorption.epsilon = -1;
   p.Bc = 0;
   p.osmotic.Kv = 1;
@@ -60,10 +57,6 @@ int main() {
   p.variation.isProteinVariation = false;
 
   mem3dg::solver::Options o;
-  // o.isEdgeFlip = true;
-  // o.isSplitEdge = true;
-  // o.isCollapseEdge = true;
-  o.isVertexShift = false;
   o.isFloatVertex = true;
 
   mem3dg::solver::System f(inputMesh, p, o, 0, false);
