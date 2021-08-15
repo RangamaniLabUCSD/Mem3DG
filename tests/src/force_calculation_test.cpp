@@ -48,11 +48,6 @@ protected:
   ForceCalculationTest() {
     o.isFloatVertex = true;
 
-    // o.isEdgeFlip = false;
-    // o.isSplitEdge = false;
-    // o.isCollapseEdge = false;
-    o.isVertexShift = false;
-
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;
     p.pt.resize(3, 1);
@@ -89,10 +84,6 @@ protected:
     p.dpd.gamma = 0;
 
     p.temp = 0;
-
-    p.Kst = 0;
-    p.Ksl = 0;
-    p.Kse = 0;
 
     p.external.Kf = 0;
     p.external.conc = -1;

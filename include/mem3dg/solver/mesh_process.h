@@ -48,85 +48,123 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 
-struct DLL_PUBLIC MeshMutator {
-  /// Whether edge flip
-  bool isMeshMutate = false;
-  /// Whether edge flip
-  bool isEdgeFlip = false;
-  /// Whether split edge
-  bool isSplitEdge = false;
-  /// Whether collapse edge
-  bool isCollapseEdge = false;
+struct MeshProcessor {
+  struct MeshRegularizer {
+    /// Whether regularize mesh
+    bool isMeshRegularize = false;
 
-  /// flip non-delaunay edge
-  bool flipNonDelaunay = false;
-  /// whether require flatness condition when flipping non-Delaunay edge
-  bool flipNonDelaunayRequireFlat = false;
+    /// triangle ratio constant
+    double Kst = 0;
+    /// Local stretching modulus
+    double Ksl = 0;
+    /// Edge spring constant
+    double Kse = 0;
+    /// whether vertex shift
+    bool shiftVertex = true;
 
-  /// split edge with large faces
-  bool splitLarge = false;
-  /// split long edge
-  bool splitLong = false;
-  /// split edge on high curvature domain
-  bool splitCurved = false;
-  /// split edge with sharp membrane property change
-  bool splitSharp = false;
-  /// split obtuse triangle
-  bool splitFat = false;
-  /// split poor aspected triangle that is still Delaunay
-  bool splitSkinnyDelaunay = false;
+    /**
+     * @brief summarizeStatus
+     */
+    void summarizeStatus() {
+      isMeshRegularize = (Kst != 0) || (Ksl != 0) || (Kse != 0);
+    };
+  };
 
-  /// collapse skinny triangles
-  bool collapseSkinny = false;
-  /// collapse small triangles
-  bool collapseSmall = false;
-  /// whether require flatness condition when collapsing small edge
-  bool collapseSmallNeedFlat = false;
+  struct MeshMutator {
+    /// Whether mutate mesh
+    bool isMeshMutate = false;
 
-  /// tolerance for curvature approximation
-  double curvTol = 0.0012;
-  /// target face area
-  double targetFaceArea = 0.001;
+    /// Whether edge flip
+    bool isEdgeFlip = false;
+    /// Whether split edge
+    bool isSplitEdge = false;
+    /// Whether collapse edge
+    bool isCollapseEdge = false;
 
-  MeshMutator() {}
-  ~MeshMutator() {}
+    /// flip non-delaunay edge
+    bool flipNonDelaunay = false;
+    /// whether require flatness condition when flipping non-Delaunay edge
+    bool flipNonDelaunayRequireFlat = false;
+
+    /// split edge with large faces
+    bool splitLarge = false;
+    /// split long edge
+    bool splitLong = false;
+    /// split edge on high curvature domain
+    bool splitCurved = false;
+    /// split edge with sharp membrane property change
+    bool splitSharp = false;
+    /// split obtuse triangle
+    bool splitFat = false;
+    /// split poor aspected triangle that is still Delaunay
+    bool splitSkinnyDelaunay = false;
+
+    /// collapse skinny triangles
+    bool collapseSkinny = false;
+    /// collapse small triangles
+    bool collapseSmall = false;
+    /// whether require flatness condition when collapsing small edge
+    bool collapseSmallNeedFlat = false;
+
+    /// tolerance for curvature approximation
+    double curvTol = 0.0012;
+    /// target face area
+    double targetFaceArea = 0.001;
+
+    /**
+     * @brief summarizeStatus
+     */
+    void summarizeStatus() {
+      isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
+      isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
+                     splitSkinnyDelaunay);
+      isCollapseEdge =
+          (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
+      isMeshMutate = isEdgeFlip || isSplitEdge || isCollapseEdge;
+    };
+
+    /**
+     * @brief return condition of edge flip
+     */
+    bool ifFlip(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
+
+    /**
+     * @brief return condition of edge split
+     */
+    bool ifSplit(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+
+    /**
+     * @brief return condition of edge collapse
+     */
+    bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+
+    void maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
+                            const gcs::Vertex v);
+
+    void neighborAreaSum(const gcs::Edge e,
+                         const gcs::VertexPositionGeometry &vpg, double &area,
+                         std::size_t &num_neighbor);
+
+    double
+    computeCurvatureThresholdLength(const gcs::Edge e,
+                                    const gcs::VertexPositionGeometry &vpg);
+  };
+
+  MeshMutator meshMutator;
+  MeshRegularizer meshRegularizer;
 
   /**
    * @brief summarizeStatus
    */
   void summarizeStatus() {
-    isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
-    isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
-                   splitSkinnyDelaunay);
-    isCollapseEdge = (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
-    isMeshMutate = isEdgeFlip || isSplitEdge || isCollapseEdge;
+    meshMutator.summarizeStatus();
+    meshRegularizer.summarizeStatus();
+    std::cout << " and " << (meshMutator.isMeshMutate && meshRegularizer.isMeshRegularize) << std::endl;
+    if (meshMutator.isMeshMutate && meshRegularizer.isMeshRegularize) {
+      mem3dg_runtime_error("For topology changing simulation, mesh "
+                           "regularization cannot be applied!");
+    }
   };
-
-  /**
-   * @brief return condition of edge flip
-   */
-  bool ifFlip(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  /**
-   * @brief return condition of edge split
-   */
-  bool ifSplit(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  /**
-   * @brief return condition of edge collapse
-   */
-  bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
-
-  void maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
-                          const gcs::Vertex v);
-
-  void neighborAreaSum(const gcs::Edge e,
-                       const gcs::VertexPositionGeometry &vpg, double &area,
-                       std::size_t &num_neighbor);
-
-  double
-  computeCurvatureThresholdLength(const gcs::Edge e,
-                                  const gcs::VertexPositionGeometry &vpg);
 };
 
 } // namespace solver

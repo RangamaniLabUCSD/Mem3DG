@@ -159,13 +159,6 @@ struct Parameters {
   /// Temperature
   double temp = 0;
 
-  /// Vertex shifting constant
-  double Kst = 0;
-  /// Local stretching modulus
-  double Ksl = 0;
-  /// Edge spring constant
-  double Kse = 0;
-
   /// domain of integration
   double radius = -1;
   /// augmented Lagrangian parameter for area
@@ -181,15 +174,6 @@ struct Parameters {
 struct Options {
   /// Whether floating "the" vertex
   bool isFloatVertex = false;
-
-  /// Whether edge flip
-  bool isEdgeFlip = false;
-  /// Whether split edge
-  bool isSplitEdge = false;
-  /// Whether collapse edge
-  bool isCollapseEdge = false;
-  /// Whether or not do vertex shift
-  bool isVertexShift = false;
 };
 
 } // namespace solver

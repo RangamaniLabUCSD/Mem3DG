@@ -257,7 +257,8 @@ void System::computeVectorForces() {
   }
 
   // measure smoothness
-  if (meshMutator.isSplitEdge || meshMutator.isCollapseEdge) {
+  if (meshProcessor.meshMutator.isSplitEdge ||
+      meshProcessor.meshMutator.isCollapseEdge) {
     isSmooth = !hasOutlier(forces.bendingForce.raw());
   }
 }

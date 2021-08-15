@@ -549,10 +549,10 @@ void Integrator::createNetcdfFile() {
 
 void Integrator::saveData() {
   // save variable to richData and save ply file
-  if ((verbosity > 3 && !f.meshMutator.isSplitEdge &&
-       !f.meshMutator.isCollapseEdge) ||
-      (verbosity > 0 &&
-       (f.meshMutator.isSplitEdge || f.meshMutator.isCollapseEdge))) {
+  if ((verbosity > 3 && !f.meshProcessor.meshMutator.isSplitEdge &&
+       !f.meshProcessor.meshMutator.isCollapseEdge) ||
+      (verbosity > 0 && (f.meshProcessor.meshMutator.isSplitEdge ||
+                         f.meshProcessor.meshMutator.isCollapseEdge))) {
     char buffer[50];
     if (isJustGeometryPly) {
       sprintf(buffer, "/frame%d.obj", (int)frame);
@@ -688,7 +688,8 @@ void Integrator::saveNetcdfData() {
   fd.writeLineNorm(idx, f.computeNorm(f.forces.lineCapillaryForce.raw()));
 
   // vector quantities
-  if (!f.O.isSplitEdge && !f.O.isCollapseEdge) {
+  if (!f.meshProcessor.meshMutator.isSplitEdge &&
+      !f.meshProcessor.meshMutator.isCollapseEdge) {
     // write velocity
     fd.writeVelocity(idx, EigenMap<double, 3>(f.velocity));
     // write protein density distribution
@@ -729,9 +730,9 @@ void Integrator::getParameterLog(std::string inputMesh) {
     myfile << "Kb:     " << f.parameters.bending.Kb << "\n"
            << "Kbc:   " << f.parameters.bending.Kbc << "\n"
            << "H0c:     " << f.parameters.bending.H0c << "\n"
-           << "Kse:    " << f.parameters.Kse << "\n"
-           << "Ksl:    " << f.parameters.Ksl << "\n"
-           << "Kst:    " << f.parameters.Kst << "\n"
+           << "Kse:    " << f.meshProcessor.meshRegularizer.Kse << "\n"
+           << "Ksl:    " << f.meshProcessor.meshRegularizer.Ksl << "\n"
+           << "Kst:    " << f.meshProcessor.meshRegularizer.Kst << "\n"
            << "Ksg:    " << f.parameters.tension.Ksg << "\n"
            << "Kv:     " << f.parameters.osmotic.Kv << "\n"
            << "gamma:  " << f.parameters.dpd.gamma << "\n"
@@ -766,9 +767,9 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "Kb:     " << f.parameters.bending.Kb << "\n"
            << "Kbc:   " << f.parameters.bending.Kbc << "\n"
            << "H0c:     " << f.parameters.bending.H0c << "\n"
-           << "Kse:    " << f.parameters.Kse << "\n"
-           << "Ksl:    " << f.parameters.Ksl << "\n"
-           << "Kst:    " << f.parameters.Kst << "\n"
+           << "Kse:    " << f.meshProcessor.meshRegularizer.Kse << "\n"
+           << "Ksl:    " << f.meshProcessor.meshRegularizer.Ksl << "\n"
+           << "Kst:    " << f.meshProcessor.meshRegularizer.Kst << "\n"
            << "Ksg:    " << f.parameters.tension.Ksg << "\n"
            << "Kv:     " << f.parameters.osmotic.Kv << "\n"
            << "gamma:  " << f.parameters.dpd.gamma << "\n"
@@ -824,7 +825,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Is considering protein: "
            << f.parameters.variation.isProteinVariation << "\n"
-           << "Is vertex shift: " << f.O.isVertexShift << "\n";
+           << "Is vertex shift: " << f.meshProcessor.meshRegularizer.shiftVertex << "\n";
 
     myfile.close();
   } else

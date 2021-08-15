@@ -107,7 +107,7 @@ void BFGS::checkParameters() {
   }
   if (f.parameters.Bc != 1 && f.parameters.Bc != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
-                             "be set to 1 for optimization!");
+                         "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
@@ -150,16 +150,24 @@ void BFGS::status() {
   //           << std::endl;
 
   // compute the area contraint error
-  dArea = (f.parameters.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  dArea = (f.parameters.tension.Ksg != 0)
+              ? abs(f.surfaceArea / f.refSurfaceArea - 1)
+              : 0.0;
 
   if (f.parameters.osmotic.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.parameters.osmotic.Kv != 0) ? abs(f.volume / f.parameters.osmotic.Vt - 1) : 0.0;
+    dVP = (f.parameters.osmotic.Kv != 0)
+              ? abs(f.volume / f.parameters.osmotic.Vt - 1)
+              : 0.0;
     // thresholding, exit if fulfilled and iterate if not
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0) : 1.0;
+    dVP =
+        (!f.mesh->hasBoundary())
+            ? abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam -
+                  1.0)
+            : 1.0;
     // thresholding, exit if fulfilled and iterate if not
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
@@ -214,7 +222,7 @@ void BFGS::march() {
     s_protein = alpha * vel_protein_e;
 
     // regularization
-    if ((f.parameters.Kse != 0) || (f.parameters.Ksl != 0) || (f.parameters.Kst != 0)) {
+    if (f.meshProcessor.meshRegularizer.isMeshRegularize) {
       f.computeRegularizationForce();
       f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
     }

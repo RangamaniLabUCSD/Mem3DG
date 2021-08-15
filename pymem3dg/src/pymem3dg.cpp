@@ -21,6 +21,7 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 
+#include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/system.h"
 #include "visualization.h"
 
@@ -503,28 +504,57 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   // ==========================================================
   // =============     MeshMutator              ===============
   // ==========================================================
-  py::class_<MeshMutator> meshmutator(pymem3dg, "MeshMutator",
-                                      R"delim(
+  py::class_<MeshProcessor::MeshRegularizer> meshregularizer(pymem3dg,
+                                                             "MeshRegularizer",
+                                                             R"delim(
         The mesh mutator settings 
     )delim");
+  meshregularizer.def(py::init<>(),
+                      R"delim(
+       meshmutator constructor
+      )delim");
+  meshregularizer.def_readwrite("Kst", &MeshProcessor::MeshRegularizer::Kst,
+                                R"delim(
+          get Vertex shifting constant 
+      )delim");
+  meshregularizer.def_readwrite("Ksl", &MeshProcessor::MeshRegularizer::Ksl,
+                                R"delim(
+          get Local stretching modulus 
+      )delim");
+  meshregularizer.def_readwrite("Kse", &MeshProcessor::MeshRegularizer::Kse,
+                                R"delim(
+          get Edge spring constant 
+      )delim");
+  meshregularizer.def_readwrite("shiftVertex", &MeshProcessor::MeshRegularizer::shiftVertex,
+                        R"delim(
+          get the option of whether do vertex shift  
+      )delim");
 
+  py::class_<MeshProcessor::MeshMutator> meshmutator(pymem3dg, "MeshMutator",
+                                                     R"delim(
+        The mesh mutator settings 
+    )delim");
   meshmutator.def(py::init<>(),
                   R"delim(
        meshmutator constructor
       )delim");
-  meshmutator.def_readonly("isMeshMutate", &MeshMutator::isMeshMutate,
+  meshmutator.def_readonly("isMeshMutate",
+                           &MeshProcessor::MeshMutator::isMeshMutate,
                            R"delim(
           get the option of whether do mesh mutation
       )delim");
-  meshmutator.def_readonly("isEdgeFlip", &MeshMutator::isEdgeFlip,
+  meshmutator.def_readonly("isEdgeFlip",
+                           &MeshProcessor::MeshMutator::isEdgeFlip,
                            R"delim(
           get the option of whether do edge flip
       )delim");
-  meshmutator.def_readonly("isSplitEdge", &MeshMutator::isSplitEdge,
+  meshmutator.def_readonly("isSplitEdge",
+                           &MeshProcessor::MeshMutator::isSplitEdge,
                            R"delim(
           get the option of whether split edge to grow mesh
       )delim");
-  meshmutator.def_readonly("isCollapseEdge", &MeshMutator::isCollapseEdge,
+  meshmutator.def_readonly("isCollapseEdge",
+                           &MeshProcessor::MeshMutator::isCollapseEdge,
                            R"delim(
           get the option of whether Collapse edge to grow mesh
       )delim");
@@ -532,41 +562,46 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief flipping criterion
    */
-  meshmutator.def_readwrite("flipNonDelaunay", &MeshMutator::flipNonDelaunay,
+  meshmutator.def_readwrite("flipNonDelaunay",
+                            &MeshProcessor::MeshMutator::flipNonDelaunay,
                             R"delim(
           whether flip non-Delaunay edge
       )delim");
-  meshmutator.def_readwrite("flipNonDelaunayRequireFlat",
-                            &MeshMutator::flipNonDelaunayRequireFlat,
-                            R"delim(
+  meshmutator.def_readwrite(
+      "flipNonDelaunayRequireFlat",
+      &MeshProcessor::MeshMutator::flipNonDelaunayRequireFlat,
+      R"delim(
           whether require flatness condition when flipping non-Delaunay edge
       )delim");
 
   /**
    * @brief splitting criterion
    */
-  meshmutator.def_readwrite("splitLarge", &MeshMutator::splitLarge,
+  meshmutator.def_readwrite("splitLarge",
+                            &MeshProcessor::MeshMutator::splitLarge,
                             R"delim(
           split edge with large faces
       )delim");
-  meshmutator.def_readwrite("splitLong", &MeshMutator::splitLong,
+  meshmutator.def_readwrite("splitLong", &MeshProcessor::MeshMutator::splitLong,
                             R"delim(
           split long edge
       )delim");
-  meshmutator.def_readwrite("splitCurved", &MeshMutator::splitCurved,
+  meshmutator.def_readwrite("splitCurved",
+                            &MeshProcessor::MeshMutator::splitCurved,
                             R"delim(
           split edge on high curvature domain
       )delim");
-  meshmutator.def_readwrite("splitSharp", &MeshMutator::splitSharp,
+  meshmutator.def_readwrite("splitSharp",
+                            &MeshProcessor::MeshMutator::splitSharp,
                             R"delim(
           split edge with sharp membrane property change
       )delim");
-  meshmutator.def_readwrite("splitFat", &MeshMutator::splitFat,
+  meshmutator.def_readwrite("splitFat", &MeshProcessor::MeshMutator::splitFat,
                             R"delim(
           split obtuse triangle
       )delim");
   meshmutator.def_readwrite("splitSkinnyDelaunay",
-                            &MeshMutator::splitSkinnyDelaunay,
+                            &MeshProcessor::MeshMutator::splitSkinnyDelaunay,
                             R"delim(
           split poor aspected triangle that is still Delaunay
       )delim");
@@ -574,26 +609,47 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief collapsing criterion
    */
-  meshmutator.def_readwrite("collapseSkinny", &MeshMutator::collapseSkinny,
+  meshmutator.def_readwrite("collapseSkinny",
+                            &MeshProcessor::MeshMutator::collapseSkinny,
                             R"delim(
           collapse skinny triangles
       )delim");
-  meshmutator.def_readwrite("collapseSmall", &MeshMutator::collapseSmall,
+  meshmutator.def_readwrite("collapseSmall",
+                            &MeshProcessor::MeshMutator::collapseSmall,
                             R"delim(
           collapse small triangles
       )delim");
   meshmutator.def_readwrite("collapseSmallNeedFlat",
-                            &MeshMutator::collapseSmallNeedFlat,
+                            &MeshProcessor::MeshMutator::collapseSmallNeedFlat,
                             R"delim(
          whether require flatness condition when collapsing small edge
       )delim");
-  meshmutator.def_readwrite("curvTol", &MeshMutator::curvTol,
+  meshmutator.def_readwrite("curvTol", &MeshProcessor::MeshMutator::curvTol,
                             R"delim(
           tolerance for curvature approximation
       )delim");
-  meshmutator.def_readwrite("targetFaceArea", &MeshMutator::targetFaceArea,
+  meshmutator.def_readwrite("targetFaceArea",
+                            &MeshProcessor::MeshMutator::targetFaceArea,
                             R"delim(
           target face area 
+      )delim");
+
+  py::class_<MeshProcessor> meshprocessor(pymem3dg, "MeshProcessor",
+                                          R"delim(
+        The mesh processor settings 
+    )delim");
+  meshprocessor.def(py::init<>(),
+                    R"delim(
+       meshprocessor constructor
+      )delim");
+  meshprocessor.def_readwrite("meshMutator", &MeshProcessor::meshMutator,
+                              R"delim(
+          meshMutator struct
+      )delim");
+  meshprocessor.def_readwrite("meshRegularizer",
+                              &MeshProcessor::meshRegularizer,
+                              R"delim(
+          meshRegularizer struct
       )delim");
 
   // ==========================================================
@@ -686,9 +742,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                        R"delim(
           get the Parameters struct
       )delim");
-  system.def_readwrite("meshMutator", &System::meshMutator,
+  system.def_readwrite("meshProcessor", &System::meshProcessor,
                        R"delim(
-          get the mesh mutator object
+          get the mesh processor object
       )delim");
   system.def_readonly("O", &System::O,
                       R"delim(
@@ -914,10 +970,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The options
     )delim");
   options.def(py::init<>());
-  options.def_readwrite("isVertexShift", &Options::isVertexShift,
-                        R"delim(
-          get the option of whether do vertex shift  
-      )delim");
   options.def_readwrite("isFloatVertex", &Options::isFloatVertex,
                         R"delim(
           get the option of whether have "the" vertex floating in embedded space
@@ -1135,18 +1187,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("protein0", &Parameters::protein0,
                            R"delim(
           get setting of initial protein density
-      )delim");
-  parameters.def_readwrite("Kst", &Parameters::Kst,
-                           R"delim(
-          get Vertex shifting constant 
-      )delim");
-  parameters.def_readwrite("Ksl", &Parameters::Ksl,
-                           R"delim(
-          get Local stretching modulus 
-      )delim");
-  parameters.def_readwrite("Kse", &Parameters::Kse,
-                           R"delim(
-          get Edge spring constant 
       )delim");
   parameters.def_readwrite("temp", &Parameters::temp,
                            R"delim(
