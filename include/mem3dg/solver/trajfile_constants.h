@@ -50,6 +50,9 @@ static const std::string CONVENTIONS_VERSION_NAME = "ConventionsVersion";
 /// Conventions version value
 static const std::string CONVENTIONS_VERSION_VALUE = "0.0.1";
 
+static const std::string PARAM_GROUP_NAME = "Parameters";
+static const std::string TRAJ_GROUP_NAME = "Trajectory";
+
 /// Name of the units labels
 static const std::string UNITS = "units";
 /// Value for length units

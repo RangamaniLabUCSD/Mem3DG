@@ -20,14 +20,17 @@
 #include "mem3dg/type_utilities.h"
 #include <Eigen/Core>
 
+#ifdef MEM3DG_WITH_NETCDF
+#include <netcdf>
+
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+namespace nc = ::netCDF;
+
 class MutableTrajfileTest : public ::testing::Test {
 public:
-  MutableTrajfileTest() {
-    f.createNewFile("test.nc", NC_NETCDF4 | NC_CLOBBER | NC_DISKLESS);
-  }
+  MutableTrajfileTest() { f.createNewFile("test.nc", nc::NcFile::replace); }
 
   mem3dg::solver::MutableTrajFile f;
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -65,3 +68,5 @@ TEST_F(MutableTrajfileTest, ReadWriteTopologyCoordinates) {
   coords = f.getCoords(1);
   ASSERT_EQ(coords, g2);
 }
+
+#endif

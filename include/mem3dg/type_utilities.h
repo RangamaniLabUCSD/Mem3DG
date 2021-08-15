@@ -41,6 +41,9 @@ using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using EigenVectorX3u = Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
 
+template <typename T, int k>
+using EigenVectorXkr_T = Eigen::Matrix<T, Eigen::Dynamic, k, Eigen::RowMajor>;
+
 /// Type alias for aligned vectors
 template <typename T>
 using AlignedVector_T = std::vector<T, Eigen::aligned_allocator<T>>;

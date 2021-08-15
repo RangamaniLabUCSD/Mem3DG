@@ -85,20 +85,26 @@ public:
       return MutableTrajFile(filename, NcFile::newFile);
   };
 
-  /**
-   * @brief Open a new file and populate it with the convention
-   *
-   * @param filename  Filename to save to
-   * @param replace   Whether to replace an existing file or exit
-   *
-   * @exception netCDF::exceptions::NcExist File already exists and
-   * replace/overwrite flag is not specified.
-   *
-   * @return MutableTrajFile helper object to manipulate the bound NetCDF file.
-   */
-  static MutableTrajFile newDisklessFile(const std::string &filename) {
-    return MutableTrajFile(filename, NC_NETCDF4 | NC_CLOBBER | NC_DISKLESS);
-  };
+  ///////////////////////////////////////////////
+  // Reintroduce when Netcdf 4.3.1 is standard
+  // Ubuntu 18.04 uses 4.3.0
+  ///////////////////////////////////////////////
+  //   /**
+  //    * @brief Open a new file and populate it with the convention
+  //    *
+  //    * @param filename  Filename to save to
+  //    * @param replace   Whether to replace an existing file or exit
+  //    *
+  //    * @exception netCDF::exceptions::NcExist File already exists and
+  //    * replace/overwrite flag is not specified.
+  //    *
+  //    * @return MutableTrajFile helper object to manipulate the bound NetCDF
+  //    file.
+  // ;   */
+  //   static MutableTrajFile newDisklessFile(const std::string &filename) {
+  //     return MutableTrajFile(filename, NC_NETCDF4 | NC_CLOBBER |
+  //     NC_DISKLESS);
+  //   }
 
   /**
    * @brief Open an existing NetCDF file in read/write mode
@@ -159,15 +165,18 @@ public:
     writeable = fMode != NcFile::read;
     check_metadata();
 
-    frame_dim = fd->getDim(FRAME_NAME);
+    parameter_group = fd->getGroup(PARAM_GROUP_NAME);
+    traj_group = fd->getGroup(TRAJ_GROUP_NAME);
 
-    // uint_array_t = fd->getType(UINT_ARR);
-    // double_array_t = fd->getType(DOUBLE_ARR);
+    frame_dim = traj_group.getDim(FRAME_NAME);
 
-    time_var = fd->getVar(TIME_VAR);
-    topo_var = fd->getVar(TOPO_VAR);
-    coord_var = fd->getVar(COORD_VAR);
-    vel_var = fd->getVar(VEL_VAR);
+    // uint_array_t = traj_group.getType(UINT_ARR);
+    // double_array_t = traj_group.getType(DOUBLE_ARR);
+
+    time_var = traj_group.getVar(TIME_VAR);
+    topo_var = traj_group.getVar(TOPO_VAR);
+    coord_var = traj_group.getVar(COORD_VAR);
+    vel_var = traj_group.getVar(VEL_VAR);
   }
 
   /**
@@ -188,38 +197,49 @@ public:
     initializeConventions();
   }
 
-  /**
-   * @brief Create a New File object with NetCDF-C modes
-   *
-   * @param filename    Path to file to create
-   * @param ncFileMode  Mode to create the file
-   */
-  void createNewFile(const std::string &filename, const int ncFileMode) {
-    if (fd != nullptr) {
-      mem3dg_runtime_error("Cannot open an already open ...");
-    }
+  ///////////////////////////////////////////////
+  // Reintroduce when Netcdf 4.3.1 is standard
+  // Ubuntu 18.04 uses 4.3.0
+  ///////////////////////////////////////////////
+  // /**
+  //  * @brief Create a New File object with NetCDF-C modes
+  //  *
+  //  * @param filename    Path to file to create
+  //  * @param ncFileMode  Mode to create the file
+  //  */
+  // void createNewFile(const std::string &filename, const int ncFileMode) {
+  //   if (fd != nullptr) {
+  //     mem3dg_runtime_error("Cannot open an already opened file.");
+  //   }
 
-    writeable = true;
+  //   writeable = true;
 
-    fd = new NcFile();
-    fd->create(filename, ncFileMode);
-    initializeConventions();
-  }
+  //   fd = new NcFile();
+  //   fd->create(filename, ncFileMode);
+  //   initializeConventions();
+  // }
+
 #pragma endregion initialization_helpers
 
-  inline void sync() { fd->sync(); }
+  void sync() { fd->sync(); }
 
   /**
    * @brief Close
    *
    */
-  inline void close() {
+  void close() {
+    if (fd == nullptr) {
+      mem3dg_runtime_error("Cannot close an unopened trajectory file.");
+    }
     fd->sync();
     fd->close();
 
     // Reset object state
     fd = nullptr;
     writeable = false;
+
+    traj_group = nc::NcGroup{};
+    parameter_group = nc::NcGroup{};
 
     frame_dim = nc::NcDim{};
     uint_array_t = nc::NcVlenType{};
@@ -236,14 +256,14 @@ public:
    *
    * @return True if writable
    */
-  inline bool isWriteable() { return writeable; };
+  bool isWriteable() { return writeable; };
 
   /**
    * @brief Get the max number of frames in the trajectory
    *
    * @return std::size_t Total number of frames
    */
-  inline std::size_t nFrames() const { return frame_dim.getSize(); };
+  std::size_t nFrames() const { return frame_dim.getSize(); };
 
 #pragma region read_write
   /**
@@ -252,7 +272,9 @@ public:
    * @param idx   Index of the frame
    * @param data  Topology matrix
    */
-  void writeTopology(const std::size_t idx, const EigenVectorX3ur &data);
+  void writeTopology(const std::size_t idx, const EigenVectorX3ur &data) {
+    writeVar<std::uint32_t, 3>(topo_var, idx, data);
+  }
 
   /**
    * @brief Write the topology for a frame
@@ -260,7 +282,10 @@ public:
    * @param idx   Index of the frame
    * @param data  Surface mesh
    */
-  void writeTopology(const std::size_t idx, gc::SurfaceMesh &mesh);
+  void writeTopology(const std::size_t idx, gc::SurfaceMesh &mesh) {
+    writeVar<std::uint32_t, 3>(topo_var, idx,
+             EigenVectorX3ur{mesh.getFaceVertexMatrix<std::uint32_t>()});
+  }
 
   /**
    * @brief Get the Topology object
@@ -268,7 +293,9 @@ public:
    * @param idx
    * @return EigenVectorX3ur
    */
-  EigenVectorX3ur getTopology(const std::size_t idx);
+  EigenVectorX3ur getTopology(const std::size_t idx) const {
+    return getVar<std::uint32_t, POLYGON_ORDER>(topo_var, idx);
+  }
 
   /**
    * @brief Write the coordinates for a frame
@@ -276,7 +303,9 @@ public:
    * @param idx   Index of the frame
    * @param data  Coordinate matrix
    */
-  void writeCoords(const std::size_t idx, const EigenVectorX3dr &data);
+  void writeCoords(const std::size_t idx, const EigenVectorX3dr &data) {
+    writeVar<double, 3>(coord_var, idx, data);
+  }
 
   /**
    * @brief Write the coordinates for a frame
@@ -285,7 +314,9 @@ public:
    * @param data  Vertex position geometry
    */
   void writeCoords(const std::size_t idx,
-                   const gc::VertexPositionGeometry &data);
+                   const gc::VertexPositionGeometry &data) {
+    writeVar<gc::Vertex>(coord_var, idx, data.inputVertexPositions);
+  }
 
   /**
    * @brief Get the coordinates of a given frame
@@ -293,7 +324,9 @@ public:
    * @param idx               Index of the frame
    * @return EigenVectorX3dr  Coordinates data
    */
-  EigenVectorX3dr getCoords(const std::size_t idx);
+  EigenVectorX3dr getCoords(const std::size_t idx) {
+    return getVar<double, SPATIAL_DIMS>(coord_var, idx);
+  }
 
   /**
    * @brief Write the velocities for a frame
@@ -301,7 +334,9 @@ public:
    * @param idx   Index of the frame
    * @param data  Velocity matrix
    */
-  void writeVelocity(const std::size_t idx, const EigenVectorX3dr &data);
+  void writeVelocity(const std::size_t idx, const EigenVectorX3dr &data) {
+    writeVar<double, 3>(vel_var, idx, data);
+  }
 
   /**
    * @brief Write the velocities for a frame
@@ -310,7 +345,9 @@ public:
    * @param data  Vertex velocities
    */
   void writeVelocity(const std::size_t idx,
-                     const gcs::VertexData<gc::Vector3> &data);
+                     const gcs::VertexData<gc::Vector3> &data) {
+    writeVar<gc::Vertex>(vel_var, idx, data);
+  }
 
   /**
    * @brief Get the velocities of a given frame
@@ -318,7 +355,9 @@ public:
    * @param idx               Index of the frame
    * @return EigenVectorX3dr  Velocity data
    */
-  EigenVectorX3dr getVelocity(const std::size_t idx);
+  EigenVectorX3dr getVelocity(const std::size_t idx) const {
+    return getVar<double, SPATIAL_DIMS>(vel_var, idx);
+  }
 
   /**
    * @brief Write the time of the trajectory
@@ -326,7 +365,9 @@ public:
    * @param idx     Index of the frame
    * @param time    Time
    */
-  void writeTime(const std::size_t idx, const double time);
+  void writeTime(const std::size_t idx, const double time) {
+    writeVar(time_var, idx, time);
+  }
 
   /**
    * @brief Get the time
@@ -334,7 +375,9 @@ public:
    * @param idx      Index
    * @return double  Time
    */
-  double getTime(const std::size_t idx) const;
+  double getTime(const std::size_t idx) const {
+    return getVar<double>(time_var, idx);
+  }
 
 #pragma endregion read_write
   /**
@@ -345,6 +388,100 @@ public:
   bool check_metadata();
 
 private:
+  // template <typename SCALAR, std::size_t k, typename T>
+  // void writeVar(nc::NcVar &var, const std::size_t idx, const T &data,
+  //               std::function<EigenVectorXkr_T<SCALAR, k>(T)>
+  //               &&toEigenVector) {
+  //   writeVar(var, idx, toEigenVector(data));
+  // }
+
+  /**
+   * @brief Write gc::Vector3 MeshData to variable
+   *
+   * @tparam E      Typename of the Mesh Element
+   * @param var     Variable to write to
+   * @param idx     Index
+   * @param data    Data
+   */
+  template <typename E>
+  void writeVar(nc::NcVar &var, const std::size_t idx,
+                const gc::MeshData<E, gc::Vector3> &data) {
+    writeVar<double, 3>(var, idx, EigenMap<double, 3>(data));
+  }
+
+  /**
+   * @brief Write MeshData storing a primitive type to a variable
+   *
+   * @tparam E      Typename of the Mesh Element
+   * @tparam T      Typename of the data type
+   * @param var     Variable to write to
+   * @param idx     Index
+   * @param data    Data
+   */
+  template <typename E, typename T,
+            typename = std::enable_if_t<std::is_fundamental<T>::value>>
+  void writeVar(nc::NcVar &var, const std::size_t idx,
+                const gc::MeshData<E, T> &data) {
+    writeVar(var, idx, data.raw());
+  }
+
+  /**
+   * @brief
+   *
+   * @tparam T
+   * @tparam k
+   * @param var
+   * @param idx
+   * @param data
+   */
+  template <typename T, int k>
+  void writeVar(nc::NcVar &var, const std::size_t idx,
+                const EigenVectorXkr_T<T, k> &data) {
+    if (!writeable)
+      mem3dg_runtime_error("Cannot write to read only file.");
+
+    nc_vlen_t vlenData;
+    vlenData.len = data.size();
+    vlenData.p = const_cast<T *>(data.data());
+
+    var.putVar({idx}, &vlenData);
+  }
+
+  template <typename T,
+            typename = std::enable_if_t<std::is_fundamental<T>::value>>
+  void writeVar(nc::NcVar &var, const std::size_t idx, const T data) {
+    if (!writeable)
+      mem3dg_runtime_error("Cannot write to read only file.");
+    var.putVar({idx}, &data);
+  }
+
+  template <typename T, std::size_t k>
+  EigenVectorXkr_T<T, k> getVar(const nc::NcVar &var,
+                                const std::size_t idx) const {
+    assert(idx < nFrames());
+
+    nc_vlen_t vlenData;
+    var.getVar({idx}, &vlenData);
+
+    // Initialize an Eigen object and copy the data over
+    EigenVectorXkr_T<T, k> vec(vlenData.len / k, k);
+    // Bind to nc_vlen_t memory and copy data over
+    vec = AlignedEigenMap_T<T, k, Eigen::RowMajor>(static_cast<T *>(vlenData.p),
+                                                   vlenData.len / k, k);
+    return vec;
+  }
+
+  template <typename T,
+            typename = std::enable_if_t<std::is_fundamental<T>::value>>
+  T getVar(const nc::NcVar &var, const std::size_t idx) const {
+    assert(idx < nFrames());
+
+    T data;
+    var.getVar({idx}, &data);
+
+    return data;
+  }
+
   /**
    * @brief Private constructor for opening or creating a new NetCDF file.
    *
@@ -361,18 +498,22 @@ private:
       createNewFile(filename, fMode);
   }
 
-  /**
-   * @brief Private constructor for new file using ncflags directly
-   *
-   * Note that this only creates new files!
-   *
-   * @param filename      Path to file of interest
-   * @param ncFileFlags   Mode to create file with
-   */
-  MutableTrajFile(const std::string &filename, const int ncFileFlags)
-      : filename(filename), fd(nullptr), writeable(true) {
-    createNewFile(filename, ncFileFlags);
-  }
+  ///////////////////////////////////////////////
+  // Reintroduce when Netcdf 4.3.1 is standard
+  // Ubuntu 18.04 uses 4.3.0
+  ///////////////////////////////////////////////
+  // /**
+  //  * @brief Private constructor for new file using ncflags directly
+  //  *
+  //  * Note that this only creates new files!
+  //  *
+  //  * @param filename      Path to file of interest
+  //  * @param ncFileFlags   Mode to create file with
+  //  */
+  // MutableTrajFile(const std::string &filename, const int ncFileFlags)
+  //     : filename(filename), fd(nullptr), writeable(true) {
+  //   createNewFile(filename, ncFileFlags);
+  // }
 
   /**
    * @brief Initialize a new file with the given conventions
@@ -385,25 +526,31 @@ private:
     fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
     fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
 
-    frame_dim = fd->addDim(FRAME_NAME);
+    parameter_group = fd->addGroup(PARAM_GROUP_NAME);
+    traj_group = fd->addGroup(TRAJ_GROUP_NAME);
 
-    time_var = fd->addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
+    frame_dim = traj_group.addDim(FRAME_NAME);
+
+    time_var = traj_group.addVar(TIME_VAR, netCDF::ncDouble, {frame_dim});
     time_var.putAtt(UNITS, TIME_UNITS);
     time_var.setCompression(true, true, compression_level);
 
-    uint_array_t = fd->addVlenType(UINT_ARR, nc::ncUint);
-    double_array_t = fd->addVlenType(DOUBLE_ARR, nc::ncDouble);
+    uint_array_t = traj_group.addVlenType(UINT_ARR, nc::ncUint);
+    double_array_t = traj_group.addVlenType(DOUBLE_ARR, nc::ncDouble);
 
-    topo_var = fd->addVar(TOPO_VAR, uint_array_t, {frame_dim});
+    topo_var = traj_group.addVar(TOPO_VAR, uint_array_t, {frame_dim});
     topo_var.setCompression(true, true, compression_level);
-    coord_var = fd->addVar(COORD_VAR, double_array_t, {frame_dim});
+    coord_var = traj_group.addVar(COORD_VAR, double_array_t, {frame_dim});
     coord_var.setCompression(true, true, compression_level);
-    vel_var = fd->addVar(VEL_VAR, double_array_t, {frame_dim});
+    vel_var = traj_group.addVar(VEL_VAR, double_array_t, {frame_dim});
     vel_var.setCompression(true, true, compression_level);
   }
 
   /// Bound NcFile
   NcFile *fd;
+
+  nc::NcGroup parameter_group;
+  nc::NcGroup traj_group;
 
   // Save dimensions
   nc::NcDim frame_dim;
@@ -418,8 +565,10 @@ private:
   nc::NcVar topo_var;
   /// Vlen variable for coordinates
   nc::NcVar coord_var;
+
   /// Vlen variable for velocities
   nc::NcVar vel_var;
+  nc::NcVar phi_var;
 
   /// Filepath to file
   std::string filename;
