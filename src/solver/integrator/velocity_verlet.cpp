@@ -198,7 +198,7 @@ void VelocityVerlet::march() {
   }
 
   // process the mesh with regularization or mutation
-  f.processMesh();
+  f.mutateMesh();
 }
 } // namespace integrator
 } // namespace solver

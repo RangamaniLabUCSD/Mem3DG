@@ -80,16 +80,6 @@ struct Energy {
 
 class DLL_PUBLIC System {
 protected:
-  /// Mean target area per face
-  double meanTargetFaceArea;
-  /// Mean target area per face
-  double meanTargetEdgeLength;
-  /// Target edge cross length ratio
-  gcs::EdgeData<double> targetLcrs;
-  /// Reference edge Length of reference mesh
-  gcs::EdgeData<double> refEdgeLengths;
-  /// Reference face Area of reference mesh
-  gcs::FaceData<double> refFaceAreas;
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistanceFromPtInd;
   /// Random number engine
@@ -185,13 +175,13 @@ public:
       : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub),
                p) {
     // Check confliciting parameters and options
-    checkParametersAndOptions();
+    checkParameters();
 
     // Initialize reference values
     initConstants();
 
     // Process the mesh by regularization and mutation
-    processMesh();
+    mutateMesh();
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
@@ -215,13 +205,13 @@ public:
                p) {
 
     // Check confliciting parameters and options
-    checkParametersAndOptions();
+    checkParameters();
 
     // Initialize reference values
     initConstants();
 
     // Process the mesh by regularization and mutation
-    processMesh();
+    mutateMesh();
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
@@ -237,7 +227,7 @@ public:
       : System(readMeshes(inputMesh, inputMesh, nSub)) {
 
     // Check confliciting parameters and options
-    checkParametersAndOptions();
+    checkParameters();
 
     // Initialize reference values
     initConstants();
@@ -259,7 +249,7 @@ public:
       : System(readMeshes(inputMesh, inputMesh, nSub), p) {
 
     // Check confliciting parameters and options
-    checkParametersAndOptions();
+    checkParameters();
 
     // Initialize reference values
     initConstants();
@@ -273,7 +263,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    processMesh();
+    mutateMesh();
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
@@ -294,7 +284,7 @@ public:
       : System(readMeshes(inputMesh, refMesh, nSub), p) {
 
     // Check confliciting parameters and options
-    checkParametersAndOptions();
+    checkParameters();
 
     // Initialize reference values
     initConstants();
@@ -308,7 +298,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    processMesh();
+    mutateMesh();
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
@@ -341,12 +331,12 @@ public:
    * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    */
-  System(std::string trajFile, int startingFrame, Parameters &p, 
+  System(std::string trajFile, int startingFrame, Parameters &p,
          std::size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p) {
 
     // Check confliciting parameters and options
-    checkParametersAndOptions();
+    checkParameters();
 
     // Initialize reference values
     initConstants();
@@ -357,7 +347,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    processMesh();
+    mutateMesh();
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
@@ -433,10 +423,7 @@ private:
     H0 = gcs::VertexData<double>(*mesh);
     Kb = gcs::VertexData<double>(*mesh);
 
-    refEdgeLengths = gcs::EdgeData<double>(*mesh);
-    refFaceAreas = gcs::FaceData<double>(*mesh);
     geodesicDistanceFromPtInd = gcs::VertexData<double>(*mesh, 0);
-    targetLcrs = gc::EdgeData<double>(*mesh);
 
     isSmooth = true;
     smoothingMask = gc::VertexData<bool>(*mesh, false);
@@ -552,7 +539,7 @@ public:
    * @brief Check all conflicting parameters and options
    *
    */
-  void checkParametersAndOptions();
+  void checkParameters();
 
   /**
    * @brief testing of random number generator pcg
@@ -567,9 +554,9 @@ public:
   void initConstants();
 
   /**
-   * @brief Mesh processing by regularization or mutation
+   * @brief Mesh mutation
    */
-  void processMesh();
+  void mutateMesh();
 
   /**
    * @brief Update the vertex position and recompute cached values
@@ -716,16 +703,6 @@ public:
   // ==========================================================
   // =============          Helpers             ===============
   // ==========================================================
-  /**
-   * @brief Get length cross ratio of the mesh
-   */
-
-  void computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                               gcs::EdgeData<double> &targetLcrs);
-  double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                 gcs::Edge &e) const;
-  double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                 gcs::Edge &&e) const;
 
   /**
    * @brief Get gradient of quantities on face

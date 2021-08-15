@@ -56,6 +56,28 @@ struct MeshProcessor {
     double Ksl = 0;
     /// Edge spring constant
     double Kse = 0;
+    /// Reference face area
+    EigenVectorX1d refFaceAreas;
+    /// Reference edge length
+    EigenVectorX1d refEdgeLengths;
+    /// Reference Lcr
+    EigenVectorX1d refLcrs;
+    /// Mean target area per face
+    double meanTargetFaceArea;
+    /// Mean target area per face
+    double meanTargetEdgeLength;
+
+    size_t nEdge;
+    size_t nVertex;
+    size_t nFace;
+
+    void readReferenceData(std::string refMesh, std::size_t nSub);
+    void readReferenceData(
+        Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
+        Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
+        std::size_t nSub);
+    double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                   gcs::Edge &e) const;
   };
 
   struct MeshMutator {
@@ -93,13 +115,13 @@ struct MeshProcessor {
     bool collapseSkinny = false;
     /// collapse small triangles
     bool collapseSmall = false;
+    /// target face area
+    double targetFaceArea = 0.001;
     /// whether require flatness condition when collapsing small edge
     bool collapseSmallNeedFlat = false;
 
     /// tolerance for curvature approximation
     double curvTol = 0.0012;
-    /// target face area
-    double targetFaceArea = 0.001;
 
     /**
      * @brief summarizeStatus
