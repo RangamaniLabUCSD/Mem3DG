@@ -708,13 +708,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(
-      py::init<std::string, std::string, Parameters &, std::size_t, bool>(),
-      py::arg("inputMesh"), py::arg("refMesh"), py::arg("p"),
-      py::arg("nSub") = 0, py::arg("isContinue") = false,
-      R"delim(
-        System constructor with .ply files 
-      )delim");
 
   /**
    * @brief Constructors by matrices
@@ -733,17 +726,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                       std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
              py::arg("nSub") = 0,
-             R"delim(
-        System constructor with Matrices 
-      )delim");
-
-  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      std::size_t>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("refVertexMatrix"), py::arg("p"), py::arg("nSub") = 0,
-
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -813,15 +795,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::return_value_policy::reference_internal,
       R"delim(
           get the vertex position matrix
-      )delim");
-  system.def(
-      "getReferenceVertexPositionMatrix",
-      [](System &s) {
-        return gc::EigenMap<double, 3>(s.refVpg->inputVertexPositions);
-      },
-      py::return_value_policy::reference_internal,
-      R"delim(
-          get the face vertex matrix
       )delim");
   system.def(
       "getFaceVertexMatrix",
