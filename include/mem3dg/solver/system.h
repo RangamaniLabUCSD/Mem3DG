@@ -96,8 +96,6 @@ public:
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   /// Embedding and other geometric details
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  /// reference embedding geometry
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
   /// Energy
   Energy energy;
   /// Time
@@ -152,7 +150,7 @@ public:
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
          std::size_t nSub)
-      : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub)) {
+      : System(readMeshes(topologyMatrix, vertexMatrix, nSub)) {
 
     // Initialize reference values
     initConstants();
@@ -172,38 +170,7 @@ public:
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
          std::size_t nSub)
-      : System(readMeshes(topologyMatrix, vertexMatrix, vertexMatrix, nSub),
-               p) {
-    // Check confliciting parameters and options
-    checkParameters();
-
-    // Initialize reference values
-    initConstants();
-
-    // Process the mesh by regularization and mutation
-    mutateMesh();
-
-    /// compute nonconstant values during simulation
-    updateVertexPositions();
-  };
-
-  /**
-   * @brief Construct a new Force object by reading topology and vertex matrices
-   *
-   * @param topologyMatrix,  topology matrix, F x 3
-   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
-   * @param refVertexMatrix, reference mesh coordinate matrix V x 3
-   * @param p             Parameter of simulation
-   * @param nSub          Number of subdivision
-   * regularization
-   */
-  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-         Parameters &p, std::size_t nSub)
-      : System(readMeshes(topologyMatrix, vertexMatrix, refVertexMatrix, nSub),
-               p) {
-
+      : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p) {
     // Check confliciting parameters and options
     checkParameters();
 
@@ -224,7 +191,7 @@ public:
    * @param nSub          Number of subdivision
    */
   System(std::string inputMesh, std::size_t nSub)
-      : System(readMeshes(inputMesh, inputMesh, nSub)) {
+      : System(readMeshes(inputMesh, nSub)) {
 
     // Check confliciting parameters and options
     checkParameters();
@@ -246,42 +213,7 @@ public:
    */
   System(std::string inputMesh, Parameters &p, std::size_t nSub,
          bool isContinue)
-      : System(readMeshes(inputMesh, inputMesh, nSub), p) {
-
-    // Check confliciting parameters and options
-    checkParameters();
-
-    // Initialize reference values
-    initConstants();
-
-    // Map continuation variables
-    if (isContinue) {
-      std::cout << "\nWARNING: isContinue is on and make sure mesh file "
-                   "supports richData!"
-                << std::endl;
-      mapContinuationVariables(inputMesh);
-    }
-
-    // Process the mesh by regularization and mutation
-    mutateMesh();
-
-    /// compute nonconstant values during simulation
-    updateVertexPositions();
-  };
-
-  /**
-   * @brief Construct a new Force object by reading mesh file path
-   *
-   * @param inputMesh     Input Mesh
-   * @param refMesh       Reference Mesh
-   * @param p             Parameter of simulation
-   * @param nSub          Number of subdivision
-   * @param isContinue    Wether continue simulation
-   * regularization
-   */
-  System(std::string inputMesh, std::string refMesh, Parameters &p,
-         std::size_t nSub, bool isContinue)
-      : System(readMeshes(inputMesh, refMesh, nSub), p) {
+      : System(readMeshes(inputMesh, nSub), p) {
 
     // Check confliciting parameters and options
     checkParameters();
@@ -363,13 +295,11 @@ private:
    * @param p             Parameter of simulation
    */
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
          Parameters &p)
       : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)),
-               std::move(std::get<2>(meshVpgTuple)), p){};
+               std::move(std::get<1>(meshVpgTuple)), p){};
 
   /**
    * @brief Construct a new System object by reading tuple of unique_ptrs
@@ -378,25 +308,21 @@ private:
    * information, Mesh rich data
    */
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple)
       : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)),
-               std::move(std::get<2>(meshVpgTuple))){};
+               std::move(std::get<1>(meshVpgTuple))){};
 
   /**
    * @brief Construct a new System object by reading unique_ptrs to mesh and
    * geometry objects
    * @param ptrmesh_         Mesh connectivity
    * @param ptrvpg_          Embedding and geometry information
-   * @param ptrRefvpg_       Embedding and geometry information
    * @param p             Parameter of simulation
    */
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), std::move(ptrrefVpg_)) {
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, Parameters &p)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_)) {
     parameters = p;
   }
 
@@ -405,13 +331,11 @@ private:
    * geometry objects
    * @param ptrmesh_         Mesh connectivity
    * @param ptrvpg_          Embedding and geometry information
-   * @param ptrRefvpg_       Embedding and geometry information
    */
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_)
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
-        refVpg(std::move(ptrrefVpg_)), forces(*mesh, *vpg) {
+        forces(*mesh, *vpg) {
 
     energy = Energy({0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     time = 0;
@@ -488,11 +412,9 @@ public:
    *
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readMeshes(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
              Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexPositionMatrix,
-             Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexPositionMatrix,
              std::size_t nSub);
 
   /**
@@ -500,9 +422,8 @@ public:
    *
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(std::string inputMesh, std::string refMesh, std::size_t nSub);
+  readMeshes(std::string inputMesh, std::size_t nSub);
 
   /**
    * @brief Map the continuation variables
@@ -522,7 +443,6 @@ public:
    *
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub);
   /**

@@ -67,7 +67,6 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
 System::readTrajFile(std::string trajFile, int startingFrame,
                      std::size_t nSub) {
@@ -75,9 +74,6 @@ System::readTrajFile(std::string trajFile, int startingFrame,
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
   TrajFile fd = TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
@@ -86,131 +82,62 @@ System::readTrajFile(std::string trajFile, int startingFrame,
   std::cout << "Loaded input mesh from " << trajFile << " of frame "
             << startingFrame << std::endl;
 
-  /// Load reference geometry ptrRefVpg onto ptrMesh object
-  std::tie(referenceMesh, referenceVpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(fd.getRefcoordinate(),
-                                              fd.getTopology());
-  std::cout << "Loaded reference mesh" << std::endl;
-
   /// Subdivide the mesh and geometry objects
   if (nSub > 0) {
     mem3dg::loopSubdivide(mesh, vpg, nSub);
-    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
     std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
               << std::endl;
   }
 
-  // Check consistent topology
-  if ((mesh->nVertices() == referenceMesh->nVertices() &&
-       mesh->nEdges() == referenceMesh->nEdges() &&
-       mesh->nFaces() == referenceMesh->nFaces())) {
-    // reinterpret referenceVpg to mesh instead of referenceMesh.
-    refVpg = referenceVpg->reinterpretTo(*mesh);
-    // throw std::logic_error(
-    //     "Topology of input mesh and reference mesh is not consistent! If not
-    //     " "referencing a mesh, please have the option isRefMesh on and have "
-    //     "input mesh as the duplicated argument!");
-  }
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+  return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 #endif
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(std::string inputMesh, std::string refMesh,
-                   std::size_t nSub) {
+System::readMeshes(std::string inputMesh, std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
   // Load input mesh and geometry
   std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
   std::cout << "Loaded input mesh " << inputMesh << std::endl;
 
-  // Load input reference mesh and geometry
-  std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
-  std::cout << "Loaded reference mesh " << refMesh << std::endl;
-
   // Subdivide the mesh and geometry objects
   if (nSub > 0) {
     // mem3dg::subdivide(mesh, vpg, nSub);
-    // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
     mem3dg::loopSubdivide(mesh, vpg, nSub);
-    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
-    std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
-              << std::endl;
+    std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
   }
 
-  // Check consistent topology
-  if ((mesh->nVertices() == referenceMesh->nVertices() &&
-       mesh->nEdges() == referenceMesh->nEdges() &&
-       mesh->nFaces() == referenceMesh->nFaces())) {
-    // reinterpret referenceVpg to mesh instead of referenceMesh.
-    refVpg = referenceVpg->reinterpretTo(*mesh);
-    // throw std::logic_error(
-    //     "Topology of input mesh and reference mesh is not consistent! If not
-    //     " "referencing a mesh, please have the option isRefMesh on and have "
-    //     "input mesh as the duplicated argument!");
-  }
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+  return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
 System::readMeshes(
     Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-    std::size_t nSub) {
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, std::size_t nSub) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
   // Load input mesh and geometry
   std::tie(mesh, vpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(vertexMatrix, topologyMatrix);
   std::cout << "Loaded input mesh " << std::endl;
 
-  // Load input reference mesh and geometry
-  std::tie(referenceMesh, referenceVpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(refVertexMatrix, topologyMatrix);
-  std::cout << "Loaded reference mesh " << std::endl;
-
   // Subdivide the mesh and geometry objects
   if (nSub > 0) {
     // mem3dg::subdivide(mesh, vpg, nSub);
-    // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
     mem3dg::loopSubdivide(mesh, vpg, nSub);
-    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
-    std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
-              << std::endl;
+    std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
   }
 
-  // Check consistent topology
-  if ((mesh->nVertices() == referenceMesh->nVertices() &&
-       mesh->nEdges() == referenceMesh->nEdges() &&
-       mesh->nFaces() == referenceMesh->nFaces())) {
-    // reinterpret referenceVpg to mesh instead of referenceMesh.
-    refVpg = referenceVpg->reinterpretTo(*mesh);
-    // throw std::logic_error(
-    //     "Topology of input mesh and reference mesh is not consistent! If not
-    //     " "referencing a mesh, please have the option isRefMesh on and have "
-    //     "input mesh as the duplicated argument!");
-  }
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+  return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
 void System::mapContinuationVariables(std::string plyFile) {
