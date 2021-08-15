@@ -54,6 +54,7 @@ int main() {
   p.osmotic.Vt = Vt;
   p.osmotic.cam = cam;
   p.osmotic.n = n;
+  p.osmotic.isPreferredVolume = true;
   p.dirichlet.eta = eta;
   p.adsorption.epsilon = epsilon;
   p.Bc = Bc;
@@ -64,11 +65,10 @@ int main() {
   p.external.conc = conc;
   p.external.height = height;
   p.radius = radius;
+  p.variation.isProteinVariation = false;
 
   mem3dg::solver::Options o;
-  o.isProteinVariation = false;
   o.isVertexShift = false;
-  o.isPreferredVolume = true;
   o.isEdgeFlip = false;
   o.isSplitEdge = false;
   o.isCollapseEdge = false;

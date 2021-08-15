@@ -115,10 +115,10 @@ bool ConjugateGradient::integrate() {
 }
 
 void ConjugateGradient::checkParameters() {
-  if (f.P.dpd.gamma != 0 || f.P.temp != 0) {
+  if (f.parameters.dpd.gamma != 0 || f.parameters.temp != 0) {
     mem3dg_runtime_error("DPD has to be turned off for CG integration!");
   }
-  if (f.P.Bc != 1 && f.P.Bc != 0) {
+  if (f.parameters.Bc != 1 && f.parameters.Bc != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
                              "be set to 1 for optimization!");
   }
@@ -137,18 +137,18 @@ void ConjugateGradient::checkParameters() {
 }
 
 void ConjugateGradient::status() {
-  auto physicalForce = toMatrix(f.F.mechanicalForce);
+  auto physicalForce = toMatrix(f.forces.mechanicalForce);
 
   // compute summerized forces
   getForces();
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
-  if (f.O.isPreferredVolume) {
-    dVP = abs(f.volume / f.P.osmotic.Vt - 1);
+  if (f.parameters.osmotic.isPreferredVolume) {
+    dVP = abs(f.volume / f.parameters.osmotic.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
-    dVP = abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0);
+    dVP = abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0);
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
 
@@ -168,11 +168,11 @@ void ConjugateGradient::status() {
 
 void ConjugateGradient::march() {
   // map the raw eigen datatype for computation
-  auto vel_e = toMatrix(f.vel);
-  auto vel_protein_e = toMatrix(f.vel_protein);
+  auto vel_e = toMatrix(f.velocity);
+  auto vel_protein_e = toMatrix(f.proteinVelocity);
   auto pos_e = toMatrix(f.vpg->inputVertexPositions);
-  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.forces.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.forces.mechanicalForce);
   // typedef gc::EigenVectorMap_T<double, 3,
   // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3
   // Map3 = gc::EigenMap<double, 3>;
@@ -180,21 +180,21 @@ void ConjugateGradient::march() {
   // determine conjugate gradient direction, restart after nVertices() cycles
   if (countCG % restartNum == 0) {
     pastNormSq =
-        (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
-        (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
+        (f.parameters.variation.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
+        (f.parameters.variation.isProteinVariation ? f.forces.chemicalPotential.raw().squaredNorm()
                                 : 0);
     vel_e = physicalForceVec;
-    vel_protein_e = f.P.Bc * f.F.chemicalPotential.raw();
+    vel_protein_e = f.parameters.Bc * f.forces.chemicalPotential.raw();
     countCG = 1;
   } else {
     currentNormSq =
-        (f.O.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
-        (f.O.isProteinVariation ? f.F.chemicalPotential.raw().squaredNorm()
+        (f.parameters.variation.isShapeVariation ? physicalForceVec.squaredNorm() : 0) +
+        (f.parameters.variation.isProteinVariation ? f.forces.chemicalPotential.raw().squaredNorm()
                                 : 0);
     vel_e *= currentNormSq / pastNormSq;
     vel_e += physicalForceVec;
     vel_protein_e *= currentNormSq / pastNormSq;
-    vel_protein_e += f.P.Bc * f.F.chemicalPotential.raw();
+    vel_protein_e += f.parameters.Bc * f.forces.chemicalPotential.raw();
     pastNormSq = currentNormSq;
     countCG++;
   }
@@ -203,14 +203,14 @@ void ConjugateGradient::march() {
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
     dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.O.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
+         (f.parameters.variation.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
                                : vel_protein_e.cwiseAbs().maxCoeff());
   }
 
   // time stepping on vertex position
-  previousE = f.E;
+  previousE = f.energy;
   if (isBacktrack) {
-    backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
+    backtrack(f.energy.potE, vel_e, vel_protein_e, rho, c1);
   } else {
     pos_e += vel_e * dt;
     f.proteinDensity.raw() += vel_protein_e * dt;
@@ -218,9 +218,9 @@ void ConjugateGradient::march() {
   }
 
   // regularization
-  if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
+  if ((f.parameters.Kse != 0) || (f.parameters.Ksl != 0) || (f.parameters.Kst != 0)) {
     f.computeRegularizationForce();
-    f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+    f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
   }
 
   // recompute cached values
@@ -235,7 +235,7 @@ void FeedForwardSweep::sweep() {
 #endif
 
   // initialize variables
-  const double KV = f.P.osmotic.Kv, KSG = f.P.tension.Ksg, init_time = 0.0;
+  const double KV = f.parameters.osmotic.Kv, KSG = f.parameters.tension.Ksg, init_time = 0.0;
   const std::size_t verbosity = 2;
 
   // initialize variables used if adopting adaptive time step based on mesh
@@ -251,11 +251,11 @@ void FeedForwardSweep::sweep() {
     for (double VP : VP_) {
       // reset parameters
       if (isAugmentedLagrangian) {
-        f.P.lambdaSG = 0;
-        f.P.lambdaV = 0;
+        f.parameters.lambdaSG = 0;
+        f.parameters.lambdaV = 0;
       } else {
-        f.P.osmotic.Kv = KV;
-        f.P.tension.Ksg = KSG;
+        f.parameters.osmotic.Kv = KV;
+        f.parameters.tension.Ksg = KSG;
       }
 
       // adjust time step if adopt adaptive time step based on mesh size
@@ -270,9 +270,9 @@ void FeedForwardSweep::sweep() {
       trajFileName = buffer;
 
       // update sweeping paraemters
-      f.P.bending.H0c = H;
-      (f.O.isPreferredVolume ? f.P.osmotic.Vt : f.P.osmotic.cam) = VP;
-      std::cout << "\nH0c: " << f.P.bending.H0c << std::endl;
+      f.parameters.bending.H0c = H;
+      (f.parameters.osmotic.isPreferredVolume ? f.parameters.osmotic.Vt : f.parameters.osmotic.cam) = VP;
+      std::cout << "\nH0c: " << f.parameters.bending.H0c << std::endl;
       std::cout << "VP: " << VP << std::endl;
 
       // recalculate cached values

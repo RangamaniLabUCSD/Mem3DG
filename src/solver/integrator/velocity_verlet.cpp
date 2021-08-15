@@ -106,8 +106,8 @@ void VelocityVerlet::status() {
   f.updateVertexPositions();
 
   // alias vpg quantities, which should follow the update
-  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.forces.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.forces.mechanicalForce);
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(f.vpg->vertexNormals);
 
   // compute summerized forces
@@ -127,14 +127,14 @@ void VelocityVerlet::status() {
           .matrix();
 
   // compute the area contraint error
-  dArea = (f.P.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  dArea = (f.parameters.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
-  if (f.O.isPreferredVolume) {
+  if (f.parameters.osmotic.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.P.osmotic.Kv != 0) ? abs(f.volume / f.P.osmotic.Vt - 1) : 0.0;
+    dVP = (f.parameters.osmotic.Kv != 0) ? abs(f.volume / f.parameters.osmotic.Vt - 1) : 0.0;
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0) : 1.0;
+    dVP = (!f.mesh->hasBoundary()) ? abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0) : 1.0;
   }
 
   // exit if under error tol
@@ -154,7 +154,7 @@ void VelocityVerlet::status() {
 
   // backtracking for error
   finitenessErrorBacktrack();
-  if (f.E.totalE > 1.05 * totalEnergy) {
+  if (f.energy.totalE > 1.05 * totalEnergy) {
     std::cout
         << "\nVelocity Verlet: increasing system energy, simulation stopped!"
         << std::endl;
@@ -165,8 +165,8 @@ void VelocityVerlet::status() {
 void VelocityVerlet::march() {
 
   // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto vel_protein_e = toMatrix(f.vel_protein);
+  auto vel_e = gc::EigenMap<double, 3>(f.velocity);
+  auto vel_protein_e = toMatrix(f.proteinVelocity);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
 
   // adjust time step if adopt adaptive time step based on mesh size
@@ -179,15 +179,15 @@ void VelocityVerlet::march() {
   //     sqrt(2 * f.P.gamma * mem3dg::constants::kBoltzmann * f.P.temp / dt);
 
   // time stepping on vertex position
-  previousE = f.E;
+  previousE = f.energy;
   pos_e += vel_e * dt + hdt2 * totalPressure;
   vel_e += (totalPressure + newTotalPressure) * hdt;
   totalPressure = newTotalPressure;
   f.time += dt;
 
   // time stepping on protein density
-  if (f.O.isProteinVariation) {
-    vel_protein_e = f.P.Bc * f.F.chemicalPotential.raw();
+  if (f.parameters.variation.isProteinVariation) {
+    vel_protein_e = f.parameters.Bc * f.forces.chemicalPotential.raw();
     f.proteinDensity.raw() += vel_protein_e * dt;
   }
 

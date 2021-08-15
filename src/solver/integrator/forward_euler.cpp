@@ -110,7 +110,7 @@ bool Euler::integrate() {
 }
 
 void Euler::checkParameters() {
-  if (f.P.dpd.gamma != 0 || f.P.temp != 0) {
+  if (f.parameters.dpd.gamma != 0 || f.parameters.temp != 0) {
     mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
   if (isBacktrack) {
@@ -126,8 +126,8 @@ void Euler::status() {
 
   // compute the area contraint error
   dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
-  dVP = (f.O.isPreferredVolume) ? abs(f.volume / f.P.osmotic.Vt - 1)
-                              : abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0);
+  dVP = (f.parameters.osmotic.isPreferredVolume) ? abs(f.volume / f.parameters.osmotic.Vt - 1)
+                              : abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0);
 
   // exit if under error tolerance
   if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
@@ -151,28 +151,28 @@ void Euler::status() {
 
 void Euler::march() {
   // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto vel_protein_e = toMatrix(f.vel_protein);
+  auto vel_e = gc::EigenMap<double, 3>(f.velocity);
+  auto vel_protein_e = toMatrix(f.proteinVelocity);
   auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.forces.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.forces.mechanicalForce);
 
   // compute force, which is equivalent to velocity
   vel_e = physicalForceVec;
-  vel_protein_e = f.P.Bc * f.F.chemicalPotential.raw();
+  vel_protein_e = f.parameters.Bc * f.forces.chemicalPotential.raw();
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
     double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
     dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.O.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
+         (f.parameters.variation.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
                                : vel_protein_e.cwiseAbs().maxCoeff());
   }
 
   // time stepping on vertex position
-  previousE = f.E;
+  previousE = f.energy;
   if (isBacktrack) {
-    backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
+    backtrack(f.energy.potE, vel_e, vel_protein_e, rho, c1);
   } else {
     pos_e += vel_e * dt;
     f.proteinDensity.raw() += vel_protein_e * dt;
@@ -180,9 +180,9 @@ void Euler::march() {
   }
 
   // regularization
-  if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
+  if ((f.parameters.Kse != 0) || (f.parameters.Ksl != 0) || (f.parameters.Kst != 0)) {
     f.computeRegularizationForce();
-    f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+    f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
   }
 
   // recompute cached values

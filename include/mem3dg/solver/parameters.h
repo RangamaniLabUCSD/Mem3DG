@@ -67,6 +67,8 @@ struct Parameters {
   };
 
   struct Tension {
+    /// Whether adopt constant surface tension
+    bool isConstantSurfaceTension = false;
     /// Global stretching modulus
     double Ksg = 0;
     /// Area reservior
@@ -74,6 +76,10 @@ struct Parameters {
   };
 
   struct Osmotic {
+    /// Whether adopt preferred volume parametrization
+    bool isPreferredVolume = false;
+    /// Whether adopt constant osmotic pressure
+    bool isConstantOsmoticPressure = false;
     /// pressure-volume modulus
     double Kv = 0;
     /// preferred volume
@@ -110,16 +116,48 @@ struct Parameters {
     double gamma = 0;
   };
 
-  Bending bending;
-  Tension tension;
-  Osmotic osmotic;
-  Adsorption adsorption;
-  Dirichlet dirichlet;
-  External external;
-  DPD dpd;
+  struct Boundary {
+    /// shape boundary condition: roller, pin, fixed, none
+    std::string shapeBoundaryCondition = "none";
+    /// protein boundary condition: pin
+    std::string proteinBoundaryCondition = "none";
+  };
 
+  struct Variation {
+    /// Whether or not consider protein binding
+    bool isProteinVariation = false;
+    /// Whether or not consider shape evolution
+    bool isShapeVariation = true;
+  };
+
+  /// bending parameters
+  Bending bending;
+  /// surface tension parameters
+  Tension tension;
+  /// osmotic pressure parameters
+  Osmotic osmotic;
+  /// protein adsorption parameters
+  Adsorption adsorption;
+  /// protein dirichlet energy parameters
+  Dirichlet dirichlet;
+  /// external force parameters
+  External external;
+  /// DPD parameters
+  DPD dpd;
+  /// boundary conditions
+  Boundary boundary;
+  /// variation
+  Variation variation;
+
+  
   /// (initial) protein density
   EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
+  /// The point
+  EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
+  /// mobility constant
+  double Bc = 0;
+  /// Temperature
+  double temp = 0;
 
   /// Vertex shifting constant
   double Kst = 0;
@@ -127,15 +165,6 @@ struct Parameters {
   double Ksl = 0;
   /// Edge spring constant
   double Kse = 0;
-
-  /// The point
-  EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
-
-  /// mobility constant
-  double Bc = 0;
-
-  /// Temperature
-  double temp = 0;
 
   /// domain of integration
   double radius = -1;
@@ -150,30 +179,17 @@ struct Parameters {
 };
 
 struct Options {
-  /// Whether or not consider protein binding
-  bool isProteinVariation = false;
-  /// Whether or not consider shape evolution
-  bool isShapeVariation = true;
-  /// Whether or not do vertex shift
-  bool isVertexShift = false;
-  /// Whether adopt preferred volume parametrization
-  bool isPreferredVolume = false;
-  /// Whether adopt constant osmotic pressure
-  bool isConstantOsmoticPressure = false;
-  /// Whether adopt constant surface tension
-  bool isConstantSurfaceTension = false;
+  /// Whether floating "the" vertex
+  bool isFloatVertex = false;
+
   /// Whether edge flip
   bool isEdgeFlip = false;
   /// Whether split edge
   bool isSplitEdge = false;
   /// Whether collapse edge
   bool isCollapseEdge = false;
-  /// Whether floating "the" vertex
-  bool isFloatVertex = false;
-  /// shape boundary condition: roller, pin, fixed, none
-  std::string shapeBoundaryCondition = "none";
-  /// protein boundary condition: pin
-  std::string proteinBoundaryCondition = "none";
+  /// Whether or not do vertex shift
+  bool isVertexShift = false;
 };
 
 } // namespace solver

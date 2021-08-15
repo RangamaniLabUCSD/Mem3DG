@@ -98,7 +98,7 @@ protected:
 
 public:
   /// Parameters
-  Parameters P;
+  Parameters parameters;
   /// Options
   Options O;
   /// Mesh mutator;
@@ -111,12 +111,12 @@ public:
   /// reference embedding geometry
   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
   /// Energy
-  Energy E;
+  Energy energy;
   /// Time
   double time;
 
   /// Forces of the system
-  Forces F;
+  Forces forces;
 
   /// mechanical error norm
   double mechErrorNorm;
@@ -131,9 +131,9 @@ public:
   /// Spontaneous curvature gradient of the mesh
   gcs::FaceData<gc::Vector3> proteinDensityGradient;
   /// Cached vertex velocity
-  gcs::VertexData<gc::Vector3> vel;
+  gcs::VertexData<gc::Vector3> velocity;
   /// Cached vertex protein velocity
-  gcs::VertexData<double> vel_protein;
+  gcs::VertexData<double> proteinVelocity;
   /// Spontaneous curvature of the mesh
   gcs::VertexData<double> H0;
   /// Bending rigidity of the membrane
@@ -417,7 +417,7 @@ private:
          std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_, Parameters &p,
          Options &o)
       : System(std::move(ptrmesh_), std::move(ptrvpg_), std::move(ptrrefVpg_)) {
-    P = p;
+    parameters = p;
     O = o;
   }
 
@@ -432,15 +432,15 @@ private:
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrrefVpg_)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
-        refVpg(std::move(ptrrefVpg_)), F(*mesh, *vpg) {
+        refVpg(std::move(ptrrefVpg_)), forces(*mesh, *vpg) {
 
-    E = Energy({0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    energy = Energy({0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     time = 0;
 
     proteinDensity = gc::VertexData<double>(*mesh, 0);
     proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
-    vel = gcs::VertexData<gc::Vector3>(*mesh, {0, 0, 0});
-    vel_protein = gcs::VertexData<double>(*mesh, 0);
+    velocity = gcs::VertexData<gc::Vector3>(*mesh, {0, 0, 0});
+    proteinVelocity = gcs::VertexData<double>(*mesh, 0);
     H0 = gcs::VertexData<double>(*mesh);
     Kb = gcs::VertexData<double>(*mesh);
 

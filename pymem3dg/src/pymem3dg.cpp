@@ -21,6 +21,7 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 
+#include "mem3dg/solver/system.h"
 #include "visualization.h"
 
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
@@ -665,7 +666,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Initializing arguments
    */
-  system.def_readwrite("P", &System::P,
+  system.def_readwrite("parameters", &System::parameters,
                        R"delim(
           get the Parameters struct
       )delim");
@@ -787,11 +788,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Membrane dynamics properties (Mem3DG)
    */
-  system.def_readwrite("E", &System::E,
+  system.def_readwrite("energy", &System::energy,
                        R"delim(
           get the Energy components struct
       )delim");
-  system.def_readonly("F", &System::F,
+  system.def_readonly("forces", &System::forces,
                       R"delim(
           get the force component struct
       )delim");
@@ -803,7 +804,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   system.def(
       "getVertexVelocityMatrix",
-      [](System &s) { return gc::EigenMap<double, 3>(s.vel); },
+      [](System &s) { return gc::EigenMap<double, 3>(s.velocity); },
       py::return_value_policy::reference_internal,
       R"delim(
           get the vertex velocity matrix
@@ -901,28 +902,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether do vertex shift  
       )delim");
-  options.def_readwrite("isProteinVariation", &Options::isProteinVariation,
-                        R"delim(
-          get the option of whether simulate protein variation
-      )delim");
-  options.def_readwrite("isShapeVariation", &Options::isShapeVariation,
-                        R"delim(
-          get the option of whether simulate shape variation
-      )delim");
-  options.def_readwrite("isPreferredVolume", &Options::isPreferredVolume,
-                        R"delim(
-          get the option of whether adopt the preferred volume parametrization  
-      )delim");
-  options.def_readwrite("isConstantOsmoticPressure",
-                        &Options::isConstantOsmoticPressure,
-                        R"delim(
-          get the option of whether adopt constant osmotic pressure
-      )delim");
-  options.def_readwrite("isConstantSurfaceTension",
-                        &Options::isConstantSurfaceTension,
-                        R"delim(
-          get the option of whether adopt constant surface tension 
-      )delim");
   options.def_readwrite("isEdgeFlip", &Options::isEdgeFlip,
                         R"delim(
           get the option of whether do edge flip
@@ -939,20 +918,40 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                         R"delim(
           get the option of whether have "the" vertex floating in embedded space
       )delim");
-  options.def_readwrite("shapeBoundaryCondition",
-                        &Options::shapeBoundaryCondition,
-                        R"delim(
-          get the option of "roller", "pin", "fixed", or "none" to specify shape boundary condition.
-      )delim");
-  options.def_readwrite("proteinBoundaryCondition",
-                        &Options::proteinBoundaryCondition,
-                        R"delim(
-          get the option of "pin", or "none" to specify protein boundary condition.
-      )delim");
 
   // ==========================================================
   // =============   Simulation parameters      ===============
   // ==========================================================
+  py::class_<Parameters::Boundary> boundary(pymem3dg, "Boundary", R"delim(
+        The boundary conditions
+    )delim");
+  boundary.def(py::init<>());
+  boundary.def_readwrite("shapeBoundaryCondition",
+                         &Parameters::Boundary::shapeBoundaryCondition,
+                         R"delim(
+          get the option of "roller", "pin", "fixed", or "none" to specify shape boundary condition.
+      )delim");
+  boundary.def_readwrite("proteinBoundaryCondition",
+                         &Parameters::Boundary::proteinBoundaryCondition,
+                         R"delim(
+          get the option of "pin", or "none" to specify protein boundary condition.
+      )delim");
+
+  py::class_<Parameters::Variation> variation(pymem3dg, "Variation", R"delim(
+        Variation
+    )delim");
+  variation.def(py::init<>());
+  variation.def_readwrite("isProteinVariation",
+                          &Parameters::Variation::isProteinVariation,
+                          R"delim(
+          get the option of whether simulate protein variation
+      )delim");
+  variation.def_readwrite("isShapeVariation",
+                          &Parameters::Variation::isShapeVariation,
+                          R"delim(
+          get the option of whether simulate shape variation
+      )delim");
+
   py::class_<Parameters::Bending> bending(pymem3dg, "Bending", R"delim(
         The bending parameters
     )delim");
@@ -978,6 +977,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The surface tension parameters
     )delim");
   tension.def(py::init<>());
+  tension.def_readwrite("isConstantSurfaceTension",
+                        &Parameters::Tension::isConstantSurfaceTension,
+                        R"delim(
+          get the option of whether adopt constant surface tension 
+      )delim");
   tension.def_readwrite("Ksg", &Parameters::Tension::Ksg,
                         R"delim(
           get Global stretching modulus 
@@ -1009,6 +1013,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   osmotic.def_readwrite("n", &Parameters::Osmotic::n,
                         R"delim(
           get the enclosed solute amount
+      )delim");
+  osmotic.def_readwrite("isPreferredVolume",
+                        &Parameters::Osmotic::isPreferredVolume,
+                        R"delim(
+          get the option of whether adopt the preferred volume parametrization  
+      )delim");
+  osmotic.def_readwrite("isConstantOsmoticPressure",
+                        &Parameters::Osmotic::isConstantOsmoticPressure,
+                        R"delim(
+          get the option of whether adopt constant osmotic pressure
       )delim");
 
   py::class_<Parameters::Adsorption> adsorption(pymem3dg, "Adsorption",
@@ -1051,7 +1065,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The Dirichlet energy parameters
     )delim");
   dirichlet.def_readwrite("eta", &Parameters::Dirichlet::eta,
-                           R"delim(
+                          R"delim(
           get coefficient
       )delim");
 
@@ -1081,6 +1095,38 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("bending", &Parameters::bending,
                            R"delim(
           bending parameters
+      )delim");
+  parameters.def_readwrite("tension", &Parameters::tension,
+                           R"delim(
+          tension parameters
+      )delim");
+  parameters.def_readwrite("osmotic", &Parameters::osmotic,
+                           R"delim(
+        "osmotic parameters
+      )delim");
+  parameters.def_readwrite("adsorption", &Parameters::adsorption,
+                           R"delim(
+          adsorption parameters
+      )delim");
+  parameters.def_readwrite("dirichlet", &Parameters::dirichlet,
+                           R"delim(
+          dirichlet parameters
+      )delim");
+  parameters.def_readwrite("dpd", &Parameters::dpd,
+                           R"delim(
+          dpd parameters
+      )delim");
+  parameters.def_readwrite("external", &Parameters::external,
+                           R"delim(
+          external parameters
+      )delim");
+  parameters.def_readwrite("boundary", &Parameters::boundary,
+                           R"delim(
+          boundary parameters
+      )delim");
+  parameters.def_readwrite("variation", &Parameters::variation,
+                           R"delim(
+          variation parameters
       )delim");
   parameters.def_readwrite("protein0", &Parameters::protein0,
                            R"delim(
