@@ -51,9 +51,9 @@ void System::computeBendingEnergy() {
       abs(vpg->vertexMeanCurvatures.raw().array() /
               vpg->vertexDualAreas.raw().array() -
           H0.raw().array());
-  E.BE = (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
-          H_difference.array().square())
-             .sum();
+  energy.BE = (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
+               H_difference.array().square())
+                  .sum();
 
   // when considering topological changes, additional term of gauss curvature
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
@@ -63,35 +63,38 @@ void System::computeBendingEnergy() {
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
   double A_difference = surfaceArea - refSurfaceArea;
-  E.sE = O.isConstantSurfaceTension ? F.surfaceTension * surfaceArea
-                                    : F.surfaceTension * A_difference / 2 +
-                                          P.lambdaSG * A_difference / 2;
+  energy.sE = parameters.tension.isConstantSurfaceTension
+                  ? forces.surfaceTension * surfaceArea
+                  : forces.surfaceTension * A_difference / 2 +
+                        parameters.lambdaSG * A_difference / 2;
 }
 
 void System::computePressureEnergy() {
   // Note: area weighted normal is exact volume variation
-  if (O.isPreferredVolume) {
-    double V_difference = volume - P.osmotic.Vt;
-    E.pE = -F.osmoticPressure * V_difference / 2 + P.lambdaV * V_difference / 2;
-  } else if (O.isConstantOsmoticPressure) {
-    E.pE = -F.osmoticPressure * volume;
+  if (parameters.osmotic.isPreferredVolume) {
+    double V_difference = volume - parameters.osmotic.Vt;
+    energy.pE = -forces.osmoticPressure * V_difference / 2 +
+                parameters.lambdaV * V_difference / 2;
+  } else if (parameters.osmotic.isConstantOsmoticPressure) {
+    energy.pE = -forces.osmoticPressure * volume;
   } else {
-    double ratio = P.osmotic.cam * volume / P.osmotic.n;
-    E.pE = mem3dg::constants::i * mem3dg::constants::R * P.temp * P.osmotic.n *
-           (ratio - log(ratio) - 1);
+    double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
+    energy.pE = mem3dg::constants::i * mem3dg::constants::R * parameters.temp *
+                parameters.osmotic.n * (ratio - log(ratio) - 1);
   }
 }
 
 void System::computeAdsorptionEnergy() {
-  E.aE =
-      P.adsorption.epsilon *
+  energy.aE =
+      parameters.adsorption.epsilon *
       (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
 }
 
 void System::computeProteinInteriorPenaltyEnergy() {
   // interior method to constrain protein density to remain from 0 to 1
-  E.inE = -P.lambdaPhi * ((proteinDensity.raw().array()).log().sum() +
-                          (1 - proteinDensity.raw().array()).log().sum());
+  energy.inE =
+      -parameters.lambdaPhi * ((proteinDensity.raw().array()).log().sum() +
+                               (1 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeDirichletEnergy() {
@@ -107,9 +110,10 @@ void System::computeDirichletEnergy() {
   }
 
   // explicit dirichlet energy
-  E.dE = 0;
+  energy.dE = 0;
   for (gcs::Face f : mesh->faces()) {
-    E.dE += 0.5 * P.dirichlet.eta * proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
+    energy.dE += 0.5 * parameters.dirichlet.eta *
+                 proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
   }
 
   // alternative dirichlet energy after integration by part
@@ -119,54 +123,56 @@ void System::computeDirichletEnergy() {
 }
 
 void System::computeExternalForceEnergy() {
-  E.exE = -rowwiseDotProduct(rowwiseScalarProduct(
-                                 F.externalForce.raw(),
-                                 gc::EigenMap<double, 3>(vpg->vertexNormals)),
-                             gc::EigenMap<double, 3>(vpg->inputVertexPositions))
-               .sum();
+  energy.exE =
+      -rowwiseDotProduct(
+           rowwiseScalarProduct(forces.externalForce.raw(),
+                                gc::EigenMap<double, 3>(vpg->vertexNormals)),
+           gc::EigenMap<double, 3>(vpg->inputVertexPositions))
+           .sum();
 }
 
 void System::computeKineticEnergy() {
-  auto velocity = gc::EigenMap<double, 3>(vel);
+  auto vel = gc::EigenMap<double, 3>(velocity);
   // auto velocity =
   //     rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
   //                       gc::EigenMap<double, 3>(vpg->inputVertexPositions));
-  E.kE = 0.5 * (vpg->vertexLumpedMassMatrix *
-                (velocity.array() * velocity.array()).matrix())
-                   .sum();
+  energy.kE =
+      0.5 * (vpg->vertexLumpedMassMatrix * (vel.array() * vel.array()).matrix())
+                .sum();
 }
 
 void System::computePotentialEnergy() {
-  if (P.bending.Kb != 0 || P.bending.Kbc != 0) {
+  if (parameters.bending.Kb != 0 || parameters.bending.Kbc != 0) {
     computeBendingEnergy();
   }
-  if (P.tension.Ksg != 0) {
+  if (parameters.tension.Ksg != 0) {
     computeSurfaceEnergy();
   }
-  if (P.osmotic.Kv != 0) {
+  if (parameters.osmotic.Kv != 0) {
     computePressureEnergy();
   }
-  if (P.adsorption.epsilon != 0) {
+  if (parameters.adsorption.epsilon != 0) {
     computeAdsorptionEnergy();
   }
-  if (P.dirichlet.eta != 0) {
+  if (parameters.dirichlet.eta != 0) {
     computeDirichletEnergy();
   }
-  if (P.external.Kf != 0) {
+  if (parameters.external.Kf != 0) {
     computeExternalForceEnergy();
   }
-  if (O.isProteinVariation) {
+  if (parameters.variation.isProteinVariation) {
     computeProteinInteriorPenaltyEnergy();
   }
-  E.potE = E.BE + E.sE + E.pE + E.aE + E.dE + E.exE + E.inE;
+  energy.potE = energy.BE + energy.sE + energy.pE + energy.aE + energy.dE +
+                energy.exE + energy.inE;
 }
 
 void System::computeFreeEnergy() {
   // zero all energy
-  E = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  energy = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   computeKineticEnergy();
   computePotentialEnergy();
-  E.totalE = E.kE + E.potE;
+  energy.totalE = energy.kE + energy.potE;
 }
 
 void System::computeGradient(gcs::VertexData<double> &quantities,

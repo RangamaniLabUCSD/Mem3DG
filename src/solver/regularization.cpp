@@ -69,7 +69,7 @@ void System::computeRegularizationForce() {
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
 
         // Conformal regularization
-        if (P.Kst != 0 && !he.edge().isBoundary()) {
+        if (parameters.Kst != 0 && !he.edge().isBoundary()) {
           gcs::Halfedge jl = he.next();
           gcs::Halfedge li = jl.next();
           gcs::Halfedge ik = he.twin().next();
@@ -77,8 +77,8 @@ void System::computeRegularizationForce() {
 
           gc::Vector3 grad_li = vecFromHalfedge(li, *vpg).normalize();
           gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
-          F.regularizationForce[v] +=
-              -P.Kst *
+          forces.regularizationForce[v] +=
+              -parameters.Kst *
               (computeLengthCrossRatio(*vpg, he.edge()) -
                targetLcrs[he.edge()]) /
               targetLcrs[he.edge()] *
@@ -89,25 +89,25 @@ void System::computeRegularizationForce() {
         }
 
         // Local area regularization
-        if (P.Ksl != 0 && he.isInterior()) {
+        if (parameters.Ksl != 0 && he.isInterior()) {
           gcs::Halfedge base_he = he.next();
           gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
           gc::Vector3 localAreaGradient =
               -gc::cross(base_vec, vpg->faceNormal(he.face()));
           auto &referenceArea = (v.isBoundary() ? refFaceAreas[base_he.face()]
                                                 : meanTargetFaceArea);
-          F.regularizationForce[v] +=
-              -P.Ksl * localAreaGradient *
+          forces.regularizationForce[v] +=
+              -parameters.Ksl * localAreaGradient *
               (vpg->faceArea(base_he.face()) - referenceArea);
         }
 
         // local edge regularization
-        if (P.Kse != 0) {
+        if (parameters.Kse != 0) {
           gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
           auto &referenceLength = (v.isBoundary() ? refEdgeLengths[he.edge()]
                                                   : meanTargetEdgeLength);
-          F.regularizationForce[v] +=
-              -P.Kse * edgeGradient *
+          forces.regularizationForce[v] +=
+              -parameters.Kse * edgeGradient *
               (vpg->edgeLength(he.edge()) - referenceLength);
         }
       }
@@ -116,7 +116,7 @@ void System::computeRegularizationForce() {
 
   // post processing regularization force
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto regularizationForce_e = gc::EigenMap<double, 3>(F.regularizationForce);
+  auto regularizationForce_e = gc::EigenMap<double, 3>(forces.regularizationForce);
 
   // remove the normal component
   regularizationForce_e -= rowwiseScalarProduct(
@@ -170,7 +170,7 @@ void System::computeRegularizationForce() {
 
 void System::vertexShift() {
   for (gcs::Vertex v : mesh->vertices()) {
-    if (gc::sum(F.forceMask[v]) > 0.5) {
+    if (gc::sum(forces.forceMask[v]) > 0.5) {
       if (v.isBoundary()) {
         gcs::Vertex v1 = v;
         gcs::Vertex v2 = v;
@@ -239,7 +239,7 @@ bool System::edgeFlip() {
       continue;
     }
     gcs::Halfedge he = e.halfedge();
-    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) <
+    if (gc::sum(forces.forceMask[he.vertex()] + forces.forceMask[he.twin().vertex()]) <
         0.5) {
       continue;
     }
@@ -277,7 +277,7 @@ bool System::growMesh() {
     if (!isOrigEdge[e]) {
       continue;
     }
-    if (gc::sum(F.forceMask[vertex1] + F.forceMask[vertex2]) < 0.5) {
+    if (gc::sum(forces.forceMask[vertex1] + forces.forceMask[vertex2]) < 0.5) {
       continue;
     }
 
@@ -294,11 +294,11 @@ bool System::growMesh() {
       // Note: think about conservation of energy, momentum and angular
       // momentum
       averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
-      averageData(vel, vertex1, vertex2, newVertex);
+      averageData(velocity, vertex1, vertex2, newVertex);
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
       thePointTracker[newVertex] = false;
-      F.forceMask[newVertex] = gc::Vector3{1, 1, 1};
+      forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
       meshMutator.maskAllNeighboring(smoothingMask, newVertex);
       // smoothingMask[newVertex] = true;
@@ -308,9 +308,9 @@ bool System::growMesh() {
                O.isCollapseEdge) { // Collapsing
                                    // precached pre-mutation values or flag
       gc::Vector3 collapsedPosition =
-          gc::sum(F.forceMask[vertex1]) < 2.5
+          gc::sum(forces.forceMask[vertex1]) < 2.5
               ? vpg->inputVertexPositions[vertex1]
-          : gc::sum(F.forceMask[vertex2]) < 2.5
+          : gc::sum(forces.forceMask[vertex2]) < 2.5
               ? vpg->inputVertexPositions[vertex2]
               : (vpg->inputVertexPositions[vertex1] +
                  vpg->inputVertexPositions[vertex2]) /
@@ -328,7 +328,7 @@ bool System::growMesh() {
       thePointTracker[newVertex] = isThePoint;
       // Note: think about conservation of energy, momentum and angular
       // momentum
-      averageData(vel, vertex1, vertex2, newVertex);
+      averageData(velocity, vertex1, vertex2, newVertex);
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
 
@@ -365,11 +365,11 @@ void System::processMesh() {
   }
 
   // regularization
-  if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
+  if ((parameters.Kse != 0) || (parameters.Ksl != 0) || (parameters.Kst != 0)) {
     computeRegularizationForce();
-    vpg->inputVertexPositions.raw() += F.regularizationForce.raw();
+    vpg->inputVertexPositions.raw() += forces.regularizationForce.raw();
     computeRegularizationForce();
-    vpg->inputVertexPositions.raw() += F.regularizationForce.raw();
+    vpg->inputVertexPositions.raw() += forces.regularizationForce.raw();
   }
 
   // globally update quantities
@@ -390,7 +390,7 @@ void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
     auto pos_e = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
     auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
     gradient = (smoothingMask.raw().cast<double>()).array() *
-               F.bendingForce.raw().array();
+               forces.bendingForce.raw().array();
     gradNorm =
         gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum();
     if (gradNorm > pastGradNorm) {
@@ -486,10 +486,10 @@ void System::globalUpdateAfterMutation() {
 
   // Update mask when topology changes (likely not necessary, just for safety)
   if (isOpenMesh) {
-    F.forceMask.fill({1, 1, 1});
-    boundaryForceMask(*mesh, F.forceMask, O.shapeBoundaryCondition);
-    F.proteinMask.fill(1);
-    boundaryProteinMask(*mesh, F.proteinMask, O.proteinBoundaryCondition);
+    forces.forceMask.fill({1, 1, 1});
+    boundaryForceMask(*mesh, forces.forceMask, parameters.boundary.shapeBoundaryCondition);
+    forces.proteinMask.fill(1);
+    boundaryProteinMask(*mesh, forces.proteinMask, parameters.boundary.proteinBoundaryCondition);
     // for (gcs::Vertex v : mesh->vertices()) {
     //   if (!mask[v]) {
     //     vpg->inputVertexPositions[v].z = 0;

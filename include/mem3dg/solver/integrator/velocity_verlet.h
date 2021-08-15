@@ -52,7 +52,7 @@ public:
     newTotalPressure.setZero();
 
     f.computeFreeEnergy();
-    totalEnergy = f.E.totalE;
+    totalEnergy = f.energy.totalE;
   }
 
   /**

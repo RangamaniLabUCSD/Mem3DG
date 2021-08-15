@@ -48,6 +48,7 @@ int main() {
   p.osmotic.Vt = -1;
   p.osmotic.n = 1;
   p.osmotic.cam = 0;
+  p.osmotic.isPreferredVolume = false;
   p.external.Kf = 0;
   p.external.conc = -1;
   p.external.height = 0;
@@ -56,10 +57,9 @@ int main() {
   p.temp = 0;
   p.pt = EigenVectorX1d(2);
   p.pt << 0, 0;
+  p.variation.isProteinVariation = false;
 
   mem3dg::solver::Options o;
-  o.isProteinVariation = false;
-  o.isPreferredVolume = false;
   o.isEdgeFlip = true;
   o.isSplitEdge = true;
   o.isCollapseEdge = true;

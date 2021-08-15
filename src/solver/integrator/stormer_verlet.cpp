@@ -38,7 +38,7 @@ bool StormerVerlet::integrate() {
             ptrVpg->inputVertexPositions,
             ptrMesh->getFaceVertexList());*/
     // polyscope::show();
-    gc::EigenMap<double, 3>(f.vel) =
+    gc::EigenMap<double, 3>(f.velocity) =
         (gc::EigenMap<double, 3>(f.vpg->inputVertexPositions) -
          gc::EigenMap<double, 3>(pastPositions)) /
         dt;
@@ -59,8 +59,8 @@ bool StormerVerlet::integrate() {
       }
       if (flag == true) {
         f.vpg->inputVertexPositions[v] *= 2;
-        totalForce = f.F.mechanicalForceVec[v] + f.F.dampingForce[v] +
-                     f.F.stochasticForce[v] + f.F.regularizationForce[v];
+        totalForce = f.forces.mechanicalForceVec[v] + f.forces.dampingForce[v] +
+                     f.forces.stochasticForce[v] + f.forces.regularizationForce[v];
         f.vpg->inputVertexPositions[v] +=
             totalForce * dt * dt - pastPositions[v];
       }

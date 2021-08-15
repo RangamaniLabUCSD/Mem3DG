@@ -60,9 +60,9 @@ void visualize(mem3dg::solver::System &f) {
   // Process attributes
   Eigen::Matrix<double, Eigen::Dynamic, 1> fn;
 
-  fn = f.F.bendingForce.raw() + f.F.capillaryForce.raw() +
-       f.F.osmoticForce.raw() + f.F.externalForce.raw() +
-       f.F.lineCapillaryForce.raw();
+  fn = f.forces.bendingForce.raw() + f.forces.capillaryForce.raw() +
+       f.forces.osmoticForce.raw() + f.forces.externalForce.raw() +
+       f.forces.lineCapillaryForce.raw();
 
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
@@ -76,10 +76,10 @@ void visualize(mem3dg::solver::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("external_Force", f.F.externalForce);
+      ->addVertexScalarQuantity("external_Force", f.forces.externalForce);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
-                                f.F.lineCapillaryForce.raw().array() /
+                                f.forces.lineCapillaryForce.raw().array() /
                                     f.vpg->vertexDualAreas.raw().array());
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_force", fn);

@@ -159,11 +159,11 @@ void System::computeVectorForces() {
       }
 
       // Assemble to forces
-      osmoticForceVec += F.osmoticPressure * volGrad;
-      capillaryForceVec -= F.surfaceTension * areaGrad;
+      osmoticForceVec += forces.osmoticPressure * volGrad;
+      capillaryForceVec -= forces.surfaceTension * areaGrad;
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
-                            P.adsorption.epsilon * areaGrad;
-      lineCapForceVec -= P.dirichlet.eta * (0.125 * dirichletVec -
+                            parameters.adsorption.epsilon * areaGrad;
+      lineCapForceVec -= parameters.dirichlet.eta * (0.125 * dirichletVec -
                                   0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
 
       bendForceVec_schlafliVec -=
@@ -227,37 +227,37 @@ void System::computeVectorForces() {
     }
 
     // masking
-    osmoticForceVec = F.maskForce(osmoticForceVec, i);
-    capillaryForceVec = F.maskForce(capillaryForceVec, i);
-    bendForceVec = F.maskForce(bendForceVec, i);
-    lineCapForceVec = F.maskForce(lineCapForceVec, i);
-    adsorptionForceVec = F.maskForce(adsorptionForceVec, i);
-    bendForceVec = F.maskForce(bendForceVec, i);
-    bendForceVec_areaGrad = F.maskForce(bendForceVec_areaGrad, i);
-    bendForceVec_gaussVec = F.maskForce(bendForceVec_gaussVec, i);
-    bendForceVec_schlafliVec = F.maskForce(bendForceVec_schlafliVec, i);
+    osmoticForceVec = forces.maskForce(osmoticForceVec, i);
+    capillaryForceVec = forces.maskForce(capillaryForceVec, i);
+    bendForceVec = forces.maskForce(bendForceVec, i);
+    lineCapForceVec = forces.maskForce(lineCapForceVec, i);
+    adsorptionForceVec = forces.maskForce(adsorptionForceVec, i);
+    bendForceVec = forces.maskForce(bendForceVec, i);
+    bendForceVec_areaGrad = forces.maskForce(bendForceVec_areaGrad, i);
+    bendForceVec_gaussVec = forces.maskForce(bendForceVec_gaussVec, i);
+    bendForceVec_schlafliVec = forces.maskForce(bendForceVec_schlafliVec, i);
 
     // Combine to one
-    F.osmoticForceVec[i] = osmoticForceVec;
-    F.capillaryForceVec[i] = capillaryForceVec;
-    F.bendingForceVec[i] = bendForceVec;
-    F.lineCapillaryForceVec[i] = lineCapForceVec;
-    F.adsorptionForceVec[i] = adsorptionForceVec;
-    F.bendingForceVec[i] = bendForceVec;
-    F.bendingForceVec_areaGrad[i] = bendForceVec_areaGrad;
-    F.bendingForceVec_gaussVec[i] = bendForceVec_gaussVec;
-    F.bendingForceVec_schlafliVec[i] = bendForceVec_schlafliVec;
+    forces.osmoticForceVec[i] = osmoticForceVec;
+    forces.capillaryForceVec[i] = capillaryForceVec;
+    forces.bendingForceVec[i] = bendForceVec;
+    forces.lineCapillaryForceVec[i] = lineCapForceVec;
+    forces.adsorptionForceVec[i] = adsorptionForceVec;
+    forces.bendingForceVec[i] = bendForceVec;
+    forces.bendingForceVec_areaGrad[i] = bendForceVec_areaGrad;
+    forces.bendingForceVec_gaussVec[i] = bendForceVec_gaussVec;
+    forces.bendingForceVec_schlafliVec[i] = bendForceVec_schlafliVec;
 
     // Scalar force by projection to angle-weighted normal
-    F.bendingForce[i] = F.ontoNormal(bendForceVec, i);
-    F.capillaryForce[i] = F.ontoNormal(capillaryForceVec, i);
-    F.osmoticForce[i] = F.ontoNormal(osmoticForceVec, i);
-    F.lineCapillaryForce[i] = F.ontoNormal(lineCapForceVec, i);
+    forces.bendingForce[i] = forces.ontoNormal(bendForceVec, i);
+    forces.capillaryForce[i] = forces.ontoNormal(capillaryForceVec, i);
+    forces.osmoticForce[i] = forces.ontoNormal(osmoticForceVec, i);
+    forces.lineCapillaryForce[i] = forces.ontoNormal(lineCapForceVec, i);
   }
 
   // measure smoothness
   if (O.isSplitEdge || O.isCollapseEdge) {
-    isSmooth = !hasOutlier(F.bendingForce.raw());
+    isSmooth = !hasOutlier(forces.bendingForce.raw());
   }
 }
 
@@ -306,12 +306,12 @@ EigenVectorX1d System::computeBendingForce() {
           .matrix();
 
   // calculate bendingForce
-  F.bendingForce.raw() = vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
+  forces.bendingForce.raw() = vpg->vertexLumpedMassMatrix * (productTerms + lap_H);
   // }
 
-  isSmooth = !hasOutlier(F.bendingForce.raw());
+  isSmooth = !hasOutlier(forces.bendingForce.raw());
 
-  return F.bendingForce.raw();
+  return forces.bendingForce.raw();
 
   // /// B. optimized version
   // // calculate the Laplacian of mean curvature H
@@ -347,12 +347,12 @@ EigenVectorX1d System::computeCapillaryForce() {
   mem3dg_runtime_error("computeCapillaryForce: out of data implementation, "
                            "shouldn't be called!");
   /// Geometric implementation
-  F.surfaceTension =
-      P.tension.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea + P.lambdaSG;
-  F.capillaryForce.raw() =
-      -F.surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
+  forces.surfaceTension =
+      parameters.tension.Ksg * (surfaceArea - refSurfaceArea) / refSurfaceArea + parameters.lambdaSG;
+  forces.capillaryForce.raw() =
+      -forces.surfaceTension * 2 * vpg->vertexMeanCurvatures.raw();
 
-  return F.capillaryForce.raw();
+  return forces.capillaryForce.raw();
 
   // /// Nongeometric implementationx
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -375,10 +375,10 @@ EigenVectorX1d System::computeCapillaryForce() {
 EigenVectorX1d System::computeOsmoticForce() {
   mem3dg_runtime_error("computeOsmoticForce: out of data implementation, "
                            "shouldn't be called!");
-  F.osmoticForce.raw().setConstant(F.osmoticPressure);
-  F.osmoticForce.raw().array() *= vpg->vertexDualAreas.raw().array();
+  forces.osmoticForce.raw().setConstant(forces.osmoticPressure);
+  forces.osmoticForce.raw().array() *= vpg->vertexDualAreas.raw().array();
 
-  return F.osmoticForce.raw();
+  return forces.osmoticForce.raw();
 
   // /// Nongeometric implementation
   // for (gcs::Vertex v : mesh->vertices()) {
@@ -409,7 +409,7 @@ EigenVectorX1d System::computeLineCapillaryForce() {
     //      normalCurvature.array().max(0))
     //         .matrix();
   }
-  return F.lineCapillaryForce.raw();
+  return forces.lineCapillaryForce.raw();
 }
 
 EigenVectorX1d System::computeExternalForce() {
@@ -436,17 +436,17 @@ EigenVectorX1d System::computeExternalForce() {
   // initialize/update the external pressure magnitude distribution
   gaussianDistribution(externalPressureMagnitude,
                        geodesicDistanceFromPtInd.raw(),
-                       geodesicDistanceFromPtInd.raw().maxCoeff() / P.external.conc);
-  externalPressureMagnitude *= P.external.Kf;
+                       geodesicDistanceFromPtInd.raw().maxCoeff() / parameters.external.conc);
+  externalPressureMagnitude *= parameters.external.Kf;
 
   Eigen::Matrix<double, 1, 3> zDir;
   zDir << 0.0, 0.0, -1.0;
   // externalPressure_e = -externalPressureMagnitude * zDir *
   //                      (vpg->inputVertexPositions[theVertex].z - P.height);
-  F.externalForce.raw() = externalPressureMagnitude;
-  F.externalForce.raw() *= vpg->vertexLumpedMassMatrix;
+  forces.externalForce.raw() = externalPressureMagnitude;
+  forces.externalForce.raw() *= vpg->vertexLumpedMassMatrix;
 
-  return F.externalForce.raw();
+  return forces.externalForce.raw();
 }
 
 EigenVectorX1d System::computeChemicalPotential() {
@@ -456,36 +456,36 @@ EigenVectorX1d System::computeChemicalPotential() {
                        vpg->vertexDualAreas.raw().array()) -
                       H0.raw().array();
 
-  if (P.bending.relation == "linear") {
-    dH0dphi.fill(P.bending.H0c);
-    dKbdphi.fill(P.bending.Kbc);
-  } else if (P.bending.relation == "hill") {
+  if (parameters.bending.relation == "linear") {
+    dH0dphi.fill(parameters.bending.H0c);
+    dKbdphi.fill(parameters.bending.Kbc);
+  } else if (parameters.bending.relation == "hill") {
     EigenVectorX1d proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
     dH0dphi.raw() =
-        (2 * P.bending.H0c * proteinDensity.raw().array() /
+        (2 * parameters.bending.H0c * proteinDensity.raw().array() /
          ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
             .matrix();
     dKbdphi.raw() =
-        (2 * P.bending.Kbc * proteinDensity.raw().array() /
+        (2 * parameters.bending.Kbc * proteinDensity.raw().array() /
          ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
             .matrix();
   }
 
-  F.adsorptionPotential.raw() =
-      F.maskProtein(-P.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
-  F.bendingPotential.raw() = F.maskProtein(
+  forces.adsorptionPotential.raw() =
+      forces.maskProtein(-parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
+  forces.bendingPotential.raw() = forces.maskProtein(
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
        2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
-  F.diffusionPotential.raw() =
-      F.maskProtein(-P.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
-  F.interiorPenaltyPotential.raw() =
-      F.maskProtein(P.lambdaPhi * (1 / proteinDensity.raw().array() -
+  forces.diffusionPotential.raw() =
+      forces.maskProtein(-parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
+  forces.interiorPenaltyPotential.raw() =
+      forces.maskProtein(parameters.lambdaPhi * (1 / proteinDensity.raw().array() -
                                    1 / (1 - proteinDensity.raw().array())));
-  F.chemicalPotential.raw() =
-      F.adsorptionPotential.raw() + F.bendingPotential.raw() +
-      F.diffusionPotential.raw() + F.interiorPenaltyPotential.raw();
+  forces.chemicalPotential.raw() =
+      forces.adsorptionPotential.raw() + forces.bendingPotential.raw() +
+      forces.diffusionPotential.raw() + forces.interiorPenaltyPotential.raw();
 
   // F.chemicalPotential.raw().array() =
   //     -vpg->vertexDualAreas.raw().array() *
@@ -496,14 +496,14 @@ EigenVectorX1d System::computeChemicalPotential() {
   //     P.lambdaPhi * (1 / proteinDensity.raw().array() -
   //                    1 / (1 - proteinDensity.raw().array()));
 
-  return F.chemicalPotential.raw();
+  return forces.chemicalPotential.raw();
 }
 
 std::tuple<EigenVectorX3dr, EigenVectorX3dr>
 System::computeDPDForces(double dt) {
 
-  auto dampingForce_e = EigenMap<double, 3>(F.dampingForce);
-  auto stochasticForce_e = EigenMap<double, 3>(F.stochasticForce);
+  auto dampingForce_e = EigenMap<double, 3>(forces.dampingForce);
+  auto stochasticForce_e = EigenMap<double, 3>(forces.stochasticForce);
 
   // Reset forces to zero
   dampingForce_e.setZero();
@@ -515,7 +515,7 @@ System::computeDPDForces(double dt) {
   // std::default_random_engine random_generator;
   // gcs::EdgeData<double> random_var(mesh);
   double sigma =
-      sqrt(2 * P.dpd.gamma * mem3dg::constants::kBoltzmann * P.temp / dt);
+      sqrt(2 * parameters.dpd.gamma * mem3dg::constants::kBoltzmann * parameters.temp / dt);
   std::normal_distribution<double> normal_dist(0, sigma);
 
   for (gcs::Edge e : mesh->edges()) {
@@ -523,19 +523,19 @@ System::computeDPDForces(double dt) {
     gcs::Vertex v1 = he.vertex();
     gcs::Vertex v2 = he.next().vertex();
 
-    gc::Vector3 dVel12 = vel[v1] - vel[v2];
+    gc::Vector3 dVel12 = velocity[v1] - velocity[v2];
     gc::Vector3 dPos12_n = (pos[v1] - pos[v2]).normalize();
 
-    if (P.dpd.gamma != 0) {
-      gc::Vector3 df = P.dpd.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
-      F.dampingForce[v1] -= df;
-      F.dampingForce[v2] += df;
+    if (parameters.dpd.gamma != 0) {
+      gc::Vector3 df = parameters.dpd.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
+      forces.dampingForce[v1] -= df;
+      forces.dampingForce[v2] += df;
     }
 
     if (sigma != 0) {
       double noise = normal_dist(rng);
-      F.stochasticForce[v1] += noise * dPos12_n;
-      F.stochasticForce[v2] -= noise * dPos12_n;
+      forces.stochasticForce[v1] += noise * dPos12_n;
+      forces.stochasticForce[v2] -= noise * dPos12_n;
     }
 
     // gc::Vector3 dVel21 = vel[v2] - vel[v1];
@@ -633,40 +633,40 @@ double System::computeNorm(
 void System::computePhysicalForces() {
 
   // zero all forces
-  F.bendingForceVec.fill({0, 0, 0});
-  F.bendingForceVec_areaGrad.fill({0, 0, 0});
-  F.bendingForceVec_gaussVec.fill({0, 0, 0});
-  F.bendingForceVec_schlafliVec.fill({0, 0, 0});
+  forces.bendingForceVec.fill({0, 0, 0});
+  forces.bendingForceVec_areaGrad.fill({0, 0, 0});
+  forces.bendingForceVec_gaussVec.fill({0, 0, 0});
+  forces.bendingForceVec_schlafliVec.fill({0, 0, 0});
 
-  F.capillaryForceVec.fill({0, 0, 0});
-  F.osmoticForceVec.fill({0, 0, 0});
-  F.lineCapillaryForceVec.fill({0, 0, 0});
-  F.adsorptionForceVec.fill({0, 0, 0});
+  forces.capillaryForceVec.fill({0, 0, 0});
+  forces.osmoticForceVec.fill({0, 0, 0});
+  forces.lineCapillaryForceVec.fill({0, 0, 0});
+  forces.adsorptionForceVec.fill({0, 0, 0});
 
-  F.bendingForce.raw().setZero();
-  F.capillaryForce.raw().setZero();
-  F.lineCapillaryForce.raw().setZero();
-  F.externalForce.raw().setZero();
-  F.osmoticForce.raw().setZero();
+  forces.bendingForce.raw().setZero();
+  forces.capillaryForce.raw().setZero();
+  forces.lineCapillaryForce.raw().setZero();
+  forces.externalForce.raw().setZero();
+  forces.osmoticForce.raw().setZero();
 
-  F.chemicalPotential.raw().setZero();
-  F.diffusionPotential.raw().setZero();
-  F.bendingPotential.raw().setZero();
-  F.adsorptionPotential.raw().setZero();
-  F.interiorPenaltyPotential.raw().setZero();
+  forces.chemicalPotential.raw().setZero();
+  forces.diffusionPotential.raw().setZero();
+  forces.bendingPotential.raw().setZero();
+  forces.adsorptionPotential.raw().setZero();
+  forces.interiorPenaltyPotential.raw().setZero();
 
-  if (O.isShapeVariation) {
+  if (parameters.variation.isShapeVariation) {
     computeVectorForces();
-    if (P.external.Kf != 0) {
+    if (parameters.external.Kf != 0) {
       computeExternalForce();
     }
-    F.mechanicalForceVec = F.osmoticForceVec + F.capillaryForceVec +
-                           F.bendingForceVec + F.lineCapillaryForceVec +
-                           F.adsorptionForceVec + F.addNormal(F.externalForce);
-    F.mechanicalForce = F.ontoNormal(F.mechanicalForceVec);
+    forces.mechanicalForceVec = forces.osmoticForceVec + forces.capillaryForceVec +
+                           forces.bendingForceVec + forces.lineCapillaryForceVec +
+                           forces.adsorptionForceVec + forces.addNormal(forces.externalForce);
+    forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
   }
 
-  if (O.isProteinVariation) {
+  if (parameters.variation.isProteinVariation) {
     computeChemicalPotential();
   }
 
@@ -683,11 +683,11 @@ void System::computePhysicalForces() {
 
   // compute the mechanical error norm
   mechErrorNorm =
-      O.isShapeVariation ? computeNorm(toMatrix(F.mechanicalForceVec)) : 0;
+      parameters.variation.isShapeVariation ? computeNorm(toMatrix(forces.mechanicalForceVec)) : 0;
 
   // compute the chemical error norm
   chemErrorNorm =
-      O.isProteinVariation ? computeNorm(F.chemicalPotential.raw()) : 0;
+      parameters.variation.isProteinVariation ? computeNorm(forces.chemicalPotential.raw()) : 0;
 }
 
 } // namespace solver

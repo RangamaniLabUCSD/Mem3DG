@@ -95,7 +95,7 @@ bool BFGS::integrate() {
 }
 
 void BFGS::checkParameters() {
-  if (f.P.dpd.gamma != 0 || f.P.temp != 0) {
+  if (f.parameters.dpd.gamma != 0 || f.parameters.temp != 0) {
     mem3dg_runtime_error("DPD has to be turned off for BFGS integration!");
   }
   // if (f.O.isVertexShift) {
@@ -105,7 +105,7 @@ void BFGS::checkParameters() {
   if (!isBacktrack) {
     mem3dg_runtime_error("Backtracking is required for BFGS integration");
   }
-  if (f.P.Bc != 1 && f.P.Bc != 0) {
+  if (f.parameters.Bc != 1 && f.parameters.Bc != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
                              "be set to 1 for optimization!");
   }
@@ -117,8 +117,8 @@ void BFGS::checkParameters() {
 }
 
 void BFGS::status() {
-  auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(f.forces.mechanicalForceVec);
+  auto physicalForce = toMatrix(f.forces.mechanicalForce);
 
   // compute summerized forces
   getForces();
@@ -132,7 +132,7 @@ void BFGS::status() {
         (hess_inv * y * s.transpose() + s * y.transpose() * hess_inv) / sTy;
 
     EigenVectorX1d y_protein =
-        -f.F.chemicalPotential.raw() + pastPhysicalForce_protein;
+        -f.forces.chemicalPotential.raw() + pastPhysicalForce_protein;
     double sTy_protein = (s_protein.transpose() * y_protein);
     hess_inv_protein += (s_protein * s_protein.transpose()) *
                             (sTy_protein + y_protein.transpose() *
@@ -143,23 +143,23 @@ void BFGS::status() {
                             sTy_protein;
   }
   pastPhysicalForce = flatten(physicalForceVec);
-  pastPhysicalForce_protein = f.F.chemicalPotential.raw();
+  pastPhysicalForce_protein = f.forces.chemicalPotential.raw();
   // std::cout << "if equal: "
   //           << (unflatten<3>(flatten(physicalForceVec)).array() ==
   //               physicalForceVec.array())
   //           << std::endl;
 
   // compute the area contraint error
-  dArea = (f.P.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  dArea = (f.parameters.tension.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
 
-  if (f.O.isPreferredVolume) {
+  if (f.parameters.osmotic.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.P.osmotic.Kv != 0) ? abs(f.volume / f.P.osmotic.Vt - 1) : 0.0;
+    dVP = (f.parameters.osmotic.Kv != 0) ? abs(f.volume / f.parameters.osmotic.Vt - 1) : 0.0;
     // thresholding, exit if fulfilled and iterate if not
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(f.P.osmotic.n / f.volume / f.P.osmotic.cam - 1.0) : 1.0;
+    dVP = (!f.mesh->hasBoundary()) ? abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0) : 1.0;
     // thresholding, exit if fulfilled and iterate if not
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
   }
@@ -190,33 +190,33 @@ void BFGS::march() {
     hess_inv_protein.setIdentity();
   } else {
     // map the raw eigen datatype for computation
-    auto vel_e = toMatrix(f.vel);
-    auto vel_protein_e = toMatrix(f.vel_protein);
-    auto physicalForceVec = toMatrix(f.F.mechanicalForceVec);
-    auto physicalForce = toMatrix(f.F.mechanicalForce);
+    auto vel_e = toMatrix(f.velocity);
+    auto vel_protein_e = toMatrix(f.proteinVelocity);
+    auto physicalForceVec = toMatrix(f.forces.mechanicalForceVec);
+    auto physicalForce = toMatrix(f.forces.mechanicalForce);
 
     vel_e = unflatten<3>((hess_inv * flatten(physicalForceVec)).eval());
-    vel_protein_e = hess_inv_protein * f.F.chemicalPotential.raw();
+    vel_protein_e = hess_inv_protein * f.forces.chemicalPotential.raw();
 
     // adjust time step if adopt adaptive time step based on mesh size
     if (isAdaptiveStep) {
       double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
       dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-           (f.O.isShapeVariation
+           (f.parameters.variation.isShapeVariation
                 ? physicalForce.cwiseAbs().maxCoeff()
-                : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
+                : f.forces.chemicalPotential.raw().cwiseAbs().maxCoeff());
     }
 
     // time stepping on vertex position
-    previousE = f.E;
-    double alpha = backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
+    previousE = f.energy;
+    double alpha = backtrack(f.energy.potE, vel_e, vel_protein_e, rho, c1);
     s = alpha * flatten(vel_e);
     s_protein = alpha * vel_protein_e;
 
     // regularization
-    if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
+    if ((f.parameters.Kse != 0) || (f.parameters.Ksl != 0) || (f.parameters.Kst != 0)) {
       f.computeRegularizationForce();
-      f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+      f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
     }
 
     // recompute cached values

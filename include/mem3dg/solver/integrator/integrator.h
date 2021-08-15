@@ -117,7 +117,7 @@ public:
    */
   Integrator(System &f_, double dt_, double total_time_, double tSave_,
              double tolerance_, std::string outputDir_)
-      : f(f_), previousE(f_.E), dt(dt_), total_time(total_time_), tSave(tSave_),
+      : f(f_), previousE(f_.energy), dt(dt_), total_time(total_time_), tSave(tSave_),
         tol(tolerance_), tUpdateGeodesics(total_time), tProcessMesh(total_time),
         outputDir(outputDir_), init_time(f_.time), SUCCESS(true), EXIT(false),
         frame(0), lastUpdateGeodesics(f_.time), lastProcessMesh(f_.time),
@@ -129,9 +129,9 @@ public:
 
     // Initialize the initial maxForce
     getForces();
-    maxForce = f.O.isShapeVariation
-                   ? toMatrix(f.F.mechanicalForce).cwiseAbs().maxCoeff()
-                   : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff();
+    maxForce = f.parameters.variation.isShapeVariation
+                   ? toMatrix(f.forces.mechanicalForce).cwiseAbs().maxCoeff()
+                   : f.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
     dArea = 1e10;
