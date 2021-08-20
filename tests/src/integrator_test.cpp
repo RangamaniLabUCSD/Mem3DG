@@ -30,7 +30,6 @@ public:
     /// physical parameters
     p.bending.Kbc = 8.22e-5;
     p.tension.Ksg = 0.1;
-    p.osmotic.Kv = 0.01;
     p.osmotic.cam = 0.40;
   }
   void SetUp() override {}

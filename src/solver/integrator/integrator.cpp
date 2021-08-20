@@ -441,7 +441,7 @@ void Integrator::getForces() {
 
   f.computePhysicalForces();
 
-  if ((f.parameters.dpd.gamma != 0) || (f.parameters.temperature != 0)) {
+  if (f.parameters.dpd.gamma != 0) {
     f.computeDPDForces(dt);
     DPDForce = rowwiseDotProduct(
         f.forces.maskForce(EigenMap<double, 3>(f.forces.dampingForce) +
@@ -472,10 +472,11 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
       } else { // iterate if not
         std::cout << "\n[lambdaSG] = [" << f.parameters.tension.lambdaSG << ", "
                   << "]";
-        f.parameters.tension.lambdaSG += f.parameters.tension.Ksg *
-                                 (f.surfaceArea - f.parameters.tension.At) /
-                                 f.parameters.tension.At;
-        std::cout << " -> [" << f.parameters.tension.lambdaSG << "]" << std::endl;
+        f.parameters.tension.lambdaSG +=
+            f.parameters.tension.Ksg *
+            (f.surfaceArea - f.parameters.tension.At) / f.parameters.tension.At;
+        std::cout << " -> [" << f.parameters.tension.lambdaSG << "]"
+                  << std::endl;
       }
     } else {              // incremental harmonic penalty method
       if (dArea < ctol) { // exit if fulfilled all constraints
@@ -501,14 +502,15 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
         std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n.tension[lambdaSG, lambdaV] = [" << f.parameters.tension.lambdaSG
-                  << ", " << f.parameters.osmotic.lambdaV << "]";
-        f.parameters.tension.lambdaSG += f.parameters.tension.Ksg *
-                                 (f.surfaceArea - f.parameters.tension.At) /
-                                 f.parameters.tension.At;
+        std::cout << "\n.tension[lambdaSG, lambdaV] = ["
+                  << f.parameters.tension.lambdaSG << ", "
+                  << f.parameters.osmotic.lambdaV << "]";
+        f.parameters.tension.lambdaSG +=
+            f.parameters.tension.Ksg *
+            (f.surfaceArea - f.parameters.tension.At) / f.parameters.tension.At;
         f.parameters.osmotic.lambdaV += f.parameters.osmotic.Kv *
-                                (f.volume - f.parameters.osmotic.Vt) /
-                                f.parameters.osmotic.Vt;
+                                        (f.volume - f.parameters.osmotic.Vt) /
+                                        f.parameters.osmotic.Vt;
         std::cout << " -> [" << f.parameters.tension.lambdaSG << ", "
                   << f.parameters.osmotic.lambdaV << "]" << std::endl;
       }
@@ -668,8 +670,9 @@ void Integrator::saveNetcdfData() {
   fd.writeIsSmooth(idx, f.isSmooth);
   // write geometry
   fd.writeVolume(idx, f.volume);
-  fd.writeSurfArea(idx, f.mesh->hasBoundary() ? f.surfaceArea - f.parameters.tension.At
-                                              : f.surfaceArea);
+  fd.writeSurfArea(idx, f.mesh->hasBoundary()
+                            ? f.surfaceArea - f.parameters.tension.At
+                            : f.surfaceArea);
   fd.writeHeight(idx, toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
   fd.writeBendEnergy(idx, f.energy.BE);
@@ -825,7 +828,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Is considering protein: "
            << f.parameters.variation.isProteinVariation << "\n"
-           << "Is vertex shift: " << f.meshProcessor.meshMutator.shiftVertex << "\n";
+           << "Is vertex shift: " << f.meshProcessor.meshMutator.shiftVertex
+           << "\n";
 
     myfile.close();
   } else
