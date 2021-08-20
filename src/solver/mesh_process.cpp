@@ -28,14 +28,25 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void MeshProcessor::summarizeStatus() {
+  meshRegularizer.summarizeStatus();
+  meshMutator.summarizeStatus();
+
   isMeshRegularize = (meshRegularizer.Kst != 0) || (meshRegularizer.Ksl != 0) ||
                      (meshRegularizer.Kse != 0);
-  meshMutator.summarizeStatus();
   isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
+
+  if (meshRegularizer.ifRefMesh && isMeshRegularize) {
+    mem3dg_runtime_error(
+        "To apply mesh regularization, reference mesh has to be provided!");
+  }
   if (meshMutator.isChangeTopology && isMeshRegularize) {
     mem3dg_runtime_error("For topology changing simulation, mesh "
                          "regularization cannot be applied!");
   }
+};
+
+void MeshProcessor::MeshRegularizer::summarizeStatus() {
+  ifRefMesh = (nEdge != 0) || (nVertex != 0) || (nFace != 0);
 };
 
 void MeshProcessor::MeshRegularizer::readReferenceData(std::string refMesh,

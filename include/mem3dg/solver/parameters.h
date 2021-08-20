@@ -180,7 +180,7 @@ struct Parameters {
   /// mobility constant
   double proteinMobility = 0;
   /// Temperature
-  double temperature = 0;
+  double temperature = 	293;
 };
 
 } // namespace solver
