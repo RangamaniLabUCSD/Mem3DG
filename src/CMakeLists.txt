@@ -13,8 +13,10 @@
 #
 
 set(DDG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
-
+    "${CMAKE_CURRENT_SOURCE_DIR}/mesh_io.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/visualization.cpp"
+    
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/init.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/pressure.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/energy.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/regularization.cpp"
@@ -28,8 +30,5 @@ set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/velocity_verlet.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/forward_euler.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/conjugate_gradient.cpp"
-    
-    "${CMAKE_CURRENT_SOURCE_DIR}/init.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/visualization.cpp"
     PARENT_SCOPE
 )
