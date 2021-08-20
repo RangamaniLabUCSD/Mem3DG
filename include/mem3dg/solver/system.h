@@ -168,8 +168,8 @@ public:
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
          std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p) {
-    // Check confliciting parameters and options
-    checkParameters();
+    // Check incompatible configuration 
+    checkConfiguration();
 
     // Initialize reference values
     initConstants();
@@ -194,8 +194,8 @@ public:
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
          MeshProcessor &mp, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p, mp) {
-    // Check confliciting parameters and options
-    checkParameters();
+    // Check incompatible configuration 
+    checkConfiguration();
 
     // Initialize reference values
     initConstants();
@@ -216,8 +216,8 @@ public:
   System(std::string inputMesh, std::size_t nSub)
       : System(readMeshes(inputMesh, nSub)) {
 
-    // Check confliciting parameters and options
-    checkParameters();
+    // Check incompatible configuration 
+    checkConfiguration();
 
     // Initialize reference values
     initConstants();
@@ -238,8 +238,8 @@ public:
          bool isContinue)
       : System(readMeshes(inputMesh, nSub), p) {
 
-    // Check confliciting parameters and options
-    checkParameters();
+    // Check incompatible configuration 
+    checkConfiguration();
 
     // Initialize reference values
     initConstants();
@@ -272,8 +272,8 @@ public:
          std::size_t nSub, bool isContinue)
       : System(readMeshes(inputMesh, nSub), p, mp) {
 
-    // Check confliciting parameters and options
-    checkParameters();
+    // Check incompatible configuration 
+    checkConfiguration();
 
     // Initialize reference values
     initConstants();
@@ -324,8 +324,8 @@ public:
          std::size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p) {
 
-    // Check confliciting parameters and options
-    checkParameters();
+    // Check incompatible configuration 
+    checkConfiguration();
 
     // Initialize reference values
     initConstants();
@@ -356,8 +356,8 @@ public:
          MeshProcessor &mp, std::size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, mp) {
 
-    // Check confliciting parameters and options
-    checkParameters();
+    // Check incompatible configuration 
+    checkConfiguration();
 
     // Initialize reference values
     initConstants();
@@ -579,7 +579,7 @@ public:
    * @brief Check all conflicting parameters and options
    *
    */
-  void checkParameters();
+  void checkConfiguration();
 
   /**
    * @brief testing of random number generator pcg
