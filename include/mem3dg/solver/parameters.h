@@ -77,6 +77,11 @@ struct Parameters {
     double At = -1;
     /// augmented Lagrangian parameter for area
     double lambdaSG = 0;
+
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters();
   };
 
   struct Osmotic {
@@ -96,6 +101,11 @@ struct Parameters {
     double n = 1;
     /// augmented Lagrangian parameter for volume
     double lambdaV = 0;
+
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters();
   };
 
   struct Adsorption {
@@ -115,6 +125,11 @@ struct Parameters {
     double conc = -1;
     /// target height
     double height = 0;
+
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters();
   };
 
   struct DPD {
@@ -127,6 +142,11 @@ struct Parameters {
     std::string shapeBoundaryCondition = "none";
     /// protein boundary condition: pin
     std::string proteinBoundaryCondition = "none";
+
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters();
   };
 
   struct Variation {
@@ -136,6 +156,11 @@ struct Parameters {
     bool isShapeVariation = true;
     /// domain of shape variation
     double radius = -1;
+
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters();
   };
 
   struct Point {
@@ -143,6 +168,11 @@ struct Parameters {
     EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
     /// Whether floating "the" vertex
     bool isFloatVertex = false;
+
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters();
   };
 
   struct ProteinDistribution {
@@ -152,6 +182,18 @@ struct Parameters {
     double sharpness = 20;
     /// interior point parameter for protein density
     double lambdaPhi = 1e-9;
+    /// type of input
+    enum TypeOfProtein0 {
+      Disabled,
+      Homogeneous,
+      GeodesicPhaseSeparation,
+      VertexWise
+    };
+    TypeOfProtein0 typeOfProtein0;
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters(size_t nVertex);
   };
 
   /// bending parameters
@@ -180,7 +222,12 @@ struct Parameters {
   /// mobility constant
   double proteinMobility = 0;
   /// Temperature
-  double temperature = 	293;
+  double temperature = 293;
+
+  /**
+   * @brief check parameter conflicts
+   */
+  void checkParameters(bool hasBoundary, size_t nVertex);
 };
 
 } // namespace solver

@@ -227,215 +227,25 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
   }
 }
 
-void System::checkParameters() {
+void System::checkConfiguration() {
 
-  // check validity of parameters / options
-  if (!parameters.variation.isShapeVariation) {
-    if (parameters.tension.Ksg != 0) {
-      mem3dg_runtime_error("Stretching modulus Ksg has to be zero for non "
-                           "shape variation simulation!");
-    }
-    if (parameters.osmotic.Kv != 0) {
-      mem3dg_runtime_error("Pressure-volume modulus Kv has to be zero for non "
-                           "shape variation simulation!");
-    }
-    meshProcessor.meshMutator.summarizeStatus();
-    if (meshProcessor.isMeshMutate) {
-      mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
-                           "variation simulation");
-    }
-    if (parameters.boundary.shapeBoundaryCondition != "none") {
-      mem3dg_runtime_error("Shape boundary condition has to be none for non "
-                           "shape variation simulation");
-    }
-  }
-
-  // protein related
-  if (parameters.variation.isProteinVariation != (parameters.proteinMobility > 0)) {
-    mem3dg_runtime_error("Binding constant Bc has to be consistent with the "
-                         "protein variation option!");
-  }
-  if (parameters.variation.isProteinVariation && parameters.bending.Kbc != 0) {
-    mem3dg_runtime_error(
-        "Kbc != 0 is currently not expected for protein variation!");
-  }
-  if (parameters.proteinDistribution.protein0.rows() == 1 &&
-      parameters.proteinDistribution.protein0[0] == -1) {
-    std::cout << "Disable protein init, expect continuation simulation."
-              << std::endl;
-  } else if (parameters.proteinDistribution.protein0.rows() == 1 &&
-             parameters.proteinDistribution.protein0[0] >= 0 &&
-             parameters.proteinDistribution.protein0[0] <= 1) {
-    if (parameters.variation.isProteinVariation) {
-      if (parameters.proteinDistribution.protein0[0] == 0 ||
-          parameters.proteinDistribution.protein0[0] == 1) {
-        mem3dg_runtime_error("{0<phi<1}");
-      }
-    } else {
-      if (parameters.proteinDistribution.protein0[0] != 1 ||
-          parameters.bending.Kb != 0 || parameters.dirichlet.eta != 0 ||
-          parameters.adsorption.epsilon != 0) {
-        mem3dg_runtime_error("For homogenous membrane simulation, good "
-                             "practice is "
-                             "to set proteinDensity.protein0 = 1, Kb = 0, eta "
-                             "= 0, epsilon = 0 to "
-                             "avoid ambiguity & save computation!");
-      }
-    }
-  } else if (parameters.proteinDistribution.protein0.rows() == 4 &&
-             (parameters.proteinDistribution.protein0[2] >= 0 &&
-              parameters.proteinDistribution.protein0[2] <= 1) &&
-             (parameters.proteinDistribution.protein0[3] >= 0 &&
-              parameters.proteinDistribution.protein0[3] <= 1) &&
-             (parameters.proteinDistribution.protein0[0] > 0 &&
-              parameters.proteinDistribution.protein0[1] > 0)) {
-    if (parameters.proteinDistribution.protein0[2] ==
-        parameters.proteinDistribution.protein0[3]) {
-      mem3dg_runtime_error("Please switch to {phi} for homogeneous membrane!");
-    }
-    if (parameters.variation.isProteinVariation) {
-      if (parameters.proteinDistribution.protein0[2] == 0 ||
-          parameters.proteinDistribution.protein0[2] == 1 ||
-          parameters.proteinDistribution.protein0[3] == 0 ||
-          parameters.proteinDistribution.protein0[3] == 1) {
-        mem3dg_runtime_error("{0<phi<1}");
-      }
-    }
-  } else if (parameters.proteinDistribution.protein0.rows() ==
-                 proteinDensity.raw().rows() &&
-             (parameters.proteinDistribution.protein0.array() > 0).all() &&
-             (parameters.proteinDistribution.protein0.array() < 1).all()) {
-  } else {
-    mem3dg_runtime_error("protein 0 can only be specified in three ways: 1. "
-                         "length = 1, uniform {0<phi<1} 2. "
-                         "length = 4, geodesic disk, {r1>0, r2>0, "
-                         "0<phi_in<1, 0<phi_out<1} 3. length "
-                         "= nVertices, user defined. To disable use {-1}");
-  }
-
-  // boundary related
-  if (parameters.variation.radius <= 0 && parameters.variation.radius != -1) {
-    mem3dg_runtime_error("Radius > 0 or radius = 1 to disable!");
-  }
   isOpenMesh = mesh->hasBoundary();
+  parameters.checkParameters(isOpenMesh, mesh->nVertices());
+  meshProcessor.summarizeStatus();
+  if (meshProcessor.isMeshMutate && !parameters.variation.isShapeVariation) {
+    mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
+                         "variation simulation");
+  }
   if (!isOpenMesh && mesh->genus() != 0) {
     mem3dg_runtime_error(
         "Do not support closed mesh with nonzero number of genus!")
   }
-  if (isOpenMesh) {
-    if (parameters.boundary.shapeBoundaryCondition != "roller" &&
-        parameters.boundary.shapeBoundaryCondition != "pin" &&
-        parameters.boundary.shapeBoundaryCondition != "fixed" &&
-        parameters.variation.isShapeVariation) {
-      std::cout << "Shape boundary condition type (roller, pin or fixed) "
-                   "has not been specified for open boundary mesh!"
-                << std::endl;
-    }
-    if (parameters.boundary.proteinBoundaryCondition != "pin" &&
-        parameters.variation.isProteinVariation) {
-      std::cout << "Protein boundary condition type (pin) "
-                   "has not been specified for open boundary mesh!"
-                << std::endl;
-    }
-  } else {
-    if (parameters.tension.A_res != 0 || parameters.osmotic.V_res != 0) {
-      mem3dg_runtime_error(
-          "Closed mesh can not have area and volume reservior!");
-    }
-    if (parameters.boundary.shapeBoundaryCondition != "none") {
-      mem3dg_runtime_error(
-          "Shape boundary condition type should be disable (= \"none\") "
-          "for closed boundary mesh!");
-    }
-    if (parameters.boundary.proteinBoundaryCondition != "none") {
-      mem3dg_runtime_error(
-          "Protein boundary condition type should be disable (= \"none\") "
-          "for closed boundary mesh!");
-    }
-  }
-
-  // regularization related
-  meshProcessor.summarizeStatus();
   if (meshProcessor.isMeshRegularize &&
       ((mesh->nVertices() != meshProcessor.meshRegularizer.nVertex ||
         mesh->nEdges() != meshProcessor.meshRegularizer.nEdge ||
         mesh->nFaces() != meshProcessor.meshRegularizer.nFace))) {
     mem3dg_runtime_error("For topologically different reference mesh, mesh "
                          "regularization cannot be applied!");
-  }
-
-  // the vertex related
-  if (parameters.point.pt.rows() > 3) {
-    mem3dg_runtime_error(
-        "Length of p.pt cannnot exceed 3! Instruction: (Length=1) => (vertex "
-        "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
-        "coordinate)");
-  }
-  if (parameters.point.pt.rows() == 2 && !mesh->hasBoundary()) {
-    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
-                 "lead to ambiguity! Please check by visualizing it first!\n"
-              << std::endl;
-  }
-  if (parameters.point.isFloatVertex) {
-    if (parameters.point.pt.rows() == 1) {
-      mem3dg_runtime_error(
-          "To have Floating vertex, one must specify vertex by coordinate!");
-    }
-    // if (P.pt.rows() == 3) {
-    //   std::cout << "\nWARNING: float vertex using 3D position may lead to
-    //   jump "
-    //                "in geodesic sense!\n"
-    //             << std::endl;
-    // }
-  }
-
-  // Osmotic pressure related
-  if (parameters.osmotic.isPreferredVolume) {
-    if (parameters.osmotic.cam != -1) {
-      mem3dg_runtime_error("ambient concentration cam has to be -1 for "
-                           "preferred volume parametrized simulation!");
-    }
-    if (parameters.osmotic.isConstantOsmoticPressure) {
-      mem3dg_runtime_error("preferred volume and constant osmotic pressure "
-                           "cannot be simultaneously turned on!");
-    }
-  } else {
-    if (parameters.osmotic.Vt != -1 &&
-        !parameters.osmotic.isConstantOsmoticPressure) {
-      mem3dg_runtime_error("preferred volume Vt has to be -1 for "
-                           "ambient pressure parametrized simulation!");
-    }
-  }
-  if (parameters.osmotic.isConstantOsmoticPressure) {
-    if (parameters.osmotic.isPreferredVolume) {
-      mem3dg_runtime_error("preferred volume and constant osmotic pressure "
-                           "cannot be simultaneously turned on!");
-    }
-    if (parameters.osmotic.Vt != -1 || parameters.osmotic.V_res != 0 ||
-        parameters.osmotic.cam != -1) {
-      mem3dg_runtime_error(
-          "Vt and cam have to be set to -1 and V_res to be 0 to "
-          "enable constant omostic pressure! Note Kv is the "
-          "pressure directly!");
-    }
-  }
-
-  // surface tension related
-  if (parameters.tension.isConstantSurfaceTension) {
-    if (parameters.tension.A_res != 0) {
-      mem3dg_runtime_error(
-          "A_res has to be set to 0 to "
-          "enable constant surface! Note Ksg is the surface tension directly!");
-    }
-  }
-
-  // external force related
-  if (parameters.external.Kf == 0) {
-    if (parameters.external.conc != -1 || parameters.external.height != 0) {
-      mem3dg_runtime_error("With no external force, its concentration "
-                           "should be disabled (=-1) "
-                           "and prescribed height should be set to 0!");
-    }
   }
 }
 
@@ -486,16 +296,19 @@ void System::initConstants() {
 
   // Initialize the constant mask based on distance from the point specified
   if (parameters.variation.radius != -1) {
-    if (parameters.variation.radius > geodesicDistanceFromPtInd.raw().maxCoeff() ||
-        parameters.variation.radius < geodesicDistanceFromPtInd.raw().minCoeff()) {
+    if (parameters.variation.radius >
+            geodesicDistanceFromPtInd.raw().maxCoeff() ||
+        parameters.variation.radius <
+            geodesicDistanceFromPtInd.raw().minCoeff()) {
       mem3dg_runtime_error("initConstants: either all vertices or none is "
                            "included within integration disk, "
                            "set radius = -1 to disable!");
     }
     for (gcs::Vertex v : mesh->vertices()) {
-      forces.forceMask[v] = (geodesicDistanceFromPtInd[v] < parameters.variation.radius)
-                                ? gc::Vector3{1, 1, 1}
-                                : gc::Vector3{0, 0, 0};
+      forces.forceMask[v] =
+          (geodesicDistanceFromPtInd[v] < parameters.variation.radius)
+              ? gc::Vector3{1, 1, 1}
+              : gc::Vector3{0, 0, 0};
       forces.proteinMask[v] =
           (geodesicDistanceFromPtInd[v] < parameters.variation.radius) ? 1 : 0;
     }
