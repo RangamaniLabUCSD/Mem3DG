@@ -110,7 +110,7 @@ bool Euler::integrate() {
 }
 
 void Euler::checkParameters() {
-  if (f.parameters.dpd.gamma != 0 || f.parameters.temperature != 0) {
+  if (f.parameters.dpd.gamma != 0) {
     mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
   if (isBacktrack) {

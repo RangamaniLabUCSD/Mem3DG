@@ -46,7 +46,7 @@ void Parameters::Osmotic::checkParameters() {
       mem3dg_runtime_error("preferred volume Vt has to be -1 for "
                            "ambient pressure parametrized simulation!");
     }
-    if (Kv != 0) {
+    if (Kv != 0 && !isConstantOsmoticPressure) {
       mem3dg_runtime_error(
           "Kv has to be 0 for ambient pressure parametrized simulation!");
     }
@@ -187,7 +187,7 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
           "Shape boundary condition type (roller, pin or fixed) "
           "has not been specified for open boundary mesh!");
     }
-    if (boundary.proteinBoundaryCondition != "none" &&
+    if (boundary.proteinBoundaryCondition != "pin" &&
         variation.isProteinVariation) {
       mem3dg_runtime_error("Protein boundary condition type (pin) "
                            "has not been specified for open boundary mesh!");
@@ -208,7 +208,6 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
           "for closed boundary mesh!");
     }
   }
-
 
   // protein distribution
   switch (proteinDistribution.typeOfProtein0) {
@@ -243,9 +242,6 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   }
   default:;
   }
-
-
-  
 }
 
 } // namespace solver
