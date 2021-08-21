@@ -17,14 +17,16 @@
 #include <memory>
 #include <time.h>
 
+#include "mem3dg/solver/mesh_process.h"
+#include "mem3dg/solver/mutable_trajfile.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/view.h"
 
 #include <geometrycentral/surface/meshio.h>
 
-#include "visualization.h"
 #include "mem3dg/mem3dg"
+#include "visualization.h"
 //#include <pybind11/embed.h>
 
 #ifdef _WIN32
@@ -101,9 +103,9 @@ void visualize(mem3dg::solver::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addEdgeScalarQuantity("edge_length", f.vpg->edgeLengths);
   polyscope::getSurfaceMesh("Membrane")
-      ->addFaceCountQuantity("the point",
-                             std::vector<std::pair<std::size_t, int>>{std::make_pair(
-                                 f.thePoint.inSomeFace().face.getIndex(), 1)})
+      ->addFaceCountQuantity(
+          "the point", std::vector<std::pair<std::size_t, int>>{std::make_pair(
+                           f.thePoint.inSomeFace().face.getIndex(), 1)})
       ->setPointRadius(sqrt(f.surfaceArea / f.mesh->nFaces() * 4 / sqrt(3)) / 2,
                        false);
 
@@ -184,8 +186,8 @@ int snapshot_ply(std::string fileName, const Quantities &option,
 }
 
 int animate_ply(std::string frameDir, const Quantities &options,
-                std::vector<std::size_t> frameNum, float transparency, float fov,
-                float edgeWidth) {
+                std::vector<std::size_t> frameNum, float transparency,
+                float fov, float edgeWidth) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -289,7 +291,10 @@ int animate_nc(std::string &filename, const Quantities &options,
   signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
-  mem3dg::solver::TrajFile fd = mem3dg::solver::TrajFile::openReadOnly(filename);
+  // mem3dg::solver::TrajFile fd =
+  //     mem3dg::solver::TrajFile::openReadOnly(filename);
+  mem3dg::solver::MutableTrajFile fd =
+      mem3dg::solver::MutableTrajFile::openReadOnly(filename);
 
   // Initialize visualization variables
   int prevFrame = 0;
@@ -381,7 +386,10 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
   signal(SIGINT, mem3dg::signalHandler);
 
   // Read netcdf trajectory file
-  mem3dg::solver::TrajFile fd = mem3dg::solver::TrajFile::openReadOnly(filename);
+  // mem3dg::solver::TrajFile fd =
+  // mem3dg::solver::TrajFile::openReadOnly(filename);
+  mem3dg::solver::MutableTrajFile fd =
+      mem3dg::solver::MutableTrajFile::openReadOnly(filename);
   fd.getNcFrame(frame);
 
   // Set preference for polyscope
@@ -459,7 +467,8 @@ int snapshot_nc(std::string &filename, const Quantities &options, int frame,
 // ==========================================================
 
 #ifdef MEM3DG_WITH_NETCDF
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd, int idx,
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd,
+                                            int idx,
                                             const Quantities &options) {
   if (idx >= fd.nFrames()) {
     idx = 0;
@@ -531,8 +540,38 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd, int id
   return polyscopeMesh;
 }
 
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::MutableTrajFile &fd,
+                                            int idx,
+                                            const Quantities &options) {
+  if (idx >= fd.nFrames()) {
+    idx = 0;
+  }
+
+  mem3dg::EigenVectorX3ur topo_frame = fd.getTopology(idx);
+  mem3dg::EigenVectorX3dr coords = fd.getCoords(idx);
+  // mesh->updateVertexPositions(coords);
+  polyscope::SurfaceMesh *polyscopeMesh =
+      polyscope::registerSurfaceMesh("Mesh", coords, topo_frame);
+  // polyscopeMesh->setEnabled(true);
+
+  return polyscopeMesh;
+}
+
 void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::TrajFile &fd,
           int &idx, int &waitTime, Quantities options, bool &toggle) {
+
+  polyscopeMesh = registerSurfaceMesh(fd, idx, options);
+  idx++;
+  if (idx >= fd.nFrames()) {
+    idx = 0;
+    toggle = !toggle;
+  }
+  wait(waitTime);
+}
+
+void play(polyscope::SurfaceMesh *&polyscopeMesh,
+          mem3dg::solver::MutableTrajFile &fd, int &idx, int &waitTime,
+          Quantities options, bool &toggle) {
 
   polyscopeMesh = registerSurfaceMesh(fd, idx, options);
   idx++;

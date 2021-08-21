@@ -46,7 +46,8 @@ bool VelocityVerlet::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  createNetcdfFile();
+  // createNetcdfFile();
+  createMutableNetcdfFile();
   // print to console
   std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
             << std::endl;
@@ -193,7 +194,8 @@ void VelocityVerlet::march() {
 
   // time stepping on protein density
   if (f.parameters.variation.isProteinVariation) {
-    vel_protein_e = f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
+    vel_protein_e =
+        f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
     f.proteinDensity.raw() += vel_protein_e * dt;
   }
 

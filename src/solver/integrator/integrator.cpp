@@ -535,41 +535,26 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
   }
 }
 
-void Integrator::createNetcdfFile() {
-  // initialize netcdf traj file
-#ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
-    fd.createNewFile(outputDir + "/" + trajFileName, *f.mesh, *f.vpg,
-                     TrajFile::NcFile::replace);
-    fd.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
-    if (!f.mesh->hasBoundary()) {
-      fd.writeRefSurfArea(f.parameters.tension.At);
-    }
-  }
-#endif
-}
-
 void Integrator::saveData() {
-  // save variable to richData and save ply file
-  if ((verbosity > 3 && !f.meshProcessor.meshMutator.isSplitEdge &&
-       !f.meshProcessor.meshMutator.isCollapseEdge) ||
-      (verbosity > 0 && (f.meshProcessor.meshMutator.isSplitEdge ||
-                         f.meshProcessor.meshMutator.isCollapseEdge))) {
-    char buffer[50];
-    if (isJustGeometryPly) {
-      sprintf(buffer, "/frame%d.obj", (int)frame);
-    } else {
-      sprintf(buffer, "/frame%d.ply", (int)frame);
-    }
-    f.saveRichData(outputDir + "/" + std::string(buffer), isJustGeometryPly);
-  }
+  // threshold of verbosity level to output ply file
+  int outputPly = 0;
 
 #ifdef MEM3DG_WITH_NETCDF
   // save variable to netcdf traj file
   if (verbosity > 0) {
-    saveNetcdfData();
+    // saveNetcdfData();
+    saveMutableNetcdfData();
   }
+  outputPly = 3;
 #endif
+
+  // save variable to richData and save ply file
+  if (verbosity > outputPly) {
+    char buffer[50];
+    sprintf(buffer, isJustGeometryPly ? "/frame%d.obj" : "/frame%d.ply",
+            (int)frame);
+    f.saveRichData(outputDir + "/" + std::string(buffer), isJustGeometryPly);
+  }
 
   // print in-progress information in the console
   if (verbosity > 1) {
@@ -661,64 +646,109 @@ void Integrator::markFileName(std::string marker_str) {
 }
 
 #ifdef MEM3DG_WITH_NETCDF
+void Integrator::createNetcdfFile() {
+  // initialize netcdf traj file
+  if (verbosity > 0) {
+    trajFile.createNewFile(outputDir + "/" + trajFileName, *f.mesh, *f.vpg,
+                           TrajFile::NcFile::replace);
+    trajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
+    if (!f.mesh->hasBoundary()) {
+      trajFile.writeRefSurfArea(f.parameters.tension.At);
+    }
+  }
+}
+
+void Integrator::createMutableNetcdfFile() {
+  // initialize netcdf traj file
+  if (verbosity > 0) {
+    mutableTrajFile.createNewFile(outputDir + "/" + trajFileName,
+                                  TrajFile::NcFile::replace);
+    // mutableTrajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
+    // if (!f.mesh->hasBoundary()) {
+    //   mutableTrajFile.writeRefSurfArea(f.parameters.tension.At);
+    // }
+  }
+}
+
 void Integrator::saveNetcdfData() {
-  std::size_t idx = fd.nFrames();
+  std::size_t idx = trajFile.nFrames();
 
   // scalar quantities
   // write time
-  fd.writeTime(idx, f.time);
-  fd.writeIsSmooth(idx, f.isSmooth);
+  trajFile.writeTime(idx, f.time);
+  trajFile.writeIsSmooth(idx, f.isSmooth);
   // write geometry
-  fd.writeVolume(idx, f.volume);
-  fd.writeSurfArea(idx, f.mesh->hasBoundary()
-                            ? f.surfaceArea - f.parameters.tension.At
-                            : f.surfaceArea);
-  fd.writeHeight(idx, toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
+  trajFile.writeVolume(idx, f.volume);
+  trajFile.writeSurfArea(idx, f.mesh->hasBoundary()
+                                  ? f.surfaceArea - f.parameters.tension.At
+                                  : f.surfaceArea);
+  trajFile.writeHeight(idx,
+                       toMatrix(f.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
-  fd.writeBendEnergy(idx, f.energy.BE);
-  fd.writeSurfEnergy(idx, f.energy.sE);
-  fd.writePressEnergy(idx, f.energy.pE);
-  fd.writeKineEnergy(idx, f.energy.kE);
-  fd.writeAdspEnergy(idx, f.energy.aE);
-  fd.writeLineEnergy(idx, f.energy.dE);
-  fd.writeTotalEnergy(idx, f.energy.totalE);
+  trajFile.writeBendEnergy(idx, f.energy.BE);
+  trajFile.writeSurfEnergy(idx, f.energy.sE);
+  trajFile.writePressEnergy(idx, f.energy.pE);
+  trajFile.writeKineEnergy(idx, f.energy.kE);
+  trajFile.writeAdspEnergy(idx, f.energy.aE);
+  trajFile.writeLineEnergy(idx, f.energy.dE);
+  trajFile.writeTotalEnergy(idx, f.energy.totalE);
   // write Norms
-  fd.writeErrorNorm(idx, f.mechErrorNorm);
-  fd.writeChemErrorNorm(idx, f.chemErrorNorm);
-  fd.writeBendNorm(idx, f.computeNorm(f.forces.bendingForce.raw()));
-  fd.writeSurfNorm(idx, f.computeNorm(f.forces.capillaryForce.raw()));
-  fd.writePressNorm(idx, f.computeNorm(f.forces.osmoticForce.raw()));
-  fd.writeLineNorm(idx, f.computeNorm(f.forces.lineCapillaryForce.raw()));
+  trajFile.writeErrorNorm(idx, f.mechErrorNorm);
+  trajFile.writeChemErrorNorm(idx, f.chemErrorNorm);
+  trajFile.writeBendNorm(idx, f.computeNorm(f.forces.bendingForce.raw()));
+  trajFile.writeSurfNorm(idx, f.computeNorm(f.forces.capillaryForce.raw()));
+  trajFile.writePressNorm(idx, f.computeNorm(f.forces.osmoticForce.raw()));
+  trajFile.writeLineNorm(idx, f.computeNorm(f.forces.lineCapillaryForce.raw()));
 
   // vector quantities
   if (!f.meshProcessor.meshMutator.isSplitEdge &&
       !f.meshProcessor.meshMutator.isCollapseEdge) {
     // write velocity
-    fd.writeVelocity(idx, EigenMap<double, 3>(f.velocity));
+    trajFile.writeVelocity(idx, EigenMap<double, 3>(f.velocity));
     // write protein density distribution
-    fd.writeProteinDensity(idx, f.proteinDensity.raw());
+    trajFile.writeProteinDensity(idx, f.proteinDensity.raw());
 
     // write geometry
-    fd.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
-    fd.writeTopoFrame(idx, f.mesh->getFaceVertexMatrix<std::uint32_t>());
-    fd.writeMeanCurvature(idx, f.vpg->vertexMeanCurvatures.raw().array() /
-                                   f.vpg->vertexDualAreas.raw().array());
-    fd.writeGaussCurvature(idx, f.vpg->vertexGaussianCurvatures.raw().array() /
-                                    f.vpg->vertexDualAreas.raw().array());
-    fd.writeSponCurvature(idx, f.H0.raw());
+    trajFile.writeCoords(idx, EigenMap<double, 3>(f.vpg->inputVertexPositions));
+    trajFile.writeTopoFrame(idx, f.mesh->getFaceVertexMatrix<std::uint32_t>());
+    trajFile.writeMeanCurvature(idx, f.vpg->vertexMeanCurvatures.raw().array() /
+                                         f.vpg->vertexDualAreas.raw().array());
+    trajFile.writeGaussCurvature(idx,
+                                 f.vpg->vertexGaussianCurvatures.raw().array() /
+                                     f.vpg->vertexDualAreas.raw().array());
+    trajFile.writeSponCurvature(idx, f.H0.raw());
     // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
     // fd.writeH_H0_diff(idx,
     //                   ((f.H - f.H0).array() * (f.H -
     //                   f.H0).array()).matrix());
 
     // write pressures
-    fd.writeBendingForce(idx, f.forces.bendingForce.raw());
-    fd.writeCapillaryForce(idx, f.forces.capillaryForce.raw());
-    fd.writeLineForce(idx, f.forces.lineCapillaryForce.raw());
-    fd.writeOsmoticForce(idx, f.forces.osmoticForce.raw());
-    fd.writeExternalForce(idx, f.forces.externalForce.raw());
-    fd.writePhysicalForce(idx, f.forces.mechanicalForce.raw());
-    fd.writeChemicalPotential(idx, f.forces.chemicalPotential.raw());
+    trajFile.writeBendingForce(idx, f.forces.bendingForce.raw());
+    trajFile.writeCapillaryForce(idx, f.forces.capillaryForce.raw());
+    trajFile.writeLineForce(idx, f.forces.lineCapillaryForce.raw());
+    trajFile.writeOsmoticForce(idx, f.forces.osmoticForce.raw());
+    trajFile.writeExternalForce(idx, f.forces.externalForce.raw());
+    trajFile.writePhysicalForce(idx, f.forces.mechanicalForce.raw());
+    trajFile.writeChemicalPotential(idx, f.forces.chemicalPotential.raw());
+  }
+}
+
+void Integrator::saveMutableNetcdfData() {
+  std::size_t idx = mutableTrajFile.nFrames();
+
+  // scalar quantities
+  // write time
+  mutableTrajFile.writeTime(idx, f.time);
+
+  // vector quantities
+  if (!f.meshProcessor.meshMutator.isSplitEdge &&
+      !f.meshProcessor.meshMutator.isCollapseEdge) {
+    // write velocity
+    mutableTrajFile.writeVelocity(idx, EigenMap<double, 3>(f.velocity));
+
+    // write geometry
+    mutableTrajFile.writeCoords(idx, *f.vpg);
+    mutableTrajFile.writeTopology(idx, *f.mesh);
   }
 }
 #endif

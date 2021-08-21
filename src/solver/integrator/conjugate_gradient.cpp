@@ -48,7 +48,8 @@ bool ConjugateGradient::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  createNetcdfFile();
+  // createNetcdfFile();
+  createMutableNetcdfFile();
   // print to console
   std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
             << std::endl;
@@ -187,7 +188,8 @@ void ConjugateGradient::march() {
                       ? f.forces.chemicalPotential.raw().squaredNorm()
                       : 0);
     vel_e = physicalForceVec;
-    vel_protein_e = f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
+    vel_protein_e =
+        f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
     countCG = 1;
   } else {
     currentNormSq = (f.parameters.variation.isShapeVariation
@@ -199,7 +201,8 @@ void ConjugateGradient::march() {
     vel_e *= currentNormSq / pastNormSq;
     vel_e += physicalForceVec;
     vel_protein_e *= currentNormSq / pastNormSq;
-    vel_protein_e += f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
+    vel_protein_e +=
+        f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
     pastNormSq = currentNormSq;
     countCG++;
   }

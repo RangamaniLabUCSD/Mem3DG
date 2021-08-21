@@ -265,6 +265,21 @@ public:
    */
   std::size_t nFrames() const { return frame_dim.getSize(); };
 
+  /**
+   * @brief Netcdf file frame reader
+   *
+   * @param frame reference to the frame index
+   *
+   */
+  void getNcFrame(int &frame) const {
+    int maxFrame = nFrames() - 1;
+    if (frame > maxFrame || frame < -(maxFrame + 1)) {
+      mem3dg_runtime_error("Snapshot frame exceed limiting frame index!");
+    } else if (frame < 0) {
+      frame = frame + maxFrame + 1;
+    }
+  }
+
 #pragma region read_write
   /**
    * @brief Write the topology for a frame
@@ -283,8 +298,9 @@ public:
    * @param data  Surface mesh
    */
   void writeTopology(const std::size_t idx, gc::SurfaceMesh &mesh) {
-    writeVar<std::uint32_t, 3>(topo_var, idx,
-             EigenVectorX3ur{mesh.getFaceVertexMatrix<std::uint32_t>()});
+    writeVar<std::uint32_t, 3>(
+        topo_var, idx,
+        EigenVectorX3ur{mesh.getFaceVertexMatrix<std::uint32_t>()});
   }
 
   /**

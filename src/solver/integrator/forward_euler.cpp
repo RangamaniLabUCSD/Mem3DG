@@ -45,7 +45,8 @@ bool Euler::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  createNetcdfFile();
+  // createNetcdfFile();
+  createMutableNetcdfFile();
   // print to console
   std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
             << std::endl;
@@ -161,7 +162,8 @@ void Euler::march() {
 
   // compute force, which is equivalent to velocity
   vel_e = physicalForceVec;
-  vel_protein_e = f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
+  vel_protein_e =
+      f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {

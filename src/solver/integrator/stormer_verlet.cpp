@@ -25,7 +25,8 @@ bool StormerVerlet::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  createNetcdfFile();
+  // createNetcdfFile();
+  createMutableNetcdfFile();
   // print to console
   std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
             << std::endl;
@@ -60,7 +61,8 @@ bool StormerVerlet::integrate() {
       if (flag == true) {
         f.vpg->inputVertexPositions[v] *= 2;
         totalForce = f.forces.mechanicalForceVec[v] + f.forces.dampingForce[v] +
-                     f.forces.stochasticForce[v] + f.forces.regularizationForce[v];
+                     f.forces.stochasticForce[v] +
+                     f.forces.regularizationForce[v];
         f.vpg->inputVertexPositions[v] +=
             totalForce * dt * dt - pastPositions[v];
       }
