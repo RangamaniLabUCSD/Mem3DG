@@ -19,6 +19,7 @@
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/constants.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/solver/mutable_trajfile.h"
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -46,6 +47,8 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
   // Open netcdf file
   TrajFile fd = TrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
+  // MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
+  // fd.getNcFrame(startingFrame);
 
   // Check consistent topology for continuation
   if (!(mesh->nFaces() == fd.getTopology().rows() &&
@@ -76,10 +79,12 @@ System::readTrajFile(std::string trajFile, int startingFrame,
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
 
-  TrajFile fd = TrajFile::openReadOnly(trajFile);
+  // TrajFile fd = TrajFile::openReadOnly(trajFile);
+  // fd.getNcFrame(startingFrame);
+  MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      fd.getCoords(startingFrame), fd.getTopology());
+      fd.getCoords(startingFrame), fd.getTopology(startingFrame));
   std::cout << "Loaded input mesh from " << trajFile << " of frame "
             << startingFrame << std::endl;
 

@@ -29,8 +29,8 @@
 #include "mem3dg/solver/system.h"
 
 #include "mem3dg/meshops.h"
-#include "mem3dg/solver/trajfile.h"
 #include "mem3dg/solver/mutable_trajfile.h"
+#include "mem3dg/solver/trajfile.h"
 
 #include <csignal>
 #include <stdexcept>
@@ -74,7 +74,8 @@ protected:
   double maxForce;
   /// TrajFile
 #ifdef MEM3DG_WITH_NETCDF
-  TrajFile fd;
+  TrajFile trajFile;
+  MutableTrajFile mutableTrajFile;
 #endif
 
 public:
@@ -118,11 +119,11 @@ public:
    */
   Integrator(System &f_, double dt_, double total_time_, double tSave_,
              double tolerance_, std::string outputDir_)
-      : f(f_), previousE(f_.energy), dt(dt_), total_time(total_time_), tSave(tSave_),
-        tol(tolerance_), tUpdateGeodesics(total_time), tProcessMesh(total_time),
-        outputDir(outputDir_), init_time(f_.time), SUCCESS(true), EXIT(false),
-        frame(0), lastUpdateGeodesics(f_.time), lastProcessMesh(f_.time),
-        lastSave(f_.time) {
+      : f(f_), previousE(f_.energy), dt(dt_), total_time(total_time_),
+        tSave(tSave_), tol(tolerance_), tUpdateGeodesics(total_time),
+        tProcessMesh(total_time), outputDir(outputDir_), init_time(f_.time),
+        SUCCESS(true), EXIT(false), frame(0), lastUpdateGeodesics(f_.time),
+        lastProcessMesh(f_.time), lastSave(f_.time) {
 
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
@@ -157,22 +158,27 @@ public:
   // =================     Output Data         ================
   // ==========================================================
   /**
-   * @brief Initialize netcdf traj file
-   */
-  void createNetcdfFile();
-
-  /**
    * @brief Save trajectory, mesh and print to console
    */
   void saveData();
 
 #ifdef MEM3DG_WITH_NETCDF
   /**
+   * @brief Initialize netcdf traj file
+   */
+  void createNetcdfFile();
+  /**
+   * @brief Initialize netcdf traj file
+   */
+  void createMutableNetcdfFile();
+  /**
    * @brief Save data to netcdf traj file
-   * @param frame, frame index of netcdf traj file
-   * @param fd, netcdf trajFile object
    */
   void saveNetcdfData();
+  /**
+   * @brief Save data to netcdf traj file
+   */
+  void saveMutableNetcdfData();
 
 #endif
 
