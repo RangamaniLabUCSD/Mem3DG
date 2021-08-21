@@ -740,16 +740,13 @@ void Integrator::saveMutableNetcdfData() {
   // write time
   mutableTrajFile.writeTime(idx, f.time);
 
-  // vector quantities
-  if (!f.meshProcessor.meshMutator.isSplitEdge &&
-      !f.meshProcessor.meshMutator.isCollapseEdge) {
-    // write velocity
-    mutableTrajFile.writeVelocity(idx, EigenMap<double, 3>(f.velocity));
+  // write velocity
+  mutableTrajFile.writeVelocity(idx, EigenMap<double, 3>(f.velocity));
 
-    // write geometry
-    mutableTrajFile.writeCoords(idx, *f.vpg);
-    mutableTrajFile.writeTopology(idx, *f.mesh);
-  }
+  // write geometry
+  mutableTrajFile.writeCoords(idx, *f.vpg);
+  mutableTrajFile.writeTopology(idx, *f.mesh);
+  mutableTrajFile.sync();
 }
 #endif
 
