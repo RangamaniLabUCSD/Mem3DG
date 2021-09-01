@@ -48,11 +48,13 @@ bool ConjugateGradient::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  // createNetcdfFile();
-  createMutableNetcdfFile();
-  // print to console
-  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
-            << std::endl;
+  if (verbosity > 0) {
+    // createNetcdfFile();
+    createMutableNetcdfFile();
+    // print to console
+    std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
+              << std::endl;
+  }
 #endif
 
   // time integration loop

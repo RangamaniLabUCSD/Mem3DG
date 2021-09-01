@@ -648,26 +648,22 @@ void Integrator::markFileName(std::string marker_str) {
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::createNetcdfFile() {
   // initialize netcdf traj file
-  if (verbosity > 0) {
-    trajFile.createNewFile(outputDir + "/" + trajFileName, *f.mesh, *f.vpg,
-                           TrajFile::NcFile::replace);
-    trajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
-    if (!f.mesh->hasBoundary()) {
-      trajFile.writeRefSurfArea(f.parameters.tension.At);
-    }
+  trajFile.createNewFile(outputDir + "/" + trajFileName, *f.mesh, *f.vpg,
+                         TrajFile::NcFile::replace);
+  trajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
+  if (!f.mesh->hasBoundary()) {
+    trajFile.writeRefSurfArea(f.parameters.tension.At);
   }
 }
 
 void Integrator::createMutableNetcdfFile() {
   // initialize netcdf traj file
-  if (verbosity > 0) {
-    mutableTrajFile.createNewFile(outputDir + "/" + trajFileName,
-                                  TrajFile::NcFile::replace);
-    // mutableTrajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
-    // if (!f.mesh->hasBoundary()) {
-    //   mutableTrajFile.writeRefSurfArea(f.parameters.tension.At);
-    // }
-  }
+  mutableTrajFile.createNewFile(outputDir + "/" + trajFileName,
+                                TrajFile::NcFile::replace);
+  // mutableTrajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
+  // if (!f.mesh->hasBoundary()) {
+  //   mutableTrajFile.writeRefSurfArea(f.parameters.tension.At);
+  // }
 }
 
 void Integrator::saveNetcdfData() {
