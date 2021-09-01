@@ -94,7 +94,7 @@ struct Parameters {
     /// preferred volume
     double Vt = -1;
     /// Ambient Pressure
-    double cam = 0;
+    double cam = -1;
     /// volume reservoir
     double V_res = 0;
     /// Enclosed solute (atto-mol)

@@ -46,11 +46,13 @@ bool VelocityVerlet::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  // createNetcdfFile();
-  createMutableNetcdfFile();
-  // print to console
-  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
-            << std::endl;
+  if (verbosity > 0) {
+    // createNetcdfFile();
+    createMutableNetcdfFile();
+    // print to console
+    std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
+              << std::endl;
+  }
 #endif
 
   // time integration loop
@@ -113,7 +115,8 @@ void VelocityVerlet::status() {
   getForces();
 
   // Compute total pressure
-  // newTotalPressure = rowwiseScalarProduct((physicalForce + DPDForce).array()
+  // newTotalPressure = rowwiseScalarProduct((physicalForce +
+  // DPDForce).array()
   // /
   //                                       f.vpg->vertexDualAreas.raw().array(),
   //                                   vertexAngleNormal_e);
