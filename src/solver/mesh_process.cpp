@@ -35,7 +35,7 @@ void MeshProcessor::summarizeStatus() {
                      (meshRegularizer.Kse != 0);
   isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
 
-  if (meshRegularizer.ifRefMesh && isMeshRegularize) {
+  if (!meshRegularizer.ifHasRefMesh && isMeshRegularize) {
     mem3dg_runtime_error(
         "To apply mesh regularization, reference mesh has to be provided!");
   }
@@ -46,7 +46,7 @@ void MeshProcessor::summarizeStatus() {
 };
 
 void MeshProcessor::MeshRegularizer::summarizeStatus() {
-  ifRefMesh = (nEdge != 0) || (nVertex != 0) || (nFace != 0);
+  ifHasRefMesh = (nEdge != 0) || (nVertex != 0) || (nFace != 0);
 };
 
 void MeshProcessor::MeshRegularizer::readReferenceData(std::string refMesh,

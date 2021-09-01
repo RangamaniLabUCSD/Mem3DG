@@ -51,7 +51,7 @@ namespace solver {
 struct MeshProcessor {
   struct MeshRegularizer {
     // whether has reference mesh
-    bool ifRefMesh;
+    bool ifHasRefMesh;
 
     /// triangle ratio constant
     double Kst = 0;
