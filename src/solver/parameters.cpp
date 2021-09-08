@@ -64,16 +64,6 @@ void Parameters::Osmotic::checkParameters() {
   }
 }
 
-void Parameters::External::checkParameters() {
-  if (Kf == 0) {
-    if (conc != -1 || height != 0) {
-      mem3dg_runtime_error("With no external force, its concentration "
-                           "should be disabled (=-1) "
-                           "and prescribed height should be set to 0!");
-    }
-  }
-}
-
 void Parameters::Point::checkParameters() {
   if (pt.rows() > 3) {
     mem3dg_runtime_error(
@@ -146,7 +136,6 @@ void Parameters::Variation::checkParameters() {
 void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   tension.checkParameters();
   osmotic.checkParameters();
-  external.checkParameters();
   variation.checkParameters();
   point.checkParameters();
   proteinDistribution.checkParameters(nVertex);

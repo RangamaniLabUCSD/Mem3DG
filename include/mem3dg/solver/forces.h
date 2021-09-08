@@ -89,6 +89,8 @@ struct Forces {
   gcs::VertexData<gc::Vector3> lineCapillaryForceVec;
   /// Cached adsorption driven force
   gcs::VertexData<gc::Vector3> adsorptionForceVec;
+  /// Cached external localized force
+  gcs::VertexData<gc::Vector3> externalForceVec;
   /// Cached mechanical force
   gcs::VertexData<gc::Vector3> mechanicalForceVec;
 
@@ -122,7 +124,7 @@ struct Forces {
         bendingForceVec_gaussVec(mesh, {0, 0, 0}),
         bendingForceVec_schlafliVec(mesh, {0, 0, 0}),
         capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
-        adsorptionForceVec(mesh, {0, 0, 0}),
+        adsorptionForceVec(mesh, {0, 0, 0}), externalForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
         capillaryForce(mesh, 0), surfaceTension(0), lineCapillaryForce(mesh, 0),
         externalForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),

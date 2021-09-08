@@ -418,39 +418,43 @@ EigenVectorX1d System::computeLineCapillaryForce() {
 }
 
 EigenVectorX1d System::computeExternalForce() {
-  EigenVectorX1d externalPressureMagnitude;
+#define MODE 0
+#if MODE == 0 // axial sinusoidal force
+  double freq = 5;
+  double totalHeight = toMatrix(vpg->inputVertexPositions).col(2).maxCoeff() -
+                       toMatrix(vpg->inputVertexPositions).col(2).minCoeff();
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    gc::Vertex v{mesh->vertex(i)};
+    gc::Vector3 direction{vpg->inputVertexPositions[v].x,
+                          vpg->inputVertexPositions[v].y, 0};
 
-  // a. FIND OUT THE CURRENT EXTERNAL PRESSURE MAGNITUDE BASED ON CURRENT
-  // GEOMETRY
+    double externalPressureMagnitude =
+        parameters.external.Kf *
+        (1 + sin(freq * 2 * constants::PI / totalHeight *
+                 vpg->inputVertexPositions[v].z));
+    forces.externalForceVec[i] = externalPressureMagnitude *
+                                 vpg->vertexDualArea(v) * direction.normalize();
+  }
 
-  // auto &dist_e = heatMethodDistance(vpg, mesh->vertex(P.ptInd)).raw();
-  // double stdDev = dist_e.maxCoeff() / P.conc;
-  // externalPressureMagnitude =
-  //    P.external.Kf / (stdDev * pow(M_PI * 2, 0.5)) *
-  //    (-dist_e.array() * dist_e.array() / (2 * stdDev * stdDev)).exp();
+#elif MODE == 1 // anchor force 
+  double concentration = 10;
+  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
+  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
+  double standardDeviation =
+      geodesicDistanceFromPtInd.raw().maxCoeff() / concentration;
 
-  // b. APPLY EXTERNAL PRESSURE NORMAL TO THE SURFACE
-
-  // auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  // externalPressure_e = externalPressureMagnitude *
-  // vertexAngleNormal_e.row(P.ptInd);
-
-  // c. ALTERNATIVELY, PRESSURE BASED ON INITIAL GEOMETRY + ALONG A FIXED
-  // DIRECTION, E.G. NEGATIVE Z DIRECTION
-
-  // initialize/update the external pressure magnitude distribution
-  gaussianDistribution(
-      externalPressureMagnitude, geodesicDistanceFromPtInd.raw(),
-      geodesicDistanceFromPtInd.raw().maxCoeff() / parameters.external.conc);
-  externalPressureMagnitude *= parameters.external.Kf;
-
-  Eigen::Matrix<double, 1, 3> zDir;
-  zDir << 0.0, 0.0, -1.0;
-  // externalPressure_e = -externalPressureMagnitude * zDir *
-  //                      (vpg->inputVertexPositions[theVertex].z - P.height);
-  forces.externalForce.raw() = externalPressureMagnitude;
-  forces.externalForce.raw() *= vpg->vertexLumpedMassMatrix;
-
+  gc::Vector3 anchor{0, 0, 1};
+  gc::Vector3 direction;
+  direction = anchor - vpg->inputVertexPositions[thePoint.nearestVertex()];
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    gc::Vertex v{mesh->vertex(i)};
+    forces.externalForceVec[i] =
+        parameters.external.Kf *
+        gaussianDistribution(geodesicDistanceFromPtInd[v], standardDeviation) *
+        vpg->vertexDualArea(v) * direction;
+  }
+#endif
+  forces.externalForce = forces.ontoNormal(forces.externalForceVec);
   return forces.externalForce.raw();
 }
 
@@ -549,7 +553,8 @@ System::computeDPDForces(double dt) {
     // gc::Vector3 dPos21_n = (pos[v2] - pos[v1]).normalize();
 
     // std::cout << -gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n)
-    //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) * -dPos12_n)
+    //           << " == " << -gamma * (gc::dot(-dVel12, -dPos12_n) *
+    //           -dPos12_n)
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
   }
@@ -649,6 +654,7 @@ void System::computePhysicalForces() {
   forces.osmoticForceVec.fill({0, 0, 0});
   forces.lineCapillaryForceVec.fill({0, 0, 0});
   forces.adsorptionForceVec.fill({0, 0, 0});
+  forces.externalForceVec.fill({0, 0, 0});
 
   forces.bendingForce.raw().setZero();
   forces.capillaryForce.raw().setZero();
@@ -670,7 +676,7 @@ void System::computePhysicalForces() {
     forces.mechanicalForceVec =
         forces.osmoticForceVec + forces.capillaryForceVec +
         forces.bendingForceVec + forces.lineCapillaryForceVec +
-        forces.adsorptionForceVec + forces.addNormal(forces.externalForce);
+        forces.adsorptionForceVec + forces.externalForceVec;
     forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
   }
 

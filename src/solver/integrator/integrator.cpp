@@ -104,7 +104,7 @@ double Integrator::backtrack(
       std::cout << "\nbacktrack: line search failure! Simulation "
                    "stopped. \n"
                 << std::endl;
-      lineSearchErrorBacktrack(alpha, initial_pos, initial_protein, true);
+      lineSearchErrorBacktrace(alpha, initial_pos, initial_protein, true);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -137,13 +137,13 @@ double Integrator::backtrack(
   // If needed to test force-energy test
   const bool isDebug = false;
   if (isDebug) {
-    lineSearchErrorBacktrack(alpha, initial_pos, initial_protein, isDebug);
+    lineSearchErrorBacktrace(alpha, initial_pos, initial_protein, isDebug);
   }
 
   return alpha;
 }
 
-void Integrator::lineSearchErrorBacktrack(
+void Integrator::lineSearchErrorBacktrace(
     const double &alpha, const EigenVectorX3dr &current_pos,
     const EigenVectorX1d &current_proteinDensity, bool runAll) {
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
@@ -321,18 +321,17 @@ void Integrator::lineSearchErrorBacktrack(
 
       f.proteinDensity.raw() = current_proteinDensity;
       toMatrix(f.vpg->inputVertexPositions) =
-          current_pos + alpha * f.forces.maskForce(f.forces.addNormal(
-                                    f.forces.externalForce.raw()));
+          current_pos +
+          alpha * f.forces.maskForce(toMatrix(f.forces.externalForceVec));
       f.updateVertexPositions(false);
       f.computeFreeEnergy();
       if (runAll || f.energy.exE > previousE.exE) {
         std::cout << "With only external force, exE has increased "
                   << f.energy.exE - previousE.exE << " from " << previousE.exE
                   << " to " << f.energy.exE << ", expected dexE: "
-                  << -alpha * f.forces
-                                  .maskForce(f.forces.addNormal(
-                                      f.forces.externalForce.raw()))
-                                  .squaredNorm()
+                  << -alpha *
+                         f.forces.maskForce(toMatrix(f.forces.externalForceVec))
+                             .squaredNorm()
                   << std::endl;
       }
     }
@@ -372,7 +371,7 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(toMatrix(f.forces.lineCapillaryForceVec).norm())) {
         std::cout << "Line capillary force is not finite!" << std::endl;
       }
-      if (!std::isfinite(toMatrix(f.forces.externalForce).norm())) {
+      if (!std::isfinite(toMatrix(f.forces.externalForceVec).norm())) {
         std::cout << "External force is not finite!" << std::endl;
       }
     }
@@ -764,9 +763,7 @@ void Integrator::getParameterLog(std::string inputMesh) {
            << "gamma:  " << f.parameters.dpd.gamma << "\n"
            << "Vt:     " << f.parameters.osmotic.Vt << "\n"
            << "kt:     " << f.parameters.temperature << "\n"
-           << "Kf:     " << f.parameters.external.Kf << "\n"
-           << "conc:   " << f.parameters.external.conc << "\n"
-           << "height: " << f.parameters.external.height << "\n";
+           << "Kf:     " << f.parameters.external.Kf << "\n";
 
     myfile << "\n";
     myfile << "Integration parameters used: \n";
@@ -801,8 +798,7 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "gamma:  " << f.parameters.dpd.gamma << "\n"
            << "Vt:     " << f.parameters.osmotic.Vt << "\n"
            << "kt:     " << f.parameters.temperature << "\n"
-           << "Kf:   " << f.parameters.external.Kf << "\n"
-           << "conc:   " << f.parameters.external.conc << "\n";
+           << "Kf:   " << f.parameters.external.Kf << "\n";
 
     myfile << "\n";
     myfile << "Integration: \n";

@@ -26,6 +26,7 @@
 #include "mem3dg/constants.h"
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
+#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
 namespace solver {
@@ -79,8 +80,9 @@ void System::computePressureEnergy() {
     energy.pE = -forces.osmoticPressure * volume;
   } else {
     double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
-    energy.pE = mem3dg::constants::i * mem3dg::constants::R * parameters.temperature *
-                parameters.osmotic.n * (ratio - log(ratio) - 1);
+    energy.pE = mem3dg::constants::i * mem3dg::constants::R *
+                parameters.temperature * parameters.osmotic.n *
+                (ratio - log(ratio) - 1);
   }
 }
 
@@ -123,12 +125,10 @@ void System::computeDirichletEnergy() {
 }
 
 void System::computeExternalForceEnergy() {
-  energy.exE =
-      -rowwiseDotProduct(
-           rowwiseScalarProduct(forces.externalForce.raw(),
-                                gc::EigenMap<double, 3>(vpg->vertexNormals)),
-           gc::EigenMap<double, 3>(vpg->inputVertexPositions))
-           .sum();
+  computeExternalForce();
+  energy.exE = -rowwiseDotProduct(toMatrix(forces.externalForceVec),
+                                  toMatrix(vpg->inputVertexPositions))
+                    .sum();
 }
 
 void System::computeKineticEnergy() {
@@ -145,20 +145,13 @@ void System::computePotentialEnergy() {
   if (parameters.bending.Kb != 0 || parameters.bending.Kbc != 0) {
     computeBendingEnergy();
   }
-  if (parameters.tension.Ksg != 0) {
-    computeSurfaceEnergy();
-  }
-  if (parameters.osmotic.Kv != 0) {
-    computePressureEnergy();
-  }
+  computeSurfaceEnergy();
+  computePressureEnergy();
   if (parameters.adsorption.epsilon != 0) {
     computeAdsorptionEnergy();
   }
   if (parameters.dirichlet.eta != 0) {
     computeDirichletEnergy();
-  }
-  if (parameters.external.Kf != 0) {
-    computeExternalForceEnergy();
   }
   if (parameters.variation.isProteinVariation) {
     computeProteinInteriorPenaltyEnergy();

@@ -596,6 +596,11 @@ gaussianDistribution(Eigen::Ref<EigenVectorX1d> distribution,
       (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
       (stdDev * pow(constants::PI * 2, 0.5));
 }
+inline double gaussianDistribution(const double &distance,
+                                   const double &stdDev) {
+  return exp(-distance * distance / (2 * stdDev * stdDev)) /
+         (stdDev * pow(constants::PI * 2, 0.5));
+}
 
 /**
  * @brief height = 1 tanh step function with radius r

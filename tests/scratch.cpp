@@ -24,57 +24,27 @@ using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 int main() {
-  // pybind11::scoped_interpreter guard{};
-  std::string inputMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
-                          "results//bud//asymm//testTraj//frame360.ply";
+
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> mesh;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vpg;
+  mem3dg::solver::Parameters p;
+  std::tie(mesh, vpg) = mem3dg::getIcosphereMatrix(1, 3);
 
   /// physical parameters
-  mem3dg::solver::Parameters p;
-  p.bending.Kb = 8.22e-5;
-  p.bending.Kbc = 8.22e-4;
-  p.bending.H0c = 6;
-  p.proteinDistribution.protein0 = EigenVectorX1d(1);
-  p.proteinDistribution.protein0 << 1;
-  p.dirichlet.eta = 0;
-  p.tension.Ksg = 2e-2;
-  p.tension.A_res = 0;
-  p.adsorption.epsilon = -1;
-  p.proteinMobility = 0;
-  p.osmotic.Kv = 1;
-  p.osmotic.V_res = 0;
-  p.osmotic.Vt = -1;
-  p.osmotic.n = 1;
-  p.osmotic.cam = 0;
-  p.osmotic.isPreferredVolume = false;
-  p.external.Kf = 0;
-  p.external.conc = -1;
-  p.external.height = 0;
-  p.dpd.gamma = 0;
-  p.temperature = 0;
-  p.point.pt = EigenVectorX1d(2);
-  p.point.pt << 0, 0;
-  p.variation.isProteinVariation = false;
-  p.variation.radius = 100000;
+  p.bending.Kbc = 8.22e-5;
+  p.tension.Ksg = 0.1;
+  p.osmotic.isPreferredVolume = true;
+  p.osmotic.Kv = 0.01;
+  p.osmotic.Vt = 4.0 / 3.0 * mem3dg::constants::PI * 0.7;
 
-  p.point.isFloatVertex = true;
+  const double dt = 0.5, T = 50, eps = 0, tSave = 10, verbosity = 1;
+  const std::string outputDir = "/tmp";
 
-  mem3dg::solver::System f(inputMesh, p, 0, false);
-
-  double h = 0.05, T = 4076, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
-         verbosity = 3, restartNum = 5;
-  bool isAdaptiveStep = true, isAugmentedLagrangian = false,
-       isBacktrack = false;
-  std::string outputDir = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
-                          "results//bud//asymm//testTraj";
-
-  mem3dg::solver::integrator::Euler integrator(f, h, T, tSave, eps, outputDir);
-  integrator.isAdaptiveStep = isAdaptiveStep;
+  mem3dg::solver::System f(mesh, vpg, p, 0);
+  mem3dg::solver::integrator::Euler integrator{f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
   integrator.verbosity = verbosity;
-  integrator.isBacktrack = isBacktrack;
-  integrator.rho = rho;
-  integrator.c1 = c1;
   integrator.integrate();
-
+  std::cout << "in main()" << std::endl;
   return 0;
 }

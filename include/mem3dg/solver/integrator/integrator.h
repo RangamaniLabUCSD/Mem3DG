@@ -274,7 +274,7 @@ public:
    * energy-force relation
    * @return
    */
-  void lineSearchErrorBacktrack(const double &alpha,
+  void lineSearchErrorBacktrace(const double &alpha,
                                 const EigenVectorX3dr &initial_pos,
                                 const EigenVectorX1d &init_proteinDensity,
                                 bool runAll = false);

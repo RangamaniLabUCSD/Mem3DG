@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 
+#include "mem3dg/constants.h"
 #include "mem3dg/mem3dg"
 #include <Eigen/Core>
 
@@ -30,7 +31,9 @@ public:
     /// physical parameters
     p.bending.Kbc = 8.22e-5;
     p.tension.Ksg = 0.1;
-    p.osmotic.cam = 0.40;
+    p.osmotic.isPreferredVolume = true;
+    p.osmotic.Kv = 0.01;
+    p.osmotic.Vt = 4.0 / 3.0 * mem3dg::constants::PI * 0.7;
   }
   void SetUp() override {}
   void TearDown() override {}
@@ -40,11 +43,7 @@ public:
 
   mem3dg::solver::Parameters p;
 
-  const double dt = 0.5, T = 50, eps = 0, tSave = 10, rho = 0.99, c1 = 0.0001,
-               verbosity = 0;
-  const bool isAdaptiveStep = false, isAugmentedLagrangian = false,
-             isBacktrack = true;
-
+  const double dt = 0.5, T = 50, eps = 0, tSave = 10, verbosity = 0;
   const std::string outputDir = "/tmp";
 };
 
