@@ -32,16 +32,16 @@ void Parameters::Tension::checkParameters() {
 };
 
 void Parameters::Osmotic::checkParameters() {
-  if (isPreferredVolume) {
+  if (isPreferredVolume && !isConstantOsmoticPressure) {
     if (cam != -1) {
       mem3dg_runtime_error("ambient concentration cam has to be -1 for "
                            "preferred volume parametrized simulation!");
     }
-    if (isConstantOsmoticPressure) {
-      mem3dg_runtime_error("preferred volume and constant osmotic pressure "
-                           "cannot be simultaneously turned on!");
+  } else if (!isPreferredVolume && !isConstantOsmoticPressure) {
+    if (n == 0) {
+      mem3dg_runtime_error("enclosed solute quantity n can not be 0 for "
+                           "ambient pressure parametrized simulation!")
     }
-  } else {
     if (Vt != -1 && !isConstantOsmoticPressure) {
       mem3dg_runtime_error("preferred volume Vt has to be -1 for "
                            "ambient pressure parametrized simulation!");
@@ -50,19 +50,17 @@ void Parameters::Osmotic::checkParameters() {
       mem3dg_runtime_error(
           "Kv has to be 0 for ambient pressure parametrized simulation!");
     }
-  }
 
-  if (isConstantOsmoticPressure) {
-    if (isPreferredVolume) {
-      mem3dg_runtime_error("preferred volume and constant osmotic pressure "
-                           "cannot be simultaneously turned on!");
-    }
+  } else if (!isPreferredVolume && isConstantOsmoticPressure) {
     if (Vt != -1 || V_res != 0 || cam != -1) {
       mem3dg_runtime_error(
           "Vt and cam have to be set to -1 and V_res to be 0 to "
           "enable constant omostic pressure! Note Kv is the "
           "pressure directly!");
     }
+  } else {
+    mem3dg_runtime_error("preferred volume and constant osmotic pressure "
+                         "cannot be simultaneously turned on!");
   }
 }
 

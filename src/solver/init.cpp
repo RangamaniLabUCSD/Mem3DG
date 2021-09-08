@@ -405,18 +405,15 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
 
   // update protein density
   if (parameters.proteinDistribution.protein0.rows() == 4 &&
-      !parameters.variation.isProteinVariation) {
-    if (isUpdateGeodesics) {
-      std::vector<double> r_heter{parameters.proteinDistribution.protein0[0],
-                                  parameters.proteinDistribution.protein0[1]};
-      tanhDistribution(*vpg, proteinDensity.raw(),
-                       geodesicDistanceFromPtInd.raw(),
-                       parameters.proteinDistribution.sharpness, r_heter);
-      proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
-                              parameters.proteinDistribution.protein0[3];
-      proteinDensity.raw().array() +=
-          parameters.proteinDistribution.protein0[3];
-    }
+      !parameters.variation.isProteinVariation && isUpdateGeodesics) {
+    std::vector<double> r_heter{parameters.proteinDistribution.protein0[0],
+                                parameters.proteinDistribution.protein0[1]};
+    tanhDistribution(*vpg, proteinDensity.raw(),
+                     geodesicDistanceFromPtInd.raw(),
+                     parameters.proteinDistribution.sharpness, r_heter);
+    proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
+                            parameters.proteinDistribution.protein0[3];
+    proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
   }
 
   // compute face gradient of spontaneous curvature

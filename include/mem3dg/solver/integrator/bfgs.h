@@ -61,9 +61,7 @@ public:
     mem3dg_runtime_error("BFGS is currently not tested and maintained!");
 
     // print to console
-    if (verbosity > 1) {
-      std::cout << "Running BFGS propagator ..." << std::endl;
-    }
+    std::cout << "Running BFGS propagator ..." << std::endl;
 
     hess_inv.resize(f.mesh->nVertices() * 3, f.mesh->nVertices() * 3);
     hess_inv.setIdentity();

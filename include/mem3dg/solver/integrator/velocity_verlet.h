@@ -39,9 +39,7 @@ public:
       : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_) {
 
     // print to console
-    if (verbosity > 1) {
-      std::cout << "Running Velocity Verlet integrator ..." << std::endl;
-    }
+    std::cout << "Running Velocity Verlet integrator ..." << std::endl;
 
     // check the validity of parameter
     checkParameters();
