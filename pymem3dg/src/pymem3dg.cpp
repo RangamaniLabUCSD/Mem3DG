@@ -454,6 +454,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the adsorption force
       )delim");
   forces.def(
+      "getExternalForce",
+      [](Forces &s) { return toMatrix(s.externalForceVec); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the external force
+      )delim");
+  forces.def(
       "getMechanicalForce",
       [](Forces &s) { return toMatrix(s.mechanicalForceVec); },
       py::return_value_policy::reference_internal,
@@ -1122,14 +1129,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   external.def_readwrite("Kf", &Parameters::External::Kf,
                          R"delim(
           get Magnitude of external force 
-      )delim");
-  external.def_readwrite("conc", &Parameters::External::conc,
-                         R"delim(
-          get level of concentration of the external force 
-      )delim");
-  external.def_readwrite("height", &Parameters::External::height,
-                         R"delim(
-          get target height 
       )delim");
 
   py::class_<Parameters::DPD> dpd(pymem3dg, "DPD",

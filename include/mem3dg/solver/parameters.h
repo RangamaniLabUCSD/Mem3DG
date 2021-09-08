@@ -121,15 +121,6 @@ struct Parameters {
   struct External {
     /// Magnitude of external force
     double Kf = 0;
-    /// level of concentration of the external force
-    double conc = -1;
-    /// target height
-    double height = 0;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    void checkParameters();
   };
 
   struct DPD {

@@ -29,47 +29,27 @@ int main() {
                           "examples//patch_bud//input-"
                           "file//patch.ply";
 
-  /// physical parameters
-  double Kb = 8.22e-5, Kbc = 10 * 8.22e-5, H0 = 40, Kst = 0, Ksl = 0, Kse = 0,
-         epsilon = 15e-5, Bc = 40, gamma = 3, Vt = 1, cam = 0, Kf = 0,
-         conc = 25, height = 0, radius = 100, temp = 0, h = 1e-5, Kv = 0,
-         eta = 0, Ksg = 0.05, A_res = 0, V_res = 0, n = 1;
-
-  EigenVectorX1d pt(3), r_H0(2);
-  pt << 0, 0, 0;
-  r_H0 << 0.15, 0.15;
-
   mem3dg::solver::Parameters p;
-  p.bending.Kb = Kb;
-  p.bending.Kbc = Kbc;
-  p.bending.H0c = H0;
-  p.proteinDistribution.protein0 = r_H0;
-  p.tension.Ksg = Ksg;
-  p.tension.A_res = A_res;
-  p.osmotic.Kv = Kv;
-  p.osmotic.V_res = V_res;
-  p.osmotic.Vt = Vt;
-  p.osmotic.cam = cam;
-  p.osmotic.n = n;
+  p.bending.Kb = 8.22e-5;
+  p.bending.Kbc = 8.22e-4;
+  p.bending.H0c = 40;
+  p.proteinDistribution.protein0.resize(2);
+  p.proteinDistribution.protein0 << 0.15, 0.15;
+  p.tension.Ksg = 0.05;
+  p.tension.A_res = 0;
   p.osmotic.isPreferredVolume = true;
-  p.dirichlet.eta = eta;
-  p.adsorption.epsilon = epsilon;
-  p.proteinMobility = Bc;
-  p.dpd.gamma = gamma;
-  p.temperature = temp;
-  p.point.pt = pt;
-  p.external.Kf = Kf;
-  p.external.conc = conc;
-  p.external.height = height;
-  p.variation.radius = radius;
+  p.osmotic.Kv = 0;
+  p.adsorption.epsilon = 15e-5;
+  p.proteinMobility = 40;
+  p.point.pt.resize(3);
+  p.point.pt << 0, 0, 0;
   p.variation.isProteinVariation = false;
   p.point.isFloatVertex = false;
 
-
   mem3dg::solver::System f(inputMesh, p, 0, false);
 
-  double T = 3, eps = 0.002, closeZone = 1000, increment = 0, tSave = 1e-1,
-         tMollify = 100, errorJumpLim = 600;
+  double T = 3, h = 1e-5, eps = 0.002, closeZone = 1000, increment = 0,
+         tSave = 1e-1, tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
   std::size_t verbosity = 2;
 
