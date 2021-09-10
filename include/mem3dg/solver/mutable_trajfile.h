@@ -145,7 +145,9 @@ public:
    * @brief Destructor frees the bound NcFile
    */
   ~MutableTrajFile() {
-    fd->close();
+    if (fd != nullptr) {
+      fd->close();
+    }
     delete fd;
   };
 
