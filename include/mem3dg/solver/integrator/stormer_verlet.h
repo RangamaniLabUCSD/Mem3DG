@@ -28,18 +28,20 @@ private:
   gcs::VertexData<gc::Vector3> pastPositions;
 
 public:
-  StormerVerlet(System &f_, double dt_, double total_time_, double tSave_,
-                double tolerance_, std::string outputDir_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_),
-        pastPositions(*f.mesh, {0, 0, 0}) {
+  StormerVerlet(System &system_, double characteristicTimeStep_,
+                double totalTime_, double savePeriod_, double tolerance_,
+                std::string outputDirectory_)
+      : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
+                   tolerance_, outputDirectory_),
+        pastPositions(*system.mesh, {0, 0, 0}) {
     mem3dg_runtime_error(
         "StomerVerlet is currently not tested and maintained!");
   }
 
   bool integrate() override;
-  void march() override {};
-  void status() override {};
-  void checkParameters() override {};
+  void march() override{};
+  void status() override{};
+  void checkParameters() override{};
 };
 } // namespace integrator
 } // namespace solver

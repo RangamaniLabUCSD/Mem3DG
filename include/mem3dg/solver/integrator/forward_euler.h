@@ -33,14 +33,15 @@ public:
   double rho = 0.99;
   double c1 = 0.0001;
 
-  Euler(System &f_, double dt_, double total_time_, double tSave_,
-        double tolerance_, std::string outputDir_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_) {
+  Euler(System &system_, double characteristicTimeStep_, double totalTime_,
+        double savePeriod_, double tolerance_, std::string outputDirectory_)
+      : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
+                   tolerance_, outputDirectory_) {
 
     // print to console
     std::cout << "Running Forward Euler (steepest descent) propagator ..."
               << std::endl;
-              
+
     // check the validity of parameter
     checkParameters();
   }

@@ -31,12 +31,14 @@ private:
   // total pressure of new iteration
   Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
   // total energy of the system
-  double totalEnergy;
+  double initialTotalEnergy;
 
 public:
-  VelocityVerlet(System &f_, double dt_, double total_time_, double tSave_,
-                 double tolerance_, std::string outputDir_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_) {
+  VelocityVerlet(System &system_, double characteristicTimeStep_,
+                 double totalTime_, double savePeriod_, double tolerance_,
+                 std::string outputDirectory_)
+      : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
+                   tolerance_, outputDirectory_) {
 
     // print to console
     std::cout << "Running Velocity Verlet integrator ..." << std::endl;
@@ -44,13 +46,12 @@ public:
     // check the validity of parameter
     checkParameters();
 
-    totalPressure.resize(f.mesh->nVertices(), 3);
-    newTotalPressure.resize(f.mesh->nVertices(), 3);
+    totalPressure.resize(system.mesh->nVertices(), 3);
+    newTotalPressure.resize(system.mesh->nVertices(), 3);
     totalPressure.setZero();
     newTotalPressure.setZero();
 
-    f.computeFreeEnergy();
-    totalEnergy = f.energy.totalE;
+    initialTotalEnergy = system.computeTotalEnergy();
   }
 
   /**

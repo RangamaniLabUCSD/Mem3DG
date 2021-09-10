@@ -52,7 +52,7 @@ bool ConjugateGradient::integrate() {
     // createNetcdfFile();
     createMutableNetcdfFile();
     // print to console
-    std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
+    std::cout << "Initialized NetCDF file at " << outputDirectory + "/" + trajFileName
               << std::endl;
   }
 #endif
@@ -64,22 +64,22 @@ bool ConjugateGradient::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    if (f.time - lastSave >= tSave || f.time == init_time || EXIT) {
-      lastSave = f.time;
+    if (system.time - lastSave >= savePeriod || system.time == initialTime || EXIT) {
+      lastSave = system.time;
       saveData();
     }
 
     // Process mesh every tProcessMesh period
-    if (f.time - lastProcessMesh > tProcessMesh) {
-      lastProcessMesh = f.time;
-      f.mutateMesh();
-      f.updateVertexPositions(false);
+    if (system.time - lastProcessMesh > processMeshPeriod) {
+      lastProcessMesh = system.time;
+      system.mutateMesh();
+      system.updateVertexPositions(false);
     }
 
     // update geodesics every tUpdateGeodesics period
-    if (f.time - lastUpdateGeodesics > tUpdateGeodesics) {
-      lastUpdateGeodesics = f.time;
-      f.updateVertexPositions(true);
+    if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
+      lastUpdateGeodesics = system.time;
+      system.updateVertexPositions(true);
     }
 
     // break loop if EXIT flag is on
@@ -88,8 +88,8 @@ bool ConjugateGradient::integrate() {
     }
 
     // step forward
-    if (f.time == lastProcessMesh || f.time == lastUpdateGeodesics) {
-      f.time += 1e-10 * dt;
+    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
+      system.time += 1e-10 * characteristicTimeStep;
       countCG = 0;
     } else {
       march();
@@ -98,7 +98,7 @@ bool ConjugateGradient::integrate() {
 
   // return if optimization is sucessful
   if (!SUCCESS) {
-    if (tol == 0) {
+    if (tolerance == 0) {
       markFileName("_most");
     } else {
       markFileName("_failed");
@@ -118,10 +118,10 @@ bool ConjugateGradient::integrate() {
 }
 
 void ConjugateGradient::checkParameters() {
-  if (f.parameters.dpd.gamma != 0) {
+  if (system.parameters.dpd.gamma != 0) {
     mem3dg_runtime_error("DPD has to be turned off for CG integration!");
   }
-  if (f.parameters.proteinMobility != 1 && f.parameters.proteinMobility != 0) {
+  if (system.parameters.proteinMobility != 1 && system.parameters.proteinMobility != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
                          "be set to 1 for optimization!");
   }
@@ -130,7 +130,7 @@ void ConjugateGradient::checkParameters() {
       mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
   }
-  if (restartNum < 1) {
+  if (restartPeriod < 1) {
     mem3dg_runtime_error("restartNum > 0!");
   }
   // if (f.O.isVertexShift) {
@@ -140,102 +140,89 @@ void ConjugateGradient::checkParameters() {
 }
 
 void ConjugateGradient::status() {
-  auto physicalForce = toMatrix(f.forces.mechanicalForce);
+  auto physicalForce = toMatrix(system.forces.mechanicalForce);
 
   // compute summerized forces
   getForces();
 
   // compute the area contraint error
-  dArea = abs(f.surfaceArea / f.parameters.tension.At - 1);
-  if (f.parameters.osmotic.isPreferredVolume) {
-    dVP = abs(f.volume / f.parameters.osmotic.Vt - 1);
-    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
+  areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
+  if (system.parameters.osmotic.isPreferredVolume) {
+    volumeDifference = abs(system.volume / system.parameters.osmotic.Vt - 1);
+    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference, volumeDifference, constraintTolerance, 1.3);
   } else {
-    dVP =
-        abs(f.parameters.osmotic.n / f.volume / f.parameters.osmotic.cam - 1.0);
-    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
+    volumeDifference =
+        abs(system.parameters.osmotic.n / system.volume / system.parameters.osmotic.cam - 1.0);
+    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference, constraintTolerance, 1.3);
   }
 
   // exit if reached time
-  if (f.time > total_time) {
+  if (system.time > totalTime) {
     std::cout << "\nReached time." << std::endl;
     EXIT = true;
     SUCCESS = false;
   }
 
   // compute the free energy of the system
-  f.computeFreeEnergy();
+  system.computeTotalEnergy();
 
   // backtracking for error
   finitenessErrorBacktrack();
 }
 
 void ConjugateGradient::march() {
-  // map the raw eigen datatype for computation
-  auto vel_e = toMatrix(f.velocity);
-  auto vel_protein_e = toMatrix(f.proteinVelocity);
-  auto pos_e = toMatrix(f.vpg->inputVertexPositions);
-  auto physicalForceVec = toMatrix(f.forces.mechanicalForceVec);
-  auto physicalForce = toMatrix(f.forces.mechanicalForce);
-  // typedef gc::EigenVectorMap_T<double, 3,
-  // Eigen::RowMajor>(*EigenMap3)(gcs::VertexData<gc::Vector3>); EigenMap3
-  // Map3 = gc::EigenMap<double, 3>;
-
   // determine conjugate gradient direction, restart after nVertices() cycles
-  if (countCG % restartNum == 0) {
-    pastNormSq = (f.parameters.variation.isShapeVariation
-                      ? physicalForceVec.squaredNorm()
+  if (countCG % restartPeriod == 0) {
+    pastNormSquared = (system.parameters.variation.isShapeVariation
+                      ? toMatrix(system.forces.mechanicalForceVec).squaredNorm()
                       : 0) +
-                 (f.parameters.variation.isProteinVariation
-                      ? f.forces.chemicalPotential.raw().squaredNorm()
+                 (system.parameters.variation.isProteinVariation
+                      ? system.forces.chemicalPotential.raw().squaredNorm()
                       : 0);
-    vel_e = physicalForceVec;
-    vel_protein_e =
-        f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
+    system.velocity = system.forces.mechanicalForceVec;
+    system.proteinVelocity =
+        system.parameters.proteinMobility * system.forces.chemicalPotential;
     countCG = 1;
   } else {
-    currentNormSq = (f.parameters.variation.isShapeVariation
-                         ? physicalForceVec.squaredNorm()
+    currentNormSquared = (system.parameters.variation.isShapeVariation
+                         ? toMatrix(system.forces.mechanicalForceVec).squaredNorm()
                          : 0) +
-                    (f.parameters.variation.isProteinVariation
-                         ? f.forces.chemicalPotential.raw().squaredNorm()
+                    (system.parameters.variation.isProteinVariation
+                         ? system.forces.chemicalPotential.raw().squaredNorm()
                          : 0);
-    vel_e *= currentNormSq / pastNormSq;
-    vel_e += physicalForceVec;
-    vel_protein_e *= currentNormSq / pastNormSq;
-    vel_protein_e +=
-        f.parameters.proteinMobility * f.forces.chemicalPotential.raw();
-    pastNormSq = currentNormSq;
+    system.velocity *= currentNormSquared / pastNormSquared;
+    system.velocity += system.forces.mechanicalForceVec;
+    system.proteinVelocity *= currentNormSquared / pastNormSquared;
+    system.proteinVelocity +=
+        system.parameters.proteinMobility * system.forces.chemicalPotential;
+    pastNormSquared = currentNormSquared;
     countCG++;
   }
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.parameters.variation.isShapeVariation
-              ? physicalForce.cwiseAbs().maxCoeff()
-              : vel_protein_e.cwiseAbs().maxCoeff());
+    updateAdaptiveCharacteristicStep();
   }
 
   // time stepping on vertex position
-  previousE = f.energy;
   if (isBacktrack) {
-    backtrack(f.energy.potE, vel_e, vel_protein_e, rho, c1);
+    timeStep = backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
+                         toMatrix(system.proteinVelocity), rho, c1);
   } else {
-    pos_e += vel_e * dt;
-    f.proteinDensity.raw() += vel_protein_e * dt;
-    f.time += dt;
+    timeStep = characteristicTimeStep;
+    system.vpg->inputVertexPositions += system.velocity * timeStep;
+    system.proteinDensity += system.proteinVelocity * timeStep;
+    system.time += timeStep;
   }
 
   // regularization
-  if (f.meshProcessor.isMeshRegularize) {
-    f.computeRegularizationForce();
-    f.vpg->inputVertexPositions.raw() += f.forces.regularizationForce.raw();
+  if (system.meshProcessor.isMeshRegularize) {
+    system.computeRegularizationForce();
+    system.vpg->inputVertexPositions.raw() += system.forces.regularizationForce.raw();
   }
 
   // recompute cached values
-  f.updateVertexPositions(false);
+  system.updateVertexPositions(false);
 }
 
 } // namespace integrator

@@ -29,30 +29,31 @@ bool StormerVerlet::integrate() {
     // createNetcdfFile();
     createMutableNetcdfFile();
     // print to console
-    std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
+    std::cout << "Initialized NetCDF file at " << outputDirectory + "/" + trajFileName
               << std::endl;
   }
 #endif
 
-  gcs::FaceData<std::size_t> faceInd = f.vpg->faceIndices;
+  gcs::FaceData<std::size_t> faceInd = system.vpg->faceIndices;
   gc::Vector3 totalForce;
-  for (std::size_t i = 0; i < total_time / dt; i++) {
+  for (std::size_t i = 0; i < totalTime / characteristicTimeStep; i++) {
     /*polyscope::registerSurfaceMesh("myMesh",
             ptrVpg->inputVertexPositions,
             ptrMesh->getFaceVertexList());*/
     // polyscope::show();
-    gc::EigenMap<double, 3>(f.velocity) =
-        (gc::EigenMap<double, 3>(f.vpg->inputVertexPositions) -
+    timeStep = characteristicTimeStep;
+    gc::EigenMap<double, 3>(system.velocity) =
+        (gc::EigenMap<double, 3>(system.vpg->inputVertexPositions) -
          gc::EigenMap<double, 3>(pastPositions)) /
-        dt;
-    f.computeBendingForce();
-    f.computeCapillaryForce();
-    f.computeOsmoticForce();
-    f.computeDPDForces(dt);
-    f.computeExternalForce();
+        timeStep;
+    system.computeBendingForce();
+    system.computeCapillaryForce();
+    system.computeOsmoticForce();
+    system.computeDPDForces(timeStep);
+    system.computeExternalForce();
 
-    gcs::VertexData<gc::Vector3> temp = f.vpg->inputVertexPositions;
-    for (gcs::Vertex v : f.mesh->vertices()) {
+    gcs::VertexData<gc::Vector3> temp = system.vpg->inputVertexPositions;
+    for (gcs::Vertex v : system.mesh->vertices()) {
       bool flag = true;
       for (gcs::Face f : v.adjacentFaces()) {
         if (faceInd[f] == 0) {
@@ -61,23 +62,23 @@ bool StormerVerlet::integrate() {
         }
       }
       if (flag == true) {
-        f.vpg->inputVertexPositions[v] *= 2;
-        totalForce = f.forces.mechanicalForceVec[v] + f.forces.dampingForce[v] +
-                     f.forces.stochasticForce[v] +
-                     f.forces.regularizationForce[v];
-        f.vpg->inputVertexPositions[v] +=
-            totalForce * dt * dt - pastPositions[v];
+        system.vpg->inputVertexPositions[v] *= 2;
+        totalForce = system.forces.mechanicalForceVec[v] + system.forces.dampingForce[v] +
+                     system.forces.stochasticForce[v] +
+                     system.forces.regularizationForce[v];
+        system.vpg->inputVertexPositions[v] +=
+            totalForce * timeStep * timeStep - pastPositions[v];
       }
     }
     // std::cout << "total force:  " << totalForce.norm() << std::endl;
     // process the mesh with regularization or mutation
-    f.mutateMesh();
-    f.updateVertexPositions();
+    system.mutateMesh();
+    system.updateVertexPositions();
     pastPositions = temp;
     // initialize/update the vertex position of the last
     // iteration
-    pastPositions = f.vpg->inputVertexPositions;
-    f.computeFreeEnergy();
+    pastPositions = system.vpg->inputVertexPositions;
+    system.computeTotalEnergy();
 
     // std::cout << "energy: " << totalEnergy << std::endl;
     // std::cout << "process: " << int(double(i) / (total_time / dt) * 100) <<

@@ -44,34 +44,32 @@ namespace integrator {
 // ==========================================================
 class DLL_PUBLIC Integrator {
 protected:
-  /// Energy of the last time step
-  Energy previousE;
+  /// time step
+  double timeStep;
   /// last time saving the data
   double lastSave;
   /// last time updating geodesics
   double lastUpdateGeodesics;
   /// last time processing mesh
   double lastProcessMesh;
-  /// regularization force to the system
-  Eigen::Matrix<double, Eigen::Dynamic, 3> regularizationForce;
   /// numerical dissipative particle dynamics force to the system
-  Eigen::Matrix<double, Eigen::Dynamic, 1> DPDForce;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> dpdForce;
   /// Starting time of the simulation
-  double init_time;
+  double initialTime;
   /// Flag of success of the simulation
-  bool SUCCESS;
+  bool SUCCESS = true;
   /// Flag for terminating the simulation
-  bool EXIT;
+  bool EXIT = false;
   /// Frame index of the trajectory output
-  std::size_t frame;
+  std::size_t frame = 0;
   /// Normalized area difference to reference mesh
-  double dArea;
+  double areaDifference;
   /// Normalized volume/osmotic pressure difference
-  double dVP;
+  double volumeDifference;
   /// ratio of time step to the squared mesh size
   double dt_size2_ratio;
   /// initial maximum force
-  double maxForce;
+  double initialMaximumForce;
   /// TrajFile
 #ifdef MEM3DG_WITH_NETCDF
   TrajFile trajFile;
@@ -80,22 +78,22 @@ protected:
 
 public:
   /// System object to be integrated
-  System &f;
-  /// time step
-  double dt;
+  System &system;
+  /// characterisitic time step
+  double characteristicTimeStep;
   // total simulation time
-  double total_time;
+  double totalTime;
   /// period of saving output data
-  double tSave;
+  double savePeriod;
   /// tolerance for termination
-  double tol;
+  double tolerance;
   /// path to the output directory
-  std::string outputDir;
+  std::string outputDirectory;
 
   /// period of saving output data
-  double tUpdateGeodesics;
+  double updateGeodesicsPeriod;
   /// period of saving output data
-  double tProcessMesh;
+  double processMeshPeriod;
   /// name of the trajectory file
   std::string trajFileName = "traj.nc";
   /// option to scale time step according to mesh size
@@ -111,39 +109,40 @@ public:
   /**
    * @brief Construct a new integrator object
    * @param f, System object to be integrated
-   * @param dt, time step
+   * @param dt_, characteristic time step
    * @param total_time, total simulation time
    * @param tSave, period of saving output data
    * @param tolerance, tolerance for termination
    * @param outputDir, path to the output directory
    */
-  Integrator(System &f_, double dt_, double total_time_, double tSave_,
-             double tolerance_, std::string outputDir_)
-      : f(f_), previousE(f_.energy), dt(dt_), total_time(total_time_),
-        tSave(tSave_), tol(tolerance_), tUpdateGeodesics(total_time),
-        tProcessMesh(total_time), outputDir(outputDir_), init_time(f_.time),
-        SUCCESS(true), EXIT(false), frame(0), lastUpdateGeodesics(f_.time),
-        lastProcessMesh(f_.time), lastSave(f_.time) {
+  Integrator(System &system_, double characteristicTimeStep_, double totalTime_,
+             double savePeriod_, double tolerance_,
+             std::string outputDirectory_)
+      : system(system_), characteristicTimeStep(characteristicTimeStep_),
+        totalTime(totalTime_), savePeriod(savePeriod_), tolerance(tolerance_),
+        updateGeodesicsPeriod(totalTime_), processMeshPeriod(totalTime_),
+        outputDirectory(outputDirectory_), initialTime(system_.time),
+        lastUpdateGeodesics(system_.time), lastProcessMesh(system_.time),
+        lastSave(system_.time), timeStep(characteristicTimeStep_) {
 
     // Initialize the timestep-meshsize ratio
-    dt_size2_ratio = dt / f.vpg->edgeLengths.raw().minCoeff() /
-                     f.vpg->edgeLengths.raw().minCoeff();
+    dt_size2_ratio = characteristicTimeStep /
+                     std::pow(system.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
     getForces();
-    maxForce = f.parameters.variation.isShapeVariation
-                   ? toMatrix(f.forces.mechanicalForce).cwiseAbs().maxCoeff()
-                   : f.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
+    initialMaximumForce =
+        system.parameters.variation.isShapeVariation
+            ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
+            : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
-    dArea = 1e10;
-    dVP = 1e10;
+    areaDifference = 1e10;
+    volumeDifference = 1e10;
 
     // Initialize system summarized forces
-    regularizationForce.resize(f.mesh->nVertices(), 3);
-    DPDForce.resize(f.mesh->nVertices(), 1);
-    regularizationForce.setZero();
-    DPDForce.setZero();
+    dpdForce.resize(system.mesh->nVertices(), 1);
+    dpdForce.setZero();
   }
 
   // ==========================================================
@@ -251,7 +250,7 @@ public:
    */
   double backtrack(const double energy_pre,
                    Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-                   Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
+                   Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
                    double rho = 0.99, double c1 = 0.0001);
 
   /**
@@ -277,7 +276,13 @@ public:
   void lineSearchErrorBacktrace(const double &alpha,
                                 const EigenVectorX3dr &initial_pos,
                                 const EigenVectorX1d &init_proteinDensity,
-                                bool runAll = false);
+                                const Energy &previousE, bool runAll = false);
+
+  /**
+   * @brief update adaptive time step
+   * @return
+   */
+  void updateAdaptiveCharacteristicStep();
 };
 } // namespace integrator
 } // namespace solver
