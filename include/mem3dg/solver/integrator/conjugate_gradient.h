@@ -87,34 +87,6 @@ public:
     }
   }
 };
-
-// ==========================================================
-// =============      FeedForward Sweep         =============
-// ==========================================================
-/**
- * @brief Conjugate Gradient based feedforward parameter sweep
- * @param H__, vector of sweep parameters (H0)
- * @param VP__, vector of sweep parameters (V/cam)
- * @return
- */
-class DLL_PUBLIC FeedForwardSweep : public ConjugateGradient {
-public:
-  std::vector<double> H_;
-  std::vector<double> VP_;
-  FeedForwardSweep(System &f_, double dt_, double total_time_, double tSave_,
-                   double tolerance_, std::string outputDir_,
-                   bool isAdaptiveStep_, std::string trajFileName_,
-                   std::size_t verbosity_, bool isBacktrack_, double rho_,
-                   double c1_, double ctol_, bool isAugmentedLagrangian_,
-                   std::size_t restartNum_, std::vector<double> H__,
-                   std::vector<double> VP__)
-      : ConjugateGradient(f_, dt_, total_time_, tSave_, tolerance_, outputDir_),
-        H_(H__), VP_(VP__) {
-    mem3dg_runtime_error(
-        "FeedForwardSweep is currently not tested and maintained!");
-  }
-  void sweep();
-};
 } // namespace integrator
 } // namespace solver
 } // namespace mem3dg
