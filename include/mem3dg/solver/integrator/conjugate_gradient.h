@@ -31,24 +31,26 @@ namespace integrator {
  */
 class DLL_PUBLIC ConjugateGradient : public Integrator {
 private:
-  double currentNormSq;
-  double pastNormSq;
+  double currentNormSquared;
+  double pastNormSquared;
 
   std::size_t countCG = 0;
 
 public:
-  std::size_t restartNum = 5;
+  std::size_t restartPeriod = 5;
   bool isBacktrack = true;
   double rho = 0.99;
   double c1 = 0.001;
-  double ctol = 0.01;
+  double constraintTolerance = 0.01;
   bool isAugmentedLagrangian = false;
 
   // std::size_t countPM = 0;
 
-  ConjugateGradient(System &f_, double dt_, double total_time_, double tSave_,
-                    double tolerance_, std::string outputDir_)
-      : Integrator(f_, dt_, total_time_, tSave_, tolerance_, outputDir_) {
+  ConjugateGradient(System &system_, double characteristicTimeStep_,
+                    double totalTime_, double savePeriod_, double tolerance_,
+                    std::string outputDirectory_)
+      : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
+                   tolerance_, outputDirectory_) {
 
     // print to console
     std::cout << "Running Conjugate Gradient propagator ..." << std::endl;

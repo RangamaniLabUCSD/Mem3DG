@@ -152,7 +152,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   double expectRate = 2;
 
   f.updateVertexPositions();
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   Energy previousE{f.energy};
 
   f.computePhysicalForces();
@@ -162,12 +162,12 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos + h * f.forces.maskForce(toMatrix(f.forces.bendingForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskForce(toMatrix(f.forces.bendingForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.BE + previousE.BE;
+  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.BE <= previousE.BE);
+  EXPECT_TRUE(f.energy.bendingEnergy <= previousE.bendingEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "bending force: (expected - actual) / expected = "
       << difference_h / abs(actualEnergyDecrease);
@@ -177,11 +177,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.bendingForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       stepFold * h *
       f.forces.maskForce(toMatrix(f.forces.bendingForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.BE + previousE.BE;
+  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
               tolerance)
@@ -194,12 +194,12 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.bendingPotential.raw());
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskProtein(f.forces.bendingPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.BE + previousE.BE;
+  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.BE <= previousE.BE);
+  EXPECT_TRUE(f.energy.bendingEnergy <= previousE.bendingEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "bending potential: (expected - actual) / expected: "
       << difference_h / abs(actualEnergyDecrease);
@@ -209,11 +209,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_proteinDensity +
       stepFold * h * f.forces.maskProtein(f.forces.bendingPotential.raw());
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       stepFold * h *
       f.forces.maskProtein(f.forces.bendingPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.BE + previousE.BE;
+  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
               tolerance)
@@ -226,13 +226,13 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.capillaryForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h *
       f.forces.maskForce(toMatrix(f.forces.capillaryForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.sE + previousE.sE;
+  actualEnergyDecrease = -f.energy.surfaceEnergy + previousE.surfaceEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.sE <= previousE.sE);
+  EXPECT_TRUE(f.energy.surfaceEnergy <= previousE.surfaceEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "capillary force: (expected - actual) / expected = "
       << difference_h / abs(actualEnergyDecrease);
@@ -242,11 +242,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.capillaryForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       stepFold * h *
       f.forces.maskForce(toMatrix(f.forces.capillaryForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.sE + previousE.sE;
+  actualEnergyDecrease = -f.energy.surfaceEnergy + previousE.surfaceEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
               tolerance)
@@ -258,12 +258,12 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos + h * f.forces.maskForce(toMatrix(f.forces.osmoticForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskForce(toMatrix(f.forces.osmoticForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.pE + previousE.pE;
+  actualEnergyDecrease = -f.energy.pressureEnergy + previousE.pressureEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.pE <= previousE.pE);
+  EXPECT_TRUE(f.energy.pressureEnergy <= previousE.pressureEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "osmotic force: (expected - actual) / expected = "
       << difference_h / abs(actualEnergyDecrease);
@@ -273,11 +273,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.osmoticForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       stepFold * h *
       f.forces.maskForce(toMatrix(f.forces.osmoticForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.pE + previousE.pE;
+  actualEnergyDecrease = -f.energy.pressureEnergy + previousE.pressureEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
               tolerance)
@@ -290,13 +290,13 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h *
       f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.aE + previousE.aE;
+  actualEnergyDecrease = -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.aE <= previousE.aE);
+  EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "adsorption force: (expected - actual) / expected = "
       << difference_h / abs(actualEnergyDecrease);
@@ -306,11 +306,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       stepFold * h *
       f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
-  actualEnergyDecrease = -f.energy.aE + previousE.aE;
+  actualEnergyDecrease = -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
               tolerance)
@@ -323,13 +323,13 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.adsorptionPotential.raw());
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h *
       f.forces.maskProtein(f.forces.adsorptionPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.aE + previousE.aE;
+  actualEnergyDecrease = -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.aE <= previousE.aE);
+  EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "adsorption potential: (expected - actual) / expected = "
       << difference_h / abs(actualEnergyDecrease);
@@ -356,13 +356,13 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec))
               .squaredNorm();
-  actualEnergyDecrease = -f.energy.dE + previousE.dE;
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.dE <= previousE.dE);
+  EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "line tension force = (expected - actual) / expected: "
       << difference_h / abs(actualEnergyDecrease);
@@ -373,12 +373,12 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       stepFold * h *
           f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       stepFold * h *
       f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec))
           .squaredNorm();
-  actualEnergyDecrease = -f.energy.dE + previousE.dE;
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
               tolerance)
@@ -391,12 +391,12 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskProtein(f.forces.diffusionPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.dE + previousE.dE;
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.dE <= previousE.dE);
+  EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
   EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
       << "diffusion potential = (expected - actual) / expected: "
       << difference_h / abs(actualEnergyDecrease);
@@ -406,11 +406,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       current_proteinDensity +
       stepFold * h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
   f.updateVertexPositions(false);
-  f.computeFreeEnergy();
+  f.computeTotalEnergy();
   expectedEnergyDecrease =
       stepFold * h *
       f.forces.maskProtein(f.forces.diffusionPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.dE + previousE.dE;
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
               tolerance)

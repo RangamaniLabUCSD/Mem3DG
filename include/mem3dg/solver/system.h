@@ -57,25 +57,25 @@ namespace solver {
 
 struct Energy {
   /// total Energy of the system
-  double totalE;
+  double totalEnergy = 0;
   /// kinetic energy of the membrane
-  double kE;
+  double kineticEnergy = 0;
   /// potential energy of the membrane
-  double potE;
+  double potentialEnergy = 0;
   /// bending energy of the membrane
-  double BE;
+  double bendingEnergy = 0;
   /// stretching energy of the membrane
-  double sE;
+  double surfaceEnergy = 0;
   /// work of pressure within membrane
-  double pE;
+  double pressureEnergy = 0;
   /// adsorption energy of the membrane protein
-  double aE;
+  double adsorptionEnergy = 0;
   /// line tension energy of interface
-  double dE;
+  double dirichletEnergy = 0;
   /// work of external force
-  double exE;
+  double externalWork = 0;
   /// protein interior penalty energy
-  double inE;
+  double proteinInteriorPenalty = 0;
 };
 
 class DLL_PUBLIC System {
@@ -168,7 +168,7 @@ public:
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
          std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p) {
-    // Check incompatible configuration 
+    // Check incompatible configuration
     checkConfiguration();
 
     // Initialize reference values
@@ -194,7 +194,7 @@ public:
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
          MeshProcessor &mp, std::size_t nSub)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p, mp) {
-    // Check incompatible configuration 
+    // Check incompatible configuration
     checkConfiguration();
 
     // Initialize reference values
@@ -216,7 +216,7 @@ public:
   System(std::string inputMesh, std::size_t nSub)
       : System(readMeshes(inputMesh, nSub)) {
 
-    // Check incompatible configuration 
+    // Check incompatible configuration
     checkConfiguration();
 
     // Initialize reference values
@@ -238,7 +238,7 @@ public:
          bool isContinue)
       : System(readMeshes(inputMesh, nSub), p) {
 
-    // Check incompatible configuration 
+    // Check incompatible configuration
     checkConfiguration();
 
     // Initialize reference values
@@ -272,7 +272,7 @@ public:
          std::size_t nSub, bool isContinue)
       : System(readMeshes(inputMesh, nSub), p, mp) {
 
-    // Check incompatible configuration 
+    // Check incompatible configuration
     checkConfiguration();
 
     // Initialize reference values
@@ -324,7 +324,7 @@ public:
          std::size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p) {
 
-    // Check incompatible configuration 
+    // Check incompatible configuration
     checkConfiguration();
 
     // Initialize reference values
@@ -356,7 +356,7 @@ public:
          MeshProcessor &mp, std::size_t nSub, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, mp) {
 
-    // Check incompatible configuration 
+    // Check incompatible configuration
     checkConfiguration();
 
     // Initialize reference values
@@ -681,7 +681,7 @@ public:
   /**
    * @brief Compute protein interior penalty
    */
-  void computeProteinInteriorPenaltyEnergy();
+  void computeProteinInteriorPenalty();
 
   /**
    * @brief Compute Dirichlet energy
@@ -689,24 +689,24 @@ public:
   void computeDirichletEnergy();
 
   /**
-   * @brief Compute external force energy
+   * @brief Compute external work
    */
-  void computeExternalForceEnergy();
+  void integrateExternalPower(double dt);
 
   /**
    * @brief Compute kinetic energy
    */
-  void computeKineticEnergy();
+  double computeKineticEnergy();
 
   /**
    * @brief Compute potential energy
    */
-  void computePotentialEnergy();
+  double computePotentialEnergy();
 
   /**
-   * @brief Compute all components of energy (free energy)
+   * @brief compute total energy
    */
-  void computeFreeEnergy();
+  double computeTotalEnergy();
 
   /**
    * @brief Compute the L1 norm of the pressure

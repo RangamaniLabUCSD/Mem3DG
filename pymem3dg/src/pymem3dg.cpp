@@ -20,6 +20,7 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 
+#include "mem3dg/solver/integrator/conjugate_gradient.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/system.h"
 #include "visualization.h"
@@ -84,8 +85,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   velocityverlet.def(
       py::init<System &, double, double, double, double, std::string>(),
-      py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-      py::arg("tolerance"), py::arg("outputDir"),
+      py::arg("system"), py::arg("characteristicTimeStep"),
+      py::arg("totalTime"), py::arg("savePeriod"), py::arg("tolerance"),
+      py::arg("outputDirectory"),
       R"delim(
         Velocity Verlet integrator constructor
       )delim");
@@ -118,8 +120,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
 
   euler.def(py::init<System &, double, double, double, double, std::string>(),
-            py::arg("f"), py::arg("dt"), py::arg("total_time"),
-            py::arg("tSave"), py::arg("tolerance"), py::arg("outputDir"),
+            py::arg("system"), py::arg("characteristicTimeStep"),
+            py::arg("totalTime"), py::arg("savePeriod"), py::arg("tolerance"),
+            py::arg("outputDirectory"),
             R"delim(
         Euler integrator (steepest descent) constructor
       )delim");
@@ -127,27 +130,27 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief attributes, integration options
    */
-  euler.def_readonly("dt", &Euler::dt,
+  euler.def_readonly("characteristicTimeStep", &Euler::characteristicTimeStep,
                      R"delim(
-          time step
+          characteristic time step
       )delim");
-  euler.def_readonly("total_time", &Euler::total_time,
+  euler.def_readonly("totalTime", &Euler::totalTime,
                      R"delim(
           time limit
       )delim");
-  euler.def_readonly("tSave", &Euler::tSave,
+  euler.def_readonly("savePeriod", &Euler::savePeriod,
                      R"delim(
          period of saving output data
       )delim");
-  euler.def_readonly("tol", &Euler::tol,
+  euler.def_readonly("tolerance", &Euler::tolerance,
                      R"delim(
           tolerance for termination
       )delim");
-  euler.def_readwrite("tUpdateGeodesics", &Euler::tUpdateGeodesics,
+  euler.def_readwrite("updateGeodesicsPeriod", &Euler::updateGeodesicsPeriod,
                       R"delim(
           period of update geodesics
       )delim");
-  euler.def_readwrite("tProcessMesh", &Euler::tProcessMesh,
+  euler.def_readwrite("processMeshPeriod", &Euler::processMeshPeriod,
                       R"delim(
           period of processing mesh
       )delim");
@@ -159,7 +162,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                       R"delim(
           option to scale time step according to mesh size
       )delim");
-  euler.def_readwrite("outputDir", &Euler::outputDir,
+  euler.def_readwrite("outputDirectory", &Euler::outputDirectory,
                       R"delim(
         collapse small triangles
       )delim");
@@ -219,8 +222,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   conjugategradient.def(
       py::init<System &, double, double, double, double, std::string>(),
-      py::arg("f"), py::arg("dt"), py::arg("total_time"), py::arg("tSave"),
-      py::arg("tolerance"), py::arg("outputDir"),
+      py::arg("system"), py::arg("characteristicTimeStep"), py::arg("totalTime"),
+      py::arg("savePeriod"), py::arg("tolerance"), py::arg("outputDirectory"),
       R"delim(
         Conjugate Gradient optimizer constructor
       )delim");
@@ -228,29 +231,30 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief attributes, integration options
    */
-  conjugategradient.def_readonly("dt", &ConjugateGradient::dt,
+  conjugategradient.def_readonly("characteristicTimeStep",
+                                 &ConjugateGradient::characteristicTimeStep,
                                  R"delim(
-          time step
+          characteristic time step
       )delim");
-  conjugategradient.def_readonly("total_time", &ConjugateGradient::total_time,
+  conjugategradient.def_readonly("totalTime", &ConjugateGradient::totalTime,
                                  R"delim(
           time limit
       )delim");
-  conjugategradient.def_readonly("tSave", &ConjugateGradient::tSave,
+  conjugategradient.def_readonly("savePeriod", &ConjugateGradient::savePeriod,
                                  R"delim(
          period of saving output data
       )delim");
-  conjugategradient.def_readonly("tol", &ConjugateGradient::tol,
+  conjugategradient.def_readonly("tolerance", &ConjugateGradient::tolerance,
                                  R"delim(
           tolerance for termination
       )delim");
-  conjugategradient.def_readwrite("tUpdateGeodesics",
-                                  &ConjugateGradient::tUpdateGeodesics,
+  conjugategradient.def_readwrite("updateGeodesicsPeriod",
+                                  &ConjugateGradient::updateGeodesicsPeriod,
                                   R"delim(
           period of update geodesics
       )delim");
-  conjugategradient.def_readwrite("tProcessMesh",
-                                  &ConjugateGradient::tProcessMesh,
+  conjugategradient.def_readwrite("processMeshPeriod",
+                                  &ConjugateGradient::processMeshPeriod,
                                   R"delim(
           period of processing mesh
       )delim");
@@ -264,7 +268,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                                   R"delim(
           option to scale time step according to mesh size
       )delim");
-  conjugategradient.def_readwrite("outputDir", &ConjugateGradient::outputDir,
+  conjugategradient.def_readwrite("outputDirectory",
+                                  &ConjugateGradient::outputDirectory,
                                   R"delim(
         collapse small triangles
       )delim");
@@ -290,12 +295,12 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                                   R"delim(
           Wolfe condition parameter
       )delim");
-  conjugategradient.def_readwrite("restartNum", &ConjugateGradient::restartNum,
+  conjugategradient.def_readwrite("restartPeriod", &ConjugateGradient::restartPeriod,
                                   R"delim(
           option to restart conjugate gradient using gradient descent 
       )delim");
 
-  conjugategradient.def_readwrite("ctol", &ConjugateGradient::ctol,
+  conjugategradient.def_readwrite("constraintTolerance", &ConjugateGradient::constraintTolerance,
                                   R"delim(
             tolerance for constraints
       )delim");
@@ -962,9 +967,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Method: Energy computation
    */
-  system.def("computeFreeEnergy", &System::computeFreeEnergy,
+  system.def("computeTotalEnergy", &System::computeTotalEnergy,
              R"delim(
-          compute the free energy of the system
+          compute the total energy, where total energy = kinetic energy + potential energy - external work
       )delim");
   //   system.def("computeL1Norm", &System::computeL1Norm,
   //              R"delim(
@@ -1024,7 +1029,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the option of whether simulate shape variation
       )delim");
   variation.def_readwrite("radius", &Parameters::Variation::radius,
-                           R"delim(
+                          R"delim(
           get domain of shape variation
       )delim");
 
@@ -1263,45 +1268,45 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   py::class_<Energy> energy(pymem3dg, "Energy", R"delim(
         The energy
     )delim");
-  energy.def(py::init<double, double, double, double, double, double, double,
-                      double, double>());
-  energy.def_readwrite("totalE", &Energy::totalE,
+  energy.def(py::init<>());
+  energy.def_readwrite("totalEnergy", &Energy::totalEnergy,
                        R"delim(
           get total Energy of the system  
       )delim");
-  energy.def_readwrite("kE", &Energy::kE,
+  energy.def_readwrite("kineticEnergy", &Energy::kineticEnergy,
                        R"delim(
           get kinetic energy of the membrane  
       )delim");
-  energy.def_readwrite("potE", &Energy::potE,
+  energy.def_readwrite("potentialEnergy", &Energy::potentialEnergy,
                        R"delim(
           get potential energy of the membrane  
       )delim");
-  energy.def_readwrite("BE", &Energy::BE,
+  energy.def_readwrite("bendingEnergy", &Energy::bendingEnergy,
                        R"delim(
           get bending energy of the membrane  
       )delim");
-  energy.def_readwrite("sE", &Energy::sE,
+  energy.def_readwrite("surfaceEnergy", &Energy::surfaceEnergy,
                        R"delim(
           get stretching energy of the membrane  
       )delim");
-  energy.def_readwrite("pE", &Energy::pE,
+  energy.def_readwrite("pressureEnergy", &Energy::pressureEnergy,
                        R"delim(
           get work of pressure within membrane  
       )delim");
-  energy.def_readwrite("aE", &Energy::aE,
+  energy.def_readwrite("adsorptionEnergy", &Energy::adsorptionEnergy,
                        R"delim(
           get adsorption energy of the membrane protein  
       )delim");
-  energy.def_readwrite("dE", &Energy::dE,
+  energy.def_readwrite("dirichletEnergy", &Energy::dirichletEnergy,
                        R"delim(
           get  line tension (dirichlet) energy of interface energy
       )delim");
-  energy.def_readwrite("exE", &Energy::exE,
+  energy.def_readwrite("externalWork", &Energy::externalWork,
                        R"delim(
-          get work of external force  
+          get work of external force 
       )delim");
-  energy.def_readwrite("inE", &Energy::inE,
+  energy.def_readwrite("proteinInteriorPenalty",
+                       &Energy::proteinInteriorPenalty,
                        R"delim(
           get protein interior penalty energy (numerical energy)
       )delim");

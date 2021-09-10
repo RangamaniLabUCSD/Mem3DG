@@ -21,6 +21,7 @@
 
 #include <Eigen/Core>
 
+#include "Eigen/src/Core/GlobalFunctions.h"
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "mem3dg/constants.h"
@@ -52,9 +53,10 @@ void System::computeBendingEnergy() {
       abs(vpg->vertexMeanCurvatures.raw().array() /
               vpg->vertexDualAreas.raw().array() -
           H0.raw().array());
-  energy.BE = (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
-               H_difference.array().square())
-                  .sum();
+  energy.bendingEnergy =
+      (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
+       H_difference.array().square())
+          .sum();
 
   // when considering topological changes, additional term of gauss curvature
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
@@ -64,39 +66,41 @@ void System::computeBendingEnergy() {
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
   double A_difference = surfaceArea - parameters.tension.At;
-  energy.sE = parameters.tension.isConstantSurfaceTension
-                  ? forces.surfaceTension * surfaceArea
-                  : forces.surfaceTension * A_difference / 2 +
-                        parameters.tension.lambdaSG * A_difference / 2;
+  energy.surfaceEnergy =
+      parameters.tension.isConstantSurfaceTension
+          ? forces.surfaceTension * surfaceArea
+          : forces.surfaceTension * A_difference / 2 +
+                parameters.tension.lambdaSG * A_difference / 2;
 }
 
 void System::computePressureEnergy() {
   // Note: area weighted normal is exact volume variation
   if (parameters.osmotic.isPreferredVolume) {
     double V_difference = volume - parameters.osmotic.Vt;
-    energy.pE = -forces.osmoticPressure * V_difference / 2 +
-                parameters.osmotic.lambdaV * V_difference / 2;
+    energy.pressureEnergy = -forces.osmoticPressure * V_difference / 2 +
+                            parameters.osmotic.lambdaV * V_difference / 2;
   } else if (parameters.osmotic.isConstantOsmoticPressure) {
-    energy.pE = -forces.osmoticPressure * volume;
+    energy.pressureEnergy = -forces.osmoticPressure * volume;
   } else {
     double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
-    energy.pE = mem3dg::constants::i * mem3dg::constants::R *
-                parameters.temperature * parameters.osmotic.n *
-                (ratio - log(ratio) - 1);
+    energy.pressureEnergy = mem3dg::constants::i * mem3dg::constants::R *
+                            parameters.temperature * parameters.osmotic.n *
+                            (ratio - log(ratio) - 1);
   }
 }
 
 void System::computeAdsorptionEnergy() {
-  energy.aE =
+  energy.adsorptionEnergy =
       parameters.adsorption.epsilon *
       (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
 }
 
-void System::computeProteinInteriorPenaltyEnergy() {
+void System::computeProteinInteriorPenalty() {
   // interior method to constrain protein density to remain from 0 to 1
-  energy.inE = -parameters.proteinDistribution.lambdaPhi *
-               ((proteinDensity.raw().array()).log().sum() +
-                (1 - proteinDensity.raw().array()).log().sum());
+  energy.proteinInteriorPenalty =
+      -parameters.proteinDistribution.lambdaPhi *
+      ((proteinDensity.raw().array()).log().sum() +
+       (1 - proteinDensity.raw().array()).log().sum());
 }
 
 void System::computeDirichletEnergy() {
@@ -112,10 +116,11 @@ void System::computeDirichletEnergy() {
   }
 
   // explicit dirichlet energy
-  energy.dE = 0;
+  energy.dirichletEnergy = 0;
   for (gcs::Face f : mesh->faces()) {
-    energy.dE += 0.5 * parameters.dirichlet.eta *
-                 proteinDensityGradient[f].norm2() * vpg->faceAreas[f];
+    energy.dirichletEnergy += 0.5 * parameters.dirichlet.eta *
+                              proteinDensityGradient[f].norm2() *
+                              vpg->faceAreas[f];
   }
 
   // alternative dirichlet energy after integration by part
@@ -124,48 +129,65 @@ void System::computeDirichletEnergy() {
   //        proteinDensity.raw();
 }
 
-void System::computeExternalForceEnergy() {
-  computeExternalForce();
-  energy.exE = -rowwiseDotProduct(toMatrix(forces.externalForceVec),
-                                  toMatrix(vpg->inputVertexPositions))
-                    .sum();
-}
-
-void System::computeKineticEnergy() {
-  auto vel = gc::EigenMap<double, 3>(velocity);
-  // auto velocity =
-  //     rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
-  //                       gc::EigenMap<double, 3>(vpg->inputVertexPositions));
-  energy.kE =
-      0.5 * (vpg->vertexLumpedMassMatrix * (vel.array() * vel.array()).matrix())
-                .sum();
-}
-
-void System::computePotentialEnergy() {
-  if (parameters.bending.Kb != 0 || parameters.bending.Kbc != 0) {
-    computeBendingEnergy();
-  }
+double System::computePotentialEnergy() {
+  // fundamental internal potential energy
+  energy.bendingEnergy = 0;
+  computeBendingEnergy();
+  energy.surfaceEnergy = 0;
   computeSurfaceEnergy();
+  energy.pressureEnergy = 0;
   computePressureEnergy();
+
+  // optional internal potential energy
   if (parameters.adsorption.epsilon != 0) {
+    energy.adsorptionEnergy = 0;
     computeAdsorptionEnergy();
   }
   if (parameters.dirichlet.eta != 0) {
+    energy.dirichletEnergy = 0;
     computeDirichletEnergy();
   }
   if (parameters.variation.isProteinVariation) {
-    computeProteinInteriorPenaltyEnergy();
+    energy.proteinInteriorPenalty = 0;
+    computeProteinInteriorPenalty();
   }
-  energy.potE = energy.BE + energy.sE + energy.pE + energy.aE + energy.dE +
-                energy.exE + energy.inE;
+
+  // summerize internal potential energy
+  energy.potentialEnergy = energy.bendingEnergy + energy.surfaceEnergy +
+                           energy.pressureEnergy + energy.adsorptionEnergy +
+                           energy.dirichletEnergy +
+                           energy.proteinInteriorPenalty;
+  return energy.potentialEnergy;
 }
 
-void System::computeFreeEnergy() {
-  // zero all energy
-  energy = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  computeKineticEnergy();
+void System::integrateExternalPower(double dt) {
+  computeExternalForce();
+  energy.externalWork +=
+      dt *
+      rowwiseDotProduct(toMatrix(forces.externalForceVec), toMatrix(velocity))
+          .sum();
+}
+
+double System::computeKineticEnergy() {
+  // auto velocity =
+  //     rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
+  //                       gc::EigenMap<double, 3>(vpg->inputVertexPositions));
+  energy.kineticEnergy =
+      0.5 * (vpg->vertexLumpedMassMatrix *
+             Eigen::square(toMatrix(velocity).array()).matrix())
+                .sum();
+  return energy.kineticEnergy;
+}
+
+double System::computeTotalEnergy() {
   computePotentialEnergy();
-  energy.totalE = energy.kE + energy.potE;
+  computeKineticEnergy();
+  if (parameters.external.Kf != 0) {
+    // integrateExternalPower(double dt)
+  }
+  energy.totalEnergy =
+      energy.kineticEnergy + energy.potentialEnergy - energy.externalWork;
+  return energy.totalEnergy;
 }
 
 void System::computeGradient(gcs::VertexData<double> &quantities,
