@@ -50,8 +50,8 @@ bool Euler::integrate() {
     // createNetcdfFile();
     createMutableNetcdfFile();
     // print to console
-    std::cout << "Initialized NetCDF file at " << outputDirectory + "/" + trajFileName
-              << std::endl;
+    std::cout << "Initialized NetCDF file at "
+              << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
@@ -62,7 +62,8 @@ bool Euler::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    if (system.time - lastSave >= savePeriod || system.time == initialTime || EXIT) {
+    if (system.time - lastSave >= savePeriod || system.time == initialTime ||
+        EXIT) {
       lastSave = system.time;
       saveData();
     }
@@ -131,9 +132,10 @@ void Euler::status() {
   // compute the area contraint error
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
   volumeDifference = (system.parameters.osmotic.isPreferredVolume)
-            ? abs(system.volume / system.parameters.osmotic.Vt - 1)
-            : abs(system.parameters.osmotic.n / system.volume / system.parameters.osmotic.cam -
-                  1.0);
+                         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+                         : abs(system.parameters.osmotic.n / system.volume /
+                                   system.parameters.osmotic.cam -
+                               1.0);
 
   // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
@@ -149,6 +151,8 @@ void Euler::status() {
   }
 
   // compute the free energy of the system
+  if (system.parameters.external.Kf != 0)
+    system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 
   // backtracking for error
@@ -158,7 +162,8 @@ void Euler::status() {
 void Euler::march() {
   // compute force, which is equivalent to velocity
   system.velocity = system.forces.mechanicalForceVec;
-  system.proteinVelocity = system.parameters.proteinMobility * system.forces.chemicalPotential;
+  system.proteinVelocity =
+      system.parameters.proteinMobility * system.forces.chemicalPotential;
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
@@ -167,8 +172,9 @@ void Euler::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    timeStep = backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
-                         toMatrix(system.proteinVelocity), rho, c1);
+    timeStep =
+        backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
+                  toMatrix(system.proteinVelocity), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
     system.vpg->inputVertexPositions += system.velocity * timeStep;
@@ -179,7 +185,8 @@ void Euler::march() {
   // regularization
   if (system.meshProcessor.isMeshRegularize) {
     system.computeRegularizationForce();
-    system.vpg->inputVertexPositions.raw() += system.forces.regularizationForce.raw();
+    system.vpg->inputVertexPositions.raw() +=
+        system.forces.regularizationForce.raw();
   }
 
   // recompute cached values

@@ -56,6 +56,8 @@ namespace mem3dg {
 namespace solver {
 
 struct Energy {
+  /// time
+  double time = 0;
   /// total Energy of the system
   double totalEnergy = 0;
   /// kinetic energy of the membrane
@@ -457,8 +459,8 @@ private:
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         forces(*mesh, *vpg) {
 
-    energy = Energy({0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     time = 0;
+    energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     proteinDensity = gc::VertexData<double>(*mesh, 0);
     proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
@@ -691,7 +693,7 @@ public:
   /**
    * @brief Compute external work
    */
-  void integrateExternalPower(double dt);
+  double computeExternalWork(double currentTime, double dt);
 
   /**
    * @brief Compute kinetic energy
@@ -715,6 +717,11 @@ public:
       Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &force) const;
   double computeNorm(
       Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &&force) const;
+  /**
+   * @brief Intermediate function to integrate the power
+   */
+  double computeIntegratedPower(double dt);
+  double computeIntegratedPower(double dt, EigenVectorX3dr &&velocity);
 
   // ==========================================================
   // =============        Regularization        ===============

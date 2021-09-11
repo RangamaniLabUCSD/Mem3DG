@@ -29,7 +29,6 @@
 
 #include "solver/integrator/integrator.h"
 #include "solver/integrator/velocity_verlet.h"
-#include "solver/integrator/stormer_verlet.h"
 #include "solver/integrator/forward_euler.h"
 #include "solver/integrator/conjugate_gradient.h"
 #include "solver/integrator/bfgs.h"

@@ -51,8 +51,8 @@ bool VelocityVerlet::integrate() {
     // createNetcdfFile();
     createMutableNetcdfFile();
     // print to console
-    std::cout << "Initialized NetCDF file at " << outputDirectory + "/" + trajFileName
-              << std::endl;
+    std::cout << "Initialized NetCDF file at "
+              << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
@@ -64,7 +64,8 @@ bool VelocityVerlet::integrate() {
 
     // Save files every tSave period and print some info
     static double lastSave;
-    if (system.time - lastSave >= savePeriod || system.time == initialTime || EXIT) {
+    if (system.time - lastSave >= savePeriod || system.time == initialTime ||
+        EXIT) {
       lastSave = system.time;
       saveData();
     }
@@ -130,22 +131,24 @@ void VelocityVerlet::status() {
           .matrix();
 
   // compute the area contraint error
-  areaDifference = (system.parameters.tension.Ksg != 0)
-              ? abs(system.surfaceArea / system.parameters.tension.At - 1)
-              : 0.0;
+  areaDifference =
+      (system.parameters.tension.Ksg != 0)
+          ? abs(system.surfaceArea / system.parameters.tension.At - 1)
+          : 0.0;
 
   if (system.parameters.osmotic.isPreferredVolume) {
     // compute volume constraint error
-    volumeDifference = (system.parameters.osmotic.Kv != 0)
-              ? abs(system.volume / system.parameters.osmotic.Vt - 1)
-              : 0.0;
+    volumeDifference =
+        (system.parameters.osmotic.Kv != 0)
+            ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+            : 0.0;
   } else {
     // compute pressure constraint error
-    volumeDifference =
-        (!system.mesh->hasBoundary())
-            ? abs(system.parameters.osmotic.n / system.volume / system.parameters.osmotic.cam -
-                  1.0)
-            : 1.0;
+    volumeDifference = (!system.mesh->hasBoundary())
+                           ? abs(system.parameters.osmotic.n / system.volume /
+                                     system.parameters.osmotic.cam -
+                                 1.0)
+                           : 1.0;
   }
 
   // exit if under error tol
@@ -161,6 +164,8 @@ void VelocityVerlet::status() {
   }
 
   // compute the free energy of the system
+  if (system.parameters.external.Kf != 0)
+    system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 
   // backtracking for error

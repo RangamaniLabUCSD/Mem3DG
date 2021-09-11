@@ -160,12 +160,22 @@ double System::computePotentialEnergy() {
   return energy.potentialEnergy;
 }
 
-void System::integrateExternalPower(double dt) {
+double System::computeIntegratedPower(double dt) {
   computeExternalForce();
-  energy.externalWork +=
-      dt *
-      rowwiseDotProduct(toMatrix(forces.externalForceVec), toMatrix(velocity))
-          .sum();
+  return dt * rowwiseDotProduct(toMatrix(forces.externalForceVec),
+                                toMatrix(velocity))
+                  .sum();
+}
+double System::computeIntegratedPower(double dt, EigenVectorX3dr &&velocity) {
+  computeExternalForce();
+  return dt *
+         rowwiseDotProduct(toMatrix(forces.externalForceVec), velocity).sum();
+}
+
+double System::computeExternalWork(double currentTime, double dt) {
+  energy.time = currentTime;
+  energy.externalWork += computeIntegratedPower(dt);
+  return energy.externalWork;
 }
 
 double System::computeKineticEnergy() {
@@ -182,11 +192,14 @@ double System::computeKineticEnergy() {
 double System::computeTotalEnergy() {
   computePotentialEnergy();
   computeKineticEnergy();
-  if (parameters.external.Kf != 0) {
-    // integrateExternalPower(double dt)
+  if (time == energy.time) {
+    energy.totalEnergy =
+        energy.kineticEnergy + energy.potentialEnergy - energy.externalWork;
+  } else if (parameters.external.Kf == 0) {
+    energy.totalEnergy = energy.kineticEnergy + energy.potentialEnergy;
+  } else {
+    mem3dg_runtime_error("energy.externalWork not updated!")
   }
-  energy.totalEnergy =
-      energy.kineticEnergy + energy.potentialEnergy - energy.externalWork;
   return energy.totalEnergy;
 }
 

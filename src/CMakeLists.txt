@@ -26,7 +26,6 @@ set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/mutable_trajfile.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/integrator.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/stormer_verlet.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/BFGS.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/velocity_verlet.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/forward_euler.cpp"
