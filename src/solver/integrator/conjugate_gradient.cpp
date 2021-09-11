@@ -52,8 +52,8 @@ bool ConjugateGradient::integrate() {
     // createNetcdfFile();
     createMutableNetcdfFile();
     // print to console
-    std::cout << "Initialized NetCDF file at " << outputDirectory + "/" + trajFileName
-              << std::endl;
+    std::cout << "Initialized NetCDF file at "
+              << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
@@ -64,7 +64,8 @@ bool ConjugateGradient::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    if (system.time - lastSave >= savePeriod || system.time == initialTime || EXIT) {
+    if (system.time - lastSave >= savePeriod || system.time == initialTime ||
+        EXIT) {
       lastSave = system.time;
       saveData();
     }
@@ -121,7 +122,8 @@ void ConjugateGradient::checkParameters() {
   if (system.parameters.dpd.gamma != 0) {
     mem3dg_runtime_error("DPD has to be turned off for CG integration!");
   }
-  if (system.parameters.proteinMobility != 1 && system.parameters.proteinMobility != 0) {
+  if (system.parameters.proteinMobility != 1 &&
+      system.parameters.proteinMobility != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
                          "be set to 1 for optimization!");
   }
@@ -132,6 +134,10 @@ void ConjugateGradient::checkParameters() {
   }
   if (restartPeriod < 1) {
     mem3dg_runtime_error("restartNum > 0!");
+  }
+  if (system.parameters.external.Kf != 0) {
+    mem3dg_runtime_error(
+        "External force can not be applied using energy optimization")
   }
   // if (f.O.isVertexShift) {
   //   mem3dg_runtime_error(
@@ -149,11 +155,14 @@ void ConjugateGradient::status() {
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
   if (system.parameters.osmotic.isPreferredVolume) {
     volumeDifference = abs(system.volume / system.parameters.osmotic.Vt - 1);
-    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference, volumeDifference, constraintTolerance, 1.3);
+    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference,
+                           volumeDifference, constraintTolerance, 1.3);
   } else {
-    volumeDifference =
-        abs(system.parameters.osmotic.n / system.volume / system.parameters.osmotic.cam - 1.0);
-    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference, constraintTolerance, 1.3);
+    volumeDifference = abs(system.parameters.osmotic.n / system.volume /
+                               system.parameters.osmotic.cam -
+                           1.0);
+    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference,
+                                constraintTolerance, 1.3);
   }
 
   // exit if reached time
@@ -173,23 +182,25 @@ void ConjugateGradient::status() {
 void ConjugateGradient::march() {
   // determine conjugate gradient direction, restart after nVertices() cycles
   if (countCG % restartPeriod == 0) {
-    pastNormSquared = (system.parameters.variation.isShapeVariation
-                      ? toMatrix(system.forces.mechanicalForceVec).squaredNorm()
-                      : 0) +
-                 (system.parameters.variation.isProteinVariation
-                      ? system.forces.chemicalPotential.raw().squaredNorm()
-                      : 0);
+    pastNormSquared =
+        (system.parameters.variation.isShapeVariation
+             ? toMatrix(system.forces.mechanicalForceVec).squaredNorm()
+             : 0) +
+        (system.parameters.variation.isProteinVariation
+             ? system.forces.chemicalPotential.raw().squaredNorm()
+             : 0);
     system.velocity = system.forces.mechanicalForceVec;
     system.proteinVelocity =
         system.parameters.proteinMobility * system.forces.chemicalPotential;
     countCG = 1;
   } else {
-    currentNormSquared = (system.parameters.variation.isShapeVariation
-                         ? toMatrix(system.forces.mechanicalForceVec).squaredNorm()
-                         : 0) +
-                    (system.parameters.variation.isProteinVariation
-                         ? system.forces.chemicalPotential.raw().squaredNorm()
-                         : 0);
+    currentNormSquared =
+        (system.parameters.variation.isShapeVariation
+             ? toMatrix(system.forces.mechanicalForceVec).squaredNorm()
+             : 0) +
+        (system.parameters.variation.isProteinVariation
+             ? system.forces.chemicalPotential.raw().squaredNorm()
+             : 0);
     system.velocity *= currentNormSquared / pastNormSquared;
     system.velocity += system.forces.mechanicalForceVec;
     system.proteinVelocity *= currentNormSquared / pastNormSquared;
@@ -206,8 +217,9 @@ void ConjugateGradient::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    timeStep = backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
-                         toMatrix(system.proteinVelocity), rho, c1);
+    timeStep =
+        backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
+                  toMatrix(system.proteinVelocity), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
     system.vpg->inputVertexPositions += system.velocity * timeStep;
@@ -218,7 +230,8 @@ void ConjugateGradient::march() {
   // regularization
   if (system.meshProcessor.isMeshRegularize) {
     system.computeRegularizationForce();
-    system.vpg->inputVertexPositions.raw() += system.forces.regularizationForce.raw();
+    system.vpg->inputVertexPositions.raw() +=
+        system.forces.regularizationForce.raw();
   }
 
   // recompute cached values

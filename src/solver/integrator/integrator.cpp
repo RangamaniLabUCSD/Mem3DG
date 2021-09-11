@@ -68,9 +68,9 @@ double Integrator::backtrack(
     }
   }
   if (system.parameters.variation.isProteinVariation) {
-    chemicalProjection =
-        (system.forces.chemicalPotential.raw().array() * chemicalDirection.array())
-            .sum();
+    chemicalProjection = (system.forces.chemicalPotential.raw().array() *
+                          chemicalDirection.array())
+                             .sum();
     if (chemicalProjection < 0) {
       std::cout << "\nBacktracking line search: chemical direction on "
                    "uphill direction, "
@@ -78,9 +78,9 @@ double Integrator::backtrack(
                    "gradient! \n"
                 << std::endl;
       chemicalDirection = system.forces.chemicalPotential.raw();
-      chemicalProjection =
-          (system.forces.chemicalPotential.raw().array() * chemicalDirection.array())
-              .sum();
+      chemicalProjection = (system.forces.chemicalPotential.raw().array() *
+                            chemicalDirection.array())
+                               .sum();
     }
   }
 
@@ -104,12 +104,13 @@ double Integrator::backtrack(
   }
   system.time += alpha;
   system.updateVertexPositions(false);
-  system.computeTotalEnergy();
+  system.computePotentialEnergy();
 
   while (true) {
     // Wolfe condition fulfillment
     if (system.energy.potentialEnergy <
-        (energy_pre - c1 * alpha * (positionProjection + chemicalProjection))) {
+        (energy_pre + system.computeIntegratedPower(alpha) -
+         c1 * alpha * (positionProjection + chemicalProjection))) {
       break;
     }
 
@@ -136,7 +137,7 @@ double Integrator::backtrack(
     }
     system.time = init_time + alpha;
     system.updateVertexPositions(false);
-    system.computeTotalEnergy();
+    system.computePotentialEnergy();
 
     // count the number of iterations
     count++;
@@ -161,219 +162,276 @@ double Integrator::backtrack(
 }
 
 void Integrator::lineSearchErrorBacktrace(
-    const double &alpha, const EigenVectorX3dr &current_pos,
-    const EigenVectorX1d &current_proteinDensity, const Energy &previousE,
+    const double &alpha, const EigenVectorX3dr &currentPosition,
+    const EigenVectorX1d &currentProteinDensity, const Energy &previousEnergy,
     bool runAll) {
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
 
-  if (runAll || system.energy.potentialEnergy > previousE.potentialEnergy) {
-    if (runAll || system.energy.bendingEnergy > previousE.bendingEnergy) {
-      std::cout << "\nWith F_tol, BE has increased "
-                << system.energy.bendingEnergy - previousE.bendingEnergy << " from "
-                << previousE.bendingEnergy << " to " << system.energy.bendingEnergy
-                << std::endl;
+  // cache the energy when applied the total force
+  if (system.parameters.external.Kf != 0)
+    system.computeExternalWork(system.time, timeStep);
+  system.computeTotalEnergy();
+  const Energy totalForceEnergy{system.energy};
 
-      system.proteinDensity.raw() = current_proteinDensity;
+  // test if total potential energy increases
+  if (runAll ||
+      totalForceEnergy.potentialEnergy > previousEnergy.potentialEnergy) {
+
+    // test if bending energy increases
+    if (runAll ||
+        totalForceEnergy.bendingEnergy > previousEnergy.bendingEnergy) {
+
+      // report the finding
+      std::cout << "\nWith F_tol, BE has increased "
+                << totalForceEnergy.bendingEnergy - previousEnergy.bendingEnergy
+                << " from " << previousEnergy.bendingEnergy << " to "
+                << totalForceEnergy.bendingEnergy << std::endl;
+
+      // test single-force-energy computation
+      // perturb the configuration
+      system.proteinDensity.raw() = currentProteinDensity;
       toMatrix(system.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * system.forces.maskForce(toMatrix(system.forces.bendingForceVec));
+          currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                        system.forces.bendingForceVec));
       system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.bendingEnergy > previousE.bendingEnergy) {
+
+      // test if bending energy increases
+      system.computeBendingEnergy();
+      if (runAll ||
+          system.energy.bendingEnergy > previousEnergy.bendingEnergy) {
         std::cout << "With only bending force, BE has increased "
-                  << system.energy.bendingEnergy - previousE.bendingEnergy
-                  << " from " << previousE.bendingEnergy << " to "
+                  << system.energy.bendingEnergy - previousEnergy.bendingEnergy
+                  << " from " << previousEnergy.bendingEnergy << " to "
                   << system.energy.bendingEnergy << ", expected dBE: "
                   << -alpha *
-                         system.forces.maskForce(toMatrix(system.forces.bendingForceVec))
+                         system.forces
+                             .maskForce(toMatrix(system.forces.bendingForceVec))
                              .squaredNorm()
                   << std::endl;
-        // << -alpha *
-        //        (f.F.mask(toMatrix(f.F.bendingForceVec)).array() *
-        //         f.F.mask(toMatrix(f.F.bendingForceVec)).array())
-        //            .sum()
-        // << std::endl;
       }
 
-      toMatrix(system.vpg->inputVertexPositions) = current_pos;
+      // perturb the configuration
+      toMatrix(system.vpg->inputVertexPositions) = currentPosition;
       system.proteinDensity.raw() =
-          current_proteinDensity +
+          currentProteinDensity +
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(system.forces.bendingPotential.raw());
       system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.bendingEnergy > previousE.bendingEnergy) {
+
+      // test if bending energy increases
+      system.computeBendingEnergy();
+      if (runAll ||
+          system.energy.bendingEnergy > previousEnergy.bendingEnergy) {
         std::cout << "With only bending potential, BE has increased "
-                  << system.energy.bendingEnergy - previousE.bendingEnergy
-                  << " from " << previousE.bendingEnergy << " to "
+                  << system.energy.bendingEnergy - previousEnergy.bendingEnergy
+                  << " from " << previousEnergy.bendingEnergy << " to "
                   << system.energy.bendingEnergy << ", expected dBE: "
                   << -alpha * system.parameters.proteinMobility *
-                         system.forces.maskProtein(system.forces.bendingPotential.raw())
+                         system.forces
+                             .maskProtein(system.forces.bendingPotential.raw())
                              .squaredNorm()
                   << std::endl;
       }
     }
-    if (runAll || system.energy.surfaceEnergy > previousE.surfaceEnergy) {
+
+    // test if surface energy increases
+    if (runAll ||
+        totalForceEnergy.surfaceEnergy > previousEnergy.surfaceEnergy) {
+
+      // report the finding
       std::cout << "\nWith F_tol, sE has increased "
-                << system.energy.surfaceEnergy - previousE.surfaceEnergy << " from "
-                << previousE.surfaceEnergy << " to " << system.energy.surfaceEnergy
-                << std::endl;
+                << totalForceEnergy.surfaceEnergy - previousEnergy.surfaceEnergy
+                << " from " << previousEnergy.surfaceEnergy << " to "
+                << totalForceEnergy.surfaceEnergy << std::endl;
 
-      system.proteinDensity.raw() = current_proteinDensity;
+      // test single-force-energy computation
+      // perturb the configuration
+      system.proteinDensity.raw() = currentProteinDensity;
       toMatrix(system.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * system.forces.maskForce(toMatrix(system.forces.capillaryForceVec));
+          currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                        system.forces.capillaryForceVec));
       system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.surfaceEnergy > previousE.surfaceEnergy) {
+      system.computeSurfaceEnergy();
+      if (runAll ||
+          system.energy.surfaceEnergy > previousEnergy.surfaceEnergy) {
         std::cout << "With only capillary force, sE has increased "
-                  << system.energy.surfaceEnergy - previousE.surfaceEnergy
-                  << " from " << previousE.surfaceEnergy << " to "
+                  << system.energy.surfaceEnergy - previousEnergy.surfaceEnergy
+                  << " from " << previousEnergy.surfaceEnergy << " to "
                   << system.energy.surfaceEnergy << ", expected dsE: "
-                  << -alpha *
-                         system.forces
-                             .maskForce(toMatrix(system.forces.capillaryForceVec))
-                             .squaredNorm()
-                  << std::endl;
-      }
-    }
-    if (runAll || system.energy.pressureEnergy > previousE.pressureEnergy) {
-      std::cout << "\nWith F_tol, pE has increased "
-                << system.energy.pressureEnergy - previousE.pressureEnergy
-                << " from " << previousE.pressureEnergy << " to "
-                << system.energy.pressureEnergy << std::endl;
-
-      system.proteinDensity.raw() = current_proteinDensity;
-      toMatrix(system.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * system.forces.maskForce(toMatrix(system.forces.osmoticForceVec));
-      system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.pressureEnergy > previousE.pressureEnergy) {
-        std::cout << "With only osmotic force, pE has increased "
-                  << system.energy.pressureEnergy - previousE.pressureEnergy
-                  << " from " << previousE.pressureEnergy << " to "
-                  << system.energy.pressureEnergy << ", expected dpE: "
-                  << -alpha *
-                         system.forces.maskForce(toMatrix(system.forces.osmoticForceVec))
-                             .squaredNorm()
-                  << std::endl;
-      }
-    }
-    if (runAll || system.energy.adsorptionEnergy > previousE.adsorptionEnergy) {
-      std::cout << "\nWith F_tol, aE has increased "
-                << system.energy.adsorptionEnergy - previousE.adsorptionEnergy
-                << " from " << previousE.adsorptionEnergy << " to "
-                << system.energy.adsorptionEnergy << std::endl;
-
-      system.proteinDensity.raw() = current_proteinDensity;
-      toMatrix(system.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * system.forces.maskForce(toMatrix(system.forces.adsorptionForceVec));
-      system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.adsorptionEnergy > previousE.adsorptionEnergy) {
-        std::cout << "With only adsorption force, aE has increased "
-                  << system.energy.adsorptionEnergy - previousE.adsorptionEnergy
-                  << " from " << previousE.adsorptionEnergy << " to "
-                  << system.energy.adsorptionEnergy << ", expected daE: "
-                  << -alpha *
-                         system.forces
-                             .maskForce(toMatrix(system.forces.adsorptionForceVec))
-                             .squaredNorm()
-                  << std::endl;
-      }
-
-      toMatrix(system.vpg->inputVertexPositions) = current_pos;
-      system.proteinDensity.raw() =
-          current_proteinDensity +
-          alpha * system.parameters.proteinMobility *
-              system.forces.maskProtein(system.forces.adsorptionPotential.raw());
-      system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.adsorptionEnergy > previousE.adsorptionEnergy) {
-        std::cout << "With only adsorption potential, aE has increased "
-                  << system.energy.adsorptionEnergy - previousE.adsorptionEnergy
-                  << " from " << previousE.adsorptionEnergy << " to "
-                  << system.energy.adsorptionEnergy << ", expected dBE: "
-                  << -alpha * system.parameters.proteinMobility *
-                         system.forces
-                             .maskProtein(system.forces.adsorptionPotential.raw())
-                             .squaredNorm()
-                  << std::endl;
-      }
-    }
-    if (runAll || system.energy.dirichletEnergy > previousE.dirichletEnergy) {
-      std::cout << "\nWith F_tol, dE has increased "
-                << system.energy.dirichletEnergy - previousE.dirichletEnergy
-                << " from " << previousE.dirichletEnergy << " to "
-                << system.energy.dirichletEnergy << std::endl;
-
-      system.proteinDensity.raw() = current_proteinDensity;
-      toMatrix(system.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * system.forces.maskForce(toMatrix(system.forces.lineCapillaryForceVec));
-      system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.dirichletEnergy > previousE.dirichletEnergy) {
-        std::cout << "With only line tension force, dE has increased "
-                  << system.energy.dirichletEnergy - previousE.dirichletEnergy
-                  << " from " << previousE.dirichletEnergy << " to "
-                  << system.energy.dirichletEnergy << ", expected ddE: "
                   << -alpha * system.forces
                                   .maskForce(
-                                      toMatrix(system.forces.lineCapillaryForceVec))
+                                      toMatrix(system.forces.capillaryForceVec))
+                                  .squaredNorm()
+                  << std::endl;
+      }
+    }
+
+    // test if pressure energy increases
+    if (runAll ||
+        totalForceEnergy.pressureEnergy > previousEnergy.pressureEnergy) {
+
+      // report the finding
+      std::cout << "\nWith F_tol, pE has increased "
+                << totalForceEnergy.pressureEnergy -
+                       previousEnergy.pressureEnergy
+                << " from " << previousEnergy.pressureEnergy << " to "
+                << totalForceEnergy.pressureEnergy << std::endl;
+
+      // test single-force-energy computation
+      // perturb the configuration
+      system.proteinDensity.raw() = currentProteinDensity;
+      toMatrix(system.vpg->inputVertexPositions) =
+          currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                        system.forces.osmoticForceVec));
+      system.updateVertexPositions(false);
+      system.computePressureEnergy();
+      if (runAll ||
+          system.energy.pressureEnergy > previousEnergy.pressureEnergy) {
+        std::cout << "With only osmotic force, pE has increased "
+                  << system.energy.pressureEnergy -
+                         previousEnergy.pressureEnergy
+                  << " from " << previousEnergy.pressureEnergy << " to "
+                  << system.energy.pressureEnergy << ", expected dpE: "
+                  << -alpha *
+                         system.forces
+                             .maskForce(toMatrix(system.forces.osmoticForceVec))
+                             .squaredNorm()
+                  << std::endl;
+      }
+    }
+
+    // test if adsorption energy increases
+    if (runAll ||
+        totalForceEnergy.adsorptionEnergy > previousEnergy.adsorptionEnergy) {
+
+      // report the finding
+      std::cout << "\nWith F_tol, aE has increased "
+                << totalForceEnergy.adsorptionEnergy -
+                       previousEnergy.adsorptionEnergy
+                << " from " << previousEnergy.adsorptionEnergy << " to "
+                << totalForceEnergy.adsorptionEnergy << std::endl;
+
+      // test single-force-energy computation
+      // perturb the configuration
+      system.proteinDensity.raw() = currentProteinDensity;
+      toMatrix(system.vpg->inputVertexPositions) =
+          currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                        system.forces.adsorptionForceVec));
+      system.updateVertexPositions(false);
+      system.computeAdsorptionEnergy();
+      if (runAll ||
+          system.energy.adsorptionEnergy > previousEnergy.adsorptionEnergy) {
+        std::cout << "With only adsorption force, aE has increased "
+                  << system.energy.adsorptionEnergy -
+                         previousEnergy.adsorptionEnergy
+                  << " from " << previousEnergy.adsorptionEnergy << " to "
+                  << system.energy.adsorptionEnergy << ", expected daE: "
+                  << -alpha * system.forces
+                                  .maskForce(toMatrix(
+                                      system.forces.adsorptionForceVec))
                                   .squaredNorm()
                   << std::endl;
       }
 
-      toMatrix(system.vpg->inputVertexPositions) = current_pos;
+      // test single-force-energy computation
+      // perturb the configuration
+      toMatrix(system.vpg->inputVertexPositions) = currentPosition;
       system.proteinDensity.raw() =
-          current_proteinDensity +
+          currentProteinDensity +
           alpha * system.parameters.proteinMobility *
-              system.forces.maskProtein(system.forces.diffusionPotential.raw());
+              system.forces.maskProtein(
+                  system.forces.adsorptionPotential.raw());
       system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.dirichletEnergy > previousE.dirichletEnergy) {
-        std::cout << "With only diffusion potential, dE has increased "
-                  << system.energy.dirichletEnergy - previousE.dirichletEnergy
-                  << " from " << previousE.dirichletEnergy << " to "
-                  << system.energy.dirichletEnergy << ", expected ddE: "
+      system.computeAdsorptionEnergy();
+      if (runAll ||
+          system.energy.adsorptionEnergy > previousEnergy.adsorptionEnergy) {
+        std::cout << "With only adsorption potential, aE has increased "
+                  << system.energy.adsorptionEnergy -
+                         previousEnergy.adsorptionEnergy
+                  << " from " << previousEnergy.adsorptionEnergy << " to "
+                  << system.energy.adsorptionEnergy << ", expected dBE: "
                   << -alpha * system.parameters.proteinMobility *
-                         system.forces.maskProtein(system.forces.diffusionPotential.raw())
+                         system.forces
+                             .maskProtein(
+                                 system.forces.adsorptionPotential.raw())
                              .squaredNorm()
                   << std::endl;
       }
     }
-    if (runAll || system.energy.externalWork > previousE.externalWork) {
-      std::cout << "\nWith F_tol, exE has increased "
-                << system.energy.externalWork - previousE.externalWork << " from "
-                << previousE.externalWork << " to " << system.energy.externalWork
-                << std::endl;
 
-      system.proteinDensity.raw() = current_proteinDensity;
+    // test if dirichlet energy increases
+    if (runAll ||
+        system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
+
+      // report the finding
+      std::cout << "\nWith F_tol, dE has increased "
+                << system.energy.dirichletEnergy -
+                       previousEnergy.dirichletEnergy
+                << " from " << previousEnergy.dirichletEnergy << " to "
+                << system.energy.dirichletEnergy << std::endl;
+
+      // test single-force-energy computation
+      // perturb the configuration
+      system.proteinDensity.raw() = currentProteinDensity;
       toMatrix(system.vpg->inputVertexPositions) =
-          current_pos +
-          alpha * system.forces.maskForce(toMatrix(system.forces.externalForceVec));
+          currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                        system.forces.lineCapillaryForceVec));
       system.updateVertexPositions(false);
-      system.computeTotalEnergy();
-      if (runAll || system.energy.externalWork > previousE.externalWork) {
-        std::cout << "With only external force, exE has increased "
-                  << system.energy.externalWork - previousE.externalWork << " from "
-                  << previousE.externalWork << " to " << system.energy.externalWork
-                  << ", expected dexE: "
-                  << -alpha *
-                         system.forces.maskForce(toMatrix(system.forces.externalForceVec))
+      system.computeDirichletEnergy();
+      if (runAll ||
+          system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
+        std::cout << "With only line tension force, dE has increased "
+                  << system.energy.dirichletEnergy -
+                         previousEnergy.dirichletEnergy
+                  << " from " << previousEnergy.dirichletEnergy << " to "
+                  << system.energy.dirichletEnergy << ", expected ddE: "
+                  << -alpha * system.forces
+                                  .maskForce(toMatrix(
+                                      system.forces.lineCapillaryForceVec))
+                                  .squaredNorm()
+                  << std::endl;
+      }
+
+      // test single-force-energy computation
+      // perturb the configuration
+      toMatrix(system.vpg->inputVertexPositions) = currentPosition;
+      system.proteinDensity.raw() =
+          currentProteinDensity +
+          alpha * system.parameters.proteinMobility *
+              system.forces.maskProtein(system.forces.diffusionPotential.raw());
+      system.updateVertexPositions(false);
+      system.computeDirichletEnergy();
+      if (runAll ||
+          system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
+        std::cout << "With only diffusion potential, dE has increased "
+                  << system.energy.dirichletEnergy -
+                         previousEnergy.dirichletEnergy
+                  << " from " << previousEnergy.dirichletEnergy << " to "
+                  << system.energy.dirichletEnergy << ", expected ddE: "
+                  << -alpha * system.parameters.proteinMobility *
+                         system.forces
+                             .maskProtein(
+                                 system.forces.diffusionPotential.raw())
                              .squaredNorm()
                   << std::endl;
       }
     }
   }
-  if (runAll || system.energy.kineticEnergy > previousE.kineticEnergy) {
+
+  // test if total force is doing negative work against external force field
+  if (runAll || totalForceEnergy.externalWork < previousEnergy.externalWork) {
+    std::cout
+        << "\nF_tol is doing negative work against external force field by "
+        << previousEnergy.externalWork - totalForceEnergy.externalWork
+        << std::endl;
+  }
+
+  // test if total kinetic energy increases
+  if (runAll || totalForceEnergy.kineticEnergy > previousEnergy.kineticEnergy) {
     std::cout << "\nWith F_tol, kE has increased "
-              << system.energy.kineticEnergy - previousE.kineticEnergy << " from "
-              << previousE.kineticEnergy << " to " << system.energy.kineticEnergy
-              << std::endl;
+              << totalForceEnergy.kineticEnergy - previousEnergy.kineticEnergy
+              << " from " << previousEnergy.kineticEnergy << " to "
+              << totalForceEnergy.kineticEnergy << std::endl;
   }
 }
 
@@ -403,7 +461,8 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(toMatrix(system.forces.osmoticForceVec).norm())) {
         std::cout << "Osmotic force is not finite!" << std::endl;
       }
-      if (!std::isfinite(toMatrix(system.forces.lineCapillaryForceVec).norm())) {
+      if (!std::isfinite(
+              toMatrix(system.forces.lineCapillaryForceVec).norm())) {
         std::cout << "Line capillary force is not finite!" << std::endl;
       }
       if (!std::isfinite(toMatrix(system.forces.externalForceVec).norm())) {
@@ -424,7 +483,8 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(toMatrix(system.forces.bendingPotential).norm())) {
         std::cout << "Bending Potential is not finite!" << std::endl;
       }
-      if (!std::isfinite(toMatrix(system.forces.interiorPenaltyPotential).norm())) {
+      if (!std::isfinite(
+              toMatrix(system.forces.interiorPenaltyPotential).norm())) {
         std::cout << "Protein interior penalty potential is not finite!"
                   << std::endl;
       }
@@ -443,6 +503,9 @@ void Integrator::finitenessErrorBacktrack() {
     if (!std::isfinite(system.energy.kineticEnergy)) {
       std::cout << "Kinetic energy is not finite!" << std::endl;
     }
+    if (!std::isfinite(system.energy.externalWork)) {
+      std::cout << "External work is not finite!" << std::endl;
+    }
     if (!std::isfinite(system.energy.potentialEnergy)) {
       if (!std::isfinite(system.energy.bendingEnergy)) {
         std::cout << "Bending energy is not finite!" << std::endl;
@@ -459,9 +522,6 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(system.energy.dirichletEnergy)) {
         std::cout << "Line tension energy is not finite!" << std::endl;
       }
-      if (!std::isfinite(system.energy.externalWork)) {
-        std::cout << "External force energy is not finite!" << std::endl;
-      }
       if (!std::isfinite(system.energy.proteinInteriorPenalty)) {
         std::cout << "Protein interior penalty energy is not finite!"
                   << std::endl;
@@ -476,7 +536,7 @@ void Integrator::getForces() {
     system.computeDPDForces(timeStep);
     dpdForce = rowwiseDotProduct(
         system.forces.maskForce(toMatrix(system.forces.dampingForce) +
-                           toMatrix(system.forces.stochasticForce)),
+                                toMatrix(system.forces.stochasticForce)),
         toMatrix(system.vpg->vertexNormals));
   }
 
@@ -501,11 +561,13 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
         std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n[lambdaSG] = [" << system.parameters.tension.lambdaSG << ", "
+        std::cout << "\n[lambdaSG] = [" << system.parameters.tension.lambdaSG
+                  << ", "
                   << "]";
         system.parameters.tension.lambdaSG +=
             system.parameters.tension.Ksg *
-            (system.surfaceArea - system.parameters.tension.At) / system.parameters.tension.At;
+            (system.surfaceArea - system.parameters.tension.At) /
+            system.parameters.tension.At;
         std::cout << " -> [" << system.parameters.tension.lambdaSG << "]"
                   << std::endl;
       }
@@ -516,7 +578,8 @@ void Integrator::pressureConstraintThreshold(bool &EXIT,
       } else { // iterate if not
         std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
         system.parameters.tension.Ksg *= increment;
-        std::cout << " -> [" << system.parameters.tension.Ksg << "]" << std::endl;
+        std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                  << std::endl;
       }
     }
   }
@@ -538,10 +601,12 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
                   << system.parameters.osmotic.lambdaV << "]";
         system.parameters.tension.lambdaSG +=
             system.parameters.tension.Ksg *
-            (system.surfaceArea - system.parameters.tension.At) / system.parameters.tension.At;
-        system.parameters.osmotic.lambdaV += system.parameters.osmotic.Kv *
-                                        (system.volume - system.parameters.osmotic.Vt) /
-                                        system.parameters.osmotic.Vt;
+            (system.surfaceArea - system.parameters.tension.At) /
+            system.parameters.tension.At;
+        system.parameters.osmotic.lambdaV +=
+            system.parameters.osmotic.Kv *
+            (system.volume - system.parameters.osmotic.Vt) /
+            system.parameters.osmotic.Vt;
         std::cout << " -> [" << system.parameters.tension.lambdaSG << ", "
                   << system.parameters.osmotic.lambdaV << "]" << std::endl;
       }
@@ -555,12 +620,14 @@ void Integrator::reducedVolumeThreshold(bool &EXIT,
       if (dArea > ctol) {
         std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
         system.parameters.tension.Ksg *= 1.3;
-        std::cout << " -> [" << system.parameters.tension.Ksg << "]" << std::endl;
+        std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                  << std::endl;
       }
       if (dVolume > ctol) {
         std::cout << "\n[Kv] = [" << system.parameters.osmotic.Kv << "]";
         system.parameters.osmotic.Kv *= 1.3;
-        std::cout << " -> [" << system.parameters.osmotic.Kv << "]" << std::endl;
+        std::cout << " -> [" << system.parameters.osmotic.Kv << "]"
+                  << std::endl;
       }
     }
   }
@@ -584,7 +651,8 @@ void Integrator::saveData() {
     char buffer[50];
     sprintf(buffer, isJustGeometryPly ? "/frame%d.obj" : "/frame%d.ply",
             (int)frame);
-    system.saveRichData(outputDirectory + "/" + std::string(buffer), isJustGeometryPly);
+    system.saveRichData(outputDirectory + "/" + std::string(buffer),
+                        isJustGeometryPly);
   }
 
   // print in-progress information in the console
@@ -593,12 +661,17 @@ void Integrator::saveData() {
               << "t: " << system.time << ", "
               << "n: " << frame << ", "
               << "isSmooth: " << system.isSmooth << "\n"
-              << "dA/Area: " << areaDifference << "/" << system.surfaceArea << ", "
-              << "dVP/Volume: " << volumeDifference << "/" << system.volume << ", "
+              << "dA/Area: " << areaDifference << "/" << system.surfaceArea
+              << ", "
+              << "dVP/Volume: " << volumeDifference << "/" << system.volume
+              << ", "
               << "h: "
-              << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff() << "\n"
+              << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff()
+              << "\n"
               << "E_total: " << system.energy.totalEnergy << "\n"
+              << "E_kin: " << system.energy.kineticEnergy << "\n"
               << "E_pot: " << system.energy.potentialEnergy << "\n"
+              << "W_ext: " << system.energy.externalWork << "\n"
               << "|e|Mech: " << system.mechErrorNorm << "\n"
               << "|e|Chem: " << system.chemErrorNorm << "\n"
               << "H: ["
@@ -679,8 +752,8 @@ void Integrator::markFileName(std::string marker_str) {
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::createNetcdfFile() {
   // initialize netcdf traj file
-  trajFile.createNewFile(outputDirectory + "/" + trajFileName, *system.mesh, *system.vpg,
-                         TrajFile::NcFile::replace);
+  trajFile.createNewFile(outputDirectory + "/" + trajFileName, *system.mesh,
+                         *system.vpg, TrajFile::NcFile::replace);
   trajFile.writeMask(toMatrix(system.forces.forceMask).rowwise().sum());
   if (!system.mesh->hasBoundary()) {
     trajFile.writeRefSurfArea(system.parameters.tension.At);
@@ -706,11 +779,12 @@ void Integrator::saveNetcdfData() {
   trajFile.writeIsSmooth(idx, system.isSmooth);
   // write geometry
   trajFile.writeVolume(idx, system.volume);
-  trajFile.writeSurfArea(idx, system.mesh->hasBoundary()
-                                  ? system.surfaceArea - system.parameters.tension.At
-                                  : system.surfaceArea);
-  trajFile.writeHeight(idx,
-                       toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff());
+  trajFile.writeSurfArea(idx,
+                         system.mesh->hasBoundary()
+                             ? system.surfaceArea - system.parameters.tension.At
+                             : system.surfaceArea);
+  trajFile.writeHeight(
+      idx, toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
   trajFile.writeBendEnergy(idx, system.energy.bendingEnergy);
   trajFile.writeSurfEnergy(idx, system.energy.surfaceEnergy);
@@ -722,10 +796,14 @@ void Integrator::saveNetcdfData() {
   // write Norms
   trajFile.writeErrorNorm(idx, system.mechErrorNorm);
   trajFile.writeChemErrorNorm(idx, system.chemErrorNorm);
-  trajFile.writeBendNorm(idx, system.computeNorm(system.forces.bendingForce.raw()));
-  trajFile.writeSurfNorm(idx, system.computeNorm(system.forces.capillaryForce.raw()));
-  trajFile.writePressNorm(idx, system.computeNorm(system.forces.osmoticForce.raw()));
-  trajFile.writeLineNorm(idx, system.computeNorm(system.forces.lineCapillaryForce.raw()));
+  trajFile.writeBendNorm(idx,
+                         system.computeNorm(system.forces.bendingForce.raw()));
+  trajFile.writeSurfNorm(
+      idx, system.computeNorm(system.forces.capillaryForce.raw()));
+  trajFile.writePressNorm(idx,
+                          system.computeNorm(system.forces.osmoticForce.raw()));
+  trajFile.writeLineNorm(
+      idx, system.computeNorm(system.forces.lineCapillaryForce.raw()));
 
   // vector quantities
   if (!system.meshProcessor.meshMutator.isSplitEdge &&
@@ -737,12 +815,14 @@ void Integrator::saveNetcdfData() {
 
     // write geometry
     trajFile.writeCoords(idx, toMatrix(system.vpg->inputVertexPositions));
-    trajFile.writeTopoFrame(idx, system.mesh->getFaceVertexMatrix<std::uint32_t>());
-    trajFile.writeMeanCurvature(idx, system.vpg->vertexMeanCurvatures.raw().array() /
-                                         system.vpg->vertexDualAreas.raw().array());
-    trajFile.writeGaussCurvature(idx,
-                                 system.vpg->vertexGaussianCurvatures.raw().array() /
-                                     system.vpg->vertexDualAreas.raw().array());
+    trajFile.writeTopoFrame(idx,
+                            system.mesh->getFaceVertexMatrix<std::uint32_t>());
+    trajFile.writeMeanCurvature(idx,
+                                system.vpg->vertexMeanCurvatures.raw().array() /
+                                    system.vpg->vertexDualAreas.raw().array());
+    trajFile.writeGaussCurvature(
+        idx, system.vpg->vertexGaussianCurvatures.raw().array() /
+                 system.vpg->vertexDualAreas.raw().array());
     trajFile.writeSponCurvature(idx, system.H0.raw());
     // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
     // fd.writeH_H0_diff(idx,
@@ -853,7 +933,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
            << "Chem error norm:    " << system.chemErrorNorm << "\n"
            << "\n"
            << "Surface area:     " << system.surfaceArea << " = "
-           << system.surfaceArea / system.parameters.tension.At << " target surface area"
+           << system.surfaceArea / system.parameters.tension.At
+           << " target surface area"
            << "\n"
            << "COM (x, y, z):		 "
            << toMatrix(system.vpg->inputVertexPositions).colwise().sum() /
@@ -877,8 +958,8 @@ void Integrator::getStatusLog(std::string nameOfFile, std::size_t frame,
     myfile << "\n";
     myfile << "Is considering protein: "
            << system.parameters.variation.isProteinVariation << "\n"
-           << "Is vertex shift: " << system.meshProcessor.meshMutator.shiftVertex
-           << "\n";
+           << "Is vertex shift: "
+           << system.meshProcessor.meshMutator.shiftVertex << "\n";
 
     myfile.close();
   } else

@@ -59,6 +59,7 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Map continuation variables
   time = fd.getTime(startingFrame);
+  energy.time = time;
   if (parameters.proteinDistribution.protein0.rows() == 1 &&
       parameters.proteinDistribution.protein0[0] == -1) {
     proteinDensity.raw() = fd.getProteinDensity(startingFrame);

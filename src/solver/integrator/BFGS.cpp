@@ -62,7 +62,8 @@ bool BFGS::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    if (system.time - lastSave >= savePeriod || system.time == initialTime || EXIT) {
+    if (system.time - lastSave >= savePeriod || system.time == initialTime ||
+        EXIT) {
       lastSave = system.time;
       saveData();
     }
@@ -108,7 +109,8 @@ void BFGS::checkParameters() {
   if (!isBacktrack) {
     mem3dg_runtime_error("Backtracking is required for BFGS integration");
   }
-  if (system.parameters.proteinMobility != 1 && system.parameters.proteinMobility != 0) {
+  if (system.parameters.proteinMobility != 1 &&
+      system.parameters.proteinMobility != 0) {
     mem3dg_runtime_error("Protein mobility constant should "
                          "be set to 1 for optimization!");
   }
@@ -116,6 +118,10 @@ void BFGS::checkParameters() {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
       mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
+  }
+  if (system.parameters.external.Kf != 0) {
+    mem3dg_runtime_error(
+        "External force can not be applied using energy optimization")
   }
 }
 
@@ -153,26 +159,30 @@ void BFGS::status() {
   //           << std::endl;
 
   // compute the area contraint error
-  areaDifference = (system.parameters.tension.Ksg != 0)
-              ? abs(system.surfaceArea / system.parameters.tension.At - 1)
-              : 0.0;
+  areaDifference =
+      (system.parameters.tension.Ksg != 0)
+          ? abs(system.surfaceArea / system.parameters.tension.At - 1)
+          : 0.0;
 
   if (system.parameters.osmotic.isPreferredVolume) {
     // compute volume constraint error
-    volumeDifference = (system.parameters.osmotic.Kv != 0)
-              ? abs(system.volume / system.parameters.osmotic.Vt - 1)
-              : 0.0;
+    volumeDifference =
+        (system.parameters.osmotic.Kv != 0)
+            ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+            : 0.0;
     // thresholding, exit if fulfilled and iterate if not
-    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference, volumeDifference, ctol, 1.3);
+    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference,
+                           volumeDifference, ctol, 1.3);
   } else {
     // compute pressure constraint error
-    volumeDifference =
-        (!system.mesh->hasBoundary())
-            ? abs(system.parameters.osmotic.n / system.volume / system.parameters.osmotic.cam -
-                  1.0)
-            : 1.0;
+    volumeDifference = (!system.mesh->hasBoundary())
+                           ? abs(system.parameters.osmotic.n / system.volume /
+                                     system.parameters.osmotic.cam -
+                                 1.0)
+                           : 1.0;
     // thresholding, exit if fulfilled and iterate if not
-    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference, ctol, 1.3);
+    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference,
+                                ctol, 1.3);
   }
 
   // exit if reached time
@@ -202,7 +212,8 @@ void BFGS::march() {
   } else {
     // map the raw eigen datatype for computation
     auto f_velocity_e = toMatrix(system.velocity);
-    auto f_forces_mechanicalForceVec_e = toMatrix(system.forces.mechanicalForceVec);
+    auto f_forces_mechanicalForceVec_e =
+        toMatrix(system.forces.mechanicalForceVec);
 
     f_velocity_e = unflatten<3>(
         (hess_inv * flatten(f_forces_mechanicalForceVec_e)).eval());
@@ -217,14 +228,15 @@ void BFGS::march() {
 
     // time stepping on vertex position
     timeStep = backtrack(system.energy.potentialEnergy, f_velocity_e,
-                             toMatrix(system.proteinVelocity), rho, c1);
+                         toMatrix(system.proteinVelocity), rho, c1);
     s = timeStep * flatten(f_velocity_e);
     s_protein = timeStep * toMatrix(system.proteinVelocity);
 
     // regularization
     if (system.meshProcessor.isMeshRegularize) {
       system.computeRegularizationForce();
-      system.vpg->inputVertexPositions.raw() += system.forces.regularizationForce.raw();
+      system.vpg->inputVertexPositions.raw() +=
+          system.forces.regularizationForce.raw();
     }
 
     // recompute cached values
