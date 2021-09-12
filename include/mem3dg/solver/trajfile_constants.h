@@ -79,6 +79,8 @@ static const std::string ANGLE_VAR = "angle";
 static const std::string REFCOORD_VAR = "refcoordinates";
 /// Name of the velocity data
 static const std::string VEL_VAR = "velocities";
+/// Name of the velocity data
+static const std::string EXTF_VAR = "externalForce";
 /// Name of the mean curvature data
 static const std::string MEANCURVE_VAR = "meancurvature";
 /// Name of the Gaussian curvature data
