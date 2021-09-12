@@ -45,13 +45,13 @@ namespace solver {
 void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Open netcdf file
-  TrajFile fd = TrajFile::openReadOnly(trajFile);
-  fd.getNcFrame(startingFrame);
-  // MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
+  // TrajFile fd = TrajFile::openReadOnly(trajFile);
   // fd.getNcFrame(startingFrame);
+  MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
+  fd.getNcFrame(startingFrame);
 
   // Check consistent topology for continuation
-  if (!(mesh->nFaces() == fd.getTopology().rows() &&
+  if (!(mesh->nFaces() == fd.getTopology(startingFrame).rows() &&
         mesh->nVertices() == fd.getCoords(startingFrame).rows())) {
     throw std::logic_error(
         "Topology for continuation parameters mapping is not consistent!");
@@ -60,13 +60,7 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
   // Map continuation variables
   time = fd.getTime(startingFrame);
   energy.time = time;
-  if (parameters.proteinDistribution.protein0.rows() == 1 &&
-      parameters.proteinDistribution.protein0[0] == -1) {
-    proteinDensity.raw() = fd.getProteinDensity(startingFrame);
-  } else {
-    throw std::logic_error(
-        "protein0 has to be disabled (=[-1]) for continuing simulations!");
-  }
+  // proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   toMatrix(velocity) = fd.getVelocity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 }
