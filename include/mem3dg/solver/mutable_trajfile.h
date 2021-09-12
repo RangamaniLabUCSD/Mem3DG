@@ -179,6 +179,7 @@ public:
     topo_var = traj_group.getVar(TOPO_VAR);
     coord_var = traj_group.getVar(COORD_VAR);
     vel_var = traj_group.getVar(VEL_VAR);
+    extF_var = traj_group.getVar(EXTF_VAR);
   }
 
   /**
@@ -250,6 +251,7 @@ public:
     topo_var = nc::NcVar{};
     coord_var = nc::NcVar{};
     vel_var = nc::NcVar{};
+    extF_var = nc::NcVar{};
     filename = "";
   }
 
@@ -375,6 +377,37 @@ public:
    */
   EigenVectorX3dr getVelocity(const std::size_t idx) const {
     return getVar<double, SPATIAL_DIMS>(vel_var, idx);
+  }
+
+  /**
+   * @brief Write the external force field for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Velocity matrix
+   */
+  void writeExternalForce(const std::size_t idx, const EigenVectorX3dr &data) {
+    writeVar<double, 3>(extF_var, idx, data);
+  }
+
+  /**
+   * @brief Write the external force field for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex velocities
+   */
+  void writeExternalForce(const std::size_t idx,
+                     const gcs::VertexData<gc::Vector3> &data) {
+    writeVar<gc::Vertex>(extF_var, idx, data);
+  }
+
+  /**
+   * @brief Get the external force field of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return EigenVectorX3dr  Velocity data
+   */
+  EigenVectorX3dr getExternalForce(const std::size_t idx) const {
+    return getVar<double, SPATIAL_DIMS>(extF_var, idx);
   }
 
   /**
@@ -562,6 +595,8 @@ private:
     coord_var.setCompression(true, true, compression_level);
     vel_var = traj_group.addVar(VEL_VAR, double_array_t, {frame_dim});
     vel_var.setCompression(true, true, compression_level);
+    extF_var = traj_group.addVar(EXTF_VAR, double_array_t, {frame_dim});
+    extF_var.setCompression(true, true, compression_level);
   }
 
   /// Bound NcFile
@@ -579,13 +614,16 @@ private:
 
   /// Variable for storing time
   nc::NcVar time_var;
+
   /// Vlen variable for topology
   nc::NcVar topo_var;
   /// Vlen variable for coordinates
   nc::NcVar coord_var;
-
   /// Vlen variable for velocities
   nc::NcVar vel_var;
+  /// Vlen variable for external forces
+  nc::NcVar extF_var;
+  /// Vlen variable for protein density
   nc::NcVar phi_var;
 
   /// Filepath to file

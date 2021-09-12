@@ -41,6 +41,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
+#pragma region integrators
   // ==========================================================
   // =============     Integrator Template      ===============
   // ==========================================================
@@ -222,8 +223,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   conjugategradient.def(
       py::init<System &, double, double, double, double, std::string>(),
-      py::arg("system"), py::arg("characteristicTimeStep"), py::arg("totalTime"),
-      py::arg("savePeriod"), py::arg("tolerance"), py::arg("outputDirectory"),
+      py::arg("system"), py::arg("characteristicTimeStep"),
+      py::arg("totalTime"), py::arg("savePeriod"), py::arg("tolerance"),
+      py::arg("outputDirectory"),
       R"delim(
         Conjugate Gradient optimizer constructor
       )delim");
@@ -295,12 +297,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                                   R"delim(
           Wolfe condition parameter
       )delim");
-  conjugategradient.def_readwrite("restartPeriod", &ConjugateGradient::restartPeriod,
+  conjugategradient.def_readwrite("restartPeriod",
+                                  &ConjugateGradient::restartPeriod,
                                   R"delim(
           option to restart conjugate gradient using gradient descent 
       )delim");
 
-  conjugategradient.def_readwrite("constraintTolerance", &ConjugateGradient::constraintTolerance,
+  conjugategradient.def_readwrite("constraintTolerance",
+                                  &ConjugateGradient::constraintTolerance,
                                   R"delim(
             tolerance for constraints
       )delim");
@@ -375,6 +379,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           step for n iterations
       )delim");
 
+#pragma endregion integrators
+
+#pragma region forces
   // ==========================================================
   // =============     Forces             ===============
   // ==========================================================
@@ -512,6 +519,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the chemical Potential
       )delim");
 
+#pragma endregion forces
+
+#pragma region mesh_mutator
   // ==========================================================
   // =============     MeshMutator              ===============
   // ==========================================================
@@ -694,7 +704,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                              R"delim(
           get the option of whether do mesh regularization
       )delim");
+#pragma endregion mesh_mutator
 
+#pragma region system
   // ==========================================================
   // =============          System              ===============
   // ==========================================================
@@ -971,6 +983,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           compute the total energy, where total energy = kinetic energy + potential energy - external work
       )delim");
+  system.def(
+      "computeIntegratedPower",
+      static_cast<double (System::*)(double)>(&System::computeIntegratedPower),
+      py::arg("dt"),
+      R"delim(
+            Intermediate function to integrate the power
+        )delim");
   //   system.def("computeL1Norm", &System::computeL1Norm,
   //              R"delim(
   //                    compute error norm
@@ -995,7 +1014,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
              R"delim(
           save snapshot data to directory
       )delim");
+#pragma endregion system
 
+#pragma region parameters
   // ==========================================================
   // =============   Simulation parameters      ===============
   // ==========================================================
@@ -1311,6 +1332,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get protein interior penalty energy (numerical energy)
       )delim");
 
+#pragma endregion parameters
+
+#pragma region visualization
   // ==========================================================
   // =============   Visualization              ===============
   // ==========================================================
@@ -1440,6 +1464,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         visualize adsorption component of chemical potential
       )delim");
 
+#pragma endregion visualization
+
+#pragma region mesh_io
   // ==========================================================
   // =============      mesh generation    ===============
   // ==========================================================
@@ -1499,6 +1526,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
 
   pymem3dg.def("processSoup", &processSoup, "process polygon soup",
                py::arg("meshName"));
+
+#pragma endregion mesh_io
 };
 } // namespace integrator
 } // namespace solver

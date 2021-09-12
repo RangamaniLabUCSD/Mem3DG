@@ -847,10 +847,12 @@ void Integrator::saveMutableNetcdfData() {
   // write time
   mutableTrajFile.writeTime(idx, system.time);
 
-  // write velocity
-  mutableTrajFile.writeVelocity(idx, toMatrix(system.velocity));
+  // write dynamic properties
+  mutableTrajFile.writeVelocity(idx, system.velocity);
+  if (system.parameters.external.Kf != 0)
+    mutableTrajFile.writeExternalForce(idx, system.forces.externalForceVec);
 
-  // write geometry
+  // write static properties
   mutableTrajFile.writeCoords(idx, *system.vpg);
   mutableTrajFile.writeTopology(idx, *system.mesh);
   mutableTrajFile.sync();
