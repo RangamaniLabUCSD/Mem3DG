@@ -90,7 +90,7 @@ public:
     externforce_var = fd->getVar(EXTERNFORCE_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
     gausscurve_var = fd->getVar(GAUSSCURVE_VAR);
-    proteinden_var = fd->getVar(PROTEINDEN_VAR);
+    phi_var = fd->getVar(PHI_VAR);
     sponcurve_var = fd->getVar(SPONCURVE_VAR);
     chempotential_var = fd->getVar(CHEMPOTENTIAL_VAR);
     physforce_var = fd->getVar(PHYSFORCE_VAR);
@@ -176,9 +176,9 @@ public:
                          {frame_dim, nvertices_dim, spatial_dim});
     vel_var.putAtt(UNITS, LEN_UNITS + TIME_UNITS + "^(-1)");
 
-    proteinden_var = fd->addVar(PROTEINDEN_VAR, netCDF::ncDouble,
+    phi_var = fd->addVar(PHI_VAR, netCDF::ncDouble,
                                 {frame_dim, nvertices_dim});
-    proteinden_var.putAtt(UNITS, LEN_UNITS + "^(-2)");
+    phi_var.putAtt(UNITS, LEN_UNITS + "^(-2)");
 
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -607,7 +607,7 @@ private:
   nc::NcVar topo_frame_var;
   nc::NcVar angle_var;
   nc::NcVar vel_var;
-  nc::NcVar proteinden_var;
+  nc::NcVar phi_var;
   nc::NcVar meancurve_var;
   nc::NcVar gausscurve_var;
   nc::NcVar sponcurve_var;

@@ -210,7 +210,7 @@ void TrajFile::writeProteinDensity(
 
   assert(data.rows() == nvertices_dim.getSize());
 
-  proteinden_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+  phi_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
@@ -219,7 +219,7 @@ TrajFile::getProteinDensity(const std::size_t idx) const {
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
 
-  proteinden_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  phi_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
   return vec;
 }
 
