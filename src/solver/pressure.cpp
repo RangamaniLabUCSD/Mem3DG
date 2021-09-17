@@ -43,6 +43,16 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+gc::Vector3 System::computeVolumeVariationVector(const gc::Halfedge &he) {
+  std::size_t fID = he.face().getIndex();
+  bool interiorHalfedge = he.isInterior();
+  gc::Vector3 volGrad{0, 0, 0};
+  if (interiorHalfedge) {
+    volGrad = vpg->faceNormals[fID] * vpg->faceAreas[fID] / 3;
+  }
+  return volGrad;
+}
+
 void System::computeVectorForces() {
   assert(mesh->isCompressed());
   // if(!mesh->isCompressed()){
@@ -93,13 +103,11 @@ void System::computeVectorForces() {
       // axis forces
       // volGrad = vpg->faceNormals[fID] * vpg->faceAreas[fID] /
       // 3;
-      gc::Vector3 volGrad{0, 0, 0};
       gc::Vector3 oneSidedAreaGrad{0, 0, 0};
       gc::Vector3 dirichletVec{0, 0, 0};
       gc::Vector3 areaGrad{0, 0, 0};
 
       if (interiorHalfedge) {
-        volGrad = vpg->faceNormals[fID] * vpg->faceAreas[fID] / 3;
         oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[fID],
                                            vecFromHalfedge(he.next(), *vpg));
         dirichletVec = computeGradientNorm2Gradient(he, proteinDensity) /
@@ -159,7 +167,7 @@ void System::computeVectorForces() {
       }
 
       // Assemble to forces
-      osmoticForceVec += forces.osmoticPressure * volGrad;
+      osmoticForceVec += forces.osmoticPressure * computeVolumeVariationVector(he);
       capillaryForceVec -= forces.surfaceTension * areaGrad;
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
                             parameters.adsorption.epsilon * areaGrad;
@@ -436,7 +444,7 @@ EigenVectorX1d System::computeExternalForce() {
                                  vpg->vertexDualArea(v) * direction.normalize();
   }
 
-#elif MODE == 1 // anchor force 
+#elif MODE == 1 // anchor force
   double concentration = 10;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);

@@ -610,6 +610,33 @@ public:
   void updateVertexPositions(bool isUpdateGeodesics = false);
 
   // ==========================================================
+  // ================   Variational vectors  ==================
+  // ==========================================================
+  /**
+   * @brief Compute volume variation vector
+   */
+  gcs::VertexData<gc::Vector3> computeVolumeVariationVector();
+  gc::Vector3 computeVolumeVariationVector(const gc::Halfedge &he);
+
+  /**
+   * @brief Compute mean curvature vector using cotan
+   */
+  gcs::VertexData<gc::Vector3> computeMeanCurvatureVector();
+  gc::Vector3 computeMeanCurvatureVector(const gc::Halfedge &he);
+
+  /**
+   * @brief Compute Gaussian curvature vector
+   */
+  gcs::VertexData<gc::Vector3> computeGaussianCurvatureVector();
+  gc::Vector3 computeGaussianCurvatureVector(const gc::Halfedge &he);
+
+  /**
+   * @brief Compute Schlafli vector 
+   */
+  gcs::VertexData<gc::Vector3> computeSchlafliVector();
+  gc::Vector3 computeSchlafliVector(const gc::Halfedge &he);
+
+  // ==========================================================
   // ================        Pressure        ==================
   // ==========================================================
   /**
