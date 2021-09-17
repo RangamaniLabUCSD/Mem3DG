@@ -358,19 +358,18 @@ public:
    */
   void writeProteinDensity(const std::size_t idx,
                            const gc::MeshData<gc::Vertex, double> &data) {
-    // writeVar<double, 1>(phi_var, idx, data.raw());
-    writeVar<gc::Vertex>(phi_var, idx, data);
+    writeVar(phi_var, idx, data);
   }
 
-  // /**
-  //  * @brief Get the protein density of a given frame
-  //  *
-  //  * @param idx               Index of the frame
-  //  * @return EigenVectorX3dr  Coordinates data
-  //  */
-  // EigenVectorX1d getProteinDensity(const std::size_t idx) {
-  //   return getVar<double, 1>(phi_var, idx);
-  // }
+  /**
+   * @brief Get the protein density of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return EigenVectorX3dr  Coordinates data
+   */
+  EigenVectorX1d getProteinDensity(const std::size_t idx) {
+    return getVar1d<double>(phi_var, idx);
+  }
 
   /**
    * @brief Write the velocities for a frame
@@ -580,6 +579,22 @@ private:
                                                    vlenData.len / k, k);
     return vec;
   }
+
+  template <typename T>
+  EigenVectorX1_T<T> getVar1d(const nc::NcVar &var,
+                                const std::size_t idx) const {
+    assert(idx < nFrames());
+
+    nc_vlen_t vlenData;
+    var.getVar({idx}, &vlenData);
+
+    // Initialize an Eigen object and copy the data over
+    EigenVectorX1_T<T> vec(vlenData.len);
+    // Bind to nc_vlen_t memory and copy data over
+    vec = AlignedEigenMap_T<T, 1, Eigen::ColMajor>(static_cast<T *>(vlenData.p), vlenData.len);
+    return vec;
+  }
+
 
   template <typename T,
             typename = std::enable_if_t<std::is_fundamental<T>::value>>
