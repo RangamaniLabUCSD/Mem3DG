@@ -880,26 +880,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       R"delim(
           get the Gaussian Curvature
       )delim");
-  system.def(
-      "getMeanCurvature",
-      [](System &s) {
-        return s.vpg->vertexMeanCurvatures.raw().array() /
-               s.vpg->vertexDualAreas.raw().array();
-      },
-      py::return_value_policy::reference_internal,
-      R"delim(
-          get the mean curvature
-      )delim");
-  system.def(
-      "getGaussianCurvature",
-      [](System &s) {
-        return s.vpg->vertexGaussianCurvatures.raw().array() /
-               s.vpg->vertexDualAreas.raw().array();
-      },
-      py::return_value_policy::reference_internal,
-      R"delim(
-          get the Gaussian Curvature
-      )delim");
 
   /**
    * @brief Membrane dynamics properties (Mem3DG)
