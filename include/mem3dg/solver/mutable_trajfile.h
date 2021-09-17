@@ -350,17 +350,17 @@ public:
     return getVar<double, SPATIAL_DIMS>(coord_var, idx);
   }
 
-/**
- * @brief Write the protein density for a frame
- *
- * @param idx   Index of the frame
- * @param data  Vertex position geometry
- */
-void writeProteinDensity(const std::size_t idx,
-                         const gc::MeshData<gc::Vertex, double> &data) {
-  // writeVar<double, 1>(phi_var, idx, data.raw());
-  writeVar<gc::Vertex>(phi_var, idx, data);
-}
+  /**
+   * @brief Write the protein density for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex position geometry
+   */
+  void writeProteinDensity(const std::size_t idx,
+                           const gc::MeshData<gc::Vertex, double> &data) {
+    // writeVar<double, 1>(phi_var, idx, data.raw());
+    writeVar<gc::Vertex>(phi_var, idx, data);
+  }
 
   // /**
   //  * @brief Get the protein density of a given frame
@@ -526,6 +526,27 @@ private:
   template <typename T, int k>
   void writeVar(nc::NcVar &var, const std::size_t idx,
                 const EigenVectorXkr_T<T, k> &data) {
+    if (!writeable)
+      mem3dg_runtime_error("Cannot write to read only file.");
+
+    nc_vlen_t vlenData;
+    vlenData.len = data.size();
+    vlenData.p = const_cast<T *>(data.data());
+
+    var.putVar({idx}, &vlenData);
+  }
+
+  /**
+   * @brief
+   *
+   * @tparam T
+   * @param var
+   * @param idx
+   * @param data
+   */
+  template <typename T>
+  void writeVar(nc::NcVar &var, const std::size_t idx,
+                const EigenVectorX1_T<T> &data) {
     if (!writeable)
       mem3dg_runtime_error("Cannot write to read only file.");
 

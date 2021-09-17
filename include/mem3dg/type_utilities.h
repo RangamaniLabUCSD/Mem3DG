@@ -34,6 +34,8 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+template <typename T>
+using EigenVectorX1_T = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
 using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
