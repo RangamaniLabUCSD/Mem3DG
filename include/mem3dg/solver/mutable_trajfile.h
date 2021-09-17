@@ -178,6 +178,7 @@ public:
     time_var = traj_group.getVar(TIME_VAR);
     topo_var = traj_group.getVar(TOPO_VAR);
     coord_var = traj_group.getVar(COORD_VAR);
+    phi_var = traj_group.getVar(PHI_VAR);
     vel_var = traj_group.getVar(VEL_VAR);
     extF_var = traj_group.getVar(EXTF_VAR);
   }
@@ -250,6 +251,7 @@ public:
     time_var = nc::NcVar{};
     topo_var = nc::NcVar{};
     coord_var = nc::NcVar{};
+    phi_var = nc::NcVar{};
     vel_var = nc::NcVar{};
     extF_var = nc::NcVar{};
     filename = "";
@@ -349,6 +351,27 @@ public:
   }
 
   /**
+   * @brief Write the protein density for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex position geometry
+   */
+  void writeProteinDensity(const std::size_t idx,
+                           const gc::MeshData<gc::Vertex, double> &data) {
+    writeVar(phi_var, idx, data);
+  }
+
+  /**
+   * @brief Get the protein density of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return EigenVectorX3dr  Coordinates data
+   */
+  EigenVectorX1d getProteinDensity(const std::size_t idx) {
+    return getVar1d<double>(phi_var, idx);
+  }
+
+  /**
    * @brief Write the velocities for a frame
    *
    * @param idx   Index of the frame
@@ -396,7 +419,7 @@ public:
    * @param data  Vertex velocities
    */
   void writeExternalForce(const std::size_t idx,
-                     const gcs::VertexData<gc::Vector3> &data) {
+                          const gcs::VertexData<gc::Vector3> &data) {
     writeVar<gc::Vertex>(extF_var, idx, data);
   }
 
@@ -444,6 +467,20 @@ private:
   //               std::function<EigenVectorXkr_T<SCALAR, k>(T)>
   //               &&toEigenVector) {
   //   writeVar(var, idx, toEigenVector(data));
+  // }
+
+  // /**
+  //  * @brief Write double MeshData to variable
+  //  *
+  //  * @tparam E      Typename of the Mesh Element
+  //  * @param var     Variable to write to
+  //  * @param idx     Index
+  //  * @param data    Data
+  //  */
+  // template <typename E>
+  // void writeVar(nc::NcVar &var, const std::size_t idx,
+  //               const gc::MeshData<E, double> &data) {
+  //   writeVar<E, double>(var, idx, data);
   // }
 
   /**
@@ -498,6 +535,27 @@ private:
     var.putVar({idx}, &vlenData);
   }
 
+  /**
+   * @brief
+   *
+   * @tparam T
+   * @param var
+   * @param idx
+   * @param data
+   */
+  template <typename T>
+  void writeVar(nc::NcVar &var, const std::size_t idx,
+                const EigenVectorX1_T<T> &data) {
+    if (!writeable)
+      mem3dg_runtime_error("Cannot write to read only file.");
+
+    nc_vlen_t vlenData;
+    vlenData.len = data.size();
+    vlenData.p = const_cast<T *>(data.data());
+
+    var.putVar({idx}, &vlenData);
+  }
+
   template <typename T,
             typename = std::enable_if_t<std::is_fundamental<T>::value>>
   void writeVar(nc::NcVar &var, const std::size_t idx, const T data) {
@@ -521,6 +579,22 @@ private:
                                                    vlenData.len / k, k);
     return vec;
   }
+
+  template <typename T>
+  EigenVectorX1_T<T> getVar1d(const nc::NcVar &var,
+                                const std::size_t idx) const {
+    assert(idx < nFrames());
+
+    nc_vlen_t vlenData;
+    var.getVar({idx}, &vlenData);
+
+    // Initialize an Eigen object and copy the data over
+    EigenVectorX1_T<T> vec(vlenData.len);
+    // Bind to nc_vlen_t memory and copy data over
+    vec = AlignedEigenMap_T<T, 1, Eigen::ColMajor>(static_cast<T *>(vlenData.p), vlenData.len);
+    return vec;
+  }
+
 
   template <typename T,
             typename = std::enable_if_t<std::is_fundamental<T>::value>>
@@ -593,6 +667,8 @@ private:
     topo_var.setCompression(true, true, compression_level);
     coord_var = traj_group.addVar(COORD_VAR, double_array_t, {frame_dim});
     coord_var.setCompression(true, true, compression_level);
+    phi_var = traj_group.addVar(PHI_VAR, double_array_t, {frame_dim});
+    phi_var.setCompression(true, true, compression_level);
     vel_var = traj_group.addVar(VEL_VAR, double_array_t, {frame_dim});
     vel_var.setCompression(true, true, compression_level);
     extF_var = traj_group.addVar(EXTF_VAR, double_array_t, {frame_dim});
@@ -619,12 +695,12 @@ private:
   nc::NcVar topo_var;
   /// Vlen variable for coordinates
   nc::NcVar coord_var;
+  /// Vlen variable for protein density
+  nc::NcVar phi_var;
   /// Vlen variable for velocities
   nc::NcVar vel_var;
   /// Vlen variable for external forces
   nc::NcVar extF_var;
-  /// Vlen variable for protein density
-  nc::NcVar phi_var;
 
   /// Filepath to file
   std::string filename;
