@@ -43,41 +43,140 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-gc::Vector3 System::computeMeanCurvatureVector(const gc::Halfedge &he) {
+std::tuple<gc::Vector3, gc::Vector3>
+System::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
+                                      gc::Halfedge &he) {
+  std::size_t fID = he.face().getIndex();
+  std::size_t heID_twin = he.twin().getIndex();
+  std::size_t fID_he_twin = he.twin().face().getIndex();
+  std::size_t heID_twin_next = he.twin().next().getIndex();
+  std::size_t heID_he_next_next = he.next().next().getIndex();
+  gc::Vertex vj = he.tipVertex();
+  bool boundaryVertex = he.vertex().isBoundary();
+  bool boundaryEdge = he.edge().isBoundary();
+  bool interiorHalfedge = he.isInterior();
+  bool interiorTwinHalfedge = he.twin().isInterior();
+  gc::Vector3 schlafliVec1{0, 0, 0};
+  gc::Vector3 schlafliVec2{0, 0, 0};
+  if (!boundaryEdge) {
+    schlafliVec1 =
+        vpg.halfedgeCotanWeights[heID_he_next_next] * vpg.faceNormals[fID] +
+        vpg.halfedgeCotanWeights[heID_twin_next] * vpg.faceNormals[fID_he_twin];
+  }
+  if (boundaryVertex && boundaryEdge) {
+    schlafliVec2 = interiorHalfedge
+                       ? (-(vpg.halfedgeCotanWeights[he] +
+                            vpg.halfedgeCotanWeights[heID_he_next_next]) *
+                          vpg.faceNormals[fID])
+                       : (-(vpg.halfedgeCotanWeights[heID_twin] +
+                            vpg.halfedgeCotanWeights[heID_twin_next]) *
+                          vpg.faceNormals[fID_he_twin]);
+  } else if (!boundaryVertex && vj.isBoundary()) {
+    schlafliVec2 =
+        vpg.halfedgeCotanWeights[heID_he_next_next] * vpg.faceNormals[fID] +
+        vpg.halfedgeCotanWeights[heID_twin_next] * vpg.faceNormals[fID_he_twin];
+
+    if (!he.next().edge().isBoundary())
+      schlafliVec2 -= (vpg.halfedgeCotanWeights[he] +
+                       vpg.halfedgeCotanWeights[heID_he_next_next]) *
+                      vpg.faceNormals[fID];
+
+    if (!he.twin().next().next().edge().isBoundary())
+      schlafliVec2 -= (vpg.halfedgeCotanWeights[heID_twin] +
+                       vpg.halfedgeCotanWeights[heID_twin_next]) *
+                      vpg.faceNormals[fID_he_twin];
+  } else {
+    schlafliVec2 =
+        -(vpg.halfedgeCotanWeights[he] * vpg.faceNormals[fID] +
+          vpg.halfedgeCotanWeights[heID_twin] * vpg.faceNormals[fID_he_twin]);
+  }
+  return std::make_tuple(schlafliVec1, schlafliVec2);
+}
+
+gc::Vector3
+System::computeHalfedgeGaussianCurvatureVector(gcs::VertexPositionGeometry &vpg,
+                                               gc::Halfedge &he) {
+  bool boundaryEdge = he.edge().isBoundary();
+  gc::Vector3 gaussVec{0, 0, 0};
+  if (!boundaryEdge) {
+    // gc::Vector3 eji{} = -vecFromHalfedge(he, *vpg);
+    gaussVec = 0.5 * vpg.edgeDihedralAngles[he.edge()] *
+               (-vecFromHalfedge(he, vpg)).unit();
+  }
+  return gaussVec;
+}
+
+gc::Vector3
+System::computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
+                                           gc::Halfedge &he) {
   std::size_t fID = he.face().getIndex();
   std::size_t fID_he_twin = he.twin().face().getIndex();
   bool interiorHalfedge = he.isInterior();
   bool interiorTwinHalfedge = he.twin().isInterior();
   gc::Vector3 areaGrad{0, 0, 0};
   if (interiorHalfedge) {
-    areaGrad += 0.25 * gc::cross(vpg->faceNormals[fID],
-                                 vecFromHalfedge(he.next(), *vpg));
+    areaGrad +=
+        0.25 * gc::cross(vpg.faceNormals[fID], vecFromHalfedge(he.next(), vpg));
   }
   if (interiorTwinHalfedge) {
-    areaGrad +=
-        0.25 * gc::cross(vpg->faceNormals[fID_he_twin],
-                         vecFromHalfedge(he.twin().next().next(), *vpg));
+    areaGrad += 0.25 * gc::cross(vpg.faceNormals[fID_he_twin],
+                                 vecFromHalfedge(he.twin().next().next(), vpg));
   }
-  return areaGrad/2;
+  return areaGrad / 2;
 }
 
-gc::Vector3 System::computeVolumeVariationVector(const gc::Halfedge &he) {
+gc::Vector3
+System::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
+                                             gc::Halfedge &he) {
   std::size_t fID = he.face().getIndex();
   bool interiorHalfedge = he.isInterior();
   gc::Vector3 volGrad{0, 0, 0};
   if (interiorHalfedge) {
-    volGrad = vpg->faceNormals[fID] * vpg->faceAreas[fID] / 3;
+    volGrad = vpg.faceNormals[fID] * vpg.faceAreas[fID] / 3;
   }
   return volGrad;
 }
 
-gc::VertexData<gc::Vector3> System::computeVolumeVariationVector() {
+gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
   assert(mesh->isCompressed());
   gc::VertexData<gc::Vector3> vector(*mesh, {0, 0, 0});
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     for (gc::Halfedge he : v.outgoingHalfedges()) {
-      vector[v] += computeVolumeVariationVector(he);
+      gc::Vector3 vec1;
+      gc::Vector3 vec2;
+      std::tie(vec1, vec2) = computeHalfedgeSchlafliVector(*vpg, he);
+      vector[v] += vec1 + vec2;
+    }
+  }
+  return vector;
+}
+
+gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVector() {
+  return populateVariationalVector(*mesh, *vpg,
+                                   computeHalfedgeGaussianCurvatureVector);
+}
+
+gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVector() {
+  return populateVariationalVector(*mesh, *vpg,
+                                   computeHalfedgeMeanCurvatureVector);
+}
+
+gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVector() {
+  return populateVariationalVector(*mesh, *vpg,
+                                   computeHalfedgeVolumeVariationVector);
+}
+
+gcs::VertexData<gc::Vector3> System::populateVariationalVector(
+    gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
+    std::function<gc::Vector3(gcs::VertexPositionGeometry &vpg, gc::Halfedge &)>
+        computeHalfedgeVariationalVector) {
+  assert(mesh.isCompressed());
+  gc::VertexData<gc::Vector3> vector(mesh, {0, 0, 0});
+  for (std::size_t i = 0; i < mesh.nVertices(); ++i) {
+    gc::Vertex v{mesh.vertex(i)};
+    for (gc::Halfedge he : v.outgoingHalfedges()) {
+      vector[v] += computeHalfedgeVariationalVector(vpg, he);
     }
   }
   return vector;
@@ -109,14 +208,9 @@ void System::computeVectorForces() {
 
     for (gc::Halfedge he : v.outgoingHalfedges()) {
       std::size_t fID = he.face().getIndex();
-      std::size_t fID_he_twin = he.twin().face().getIndex();
-      std::size_t heID_twin = he.twin().getIndex();
-      std::size_t heID_twin_next = he.twin().next().getIndex();
-      std::size_t heID_he_next_next = he.next().next().getIndex();
 
       // Initialize local variables for computation
-      gc::Vertex vj = he.tipVertex();
-      std::size_t i_vj = vj.getIndex();
+      std::size_t i_vj = he.tipVertex().getIndex();
 
       gc::Vector3 dphi_ijk{he.isInterior() ? proteinDensityGradient[fID]
                                            : gc::Vector3{0, 0, 0}};
@@ -124,18 +218,20 @@ void System::computeVectorForces() {
       double H0j = H0[i_vj];
       double Kbj = Kb[i_vj];
       double proteinDensityj = proteinDensity[i_vj];
-
-      bool boundaryEdge = he.edge().isBoundary();
       bool interiorHalfedge = he.isInterior();
-      bool interiorTwinHalfedge = he.twin().isInterior();
 
       // Note: the missing contribution from faces only contributes to z -
       // axis forces
       // volGrad = vpg->faceNormals[fID] * vpg->faceAreas[fID] /
       // 3;
+      gc::Vector3 areaGrad = 2 * computeHalfedgeMeanCurvatureVector(*vpg, he);
+      gc::Vector3 gaussVec = computeHalfedgeGaussianCurvatureVector(*vpg, he);
+      gc::Vector3 schlafliVec1;
+      gc::Vector3 schlafliVec2;
+      std::tie(schlafliVec1, schlafliVec2) =
+          computeHalfedgeSchlafliVector(*vpg, he);
       gc::Vector3 oneSidedAreaGrad{0, 0, 0};
       gc::Vector3 dirichletVec{0, 0, 0};
-
       if (interiorHalfedge) {
         oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[fID],
                                            vecFromHalfedge(he.next(), *vpg));
@@ -143,53 +239,10 @@ void System::computeVectorForces() {
                        vpg->faceAreas[fID];
       }
 
-      gc::Vector3 areaGrad = 2 * computeMeanCurvatureVector(he);
-      gc::Vector3 gaussVec{0, 0, 0};
-      gc::Vector3 schlafliVec1{0, 0, 0};
-      gc::Vector3 schlafliVec2{0, 0, 0};
-
-      if (!boundaryEdge) {
-        // gc::Vector3 eji{} = -vecFromHalfedge(he, *vpg);
-        gaussVec = 0.5 * vpg->edgeDihedralAngles[he.edge()] *
-                   (-vecFromHalfedge(he, *vpg)).unit();
-        schlafliVec1 = vpg->halfedgeCotanWeights[heID_he_next_next] *
-                           vpg->faceNormals[fID] +
-                       vpg->halfedgeCotanWeights[heID_twin_next] *
-                           vpg->faceNormals[fID_he_twin];
-      }
-
-      if (boundaryVertex && boundaryEdge) {
-        schlafliVec2 = interiorHalfedge
-                           ? (-(vpg->halfedgeCotanWeights[he] +
-                                vpg->halfedgeCotanWeights[heID_he_next_next]) *
-                              vpg->faceNormals[fID])
-                           : (-(vpg->halfedgeCotanWeights[heID_twin] +
-                                vpg->halfedgeCotanWeights[heID_twin_next]) *
-                              vpg->faceNormals[fID_he_twin]);
-      } else if (!boundaryVertex && vj.isBoundary()) {
-        schlafliVec2 = vpg->halfedgeCotanWeights[heID_he_next_next] *
-                           vpg->faceNormals[fID] +
-                       vpg->halfedgeCotanWeights[heID_twin_next] *
-                           vpg->faceNormals[fID_he_twin];
-
-        if (!he.next().edge().isBoundary())
-          schlafliVec2 -= (vpg->halfedgeCotanWeights[he] +
-                           vpg->halfedgeCotanWeights[heID_he_next_next]) *
-                          vpg->faceNormals[fID];
-
-        if (!he.twin().next().next().edge().isBoundary())
-          schlafliVec2 -= (vpg->halfedgeCotanWeights[heID_twin] +
-                           vpg->halfedgeCotanWeights[heID_twin_next]) *
-                          vpg->faceNormals[fID_he_twin];
-      } else {
-        schlafliVec2 = -(vpg->halfedgeCotanWeights[he] * vpg->faceNormals[fID] +
-                         vpg->halfedgeCotanWeights[heID_twin] *
-                             vpg->faceNormals[fID_he_twin]);
-      }
 
       // Assemble to forces
-      osmoticForceVec +=
-          forces.osmoticPressure * computeVolumeVariationVector(he);
+      osmoticForceVec += forces.osmoticPressure *
+                         computeHalfedgeVolumeVariationVector(*vpg, he);
       capillaryForceVec -= forces.surfaceTension * areaGrad;
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
                             parameters.adsorption.epsilon * areaGrad;
