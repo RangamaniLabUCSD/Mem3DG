@@ -31,6 +31,7 @@
 #include <pcg_random.hpp>
 #include <random>
 
+#include <functional>
 #include <math.h>
 #include <vector>
 
@@ -613,28 +614,61 @@ public:
   // ================   Variational vectors  ==================
   // ==========================================================
   /**
-   * @brief Compute volume variation vector
+   * @brief template code for populate verttexwise using halfedge vector
+   * computation
    */
-  gcs::VertexData<gc::Vector3> computeVolumeVariationVector();
-  gc::Vector3 computeVolumeVariationVector(const gc::Halfedge &he);
+  static gcs::VertexData<gc::Vector3> populateVariationalVector(
+      gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
+      std::function<gc::Vector3(gcs::VertexPositionGeometry &, gc::Halfedge &)>
+          computeHalfedgeVariationalVector);
 
   /**
-   * @brief Compute mean curvature vector using cotan
+   * @brief Compute vertex volume variation vector
    */
-  gcs::VertexData<gc::Vector3> computeMeanCurvatureVector();
-  gc::Vector3 computeMeanCurvatureVector(const gc::Halfedge &he);
+  gcs::VertexData<gc::Vector3> computeVertexVolumeVariationVector();
 
   /**
-   * @brief Compute Gaussian curvature vector
+   * @brief Compute halfedge volume variation vector
    */
-  gcs::VertexData<gc::Vector3> computeGaussianCurvatureVector();
-  gc::Vector3 computeGaussianCurvatureVector(const gc::Halfedge &he);
+  static gc::Vector3
+  computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
+                                       gc::Halfedge &he);
 
   /**
-   * @brief Compute Schlafli vector 
+   * @brief Compute vertex mean curvature vector using cotan
    */
-  gcs::VertexData<gc::Vector3> computeSchlafliVector();
-  gc::Vector3 computeSchlafliVector(const gc::Halfedge &he);
+  gcs::VertexData<gc::Vector3> computeVertexMeanCurvatureVector();
+
+  /**
+   * @brief Compute halfedge mean curvature vector using cotan
+   */
+  static gc::Vector3
+  computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
+                                     gc::Halfedge &he);
+
+  /**
+   * @brief Compute vertex Gaussian curvature vector
+   */
+  gcs::VertexData<gc::Vector3> computeVertexGaussianCurvatureVector();
+
+  /**
+   * @brief Compute halfedge Gaussian curvature vector
+   */
+  static gc::Vector3
+  computeHalfedgeGaussianCurvatureVector(gcs::VertexPositionGeometry &vpg,
+                                         gc::Halfedge &he);
+
+  /**
+   * @brief Compute vertex Schlafli vector
+   */
+  gcs::VertexData<gc::Vector3> computeVertexSchlafliVector();
+
+  /**
+   * @brief Compute halfedge Schlafli vector
+   */
+  static std::tuple<gc::Vector3, gc::Vector3>
+  computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
+                                gc::Halfedge &he);
 
   // ==========================================================
   // ================        Pressure        ==================

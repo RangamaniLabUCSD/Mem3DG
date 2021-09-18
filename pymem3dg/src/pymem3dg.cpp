@@ -861,24 +861,65 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the signed F-E edge adjacency matrix, equivalent of d1 operator
       )delim");
   system.def(
-      "getMeanCurvature",
-      [](System &s) {
-        return s.vpg->vertexMeanCurvatures.raw().array() /
-               s.vpg->vertexDualAreas.raw().array();
-      },
+      "getVertexDualArea",
+      [](System &s) { return s.vpg->vertexDualAreas.raw().array(); },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the mean curvature
+          get vertex dual area
+      )delim");
+  system.def(
+      "getMeanCurvature",
+      [](System &s) { return s.vpg->vertexMeanCurvatures.raw().array(); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the integrated scalar mean curvature
       )delim");
   system.def(
       "getGaussianCurvature",
+      [](System &s) { return s.vpg->vertexGaussianCurvatures.raw().array(); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the integrated scalar Gaussian Curvature
+      )delim");
+  system.def(
+      "getGaussianCurvatureVector",
       [](System &s) {
-        return s.vpg->vertexGaussianCurvatures.raw().array() /
-               s.vpg->vertexDualAreas.raw().array();
+        auto vector = s.computeVertexGaussianCurvatureVector();
+        return vector.raw().array();
       },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the Gaussian Curvature
+          get the integrated vector Gaussian Curvature
+      )delim");
+  system.def(
+      "getVolumeVariationVector",
+      [](System &s) {
+        auto vector = s.computeVertexVolumeVariationVector();
+        return vector.raw().array();
+      },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the integrated vector Volume Variation (dual area)
+      )delim");
+  system.def(
+      "getMeanCurvatureVector",
+      [](System &s) {
+        auto vector = s.computeVertexMeanCurvatureVector();
+        return vector.raw().array();
+      },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the integrated vector Mean Curvature
+      )delim");
+  system.def(
+      "getSchlafliVector",
+      [](System &s) {
+        auto vector = s.computeVertexSchlafliVector();
+        return vector.raw().array();
+      },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get the integrated vector Schlafli Vector
       )delim");
 
   /**
@@ -896,7 +937,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "getSpontaneousCurvature", [](System &s) { return s.H0.raw(); },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the spontaneous curvature
+          get the pointwise spontaneous curvature
       )delim");
   system.def(
       "getVertexVelocityMatrix",
