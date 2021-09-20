@@ -885,7 +885,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "getGaussianCurvatureVector",
       [](System &s) {
         auto vector = s.computeVertexGaussianCurvatureVector();
-        return vector.raw().array();
+        return toMatrix(vector);
       },
       py::return_value_policy::reference_internal,
       R"delim(
@@ -895,7 +895,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "getVolumeVariationVector",
       [](System &s) {
         auto vector = s.computeVertexVolumeVariationVector();
-        return vector.raw().array();
+        return toMatrix(vector);
       },
       py::return_value_policy::reference_internal,
       R"delim(
@@ -905,7 +905,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "getMeanCurvatureVector",
       [](System &s) {
         auto vector = s.computeVertexMeanCurvatureVector();
-        return vector.raw().array();
+        return toMatrix(vector);
       },
       py::return_value_policy::reference_internal,
       R"delim(
@@ -915,7 +915,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "getSchlafliVector",
       [](System &s) {
         auto vector = s.computeVertexSchlafliVector();
-        return vector.raw().array();
+        return toMatrix(vector);
       },
       py::return_value_policy::reference_internal,
       R"delim(
