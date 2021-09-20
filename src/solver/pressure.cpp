@@ -146,7 +146,7 @@ gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
       gc::Vector3 vec1;
       gc::Vector3 vec2;
       std::tie(vec1, vec2) = computeHalfedgeSchlafliVector(*vpg, he);
-      vector[v] += vec1 + vec2;
+      vector[v] += (vec1 + vec2);
     }
   }
   return vector;
