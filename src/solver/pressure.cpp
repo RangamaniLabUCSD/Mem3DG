@@ -138,15 +138,20 @@ System::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
 }
 
 gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
-  assert(mesh->isCompressed());
+  mesh->compress();
   gc::VertexData<gc::Vector3> vector(*mesh, {0, 0, 0});
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
+    double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
+    double H0i = H0[i];
     for (gc::Halfedge he : v.outgoingHalfedges()) {
+      std::size_t i_vj = he.tipVertex().getIndex();
+      double Hj = vpg->vertexMeanCurvatures[i_vj] / vpg->vertexDualAreas[i_vj];
+      double H0j = H0[i_vj];
       gc::Vector3 vec1;
       gc::Vector3 vec2;
       std::tie(vec1, vec2) = computeHalfedgeSchlafliVector(*vpg, he);
-      vector[v] += (vec1 + vec2);
+      vector[v] += (Hi - H0i) * vec1 + (Hj - H0j) * vec2;
     }
   }
   return vector;
@@ -171,7 +176,7 @@ gcs::VertexData<gc::Vector3> System::populateVariationalVector(
     gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
     std::function<gc::Vector3(gcs::VertexPositionGeometry &vpg, gc::Halfedge &)>
         computeHalfedgeVariationalVector) {
-  assert(mesh.isCompressed());
+  mesh.compress();
   gc::VertexData<gc::Vector3> vector(mesh, {0, 0, 0});
   for (std::size_t i = 0; i < mesh.nVertices(); ++i) {
     gc::Vertex v{mesh.vertex(i)};
@@ -238,7 +243,6 @@ void System::computeVectorForces() {
         dirichletVec = computeGradientNorm2Gradient(he, proteinDensity) /
                        vpg->faceAreas[fID];
       }
-
 
       // Assemble to forces
       osmoticForceVec += forces.osmoticPressure *

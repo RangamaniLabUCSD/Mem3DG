@@ -833,6 +833,12 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the Cotan Laplacian matrix of the mesh
       )delim");
   system.def(
+      "getAngleWeightedNormal", [](System &s) { return toMatrix(s.vpg->vertexNormals); },
+      py::return_value_policy::reference_internal,
+      R"delim(
+          get angle-weighted normal on vertices
+      )delim");
+  system.def(
       "getVertexPositionMatrix",
       [](System &s) {
         return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
@@ -912,14 +918,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the integrated vector Mean Curvature
       )delim");
   system.def(
-      "getSchlafliVector",
+      "getLaplacianMeanCurvatureVector",
       [](System &s) {
         auto vector = s.computeVertexSchlafliVector();
         return toMatrix(vector);
       },
       py::return_value_policy::reference_internal,
       R"delim(
-          get the integrated vector Schlafli Vector
+          get the integrated vector Laplcian H
       )delim");
 
   /**
