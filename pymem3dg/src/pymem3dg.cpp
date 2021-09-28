@@ -391,13 +391,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
     )delim");
   forces.def(
       "getSurfaceTension", [](Forces &s) { return s.surfaceTension; },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the Surface tension
       )delim");
   forces.def(
       "getOsmoticPressure", [](Forces &s) { return s.osmoticPressure; },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the osmotic pressure
       )delim");
@@ -407,75 +407,75 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    */
   forces.def(
       "getBendingForce", [](Forces &s) { return toMatrix(s.bendingForceVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_areaGrad",
       [](Forces &s) { return toMatrix(s.bendingForceVec_areaGrad); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the area gradient component of the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_gaussVec",
       [](Forces &s) { return toMatrix(s.bendingForceVec_gaussVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the the gaussian curvature vector component of the bending force of the system
       )delim");
   forces.def(
       "getBendingForce_schlafliVec",
       [](Forces &s) { return toMatrix(s.bendingForceVec_schlafliVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the Schlaflic (smoothing) component of the bending force of the system
       )delim");
   forces.def(
       "getCapillaryForce",
       [](Forces &s) { return toMatrix(s.capillaryForceVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the tension-induced capillary Force
       )delim");
   forces.def(
       "getLineCapillaryForce",
       [](Forces &s) { return toMatrix(s.lineCapillaryForceVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the interfacial line tension
       )delim");
   forces.def(
       "getExternalForce", [](Forces &s) { return toMatrix(s.externalForce); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the externally-applied Force
       )delim");
   forces.def(
       "getOsmoticForce", [](Forces &s) { return toMatrix(s.osmoticForceVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the osmotic force
       )delim");
   forces.def(
       "getAdsorptionForce",
       [](Forces &s) { return toMatrix(s.adsorptionForceVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the adsorption force
       )delim");
   forces.def(
       "getExternalForce",
       [](Forces &s) { return toMatrix(s.externalForceVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the external force
       )delim");
   forces.def(
       "getMechanicalForce",
       [](Forces &s) { return toMatrix(s.mechanicalForceVec); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the the total mechanical force
       )delim");
@@ -486,35 +486,35 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   forces.def(
       "getBendingPotential",
       [](Forces &s) { return toMatrix(s.bendingPotential); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the bending potential
       )delim");
   forces.def(
       "getInteriorPenaltyPotential",
       [](Forces &s) { return toMatrix(s.interiorPenaltyPotential); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the interior point potential
       )delim");
   forces.def(
       "getAdsorptionPotential",
       [](Forces &s) { return toMatrix(s.adsorptionPotential); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the adsorption potential
       )delim");
   forces.def(
       "getDiffusionPotential",
       [](Forces &s) { return toMatrix(s.diffusionPotential); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the diffusion Potential
       )delim");
   forces.def(
       "getChemicalPotential",
       [](Forces &s) { return toMatrix(s.chemicalPotential); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the chemical Potential
       )delim");
@@ -822,19 +822,19 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   system.def(
       "getLumpedMassMatrix",
       [](System &s) { return s.vpg->vertexLumpedMassMatrix; },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the lumped mass matrix of the mesh
       )delim");
   system.def(
       "getCotanLaplacian", [](System &s) { return s.vpg->cotanLaplacian; },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the Cotan Laplacian matrix of the mesh
       )delim");
   system.def(
       "getAngleWeightedNormal", [](System &s) { return toMatrix(s.vpg->vertexNormals); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get angle-weighted normal on vertices
       )delim");
@@ -843,47 +843,47 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       [](System &s) {
         return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
       },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the vertex position matrix
       )delim");
   system.def(
       "getFaceVertexMatrix",
       [](System &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the face vertex matrix
       )delim");
   system.def(
       "getVertexAdjacencyMatrix", [](System &s) { return s.vpg->d0; },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the signed E-V vertex adjacency matrix, equivalent of d0 operator
       )delim");
   system.def(
       "getEdgeAdjacencyMatrix", [](System &s) { return s.vpg->d1; },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the signed F-E edge adjacency matrix, equivalent of d1 operator
       )delim");
   system.def(
       "getVertexDualArea",
       [](System &s) { return s.vpg->vertexDualAreas.raw().array(); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get vertex dual area
       )delim");
   system.def(
       "getMeanCurvature",
       [](System &s) { return s.vpg->vertexMeanCurvatures.raw().array(); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the integrated scalar mean curvature
       )delim");
   system.def(
       "getGaussianCurvature",
       [](System &s) { return s.vpg->vertexGaussianCurvatures.raw().array(); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the integrated scalar Gaussian Curvature
       )delim");
@@ -893,7 +893,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         auto vector = s.computeVertexGaussianCurvatureVector();
         return toMatrix(vector);
       },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the integrated vector Gaussian Curvature
       )delim");
@@ -903,7 +903,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         auto vector = s.computeVertexVolumeVariationVector();
         return toMatrix(vector);
       },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the integrated vector Volume Variation (dual area)
       )delim");
@@ -913,7 +913,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         auto vector = s.computeVertexMeanCurvatureVector();
         return toMatrix(vector);
       },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the integrated vector Mean Curvature
       )delim");
@@ -923,7 +923,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         auto vector = s.computeVertexSchlafliVector();
         return toMatrix(vector);
       },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the integrated vector Laplcian H
       )delim");
@@ -941,20 +941,20 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   system.def(
       "getSpontaneousCurvature", [](System &s) { return s.H0.raw(); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the pointwise spontaneous curvature
       )delim");
   system.def(
       "getVertexVelocityMatrix",
       [](System &s) { return gc::EigenMap<double, 3>(s.velocity); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the vertex velocity matrix
       )delim");
   system.def(
       "getProteinDensity", [](System &s) { return s.proteinDensity.raw(); },
-      py::return_value_policy::reference_internal,
+      py::return_value_policy::copy,
       R"delim(
           get the protein Density
       )delim");
@@ -967,38 +967,38 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             compute all the forces
         )delim");
   //   system.def("computeBendingForce", &System::computeBendingForce,
-  //              py::return_value_policy::reference_internal,
+  //              py::return_value_policy::copy,
   //              R"delim(
   //           compute the bending force
   //       )delim");
   //   system.def("computeChemicalPotential", &System::computeChemicalPotential,
-  //              py::return_value_policy::reference_internal,
+  //              py::return_value_policy::copy,
   //              R"delim(
   //           compute the chemical potential
   //       )delim");
   //   system.def("computeCapillaryForce", &System::computeCapillaryForce,
-  //              py::return_value_policy::reference_internal,
+  //              py::return_value_policy::copy,
   //              R"delim(
   //           compute the capillary force
   //       )delim");
   //   system.def("computeOsmoticForce", &System::computeOsmoticForce,
-  //              py::return_value_policy::reference_internal,
+  //              py::return_value_policy::copy,
   //              R"delim(
   //           compute the osmotic force
   //       )delim");
   //   system.def("computeLineCapillaryForce",
   //   &System::computeLineCapillaryForce,
-  //              py::return_value_policy::reference_internal,
+  //              py::return_value_policy::copy,
   //              R"delim(
   //           compute the LineTensionForce
   //       )delim");
   //   system.def("computeExternalForce", &System::computeExternalForce,
-  //              py::return_value_policy::reference_internal,
+  //              py::return_value_policy::copy,
   //              R"delim(
   //           compute the External Force
   //       )delim");
   //   system.def("computeDPDForces", &System::computeDPDForces,
-  //              py::return_value_policy::reference_internal, py::arg("dt"),
+  //              py::return_value_policy::copy, py::arg("dt"),
   //              R"delim(
   //           compute the DPDForces
   //       )delim");
