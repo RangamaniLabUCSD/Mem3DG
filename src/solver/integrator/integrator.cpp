@@ -855,6 +855,7 @@ void Integrator::saveMutableNetcdfData() {
   // write static properties
   mutableTrajFile.writeCoords(idx, *system.vpg);
   mutableTrajFile.writeTopology(idx, *system.mesh);
+  mutableTrajFile.writeProteinDensity(idx, system.proteinDensity);
   mutableTrajFile.sync();
 }
 #endif
