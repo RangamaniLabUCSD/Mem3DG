@@ -833,7 +833,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the Cotan Laplacian matrix of the mesh
       )delim");
   system.def(
-      "getAngleWeightedNormal", [](System &s) { return toMatrix(s.vpg->vertexNormals); },
+      "getAngleWeightedNormal",
+      [](System &s) { return toMatrix(s.vpg->vertexNormals); },
       py::return_value_policy::copy,
       R"delim(
           get angle-weighted normal on vertices
@@ -868,21 +869,27 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
   system.def(
       "getVertexDualArea",
-      [](System &s) { return s.vpg->vertexDualAreas.raw().array(); },
+      [](System &s) { return s.vpg->vertexDualAreas.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get vertex dual area
       )delim");
   system.def(
       "getMeanCurvature",
-      [](System &s) { return s.vpg->vertexMeanCurvatures.raw().array(); },
+      [](System &s) {
+        s.vpg->requireVertexMeanCurvatures();
+        return s.vpg->vertexMeanCurvatures.raw();
+      },
       py::return_value_policy::copy,
       R"delim(
           get the integrated scalar mean curvature
       )delim");
   system.def(
       "getGaussianCurvature",
-      [](System &s) { return s.vpg->vertexGaussianCurvatures.raw().array(); },
+      [](System &s) {
+        s.vpg->requireVertexGaussianCurvatures();
+        return s.vpg->vertexGaussianCurvatures.raw();
+      },
       py::return_value_policy::copy,
       R"delim(
           get the integrated scalar Gaussian Curvature
@@ -1309,7 +1316,9 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
           get protein mobility constant 
       )delim");
+#pragma endregion parameters
 
+#pragma region energy
   // ==========================================================
   // =============   Free energy                ===============
   // ==========================================================
@@ -1359,7 +1368,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get protein interior penalty energy (numerical energy)
       )delim");
 
-#pragma endregion parameters
+#pragma endregion energy
 
 #pragma region visualization
   // ==========================================================

@@ -60,7 +60,7 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
   // Map continuation variables
   time = fd.getTime(startingFrame);
   energy.time = time;
-  // proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+  proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   toMatrix(velocity) = fd.getVelocity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 }
