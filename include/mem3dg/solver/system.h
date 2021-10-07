@@ -850,6 +850,10 @@ public:
    */
   void globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
                        double stepSize = 1);
+  /**
+   * @brief infer the target surface area of the system
+   */
+  double inferTargetSurfaceArea();
 };
 } // namespace solver
 } // namespace mem3dg

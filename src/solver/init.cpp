@@ -340,26 +340,12 @@ void System::initConstants() {
                         parameters.boundary.proteinBoundaryCondition);
   }
 
-  // Infer the target surface (total mesh) area if not specified
-  if (parameters.tension.At == -1) {
-    if (isOpenMesh) {
-      parameters.tension.At = parameters.tension.A_res;
-      for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-        parameters.tension.At +=
-            computePolygonArea(bl, vpg->inputVertexPositions);
-      }
-    } else {
-      parameters.tension.At = vpg->faceAreas.raw().sum();
-    }
-  }
-
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
-  std::cout << "area_init/area_ref = " << surfaceArea / parameters.tension.At
-            << std::endl;
+  std::cout << "area_init = " << surfaceArea << std::endl;
 
   // Initialize the constant reference volume
-  std::cout << "vol_ref = "
+  std::cout << "Characteristic volume wrt to At = "
             << (isOpenMesh
                     ? parameters.osmotic.V_res
                     : std::pow(parameters.tension.At / constants::PI / 4, 1.5) *
@@ -477,6 +463,19 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
     // lineTension.raw() = P.dirichlet.eta * (vpg->d0 *
     // H0.raw()).cwiseAbs().array();
   }
+}
+
+double System::inferTargetSurfaceArea() {
+  double targetArea;
+  if (isOpenMesh) {
+    targetArea = parameters.tension.A_res;
+    for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
+      targetArea += computePolygonArea(bl, vpg->inputVertexPositions);
+    }
+  } else {
+    targetArea = vpg->faceAreas.raw().sum();
+  }
+  return targetArea;
 }
 
 void System::findThePoint(gcs::VertexPositionGeometry &vpg,
