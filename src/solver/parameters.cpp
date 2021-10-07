@@ -31,7 +31,7 @@ void Parameters::Tension::checkParameters() {
   }
   if (!(At > 0)) {
     mem3dg_runtime_error(
-        "Target area At has to be greater than zer!");
+        "Target area At has to be greater than zero!");
   }
 };
 
