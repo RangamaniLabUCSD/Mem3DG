@@ -30,8 +30,13 @@ void Parameters::Tension::checkParameters() {
     }
   }
   if (!(At > 0)) {
-    mem3dg_runtime_error(
-        "Target area At has to be greater than zero!");
+    if (Ksg > 0 && !isConstantSurfaceTension) {
+      if (At == -1) {
+        mem3dg_runtime_error("Target area At has to be specified!");
+      } else {
+        mem3dg_runtime_error("Target area At has to be greater than zero!");
+      }
+    }
   }
 };
 
@@ -161,7 +166,7 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   }
 
   if (variation.isProteinVariation != (proteinMobility > 0)) {
-    mem3dg_runtime_error("Binding constant Bc has to be consistent with the "
+    mem3dg_runtime_error("proteinMobility value has to be consistent with the "
                          "protein variation option!");
   }
 
