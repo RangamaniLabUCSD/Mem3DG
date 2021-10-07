@@ -31,6 +31,7 @@ public:
     /// physical parameters
     p.bending.Kbc = 8.22e-5;
     p.tension.Ksg = 0.1;
+    p.tension.At = 4.0 * mem3dg::constants::PI;
     p.osmotic.isPreferredVolume = true;
     p.osmotic.Kv = 0.01;
     p.osmotic.Vt = 4.0 / 3.0 * mem3dg::constants::PI * 0.7;
@@ -43,7 +44,8 @@ public:
 
   mem3dg::solver::Parameters p;
 
-  const double dt = 0.5, T = 50, eps = 0, tSave = 10, verbosity = 0;
+  const double dt = 0.5, T = 50, eps = 0, tSave = 10;
+  const size_t verbosity = 0;
   const std::string outputDir = "/tmp";
 };
 
