@@ -29,6 +29,10 @@ void Parameters::Tension::checkParameters() {
           "enable constant surface! Note Ksg is the surface tension directly!");
     }
   }
+  if (!(At > 0)) {
+    mem3dg_runtime_error(
+        "Target area At has to be greater than zer!");
+  }
 };
 
 void Parameters::Osmotic::checkParameters() {
