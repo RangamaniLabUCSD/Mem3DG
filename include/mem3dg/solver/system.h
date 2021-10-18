@@ -676,7 +676,7 @@ public:
   /**
    * @brief Compute all forcing of the system
    */
-  void computePhysicalForces();
+  void computePhysicalForcing();
 
   /**
    * @brief Compute chemical potential of the system

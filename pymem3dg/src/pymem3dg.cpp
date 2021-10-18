@@ -969,7 +969,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Method: force computation
    */
-  system.def("computePhysicalForces", &System::computePhysicalForces,
+  system.def("computePhysicalForcing", &System::computePhysicalForcing,
              R"delim(
             compute all the forces
         )delim");
