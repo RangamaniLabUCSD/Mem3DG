@@ -617,7 +617,7 @@ public:
    * @brief template code for populate verttexwise using halfedge vector
    * computation
    */
-  static gcs::VertexData<gc::Vector3> populateVariationalVector(
+  static gcs::VertexData<gc::Vector3> halfedgeVectorToVertexVector(
       gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
       std::function<gc::Vector3(gcs::VertexPositionGeometry &, gc::Halfedge &)>
           computeHalfedgeVariationalVector);
@@ -674,24 +674,9 @@ public:
   // ================        Pressure        ==================
   // ==========================================================
   /**
-   * @brief Compute bending force component of the system
+   * @brief Compute all forcing of the system
    */
-  EigenVectorX1d computeBendingForce();
-
-  /**
-   * @brief Compute capillary force component of the system
-   */
-  EigenVectorX1d computeCapillaryForce();
-
-  /**
-   * @brief Compute osmotic force component of the system
-   */
-  EigenVectorX1d computeOsmoticForce();
-
-  /**
-   * @brief Compute forces at the same time
-   */
-  void computeVectorForces();
+  void computePhysicalForces();
 
   /**
    * @brief Compute chemical potential of the system
@@ -699,19 +684,14 @@ public:
   EigenVectorX1d computeChemicalPotential();
 
   /**
-   * @brief Compute line tension force component of the system
+   * @brief Compute mechanical forces
    */
-  EigenVectorX1d computeLineCapillaryForce();
+  void computeMechanicalForces();
 
   /**
    * @brief Compute external force component of the system
    */
-  EigenVectorX1d computeExternalForce();
-
-  /**
-   * @brief Compute all forces of the system
-   */
-  void computePhysicalForces();
+  EigenVectorX3dr prescribeExternalForce();
 
   /**
    * @brief Compute DPD forces of the system

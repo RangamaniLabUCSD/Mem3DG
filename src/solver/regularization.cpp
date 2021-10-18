@@ -352,7 +352,7 @@ void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
   double gradNorm;
   do {
     vpg->refreshQuantities();
-    computeBendingForce();
+    computeMechanicalForces();
     auto pos_e = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
     auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
     gradient = (smoothingMask.raw().cast<double>()).array() *

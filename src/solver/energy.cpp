@@ -161,13 +161,13 @@ double System::computePotentialEnergy() {
 }
 
 double System::computeIntegratedPower(double dt) {
-  computeExternalForce();
+  prescribeExternalForce();
   return dt * rowwiseDotProduct(toMatrix(forces.externalForceVec),
                                 toMatrix(velocity))
                   .sum();
 }
 double System::computeIntegratedPower(double dt, EigenVectorX3dr &&velocity) {
-  computeExternalForce();
+  prescribeExternalForce();
   return dt *
          rowwiseDotProduct(toMatrix(forces.externalForceVec), velocity).sum();
 }

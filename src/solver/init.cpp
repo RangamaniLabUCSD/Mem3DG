@@ -381,7 +381,7 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
 
   // initialize/update external force
   if (parameters.external.Kf != 0 && isUpdateGeodesics) {
-    computeExternalForce();
+    prescribeExternalForce();
   }
 
   // update protein density
