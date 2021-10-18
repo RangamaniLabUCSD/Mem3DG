@@ -531,7 +531,7 @@ void Integrator::finitenessErrorBacktrack() {
 }
 
 void Integrator::getForces() {
-  system.computePhysicalForces();
+  system.computePhysicalForcing();
   if (system.parameters.dpd.gamma != 0) {
     system.computeDPDForces(timeStep);
     dpdForce = rowwiseDotProduct(

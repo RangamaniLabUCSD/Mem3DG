@@ -532,7 +532,7 @@ double System::computeNorm(
   return force.norm();
 }
 
-void System::computePhysicalForces() {
+void System::computePhysicalForcing() {
 
   // zero all forces
   forces.bendingForceVec.fill({0, 0, 0});

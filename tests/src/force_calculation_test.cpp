@@ -104,14 +104,14 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
   std::size_t nSub = 0;
   mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
   // First time calculation of force
-  f.computePhysicalForces();
+  f.computePhysicalForcing();
   f.computeRegularizationForce();
   EigenVectorX3dr mechanicalForceVec1 = toMatrix(f.forces.mechanicalForceVec);
   EigenVectorX1d chemicalPotential1 = toMatrix(f.forces.chemicalPotential);
   EigenVectorX3dr regularizationForce1 = toMatrix(f.forces.regularizationForce);
 
   // Second time calculation of force
-  f.computePhysicalForces();
+  f.computePhysicalForcing();
   f.computeRegularizationForce();
   EigenVectorX3dr mechanicalForceVec2 = toMatrix(f.forces.mechanicalForceVec);
   EigenVectorX1d chemicalPotential2 = toMatrix(f.forces.chemicalPotential);
@@ -155,7 +155,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   f.computeTotalEnergy();
   Energy previousE{f.energy};
 
-  f.computePhysicalForces();
+  f.computePhysicalForcing();
 
   // bending force
   f.proteinDensity.raw() = current_proteinDensity;
