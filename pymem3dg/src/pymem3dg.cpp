@@ -999,16 +999,16 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   //              R"delim(
   //           compute the LineTensionForce
   //       )delim");
-  //   system.def("computeExternalForce", &System::computeExternalForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the External Force
-  //       )delim");
-  //   system.def("computeDPDForces", &System::computeDPDForces,
-  //              py::return_value_policy::copy, py::arg("dt"),
-  //              R"delim(
-  //           compute the DPDForces
-  //       )delim");
+  system.def("prescribeExternalForce", &System::prescribeExternalForce,
+             py::return_value_policy::copy,
+             R"delim(
+            prescribe the External Force
+        )delim");
+  system.def("computeDPDForces", &System::computeDPDForces, py::arg("dt"),
+             py::return_value_policy::copy,
+             R"delim(
+            compute the DPDForces
+        )delim");
 
   /**
    * @brief Method: Energy computation

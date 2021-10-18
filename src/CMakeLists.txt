@@ -17,7 +17,7 @@ set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/visualization.cpp"
     
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/init.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/solver/pressure.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/force.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/energy.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/parameters.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/regularization.cpp"
