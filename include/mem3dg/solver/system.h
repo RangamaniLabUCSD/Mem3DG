@@ -141,7 +141,7 @@ public:
   // =============        Constructors           ==============
   // ==========================================================
   /**
-   * @brief Construct a new Force object by reading topology and vertex matrices
+   * @brief Construct a new (geometry) System by reading topology and vertex matrices
    *
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
@@ -160,7 +160,7 @@ public:
   };
 
   /**
-   * @brief Construct a new Force object by reading topology and vertex matrices
+   * @brief Construct a new System by reading topology and vertex matrices
    *
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
@@ -185,7 +185,7 @@ public:
   };
 
   /**
-   * @brief Construct a new Force object by reading topology and vertex matrices
+   * @brief Construct a new System by reading topology and vertex matrices
    *
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
@@ -211,17 +211,13 @@ public:
   };
 
   /**
-   * @brief Construct a new Force object by reading mesh file path
+   * @brief Construct a new (geometry) System by reading mesh file path
    *
    * @param inputMesh     Input Mesh
    * @param nSub          Number of subdivision
    */
   System(std::string inputMesh, std::size_t nSub)
       : System(readMeshes(inputMesh, nSub)) {
-
-    // Check incompatible configuration
-    checkConfiguration();
-
     // Initialize reference values
     initConstants();
 
@@ -230,7 +226,7 @@ public:
   };
 
   /**
-   * @brief Construct a new Force object by reading mesh file path
+   * @brief Construct a new System by reading mesh file path
    *
    * @param inputMesh     Input Mesh
    * @param p             Parameter of simulation
@@ -263,7 +259,7 @@ public:
   };
 
   /**
-   * @brief Construct a new Force object by reading mesh file path
+   * @brief Construct a new System by reading mesh file path
    *
    * @param inputMesh     Input Mesh
    * @param p             Parameter of simulation
@@ -499,7 +495,7 @@ private:
 
 public:
   /**
-   * @brief Destroy the Force object
+   * @brief Destroy the System
    *
    * Explicitly unrequire values required by the constructor. In case, there
    * is another pointer to the HalfEdgeMesh and VertexPositionGeometry
