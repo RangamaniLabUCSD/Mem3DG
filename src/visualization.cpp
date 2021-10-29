@@ -186,8 +186,9 @@ int snapshot_ply(std::string fileName, const Quantities &option,
 }
 
 int animate_ply(std::string frameDir, const Quantities &options,
-                std::vector<std::size_t> frameNum, float transparency,
-                float fov, float edgeWidth) {
+                std::vector<std::size_t> frameNum, double mapMinLim,
+                double mapMaxLim, float transparency, float fov,
+                float edgeWidth) {
 
   // Activate signal handling
   signal(SIGINT, mem3dg::signalHandler);
@@ -213,7 +214,8 @@ int animate_ply(std::string frameDir, const Quantities &options,
   sprintf(buffer, "/frame%d.ply", (int)frameNum[0]);
   std::string plyName(buffer);
   plyName = frameDir + plyName;
-  auto polyscopeMesh = registerSurfaceMesh(plyName, options);
+  auto polyscopeMesh =
+      registerSurfaceMesh(plyName, options, mapMinLim, mapMaxLim);
   polyscopeMesh->setSmoothShade(true);
   polyscopeMesh->setEdgeWidth(edgeWidth);
   polyscopeMesh->setTransparency(transparency);
@@ -255,7 +257,8 @@ int animate_ply(std::string frameDir, const Quantities &options,
       sprintf(buffer, "/frame%d.ply", (int)currFrame);
       std::string plyName(buffer);
       plyName = frameDir + plyName;
-      polyscopeMesh = registerSurfaceMesh(plyName, options);
+      polyscopeMesh =
+          registerSurfaceMesh(plyName, options, mapMinLim, mapMaxLim);
       prevFrame = currFrame;
     }
     if (isRecord) {
@@ -264,12 +267,12 @@ int animate_ply(std::string frameDir, const Quantities &options,
       std::string defaultName(buff);
       polyscope::screenshot(defaultName, true);
       play(polyscopeMesh, frameDir, currFrame, waitTime, options, isRecord,
-           frameNum);
+           frameNum, mapMinLim, mapMaxLim);
       prevFrame = currFrame;
     }
     if (isStart) {
       play(polyscopeMesh, frameDir, currFrame, waitTime, options, isStart,
-           frameNum);
+           frameNum, mapMinLim, mapMaxLim);
       prevFrame = currFrame;
     }
 
@@ -602,7 +605,9 @@ void initGui() {
 }
 
 polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
-                                            const Quantities &options) {
+                                            const Quantities &options,
+                                            double mapMinLim,
+                                            double mapMaxLim) {
 
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
@@ -630,123 +635,240 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
   // polyscopeMesh->setEdgeWidth(1);
 
   /// Read element data
-  if (options.mean_curvature) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "mean_curvature",
-        ptrRichData->getVertexProperty<double>("mean_curvature"));
-    // polyscopeMesh
-    //     ->addVertexScalarQuantity(
-    //         "mean_curvature",
-    //         ptrRichData->getVertexProperty<double>("mean_curvature"))
-    //     ->setMapRange(std::make_pair(-2.54, 10.29));
-  }
-  if (options.gauss_curvature) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "gauss_curvature",
-        ptrRichData->getVertexProperty<double>("gauss_curvature"));
-  }
-  if (options.spon_curvature) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "spon_curvature",
-        ptrRichData->getVertexProperty<double>("spon_curvature"));
-  }
+  if (mapMinLim == 0 && mapMaxLim == 0) {
+    if (options.mean_curvature) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "mean_curvature",
+          ptrRichData->getVertexProperty<double>("mean_curvature"));
+      // polyscopeMesh
+      //     ->addVertexScalarQuantity(
+      //         "mean_curvature",
+      //         ptrRichData->getVertexProperty<double>("mean_curvature"))
+      //     ->setMapRange(std::make_pair(-2.54, 10.29));
+    }
+    if (options.gauss_curvature) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "gauss_curvature",
+          ptrRichData->getVertexProperty<double>("gauss_curvature"));
+    }
+    if (options.spon_curvature) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "spon_curvature",
+          ptrRichData->getVertexProperty<double>("spon_curvature"));
+    }
 
-  if (options.ext_force) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "external_force",
-        ptrRichData->getVertexProperty<double>("external_force"));
-  }
-  if (options.physical_force) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "physical_force",
-        ptrRichData->getVertexProperty<double>("physical_force"));
-  }
-  if (options.capillary_force) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "capillary_force",
-        ptrRichData->getVertexProperty<double>("capillary_force"));
-  }
-  if (options.bending_force) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "bending_force",
-        ptrRichData->getVertexProperty<double>("bending_force"));
-  }
-  if (options.line_force) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "line_tension_force",
-        ptrRichData->getVertexProperty<double>("line_tension_force"));
-  }
-  if (options.osmotic_force) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "osmotic_force",
-        ptrRichData->getVertexProperty<double>("osmotic_force"));
-  }
-  if (options.mask) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "mask", ptrRichData->getVertexProperty<double>("mask"));
-  }
-  if (options.the_point) {
-    polyscopeMesh
-        ->addVertexCountQuantity(
-            "the_point", getCountQuantities(
-                             ptrRichData->getVertexProperty<int>("the_point")))
-        ->setPointRadius(0.01, true);
-  }
-  if (options.smoothing_mask) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "smoothing_mask",
-        ptrRichData->getVertexProperty<int>("smoothing_mask"));
-  }
-  if (options.chemical_potential) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "chemical_potential",
-        ptrRichData->getVertexProperty<double>("chemical_potential"));
-  }
-  if (options.bending_potential) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "bending_potential",
-        ptrRichData->getVertexProperty<double>("bending_potential"));
-  }
-  if (options.diffusion_potential) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "diffusion_potential",
-        ptrRichData->getVertexProperty<double>("diffusion_potential"));
-  }
-  if (options.adsorption_potential) {
-    polyscopeMesh->addVertexScalarQuantity(
-        "adsorption_potential",
-        ptrRichData->getVertexProperty<double>("adsorption_potential"));
-  }
-  /*gcs::VertexData<gc::Vector3> vertexVelocity =
-      ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
-  /*gcs::VertexData<gc::Vector3> normalForce =
-  ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
-  gcs::VertexData<gc::Vector3> tangentialForce =
-  ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
-  // mem3dg::EigenVectorX3dr vertexVelocity_e =
-  //    mem3dg::EigenMap<double, 3>(vertexVelocity);
-  /*mem3dg::EigenVectorX3dr normalForce_e =
-  gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
-  Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
-  3>(tangentialForce);*/
-  /*polyscope::getSurfaceMesh("Vesicle surface")
-      ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
-  /*polyscope::getSurfaceMesh("Vesicle
-  surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
-  polyscope::getSurfaceMesh("Vesicle
-  surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
+    if (options.ext_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "external_force",
+          ptrRichData->getVertexProperty<double>("external_force"));
+    }
+    if (options.physical_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "physical_force",
+          ptrRichData->getVertexProperty<double>("physical_force"));
+    }
+    if (options.capillary_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "capillary_force",
+          ptrRichData->getVertexProperty<double>("capillary_force"));
+    }
+    if (options.bending_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "bending_force",
+          ptrRichData->getVertexProperty<double>("bending_force"));
+    }
+    if (options.line_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "line_tension_force",
+          ptrRichData->getVertexProperty<double>("line_tension_force"));
+    }
+    if (options.osmotic_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "osmotic_force",
+          ptrRichData->getVertexProperty<double>("osmotic_force"));
+    }
+    if (options.mask) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "mask", ptrRichData->getVertexProperty<double>("mask"));
+    }
+    if (options.the_point) {
+      polyscopeMesh
+          ->addVertexCountQuantity(
+              "the_point",
+              getCountQuantities(
+                  ptrRichData->getVertexProperty<int>("the_point")))
+          ->setPointRadius(0.01, true);
+    }
+    if (options.smoothing_mask) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "smoothing_mask",
+          ptrRichData->getVertexProperty<int>("smoothing_mask"));
+    }
+    if (options.chemical_potential) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "chemical_potential",
+          ptrRichData->getVertexProperty<double>("chemical_potential"));
+    }
+    if (options.bending_potential) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "bending_potential",
+          ptrRichData->getVertexProperty<double>("bending_potential"));
+    }
+    if (options.diffusion_potential) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "diffusion_potential",
+          ptrRichData->getVertexProperty<double>("diffusion_potential"));
+    }
+    if (options.adsorption_potential) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "adsorption_potential",
+          ptrRichData->getVertexProperty<double>("adsorption_potential"));
+    }
+    /*gcs::VertexData<gc::Vector3> vertexVelocity =
+        ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
+    /*gcs::VertexData<gc::Vector3> normalForce =
+    ptrRichData->getVertexProperty<gc::Vector3>("normal_force");
+    gcs::VertexData<gc::Vector3> tangentialForce =
+    ptrRichData->getVertexProperty<gc::Vector3>("tangential_force");*/
+    // mem3dg::EigenVectorX3dr vertexVelocity_e =
+    //    mem3dg::EigenMap<double, 3>(vertexVelocity);
+    /*mem3dg::EigenVectorX3dr normalForce_e =
+    gc::EigenMap<double, 3>(normalForce); Eigen::Matrix<double,
+    Eigen::Dynamic, 3> tangentialForce_e = gc::EigenMap<double,
+    3>(tangentialForce);*/
+    /*polyscope::getSurfaceMesh("Vesicle surface")
+        ->addVertexVectorQuantity("vertexVelocity", vertexVelocity_e);*/
+    /*polyscope::getSurfaceMesh("Vesicle
+    surface")->addVertexVectorQuantity("tangential_force", tangentialForce_e);
+    polyscope::getSurfaceMesh("Vesicle
+    surface")->addVertexVectorQuantity("normal_force", normalForce_e);*/
+  } else {
+    if (options.mean_curvature) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "mean_curvature",
+              ptrRichData->getVertexProperty<double>("mean_curvature"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.gauss_curvature) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "gauss_curvature",
+              ptrRichData->getVertexProperty<double>("gauss_curvature"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.spon_curvature) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "spon_curvature",
+              ptrRichData->getVertexProperty<double>("spon_curvature"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
 
+    if (options.ext_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "external_force",
+              ptrRichData->getVertexProperty<double>("external_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.physical_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "physical_force",
+              ptrRichData->getVertexProperty<double>("physical_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.capillary_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "capillary_force",
+              ptrRichData->getVertexProperty<double>("capillary_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.bending_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "bending_force",
+              ptrRichData->getVertexProperty<double>("bending_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.line_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "line_tension_force",
+              ptrRichData->getVertexProperty<double>("line_tension_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.osmotic_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "osmotic_force",
+              ptrRichData->getVertexProperty<double>("osmotic_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.mask) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "mask", ptrRichData->getVertexProperty<double>("mask"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.smoothing_mask) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "smoothing_mask",
+              ptrRichData->getVertexProperty<int>("smoothing_mask"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.chemical_potential) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "chemical_potential",
+              ptrRichData->getVertexProperty<double>("chemical_potential"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.bending_potential) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "bending_potential",
+              ptrRichData->getVertexProperty<double>("bending_potential"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.diffusion_potential) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "diffusion_potential",
+              ptrRichData->getVertexProperty<double>("diffusion_potential"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.adsorption_potential) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "adsorption_potential",
+              ptrRichData->getVertexProperty<double>("adsorption_potential"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.the_point) {
+      polyscopeMesh
+          ->addVertexCountQuantity(
+              "the_point",
+              getCountQuantities(
+                  ptrRichData->getVertexProperty<int>("the_point")))
+          ->setPointRadius(0.01, true);
+    }
+  }
   return polyscopeMesh;
 }
 
 void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
           int &idx, int &waitTime, Quantities options, bool &toggle,
-          std::vector<std::size_t> frameNum) {
+          std::vector<std::size_t> frameNum, double mapMinLim,
+          double mapMaxLim) {
   char buffer[50];
   sprintf(buffer, "/frame%d.ply", (int)idx);
   std::string plyName(buffer);
   plyName = framesDir + plyName;
-  polyscopeMesh = registerSurfaceMesh(plyName, options);
+  polyscopeMesh = registerSurfaceMesh(plyName, options, mapMinLim, mapMaxLim);
   idx++;
   if (idx > frameNum[1]) {
     idx = frameNum[0];
