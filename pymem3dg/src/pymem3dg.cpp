@@ -1393,6 +1393,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       "animate_ply", &animate_ply,
       " Visualize .ply files in polysope with options of additional quantities",
       py::arg("framesDir"), py::arg("options"), py::arg("frameNum"),
+      py::arg("mapMinLim") = 0, py::arg("mapMaxLim") = 0,
       py::arg("transparency") = 1, py::arg("fov") = 50,
       py::arg("edgeWidth") = 1);
 

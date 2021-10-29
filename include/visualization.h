@@ -14,9 +14,9 @@
 
 #pragma once
 #include "mem3dg/mem3dg"
+#include <geometrycentral/surface/surface_mesh.h>
 #include <polyscope/polyscope.h>
 #include <polyscope/surface_mesh.h>
-#include <geometrycentral/surface/surface_mesh.h>
 
 /**
  * @brief Quantities option for visualization
@@ -83,8 +83,10 @@ DLL_PUBLIC int snapshot_ply(std::string fileName, const Quantities &options,
  * @brief Visualize .ply files in polysope with options of additional quantities
  */
 DLL_PUBLIC int animate_ply(std::string framesDir, const Quantities &options,
-                           std::vector<std::size_t> frameNum, float transparency = 1,
-                           float fov = 50, float edgeWidth = 1);
+                           std::vector<std::size_t> frameNum,
+                           double mapMinLim, double mapMaxLim,
+                           float transparency = 1, float fov = 50,
+                           float edgeWidth = 1);
 
 #ifdef MEM3DG_WITH_NETCDF
 /**
@@ -122,14 +124,17 @@ void wait(unsigned timeout);
  */
 void play(polyscope::SurfaceMesh *&polyscopeMesh, std::string framesDir,
           int &idx, int &waitTime, const Quantities options, bool &toggle,
-          std::vector<std::size_t> frameNum);
+          std::vector<std::size_t> frameNum, double mapMinLim = 0,
+          double mapMaxLim = 0);
 
 /**
  * @brief Register Polyscope surface mesh from .ply file with options of data
  * quantities
  */
 polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
-                                            const Quantities &options);
+                                            const Quantities &options,
+                                            double mapMinLim = 0,
+                                            double mapMaxLim = 0);
 /**
  * @brief get discrete count from every nonzero entries
  */
@@ -142,15 +147,16 @@ getCountQuantities(gc::VertexData<int> &&meshData);
  */
 void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::TrajFile &fd,
           int &idx, int &waitTime, const Quantities options, bool &toggle);
-void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::MutableTrajFile &fd,
-          int &idx, int &waitTime, const Quantities options, bool &toggle);
+void play(polyscope::SurfaceMesh *&polyscopeMesh,
+          mem3dg::solver::MutableTrajFile &fd, int &idx, int &waitTime,
+          const Quantities options, bool &toggle);
 
 /**
  * @brief Register Polyscope surface mesh from certain frame of the NetCDF
  * trajectory file with options of data quantities
  */
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd, int idx,
-                                            const Quantities &options);
-polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::MutableTrajFile &fd, int idx,
-                                            const Quantities &options);
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::TrajFile &fd,
+                                            int idx, const Quantities &options);
+polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::MutableTrajFile &fd,
+                                            int idx, const Quantities &options);
 #endif
