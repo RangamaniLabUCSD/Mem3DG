@@ -170,11 +170,6 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
                          "protein variation option!");
   }
 
-  if (variation.isProteinVariation && bending.Kbc != 0) {
-    mem3dg_runtime_error(
-        "Kbc != 0 is currently not expected for protein variation!");
-  }
-
   // boundary
   if (hasBoundary) {
     if (boundary.shapeBoundaryCondition == "none" &&
