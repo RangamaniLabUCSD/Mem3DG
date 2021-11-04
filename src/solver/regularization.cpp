@@ -15,50 +15,17 @@
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "geometrycentral/utilities/vector3.h"
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/constants.h"
+#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
 #include <Eigen/Core>
 #include <cmath>
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
-
-void System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                     gcs::EdgeData<double> &lcr) {
-  for (gcs::Edge e : mesh->edges()) {
-    gcs::Edge lj = e.halfedge().next().edge();
-    gcs::Edge ki = e.halfedge().twin().next().edge();
-    gcs::Edge il = e.halfedge().next().next().edge();
-    gcs::Edge jk = e.halfedge().twin().next().next().edge();
-    lcr[e] = vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-             vpg.edgeLengths[lj];
-  }
-}
-
-double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                       gcs::Edge &e) const {
-
-  gcs::Edge lj = e.halfedge().next().edge();
-  gcs::Edge ki = e.halfedge().twin().next().edge();
-  gcs::Edge il = e.halfedge().next().next().edge();
-  gcs::Edge jk = e.halfedge().twin().next().next().edge();
-  return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-         vpg.edgeLengths[lj];
-}
-
-double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                       gcs::Edge &&e) const {
-
-  gcs::Edge lj = e.halfedge().next().edge();
-  gcs::Edge ki = e.halfedge().twin().next().edge();
-  gcs::Edge il = e.halfedge().next().next().edge();
-  gcs::Edge jk = e.halfedge().twin().next().next().edge();
-  return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-         vpg.edgeLengths[lj];
-}
 
 void System::computeRegularizationForce() {
   // Note in regularization, it is preferred to use immediate calculation rather
@@ -66,9 +33,9 @@ void System::computeRegularizationForce() {
   for (gcs::Vertex v : mesh->vertices()) {
     if (!v.isBoundary()) {
       for (gcs::Halfedge he : v.outgoingHalfedges()) {
-
+        gcs::Edge e = he.edge();
         // Conformal regularization
-        if (P.Kst != 0 && !he.edge().isBoundary()) {
+        if (meshProcessor.meshRegularizer.Kst != 0 && !e.isBoundary()) {
           gcs::Halfedge jl = he.next();
           gcs::Halfedge li = jl.next();
           gcs::Halfedge ik = he.twin().next();
@@ -76,11 +43,11 @@ void System::computeRegularizationForce() {
 
           gc::Vector3 grad_li = vecFromHalfedge(li, *vpg).normalize();
           gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
-          F.regularizationForce[v] +=
-              -P.Kst *
-              (computeLengthCrossRatio(*vpg, he.edge()) -
-               targetLcrs[he.edge()]) /
-              targetLcrs[he.edge()] *
+          forces.regularizationForce[v] +=
+              -meshProcessor.meshRegularizer.Kst *
+              (meshProcessor.meshRegularizer.computeLengthCrossRatio(*vpg, e) -
+               meshProcessor.meshRegularizer.refLcrs[e.getIndex()]) /
+              meshProcessor.meshRegularizer.refLcrs[e.getIndex()] *
               (vpg->edgeLength(kj.edge()) / vpg->edgeLength(jl.edge())) *
               (grad_li * vpg->edgeLength(ik.edge()) -
                grad_ik * vpg->edgeLength(li.edge())) /
@@ -88,26 +55,31 @@ void System::computeRegularizationForce() {
         }
 
         // Local area regularization
-        if (P.Ksl != 0 && he.isInterior()) {
+        if (meshProcessor.meshRegularizer.Ksl != 0 && he.isInterior()) {
           gcs::Halfedge base_he = he.next();
           gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
           gc::Vector3 localAreaGradient =
               -gc::cross(base_vec, vpg->faceNormal(he.face()));
-          auto &referenceArea = (v.isBoundary() ? refFaceAreas[base_he.face()]
-                                                : meanTargetFaceArea);
-          F.regularizationForce[v] +=
-              -P.Ksl * localAreaGradient *
+          auto &referenceArea =
+              (v.isBoundary()
+                   ? meshProcessor.meshRegularizer
+                         .refFaceAreas[base_he.face().getIndex()]
+                   : meshProcessor.meshRegularizer.meanTargetFaceArea);
+          forces.regularizationForce[v] +=
+              -meshProcessor.meshRegularizer.Ksl * localAreaGradient *
               (vpg->faceArea(base_he.face()) - referenceArea);
         }
 
         // local edge regularization
-        if (P.Kse != 0) {
+        if (meshProcessor.meshRegularizer.Kse != 0) {
           gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
-          auto &referenceLength = (v.isBoundary() ? refEdgeLengths[he.edge()]
-                                                  : meanTargetEdgeLength);
-          F.regularizationForce[v] +=
-              -P.Kse * edgeGradient *
-              (vpg->edgeLength(he.edge()) - referenceLength);
+          auto &referenceLength =
+              (v.isBoundary()
+                   ? meshProcessor.meshRegularizer.refEdgeLengths[e.getIndex()]
+                   : meshProcessor.meshRegularizer.meanTargetEdgeLength);
+          forces.regularizationForce[v] +=
+              -meshProcessor.meshRegularizer.Kse * edgeGradient *
+              (vpg->edgeLength(e) - referenceLength);
         }
       }
     }
@@ -115,10 +87,11 @@ void System::computeRegularizationForce() {
 
   // post processing regularization force
   auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto regularizationForce_e = gc::EigenMap<double, 3>(F.regularizationForce);
+  auto regularizationForce_e =
+      gc::EigenMap<double, 3>(forces.regularizationForce);
 
   // remove the normal component
-  regularizationForce_e -= rowwiseScaling(
+  regularizationForce_e -= rowwiseScalarProduct(
       rowwiseDotProduct(regularizationForce_e, vertexAngleNormal_e),
       vertexAngleNormal_e);
 
@@ -142,7 +115,7 @@ void System::computeRegularizationForce() {
 
   // // remove the masked components
   // regularizationForce_e =
-  //     rowwiseScaling(mask.raw().cast<double>(), regularizationForce_e);
+  //     rowwiseScalarProduct(mask.raw().cast<double>(), regularizationForce_e);
   // // moving boundary
   // for (gcs::Vertex v : mesh->vertices()) {
   //   if (!mask[v]) {
@@ -169,7 +142,7 @@ void System::computeRegularizationForce() {
 
 void System::vertexShift() {
   for (gcs::Vertex v : mesh->vertices()) {
-    if (gc::sum(F.forceMask[v]) > 0.5) {
+    if (gc::sum(forces.forceMask[v]) > 0.5) {
       if (v.isBoundary()) {
         gcs::Vertex v1 = v;
         gcs::Vertex v2 = v;
@@ -191,7 +164,7 @@ void System::vertexShift() {
           }
         }
         if (n_vAdj != 2) {
-          throw std::runtime_error(
+          mem3dg_runtime_error(
               "vertexShift: number of neighbor vertices on boundary is not 2!");
         }
         baryCenter =
@@ -238,17 +211,19 @@ bool System::edgeFlip() {
       continue;
     }
     gcs::Halfedge he = e.halfedge();
-    if (gc::sum(F.forceMask[he.vertex()] + F.forceMask[he.twin().vertex()]) <
-        0.5) {
+    if (gc::sum(forces.forceMask[he.vertex()] +
+                forces.forceMask[he.twin().vertex()]) < 0.5) {
       continue;
     }
 
-    if (meshMutator.ifFlip(e, *vpg)) {
+    if (meshProcessor.meshMutator.ifFlip(e, *vpg)) {
       bool sucess = mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
-      meshMutator.maskAllNeighboring(smoothingMask, he.tailVertex());
-      meshMutator.maskAllNeighboring(smoothingMask, he.tipVertex());
+      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask,
+                                                   he.tailVertex());
+      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask,
+                                                   he.tipVertex());
     }
   }
 
@@ -276,12 +251,12 @@ bool System::growMesh() {
     if (!isOrigEdge[e]) {
       continue;
     }
-    if (gc::sum(F.forceMask[vertex1] + F.forceMask[vertex2]) < 0.5) {
+    if (gc::sum(forces.forceMask[vertex1] + forces.forceMask[vertex2]) < 0.5) {
       continue;
     }
 
     // Spltting
-    if (meshMutator.ifSplit(e, *vpg) && O.isSplitEdge) {
+    if (meshProcessor.meshMutator.ifSplit(e, *vpg)) {
       count++;
       // split the edge
       const auto &newVertex = mesh->splitEdgeTriangular(e).vertex();
@@ -293,23 +268,22 @@ bool System::growMesh() {
       // Note: think about conservation of energy, momentum and angular
       // momentum
       averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
-      averageData(vel, vertex1, vertex2, newVertex);
+      averageData(velocity, vertex1, vertex2, newVertex);
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
       thePointTracker[newVertex] = false;
-      F.forceMask[newVertex] = gc::Vector3{1, 1, 1};
+      forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
-      meshMutator.maskAllNeighboring(smoothingMask, newVertex);
+      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask, newVertex);
       // smoothingMask[newVertex] = true;
 
       isGrown = true;
-    } else if (meshMutator.ifCollapse(e, *vpg) &&
-               O.isCollapseEdge) { // Collapsing
-                                   // precached pre-mutation values or flag
+    } else if (meshProcessor.meshMutator.ifCollapse(e, *vpg)) { // Collapsing
+      // precached pre-mutation values or flag
       gc::Vector3 collapsedPosition =
-          gc::sum(F.forceMask[vertex1]) < 2.5
+          gc::sum(forces.forceMask[vertex1]) < 2.5
               ? vpg->inputVertexPositions[vertex1]
-          : gc::sum(F.forceMask[vertex2]) < 2.5
+          : gc::sum(forces.forceMask[vertex2]) < 2.5
               ? vpg->inputVertexPositions[vertex2]
               : (vpg->inputVertexPositions[vertex1] +
                  vpg->inputVertexPositions[vertex2]) /
@@ -327,11 +301,11 @@ bool System::growMesh() {
       thePointTracker[newVertex] = isThePoint;
       // Note: think about conservation of energy, momentum and angular
       // momentum
-      averageData(vel, vertex1, vertex2, newVertex);
+      averageData(velocity, vertex1, vertex2, newVertex);
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
 
-      meshMutator.maskAllNeighboring(smoothingMask, newVertex);
+      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask, newVertex);
 
       isGrown = true;
     }
@@ -341,34 +315,27 @@ bool System::growMesh() {
   return isGrown;
 }
 
-void System::processMesh() {
+void System::mutateMesh() {
 
   bool isGrown = false, isFlipped = false;
   smoothingMask.fill(false);
 
   // vertex shift for regularization
-  if (O.isVertexShift) {
+  if (meshProcessor.meshMutator.shiftVertex) {
     vertexShift();
   }
 
   // split edge and collapse edge
-  if (O.isSplitEdge || O.isCollapseEdge) {
+  if (meshProcessor.meshMutator.isSplitEdge ||
+      meshProcessor.meshMutator.isCollapseEdge) {
     isGrown = growMesh();
   }
 
   // linear edge flip for non-Delauney triangles
-  if (O.isEdgeFlip) {
+  if (meshProcessor.meshMutator.isEdgeFlip) {
     isFlipped = edgeFlip();
     edgeFlip();
     edgeFlip();
-  }
-
-  // regularization
-  if ((P.Kse != 0) || (P.Ksl != 0) || (P.Kst != 0)) {
-    computeRegularizationForce();
-    vpg->inputVertexPositions.raw() += F.regularizationForce.raw();
-    computeRegularizationForce();
-    vpg->inputVertexPositions.raw() += F.regularizationForce.raw();
   }
 
   // globally update quantities
@@ -380,16 +347,16 @@ void System::processMesh() {
 
 void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
                              double stepSize) {
-  EigenVectorX1D gradient;
+  EigenVectorX1d gradient;
   double pastGradNorm = 1e10;
   double gradNorm;
   do {
     vpg->refreshQuantities();
-    computeBendingForce();
+    computeMechanicalForces();
     auto pos_e = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
     auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
     gradient = (smoothingMask.raw().cast<double>()).array() *
-               F.bendingForce.raw().array();
+               forces.bendingForce.raw().array();
     gradNorm =
         gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum();
     if (gradNorm > pastGradNorm) {
@@ -399,7 +366,7 @@ void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
       //           << std::endl;
     }
     pos_e.array() +=
-        rowwiseScaling(gradient, vertexAngleNormal_e).array() * stepSize;
+        rowwiseScalarProduct(gradient, vertexAngleNormal_e).array() * stepSize;
     pastGradNorm = gradNorm;
     // std::cout << "gradient:  " << gradNorm << std::endl;
   } while (gradNorm > tol);
@@ -485,10 +452,12 @@ void System::globalUpdateAfterMutation() {
 
   // Update mask when topology changes (likely not necessary, just for safety)
   if (isOpenMesh) {
-    F.forceMask.fill({1, 1, 1});
-    boundaryForceMask(*mesh, F.forceMask, O.shapeBoundaryCondition);
-    F.proteinMask.fill(1);
-    boundaryProteinMask(*mesh, F.proteinMask, O.proteinBoundaryCondition);
+    forces.forceMask.fill({1, 1, 1});
+    boundaryForceMask(*mesh, forces.forceMask,
+                      parameters.boundary.shapeBoundaryCondition);
+    forces.proteinMask.fill(1);
+    boundaryProteinMask(*mesh, forces.proteinMask,
+                        parameters.boundary.proteinBoundaryCondition);
     // for (gcs::Vertex v : mesh->vertices()) {
     //   if (!mask[v]) {
     //     vpg->inputVertexPositions[v].z = 0;
@@ -504,211 +473,18 @@ void System::globalUpdateAfterMutation() {
   // }
 
   // Update the vertex when topology changes
-  if (!O.isFloatVertex) {
+  if (!parameters.point.isFloatVertex) {
     for (gcs::Vertex v : mesh->vertices()) {
       if (thePointTracker[v]) {
         thePoint = gcs::SurfacePoint(v);
       }
     }
     if (thePointTracker.raw().cast<int>().sum() != 1) {
-      throw std::runtime_error("globalUpdateAfterMutation: there is no "
-                               "unique/existing \"the\" point!");
+      mem3dg_runtime_error("globalUpdateAfterMutation: there is no "
+                           "unique/existing \"the\" point!");
     }
   }
 }
 
-bool MeshMutator::ifFlip(const gcs::Edge e,
-                         const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  bool condition = false;
-
-  if (flipNonDelaunay && !e.isBoundary()) {
-    bool nonDelaunay =
-        (vpg.cornerAngle(he.next().next().corner()) +
-         vpg.cornerAngle(he.twin().next().next().corner())) > (constants::PI);
-    if (flipNonDelaunayRequireFlat) {
-      bool flat = abs(vpg.edgeDihedralAngle(he.edge())) < (constants::PI / 36);
-      nonDelaunay = nonDelaunay && flat;
-    }
-    condition = condition || nonDelaunay;
-  }
-
-  return condition;
-}
-
-bool MeshMutator::ifCollapse(const gc::Edge e,
-                             const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  bool isBoundary = e.isBoundary();
-  if (!he.isInterior()) {
-    he = he.twin();
-  }
-  bool condition = false;
-
-  bool is2Small = false;
-  bool is2Skinny = false;
-  bool isFlat = false;
-  bool isSmooth = true;
-  bool isCollapse = false;
-
-  // conditions for collapsing
-  if (collapseSkinny) {
-    // is2Skinny = (vpg.cornerAngle(he.next().next().corner()) +
-    //              vpg.cornerAngle(he.twin().next().next().corner())) <
-    //             constants::PI / 3;
-    is2Skinny =
-        (isBoundary)
-            ? (vpg.cornerAngle(he.next().next().corner()) < constants::PI / 6)
-            : (vpg.cornerAngle(he.next().next().corner()) +
-               vpg.cornerAngle(he.twin().next().next().corner())) <
-                      constants::PI / 3 ||
-                  (vpg.cornerAngle(he.next().corner()) +
-                   vpg.cornerAngle(he.twin().corner())) >
-                      (constants::PI * 1.333) ||
-                  (vpg.cornerAngle(he.corner()) +
-                   vpg.cornerAngle(he.twin().next().corner())) >
-                      (constants::PI * 1.333);
-    condition = is2Skinny;
-  }
-
-  if (collapseSmall) {
-    double areaSum;
-    size_t num_neighbor;
-    neighborAreaSum(e, vpg, areaSum, num_neighbor);
-    is2Small = (isBoundary) ? ((areaSum - vpg.faceArea(he.face()) -
-                                vpg.faceArea(he.twin().face())) <
-                               (num_neighbor - 1) * targetFaceArea)
-                            : ((areaSum - vpg.faceArea(he.face()) -
-                                vpg.faceArea(he.twin().face())) <
-                               (num_neighbor - 2) * targetFaceArea);
-    if (collapseSmallNeedFlat) {
-      isFlat =
-          vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
-      is2Small = is2Small && isFlat;
-    }
-    // isSmooth =
-    //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
-    //     targetdH0);
-    condition = condition || is2Small;
-  }
-
-  // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
-
-  return condition;
-}
-
-bool MeshMutator::ifSplit(const gcs::Edge e,
-                          const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  bool isBoundary = e.isBoundary();
-  if (!he.isInterior()) {
-    he = he.twin();
-  }
-
-  bool condition = false;
-
-  bool is2Large = false;
-  bool is2Long = false;
-  bool is2Curved = false;
-  bool is2Sharp = false;
-  bool is2Fat = false;
-  bool is2Skinny = false;
-  bool isDelaunay = false;
-
-  // const double targetdH0 = 0.5;
-
-  // Conditions for splitting
-  if (splitLarge) {
-    is2Large = (isBoundary)
-                   ? vpg.faceArea(he.face()) > (2 * targetFaceArea)
-                   : (vpg.faceArea(he.face()) +
-                      vpg.faceArea(he.twin().face())) > (4 * targetFaceArea);
-    condition = condition || is2Large;
-  }
-
-  if (splitLong) {
-    is2Long =
-        (isBoundary)
-            ? (vpg.edgeLength(e) > (2 * vpg.edgeLength(he.next().edge())))
-            : (vpg.edgeLength(e) > (vpg.edgeLength(he.next().edge()) +
-                                    vpg.edgeLength(he.twin().next().edge())));
-    condition = is2Long || condition;
-  }
-
-  if (splitCurved) {
-    is2Curved =
-        vpg.edgeLength(e) > (2 * computeCurvatureThresholdLength(e, vpg));
-    condition = is2Curved || condition;
-  }
-
-  if (splitSharp) {
-    // is2Sharp = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 *
-    // targetdH0);
-  }
-
-  if (splitSkinnyDelaunay && !isBoundary) {
-    isDelaunay = (vpg.cornerAngle(e.halfedge().next().next().corner()) +
-                  vpg.cornerAngle(e.halfedge().twin().next().next().corner())) <
-                 (constants::PI);
-    is2Skinny =
-        (vpg.cornerAngle(he.next().corner()) +
-         vpg.cornerAngle(he.twin().next().corner())) < constants::PI / 3;
-    condition = (isDelaunay && is2Skinny) || condition;
-  }
-
-  if (splitFat) {
-    is2Fat = (isBoundary) ? (vpg.cornerAngle(he.next().next().corner()) >
-                             constants::PI * 0.667)
-                          : (vpg.cornerAngle(he.next().next().corner()) >
-                                 constants::PI * 0.667 ||
-                             vpg.cornerAngle(he.twin().next().next().corner()) >
-                                 constants::PI * 0.667);
-    condition = is2Fat || condition;
-  }
-
-  // bool flat = abs(vpg.edgeDihedralAngle(e)) < (constants::PI
-  // / 36);
-  // isSplit =
-  //     is2Large || is2Curved || is2Fat || is2Sharp || (is2Skinny &&
-  //     isDelaunay);
-  return condition;
-}
-
-void MeshMutator::maskAllNeighboring(gcs::VertexData<bool> &smoothingMask,
-                                     const gcs::Vertex v) {
-  smoothingMask[v] = true;
-  for (gc::Vertex nv : v.adjacentVertices()) {
-    smoothingMask[nv] = true;
-  }
-}
-
-void MeshMutator::neighborAreaSum(const gcs::Edge e,
-                                  const gcs::VertexPositionGeometry &vpg,
-                                  double &area, size_t &num_neighbor) {
-  area = 0;
-  num_neighbor = -2;
-  for (gcs::Vertex v : e.adjacentVertices()) {
-    for (gcs::Face f : v.adjacentFaces()) {
-      area += vpg.faceArea(f);
-      num_neighbor++;
-    }
-  }
-}
-
-double MeshMutator::computeCurvatureThresholdLength(
-    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
-  // curvature based remeshing:
-  // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
-  double k1 = (abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tipVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tipVertex()));
-  double k2 = (abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tailVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tailVertex()));
-  return std::sqrt(6 * curvTol / ((k1 > k2) ? k1 : k2) - 3 * curvTol * curvTol);
-}
-
+} // namespace solver
 } // namespace mem3dg

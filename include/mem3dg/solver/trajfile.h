@@ -34,132 +34,19 @@
 #include <geometrycentral/surface/vertex_position_geometry.h>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
-#include "mem3dg/solver/macros.h"
-#include "mem3dg/solver/meshops.h"
-#include "mem3dg/solver/typetraits.h"
+#include "mem3dg/macros.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/solver/trajfile_constants.h"
+#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
+namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 namespace nc = ::netCDF;
 
-// DIMENSIONS NAMES
-
-static const std::string POLYGON_ORDER_NAME = "polygon_dims";
-/// Number of vertices per polygon
-static const std::size_t POLYGON_ORDER = 3;
-
-static const std::string NPOLYGONS_NAME = "npolygons";
-
-static const std::string SPATIAL_DIMS_NAME = "spatial";
-/// Number of spatial dimensions
-static const std::size_t SPATIAL_DIMS = 3;
-/// Name of frames
-static const std::string FRAME_NAME = "frame";
-/// nvertices
-static const std::string NVERTICES_NAME = "nvertices";
-/// nconers
-static const std::string NCORNERS_NAME = "ncorners";
-
-/// Name of conventions
-static const std::string CONVENTIONS_NAME = "Conventions";
-/// Convention value
-static const std::string CONVENTIONS_VALUE = "Mem3DG";
-/// Conventions version
-static const std::string CONVENTIONS_VERSION_NAME = "ConventionsVersion";
-/// Conventions version value
-static const std::string CONVENTIONS_VERSION_VALUE = "0.0.1";
-
-/// Name of the units labels
-static const std::string UNITS = "units";
-/// Value for length units
-static const std::string LEN_UNITS = " micrometers ";
-/// Value for time units
-static const std::string TIME_UNITS = " seconds ";
-/// Value for force units
-static const std::string FORCE_UNITS = " nanonewtons ";
-
-// Data/Variable block names
-/// Name of time data
-static const std::string TIME_VAR = "time";
-/// Name of isSmooth data
-static const std::string ISSMOOTH_VAR = "issmooth";
-/// Name of coordinates data
-static const std::string COORD_VAR = "coordinates";
-/// Name of the mesh topology data
-static const std::string TOPO_VAR = "topology";
-/// Name of the mesh topology data
-static const std::string TOPO_FRAME_VAR = "topologyframe";
-/// Name of the mesh corner angle data
-static const std::string ANGLE_VAR = "angle";
-/// Name of the refMesh coordinates data
-static const std::string REFCOORD_VAR = "refcoordinates";
-/// Name of the velocity data
-static const std::string VEL_VAR = "velocities";
-/// Name of the mean curvature data
-static const std::string MEANCURVE_VAR = "meancurvature";
-/// Name of the Gaussian curvature data
-static const std::string GAUSSCURVE_VAR = "gausscurvature";
-/// Name of the protein density data
-static const std::string PROTEINDEN_VAR = "proteindensity";
-/// Name of the spontaneous curvature data
-static const std::string SPONCURVE_VAR = "sponcurvature";
-/// Name of the external pressure data
-static const std::string EXTERNFORCE_VAR = "externpressure";
-/// Name of the chemical potential data
-static const std::string CHEMPOTENTIAL_VAR = "chempotential";
-/// Name of the physical pressure data
-static const std::string PHYSFORCE_VAR = "physpressure";
-/// Name of the capillary pressure data
-static const std::string CAPFORCE_VAR = "cappressure";
-/// Name of the bending pressure data
-static const std::string BENDFORCE_VAR = "bendpressure";
-/// Name of the inside pressure data
-static const std::string OSMOTICFORCE_VAR = "insidepressure";
-/// Name of the line tension pressure data
-static const std::string LINEFORCE_VAR = "linepressure";
-/// Name of the bending energy data
-static const std::string BENDENER_VAR = "bendenergy";
-/// Name of the surface energy data
-static const std::string SURFENER_VAR = "surfenergy";
-/// Name of the pressure energy data
-static const std::string PRESSENER_VAR = "pressenergy";
-/// Name of the kinetic energy data
-static const std::string KINEENER_VAR = "kineenergy";
-/// Name of the adsorption energy data
-static const std::string ADSPENER_VAR = "adspenergy";
-/// Name of the line tension energy data
-static const std::string LINEENER_VAR = "lineenergy";
-/// Name of the chemical energy data
-static const std::string TOTALENER_VAR = "totalenergy";
-/// Name of the  chem Error Norm data
-static const std::string CHEMERRORNORM_VAR = "chemerrornorm";
-/// Name of the  Error Norm data
-static const std::string ERRORNORM_VAR = "errornorm";
-/// Name of the  Error Norm data
-static const std::string BENDNORM_VAR = "bendnorm";
-/// Name of the  Error Norm data
-static const std::string SURFNORM_VAR = "surfnorm";
-/// Name of the  Error Norm data
-static const std::string PRESSNORM_VAR = "pressnorm";
-/// Name of the  Error Norm data
-static const std::string LINENORM_VAR = "linenorm";
-/// Name of the volume data
-static const std::string VOLUME_VAR = "volume";
-/// Name of the height data
-static const std::string HEIGHT_VAR = "height";
-/// Name of the surface area data
-static const std::string SURFAREA_VAR = "surfacearea";
-/// Name of the reference volume data
-static const std::string REFVOLUME_VAR = "refvolume";
-/// Name of the reference surface area data
-static const std::string REFSURFAREA_VAR = "refsurfarea";
-/// Name of the mask data
-static const std::string MASK_VAR = "mask";
-/// Name of the curvature difference data
-static const std::string H_H0_VAR = "curvaturediff";
 /**
  * @class TrajFile
  * @brief Trajectory interface to help with manipulating trajectories
@@ -173,18 +60,12 @@ private:
 public:
   using NcFile = nc::NcFile;
   using NcException = nc::exceptions::NcException;
-  using EigenVector =
-      Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS, Eigen::RowMajor>;
-
-  // template <typename T>
-  // using EigenVector_T = Eigen::Matrix<T, Eigen::Dynamic, SPATIAL_DIMS,
-  // Eigen::RowMajor>;
 
   TrajFile() : writeable(false), fd(nullptr){};
 
   void open(const std::string &filename, const NcFile::FileMode fMode) {
     if ((fd != nullptr) && (fMode != NcFile::read)) {
-      throw std::runtime_error("Cannot open an already opened ...");
+      mem3dg_runtime_error("Cannot open an already opened ...");
     }
 
     fd = new NcFile(filename, fMode);
@@ -209,7 +90,7 @@ public:
     externforce_var = fd->getVar(EXTERNFORCE_VAR);
     meancurve_var = fd->getVar(MEANCURVE_VAR);
     gausscurve_var = fd->getVar(GAUSSCURVE_VAR);
-    proteinden_var = fd->getVar(PROTEINDEN_VAR);
+    phi_var = fd->getVar(PHI_VAR);
     sponcurve_var = fd->getVar(SPONCURVE_VAR);
     chempotential_var = fd->getVar(CHEMPOTENTIAL_VAR);
     physforce_var = fd->getVar(PHYSFORCE_VAR);
@@ -237,7 +118,7 @@ public:
                      gcs::VertexPositionGeometry &refVpg,
                      const NcFile::FileMode fMode) {
     if (fd != nullptr) {
-      throw std::runtime_error("Cannot open an already open ...");
+      mem3dg_runtime_error("Cannot open an already open ...");
     }
 
     writeable = true;
@@ -259,8 +140,8 @@ public:
         fd->addVar(TOPO_VAR, nc::ncUint, {npolygons_dim, polygon_order_dim});
 
     // Populate topology data
-    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
-        faceMatrix = getFaceVertexMatrix(mesh);
+    Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> faceMatrix{
+        mesh.getFaceVertexMatrix<std::uint32_t>()};
     std::uint32_t *topodata = faceMatrix.data();
     topology.putVar(topodata);
 
@@ -295,9 +176,9 @@ public:
                          {frame_dim, nvertices_dim, spatial_dim});
     vel_var.putAtt(UNITS, LEN_UNITS + TIME_UNITS + "^(-1)");
 
-    proteinden_var = fd->addVar(PROTEINDEN_VAR, netCDF::ncDouble,
+    phi_var = fd->addVar(PHI_VAR, netCDF::ncDouble,
                                 {frame_dim, nvertices_dim});
-    proteinden_var.putAtt(UNITS, LEN_UNITS + "^(-2)");
+    phi_var.putAtt(UNITS, LEN_UNITS + "^(-2)");
 
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -364,8 +245,7 @@ public:
         fd->addVar(CHEMERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     chemerrornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-1)");
 
-    errornorm_var =
-        fd->addVar(ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
+    errornorm_var = fd->addVar(ERRORNORM_VAR, netCDF::ncDouble, {frame_dim});
     errornorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     bendnorm_var = fd->addVar(BENDNORM_VAR, netCDF::ncDouble, {frame_dim});
@@ -374,8 +254,7 @@ public:
     surfnorm_var = fd->addVar(SURFNORM_VAR, netCDF::ncDouble, {frame_dim});
     surfnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
-    pressnorm_var =
-        fd->addVar(PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
+    pressnorm_var = fd->addVar(PRESSNORM_VAR, netCDF::ncDouble, {frame_dim});
     pressnorm_var.putAtt(UNITS, FORCE_UNITS + LEN_UNITS + "^(-2)");
 
     linenorm_var = fd->addVar(LINENORM_VAR, netCDF::ncDouble, {frame_dim});
@@ -459,9 +338,9 @@ public:
    *
    */
   void getNcFrame(int &frame) const {
-    int maxFrame = getNextFrameIndex() - 1;
+    int maxFrame = nFrames() - 1;
     if (frame > maxFrame || frame < -(maxFrame + 1)) {
-      throw std::runtime_error("Snapshot frame exceed limiting frame index!");
+      mem3dg_runtime_error("Snapshot frame exceed limiting frame index!");
     } else if (frame < 0) {
       frame = frame + maxFrame + 1;
     }
@@ -479,7 +358,7 @@ public:
    */
   inline bool isWriteable() { return writeable; };
 
-  inline std::size_t getNextFrameIndex() const { return frame_dim.getSize(); };
+  inline std::size_t nFrames() const { return frame_dim.getSize(); };
 
   /**
    * @brief Validate whether or not the metadata follows convention
@@ -492,7 +371,7 @@ public:
 
   void writeIsSmooth(const std::size_t idx, const bool isSmooth);
 
-  void writeCoords(const std::size_t idx, const EigenVector &data);
+  void writeCoords(const std::size_t idx, const EigenVectorX3dr &data);
 
   void writeTopoFrame(const std::size_t idx,
                       const Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3,
@@ -502,7 +381,7 @@ public:
 
   double getIsSmooth(const std::size_t idx) const;
 
-  EigenVector getCoords(const std::size_t idx) const;
+  EigenVectorX3dr getCoords(const std::size_t idx) const;
 
   Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>
   getTopoFrame(const std::size_t idx) const;
@@ -523,7 +402,7 @@ public:
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> getMask() const;
 
-  void writeVelocity(const std::size_t idx, const EigenVector &data);
+  void writeVelocity(const std::size_t idx, const EigenVectorX3dr &data);
 
   Eigen::Matrix<double, Eigen::Dynamic, SPATIAL_DIMS>
   getVelocity(const std::size_t idx) const;
@@ -728,7 +607,7 @@ private:
   nc::NcVar topo_frame_var;
   nc::NcVar angle_var;
   nc::NcVar vel_var;
-  nc::NcVar proteinden_var;
+  nc::NcVar phi_var;
   nc::NcVar meancurve_var;
   nc::NcVar gausscurve_var;
   nc::NcVar sponcurve_var;
@@ -765,5 +644,6 @@ private:
   /// Writeable status
   bool writeable;
 };
+} // namespace solver
 } // namespace mem3dg
 #endif

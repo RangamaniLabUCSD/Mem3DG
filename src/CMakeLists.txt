@@ -13,20 +13,22 @@
 #
 
 set(DDG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/pressure.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/energy.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/regularization.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/init.cpp"
-    
-    "${CMAKE_CURRENT_SOURCE_DIR}/stormer_verlet.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/BFGS.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/velocity_verlet.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/euler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/conjugate_gradient.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/integrator.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/trajfile.cpp"
-
+    "${CMAKE_CURRENT_SOURCE_DIR}/mesh_io.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/visualization.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
+    
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/init.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/force.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/energy.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/parameters.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/regularization.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/mesh_process.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/trajfile.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/mutable_trajfile.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/integrator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/BFGS.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/velocity_verlet.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/forward_euler.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/integrator/conjugate_gradient.cpp"
     PARENT_SCOPE
 )

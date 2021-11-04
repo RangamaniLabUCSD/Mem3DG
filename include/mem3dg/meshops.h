@@ -14,6 +14,9 @@
 
 #pragma once
 
+#include <array>
+#include <vector>
+
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/halfedge_factories.h"
 #include "geometrycentral/surface/tufted_laplacian.h"
@@ -28,9 +31,9 @@
 #include <sys/time.h>
 #endif
 
-#include "mem3dg/solver/constants.h"
-#include "mem3dg/solver/macros.h"
-#include "mem3dg/solver/util.h"
+#include "mem3dg/constants.h"
+#include "mem3dg/macros.h"
+#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
 
@@ -161,7 +164,7 @@ outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5) {
   double r, l, range;
   findRange(sorted_vec.data(), sorted_vec.size(), r, l);
   range = r - l;
-  for (size_t i = 0; i < vec.rows(); i++) {
+  for (std::size_t i = 0; i < vec.rows(); i++) {
     mask[i] =
         ((vec[i] - r < threshold * range) && (l - vec[i] < threshold * range));
   }
@@ -225,6 +228,7 @@ DLL_PUBLIC inline double signedVolumeFromFace(gc::Vector3 &p0, gc::Vector3 &p1,
   double v123 = p0.x * p1.y * p2.z;
   return (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
 }
+
 DLL_PUBLIC inline double
 signedVolumeFromFace(gcs::Vertex &&v0, gcs::Vertex &&v1, gcs::Vertex &v2,
                      gcs::VertexPositionGeometry &vpg) {
@@ -232,11 +236,12 @@ signedVolumeFromFace(gcs::Vertex &&v0, gcs::Vertex &&v1, gcs::Vertex &v2,
                               vpg.inputVertexPositions[v1],
                               vpg.inputVertexPositions[v2]);
 }
+
 DLL_PUBLIC
 inline double signedVolumeFromFace(gcs::Face &f,
                                    gcs::VertexPositionGeometry &vpg) {
   gc::Vector3 p[3];
-  size_t i = 0;
+  std::size_t i = 0;
   for (gcs::Vertex v : f.adjacentVertices()) {
     p[i] = vpg.inputVertexPositions[v];
     i++;
@@ -255,11 +260,8 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
                                        gcs::VertexPositionGeometry &vpg,
                                        bool isFillHole = true) {
   double volume = 0;
-  for (gcs::Face f : mesh.faces()) {
-    volume += signedVolumeFromFace(f, vpg);
-  }
 
-  // fill hole for open mesh
+  // Throw error or fill hole for open mesh
   if (mesh.hasBoundary()) {
     if (isFillHole) {
       for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
@@ -272,10 +274,15 @@ DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
         }
       }
     } else {
-      throw std::runtime_error("getMeshVolume: mesh is opened, not able to "
-                               "compute enclosed volume unless filled holes!");
+      mem3dg_runtime_error("Mesh is opened, not able to ",
+                           "compute enclosed volume unless filled holes!");
     }
   }
+
+  for (gcs::Face f : mesh.faces()) {
+    volume += signedVolumeFromFace(f, vpg);
+  }
+
   return volume;
 }
 
@@ -296,31 +303,31 @@ DLL_PUBLIC inline void averageData(gc::MeshData<E, T> &meshData,
 }
 
 /**
- * @brief get barycentric coordinate from cartesian coordinate
+ * @brief Convert cartesian coordinates to barycentric coordinates
  *
- * @param meshData
- * @param element1
- * @param element2
- * @param newElement
- * @return
+ * @param v1 The first basis
+ * @param v2 The second basis
+ * @param v3 The third basis
+ * @param v
+ * @return DLL_PUBLIC
  */
 DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
                                                      gc::Vector2 &v2,
                                                      gc::Vector2 &v3,
                                                      gc::Vector2 &v) {
-  gc::Vector3 lambda;
-
-  lambda.x = ((v2.y - v3.y) * (v.x - v3.x) + (v3.x - v2.x) * (v.y - v3.y)) /
-             ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y));
-  lambda.y = ((v3.y - v1.y) * (v.x - v3.x) + (v1.x - v3.x) * (v.y - v3.y)) /
-             ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y));
+  gc::Vector3 lambda{
+      ((v2.y - v3.y) * (v.x - v3.x) + (v3.x - v2.x) * (v.y - v3.y)) /
+          ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y)), // X
+      ((v3.y - v1.y) * (v.x - v3.x) + (v1.x - v3.x) * (v.y - v3.y)) /
+          ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y)), // Y
+      0};
   lambda.z = 1 - lambda.x - lambda.y;
 
   return lambda;
 }
 
 /**
- * @brief get coorresponding barycentric coordinate to a face
+ * @brief Get corresponding barycentric coordinate to a face
  *
  * @param baryCoords reference to Barycentric coordinate
  * @param firstHalfedge reference to the halfedge associated with the first
@@ -330,7 +337,7 @@ DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
 DLL_PUBLIC inline gc::Vector3
 correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
                                  gcs::Halfedge &firstHalfedge) {
-  size_t vertexInd = 0;
+  std::size_t vertexInd = 0;
   gc::Vector3 baryCoords;
   for (gcs::Vertex v : firstHalfedge.face().adjacentVertices()) {
     if (v == firstHalfedge.vertex()) {
@@ -340,11 +347,9 @@ correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
     } else if (v == firstHalfedge.next().next().vertex()) {
       baryCoords[vertexInd] = baryCoords_.z;
     } else if (firstHalfedge.face().isBoundaryLoop()) {
-      throw std::runtime_error(
-          "correspondBarycentricCoordinates: face is on boundary!");
+      mem3dg_runtime_error("Face is on boundary!");
     } else {
-      throw std::runtime_error(
-          "correspondBarycentricCoordinates: undefined behavior!");
+      mem3dg_runtime_error("Undefined behavior");
     }
     vertexInd++;
   }
@@ -366,49 +371,8 @@ vecFromHalfedge(const gcs::Halfedge &he,
 }
 
 /**
- * @brief helper function for taking rowwise dot product of two matrices
- *
- * @param Eigen matrix A
- * @param Eigen matrix B
- * @return Eigen matrix V
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
-rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &A,
-                  Eigen::Matrix<double, Eigen::Dynamic, 3> &B) {
-  return ((A.array() * B.array()).rowwise().sum()).matrix();
-}
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
-rowwiseDotProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &&A,
-                  Eigen::Matrix<double, Eigen::Dynamic, 3> &&B) {
-  return ((A.array() * B.array()).rowwise().sum()).matrix();
-}
-
-/**
- * @brief helper function for taking rowwise cross product of two matrices
- *
- * @param Eigen matrix A
- * @param Eigen matrix B
- * @return Eigen matrix V
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
-rowwiseCrossProduct(Eigen::Matrix<double, Eigen::Dynamic, 3> &A,
-                    Eigen::Matrix<double, Eigen::Dynamic, 3> &B) {
-  Eigen::Matrix<double, Eigen::Dynamic, 3> C;
-  if (A.rows() != B.rows()) {
-    throw std::runtime_error("The input matrices must have same sizes!");
-    return C;
-  } else {
-    C.resize(A.rows(), 3);
-    for (size_t i = 0; i < A.rows(); i++) {
-      C.row(i) = A.row(i).cross(B.row(i));
-    }
-    return C;
-  }
-}
-
-/**
- * @brief helper function for computing the polygon area enclosed by a
- * boundary loop on a mesh
+ * @brief helper function for computing the polygon area enclosed by a boundary
+ * loop on a mesh
  * @param bl boundary loop on a mesh
  * @param inputVertexPosition embedded vertex position of the mesh
  * @return enclosed polygon area
@@ -422,34 +386,8 @@ computePolygonArea(const gcs::BoundaryLoop &bl,
                         inputVertexPositions[he.tipVertex()]);
   }
 
-  // could be used to poject onto other direction if needed
+  // could be used to project onto other direction if needed
   return 0.5 * signedArea.norm();
-}
-
-/**
- * @brief helper function for taking rowwise product of two vectors
- *
- * @param Eigen vector A
- * @param Eigen vector B
- * @return Eigen matrix V
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 1>
-rowwiseProduct(Eigen::Matrix<double, Eigen::Dynamic, 1> A,
-               Eigen::Matrix<double, Eigen::Dynamic, 1> B) {
-  return (A.array() * B.array()).matrix();
-}
-
-/**
- * @brief helper function for rowwise scaling of a matrix using a vector s
- *
- * @param Eigen vector a
- * @param Eigen matrix B
- * @return Eigen matrix C
- */
-DLL_PUBLIC inline Eigen::Matrix<double, Eigen::Dynamic, 3>
-rowwiseScaling(Eigen::Matrix<double, Eigen::Dynamic, 1> a,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> B) {
-  return (B.array().colwise() * a.array()).matrix();
 }
 
 /**
@@ -504,8 +442,7 @@ DLL_PUBLIC inline void boundaryProteinMask(gcs::SurfaceMesh &mesh,
     }
   } else if (boundaryConditionType == "none") {
   } else {
-    throw std::runtime_error(
-        "boundaryProteinMask: boundaryConditionType not defined!");
+    mem3dg_runtime_error("boundaryConditionType not defined!");
   }
   if (!(mask.raw().array() < 0.5).any() && boundaryConditionType != "none") {
     std::cout << "\nboundaryProteinMask: WARNING: there is no boundary vertex "
@@ -545,8 +482,7 @@ DLL_PUBLIC inline void boundaryForceMask(gcs::SurfaceMesh &mesh,
     }
   } else if (boundaryConditionType == "none") {
   } else {
-    throw std::runtime_error(
-        "boundaryForceMask(double): boundaryConditionType not defined!");
+    mem3dg_runtime_error("boundaryConditionType is not defined");
   }
   if (!(gc::EigenMap<double, 3>(mask).array() < 0.5).any() &&
       boundaryConditionType != "none") {
@@ -564,16 +500,11 @@ DLL_PUBLIC inline void boundaryForceMask(gcs::SurfaceMesh &mesh,
 }
 
 /**
- * @brief Remove the rigid body translation
+ * @brief Remove rigid body translation
  *
- * @param Eigen force matrix
+ * @param force   Matrix of forces to process
  */
-DLL_PUBLIC inline void
-removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
-  force = force.rowwise() - ((force).colwise().sum() / force.rows());
-}
-DLL_PUBLIC inline void
-removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
+DLL_PUBLIC inline void removeTranslation(Eigen::Ref<EigenVectorX3dr> force) {
   force = force.rowwise() - ((force).colwise().sum() / force.rows());
 }
 
@@ -584,31 +515,13 @@ removeTranslation(Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
  * @param Eigen position matrix
  */
 DLL_PUBLIC inline void
-removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &force) {
-  force = force.rowwise() -
-          (rowwiseCrossProduct(position, force).colwise().sum() / force.rows());
-}
-DLL_PUBLIC inline void
-removeRotation(Eigen::Matrix<double, Eigen::Dynamic, 3> position,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &&force) {
-  force = force.rowwise() -
-          (rowwiseCrossProduct(position, force).colwise().sum() / force.rows());
-}
-
-/**
- * @brief Gaussian distribution
- *
- * @param distance vector
- * @param standard deviation
- */
-DLL_PUBLIC inline void
-gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                     Eigen::Matrix<double, Eigen::Dynamic, 1> distance,
-                     double stdDev) {
-  distribution =
-      (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
-      (stdDev * pow(constants::PI * 2, 0.5));
+removeRotation(const Eigen::Ref<const EigenVectorX3dr> &position,
+               Eigen::Ref<EigenVectorX3dr> force) {
+  Eigen::Matrix<double, 1, 3> sum(0, 0, 0);
+  for (std::size_t i = 0; i < force.rows(); ++i) {
+    sum += position.row(i).cross(force.row(i));
+  }
+  force = force.rowwise() - (sum / force.rows());
 }
 
 /**
@@ -623,7 +536,7 @@ gaussianDistribution(Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
  */
 DLL_PUBLIC inline gcs::Vertex
 closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-                  Eigen::Matrix<double, Eigen::Dynamic, 1> &position,
+                  const Eigen::Ref<const EigenVectorX1d> &position,
                   gcs::VertexData<double> &geodesicDistance,
                   double range = 1e10) {
   gcs::Vertex theVertex;
@@ -658,7 +571,7 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
                   gc::Vector3{position[0], position[1], position[2]})
                      .norm();
     } else {
-      throw std::runtime_error(
+      mem3dg_runtime_error(
           "closestVertexToPt: does not support non-2d/3d position vector!");
     }
     if (distance < shorestDistance) {
@@ -670,18 +583,24 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
 }
 
 /**
- * @brief Calculate the line tension
+ * @brief Gaussian distribution
  *
- * @param vertexPositionGeometry
- * @param mean curvature H
- * @param vertex v
- * @param lineTensionPressure
+ * @param distance vector
+ * @param standard deviation
  */
 DLL_PUBLIC inline void
-findVertexLineTension(gcs::VertexPositionGeometry &vpg, double eta,
-                      Eigen::Matrix<double, Eigen::Dynamic, 1> &H,
-                      gcs::Vertex v, gcs::Halfedge isoHe, gc::Vector3 gradVec,
-                      gcs::VertexData<gc::Vector3> &lineTensionPressure) {}
+gaussianDistribution(Eigen::Ref<EigenVectorX1d> distribution,
+                     const Eigen::Ref<const EigenVectorX1d> &distance,
+                     const double stdDev) {
+  distribution =
+      (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
+      (stdDev * pow(constants::PI * 2, 0.5));
+}
+inline double gaussianDistribution(const double &distance,
+                                   const double &stdDev) {
+  return exp(-distance * distance / (2 * stdDev * stdDev)) /
+         (stdDev * pow(constants::PI * 2, 0.5));
+}
 
 /**
  * @brief height = 1 tanh step function with radius r
@@ -694,9 +613,9 @@ findVertexLineTension(gcs::VertexPositionGeometry &vpg, double eta,
  */
 DLL_PUBLIC inline void
 tanhDistribution(gcs::VertexPositionGeometry &vpg,
-                 Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                 Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
-                 double sharpness, std::vector<double> &axes) {
+                 Eigen::Ref<EigenVectorX1d> distribution,
+                 const Eigen::Ref<const EigenVectorX1d> &distance,
+                 const double sharpness, const std::vector<double> &axes) {
   distribution.resize(distance.rows(), 1);
   if (axes[0] == axes[1]) {
     Eigen::MatrixXd radius_vec =
@@ -706,7 +625,7 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
         (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
   } else {
     double x, y, cos_t, radius;
-    for (size_t i = 0; i < distance.rows(); i++) {
+    for (std::size_t i = 0; i < distance.rows(); i++) {
       x = vpg.inputVertexPositions[i].x;
       y = vpg.inputVertexPositions[i].y;
       cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
@@ -729,15 +648,15 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
  */
 DLL_PUBLIC inline void
 ellipticDistribution(gcs::VertexPositionGeometry &vpg,
-                     Eigen::Matrix<double, Eigen::Dynamic, 1> &distribution,
-                     Eigen::Matrix<double, Eigen::Dynamic, 1> &distance,
-                     std::vector<double> &axes) {
+                     Eigen::Ref<EigenVectorX1d> distribution,
+                     const Eigen::Ref<const EigenVectorX1d> &distance,
+                     const std::vector<double> &axes) {
   distribution.resize(distance.rows(), 1);
   if (axes[0] == axes[1]) {
     distribution = (distance.array() < axes[0]).cast<double>();
   } else {
     double x, y, cos_t, radius;
-    for (size_t i = 0; i < distance.rows(); i++) {
+    for (std::size_t i = 0; i < distance.rows(); i++) {
       x = vpg.inputVertexPositions[i].x;
       y = vpg.inputVertexPositions[i].y;
       cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
@@ -764,37 +683,5 @@ DLL_PUBLIC inline double getDuration(timeval &start) {
          1.e6;
 }
 #endif
-
-/**
- * @brief Get the Face Vertex Matrix object
- *
- * @param mesh   Mesh of interest
- * @return Eigen matrix of uint32_t indices
- */
-DLL_PUBLIC inline Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3,
-                                Eigen::RowMajor>
-getFaceVertexMatrix(gcs::SurfaceMesh &mesh) {
-  if (!mesh.isTriangular())
-    throw std::runtime_error("Mesh is not triangular.");
-
-  Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor> result(
-      mesh.nFaces(), 3);
-
-  gcs::VertexData<std::size_t> vInd = mesh.getVertexIndices();
-
-  std::size_t i = 0;
-  for (gcs::Face f : mesh.faces()) {
-    std::uint32_t a, b, c;
-    gcs::Halfedge tmp = f.halfedge();
-    a = vInd[tmp.vertex()];
-    tmp = tmp.next();
-    b = vInd[tmp.vertex()];
-    tmp = tmp.next();
-    c = vInd[tmp.vertex()];
-
-    result.row(i++) << a, b, c;
-  }
-  return result;
-}
 
 } // namespace mem3dg

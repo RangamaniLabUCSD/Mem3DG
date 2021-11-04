@@ -24,11 +24,14 @@
 #include <geometrycentral/utilities/vector3.h>
 #include <stdexcept>
 
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator/bfgs.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
+namespace solver {
+namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool BFGS::integrate() {
@@ -43,10 +46,13 @@ bool BFGS::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  createNetcdfFile();
-  // print to console
-  std::cout << "Initialized integrator and the output trajactory is "
-            << outputDir + "/" + trajFileName << std::endl;
+  if (verbosity > 0) {
+    // createNetcdfFile();
+    createMutableNetcdfFile();
+    // print to console
+    std::cout << "Initialized integrator and the output trajactory is "
+              << outputDirectory + "/" + trajFileName << std::endl;
+  }
 #endif
 
   // time integration loop
@@ -56,8 +62,9 @@ bool BFGS::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    if (f.time - lastSave >= tSave || f.time == init_time || EXIT) {
-      lastSave = f.time;
+    if (system.time - lastSave >= savePeriod || system.time == initialTime ||
+        EXIT) {
+      lastSave = system.time;
       saveData();
     }
 
@@ -72,7 +79,7 @@ bool BFGS::integrate() {
 
   // return if optimization is sucessful
   if (!SUCCESS) {
-    if (tol == 0) {
+    if (tolerance == 0) {
       markFileName("_most");
     } else {
       markFileName("_failed");
@@ -92,44 +99,49 @@ bool BFGS::integrate() {
 }
 
 void BFGS::checkParameters() {
-  if (f.P.gamma != 0 || f.P.temp != 0) {
-    throw std::runtime_error("DPD has to be turned off for BFGS integration!");
+  if (system.parameters.dpd.gamma != 0) {
+    mem3dg_runtime_error("DPD has to be turned off for BFGS integration!");
   }
   // if (f.O.isVertexShift) {
-  //   throw std::runtime_error(
+  //   mem3dg_runtime_error(
   //       "Vertex shift is not supported for BFGS integration!");
   // }
   if (!isBacktrack) {
-    throw std::runtime_error("Backtracking is required for BFGS integration");
+    mem3dg_runtime_error("Backtracking is required for BFGS integration");
   }
-  if (f.P.Bc != 1 && f.P.Bc != 0) {
-    throw std::runtime_error("Protein mobility constant should "
-                             "be set to 1 for optimization!");
+  if (system.parameters.proteinMobility != 1 &&
+      system.parameters.proteinMobility != 0) {
+    mem3dg_runtime_error("Protein mobility constant should "
+                         "be set to 1 for optimization!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
-      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+      mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
+  }
+  if (system.parameters.external.Kf != 0) {
+    mem3dg_runtime_error(
+        "External force can not be applied using energy optimization")
   }
 }
 
 void BFGS::status() {
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+  auto physicalForceVec = toMatrix(system.forces.mechanicalForceVec);
+  auto physicalForce = toMatrix(system.forces.mechanicalForce);
 
   // compute summerized forces
   getForces();
 
   // update
-  if (f.time != init_time || ifRestart) {
-    EigenVectorX1D y = -f.F.flatten(physicalForceVec) + pastPhysicalForce;
+  if (system.time != initialTime || ifRestart) {
+    EigenVectorX1d y = -flatten(physicalForceVec) + pastPhysicalForce;
     double sTy = (s.transpose() * y);
     hess_inv +=
         (s * s.transpose()) * (sTy + y.transpose() * hess_inv * y) / sTy / sTy -
         (hess_inv * y * s.transpose() + s * y.transpose() * hess_inv) / sTy;
 
-    EigenVectorX1D y_protein =
-        -f.F.chemicalPotential.raw() + pastPhysicalForce_protein;
+    EigenVectorX1d y_protein =
+        -system.forces.chemicalPotential.raw() + pastPhysicalForce_protein;
     double sTy_protein = (s_protein.transpose() * y_protein);
     hess_inv_protein += (s_protein * s_protein.transpose()) *
                             (sTy_protein + y_protein.transpose() *
@@ -139,86 +151,98 @@ void BFGS::status() {
                          s_protein * y_protein.transpose() * hess_inv_protein) /
                             sTy_protein;
   }
-  pastPhysicalForce = f.F.flatten(physicalForceVec);
-  pastPhysicalForce_protein = f.F.chemicalPotential.raw();
+  pastPhysicalForce = flatten(physicalForceVec);
+  pastPhysicalForce_protein = system.forces.chemicalPotential.raw();
   // std::cout << "if equal: "
-  //           << (f.F.unflatten(f.F.flatten(physicalForceVec)).array() ==
+  //           << (unflatten<3>(flatten(physicalForceVec)).array() ==
   //               physicalForceVec.array())
   //           << std::endl;
 
   // compute the area contraint error
-  dArea = (f.P.Ksg != 0) ? abs(f.surfaceArea / f.refSurfaceArea - 1) : 0.0;
+  areaDifference =
+      (system.parameters.tension.Ksg != 0)
+          ? abs(system.surfaceArea / system.parameters.tension.At - 1)
+          : 0.0;
 
-  if (f.O.isReducedVolume) {
+  if (system.parameters.osmotic.isPreferredVolume) {
     // compute volume constraint error
-    dVP = (f.P.Kv != 0) ? abs(f.volume / f.refVolume / f.P.Vt - 1) : 0.0;
+    volumeDifference =
+        (system.parameters.osmotic.Kv != 0)
+            ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+            : 0.0;
     // thresholding, exit if fulfilled and iterate if not
-    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, dArea, dVP, ctol, 1.3);
+    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference,
+                           volumeDifference, ctol, 1.3);
   } else {
     // compute pressure constraint error
-    dVP = (!f.mesh->hasBoundary()) ? abs(1 / f.volume / f.P.cam - 1) : 1.0;
+    volumeDifference = (!system.mesh->hasBoundary())
+                           ? abs(system.parameters.osmotic.n / system.volume /
+                                     system.parameters.osmotic.cam -
+                                 1.0)
+                           : 1.0;
     // thresholding, exit if fulfilled and iterate if not
-    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, dArea, ctol, 1.3);
+    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference,
+                                ctol, 1.3);
   }
 
   // exit if reached time
-  if (f.time > total_time) {
+  if (system.time > totalTime) {
     std::cout << "\nReached time." << std::endl;
     EXIT = true;
     SUCCESS = false;
   }
 
   // compute the free energy of the system
-  f.computeFreeEnergy();
+  system.computeTotalEnergy();
 
   // backtracking for error
   finitenessErrorBacktrack();
 }
 
 void BFGS::march() {
-  if (f.time == lastSave && f.time != init_time) {
+  if (system.time == lastSave && system.time != initialTime) {
     // process the mesh with regularization or mutation
-    f.processMesh();
-    f.updateVertexPositions(true);
+    system.mutateMesh();
+    system.updateVertexPositions(true);
 
-    f.time += 1e-10 * dt;
+    system.time += 1e-10 * characteristicTimeStep;
     ifRestart = true;
     hess_inv.setIdentity();
     hess_inv_protein.setIdentity();
   } else {
     // map the raw eigen datatype for computation
-    auto vel_e = f.F.toMatrix(f.vel);
-    auto vel_protein_e = f.F.toMatrix(f.vel_protein);
-    auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-    auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
+    auto f_velocity_e = toMatrix(system.velocity);
+    auto f_forces_mechanicalForceVec_e =
+        toMatrix(system.forces.mechanicalForceVec);
 
-    vel_e = f.F.unflatten(hess_inv * f.F.flatten(physicalForceVec));
-    vel_protein_e = hess_inv_protein * f.F.chemicalPotential.raw();
+    f_velocity_e = unflatten<3>(
+        (hess_inv * flatten(f_forces_mechanicalForceVec_e)).eval());
+    toMatrix(system.proteinVelocity) =
+        hess_inv_protein * system.forces.chemicalPotential.raw();
 
-    // adjust time step if adopt adaptive time step based on mesh size
+    // adjust time step if adopt adaptive time step based on mesh size and force
+    // magnitude
     if (isAdaptiveStep) {
-      double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-      dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-           (f.O.isShapeVariation
-                ? physicalForce.cwiseAbs().maxCoeff()
-                : f.F.chemicalPotential.raw().cwiseAbs().maxCoeff());
+      updateAdaptiveCharacteristicStep();
     }
 
     // time stepping on vertex position
-    previousE = f.E;
-    double alpha = backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
-    s = alpha * f.F.flatten(vel_e);
-    s_protein = alpha * vel_protein_e;
+    timeStep = backtrack(system.energy.potentialEnergy, f_velocity_e,
+                         toMatrix(system.proteinVelocity), rho, c1);
+    s = timeStep * flatten(f_velocity_e);
+    s_protein = timeStep * toMatrix(system.proteinVelocity);
 
     // regularization
-    if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
-      f.computeRegularizationForce();
-      f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+    if (system.meshProcessor.isMeshRegularize) {
+      system.computeRegularizationForce();
+      system.vpg->inputVertexPositions.raw() +=
+          system.forces.regularizationForce.raw();
     }
 
     // recompute cached values
-    f.updateVertexPositions(false);
+    system.updateVertexPositions(false);
   }
 }
-
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg
