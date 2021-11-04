@@ -12,15 +12,23 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 // 
 
-#include "solver/constants.h"
-#include "solver/mem3dg.h"
-#include "solver/visualization.h"
+
+#include "constants.h"
+#include "typetraits.h"
+#include "type_utilities.h"
+#include "meshops.h"
+#include "mesh_io.h"
+#include "version.h"
+
+
 #include "solver/system.h"
-#include "solver/integrator.h"
-#include "solver/mesh.h"
+#include "solver/forces.h"
+#include "solver/mesh_process.h"
 #include "solver/trajfile.h"
-#include "solver/typetraits.h"
-#include "solver/util.h"
-#include "solver/macros.h"
-#include "solver/meshops.h"
-#include "solver/version.h"
+#include "solver/mutable_trajfile.h"
+
+#include "solver/integrator/integrator.h"
+#include "solver/integrator/velocity_verlet.h"
+#include "solver/integrator/forward_euler.h"
+#include "solver/integrator/conjugate_gradient.h"
+#include "solver/integrator/bfgs.h"

@@ -23,11 +23,15 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include "mem3dg/solver/integrator.h"
-#include "mem3dg/solver/meshops.h"
+#include "mem3dg/meshops.h"
+#include "mem3dg/solver/integrator/forward_euler.h"
+#include "mem3dg/solver/integrator/integrator.h"
 #include "mem3dg/solver/system.h"
+#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
+namespace solver {
+namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool Euler::integrate() {
@@ -42,10 +46,13 @@ bool Euler::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  createNetcdfFile();
-  // print to console
-  std::cout << "Initialized NetCDF file at " << outputDir + "/" + trajFileName
-            << std::endl;
+  if (verbosity > 0) {
+    // createNetcdfFile();
+    createMutableNetcdfFile();
+    // print to console
+    std::cout << "Initialized NetCDF file at "
+              << outputDirectory + "/" + trajFileName << std::endl;
+  }
 #endif
 
   // time integration loop
@@ -55,22 +62,23 @@ bool Euler::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    if (f.time - lastSave >= tSave || f.time == init_time || EXIT) {
-      lastSave = f.time;
+    if (system.time - lastSave >= savePeriod || system.time == initialTime ||
+        EXIT) {
+      lastSave = system.time;
       saveData();
     }
 
     // Process mesh every tProcessMesh period
-    if (f.time - lastProcessMesh > tProcessMesh) {
-      lastProcessMesh = f.time;
-      f.processMesh();
-      f.updateVertexPositions(false);
+    if (system.time - lastProcessMesh > processMeshPeriod) {
+      lastProcessMesh = system.time;
+      system.mutateMesh();
+      system.updateVertexPositions(false);
     }
 
     // update geodesics every tUpdateGeodesics period
-    if (f.time - lastUpdateGeodesics > tUpdateGeodesics) {
-      lastUpdateGeodesics = f.time;
-      f.updateVertexPositions(true);
+    if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
+      lastUpdateGeodesics = system.time;
+      system.updateVertexPositions(true);
     }
 
     // break loop if EXIT flag is on
@@ -79,8 +87,8 @@ bool Euler::integrate() {
     }
 
     // step forward
-    if (f.time == lastProcessMesh || f.time == lastUpdateGeodesics) {
-      f.time += 1e-10 * dt;
+    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
+      system.time += 1e-10 * characteristicTimeStep;
     } else {
       march();
     }
@@ -88,7 +96,7 @@ bool Euler::integrate() {
 
   // return if optimization is sucessful
   if (!SUCCESS) {
-    if (tol == 0) {
+    if (tolerance == 0) {
       markFileName("_most");
     } else {
       markFileName("_failed");
@@ -107,12 +115,12 @@ bool Euler::integrate() {
 }
 
 void Euler::checkParameters() {
-  if (f.P.gamma != 0 || f.P.temp != 0) {
-    throw std::runtime_error("DPD has to be turned off for euler integration!");
+  if (system.parameters.dpd.gamma != 0) {
+    mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
-      throw std::runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
+      mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
     }
   }
 }
@@ -122,67 +130,68 @@ void Euler::status() {
   getForces();
 
   // compute the area contraint error
-  dArea = abs(f.surfaceArea / f.refSurfaceArea - 1);
-  dVP = (f.O.isReducedVolume) ? abs(f.volume / f.refVolume / f.P.Vt - 1)
-                              : abs(1.0 / f.volume / f.P.cam - 1);
+  areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
+  volumeDifference = (system.parameters.osmotic.isPreferredVolume)
+                         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+                         : abs(system.parameters.osmotic.n / system.volume /
+                                   system.parameters.osmotic.cam -
+                               1.0);
 
   // exit if under error tolerance
-  if (f.mechErrorNorm < tol && f.chemErrorNorm < tol) {
+  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     std::cout << "\nError norm smaller than tolerance." << std::endl;
     EXIT = true;
   }
 
   // exit if reached time
-  if (f.time > total_time) {
+  if (system.time > totalTime) {
     std::cout << "\nReached time." << std::endl;
     EXIT = true;
     SUCCESS = false;
   }
 
   // compute the free energy of the system
-  f.computeFreeEnergy();
+  if (system.parameters.external.Kf != 0)
+    system.computeExternalWork(system.time, timeStep);
+  system.computeTotalEnergy();
 
   // backtracking for error
   finitenessErrorBacktrack();
 }
 
 void Euler::march() {
-  // map the raw eigen datatype for computation
-  auto vel_e = gc::EigenMap<double, 3>(f.vel);
-  auto vel_protein_e = f.F.toMatrix(f.vel_protein);
-  auto pos_e = gc::EigenMap<double, 3>(f.vpg->inputVertexPositions);
-  auto physicalForceVec = f.F.toMatrix(f.F.mechanicalForceVec);
-  auto physicalForce = f.F.toMatrix(f.F.mechanicalForce);
-
   // compute force, which is equivalent to velocity
-  vel_e = physicalForceVec;
-  vel_protein_e = f.P.Bc * f.F.chemicalPotential.raw();
+  system.velocity = system.forces.mechanicalForceVec;
+  system.proteinVelocity =
+      system.parameters.proteinMobility * system.forces.chemicalPotential;
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    double minMeshLength = f.vpg->edgeLengths.raw().minCoeff();
-    dt = dt_size2_ratio * maxForce * minMeshLength * minMeshLength /
-         (f.O.isShapeVariation ? physicalForce.cwiseAbs().maxCoeff()
-                               : vel_protein_e.cwiseAbs().maxCoeff());
+    updateAdaptiveCharacteristicStep();
   }
 
   // time stepping on vertex position
-  previousE = f.E;
   if (isBacktrack) {
-    backtrack(f.E.potE, vel_e, vel_protein_e, rho, c1);
+    timeStep =
+        backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
+                  toMatrix(system.proteinVelocity), rho, c1);
   } else {
-    pos_e += vel_e * dt;
-    f.proteinDensity.raw() += vel_protein_e * dt;
-    f.time += dt;
+    timeStep = characteristicTimeStep;
+    system.vpg->inputVertexPositions += system.velocity * timeStep;
+    system.proteinDensity += system.proteinVelocity * timeStep;
+    system.time += timeStep;
   }
 
   // regularization
-  if ((f.P.Kse != 0) || (f.P.Ksl != 0) || (f.P.Kst != 0)) {
-    f.computeRegularizationForce();
-    f.vpg->inputVertexPositions.raw() += f.F.regularizationForce.raw();
+  if (system.meshProcessor.isMeshRegularize) {
+    system.computeRegularizationForce();
+    system.vpg->inputVertexPositions.raw() +=
+        system.forces.regularizationForce.raw();
   }
 
   // recompute cached values
-  f.updateVertexPositions(false);
+  system.updateVertexPositions(false);
 }
+} // namespace integrator
+} // namespace solver
 } // namespace mem3dg

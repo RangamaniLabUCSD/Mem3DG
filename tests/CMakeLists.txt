@@ -27,8 +27,8 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Build the tests
-set(MEM3DG_TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
-              src/force_calculation_test.cpp
+set(MEM3DG_TEST_SRCS src/main_test.cpp src/product_test.cpp
+        src/force_calculation_test.cpp src/integrator_test.cpp src/mutable_trajfile_test.cpp
 )
 
 add_executable(Mem3DG-tests "${MEM3DG_TEST_SRCS}")
@@ -53,8 +53,9 @@ endif()
 # ##############################################################################
 add_executable(ddg scratch.cpp) 
 target_link_libraries(ddg PRIVATE mem3dg) 
-set_target_properties(ddg PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 add_executable(ddg_patch scratch_patch.cpp) 
 target_link_libraries(ddg_patch PRIVATE mem3dg) 
-set_target_properties(ddg_patch PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+add_executable(scratch_ctl scratch_ctl.cpp) 
+target_link_libraries(scratch_ctl PRIVATE mem3dg) 
