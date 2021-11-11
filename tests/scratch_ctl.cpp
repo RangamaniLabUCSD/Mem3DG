@@ -10,11 +10,19 @@ namespace gcs = ::geometrycentral::surface;
 namespace nc = ::netCDF;
 
 int main() {
+  mem3dg::solver::BendingPhysic b;
+  mem3dg::solver::StretchingPhysic s;
+
+  // std::list<mem3dg::solver::Physic *> l{&b, &s};
+  mem3dg::solver::VariablePhysicsSystem v({&b, &s});
+  mem3dg::solver::VariablePhysicsSystem q({&s});
+
   // std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   // std::unique_ptr<gcs::VertexPositionGeometry> vpg;
   // std::tie(mesh, vpg) = mem3dg::icosphere(1, 0);
 
-  // mem3dg::solver::MutableTrajFile f = mem3dg::solver::MutableTrajFile::newFile(
+  // mem3dg::solver::MutableTrajFile f =
+  // mem3dg::solver::MutableTrajFile::newFile(
   //     "/Users/ctlee/Mem3DG/build/bin/test.nc", true);
 
   // mem3dg::EigenVectorX3ur t1{mesh->getFaceVertexMatrix<std::uint32_t>()};

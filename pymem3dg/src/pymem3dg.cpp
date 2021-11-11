@@ -32,14 +32,21 @@
 #include "pybind11/cast.h"
 
 namespace gc = ::geometrycentral;
+namespace py = ::pybind11;
+
 namespace mem3dg {
 namespace solver {
+
+// Forward function declarations
+void init_variable_physics_system(py::module &);
+
 namespace integrator {
-namespace py = pybind11;
 
 // Initialize the `pymem3dg` module
 PYBIND11_MODULE(pymem3dg, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
+
+  init_variable_physics_system(pymem3dg);
 
 #pragma region integrators
   // ==========================================================
@@ -710,8 +717,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   // ==========================================================
   // =============          System              ===============
   // ==========================================================
-  py::class_<System> system(pymem3dg, "System",
-                            R"delim(
+  py::class_<System> system(pymem3dg, "System", R"delim(
         The system
     )delim");
 

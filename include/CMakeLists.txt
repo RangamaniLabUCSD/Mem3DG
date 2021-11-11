@@ -30,6 +30,12 @@ set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/trajfile.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mutable_trajfile.h"
 
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/variable_physics_system.h"
+    
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/physics/physic.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/physics/bending_physic.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/physics/stretching_physic.h"
+
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/integrator.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/forward_euler.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/conjugate_gradient.h"

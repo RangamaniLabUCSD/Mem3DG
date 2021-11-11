@@ -22,6 +22,8 @@
 
 
 #include "solver/system.h"
+#include "solver/variable_physics_system.h"
+
 #include "solver/forces.h"
 #include "solver/mesh_process.h"
 #include "solver/trajfile.h"
@@ -32,3 +34,7 @@
 #include "solver/integrator/forward_euler.h"
 #include "solver/integrator/conjugate_gradient.h"
 #include "solver/integrator/bfgs.h"
+
+#include "solver/physics/physic.h"
+#include "solver/physics/bending_physic.h"
+#include "solver/physics/stretching_physic.h"
