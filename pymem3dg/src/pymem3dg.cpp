@@ -1228,11 +1228,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The protein distribution parameters
     )delim");
   proteindistribution.def_readwrite(
+      "profile", &Parameters::ProteinDistribution::profile, R"delim(
+          get the profile type: 'gaussian' or 'tanh'
+      )delim");
+  proteindistribution.def_readwrite(
       "protein0", &Parameters::ProteinDistribution::protein0, R"delim(
           get (initial) protein density
       )delim");
   proteindistribution.def_readwrite(
-      "sharpness", &Parameters::ProteinDistribution::sharpness, R"delim(
+      "tanhSharpness", &Parameters::ProteinDistribution::tanhSharpness, R"delim(
           get protein density sharpness of tanh transition
       )delim");
   proteindistribution.def_readwrite(
