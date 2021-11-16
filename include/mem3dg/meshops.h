@@ -588,18 +588,47 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
  * @param distance vector
  * @param standard deviation
  */
-DLL_PUBLIC inline void
-gaussianDistribution(Eigen::Ref<EigenVectorX1d> distribution,
-                     const Eigen::Ref<const EigenVectorX1d> &distance,
-                     const double stdDev) {
-  distribution =
-      (-distance.array() * distance.array() / (2 * stdDev * stdDev)).exp() /
-      (stdDev * pow(constants::PI * 2, 0.5));
-}
 inline double gaussianDistribution(const double &distance,
                                    const double &stdDev) {
-  return exp(-distance * distance / (2 * stdDev * stdDev)) /
-         (stdDev * pow(constants::PI * 2, 0.5));
+  return exp(-distance * distance / (2 * stdDev * stdDev));
+}
+inline double
+gaussianDistribution(const double &distance,
+                     const gc::Vector3 &vertexPositionFromPtInd,
+                     const std::array<gc::Vector3, 2> &tangentBasis,
+                     const std::array<double, 2> &stdDev) {
+  double x = gc::dot(vertexPositionFromPtInd, tangentBasis[0]);
+  double y = gc::dot(vertexPositionFromPtInd, tangentBasis[1]);
+  double cos_t = 1.0;
+  if (!(x == 0 && y == 0)) {
+    cos_t = x / sqrt(x * x + y * y);
+  }
+  return exp(
+      -((distance * distance * cos_t * cos_t / (2 * stdDev[0] * stdDev[0])) +
+        (distance * distance * (1 - cos_t * cos_t) /
+         (2 * stdDev[1] * stdDev[1]))));
+}
+DLL_PUBLIC inline void
+gaussianDistribution(Eigen::Ref<EigenVectorX1d> distribution,
+                     const Eigen::Ref<const EigenVectorX1d> &distances,
+                     const double stdDev) {
+  distribution =
+      (-distances.array() * distances.array() / (2 * stdDev * stdDev)).exp();
+}
+DLL_PUBLIC inline void gaussianDistribution(
+    EigenVectorX1d &distribution,
+    const Eigen::Ref<const EigenVectorX1d> &distances,
+    const gcs::VertexData<gc::Vector3> &vertexPositionsFromPtInd,
+    const std::array<gc::Vector3, 2> &tangentBasis,
+    const std::array<double, 2> &stdDev) {
+  distribution.resize(distances.rows(), 1);
+  distribution.setConstant(1.0);
+  for (std::size_t i = 0; i < distances.rows(); i++) {
+    if (distances[i] != 0) {
+      distribution[i] = gaussianDistribution(
+          distances[i], vertexPositionsFromPtInd[i], tangentBasis, stdDev);
+    }
+  }
 }
 
 /**
@@ -611,34 +640,55 @@ inline double gaussianDistribution(const double &distance,
  * @param (vertexPositionGeometry) vpg
  *
  */
+inline double tanhDistribution(const double &distance, const double &sharpness,
+                               const double &ax) {
+  return 0.5 * (1.0 + tanh(sharpness * (ax - distance)));
+}
+inline double tanhDistribution(const double &distance,
+                               const gc::Vector3 &vertexPositionFromPtInd,
+                               const std::array<gc::Vector3, 2> &tangentBasis,
+                               const double &sharpness,
+                               const std::array<double, 2> &axes) {
+  double x = gc::dot(vertexPositionFromPtInd, tangentBasis[0]);
+  double y = gc::dot(vertexPositionFromPtInd, tangentBasis[1]);
+  double cos_t = 1.0;
+  if (!(x == 0 && y == 0)) {
+    cos_t = x / sqrt(x * x + y * y);
+  }
+  double ax = axes[0] * axes[1] /
+              sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
+                   axes[1] * axes[1]);
+  return 0.5 * (1.0 + tanh(sharpness * (ax - distance)));
+}
 DLL_PUBLIC inline void
-tanhDistribution(gcs::VertexPositionGeometry &vpg,
-                 Eigen::Ref<EigenVectorX1d> distribution,
-                 const Eigen::Ref<const EigenVectorX1d> &distance,
-                 const double sharpness, const std::vector<double> &axes) {
-  distribution.resize(distance.rows(), 1);
-  if (axes[0] == axes[1]) {
-    Eigen::MatrixXd radius_vec =
-        Eigen::MatrixXd::Constant(distance.rows(), 1, axes[0]);
-    distribution =
-        0.5 *
-        (1.0 + (sharpness * (radius_vec - distance)).array().tanh()).matrix();
-  } else {
-    double x, y, cos_t, radius;
-    for (std::size_t i = 0; i < distance.rows(); i++) {
-      x = vpg.inputVertexPositions[i].x;
-      y = vpg.inputVertexPositions[i].y;
-      cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
-      radius = axes[0] * axes[1] /
-               sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
-                    axes[1] * axes[1]);
-      distribution[i] = 0.5 * (1 + tanh(sharpness * (radius - distance[i])));
+tanhDistribution(Eigen::Ref<EigenVectorX1d> distribution,
+                 const Eigen::Ref<const EigenVectorX1d> &distances,
+                 const double sharpness, const double &ax) {
+  Eigen::MatrixXd radius_vec =
+      Eigen::MatrixXd::Constant(distances.rows(), 1, ax);
+  distribution =
+      0.5 *
+      (1.0 + (sharpness * (radius_vec - distances)).array().tanh()).matrix();
+}
+DLL_PUBLIC inline void
+tanhDistribution(EigenVectorX1d &distribution,
+                 const Eigen::Ref<const EigenVectorX1d> &distances,
+                 const gcs::VertexData<gc::Vector3> &vertexPositionsFromPtInd,
+                 const std::array<gc::Vector3, 2> &tangentBasis,
+                 const double sharpness, const std::array<double, 2> &axes) {
+  distribution.resize(distances.rows(), 1);
+  distribution.setConstant(1.0);
+  for (std::size_t i = 0; i < distances.rows(); i++) {
+    if (distances[i] != 0) {
+      distribution[i] =
+          tanhDistribution(distances[i], vertexPositionsFromPtInd[i],
+                           tangentBasis, sharpness, axes);
     }
   }
 }
 
 /**
- * @brief height = 1 for elliptical domain
+ * @brief height = 1 fo jump step domain
  *
  * @param (double) sharpness of transition
  * @param (double) radius of height = 1
@@ -646,24 +696,39 @@ tanhDistribution(gcs::VertexPositionGeometry &vpg,
  * @param (vertexPositionGeometry) vpg
  *
  */
+inline double jumpDistribution(const double &distance,
+                               const gc::Vector3 &vertexPositionFromPtInd,
+                               const std::array<gc::Vector3, 2> &tangentBasis,
+                               const std::array<double, 2> &axes) {
+  double x = gc::dot(vertexPositionFromPtInd, tangentBasis[0]);
+  double y = gc::dot(vertexPositionFromPtInd, tangentBasis[1]);
+  double cos_t = 1.0;
+  if (!(x == 0 && y == 0)) {
+    cos_t = x / sqrt(x * x + y * y);
+  }
+  double ax = axes[0] * axes[1] /
+              sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
+                   axes[1] * axes[1]);
+  return (double)(distance < ax);
+}
 DLL_PUBLIC inline void
-ellipticDistribution(gcs::VertexPositionGeometry &vpg,
-                     Eigen::Ref<EigenVectorX1d> distribution,
-                     const Eigen::Ref<const EigenVectorX1d> &distance,
-                     const std::vector<double> &axes) {
-  distribution.resize(distance.rows(), 1);
-  if (axes[0] == axes[1]) {
-    distribution = (distance.array() < axes[0]).cast<double>();
-  } else {
-    double x, y, cos_t, radius;
-    for (std::size_t i = 0; i < distance.rows(); i++) {
-      x = vpg.inputVertexPositions[i].x;
-      y = vpg.inputVertexPositions[i].y;
-      cos_t = vpg.inputVertexPositions[i].x / sqrt(x * x + y * y);
-      radius = axes[0] * axes[1] /
-               sqrt((axes[0] * axes[0] - axes[1] * axes[1]) * cos_t * cos_t +
-                    axes[1] * axes[1]);
-      distribution[i] = (double)(distance[i] < radius);
+jumpDistribution(Eigen::Ref<EigenVectorX1d> distribution,
+                 const Eigen::Ref<const EigenVectorX1d> &distances,
+                 const double &ax) {
+  distribution = (distances.array() < ax).cast<double>();
+}
+DLL_PUBLIC inline void
+jumpDistribution(EigenVectorX1d &distribution,
+                 const Eigen::Ref<const EigenVectorX1d> &distances,
+                 const gcs::VertexData<gc::Vector3> &vertexPositionsFromPtInd,
+                 const std::array<gc::Vector3, 2> &tangentBasis,
+                 const std::array<double, 2> &axes) {
+  distribution.resize(distances.rows(), 1);
+  distribution.setConstant(1.0);
+  for (std::size_t i = 0; i < distances.rows(); i++) {
+    if (distances[i] != 0) {
+      distribution[i] = jumpDistribution(
+          distances[i], vertexPositionsFromPtInd[i], tangentBasis, axes);
     }
   }
 }

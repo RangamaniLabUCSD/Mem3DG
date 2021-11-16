@@ -322,17 +322,29 @@ void System::initConstants() {
              proteinDensity.raw().rows()) {
     proteinDensity.raw() = parameters.proteinDistribution.protein0;
   } else if (parameters.proteinDistribution.protein0.size() == 4) {
-    std::vector<double> r_heter{parameters.proteinDistribution.protein0[0],
-                                parameters.proteinDistribution.protein0[1]};
-    tanhDistribution(*vpg, proteinDensity.raw(),
-                     geodesicDistanceFromPtInd.raw(),
-                     parameters.proteinDistribution.sharpness, r_heter);
+    std::array<double, 2> r_heter{parameters.proteinDistribution.protein0[0],
+                                  parameters.proteinDistribution.protein0[1]};
+    vpg->requireVertexTangentBasis();
+    if (parameters.proteinDistribution.profile == "gaussian") {
+      gaussianDistribution(
+          proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
+          vpg->inputVertexPositions -
+              vpg->inputVertexPositions[thePoint.nearestVertex()],
+          vpg->vertexTangentBasis[thePoint.nearestVertex()], r_heter);
+    } else if (parameters.proteinDistribution.profile == "tanh") {
+      tanhDistribution(proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
+                       vpg->inputVertexPositions -
+                           vpg->inputVertexPositions[thePoint.nearestVertex()],
+                       vpg->vertexTangentBasis[thePoint.nearestVertex()],
+                       parameters.proteinDistribution.tanhSharpness, r_heter);
+    }
+    vpg->unrequireVertexTangentBasis();
     proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
                             parameters.proteinDistribution.protein0[3];
     proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
   }
 
-  // Mask boundary element
+  // Mask boundary elementF
   if (mesh->hasBoundary()) {
     boundaryForceMask(*mesh, forces.forceMask,
                       parameters.boundary.shapeBoundaryCondition);
@@ -387,11 +399,23 @@ void System::updateVertexPositions(bool isUpdateGeodesics) {
   // update protein density
   if (parameters.proteinDistribution.protein0.rows() == 4 &&
       !parameters.variation.isProteinVariation && isUpdateGeodesics) {
-    std::vector<double> r_heter{parameters.proteinDistribution.protein0[0],
-                                parameters.proteinDistribution.protein0[1]};
-    tanhDistribution(*vpg, proteinDensity.raw(),
-                     geodesicDistanceFromPtInd.raw(),
-                     parameters.proteinDistribution.sharpness, r_heter);
+    std::array<double, 2> r_heter{parameters.proteinDistribution.protein0[0],
+                                  parameters.proteinDistribution.protein0[1]};
+    vpg->requireVertexTangentBasis();
+    if (parameters.proteinDistribution.profile == "gaussian") {
+      gaussianDistribution(
+          proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
+          vpg->inputVertexPositions -
+              vpg->inputVertexPositions[thePoint.nearestVertex()],
+          vpg->vertexTangentBasis[thePoint.nearestVertex()], r_heter);
+    } else if (parameters.proteinDistribution.profile == "tanh") {
+      tanhDistribution(proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
+                       vpg->inputVertexPositions -
+                           vpg->inputVertexPositions[thePoint.nearestVertex()],
+                       vpg->vertexTangentBasis[thePoint.nearestVertex()],
+                       parameters.proteinDistribution.tanhSharpness, r_heter);
+    }
+    vpg->unrequireVertexTangentBasis();
     proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
                             parameters.proteinDistribution.protein0[3];
     proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];

@@ -54,7 +54,7 @@ protected:
     p.point.pt << 0, 0, 1;
     p.proteinDistribution.protein0.resize(4, 1);
     p.proteinDistribution.protein0 << 1, 1, 0.7, 0.2;
-    p.proteinDistribution.sharpness = 3;
+    p.proteinDistribution.tanhSharpness = 3;
 
     p.bending.Kb = 8.22e-5;
     p.bending.Kbc = 0;

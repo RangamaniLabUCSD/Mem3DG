@@ -167,10 +167,12 @@ struct Parameters {
   };
 
   struct ProteinDistribution {
+    /// protein boundary condition: pin
+    std::string profile = "none";
     /// (initial) protein density
     EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
     /// sharpness of tanh transition
-    double sharpness = 20;
+    double tanhSharpness = 20;
     /// interior point parameter for protein density
     double lambdaPhi = 1e-9;
     /// type of input
