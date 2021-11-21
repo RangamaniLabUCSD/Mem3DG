@@ -53,6 +53,7 @@ protected:
     p.point.pt.resize(3, 1);
     p.point.pt << 0, 0, 1;
     p.proteinDistribution.protein0.resize(4, 1);
+    p.proteinDistribution.profile = "tanh";
     p.proteinDistribution.protein0 << 1, 1, 0.7, 0.2;
     p.proteinDistribution.tanhSharpness = 3;
 
