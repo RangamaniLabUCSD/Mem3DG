@@ -95,6 +95,14 @@ void System::computeAdsorptionEnergy() {
       (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
 }
 
+void System::computeAggregationEnergy() {
+  energy.aggregationEnergy =
+      parameters.aggregation.chi *
+      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
+       proteinDensity.raw().array())
+          .sum();
+}
+
 void System::computeProteinInteriorPenalty() {
   // interior method to constrain protein density to remain from 0 to 1
   energy.proteinInteriorPenalty =
@@ -142,6 +150,10 @@ double System::computePotentialEnergy() {
   if (parameters.adsorption.epsilon != 0) {
     energy.adsorptionEnergy = 0;
     computeAdsorptionEnergy();
+  }
+  if (parameters.aggregation.chi != 0) {
+    energy.aggregationEnergy = 0;
+    computeAggregationEnergy();
   }
   if (parameters.dirichlet.eta != 0) {
     energy.dirichletEnergy = 0;

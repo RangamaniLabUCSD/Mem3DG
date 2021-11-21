@@ -114,12 +114,15 @@ void Parameters::ProteinDistribution::checkParameters(size_t nVertex) {
     if (protein0[2] == protein0[3]) {
       mem3dg_runtime_error("Please switch to {phi} for homogeneous membrane!");
     }
+    if (profile != "gaussian" && profile != "tanh"){
+      mem3dg_runtime_error("Please choose the profile type, 'gaussian' or 'tanh'!")
+    }
   } else if (protein0.rows() == nVertex && (protein0.array() > 0).all() &&
              (protein0.array() < 1).all()) {
     typeOfProtein0 = VertexWise;
   } else {
     mem3dg_runtime_error("protein 0 can only be specified in three ways: 1. "
-                         "length = 1, uniform {0<phi<1} 2. "
+                         "length = 1, uniform {0<=phi<=1} 2. "
                          "length = 4, geodesic disk, {r1>0, r2>0, "
                          "0<phi_in<1, 0<phi_out<1} 3. length "
                          "= nVertices, user defined. To disable use {-1}");

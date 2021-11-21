@@ -473,6 +473,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get the adsorption force
       )delim");
   forces.def(
+      "getAggregationForce",
+      [](Forces &s) { return toMatrix(s.aggregationForceVec); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the aggregation force
+      )delim");
+  forces.def(
       "getExternalForce",
       [](Forces &s) { return toMatrix(s.externalForceVec); },
       py::return_value_policy::copy,
@@ -510,6 +517,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::return_value_policy::copy,
       R"delim(
           get the adsorption potential
+      )delim");
+  forces.def(
+      "getAggregationPotential",
+      [](Forces &s) { return toMatrix(s.aggregationPotential); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the aggregation potential
       )delim");
   forces.def(
       "getDiffusionPotential",
@@ -1188,6 +1202,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get adsorption energy per protein
       )delim");
 
+  py::class_<Parameters::Aggregation> aggregation(pymem3dg, "Aggregation",
+                                                R"delim(
+        The aggregation parameters
+    )delim");
+  aggregation.def_readwrite("chi", &Parameters::Aggregation::chi,
+                           R"delim(
+          get aggregation energy 
+      )delim");
+
   py::class_<Parameters::External> external(pymem3dg, "External",
                                             R"delim(
         The external force parameters
@@ -1234,11 +1257,15 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The protein distribution parameters
     )delim");
   proteindistribution.def_readwrite(
+      "profile", &Parameters::ProteinDistribution::profile, R"delim(
+          get the profile type: 'gaussian' or 'tanh'
+      )delim");
+  proteindistribution.def_readwrite(
       "protein0", &Parameters::ProteinDistribution::protein0, R"delim(
           get (initial) protein density
       )delim");
   proteindistribution.def_readwrite(
-      "sharpness", &Parameters::ProteinDistribution::sharpness, R"delim(
+      "tanhSharpness", &Parameters::ProteinDistribution::tanhSharpness, R"delim(
           get protein density sharpness of tanh transition
       )delim");
   proteindistribution.def_readwrite(
@@ -1284,6 +1311,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("adsorption", &Parameters::adsorption,
                            R"delim(
           adsorption parameters
+      )delim");
+  parameters.def_readwrite("aggregation", &Parameters::aggregation,
+                           R"delim(
+          aggregation parameters
       )delim");
   parameters.def_readwrite("dirichlet", &Parameters::dirichlet,
                            R"delim(
@@ -1359,6 +1390,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   energy.def_readwrite("adsorptionEnergy", &Energy::adsorptionEnergy,
                        R"delim(
           get adsorption energy of the membrane protein  
+      )delim");
+  energy.def_readwrite("aggregationEnergy", &Energy::aggregationEnergy,
+                       R"delim(
+          get aggregation energy of the membrane protein  
       )delim");
   energy.def_readwrite("dirichletEnergy", &Energy::dirichletEnergy,
                        R"delim(
@@ -1471,6 +1506,14 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
        visualize line tension force
       )delim");
+  quantities.def_readwrite("adsorption_force", &Quantities::adsorption_force,
+                           R"delim(
+       visualize adsorption force
+      )delim");
+  quantities.def_readwrite("aggregation_force", &Quantities::aggregation_force,
+                           R"delim(
+       visualize aggregation force
+      )delim");
   quantities.def_readwrite("mask", &Quantities::mask,
                            R"delim(
         visualize mask for integration
@@ -1505,6 +1548,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            &Quantities::adsorption_potential,
                            R"delim(
         visualize adsorption component of chemical potential
+      )delim");
+  quantities.def_readwrite("aggregation_potential",
+                           &Quantities::aggregation_potential,
+                           R"delim(
+        visualize aggregation component of chemical potential
       )delim");
 
 #pragma endregion visualization
