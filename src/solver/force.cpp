@@ -164,17 +164,17 @@ gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
 
 gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVector() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
-                                   computeHalfedgeGaussianCurvatureVector);
+                                      computeHalfedgeGaussianCurvatureVector);
 }
 
 gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVector() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
-                                   computeHalfedgeMeanCurvatureVector);
+                                      computeHalfedgeMeanCurvatureVector);
 }
 
 gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVector() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
-                                   computeHalfedgeVolumeVariationVector);
+                                      computeHalfedgeVolumeVariationVector);
 }
 
 gcs::VertexData<gc::Vector3> System::halfedgeVectorToVertexVector(
@@ -210,6 +210,7 @@ void System::computeMechanicalForces() {
     gc::Vector3 osmoticForceVec{0, 0, 0};
     gc::Vector3 lineCapForceVec{0, 0, 0};
     gc::Vector3 adsorptionForceVec{0, 0, 0};
+    gc::Vector3 aggregationForceVec{0, 0, 0};
     double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
     double H0i = H0[i];
     double Kbi = Kb[i];
@@ -251,6 +252,9 @@ void System::computeMechanicalForces() {
       capillaryForceVec -= forces.surfaceTension * areaGrad;
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
                             parameters.adsorption.epsilon * areaGrad;
+      aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
+                              proteinDensityj * proteinDensityj * 2 / 3) *
+                             parameters.aggregation.chi * areaGrad;
       lineCapForceVec -=
           parameters.dirichlet.eta *
           (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
@@ -279,6 +283,7 @@ void System::computeMechanicalForces() {
     capillaryForceVec = forces.maskForce(capillaryForceVec, i);
     lineCapForceVec = forces.maskForce(lineCapForceVec, i);
     adsorptionForceVec = forces.maskForce(adsorptionForceVec, i);
+    aggregationForceVec = forces.maskForce(aggregationForceVec, i);
 
     // Combine to one
     forces.bendingForceVec_areaGrad[i] = bendForceVec_areaGrad;
@@ -290,6 +295,7 @@ void System::computeMechanicalForces() {
     forces.osmoticForceVec[i] = osmoticForceVec;
     forces.lineCapillaryForceVec[i] = lineCapForceVec;
     forces.adsorptionForceVec[i] = adsorptionForceVec;
+    forces.aggregationForceVec[i] = aggregationForceVec;
 
     // Scalar force by projection to angle-weighted normal
     forces.bendingForce[i] = forces.ontoNormal(bendForceVec, i);
@@ -297,6 +303,7 @@ void System::computeMechanicalForces() {
     forces.osmoticForce[i] = forces.ontoNormal(osmoticForceVec, i);
     forces.lineCapillaryForce[i] = forces.ontoNormal(lineCapForceVec, i);
     forces.adsorptionForce[i] = forces.ontoNormal(adsorptionForceVec, i);
+    forces.aggregationForce[i] = forces.ontoNormal(aggregationForceVec, i);
   }
 
   // measure smoothness
@@ -307,7 +314,7 @@ void System::computeMechanicalForces() {
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-#define MODE 0
+#define MODE 1
 #if MODE == 0 // axial sinusoidal force
   double freq = 5;
   double totalHeight = toMatrix(vpg->inputVertexPositions).col(2).maxCoeff() -
@@ -326,19 +333,18 @@ EigenVectorX3dr System::prescribeExternalForce() {
   }
 
 #elif MODE == 1 // anchor force
-  double concentration = 10;
+  double decayTime = 500;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
-  double standardDeviation =
-      geodesicDistanceFromPtInd.raw().maxCoeff() / concentration;
+  double standardDeviation = 0.02;
 
-  gc::Vector3 anchor{0, 0, 1};
-  gc::Vector3 direction;
-  direction = anchor - vpg->inputVertexPositions[thePoint.nearestVertex()];
+  // gc::Vector3 anchor{0, 0, 1};
+  gc::Vector3 direction{0, 0, 1};
+  // direction = anchor - vpg->inputVertexPositions[thePoint.nearestVertex()];
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     forces.externalForceVec[i] =
-        parameters.external.Kf *
+        exp(-time / decayTime) * parameters.external.Kf *
         gaussianDistribution(geodesicDistanceFromPtInd[v], standardDeviation) *
         vpg->vertexDualArea(v) * direction;
   }
@@ -373,6 +379,9 @@ EigenVectorX1d System::computeChemicalPotential() {
 
   forces.adsorptionPotential.raw() = forces.maskProtein(
       -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
+  forces.aggregationPotential.raw() = forces.maskProtein(
+      -2 * parameters.aggregation.chi * proteinDensity.raw().array() *
+      vpg->vertexDualAreas.raw().array());
   forces.bendingPotential.raw() = forces.maskProtein(
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
@@ -384,8 +393,9 @@ EigenVectorX1d System::computeChemicalPotential() {
                          (1 / proteinDensity.raw().array() -
                           1 / (1 - proteinDensity.raw().array())));
   forces.chemicalPotential.raw() =
-      forces.adsorptionPotential.raw() + forces.bendingPotential.raw() +
-      forces.diffusionPotential.raw() + forces.interiorPenaltyPotential.raw();
+      forces.adsorptionPotential.raw() + forces.aggregationPotential.raw() +
+      forces.bendingPotential.raw() + forces.diffusionPotential.raw() +
+      forces.interiorPenaltyPotential.raw();
 
   // F.chemicalPotential.raw().array() =
   //     -vpg->vertexDualAreas.raw().array() *
@@ -544,6 +554,7 @@ void System::computePhysicalForcing() {
   forces.osmoticForceVec.fill({0, 0, 0});
   forces.lineCapillaryForceVec.fill({0, 0, 0});
   forces.adsorptionForceVec.fill({0, 0, 0});
+  forces.aggregationForceVec.fill({0, 0, 0});
   forces.externalForceVec.fill({0, 0, 0});
 
   forces.bendingForce.raw().setZero();
@@ -551,6 +562,7 @@ void System::computePhysicalForcing() {
   forces.lineCapillaryForce.raw().setZero();
   forces.externalForce.raw().setZero();
   forces.adsorptionForce.raw().setZero();
+  forces.aggregationForce.raw().setZero();
   forces.osmoticForce.raw().setZero();
 
   forces.chemicalPotential.raw().setZero();
@@ -567,7 +579,8 @@ void System::computePhysicalForcing() {
     forces.mechanicalForceVec =
         forces.osmoticForceVec + forces.capillaryForceVec +
         forces.bendingForceVec + forces.lineCapillaryForceVec +
-        forces.adsorptionForceVec + forces.externalForceVec;
+        forces.adsorptionForceVec + forces.aggregationForceVec +
+        forces.externalForceVec;
     forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
   }
 

@@ -65,6 +65,8 @@ struct Forces {
   gcs::VertexData<double> lineCapillaryForce;
   /// Cached adsorption induced surface force
   gcs::VertexData<double> adsorptionForce;
+  /// Cached aggregation induced surface force
+  gcs::VertexData<double> aggregationForce;
   /// Cached externally-applied force
   gcs::VertexData<double> externalForce;
   /// Cached mechanical force
@@ -91,6 +93,8 @@ struct Forces {
   gcs::VertexData<gc::Vector3> lineCapillaryForceVec;
   /// Cached adsorption driven force
   gcs::VertexData<gc::Vector3> adsorptionForceVec;
+  /// Cached aggregation driven force
+  gcs::VertexData<gc::Vector3> aggregationForceVec;
   /// Cached external localized force
   gcs::VertexData<gc::Vector3> externalForceVec;
   /// Cached mechanical force
@@ -111,6 +115,8 @@ struct Forces {
   gcs::VertexData<double> adsorptionPotential;
   /// Cached dirichlet energy related chemical potential
   gcs::VertexData<double> diffusionPotential;
+  /// Cached aggregation related chemical potential
+  gcs::VertexData<double> aggregationPotential;
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
@@ -126,14 +132,16 @@ struct Forces {
         bendingForceVec_gaussVec(mesh, {0, 0, 0}),
         bendingForceVec_schlafliVec(mesh, {0, 0, 0}),
         capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
-        adsorptionForceVec(mesh, {0, 0, 0}), externalForceVec(mesh, {0, 0, 0}),
+        adsorptionForceVec(mesh, {0, 0, 0}),
+        aggregationForceVec(mesh, {0, 0, 0}), externalForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
         capillaryForce(mesh, 0), surfaceTension(0), lineCapillaryForce(mesh, 0),
-        adsorptionForce(mesh, 0), externalForce(mesh, 0), osmoticForce(mesh, 0),
-        osmoticPressure(0), regularizationForce(mesh, {0, 0, 0}),
-        stochasticForce(mesh, {0, 0, 0}), dampingForce(mesh, {0, 0, 0}),
-        interiorPenaltyPotential(mesh, 0), bendingPotential(mesh, 0),
-        adsorptionPotential(mesh, 0), diffusionPotential(mesh, 0),
+        adsorptionForce(mesh, 0), aggregationForce(mesh, 0),
+        externalForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
+        regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
+        dampingForce(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
+        bendingPotential(mesh, 0), adsorptionPotential(mesh, 0),
+        aggregationPotential(mesh, 0), diffusionPotential(mesh, 0),
         chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
         proteinMask(mesh, 1) {}
 

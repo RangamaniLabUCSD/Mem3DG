@@ -687,6 +687,16 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
           "osmotic_force",
           ptrRichData->getVertexProperty<double>("osmotic_force"));
     }
+    if (options.adsorption_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "adsorption_force",
+          ptrRichData->getVertexProperty<double>("adsorption_force"));
+    }
+    if (options.aggregation_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "aggregation_force",
+          ptrRichData->getVertexProperty<double>("aggregation_force"));
+    }
     if (options.mask) {
       polyscopeMesh->addVertexScalarQuantity(
           "mask", ptrRichData->getVertexProperty<double>("mask"));
@@ -706,23 +716,30 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
     }
     if (options.chemical_potential) {
       polyscopeMesh->addVertexScalarQuantity(
-          "chemical_potential",
-          ptrRichData->getVertexProperty<double>("chemical_potential"));
+          "chemical_potentialx1000",
+          ptrRichData->getVertexProperty<double>("chemical_potential") * 1000);
     }
     if (options.bending_potential) {
       polyscopeMesh->addVertexScalarQuantity(
-          "bending_potential",
-          ptrRichData->getVertexProperty<double>("bending_potential"));
+          "bending_potentialx1000",
+          ptrRichData->getVertexProperty<double>("bending_potential") * 1000);
     }
     if (options.diffusion_potential) {
       polyscopeMesh->addVertexScalarQuantity(
-          "diffusion_potential",
-          ptrRichData->getVertexProperty<double>("diffusion_potential"));
+          "diffusion_potentialx1000",
+          ptrRichData->getVertexProperty<double>("diffusion_potential") * 1000);
     }
     if (options.adsorption_potential) {
       polyscopeMesh->addVertexScalarQuantity(
-          "adsorption_potential",
-          ptrRichData->getVertexProperty<double>("adsorption_potential"));
+          "adsorption_potentialx1000",
+          ptrRichData->getVertexProperty<double>("adsorption_potential") *
+              1000);
+    }
+    if (options.aggregation_potential) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "aggregation_potentialx1000",
+          ptrRichData->getVertexProperty<double>("aggregation_potential") *
+              1000);
     }
     /*gcs::VertexData<gc::Vector3> vertexVelocity =
         ptrRichData->getVertexProperty<gc::Vector3>("vertex_velocity");*/
@@ -807,6 +824,20 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
               ptrRichData->getVertexProperty<double>("osmotic_force"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
+    if (options.adsorption_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "adsorption_force",
+              ptrRichData->getVertexProperty<double>("adsorption_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.aggregation_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "aggregation_force",
+              ptrRichData->getVertexProperty<double>("aggregation_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
     if (options.mask) {
       polyscopeMesh
           ->addVertexScalarQuantity(
@@ -823,30 +854,42 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
     if (options.chemical_potential) {
       polyscopeMesh
           ->addVertexScalarQuantity(
-              "chemical_potential",
-              ptrRichData->getVertexProperty<double>("chemical_potential"))
-          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+              "chemical_potentialx1000",
+              ptrRichData->getVertexProperty<double>("chemical_potential") *
+                  1000)
+          ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
     }
     if (options.bending_potential) {
       polyscopeMesh
           ->addVertexScalarQuantity(
-              "bending_potential",
-              ptrRichData->getVertexProperty<double>("bending_potential"))
-          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+              "bending_potentialx1000",
+              ptrRichData->getVertexProperty<double>("bending_potential") *
+                  1000)
+          ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
     }
     if (options.diffusion_potential) {
       polyscopeMesh
           ->addVertexScalarQuantity(
-              "diffusion_potential",
-              ptrRichData->getVertexProperty<double>("diffusion_potential"))
-          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+              "diffusion_potentialx1000",
+              ptrRichData->getVertexProperty<double>("diffusion_potential") *
+                  1000)
+          ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
     }
     if (options.adsorption_potential) {
       polyscopeMesh
           ->addVertexScalarQuantity(
-              "adsorption_potential",
-              ptrRichData->getVertexProperty<double>("adsorption_potential"))
-          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+              "adsorption_potentialx1000",
+              ptrRichData->getVertexProperty<double>("adsorption_potential") *
+                  1000)
+          ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
+    }
+    if (options.aggregation_potential) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "aggregation_potentialx1000",
+              ptrRichData->getVertexProperty<double>("aggregation_potential") *
+                  1000)
+          ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
     }
     if (options.the_point) {
       polyscopeMesh

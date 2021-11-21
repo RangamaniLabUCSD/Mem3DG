@@ -355,6 +355,76 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 //       << "adsorption potential: difference_xh / difference_h = "
 //       << difference_xh / difference_h;
 
+  // aggregation force
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
+  f.updateVertexPositions(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      h *
+      f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
+  EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
+      << "aggregation force: (expected - actual) / expected = "
+      << difference_h / abs(actualEnergyDecrease);
+
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      stepFold * h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
+  f.updateVertexPositions(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "aggregation force: difference_xh / difference_h = "
+      << difference_xh / difference_h;
+
+  // aggregation potential
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
+  f.updateVertexPositions(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      h *
+      f.forces.maskProtein(f.forces.aggregationPotential.raw()).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
+  EXPECT_TRUE(difference_h < tolerance * abs(actualEnergyDecrease))
+      << "aggregation potential: (expected - actual) / expected = "
+      << difference_h / abs(actualEnergyDecrease);
+
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      stepFold * h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
+  f.updateVertexPositions(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskProtein(f.forces.aggregationPotential.raw()).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "aggregation potential: difference_xh / difference_h = "
+      << difference_xh / difference_h;
+
   // line tension force
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =

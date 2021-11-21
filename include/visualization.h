@@ -43,6 +43,10 @@ struct DLL_PUBLIC Quantities {
   bool osmotic_force = false;
   /// vertex bending force
   bool bending_force = false;
+  /// vertex adsorption force
+  bool adsorption_force = false;
+  /// vertex aggregation force
+  bool aggregation_force = false;
   /// vertex line tension force
   bool line_force = false;
   /// vertex mask for time integration
@@ -61,6 +65,8 @@ struct DLL_PUBLIC Quantities {
   bool diffusion_potential = false;
   /// adsorption chemical potential
   bool adsorption_potential = false;
+  /// aggregation chemical potential
+  bool aggregation_potential = false;
 };
 
 // ==========================================================
