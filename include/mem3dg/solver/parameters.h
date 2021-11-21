@@ -113,6 +113,11 @@ struct Parameters {
     double epsilon = 0;
   };
 
+  struct Aggregation {
+    /// aggregation energy constant
+    double chi = 0;
+  };
+
   struct Dirichlet {
     /// Smooothing coefficients
     double eta = 0;
@@ -197,6 +202,8 @@ struct Parameters {
   Osmotic osmotic;
   /// protein adsorption parameters
   Adsorption adsorption;
+  /// protein aggregation parameters
+  Aggregation aggregation;
   /// protein dirichlet energy parameters
   Dirichlet dirichlet;
   /// external force parameters

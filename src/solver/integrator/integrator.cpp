@@ -359,6 +359,65 @@ void Integrator::lineSearchErrorBacktrace(
       }
     }
 
+    // test if aggregation energy increases
+    if (runAll ||
+        totalForceEnergy.aggregationEnergy > previousEnergy.aggregationEnergy) {
+
+      // report the finding
+      std::cout << "\nWith F_tol, aggE has increased "
+                << totalForceEnergy.aggregationEnergy -
+                       previousEnergy.aggregationEnergy
+                << " from " << previousEnergy.aggregationEnergy << " to "
+                << totalForceEnergy.aggregationEnergy << std::endl;
+
+      // test single-force-energy computation
+      // perturb the configuration
+      system.proteinDensity.raw() = currentProteinDensity;
+      toMatrix(system.vpg->inputVertexPositions) =
+          currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                        system.forces.aggregationForceVec));
+      system.updateVertexPositions(false);
+      system.computeAggregationEnergy();
+      if (runAll ||
+          system.energy.aggregationEnergy > previousEnergy.aggregationEnergy) {
+        std::cout << "With only aggregation force, aggE has increased "
+                  << system.energy.aggregationEnergy -
+                         previousEnergy.aggregationEnergy
+                  << " from " << previousEnergy.aggregationEnergy << " to "
+                  << system.energy.aggregationEnergy << ", expected daggE: "
+                  << -alpha * system.forces
+                                  .maskForce(toMatrix(
+                                      system.forces.aggregationForceVec))
+                                  .squaredNorm()
+                  << std::endl;
+      }
+
+      // test single-force-energy computation
+      // perturb the configuration
+      toMatrix(system.vpg->inputVertexPositions) = currentPosition;
+      system.proteinDensity.raw() =
+          currentProteinDensity +
+          alpha * system.parameters.proteinMobility *
+              system.forces.maskProtein(
+                  system.forces.aggregationPotential.raw());
+      system.updateVertexPositions(false);
+      system.computeAggregationEnergy();
+      if (runAll ||
+          system.energy.aggregationEnergy > previousEnergy.aggregationEnergy) {
+        std::cout << "With only aggregation potential, aggE has increased "
+                  << system.energy.aggregationEnergy -
+                         previousEnergy.aggregationEnergy
+                  << " from " << previousEnergy.aggregationEnergy << " to "
+                  << system.energy.aggregationEnergy << ", expected dBE: "
+                  << -alpha * system.parameters.proteinMobility *
+                         system.forces
+                             .maskProtein(
+                                 system.forces.aggregationPotential.raw())
+                             .squaredNorm()
+                  << std::endl;
+      }
+    }
+
     // test if dirichlet energy increases
     if (runAll ||
         system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
@@ -518,6 +577,9 @@ void Integrator::finitenessErrorBacktrack() {
       }
       if (!std::isfinite(system.energy.adsorptionEnergy)) {
         std::cout << "Adsorption energy is not finite!" << std::endl;
+      }
+      if (!std::isfinite(system.energy.aggregationEnergy)) {
+        std::cout << "Aggregation energy is not finite!" << std::endl;
       }
       if (!std::isfinite(system.energy.dirichletEnergy)) {
         std::cout << "Line tension energy is not finite!" << std::endl;

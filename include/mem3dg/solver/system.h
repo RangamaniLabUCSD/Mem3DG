@@ -73,6 +73,8 @@ struct Energy {
   double pressureEnergy = 0;
   /// adsorption energy of the membrane protein
   double adsorptionEnergy = 0;
+  /// aggregation energy of the membrane protein
+  double aggregationEnergy = 0;
   /// line tension energy of interface
   double dirichletEnergy = 0;
   /// work of external force
@@ -457,7 +459,7 @@ private:
         forces(*mesh, *vpg) {
 
     time = 0;
-    energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     proteinDensity = gc::VertexData<double>(*mesh, 0);
     proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
@@ -716,6 +718,11 @@ public:
    * @brief Compute adsorption energy
    */
   void computeAdsorptionEnergy();
+
+  /**
+   * @brief Compute aggregation energy
+   */
+  void computeAggregationEnergy();
 
   /**
    * @brief Compute protein interior penalty

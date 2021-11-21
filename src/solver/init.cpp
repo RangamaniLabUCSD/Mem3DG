@@ -192,8 +192,8 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     gcs::VertexData<double> smthingMsk(*mesh);
     smthingMsk.fromVector(smoothingMask.raw().cast<double>());
     richData.addVertexProperty("smoothing_mask", smthingMsk);
-    gcs::VertexData<double> tkr(*mesh);
-    tkr.fromVector(thePointTracker.raw().cast<double>());
+    gcs::VertexData<int> tkr(*mesh);
+    tkr.fromVector(thePointTracker.raw().cast<int>());
     richData.addVertexProperty("the_point", tkr);
 
     // write geometry
@@ -212,6 +212,8 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("capillary_force", forces.capillaryForce);
     richData.addVertexProperty("line_tension_force", forces.lineCapillaryForce);
     richData.addVertexProperty("osmotic_force", forces.osmoticForce);
+    richData.addVertexProperty("adsorption_force", forces.adsorptionForce);
+    richData.addVertexProperty("aggregation_force", forces.aggregationForce);
     richData.addVertexProperty("external_force", forces.externalForce);
     richData.addVertexProperty("physical_force", forces.mechanicalForce);
 
@@ -221,6 +223,8 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("bending_potential", forces.bendingPotential);
     richData.addVertexProperty("adsorption_potential",
                                forces.adsorptionPotential);
+    richData.addVertexProperty("aggregation_potential",
+                               forces.aggregationPotential);
     richData.addVertexProperty("chemical_potential", forces.chemicalPotential);
 
     richData.write(PathToSave);
