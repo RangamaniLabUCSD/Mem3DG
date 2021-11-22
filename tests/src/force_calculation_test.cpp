@@ -68,6 +68,8 @@ protected:
 
     p.adsorption.epsilon = -1e-2;
 
+    p.aggregation.chi = -1e-2;
+    
     p.osmotic.isPreferredVolume = false;
     p.osmotic.isConstantOsmoticPressure = true;
     p.osmotic.Kv = 1e-2;
