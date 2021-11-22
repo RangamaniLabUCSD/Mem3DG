@@ -66,6 +66,7 @@ protected:
     p.tension.A_res = 0;
     p.tension.lambdaSG = 0;
 
+    p.aggregation.chi = -1e-2;
     p.adsorption.epsilon = -1e-2;
 
     p.osmotic.isPreferredVolume = false;
