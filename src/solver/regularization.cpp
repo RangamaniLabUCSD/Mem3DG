@@ -347,8 +347,9 @@ void System::mutateMesh() {
 Eigen::Matrix<bool, Eigen::Dynamic, 1>
 System::smoothenMesh(double initStep, double target, size_t maxIteration) {
   // require nonzero bending rigidity in parameters
-  if (Kb.raw().sum() == 0){
-    mem3dg_runtime_error("Bending rigidity has to be nonzero to smoothen mesh!");
+  if (Kb.raw().sum() == 0) {
+    mem3dg_runtime_error(
+        "Bending rigidity has to be nonzero to smoothen mesh!");
   }
   // initialize variables
   double stepSize = initStep;
@@ -382,7 +383,6 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
     if (gradNorm > pastGradNorm) {
       toMatrix(vpg->inputVertexPositions) -= pastForceVec * stepSize;
       stepSize /= 2;
-      num_iter++;
       continue;
     }
     // smoothing step
