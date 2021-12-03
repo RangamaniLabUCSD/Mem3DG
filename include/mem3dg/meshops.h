@@ -156,7 +156,8 @@ DLL_PUBLIC inline bool hasOutlier(const Eigen::VectorXd &vec,
  * @return
  */
 DLL_PUBLIC inline Eigen::Matrix<bool, Eigen::Dynamic, 1>
-outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5) {
+outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5,
+            bool negate = false) {
   Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
   mask.resize(vec.rows(), 1);
   Eigen::VectorXd sorted_vec;
@@ -164,9 +165,18 @@ outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5) {
   double r, l, range;
   findRange(sorted_vec.data(), sorted_vec.size(), r, l);
   range = r - l;
-  for (std::size_t i = 0; i < vec.rows(); i++) {
-    mask[i] =
-        ((vec[i] - r < threshold * range) && (l - vec[i] < threshold * range));
+  if (negate) {
+    // outlier: true
+    for (std::size_t i = 0; i < vec.rows(); i++) {
+      mask[i] = ((vec[i] - r < threshold * range) &&
+                 (l - vec[i] < threshold * range));
+    }
+  } else {
+    // outlier: false
+    for (std::size_t i = 0; i < vec.rows(); i++) {
+      mask[i] = ((vec[i] - r > threshold * range) ||
+                 (l - vec[i] > threshold * range));
+    }
   }
   return mask;
 }
