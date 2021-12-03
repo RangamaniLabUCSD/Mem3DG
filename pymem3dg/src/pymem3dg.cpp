@@ -1074,7 +1074,8 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Method: smoothen the mesh
    */
-  system.def("smoothenMesh", &System::smoothenMesh,
+  system.def("smoothenMesh", &System::smoothenMesh, py::arg("initStep"),
+             py::arg("target"), py::arg("maxIteration"),
              R"delim(
           smoothen the mesh using bending force
       )delim");
@@ -1213,11 +1214,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       )delim");
 
   py::class_<Parameters::Aggregation> aggregation(pymem3dg, "Aggregation",
-                                                R"delim(
+                                                  R"delim(
         The aggregation parameters
     )delim");
   aggregation.def_readwrite("chi", &Parameters::Aggregation::chi,
-                           R"delim(
+                            R"delim(
           get aggregation energy 
       )delim");
 
