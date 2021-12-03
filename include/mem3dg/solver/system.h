@@ -186,6 +186,9 @@ public:
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
+
+    // Smoothen the mesh using bending force
+    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -212,6 +215,9 @@ public:
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
+
+    // Smoothen the mesh using bending force
+    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -260,6 +266,9 @@ public:
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
+
+    // Smoothen the mesh using bending force
+    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -294,6 +303,9 @@ public:
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
+
+    // Smoothen the mesh using bending force
+    smoothenMesh(0.01, 0.1, 1000);
   };
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -343,6 +355,9 @@ public:
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
+
+    // Smoothen the mesh using bending force
+    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -375,6 +390,9 @@ public:
 
     /// compute nonconstant values during simulation
     updateVertexPositions();
+
+    // Smoothen the mesh using bending force
+    smoothenMesh(0.01, 0.1, 1000);
   };
 #endif
 
@@ -826,7 +844,7 @@ public:
    * @param maxIteration maximum number of iteration
    */
   Eigen::Matrix<bool, Eigen::Dynamic, 1>
-  smoothenMesh(double initStep, double target = 0.5, size_t maxInteration = 50);
+  smoothenMesh(double initStep, double target = 0.5, size_t maxIteration = 50);
   /**
    * @brief pointwise smoothing after mutation of the mesh
    */
