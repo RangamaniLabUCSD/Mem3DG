@@ -199,111 +199,7 @@ void System::computeMechanicalForces() {
   // }
 
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    gc::Vertex v{mesh->vertex(i)};
-
-    gc::Vector3 bendForceVec{0, 0, 0};
-    gc::Vector3 bendForceVec_areaGrad{0, 0, 0};
-    gc::Vector3 bendForceVec_gaussVec{0, 0, 0};
-    gc::Vector3 bendForceVec_schlafliVec{0, 0, 0};
-
-    gc::Vector3 capillaryForceVec{0, 0, 0};
-    gc::Vector3 osmoticForceVec{0, 0, 0};
-    gc::Vector3 lineCapForceVec{0, 0, 0};
-    gc::Vector3 adsorptionForceVec{0, 0, 0};
-    gc::Vector3 aggregationForceVec{0, 0, 0};
-    double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
-    double H0i = H0[i];
-    double Kbi = Kb[i];
-    double proteinDensityi = proteinDensity[i];
-    bool boundaryVertex = v.isBoundary();
-
-    for (gc::Halfedge he : v.outgoingHalfedges()) {
-      std::size_t fID = he.face().getIndex();
-
-      // Initialize local variables for computation
-      std::size_t i_vj = he.tipVertex().getIndex();
-
-      gc::Vector3 dphi_ijk{he.isInterior() ? proteinDensityGradient[fID]
-                                           : gc::Vector3{0, 0, 0}};
-      double Hj = vpg->vertexMeanCurvatures[i_vj] / vpg->vertexDualAreas[i_vj];
-      double H0j = H0[i_vj];
-      double Kbj = Kb[i_vj];
-      double proteinDensityj = proteinDensity[i_vj];
-      bool interiorHalfedge = he.isInterior();
-
-      gc::Vector3 areaGrad = 2 * computeHalfedgeMeanCurvatureVector(*vpg, he);
-      gc::Vector3 gaussVec = computeHalfedgeGaussianCurvatureVector(*vpg, he);
-      gc::Vector3 schlafliVec1;
-      gc::Vector3 schlafliVec2;
-      std::tie(schlafliVec1, schlafliVec2) =
-          computeHalfedgeSchlafliVector(*vpg, he);
-      gc::Vector3 oneSidedAreaGrad{0, 0, 0};
-      gc::Vector3 dirichletVec{0, 0, 0};
-      if (interiorHalfedge) {
-        oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[fID],
-                                           vecFromHalfedge(he.next(), *vpg));
-        dirichletVec = computeGradientNorm2Gradient(he, proteinDensity) /
-                       vpg->faceAreas[fID];
-      }
-
-      // Assemble to forces
-      osmoticForceVec += forces.osmoticPressure *
-                         computeHalfedgeVolumeVariationVector(*vpg, he);
-      capillaryForceVec -= forces.surfaceTension * areaGrad;
-      adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
-                            parameters.adsorption.epsilon * areaGrad;
-      aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
-                              proteinDensityj * proteinDensityj * 2 / 3) *
-                             parameters.aggregation.chi * areaGrad;
-      lineCapForceVec -=
-          parameters.dirichlet.eta *
-          (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
-
-      bendForceVec_schlafliVec -=
-          (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
-      bendForceVec_areaGrad -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
-                                Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
-                               areaGrad;
-      bendForceVec_gaussVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
-      bendForceVec -=
-          (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec +
-          (Kbi * (H0i * H0i - Hi * Hi) / 3 +
-           Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
-              areaGrad +
-          (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
-    }
-
-    // masking
-    bendForceVec_areaGrad = forces.maskForce(bendForceVec_areaGrad, i);
-    bendForceVec_gaussVec = forces.maskForce(bendForceVec_gaussVec, i);
-    bendForceVec_schlafliVec = forces.maskForce(bendForceVec_schlafliVec, i);
-    bendForceVec = forces.maskForce(bendForceVec, i);
-
-    osmoticForceVec = forces.maskForce(osmoticForceVec, i);
-    capillaryForceVec = forces.maskForce(capillaryForceVec, i);
-    lineCapForceVec = forces.maskForce(lineCapForceVec, i);
-    adsorptionForceVec = forces.maskForce(adsorptionForceVec, i);
-    aggregationForceVec = forces.maskForce(aggregationForceVec, i);
-
-    // Combine to one
-    forces.bendingForceVec_areaGrad[i] = bendForceVec_areaGrad;
-    forces.bendingForceVec_gaussVec[i] = bendForceVec_gaussVec;
-    forces.bendingForceVec_schlafliVec[i] = bendForceVec_schlafliVec;
-    forces.bendingForceVec[i] = bendForceVec;
-
-    forces.capillaryForceVec[i] = capillaryForceVec;
-    forces.osmoticForceVec[i] = osmoticForceVec;
-    forces.lineCapillaryForceVec[i] = lineCapForceVec;
-    forces.adsorptionForceVec[i] = adsorptionForceVec;
-    forces.aggregationForceVec[i] = aggregationForceVec;
-
-    // Scalar force by projection to angle-weighted normal
-    forces.bendingForce[i] = forces.ontoNormal(bendForceVec, i);
-    forces.capillaryForce[i] = forces.ontoNormal(capillaryForceVec, i);
-    forces.osmoticForce[i] = forces.ontoNormal(osmoticForceVec, i);
-    forces.lineCapillaryForce[i] = forces.ontoNormal(lineCapForceVec, i);
-    forces.adsorptionForce[i] = forces.ontoNormal(adsorptionForceVec, i);
-    forces.aggregationForce[i] = forces.ontoNormal(aggregationForceVec, i);
+    computeMechanicalForces(i);
   }
 
   // measure smoothness
@@ -311,6 +207,118 @@ void System::computeMechanicalForces() {
   //     meshProcessor.meshMutator.isCollapseEdge) {
   //   isSmooth = !hasOutlier(forces.bendingForce.raw());
   // }
+}
+
+void System::computeMechanicalForces(gcs::Vertex &v) {
+  size_t i = v.getIndex();
+  computeMechanicalForces(i);
+}
+
+void System::computeMechanicalForces(size_t i) {
+  gc::Vertex v{mesh->vertex(i)};
+  gc::Vector3 bendForceVec{0, 0, 0};
+  gc::Vector3 bendForceVec_areaGrad{0, 0, 0};
+  gc::Vector3 bendForceVec_gaussVec{0, 0, 0};
+  gc::Vector3 bendForceVec_schlafliVec{0, 0, 0};
+
+  gc::Vector3 capillaryForceVec{0, 0, 0};
+  gc::Vector3 osmoticForceVec{0, 0, 0};
+  gc::Vector3 lineCapForceVec{0, 0, 0};
+  gc::Vector3 adsorptionForceVec{0, 0, 0};
+  gc::Vector3 aggregationForceVec{0, 0, 0};
+  double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
+  double H0i = H0[i];
+  double Kbi = Kb[i];
+  double proteinDensityi = proteinDensity[i];
+  bool boundaryVertex = v.isBoundary();
+
+  for (gc::Halfedge he : v.outgoingHalfedges()) {
+    std::size_t fID = he.face().getIndex();
+
+    // Initialize local variables for computation
+    std::size_t i_vj = he.tipVertex().getIndex();
+
+    gc::Vector3 dphi_ijk{he.isInterior() ? proteinDensityGradient[fID]
+                                         : gc::Vector3{0, 0, 0}};
+    double Hj = vpg->vertexMeanCurvatures[i_vj] / vpg->vertexDualAreas[i_vj];
+    double H0j = H0[i_vj];
+    double Kbj = Kb[i_vj];
+    double proteinDensityj = proteinDensity[i_vj];
+    bool interiorHalfedge = he.isInterior();
+
+    gc::Vector3 areaGrad = 2 * computeHalfedgeMeanCurvatureVector(*vpg, he);
+    gc::Vector3 gaussVec = computeHalfedgeGaussianCurvatureVector(*vpg, he);
+    gc::Vector3 schlafliVec1;
+    gc::Vector3 schlafliVec2;
+    std::tie(schlafliVec1, schlafliVec2) =
+        computeHalfedgeSchlafliVector(*vpg, he);
+    gc::Vector3 oneSidedAreaGrad{0, 0, 0};
+    gc::Vector3 dirichletVec{0, 0, 0};
+    if (interiorHalfedge) {
+      oneSidedAreaGrad = 0.5 * gc::cross(vpg->faceNormals[fID],
+                                         vecFromHalfedge(he.next(), *vpg));
+      dirichletVec = computeGradientNorm2Gradient(he, proteinDensity) /
+                     vpg->faceAreas[fID];
+    }
+
+    // Assemble to forces
+    osmoticForceVec +=
+        forces.osmoticPressure * computeHalfedgeVolumeVariationVector(*vpg, he);
+    capillaryForceVec -= forces.surfaceTension * areaGrad;
+    adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
+                          parameters.adsorption.epsilon * areaGrad;
+    aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
+                            proteinDensityj * proteinDensityj * 2 / 3) *
+                           parameters.aggregation.chi * areaGrad;
+    lineCapForceVec -=
+        parameters.dirichlet.eta *
+        (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
+
+    bendForceVec_schlafliVec -=
+        (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
+    bendForceVec_areaGrad -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
+                              Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
+                             areaGrad;
+    bendForceVec_gaussVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
+    bendForceVec -=
+        (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec +
+        (Kbi * (H0i * H0i - Hi * Hi) / 3 +
+         Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
+            areaGrad +
+        (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
+  }
+
+  // masking
+  bendForceVec_areaGrad = forces.maskForce(bendForceVec_areaGrad, i);
+  bendForceVec_gaussVec = forces.maskForce(bendForceVec_gaussVec, i);
+  bendForceVec_schlafliVec = forces.maskForce(bendForceVec_schlafliVec, i);
+  bendForceVec = forces.maskForce(bendForceVec, i);
+
+  osmoticForceVec = forces.maskForce(osmoticForceVec, i);
+  capillaryForceVec = forces.maskForce(capillaryForceVec, i);
+  lineCapForceVec = forces.maskForce(lineCapForceVec, i);
+  adsorptionForceVec = forces.maskForce(adsorptionForceVec, i);
+  aggregationForceVec = forces.maskForce(aggregationForceVec, i);
+
+  // Combine to one
+  forces.bendingForceVec_areaGrad[i] = bendForceVec_areaGrad;
+  forces.bendingForceVec_gaussVec[i] = bendForceVec_gaussVec;
+  forces.bendingForceVec_schlafliVec[i] = bendForceVec_schlafliVec;
+  forces.bendingForceVec[i] = bendForceVec;
+
+  forces.capillaryForceVec[i] = capillaryForceVec;
+  forces.osmoticForceVec[i] = osmoticForceVec;
+  forces.lineCapillaryForceVec[i] = lineCapForceVec;
+  forces.adsorptionForceVec[i] = adsorptionForceVec;
+  forces.aggregationForceVec[i] = aggregationForceVec;
+
+  // Scalar force by projection to angle-weighted normal
+  forces.bendingForce[i] = forces.ontoNormal(bendForceVec, i);
+  forces.capillaryForce[i] = forces.ontoNormal(capillaryForceVec, i);
+  forces.osmoticForce[i] = forces.ontoNormal(osmoticForceVec, i);
+  forces.lineCapillaryForce[i] = forces.ontoNormal(lineCapForceVec, i);
+  forces.adsorptionForce[i] = forces.ontoNormal(adsorptionForceVec, i);
+  forces.aggregationForce[i] = forces.ontoNormal(aggregationForceVec, i);
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {

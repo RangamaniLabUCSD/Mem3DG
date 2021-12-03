@@ -132,7 +132,8 @@ public:
 
   /// is Smooth
   bool isSmooth;
-  gcs::VertexData<bool> smoothingMask;
+  /// if being mutated
+  gcs::VertexData<bool> mutationMarker;
   /// if has boundary
   bool isOpenMesh;
   /// "the vertex"
@@ -143,7 +144,8 @@ public:
   // =============        Constructors           ==============
   // ==========================================================
   /**
-   * @brief Construct a new (geometry) System by reading topology and vertex matrices
+   * @brief Construct a new (geometry) System by reading topology and vertex
+   * matrices
    *
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
@@ -471,7 +473,7 @@ private:
     geodesicDistanceFromPtInd = gcs::VertexData<double>(*mesh, 0);
 
     isSmooth = true;
-    smoothingMask = gc::VertexData<bool>(*mesh, false);
+    mutationMarker = gc::VertexData<bool>(*mesh, false);
     thePointTracker = gc::VertexData<bool>(*mesh, false);
 
     // GC computed properties
@@ -685,6 +687,8 @@ public:
    * @brief Compute mechanical forces
    */
   void computeMechanicalForces();
+  void computeMechanicalForces(size_t i);
+  void computeMechanicalForces(gcs::Vertex &v);
 
   /**
    * @brief Compute external force component of the system
@@ -816,6 +820,14 @@ public:
                     double range = 1e10);
 
   /**
+   * @brief global smoothing after mutation of the mesh
+   * @param initStep init guess of time step
+   * @param target target reduce of force norm
+   * @param maxIteration maximum number of iteration
+   */
+  Eigen::Matrix<bool, Eigen::Dynamic, 1>
+  smoothenMesh(double initStep, double target = 0.5, size_t maxInteration = 50);
+  /**
    * @brief pointwise smoothing after mutation of the mesh
    */
   void localSmoothing(const gcs::Vertex &v, std::size_t num = 10,
@@ -828,11 +840,6 @@ public:
    */
   void globalUpdateAfterMutation();
 
-  /**
-   * @brief global smoothing after mutation of the mesh
-   */
-  void globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol = 1e-6,
-                       double stepSize = 1);
   /**
    * @brief infer the target surface area of the system
    */

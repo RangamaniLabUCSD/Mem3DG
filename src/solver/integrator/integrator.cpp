@@ -477,6 +477,41 @@ void Integrator::lineSearchErrorBacktrace(
     }
   }
 
+  // test if interior penalty energy increases
+  if (runAll || totalForceEnergy.proteinInteriorPenalty >
+                    previousEnergy.proteinInteriorPenalty) {
+
+    // report the finding
+    std::cout << "\nWith F_tol, inPE has increased "
+              << totalForceEnergy.proteinInteriorPenalty -
+                     previousEnergy.proteinInteriorPenalty
+              << " from " << previousEnergy.proteinInteriorPenalty << " to "
+              << totalForceEnergy.proteinInteriorPenalty << std::endl;
+
+    // test single-force-energy computation
+    // perturb the configuration
+    toMatrix(system.vpg->inputVertexPositions) = currentPosition;
+    system.proteinDensity.raw() =
+        currentProteinDensity +
+        alpha * system.parameters.proteinMobility *
+            system.forces.maskProtein(system.forces.interiorPenaltyPotential.raw());
+    system.updateVertexPositions(false);
+    system.computeProteinInteriorPenalty();
+    if (runAll ||
+        system.energy.proteinInteriorPenalty > previousEnergy.proteinInteriorPenalty) {
+      std::cout << "With only protein interior penalty potential, inPE has increased "
+                << system.energy.proteinInteriorPenalty -
+                       previousEnergy.proteinInteriorPenalty
+                << " from " << previousEnergy.proteinInteriorPenalty << " to "
+                << system.energy.proteinInteriorPenalty << ", expected dinPE: "
+                << -alpha * system.parameters.proteinMobility *
+                       system.forces
+                           .maskProtein(system.forces.interiorPenaltyPotential.raw())
+                           .squaredNorm()
+                << std::endl;
+    }
+  }
+
   // test if total force is doing negative work against external force field
   if (runAll || totalForceEnergy.externalWork < previousEnergy.externalWork) {
     std::cout

@@ -297,11 +297,11 @@ bool MeshProcessor::MeshMutator::ifSplit(
   return condition;
 }
 
-void MeshProcessor::MeshMutator::maskAllNeighboring(
-    gcs::VertexData<bool> &smoothingMask, const gcs::Vertex v) {
-  smoothingMask[v] = true;
+void MeshProcessor::MeshMutator::markAllNeighboring(
+    gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v) {
+  mutationMarker[v] = true;
   for (gc::Vertex nv : v.adjacentVertices()) {
-    smoothingMask[nv] = true;
+    mutationMarker[nv] = true;
   }
 }
 

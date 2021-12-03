@@ -220,9 +220,9 @@ bool System::edgeFlip() {
       bool sucess = mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
-      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask,
+      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
                                                    he.tailVertex());
-      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask,
+      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
                                                    he.tipVertex());
     }
   }
@@ -274,8 +274,8 @@ bool System::growMesh() {
       thePointTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
-      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask, newVertex);
-      // smoothingMask[newVertex] = true;
+      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
+      // mutationMarker[newVertex] = true;
 
       isGrown = true;
     } else if (meshProcessor.meshMutator.ifCollapse(e, *vpg)) { // Collapsing
@@ -305,7 +305,7 @@ bool System::growMesh() {
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
 
-      meshProcessor.meshMutator.maskAllNeighboring(smoothingMask, newVertex);
+      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
 
       isGrown = true;
     }
@@ -318,7 +318,7 @@ bool System::growMesh() {
 void System::mutateMesh() {
 
   bool isGrown = false, isFlipped = false;
-  smoothingMask.fill(false);
+  mutationMarker.fill(false);
 
   // vertex shift for regularization
   if (meshProcessor.meshMutator.shiftVertex) {
@@ -340,36 +340,63 @@ void System::mutateMesh() {
 
   // globally update quantities
   if (isGrown || isFlipped) {
-    // globalSmoothing(smoothingMask);
     globalUpdateAfterMutation();
   }
 }
 
-void System::globalSmoothing(gcs::VertexData<bool> &smoothingMask, double tol,
-                             double stepSize) {
-  EigenVectorX1d gradient;
+Eigen::Matrix<bool, Eigen::Dynamic, 1>
+System::smoothenMesh(double initStep, double target, size_t maxIteration) {
+  // require nonzero bending rigidity in parameters
+  if (Kb.raw().sum() == 0){
+    mem3dg_runtime_error("Bending rigidity has to be nonzero to smoothen mesh!");
+  }
+  // initialize variables
+  double stepSize = initStep;
   double pastGradNorm = 1e10;
-  double gradNorm;
-  do {
+  size_t num_iter = 0;
+  // compute bending forces
+  vpg->refreshQuantities();
+  computeMechanicalForces();
+  EigenVectorX3dr pastForceVec = toMatrix(forces.bendingForceVec);
+  // initialize smoothingMask
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> smoothingMask =
+      outlierMask(forces.bendingForce.raw(), 0.5);
+  isSmooth = (smoothingMask.cast<int>().sum() == 0);
+  // initialize gradient and compute exit tolerance
+  double gradNorm = computeNorm(toMatrix(forces.bendingForceVec));
+  double tol = gradNorm * target;
+
+  while (gradNorm > tol && !isSmooth) {
+    // compute bending force if smoothingMask is true
     vpg->refreshQuantities();
-    computeMechanicalForces();
-    auto pos_e = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
-    auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-    gradient = (smoothingMask.raw().cast<double>()).array() *
-               forces.bendingForce.raw().array();
-    gradNorm =
-        gradient.cwiseAbs().sum() / smoothingMask.raw().cast<int>().sum();
-    if (gradNorm > pastGradNorm) {
-      stepSize /= 2;
-      // std::cout << "WARNING: globalSmoothing: stepSize too large, cut in
-      // half!"
-      //           << std::endl;
+    forces.bendingForceVec.fill({0, 0, 0});
+    forces.bendingForce.raw().setZero();
+    for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+      if (smoothingMask[i]) {
+        computeMechanicalForces(i);
+      }
     }
-    pos_e.array() +=
-        rowwiseScalarProduct(gradient, vertexAngleNormal_e).array() * stepSize;
+    // compute norm of the bending force
+    gradNorm = computeNorm(toMatrix(forces.bendingForceVec));
+    // recover the position and cut the step size in half
+    if (gradNorm > pastGradNorm) {
+      toMatrix(vpg->inputVertexPositions) -= pastForceVec * stepSize;
+      stepSize /= 2;
+      num_iter++;
+      continue;
+    }
+    // smoothing step
+    vpg->inputVertexPositions += forces.bendingForceVec * stepSize;
     pastGradNorm = gradNorm;
-    // std::cout << "gradient:  " << gradNorm << std::endl;
-  } while (gradNorm > tol);
+    pastForceVec = toMatrix(forces.bendingForceVec);
+    num_iter++;
+    if (num_iter == maxIteration) {
+      mem3dg_runtime_error("smoothing operation exceeds max iteration!");
+      break;
+    }
+  };
+
+  return smoothingMask;
 }
 
 void System::localSmoothing(const gcs::Vertex &v, std::size_t num,

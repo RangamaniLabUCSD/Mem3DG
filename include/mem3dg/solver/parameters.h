@@ -179,7 +179,7 @@ struct Parameters {
     /// sharpness of tanh transition
     double tanhSharpness = 20;
     /// interior point parameter for protein density
-    double lambdaPhi = 1e-9;
+    double lambdaPhi = 1e-5;
     /// type of input
     enum TypeOfProtein0 {
       Disabled,
