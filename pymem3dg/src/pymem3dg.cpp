@@ -1249,6 +1249,19 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
           get coefficient
       )delim");
 
+  py::class_<Parameters::SelfAvoidance> selfAvoidance(pymem3dg, "SelfAvoidance",
+                                              R"delim(
+        The SelfAvoidance energy parameters
+    )delim");
+  selfAvoidance.def_readwrite("d", &Parameters::SelfAvoidance::d,
+                          R"delim(
+          get coefficient of limit distance
+      )delim");
+  selfAvoidance.def_readwrite("mu", &Parameters::SelfAvoidance::mu,
+                          R"delim(
+          get coefficient of penalty coefficient
+      )delim");
+
   py::class_<Parameters::Point> point(pymem3dg, "Point",
                                       R"delim(
         The Point energy parameters
@@ -1330,6 +1343,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("dirichlet", &Parameters::dirichlet,
                            R"delim(
           dirichlet parameters
+      )delim");
+  parameters.def_readwrite("selfAvoidance", &Parameters::selfAvoidance,
+                           R"delim(
+          selfAvoidance parameters
       )delim");
   parameters.def_readwrite("dpd", &Parameters::dpd,
                            R"delim(
@@ -1471,7 +1488,7 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The quantities for visualization
     )delim");
   quantities.def(py::init<>());
-  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool,
+  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool, bool,
                           bool, bool, bool, bool>());
   quantities.def_readwrite("ref_coord", &Quantities::ref_coord,
                            R"delim(
@@ -1496,6 +1513,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   quantities.def_readwrite("ext_force", &Quantities::ext_force,
                            R"delim(
         visualize external force
+      )delim");
+  quantities.def_readwrite("avoidance_force", &Quantities::avoidance_force,
+                           R"delim(
+        visualize self avoidance force
       )delim");
   quantities.def_readwrite("physical_force", &Quantities::physical_force,
                            R"delim(
