@@ -106,7 +106,7 @@ void VelocityVerlet::checkParameters() {
 
 void VelocityVerlet::status() {
   // recompute cached values
-  system.updateVertexPositions();
+  system.updateConfigurations();
 
   // alias vpg quantities, which should follow the update
   auto physicalForceVec = toMatrix(system.forces.mechanicalForceVec);

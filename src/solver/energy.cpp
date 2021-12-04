@@ -159,7 +159,8 @@ double System::computePotentialEnergy() {
     energy.dirichletEnergy = 0;
     computeDirichletEnergy();
   }
-  if (parameters.variation.isProteinVariation) {
+  if (parameters.variation.isProteinVariation &&
+      parameters.proteinDistribution.lambdaPhi != 0) {
     energy.proteinInteriorPenalty = 0;
     computeProteinInteriorPenalty();
   }

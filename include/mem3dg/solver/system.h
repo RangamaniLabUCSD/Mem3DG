@@ -160,7 +160,7 @@ public:
     initConstants();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
   };
 
   /**
@@ -185,7 +185,7 @@ public:
     mutateMesh();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
 
     // Smoothen the mesh using bending force
     smoothenMesh(0.01, 0.1, 1000);
@@ -214,7 +214,7 @@ public:
     mutateMesh();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
 
     // Smoothen the mesh using bending force
     smoothenMesh(0.01, 0.1, 1000);
@@ -232,7 +232,7 @@ public:
     initConstants();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
   };
 
   /**
@@ -265,7 +265,7 @@ public:
     mutateMesh();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
 
     // Smoothen the mesh using bending force
     smoothenMesh(0.01, 0.1, 1000);
@@ -302,7 +302,7 @@ public:
     mutateMesh();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
 
     // Smoothen the mesh using bending force
     smoothenMesh(0.01, 0.1, 1000);
@@ -323,7 +323,7 @@ public:
     initConstants();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
   };
 
   /**
@@ -354,7 +354,7 @@ public:
     mutateMesh();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
 
     // Smoothen the mesh using bending force
     smoothenMesh(0.01, 0.1, 1000);
@@ -389,7 +389,7 @@ public:
     mutateMesh();
 
     /// compute nonconstant values during simulation
-    updateVertexPositions();
+    updateConfigurations();
 
     // Smoothen the mesh using bending force
     smoothenMesh(0.01, 0.1, 1000);
@@ -626,7 +626,7 @@ public:
    * Careful: 2. choosing to update geodesics and spatial properties may lead to
    * failing in backtrack!!
    */
-  void updateVertexPositions(bool isUpdateGeodesics = false);
+  void updateConfigurations(bool isUpdateGeodesics = false);
 
   // ==========================================================
   // ================   Variational vectors  ==================

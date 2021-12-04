@@ -74,13 +74,13 @@ bool ConjugateGradient::integrate() {
     if (system.time - lastProcessMesh > processMeshPeriod) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
-      system.updateVertexPositions(true);
+      system.updateConfigurations(true);
     }
 
     // break loop if EXIT flag is on
@@ -222,10 +222,10 @@ void ConjugateGradient::march() {
                   toMatrix(system.proteinVelocity), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
-    system.vpg->inputVertexPositions += system.velocity * timeStep;
-    system.proteinDensity += system.proteinVelocity * timeStep;
-    system.time += timeStep;
   }
+  system.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.proteinDensity += system.proteinVelocity * timeStep;
+  system.time += timeStep;
 
   // regularization
   if (system.meshProcessor.isMeshRegularize) {
@@ -235,7 +235,7 @@ void ConjugateGradient::march() {
   }
 
   // recompute cached values
-  system.updateVertexPositions(false);
+  system.updateConfigurations(false);
 }
 
 } // namespace integrator

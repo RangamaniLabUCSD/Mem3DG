@@ -39,8 +39,8 @@ private:
 public:
   std::size_t restartPeriod = 5;
   bool isBacktrack = true;
-  double rho = 0.99;
-  double c1 = 0.001;
+  double rho = 0.9;
+  double c1 = 0.0005;
   double constraintTolerance = 0.01;
   bool isAugmentedLagrangian = false;
 

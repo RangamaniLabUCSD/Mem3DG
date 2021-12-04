@@ -73,13 +73,13 @@ bool Euler::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.smoothenMesh(timeStep);
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
-      system.updateVertexPositions(true);
+      system.updateConfigurations(true);
     }
 
     // break loop if EXIT flag is on
@@ -173,15 +173,21 @@ void Euler::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    timeStep =
-        backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
-                  toMatrix(system.proteinVelocity), rho, c1);
+    double timeStep_mech, timeStep_chem = characteristicTimeStep;
+    if (system.parameters.variation.isShapeVariation)
+      timeStep_mech = mechanicalBacktrack(system.energy.potentialEnergy,
+                                          toMatrix(system.velocity), rho, c1);
+    if (system.parameters.variation.isProteinVariation)
+      timeStep_chem =
+          chemicalBacktrack(system.energy.potentialEnergy,
+                            toMatrix(system.proteinVelocity), rho, c1);
+    timeStep = timeStep_chem < timeStep_mech ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
-    system.vpg->inputVertexPositions += system.velocity * timeStep;
-    system.proteinDensity += system.proteinVelocity * timeStep;
-    system.time += timeStep;
   }
+  system.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.proteinDensity += system.proteinVelocity * timeStep;
+  system.time += timeStep;
 
   // regularization
   if (system.meshProcessor.isMeshRegularize) {
@@ -191,7 +197,7 @@ void Euler::march() {
   }
 
   // recompute cached values
-  system.updateVertexPositions(false);
+  system.updateConfigurations(false);
 }
 } // namespace integrator
 } // namespace solver

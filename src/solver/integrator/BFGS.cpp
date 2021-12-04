@@ -203,7 +203,7 @@ void BFGS::march() {
   if (system.time == lastSave && system.time != initialTime) {
     // process the mesh with regularization or mutation
     system.mutateMesh();
-    system.updateVertexPositions(true);
+    system.updateConfigurations(true);
 
     system.time += 1e-10 * characteristicTimeStep;
     ifRestart = true;
@@ -229,6 +229,9 @@ void BFGS::march() {
     // time stepping on vertex position
     timeStep = backtrack(system.energy.potentialEnergy, f_velocity_e,
                          toMatrix(system.proteinVelocity), rho, c1);
+    system.vpg->inputVertexPositions += system.velocity * timeStep;
+    system.proteinDensity += system.proteinVelocity * timeStep;
+    system.time += timeStep;
     s = timeStep * flatten(f_velocity_e);
     s_protein = timeStep * toMatrix(system.proteinVelocity);
 
@@ -240,7 +243,7 @@ void BFGS::march() {
     }
 
     // recompute cached values
-    system.updateVertexPositions(false);
+    system.updateConfigurations(false);
   }
 }
 } // namespace integrator

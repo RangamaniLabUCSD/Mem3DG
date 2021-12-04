@@ -30,8 +30,8 @@ namespace integrator {
 class DLL_PUBLIC Euler : public Integrator {
 public:
   bool isBacktrack = true;
-  double rho = 0.99;
-  double c1 = 0.0001;
+  double rho = 0.9;
+  double c1 = 0.0005;
 
   Euler(System &system_, double characteristicTimeStep_, double totalTime_,
         double savePeriod_, double tolerance_, std::string outputDirectory_)

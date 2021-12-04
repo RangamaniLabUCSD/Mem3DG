@@ -1048,10 +1048,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Method: updateVertexPosition
    */
-  system.def("updateVertexPositions", &System::updateVertexPositions,
+  system.def("updateConfigurations", &System::updateConfigurations,
              py::arg("isUpdateGeodesics") = false,
              R"delim(
-          compute the free energy of the system
+          update the system configuration due to changes in state variables (e.g vertex positions or protein density)
       )delim");
 
   /**
