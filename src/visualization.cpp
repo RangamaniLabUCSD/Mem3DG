@@ -662,6 +662,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
           "external_force",
           ptrRichData->getVertexProperty<double>("external_force"));
     }
+    if (options.avoidance_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "avoidance_force",
+          ptrRichData->getVertexProperty<double>("avoidance_force"));
+    }
     if (options.physical_force) {
       polyscopeMesh->addVertexScalarQuantity(
           "physical_force",

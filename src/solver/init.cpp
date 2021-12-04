@@ -215,6 +215,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("adsorption_force", forces.adsorptionForce);
     richData.addVertexProperty("aggregation_force", forces.aggregationForce);
     richData.addVertexProperty("external_force", forces.externalForce);
+    richData.addVertexProperty("avoidance_force", forces.selfAvoidanceForce);
     richData.addVertexProperty("physical_force", forces.mechanicalForce);
 
     // write chemical potential

@@ -35,6 +35,8 @@ struct DLL_PUBLIC Quantities {
   bool spon_curvature = false;
   /// vertex external force
   bool ext_force = false;
+  /// vertex self avoidance force
+  bool avoidance_force = false;
   /// vertex (total) physical force
   bool physical_force = false;
   /// vertex capillary force
