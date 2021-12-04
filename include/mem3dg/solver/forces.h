@@ -69,6 +69,8 @@ struct Forces {
   gcs::VertexData<double> aggregationForce;
   /// Cached externally-applied force
   gcs::VertexData<double> externalForce;
+  /// Cached self avoidance force
+  gcs::VertexData<double> selfAvoidanceForce;
   /// Cached mechanical force
   gcs::VertexData<double> mechanicalForce;
   /// Cached osmotic pressure
@@ -97,6 +99,8 @@ struct Forces {
   gcs::VertexData<gc::Vector3> aggregationForceVec;
   /// Cached external localized force
   gcs::VertexData<gc::Vector3> externalForceVec;
+  /// Cached self avoidance force
+  gcs::VertexData<gc::Vector3> selfAvoidanceForceVec;
   /// Cached mechanical force
   gcs::VertexData<gc::Vector3> mechanicalForceVec;
 
@@ -134,10 +138,12 @@ struct Forces {
         capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
         adsorptionForceVec(mesh, {0, 0, 0}),
         aggregationForceVec(mesh, {0, 0, 0}), externalForceVec(mesh, {0, 0, 0}),
+        selfAvoidanceForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
         capillaryForce(mesh, 0), surfaceTension(0), lineCapillaryForce(mesh, 0),
         adsorptionForce(mesh, 0), aggregationForce(mesh, 0),
-        externalForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
+        externalForce(mesh, 0), selfAvoidanceForce(mesh, 0),
+        osmoticForce(mesh, 0), osmoticPressure(0),
         regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
         dampingForce(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
         bendingPotential(mesh, 0), adsorptionPotential(mesh, 0),

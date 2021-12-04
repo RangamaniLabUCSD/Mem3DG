@@ -336,8 +336,10 @@ EigenVectorX3dr System::prescribeExternalForce() {
         parameters.external.Kf *
         (1 + sin(freq * 2 * constants::PI / totalHeight *
                  vpg->inputVertexPositions[v].z));
-    forces.externalForceVec[i] = externalPressureMagnitude *
-                                 vpg->vertexDualArea(v) * direction.normalize();
+    forces.externalForceVec[i] =
+        forces.maskForce(externalPressureMagnitude * vpg->vertexDualArea(v) *
+                             direction.normalize(),
+                         i);
   }
 
 #elif MODE == 1 // anchor force
@@ -352,14 +354,39 @@ EigenVectorX3dr System::prescribeExternalForce() {
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     forces.externalForceVec[i] =
-        exp(-time / decayTime) * parameters.external.Kf *
-        gaussianDistribution(geodesicDistanceFromPtInd[v], standardDeviation) *
-        vpg->vertexDualArea(v) * direction;
+        forces.maskForce(exp(-time / decayTime) * parameters.external.Kf *
+                             gaussianDistribution(geodesicDistanceFromPtInd[v],
+                                                  standardDeviation) *
+                             vpg->vertexDualArea(v) * direction,
+                         i);
   }
 #endif
   forces.externalForce = forces.ontoNormal(forces.externalForceVec);
 
   return toMatrix(forces.externalForceVec);
+}
+
+void System::computeSelfAvoidanceForce() {
+  const double d0 = parameters.selfAvoidance.d;
+  const double mu = parameters.selfAvoidance.mu;
+  double e = 0.0;
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+      gc::Vertex vi{mesh->vertex(i)};
+      gc::Vertex vj{mesh->vertex(j)};
+      double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
+                       vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      gc::Vector3 r =
+          vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+      double distance = gc::norm(r);
+      gc::Vector3 grad = r.normalize();
+      forces.selfAvoidanceForceVec[i] -=
+          forces.maskForce(penalty / (distance - d0) * grad, i);
+      forces.selfAvoidanceForceVec[j] +=
+          forces.maskForce(penalty / (distance - d0) * grad, j);
+    }
+  }
+  energy.selfAvoidancePenalty = e;
 }
 
 EigenVectorX1d System::computeChemicalPotential() {
@@ -403,7 +430,7 @@ EigenVectorX1d System::computeChemicalPotential() {
     forces.diffusionPotential.raw() = forces.maskProtein(
         -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
 
-  if (parameters.proteinDistribution.lambdaPhi!= 0)
+  if (parameters.proteinDistribution.lambdaPhi != 0)
     forces.interiorPenaltyPotential.raw() =
         forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
                            (1 / proteinDensity.raw().array() -
@@ -572,6 +599,7 @@ void System::computePhysicalForcing() {
   forces.adsorptionForceVec.fill({0, 0, 0});
   forces.aggregationForceVec.fill({0, 0, 0});
   forces.externalForceVec.fill({0, 0, 0});
+  forces.selfAvoidanceForceVec.fill({0, 0, 0});
 
   forces.bendingForce.raw().setZero();
   forces.capillaryForce.raw().setZero();
@@ -580,6 +608,7 @@ void System::computePhysicalForcing() {
   forces.adsorptionForce.raw().setZero();
   forces.aggregationForce.raw().setZero();
   forces.osmoticForce.raw().setZero();
+  forces.selfAvoidanceForce.raw().setZero();
 
   forces.chemicalPotential.raw().setZero();
   forces.diffusionPotential.raw().setZero();
@@ -592,11 +621,14 @@ void System::computePhysicalForcing() {
     if (parameters.external.Kf != 0) {
       prescribeExternalForce();
     }
+    if (parameters.selfAvoidance.mu != 0) {
+      computeSelfAvoidanceForce();
+    }
     forces.mechanicalForceVec =
         forces.osmoticForceVec + forces.capillaryForceVec +
         forces.bendingForceVec + forces.lineCapillaryForceVec +
         forces.adsorptionForceVec + forces.aggregationForceVec +
-        forces.externalForceVec;
+        forces.externalForceVec + forces.selfAvoidanceForceVec;
     forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
   }
 
