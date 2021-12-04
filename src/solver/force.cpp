@@ -385,21 +385,29 @@ EigenVectorX1d System::computeChemicalPotential() {
             .matrix();
   }
 
-  forces.adsorptionPotential.raw() = forces.maskProtein(
-      -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
-  forces.aggregationPotential.raw() = forces.maskProtein(
-      -2 * parameters.aggregation.chi * proteinDensity.raw().array() *
-      vpg->vertexDualAreas.raw().array());
   forces.bendingPotential.raw() = forces.maskProtein(
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
        2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
-  forces.diffusionPotential.raw() = forces.maskProtein(
-      -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
-  forces.interiorPenaltyPotential.raw() =
-      forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
-                         (1 / proteinDensity.raw().array() -
-                          1 / (1 - proteinDensity.raw().array())));
+
+  if (parameters.adsorption.epsilon != 0)
+    forces.adsorptionPotential.raw() = forces.maskProtein(
+        -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
+
+  if (parameters.aggregation.chi != 0)
+    forces.aggregationPotential.raw() = forces.maskProtein(
+        -2 * parameters.aggregation.chi * proteinDensity.raw().array() *
+        vpg->vertexDualAreas.raw().array());
+
+  if (parameters.dirichlet.eta != 0)
+    forces.diffusionPotential.raw() = forces.maskProtein(
+        -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
+
+  if (parameters.proteinDistribution.lambdaPhi!= 0)
+    forces.interiorPenaltyPotential.raw() =
+        forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
+                           (1 / proteinDensity.raw().array() -
+                            1 / (1 - proteinDensity.raw().array())));
   forces.chemicalPotential.raw() =
       forces.adsorptionPotential.raw() + forces.aggregationPotential.raw() +
       forces.bendingPotential.raw() + forces.diffusionPotential.raw() +

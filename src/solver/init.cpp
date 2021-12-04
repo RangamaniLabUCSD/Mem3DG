@@ -373,7 +373,7 @@ void System::initConstants() {
   std::cout << "vol_init = " << volume << std::endl;
 }
 
-void System::updateVertexPositions(bool isUpdateGeodesics) {
+void System::updateConfigurations(bool isUpdateGeodesics) {
 
   // refresh cached quantities after regularization
   vpg->refreshQuantities();

@@ -103,7 +103,7 @@ double Integrator::backtrack(
     system.proteinDensity.raw() += alpha * chemicalDirection;
   }
   system.time += alpha;
-  system.updateVertexPositions(false);
+  system.updateConfigurations(false);
   system.computePotentialEnergy();
 
   while (true) {
@@ -136,19 +136,25 @@ double Integrator::backtrack(
       system.proteinDensity.raw() = initial_protein + alpha * chemicalDirection;
     }
     system.time = init_time + alpha;
-    system.updateVertexPositions(false);
+    system.updateConfigurations(false);
     system.computePotentialEnergy();
 
     // count the number of iterations
     count++;
   }
+  // recover the initial configuration
+  system.time = init_time;
+  system.proteinDensity.raw() = initial_protein;
+  toMatrix(system.vpg->inputVertexPositions) = initial_pos;
+  system.updateConfigurations(false);
+  system.computePotentialEnergy();
 
   // report the backtracking if verbose
   if (alpha != characteristicTimeStep && verbosity > 3) {
     std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
               << std::endl;
-    std::cout << "mech norm: " << system.mechErrorNorm << std::endl;
-    std::cout << "chem norm: " << system.chemErrorNorm << std::endl;
+    // std::cout << "mech norm: " << system.mechErrorNorm << std::endl;
+    // std::cout << "chem norm: " << system.chemErrorNorm << std::endl;
   }
 
   // If needed to test force-energy test
@@ -156,6 +162,191 @@ double Integrator::backtrack(
   if (isDebug) {
     lineSearchErrorBacktrace(alpha, initial_pos, initial_protein, previousE,
                              isDebug);
+  }
+
+  return alpha;
+}
+double Integrator::chemicalBacktrack(
+    const double energy_pre,
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection, double rho,
+    double c1) {
+
+  // cache energy of the last time step
+  const Energy previousE = system.energy;
+
+  // validate the directions
+  double chemicalProjection = 0;
+  chemicalProjection = (system.forces.chemicalPotential.raw().array() *
+                        chemicalDirection.array())
+                           .sum();
+  if (chemicalProjection < 0) {
+    std::cout << "\nchemicalBacktracking line search: chemical direction on "
+                 "uphill direction, "
+                 "use bare "
+                 "gradient! \n"
+              << std::endl;
+    chemicalDirection = system.forces.chemicalPotential.raw();
+    chemicalProjection = (system.forces.chemicalPotential.raw().array() *
+                          chemicalDirection.array())
+                             .sum();
+  }
+
+  // calculate initial energy as reference level
+  const Eigen::Matrix<double, Eigen::Dynamic, 1> initial_protein =
+      system.proteinDensity.raw();
+  const double init_time = system.time;
+
+  // declare variables used in backtracking iterations
+  double alpha = characteristicTimeStep;
+  std::size_t count = 0;
+
+  // zeroth iteration
+  system.proteinDensity.raw() += alpha * chemicalDirection;
+  system.time += alpha;
+  system.updateConfigurations(false);
+  system.computePotentialEnergy();
+
+  while (true) {
+    // Wolfe condition fulfillment
+    if (system.energy.potentialEnergy <
+        (energy_pre - c1 * alpha * chemicalProjection)) {
+      break;
+    }
+
+    // limit of backtraking iterations
+    if (alpha < 1e-5 * characteristicTimeStep) {
+      std::cout << "\nchemicalBacktrack: line search failure! Simulation "
+                   "stopped. \n"
+                << std::endl;
+      lineSearchErrorBacktrace(alpha,
+                               toMatrix(system.vpg->inputVertexPositions),
+                               initial_protein, previousE, true);
+      EXIT = true;
+      SUCCESS = false;
+      break;
+    }
+
+    // backtracking time step
+    alpha *= rho;
+    system.proteinDensity.raw() = initial_protein + alpha * chemicalDirection;
+    system.time = init_time + alpha;
+    system.updateConfigurations(false);
+    system.computePotentialEnergy();
+
+    // count the number of iterations
+    count++;
+  }
+  // recover the initial configuration
+  system.time = init_time;
+  system.proteinDensity.raw() = initial_protein;
+  system.updateConfigurations(false);
+  system.computePotentialEnergy();
+
+  // report the backtracking if verbose
+  if (alpha != characteristicTimeStep && verbosity > 3) {
+    std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
+              << std::endl;
+  }
+
+  // If needed to test force-energy test
+  const bool isDebug = false;
+  if (isDebug) {
+    lineSearchErrorBacktrace(alpha, toMatrix(system.vpg->inputVertexPositions),
+                             initial_protein, previousE, isDebug);
+  }
+
+  return alpha;
+}
+
+double Integrator::mechanicalBacktrack(
+    const double energy_pre,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection, double rho,
+    double c1) {
+
+  // cache energy of the last time step
+  const Energy previousE = system.energy;
+
+  auto physicalForceVec = toMatrix(system.forces.mechanicalForceVec);
+
+  // validate the directions
+  double positionProjection = 0;
+  positionProjection =
+      (physicalForceVec.array() * positionDirection.array()).sum();
+  if (positionProjection < 0) {
+    std::cout
+        << "\nmechanicalBacktrack line search: positional velocity on uphill "
+           "direction, use bare "
+           "gradient! \n"
+        << std::endl;
+    positionDirection = physicalForceVec;
+    positionProjection =
+        (physicalForceVec.array() * positionDirection.array()).sum();
+  }
+
+  // calculate initial energy as reference level
+  const Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
+      toMatrix(system.vpg->inputVertexPositions);
+  const double init_time = system.time;
+
+  // declare variables used in backtracking iterations
+  double alpha = characteristicTimeStep;
+  std::size_t count = 0;
+
+  // zeroth iteration
+  toMatrix(system.vpg->inputVertexPositions) += alpha * positionDirection;
+  system.time += alpha;
+  system.updateConfigurations(false);
+  system.computePotentialEnergy();
+
+  while (true) {
+    // Wolfe condition fulfillment
+    if (system.energy.potentialEnergy <
+        (energy_pre + system.computeIntegratedPower(alpha) -
+         c1 * alpha * positionProjection)) {
+      break;
+    }
+
+    // limit of backtraking iterations
+    if (alpha < 1e-5 * characteristicTimeStep) {
+      std::cout << "\nmechanicalBacktrack: line search failure! Simulation "
+                   "stopped. \n"
+                << std::endl;
+      lineSearchErrorBacktrace(alpha, initial_pos, system.proteinDensity.raw(),
+                               previousE, true);
+      EXIT = true;
+      SUCCESS = false;
+      break;
+    }
+
+    // backtracking time step
+    alpha *= rho;
+    toMatrix(system.vpg->inputVertexPositions) =
+        initial_pos + alpha * positionDirection;
+
+    system.time = init_time + alpha;
+    system.updateConfigurations(false);
+    system.computePotentialEnergy();
+
+    // count the number of iterations
+    count++;
+  }
+  // recover the initial configuration
+  system.time = init_time;
+  toMatrix(system.vpg->inputVertexPositions) = initial_pos;
+  system.updateConfigurations(false);
+  system.computePotentialEnergy();
+
+  // report the backtracking if verbose
+  if (alpha != characteristicTimeStep && verbosity > 3) {
+    std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
+              << std::endl;
+  }
+
+  // If needed to test force-energy test
+  const bool isDebug = false;
+  if (isDebug) {
+    lineSearchErrorBacktrace(alpha, initial_pos, system.proteinDensity.raw(),
+                             previousE, isDebug);
   }
 
   return alpha;
@@ -169,7 +360,7 @@ void Integrator::lineSearchErrorBacktrace(
 
   // cache the energy when applied the total force
   if (system.parameters.external.Kf != 0)
-    system.computeExternalWork(system.time, timeStep);
+    system.computeExternalWork(system.time, alpha);
   system.computeTotalEnergy();
   const Energy totalForceEnergy{system.energy};
 
@@ -193,7 +384,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.bendingForceVec));
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
 
       // test if bending energy increases
       system.computeBendingEnergy();
@@ -216,7 +407,7 @@ void Integrator::lineSearchErrorBacktrace(
           currentProteinDensity +
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(system.forces.bendingPotential.raw());
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
 
       // test if bending energy increases
       system.computeBendingEnergy();
@@ -250,7 +441,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.capillaryForceVec));
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computeSurfaceEnergy();
       if (runAll ||
           system.energy.surfaceEnergy > previousEnergy.surfaceEnergy) {
@@ -283,7 +474,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.osmoticForceVec));
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computePressureEnergy();
       if (runAll ||
           system.energy.pressureEnergy > previousEnergy.pressureEnergy) {
@@ -317,7 +508,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.adsorptionForceVec));
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computeAdsorptionEnergy();
       if (runAll ||
           system.energy.adsorptionEnergy > previousEnergy.adsorptionEnergy) {
@@ -341,7 +532,7 @@ void Integrator::lineSearchErrorBacktrace(
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(
                   system.forces.adsorptionPotential.raw());
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computeAdsorptionEnergy();
       if (runAll ||
           system.energy.adsorptionEnergy > previousEnergy.adsorptionEnergy) {
@@ -376,7 +567,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.aggregationForceVec));
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computeAggregationEnergy();
       if (runAll ||
           system.energy.aggregationEnergy > previousEnergy.aggregationEnergy) {
@@ -400,7 +591,7 @@ void Integrator::lineSearchErrorBacktrace(
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(
                   system.forces.aggregationPotential.raw());
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computeAggregationEnergy();
       if (runAll ||
           system.energy.aggregationEnergy > previousEnergy.aggregationEnergy) {
@@ -435,7 +626,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.lineCapillaryForceVec));
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computeDirichletEnergy();
       if (runAll ||
           system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
@@ -458,7 +649,7 @@ void Integrator::lineSearchErrorBacktrace(
           currentProteinDensity +
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(system.forces.diffusionPotential.raw());
-      system.updateVertexPositions(false);
+      system.updateConfigurations(false);
       system.computeDirichletEnergy();
       if (runAll ||
           system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
@@ -494,21 +685,23 @@ void Integrator::lineSearchErrorBacktrace(
     system.proteinDensity.raw() =
         currentProteinDensity +
         alpha * system.parameters.proteinMobility *
-            system.forces.maskProtein(system.forces.interiorPenaltyPotential.raw());
-    system.updateVertexPositions(false);
+            system.forces.maskProtein(
+                system.forces.interiorPenaltyPotential.raw());
+    system.updateConfigurations(false);
     system.computeProteinInteriorPenalty();
-    if (runAll ||
-        system.energy.proteinInteriorPenalty > previousEnergy.proteinInteriorPenalty) {
-      std::cout << "With only protein interior penalty potential, inPE has increased "
-                << system.energy.proteinInteriorPenalty -
-                       previousEnergy.proteinInteriorPenalty
-                << " from " << previousEnergy.proteinInteriorPenalty << " to "
-                << system.energy.proteinInteriorPenalty << ", expected dinPE: "
-                << -alpha * system.parameters.proteinMobility *
-                       system.forces
-                           .maskProtein(system.forces.interiorPenaltyPotential.raw())
-                           .squaredNorm()
-                << std::endl;
+    if (runAll || system.energy.proteinInteriorPenalty >
+                      previousEnergy.proteinInteriorPenalty) {
+      std::cout
+          << "With only protein interior penalty potential, inPE has increased "
+          << system.energy.proteinInteriorPenalty -
+                 previousEnergy.proteinInteriorPenalty
+          << " from " << previousEnergy.proteinInteriorPenalty << " to "
+          << system.energy.proteinInteriorPenalty << ", expected dinPE: "
+          << -alpha * system.parameters.proteinMobility *
+                 system.forces
+                     .maskProtein(system.forces.interiorPenaltyPotential.raw())
+                     .squaredNorm()
+          << std::endl;
     }
   }
 
@@ -789,7 +982,9 @@ void Integrator::saveData() {
               << (system.vpg->vertexGaussianCurvatures.raw().array() /
                   system.vpg->vertexDualAreas.raw().array())
                      .maxCoeff()
-              << "]" << std::endl;
+              << "\n"
+              << "phi: [" << system.proteinDensity.raw().minCoeff() << ","
+              << system.proteinDensity.raw().maxCoeff() << "]" << std::endl;
     // << "COM: "
     // << gc::EigenMap<double,
     // 3>(f.vpg->inputVertexPositions).colwise().sum() /
