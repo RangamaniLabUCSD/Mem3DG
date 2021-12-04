@@ -81,6 +81,8 @@ struct Energy {
   double externalWork = 0;
   /// protein interior penalty energy
   double proteinInteriorPenalty = 0;
+  /// membrane self-avoidance penalty energy
+  double selfAvoidancePenalty = 0;
 };
 
 class DLL_PUBLIC System {
@@ -479,7 +481,7 @@ private:
         forces(*mesh, *vpg) {
 
     time = 0;
-    energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     proteinDensity = gc::VertexData<double>(*mesh, 0);
     proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
@@ -702,6 +704,11 @@ public:
   EigenVectorX1d computeChemicalPotential();
 
   /**
+   * @brief Compute Self Avoidance force
+   */
+  void computeSelfAvoidanceForce();
+
+  /**
    * @brief Compute mechanical forces
    */
   void computeMechanicalForces();
@@ -755,6 +762,11 @@ public:
    * @brief Compute Dirichlet energy
    */
   void computeDirichletEnergy();
+
+  /**
+   * @brief Compute self-avoidance energy
+   */
+  void computeSelfAvoidanceEnergy();
 
   /**
    * @brief Compute external work

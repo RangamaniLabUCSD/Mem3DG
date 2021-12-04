@@ -425,7 +425,7 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
     proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
   }
 
-  // compute face gradient of spontaneous curvature
+  // compute face gradient of protein density
   if (parameters.dirichlet.eta != 0) {
     computeGradient(proteinDensity, proteinDensityGradient);
   }

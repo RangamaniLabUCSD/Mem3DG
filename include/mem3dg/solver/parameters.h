@@ -123,6 +123,13 @@ struct Parameters {
     double eta = 0;
   };
 
+  struct SelfAvoidance {
+    /// limit distance
+    double d = 0.005;
+    /// penalty coefficient 
+    double mu = 1;
+  };
+
   struct External {
     /// Magnitude of external force
     double Kf = 0;
@@ -206,6 +213,8 @@ struct Parameters {
   Aggregation aggregation;
   /// protein dirichlet energy parameters
   Dirichlet dirichlet;
+  /// self avoidance energy parameters
+  SelfAvoidance selfAvoidance;
   /// external force parameters
   External external;
   /// DPD parameters

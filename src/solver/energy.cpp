@@ -111,6 +111,25 @@ void System::computeProteinInteriorPenalty() {
        (1 - proteinDensity.raw().array()).log().sum());
 }
 
+void System::computeSelfAvoidanceEnergy() {
+  const double d0 = parameters.selfAvoidance.d;
+  const double mu = parameters.selfAvoidance.mu;
+  double e = 0.0;
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+      gc::Vertex vi{mesh->vertex(i)};
+      gc::Vertex vj{mesh->vertex(j)};
+      double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
+                       vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      gc::Vector3 r =
+          vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+      double distance = gc::norm(r);
+      e -= penalty * log(distance - d0);
+    }
+  }
+  energy.selfAvoidancePenalty = e;
+}
+
 void System::computeDirichletEnergy() {
   if (false) {
     mem3dg_runtime_error("computeDirichletEnergy: out of date implementation, "
@@ -132,7 +151,8 @@ void System::computeDirichletEnergy() {
   }
 
   // alternative dirichlet energy after integration by part
-  // E.dE = 0.5 * P.eta * proteinDensity.raw().transpose() * vpg->cotanLaplacian
+  // E.dE = 0.5 * P.eta * proteinDensity.raw().transpose() *
+  // vpg->cotanLaplacian
   // *
   //        proteinDensity.raw();
 }
@@ -159,6 +179,10 @@ double System::computePotentialEnergy() {
     energy.dirichletEnergy = 0;
     computeDirichletEnergy();
   }
+  if (parameters.selfAvoidance.mu != 0) {
+    energy.selfAvoidancePenalty = 0;
+    computeSelfAvoidanceEnergy();
+  }
   if (parameters.variation.isProteinVariation &&
       parameters.proteinDistribution.lambdaPhi != 0) {
     energy.proteinInteriorPenalty = 0;
@@ -166,10 +190,10 @@ double System::computePotentialEnergy() {
   }
 
   // summerize internal potential energy
-  energy.potentialEnergy = energy.bendingEnergy + energy.surfaceEnergy +
-                           energy.pressureEnergy + energy.adsorptionEnergy +
-                           energy.dirichletEnergy +
-                           energy.proteinInteriorPenalty;
+  energy.potentialEnergy =
+      energy.bendingEnergy + energy.surfaceEnergy + energy.pressureEnergy +
+      energy.adsorptionEnergy + energy.dirichletEnergy +
+      energy.selfAvoidancePenalty + energy.proteinInteriorPenalty;
   return energy.potentialEnergy;
 }
 
@@ -194,7 +218,8 @@ double System::computeExternalWork(double currentTime, double dt) {
 double System::computeKineticEnergy() {
   // auto velocity =
   //     rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
-  //                       gc::EigenMap<double, 3>(vpg->inputVertexPositions));
+  //                       gc::EigenMap<double,
+  //                       3>(vpg->inputVertexPositions));
   energy.kineticEnergy =
       0.5 * (vpg->vertexLumpedMassMatrix *
              Eigen::square(toMatrix(velocity).array()).matrix())
