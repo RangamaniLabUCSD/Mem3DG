@@ -668,6 +668,40 @@ void Integrator::lineSearchErrorBacktrace(
     }
   }
 
+  // test if dirichlet energy increases
+  if (runAll || system.energy.selfAvoidancePenalty >
+                    previousEnergy.selfAvoidancePenalty) {
+
+    // report the finding
+    std::cout << "\nWith F_tol, selfE has increased "
+              << system.energy.selfAvoidancePenalty -
+                     previousEnergy.selfAvoidancePenalty
+              << " from " << previousEnergy.selfAvoidancePenalty << " to "
+              << system.energy.selfAvoidancePenalty << std::endl;
+
+    // test single-force-energy computation
+    // perturb the configuration
+    system.proteinDensity.raw() = currentProteinDensity;
+    toMatrix(system.vpg->inputVertexPositions) =
+        currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                      system.forces.selfAvoidanceForceVec));
+    system.updateConfigurations(false);
+    system.computeSelfAvoidanceEnergy();
+    if (runAll || system.energy.selfAvoidancePenalty >
+                      previousEnergy.selfAvoidancePenalty) {
+      std::cout << "With only self avoidance penalty force, selfE has increased "
+                << system.energy.selfAvoidancePenalty -
+                       previousEnergy.selfAvoidancePenalty
+                << " from " << previousEnergy.selfAvoidancePenalty << " to "
+                << system.energy.selfAvoidancePenalty << ", expected dselfE: "
+                << -alpha * system.forces
+                                .maskForce(toMatrix(
+                                    system.forces.selfAvoidanceForceVec))
+                                .squaredNorm()
+                << std::endl;
+    }
+  }
+
   // test if interior penalty energy increases
   if (runAll || totalForceEnergy.proteinInteriorPenalty >
                     previousEnergy.proteinInteriorPenalty) {
