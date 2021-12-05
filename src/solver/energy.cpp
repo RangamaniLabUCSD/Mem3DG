@@ -119,8 +119,11 @@ void System::computeSelfAvoidanceEnergy() {
     for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
       gc::Vertex vi{mesh->vertex(i)};
       gc::Vertex vj{mesh->vertex(j)};
-      double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
-                       vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
+      //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
+      // double penalty = mu * vpg->vertexDualAreas[vi] *
+      // vpg->vertexDualAreas[vj];
       gc::Vector3 r =
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
       double distance = gc::norm(r);

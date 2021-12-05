@@ -369,13 +369,15 @@ EigenVectorX3dr System::prescribeExternalForce() {
 void System::computeSelfAvoidanceForce() {
   const double d0 = parameters.selfAvoidance.d;
   const double mu = parameters.selfAvoidance.mu;
-  double e = 0.0;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
       gc::Vertex vi{mesh->vertex(i)};
       gc::Vertex vj{mesh->vertex(j)};
-      double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
-                       vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
+      //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
+      // double penalty = mu * vpg->vertexDualAreas[vi] *
+      // vpg->vertexDualAreas[vj];
       gc::Vector3 r =
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
       double distance = gc::norm(r);
@@ -386,7 +388,7 @@ void System::computeSelfAvoidanceForce() {
           forces.maskForce(penalty / (distance - d0) * grad, j);
     }
   }
-  energy.selfAvoidancePenalty = e;
+  forces.selfAvoidanceForce = forces.ontoNormal(forces.selfAvoidanceForceVec);
 }
 
 EigenVectorX1d System::computeChemicalPotential() {

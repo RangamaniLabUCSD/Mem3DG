@@ -252,6 +252,21 @@ void System::checkConfiguration() {
     mem3dg_runtime_error("For topologically different reference mesh, mesh "
                          "regularization cannot be applied!");
   }
+  if (parameters.selfAvoidance.mu != 0) {
+    for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+      for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+        gc::Vertex vi{mesh->vertex(i)};
+        gc::Vertex vj{mesh->vertex(j)};
+        gc::Vector3 r =
+            vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+        double distance = gc::norm(r);
+        gc::Vector3 grad = r.normalize();
+        if (distance < parameters.selfAvoidance.d)
+          mem3dg_runtime_error(
+              "Input mesh violates the self avoidance constraint!");
+      }
+    }
+  }
 }
 
 void System::pcg_test() {
