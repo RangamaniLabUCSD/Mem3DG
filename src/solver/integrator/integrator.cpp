@@ -689,16 +689,17 @@ void Integrator::lineSearchErrorBacktrace(
     system.computeSelfAvoidanceEnergy();
     if (runAll || system.energy.selfAvoidancePenalty >
                       previousEnergy.selfAvoidancePenalty) {
-      std::cout << "With only self avoidance penalty force, selfE has increased "
-                << system.energy.selfAvoidancePenalty -
-                       previousEnergy.selfAvoidancePenalty
-                << " from " << previousEnergy.selfAvoidancePenalty << " to "
-                << system.energy.selfAvoidancePenalty << ", expected dselfE: "
-                << -alpha * system.forces
-                                .maskForce(toMatrix(
-                                    system.forces.selfAvoidanceForceVec))
-                                .squaredNorm()
-                << std::endl;
+      std::cout
+          << "With only self avoidance penalty force, selfE has increased "
+          << system.energy.selfAvoidancePenalty -
+                 previousEnergy.selfAvoidancePenalty
+          << " from " << previousEnergy.selfAvoidancePenalty << " to "
+          << system.energy.selfAvoidancePenalty << ", expected dselfE: "
+          << -alpha *
+                 system.forces
+                     .maskForce(toMatrix(system.forces.selfAvoidanceForceVec))
+                     .squaredNorm()
+          << std::endl;
     }
   }
 
@@ -789,6 +790,9 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(toMatrix(system.forces.externalForceVec).norm())) {
         std::cout << "External force is not finite!" << std::endl;
       }
+      if (!std::isfinite(toMatrix(system.forces.selfAvoidanceForceVec).norm())) {
+        std::cout << "Self avoidance force is not finite!" << std::endl;
+      }
     }
   }
 
@@ -848,6 +852,10 @@ void Integrator::finitenessErrorBacktrack() {
       }
       if (!std::isfinite(system.energy.proteinInteriorPenalty)) {
         std::cout << "Protein interior penalty energy is not finite!"
+                  << std::endl;
+      }
+      if (!std::isfinite(system.energy.selfAvoidancePenalty)) {
+        std::cout << "Membrane self-avoidance penalty energy is not finite!"
                   << std::endl;
       }
     }
