@@ -125,7 +125,8 @@ void System::computeSelfAvoidanceEnergy() {
       gc::Vertex vj{mesh->vertex(j)};
       // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
       //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
-      double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
+      // double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
+      double penalty = mu;
       // double penalty = mu * vpg->vertexDualAreas[vi] *
       // vpg->vertexDualAreas[vj];
       gc::Vector3 r =
