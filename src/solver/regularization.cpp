@@ -220,9 +220,9 @@ bool System::edgeFlip() {
       bool sucess = mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
+      meshProcessor.meshMutator.markVertices(mutationMarker,
                                                    he.tailVertex());
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
+      meshProcessor.meshMutator.markVertices(mutationMarker,
                                                    he.tipVertex());
     }
   }
@@ -274,7 +274,7 @@ bool System::growMesh() {
       thePointTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
+      meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
       // mutationMarker[newVertex] = true;
 
       isGrown = true;
@@ -305,7 +305,7 @@ bool System::growMesh() {
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
 
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
+      meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
 
       isGrown = true;
     }
