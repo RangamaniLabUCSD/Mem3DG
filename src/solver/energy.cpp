@@ -116,8 +116,12 @@ void System::computeSelfAvoidanceEnergy() {
   const double mu = parameters.selfAvoidance.mu;
   double e = 0.0;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    gc::Vertex vi{mesh->vertex(i)};
+    gc::VertexData<bool> neighborList(*mesh, false);
+    meshProcessor.meshMutator.markVertices(neighborList, vi, 2);
     for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
-      gc::Vertex vi{mesh->vertex(i)};
+      if (neighborList[j])
+        continue;
       gc::Vertex vj{mesh->vertex(j)};
       // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
       //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];

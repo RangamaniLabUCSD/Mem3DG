@@ -161,8 +161,8 @@ struct MeshProcessor {
      */
     bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
 
-    void markAllNeighboring(gcs::VertexData<bool> &mutationMarker,
-                            const gcs::Vertex v);
+    void markVertices(gcs::VertexData<bool> &mutationMarker,
+                            const gcs::Vertex v, const size_t layer = 0);
 
     void neighborAreaSum(const gcs::Edge e,
                          const gcs::VertexPositionGeometry &vpg, double &area,

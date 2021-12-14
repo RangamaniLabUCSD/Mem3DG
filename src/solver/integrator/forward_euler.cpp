@@ -181,7 +181,7 @@ void Euler::march() {
       timeStep_chem =
           chemicalBacktrack(system.energy.potentialEnergy,
                             toMatrix(system.proteinVelocity), rho, c1);
-    timeStep = timeStep_chem < timeStep_mech ? timeStep_chem : timeStep_mech;
+    timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
   }
