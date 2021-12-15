@@ -208,7 +208,7 @@ double System::computePotentialEnergy() {
   // summerize internal potential energy
   energy.potentialEnergy =
       energy.bendingEnergy + energy.surfaceEnergy + energy.pressureEnergy +
-      energy.adsorptionEnergy + energy.dirichletEnergy +
+      energy.adsorptionEnergy + energy.dirichletEnergy + energy.aggregationEnergy +
       energy.selfAvoidancePenalty + energy.proteinInteriorPenalty;
   return energy.potentialEnergy;
 }

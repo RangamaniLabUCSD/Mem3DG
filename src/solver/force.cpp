@@ -588,6 +588,8 @@ double System::computeNorm(
 void System::computePhysicalForcing() {
 
   // zero all forces
+  forces.mechanicalForceVec.fill({0, 0, 0});
+
   forces.bendingForceVec.fill({0, 0, 0});
   forces.bendingForceVec_areaGrad.fill({0, 0, 0});
   forces.bendingForceVec_gaussVec.fill({0, 0, 0});
@@ -604,6 +606,7 @@ void System::computePhysicalForcing() {
   forces.dampingForceVec.fill({0, 0, 0});
   forces.stochasticForceVec.fill({0, 0, 0});
 
+  forces.mechanicalForce.raw().setZero();
   forces.bendingForce.raw().setZero();
   forces.capillaryForce.raw().setZero();
   forces.lineCapillaryForce.raw().setZero();
@@ -614,6 +617,7 @@ void System::computePhysicalForcing() {
   forces.selfAvoidanceForce.raw().setZero();
 
   forces.chemicalPotential.raw().setZero();
+
   forces.diffusionPotential.raw().setZero();
   forces.bendingPotential.raw().setZero();
   forces.adsorptionPotential.raw().setZero();
