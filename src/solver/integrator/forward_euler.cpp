@@ -80,18 +80,6 @@ bool Euler::integrate() {
       system.updateConfigurations(false);
     }
 
-    // Compute Avoiding force
-    if ((system.time - lastComputeAvoidingForce) >
-            0.1 * (system.projectedCollideTime) ||
-        (system.time - lastComputeAvoidingForce > 5 * savePeriod)) {
-      lastComputeAvoidingForce = system.time;
-      system.parameters.selfAvoidance.mu = avoidStrength;
-      system.computeTotalEnergy();
-    } else {
-      system.parameters.selfAvoidance.mu = 0;
-      system.computeTotalEnergy();
-    }
-
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
@@ -108,6 +96,18 @@ bool Euler::integrate() {
       system.time += 1e-10 * characteristicTimeStep;
     } else {
       march();
+    }
+
+    // Compute Avoiding force
+    if ((system.time - lastComputeAvoidingForce) >
+            0.1 * (system.projectedCollideTime) ||
+        (system.time - lastComputeAvoidingForce > 5 * savePeriod)) {
+      lastComputeAvoidingForce = system.time;
+      system.parameters.selfAvoidance.mu = avoidStrength;
+      system.computeTotalEnergy();
+    } else {
+      system.parameters.selfAvoidance.mu = 0;
+      system.computeTotalEnergy();
     }
   }
 
