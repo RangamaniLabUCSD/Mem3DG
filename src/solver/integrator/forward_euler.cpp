@@ -176,7 +176,7 @@ void Euler::status() {
   system.computeTotalEnergy();
 
   // backtracking for error
-  finitenessErrorBacktrack();
+  finitenessErrorBacktrace();
 }
 
 void Euler::march() {
@@ -196,9 +196,13 @@ void Euler::march() {
         timeStep_chem = std::numeric_limits<double>::infinity();
     if (system.parameters.variation.isShapeVariation)
       timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity), rho, c1);
+    std::cout << "mech: adsorption energy: " << system.energy.adsorptionEnergy
+              << std::endl;
     if (system.parameters.variation.isProteinVariation)
       timeStep_chem =
           chemicalBacktrack(toMatrix(system.proteinVelocity), rho, c1);
+    std::cout << "chem: adsorption energy: " << system.energy.adsorptionEnergy
+              << std::endl;
     timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;

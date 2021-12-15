@@ -199,7 +199,7 @@ void BFGS::status() {
   system.computeTotalEnergy();
 
   // backtracking for error
-  finitenessErrorBacktrack();
+  finitenessErrorBacktrace();
 }
 
 void BFGS::march() {
@@ -230,8 +230,8 @@ void BFGS::march() {
     }
 
     // time stepping on vertex position
-    timeStep = backtrack(system.energy.potentialEnergy, f_velocity_e,
-                         toMatrix(system.proteinVelocity), rho, c1);
+    timeStep =
+        backtrack(f_velocity_e, toMatrix(system.proteinVelocity), rho, c1);
     system.vpg->inputVertexPositions += system.velocity * timeStep;
     system.proteinDensity += system.proteinVelocity * timeStep;
     system.time += timeStep;

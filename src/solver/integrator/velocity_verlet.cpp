@@ -149,7 +149,7 @@ void VelocityVerlet::status() {
   system.computeTotalEnergy();
 
   // backtracking for error
-  finitenessErrorBacktrack();
+  finitenessErrorBacktrace();
 
   // check energy increase
   if (isCapEnergy) {

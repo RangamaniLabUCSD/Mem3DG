@@ -178,8 +178,8 @@ void ConjugateGradient::status() {
   // compute the free energy of the system
   system.computeTotalEnergy();
 
-  // backtracking for error
-  finitenessErrorBacktrack();
+  // backtracing for error
+  finitenessErrorBacktrace();
 }
 
 void ConjugateGradient::march() {
@@ -220,9 +220,8 @@ void ConjugateGradient::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    timeStep =
-        backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
-                  toMatrix(system.proteinVelocity), rho, c1);
+    timeStep = backtrack(toMatrix(system.velocity),
+                         toMatrix(system.proteinVelocity), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
   }

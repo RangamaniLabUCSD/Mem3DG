@@ -236,7 +236,6 @@ public:
   /**
    * @brief Backtracking algorithm that dynamically adjust step size based on
    * energy evaluation
-   * @param potentialEnergy_pre, previous energy evaluation
    * @param positionDirection, direction of shape, most likely some function of
    * gradient
    * @param chemicalDirection, direction of protein density, most likely some
@@ -245,8 +244,7 @@ public:
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double backtrack(const double energy_pre,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
+  double backtrack(Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
                    Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
                    double rho = 0.7, double c1 = 0.001);
 
@@ -281,7 +279,7 @@ public:
    * specific component
    * @return
    */
-  void finitenessErrorBacktrack();
+  void finitenessErrorBacktrace();
 
   /**
    * @brief Backtrack the line search failure by inspecting specific
