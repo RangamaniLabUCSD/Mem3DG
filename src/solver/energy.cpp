@@ -137,6 +137,7 @@ void System::computeSelfAvoidanceEnergy() {
       if (collideTime < projectedCollideTime && collideTime > 0)
         projectedCollideTime = collideTime;
       e -= penalty * log(distance);
+      // e = penalty / distance;
     }
   }
   energy.selfAvoidancePenalty = e;
