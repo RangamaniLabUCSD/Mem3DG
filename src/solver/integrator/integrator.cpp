@@ -359,6 +359,19 @@ void Integrator::lineSearchErrorBacktrace(
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
 
   // cache the energy when applied the total force
+  toMatrix(system.vpg->inputVertexPositions) = currentPosition;
+  system.proteinDensity.raw() =
+      currentProteinDensity +
+      alpha * system.parameters.proteinMobility * system.forces.chemicalPotential.raw();
+      // system.proteinVelocity.raw();
+      // system.parameters.proteinMobility *
+      //     system.forces.maskProtein(
+      //         system.forces.bendingPotential.raw() +
+      //         system.forces.adsorptionPotential.raw() +
+      //         system.forces.aggregationForce.raw() +
+      //         system.forces.diffusionPotential.raw() +
+      //         system.forces.interiorPenaltyPotential.raw());
+  system.updateConfigurations(false);
   if (system.parameters.external.Kf != 0)
     system.computeExternalWork(system.time, alpha);
   system.computeTotalEnergy();
@@ -367,6 +380,13 @@ void Integrator::lineSearchErrorBacktrace(
   // test if total potential energy increases
   if (runAll ||
       totalForceEnergy.potentialEnergy > previousEnergy.potentialEnergy) {
+
+    // report the finding
+    std::cout << "\nWith F_tol, potE has increased "
+              << totalForceEnergy.potentialEnergy -
+                     previousEnergy.potentialEnergy
+              << " from " << previousEnergy.potentialEnergy << " to "
+              << totalForceEnergy.potentialEnergy << std::endl;
 
     // test if bending energy increases
     if (runAll ||
@@ -790,7 +810,8 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(toMatrix(system.forces.externalForceVec).norm())) {
         std::cout << "External force is not finite!" << std::endl;
       }
-      if (!std::isfinite(toMatrix(system.forces.selfAvoidanceForceVec).norm())) {
+      if (!std::isfinite(
+              toMatrix(system.forces.selfAvoidanceForceVec).norm())) {
         std::cout << "Self avoidance force is not finite!" << std::endl;
       }
     }
