@@ -372,7 +372,7 @@ void System::computeSelfAvoidanceForce() {
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex vi{mesh->vertex(i)};
     gc::VertexData<bool> neighborList(*mesh, false);
-    meshProcessor.meshMutator.markVertices(neighborList, vi, 2);
+    meshProcessor.meshMutator.markVertices(neighborList, vi, 1);
     for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
       if (neighborList[j])
         continue;
