@@ -115,6 +115,7 @@ void System::computeSelfAvoidanceEnergy() {
   const double d0 = parameters.selfAvoidance.d;
   const double mu = parameters.selfAvoidance.mu;
   double e = 0.0;
+  projectedCollideTime = std::numeric_limits<double>::infinity();
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex vi{mesh->vertex(i)};
     gc::VertexData<bool> neighborList(*mesh, false);
@@ -131,11 +132,17 @@ void System::computeSelfAvoidanceEnergy() {
       // vpg->vertexDualAreas[vj];
       gc::Vector3 r =
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
-      double distance = gc::norm(r);
-      e -= penalty * log(distance - d0);
+      double distance = gc::norm(r) - d0;
+      double collideTime = distance / gc::dot(velocity[vi] - velocity[vj], r);
+      if (collideTime < projectedCollideTime && collideTime > 0)
+        projectedCollideTime = collideTime;
+      e -= penalty * log(distance);
     }
   }
   energy.selfAvoidancePenalty = e;
+  std::cout << "computing avoiding force at "
+            << "t = " << time << ", next will be " << projectedCollideTime
+            << " later" << std::endl;
 }
 
 void System::computeDirichletEnergy() {
@@ -168,32 +175,33 @@ void System::computeDirichletEnergy() {
 double System::computePotentialEnergy() {
   // fundamental internal potential energy
   energy.bendingEnergy = 0;
-  computeBendingEnergy();
   energy.surfaceEnergy = 0;
-  computeSurfaceEnergy();
   energy.pressureEnergy = 0;
+  energy.adsorptionEnergy = 0;
+  energy.aggregationEnergy = 0;
+  energy.dirichletEnergy = 0;
+  energy.selfAvoidancePenalty = 0;
+  energy.proteinInteriorPenalty = 0;
+
+  computeBendingEnergy();
+  computeSurfaceEnergy();
   computePressureEnergy();
 
   // optional internal potential energy
   if (parameters.adsorption.epsilon != 0) {
-    energy.adsorptionEnergy = 0;
     computeAdsorptionEnergy();
   }
   if (parameters.aggregation.chi != 0) {
-    energy.aggregationEnergy = 0;
     computeAggregationEnergy();
   }
   if (parameters.dirichlet.eta != 0) {
-    energy.dirichletEnergy = 0;
     computeDirichletEnergy();
   }
   if (parameters.selfAvoidance.mu != 0) {
-    energy.selfAvoidancePenalty = 0;
     computeSelfAvoidanceEnergy();
   }
   if (parameters.variation.isProteinVariation &&
       parameters.proteinDistribution.lambdaPhi != 0) {
-    energy.proteinInteriorPenalty = 0;
     computeProteinInteriorPenalty();
   }
 
