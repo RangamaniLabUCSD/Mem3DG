@@ -80,11 +80,11 @@ void Parameters::Point::checkParameters() {
         "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
         "coordinate)");
   }
-  if (pt.rows() == 2) {
-    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
-                 "lead to ambiguity! Please check by visualizing it first!\n"
-              << std::endl;
-  }
+  // if (pt.rows() == 2) {
+  //   std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
+  //                "lead to ambiguity! Please check by visualizing it first!\n"
+  //             << std::endl;
+  // }
   if (isFloatVertex) {
     if (pt.rows() == 1) {
       mem3dg_runtime_error(
