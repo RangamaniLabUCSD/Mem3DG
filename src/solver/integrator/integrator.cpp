@@ -196,6 +196,8 @@ double Integrator::chemicalBacktrack(
   }
 
   // calculate initial energy as reference level
+  gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
+  initial_pos = system.vpg->inputVertexPositions;
   gc::VertexData<double> initial_protein(*system.mesh,
                                          system.proteinDensity.raw());
   const double init_time = system.time;
@@ -265,6 +267,7 @@ double Integrator::chemicalBacktrack(
   // recover the initial configuration
   system.time = init_time;
   system.proteinDensity = initial_protein;
+  system.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations(false);
   system.computeTotalEnergy();
   return alpha;
@@ -297,6 +300,8 @@ double Integrator::mechanicalBacktrack(
   // calculate initial energy as reference level
   gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
   initial_pos = system.vpg->inputVertexPositions;
+  gc::VertexData<double> initial_protein(*system.mesh,
+                                         system.proteinDensity.raw());
   const double init_time = system.time;
 
   // declare variables used in backtracking iterations
@@ -363,6 +368,7 @@ double Integrator::mechanicalBacktrack(
 
   // recover the initial configuration
   system.time = init_time;
+  system.proteinDensity = initial_protein;
   system.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations(false);
   system.computeTotalEnergy();
