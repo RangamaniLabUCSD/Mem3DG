@@ -164,9 +164,8 @@ struct MeshProcessor {
     void markVertices(gcs::VertexData<bool> &mutationMarker,
                             const gcs::Vertex v, const size_t layer = 0);
 
-    void neighborAreaSum(const gcs::Edge e,
-                         const gcs::VertexPositionGeometry &vpg, double &area,
-                         std::size_t &num_neighbor);
+    std::tuple<double, std::size_t>
+    neighborAreaSum(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
 
     double
     computeCurvatureThresholdLength(const gcs::Edge e,

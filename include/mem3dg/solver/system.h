@@ -697,14 +697,15 @@ public:
   // ================        Pressure        ==================
   // ==========================================================
   /**
-   * @brief Compute all forcing of the system
+   * @brief Compute all forcing of the system, include DPD if given time step
    */
   void computePhysicalForcing();
+  void computePhysicalForcing(double timeStep);
 
   /**
    * @brief Compute chemical potential of the system
    */
-  EigenVectorX1d computeChemicalPotential();
+  void computeChemicalPotentials();
 
   /**
    * @brief Compute Self Avoidance force
@@ -726,7 +727,12 @@ public:
   /**
    * @brief Compute DPD forces of the system
    */
-  std::tuple<EigenVectorX3dr, EigenVectorX3dr> computeDPDForces(double dt);
+   void computeDPDForces(double dt);
+
+  /**
+   * @brief Compute damping forces of the system
+   */
+  gc::VertexData<gc::Vector3> computeDampingForce();
 
   // ==========================================================
   // ================        Energy          ==================

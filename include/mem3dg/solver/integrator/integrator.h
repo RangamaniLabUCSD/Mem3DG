@@ -54,8 +54,6 @@ protected:
   double lastProcessMesh;
   /// last time compute avoiding force
   double lastComputeAvoidingForce;
-  /// numerical dissipative particle dynamics force to the system
-  Eigen::Matrix<double, Eigen::Dynamic, 1> dpdForce;
   /// Starting time of the simulation
   double initialTime;
   /// Flag of success of the simulation
@@ -133,19 +131,15 @@ public:
                      std::pow(system.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
-    getForces();
+    system.computePhysicalForcing(timeStep);
     initialMaximumForce =
         system.parameters.variation.isShapeVariation
             ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
             : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
-    areaDifference = 1e10;
-    volumeDifference = 1e10;
-
-    // Initialize system summarized forces
-    dpdForce.resize(system.mesh->nVertices(), 1);
-    dpdForce.setZero();
+    areaDifference = std::numeric_limits<double>::infinity();
+    volumeDifference = std::numeric_limits<double>::infinity();
   }
 
   // ==========================================================
@@ -287,14 +281,6 @@ public:
       double rho = 0.7, double c1 = 0.001);
 
   /**
-   * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure
-   * and regularizationForce. Note that the forces has been removed rigid body
-   * mode and masked for integration
-   * @return
-   */
-  void getForces();
-
-  /**
    * @brief Check finiteness of simulation states and backtrack for error in
    * specific component
    * @return
@@ -312,10 +298,10 @@ public:
                                 const Energy &previousE, bool runAll = false);
 
   /**
-   * @brief update adaptive time step
+   * @brief get adaptive characteristic time step
    * @return
    */
-  void updateAdaptiveCharacteristicStep();
+  double updateAdaptiveCharacteristicStep();
 };
 } // namespace integrator
 } // namespace solver
