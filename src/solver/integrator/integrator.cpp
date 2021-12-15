@@ -375,19 +375,6 @@ void Integrator::lineSearchErrorBacktrace(
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
 
   // cache the energy when applied the total force
-  toMatrix(system.vpg->inputVertexPositions) = currentPosition;
-  system.proteinDensity.raw() =
-      currentProteinDensity +
-      alpha * system.parameters.proteinMobility * system.forces.chemicalPotential.raw();
-      // system.proteinVelocity.raw();
-      // system.parameters.proteinMobility *
-      //     system.forces.maskProtein(
-      //         system.forces.bendingPotential.raw() +
-      //         system.forces.adsorptionPotential.raw() +
-      //         system.forces.aggregationForce.raw() +
-      //         system.forces.diffusionPotential.raw() +
-      //         system.forces.interiorPenaltyPotential.raw());
-  system.updateConfigurations(false);
   if (system.parameters.external.Kf != 0)
     system.computeExternalWork(system.time, alpha);
   system.computeTotalEnergy();
