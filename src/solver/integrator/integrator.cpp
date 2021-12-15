@@ -172,7 +172,6 @@ double Integrator::backtrack(
   return alpha;
 }
 double Integrator::chemicalBacktrack(
-    const double energy_pre,
     Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection, double rho,
     double c1) {
 
@@ -214,7 +213,7 @@ double Integrator::chemicalBacktrack(
   while (true) {
     // Wolfe condition fulfillment
     if (system.energy.potentialEnergy <
-        (energy_pre - c1 * alpha * chemicalProjection)) {
+        (previousE.potentialEnergy - c1 * alpha * chemicalProjection)) {
       break;
     }
 
@@ -271,7 +270,6 @@ double Integrator::chemicalBacktrack(
 }
 
 double Integrator::mechanicalBacktrack(
-    const double energy_pre,
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection, double rho,
     double c1) {
 
@@ -313,7 +311,7 @@ double Integrator::mechanicalBacktrack(
   while (true) {
     // Wolfe condition fulfillment
     if (system.energy.potentialEnergy <
-        (energy_pre + system.computeIntegratedPower(alpha) -
+        (previousE.potentialEnergy + system.computeIntegratedPower(alpha) -
          c1 * alpha * positionProjection)) {
       break;
     }
