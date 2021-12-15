@@ -252,6 +252,11 @@ void System::checkConfiguration() {
     mem3dg_runtime_error("For topologically different reference mesh, mesh "
                          "regularization cannot be applied!");
   }
+  if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
+    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may"
+                 "lead to ambiguity! Please check by visualizing it first!\n"
+              << std::endl;
+  }
   if (parameters.selfAvoidance.mu != 0) {
     for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
       for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
@@ -393,10 +398,6 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
 
   // refresh cached quantities after regularization
   vpg->refreshQuantities();
-
-  // EigenMap commonly used matrices
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
 
   // recompute floating "the vertex"
   if (parameters.point.isFloatVertex && isUpdateGeodesics) {
