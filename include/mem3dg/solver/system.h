@@ -141,6 +141,9 @@ public:
   /// "the vertex"
   gcs::SurfacePoint thePoint;
   gcs::VertexData<bool> thePointTracker;
+  /// projected time of collision 
+  double projectedCollideTime;
+
 
   // ==========================================================
   // =============        Constructors           ==============

@@ -52,6 +52,8 @@ protected:
   double lastUpdateGeodesics;
   /// last time processing mesh
   double lastProcessMesh;
+  /// last time compute avoiding force
+  double lastComputeAvoidingForce;
   /// numerical dissipative particle dynamics force to the system
   Eigen::Matrix<double, Eigen::Dynamic, 1> dpdForce;
   /// Starting time of the simulation
@@ -123,7 +125,8 @@ public:
         updateGeodesicsPeriod(totalTime_), processMeshPeriod(totalTime_),
         outputDirectory(outputDirectory_), initialTime(system_.time),
         lastUpdateGeodesics(system_.time), lastProcessMesh(system_.time),
-        lastSave(system_.time), timeStep(characteristicTimeStep_) {
+        lastComputeAvoidingForce(system_.time), lastSave(system_.time),
+        timeStep(characteristicTimeStep_) {
 
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio = characteristicTimeStep /
@@ -263,9 +266,10 @@ public:
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double mechanicalBacktrack(const double energy_pre,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-                   double rho = 0.7, double c1 = 0.001);
+  double mechanicalBacktrack(
+      const double energy_pre,
+      Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
+      double rho = 0.7, double c1 = 0.001);
 
   /**
    * @brief Backtracking algorithm that dynamically adjust step size based on
@@ -277,9 +281,10 @@ public:
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double chemicalBacktrack(const double energy_pre,
-                   Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
-                   double rho = 0.7, double c1 = 0.001);
+  double chemicalBacktrack(
+      const double energy_pre,
+      Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
+      double rho = 0.7, double c1 = 0.001);
 
   /**
    * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure

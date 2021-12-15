@@ -56,6 +56,7 @@ bool Euler::integrate() {
 #endif
 
   // time integration loop
+  const double avoidStrength = system.parameters.selfAvoidance.mu;
   for (;;) {
 
     // Evaluate and threhold status data
@@ -74,6 +75,18 @@ bool Euler::integrate() {
       system.mutateMesh();
       system.smoothenMesh(timeStep);
       system.updateConfigurations(false);
+    }
+
+    // Compute Avoiding force
+    if ((system.time - lastComputeAvoidingForce) >
+            0.5 * (system.projectedCollideTime) ||
+        (system.time - lastComputeAvoidingForce > 5 * savePeriod)) {
+      lastComputeAvoidingForce = system.time;
+      system.parameters.selfAvoidance.mu = avoidStrength;
+      system.computeTotalEnergy();
+    } else {
+      system.parameters.selfAvoidance.mu = 0;
+      system.computeTotalEnergy();
     }
 
     // update geodesics every tUpdateGeodesics period
