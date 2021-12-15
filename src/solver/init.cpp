@@ -260,8 +260,12 @@ void System::checkConfiguration() {
   }
   if (parameters.selfAvoidance.mu != 0) {
     for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+      gc::Vertex vi{mesh->vertex(i)};
+      gc::VertexData<bool> neighborList(*mesh, false);
+      meshProcessor.meshMutator.markVertices(neighborList, vi, 1);
       for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
-        gc::Vertex vi{mesh->vertex(i)};
+        if (neighborList[j])
+          continue;
         gc::Vertex vj{mesh->vertex(j)};
         gc::Vector3 r =
             vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];

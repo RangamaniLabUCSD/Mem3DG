@@ -367,6 +367,7 @@ EigenVectorX3dr System::prescribeExternalForce() {
 }
 
 void System::computeSelfAvoidanceForce() {
+  forces.selfAvoidanceForceVec.fill({0, 0, 0});
   const double d0 = parameters.selfAvoidance.d;
   const double mu = parameters.selfAvoidance.mu;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
@@ -385,12 +386,16 @@ void System::computeSelfAvoidanceForce() {
       // vpg->vertexDualAreas[vj];;
       gc::Vector3 r =
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
-      double distance = gc::norm(r);
+      double distance = gc::norm(r) - d0;
       gc::Vector3 grad = r.normalize();
       forces.selfAvoidanceForceVec[i] -=
-          forces.maskForce(penalty / (distance - d0) * grad, i);
+          forces.maskForce(penalty / distance * grad, i);
       forces.selfAvoidanceForceVec[j] +=
-          forces.maskForce(penalty / (distance - d0) * grad, j);
+          forces.maskForce(penalty / distance * grad, j);
+      // forces.selfAvoidanceForceVec[i] -=
+      //     forces.maskForce(penalty / distance / distance * grad, i);
+      // forces.selfAvoidanceForceVec[j] +=
+      //     forces.maskForce(penalty / distance / distance * grad, j);
     }
   }
   forces.selfAvoidanceForce = forces.ontoNormal(forces.selfAvoidanceForceVec);
