@@ -247,11 +247,6 @@ double Integrator::chemicalBacktrack(
     // count the number of iterations
     count++;
   }
-  // recover the initial configuration
-  system.time = init_time;
-  system.proteinDensity.raw() = initial_protein;
-  system.updateConfigurations(false);
-  system.computePotentialEnergy();
 
   // report the backtracking if verbose
   if (alpha != characteristicTimeStep && verbosity > 3) {
@@ -260,12 +255,18 @@ double Integrator::chemicalBacktrack(
   }
 
   // If needed to test force-energy test
-  const bool isDebug = false;
+  const bool isDebug = true;
   if (isDebug) {
+    std::cout << "\nchemicalBacktrack: debugging \n" << std::endl;
     lineSearchErrorBacktrace(alpha, toMatrix(system.vpg->inputVertexPositions),
                              initial_protein, previousE, isDebug);
   }
 
+  // recover the initial configuration
+  system.time = init_time;
+  system.proteinDensity.raw() = initial_protein;
+  system.updateConfigurations(false);
+  system.computePotentialEnergy();
   return alpha;
 }
 
@@ -346,11 +347,6 @@ double Integrator::mechanicalBacktrack(
     // count the number of iterations
     count++;
   }
-  // recover the initial configuration
-  system.time = init_time;
-  toMatrix(system.vpg->inputVertexPositions) = initial_pos;
-  system.updateConfigurations(false);
-  system.computePotentialEnergy();
 
   // report the backtracking if verbose
   if (alpha != characteristicTimeStep && verbosity > 3) {
@@ -359,12 +355,18 @@ double Integrator::mechanicalBacktrack(
   }
 
   // If needed to test force-energy test
-  const bool isDebug = false;
+  const bool isDebug = true;
   if (isDebug) {
+    std::cout << "\nmechanicalBacktrack: debugging \n" << std::endl;
     lineSearchErrorBacktrace(alpha, initial_pos, system.proteinDensity.raw(),
                              previousE, isDebug);
   }
 
+  // recover the initial configuration
+  system.time = init_time;
+  toMatrix(system.vpg->inputVertexPositions) = initial_pos;
+  system.updateConfigurations(false);
+  system.computePotentialEnergy();
   return alpha;
 }
 
