@@ -225,13 +225,11 @@ double Integrator::chemicalBacktrack(
                    "stopped. \n"
                 << std::endl;
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
-      lineSearchErrorBacktrace(alpha,
-                               toMatrix(system.vpg->inputVertexPositions),
+      lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
                                toMatrix(initial_protein), previousE, true);
       std::cout << "\nError backtrace using characteristicTimeStep: \n"
                 << std::endl;
-      lineSearchErrorBacktrace(characteristicTimeStep,
-                               toMatrix(system.vpg->inputVertexPositions),
+      lineSearchErrorBacktrace(characteristicTimeStep, toMatrix(initial_pos),
                                toMatrix(initial_protein), previousE, true);
       EXIT = true;
       SUCCESS = false;
@@ -260,7 +258,7 @@ double Integrator::chemicalBacktrack(
   const bool isDebug = false;
   if (isDebug) {
     std::cout << "\nchemicalBacktrack: debugging \n" << std::endl;
-    lineSearchErrorBacktrace(alpha, toMatrix(system.vpg->inputVertexPositions),
+    lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
                              toMatrix(initial_protein), previousE, isDebug);
   }
 
@@ -329,11 +327,11 @@ double Integrator::mechanicalBacktrack(
                 << std::endl;
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
-                               system.proteinDensity.raw(), previousE, true);
+                               toMatrix(initial_protein), previousE, true);
       std::cout << "\nError backtrace using characterisiticTimeStep: \n"
                 << std::endl;
       lineSearchErrorBacktrace(characteristicTimeStep, toMatrix(initial_pos),
-                               system.proteinDensity.raw(), previousE, true);
+                               toMatrix(initial_protein), previousE, true);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -363,7 +361,7 @@ double Integrator::mechanicalBacktrack(
   if (isDebug) {
     std::cout << "\nmechanicalBacktrack: debugging \n" << std::endl;
     lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
-                             system.proteinDensity.raw(), previousE, isDebug);
+                             toMatrix(initial_protein), previousE, isDebug);
   }
 
   // recover the initial configuration
@@ -376,8 +374,8 @@ double Integrator::mechanicalBacktrack(
 }
 
 void Integrator::lineSearchErrorBacktrace(
-    const double &alpha, const EigenVectorX3dr &currentPosition,
-    const EigenVectorX1d &currentProteinDensity, const Energy &previousEnergy,
+    const double alpha, const EigenVectorX3dr currentPosition,
+    const EigenVectorX1d currentProteinDensity, const Energy previousEnergy,
     bool runAll) {
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
 

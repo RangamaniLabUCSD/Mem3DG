@@ -286,10 +286,10 @@ public:
    * energy-force relation
    * @return
    */
-  void lineSearchErrorBacktrace(const double &alpha,
-                                const EigenVectorX3dr &initial_pos,
-                                const EigenVectorX1d &init_proteinDensity,
-                                const Energy &previousE, bool runAll = false);
+  void lineSearchErrorBacktrace(const double alpha,
+                                const EigenVectorX3dr initial_pos,
+                                const EigenVectorX1d init_proteinDensity,
+                                const Energy previousE, bool runAll = false);
 
   /**
    * @brief get adaptive characteristic time step
