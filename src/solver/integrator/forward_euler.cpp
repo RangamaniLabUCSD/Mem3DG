@@ -66,6 +66,9 @@ bool Euler::integrate() {
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
+      system.parameters.selfAvoidance.mu = avoidStrength;
+      system.computeTotalEnergy();
+      system.computeSelfAvoidanceForce();
       saveData();
     }
 
@@ -79,7 +82,7 @@ bool Euler::integrate() {
 
     // Compute Avoiding force
     if ((system.time - lastComputeAvoidingForce) >
-            0.5 * (system.projectedCollideTime) ||
+            0.1 * (system.projectedCollideTime) ||
         (system.time - lastComputeAvoidingForce > 5 * savePeriod)) {
       lastComputeAvoidingForce = system.time;
       system.parameters.selfAvoidance.mu = avoidStrength;
