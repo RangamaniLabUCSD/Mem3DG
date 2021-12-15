@@ -132,6 +132,9 @@ void Euler::checkParameters() {
   if (system.parameters.dpd.gamma != 0) {
     mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
+  if (system.parameters.damping != 0) {
+    mem3dg_runtime_error("Damping to be 0 for euler integration!");
+  }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
       mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
@@ -141,9 +144,9 @@ void Euler::checkParameters() {
 
 void Euler::status() {
   // compute summerized forces
-  getForces();
+  system.computePhysicalForcing(timeStep);
 
-  // compute the area contraint error
+  // compute the contraint error
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
   volumeDifference = (system.parameters.osmotic.isPreferredVolume)
                          ? abs(system.volume / system.parameters.osmotic.Vt - 1)
@@ -181,12 +184,13 @@ void Euler::march() {
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    updateAdaptiveCharacteristicStep();
+    characteristicTimeStep = updateAdaptiveCharacteristicStep();
   }
 
   // time stepping on vertex position
   if (isBacktrack) {
-    double timeStep_mech, timeStep_chem = characteristicTimeStep;
+    double timeStep_mech,
+        timeStep_chem = std::numeric_limits<double>::infinity();
     if (system.parameters.variation.isShapeVariation)
       timeStep_mech = mechanicalBacktrack(system.energy.potentialEnergy,
                                           toMatrix(system.velocity), rho, c1);
