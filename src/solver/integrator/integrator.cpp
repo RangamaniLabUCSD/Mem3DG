@@ -380,6 +380,20 @@ void Integrator::lineSearchErrorBacktrace(
   std::cout << "\nlineSearchErrorBacktracking ..." << std::endl;
 
   // cache the energy when applied the total force
+  // system.proteinDensity.raw() = currentProteinDensity;
+  // toMatrix(system.vpg->inputVertexPositions) =
+  //     currentPosition +
+  //     alpha * system.forces.maskForce(
+  //                 toMatrix(system.forces.osmoticForceVec) +
+  //                 toMatrix(system.forces.capillaryForceVec) +
+  //                 toMatrix(system.forces.bendingForceVec) +
+  //                 toMatrix(system.forces.lineCapillaryForceVec) +
+  //                 toMatrix(system.forces.adsorptionForceVec) +
+  //                 toMatrix(system.forces.aggregationForceVec) +
+  //                 toMatrix(system.forces.externalForceVec) +
+  //                 toMatrix(system.forces.selfAvoidanceForceVec));
+  // // * toMatrix(system.forces.mechanicalForceVec);
+  // system.updateConfigurations(false);
   if (system.parameters.external.Kf != 0)
     system.computeExternalWork(system.time, alpha);
   system.computeTotalEnergy();
@@ -699,6 +713,7 @@ void Integrator::lineSearchErrorBacktrace(
   // test if dirichlet energy increases
   if (runAll || system.energy.selfAvoidancePenalty >
                     previousEnergy.selfAvoidancePenalty) {
+    std::cout << "!!!!!!!!!!!!!!!!!! mu is" << system.parameters.selfAvoidance.mu << std::endl;
 
     // report the finding
     std::cout << "\nWith F_tol, selfE has increased "
