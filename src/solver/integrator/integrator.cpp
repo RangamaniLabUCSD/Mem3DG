@@ -40,7 +40,6 @@ double Integrator::updateAdaptiveCharacteristicStep() {
 }
 
 double Integrator::backtrack(
-    const double energy_pre,
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
     Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection, double rho,
     double c1) {
@@ -48,22 +47,22 @@ double Integrator::backtrack(
   // cache energy of the last time step
   const Energy previousE = system.energy;
 
-  auto physicalForceVec = toMatrix(system.forces.mechanicalForceVec);
-
   // validate the directions
   double positionProjection = 0;
   double chemicalProjection = 0;
   if (system.parameters.variation.isShapeVariation) {
-    positionProjection =
-        (physicalForceVec.array() * positionDirection.array()).sum();
+    positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
+                          positionDirection.array())
+                             .sum();
     if (positionProjection < 0) {
       std::cout << "\nBacktracking line search: positional velocity on uphill "
                    "direction, use bare "
                    "gradient! \n"
                 << std::endl;
-      positionDirection = physicalForceVec;
-      positionProjection =
-          (physicalForceVec.array() * positionDirection.array()).sum();
+      positionDirection = toMatrix(system.forces.mechanicalForceVec);
+      positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
+                            positionDirection.array())
+                               .sum();
     }
   }
   if (system.parameters.variation.isProteinVariation) {
@@ -84,10 +83,10 @@ double Integrator::backtrack(
   }
 
   // calculate initial energy as reference level
-  const Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
-      toMatrix(system.vpg->inputVertexPositions);
-  const Eigen::Matrix<double, Eigen::Dynamic, 1> initial_protein =
-      system.proteinDensity.raw();
+  gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
+  initial_pos = system.vpg->inputVertexPositions;
+  gc::VertexData<double> initial_protein(*system.mesh,
+                                         system.proteinDensity.raw());
   const double init_time = system.time;
 
   // declare variables used in backtracking iterations
@@ -103,12 +102,12 @@ double Integrator::backtrack(
   }
   system.time += alpha;
   system.updateConfigurations(false);
-  system.computePotentialEnergy();
+  system.computeTotalEnergy();
 
   while (true) {
     // Wolfe condition fulfillment
     if (system.energy.potentialEnergy <
-        (energy_pre + system.computeIntegratedPower(alpha) -
+        (previousE.potentialEnergy + system.computeIntegratedPower(alpha) -
          c1 * alpha * (positionProjection + chemicalProjection))) {
       break;
     }
@@ -119,13 +118,13 @@ double Integrator::backtrack(
                    "stopped. \n"
                 << std::endl;
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
-      lineSearchErrorBacktrace(alpha, initial_pos, initial_protein, previousE,
-                               true);
+      lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
+                               toMatrix(initial_protein), previousE, true);
       std::cout << "\nError backtrace using characteristicTimeStep: \n"
                 << std::endl;
       lineSearchErrorBacktrace(characteristicTimeStep,
                                toMatrix(system.vpg->inputVertexPositions),
-                               initial_protein, previousE, true);
+                               toMatrix(initial_protein), previousE, true);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -135,24 +134,19 @@ double Integrator::backtrack(
     alpha *= rho;
     if (system.parameters.variation.isShapeVariation) {
       toMatrix(system.vpg->inputVertexPositions) =
-          initial_pos + alpha * positionDirection;
+          toMatrix(initial_pos) + alpha * positionDirection;
     }
     if (system.parameters.variation.isProteinVariation) {
-      system.proteinDensity.raw() = initial_protein + alpha * chemicalDirection;
+      system.proteinDensity.raw() =
+          toMatrix(initial_protein) + alpha * chemicalDirection;
     }
     system.time = init_time + alpha;
     system.updateConfigurations(false);
-    system.computePotentialEnergy();
+    system.computeTotalEnergy();
 
     // count the number of iterations
     count++;
   }
-  // recover the initial configuration
-  system.time = init_time;
-  system.proteinDensity.raw() = initial_protein;
-  toMatrix(system.vpg->inputVertexPositions) = initial_pos;
-  system.updateConfigurations(false);
-  system.computePotentialEnergy();
 
   // report the backtracking if verbose
   if (alpha != characteristicTimeStep && verbosity > 3) {
@@ -165,10 +159,16 @@ double Integrator::backtrack(
   // If needed to test force-energy test
   const bool isDebug = false;
   if (isDebug) {
-    lineSearchErrorBacktrace(alpha, initial_pos, initial_protein, previousE,
-                             isDebug);
+    lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
+                             toMatrix(initial_protein), previousE, isDebug);
   }
 
+  // recover the initial configuration
+  system.time = init_time;
+  system.proteinDensity = initial_protein;
+  system.vpg->inputVertexPositions = initial_pos;
+  system.updateConfigurations(false);
+  system.computeTotalEnergy();
   return alpha;
 }
 double Integrator::chemicalBacktrack(
@@ -196,8 +196,8 @@ double Integrator::chemicalBacktrack(
   }
 
   // calculate initial energy as reference level
-  const Eigen::Matrix<double, Eigen::Dynamic, 1> initial_protein =
-      system.proteinDensity.raw();
+  gc::VertexData<double> initial_protein(*system.mesh,
+                                         system.proteinDensity.raw());
   const double init_time = system.time;
 
   // declare variables used in backtracking iterations
@@ -208,7 +208,7 @@ double Integrator::chemicalBacktrack(
   system.proteinDensity.raw() += alpha * chemicalDirection;
   system.time += alpha;
   system.updateConfigurations(false);
-  system.computePotentialEnergy();
+  system.computeTotalEnergy();
 
   while (true) {
     // Wolfe condition fulfillment
@@ -225,12 +225,12 @@ double Integrator::chemicalBacktrack(
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha,
                                toMatrix(system.vpg->inputVertexPositions),
-                               initial_protein, previousE, true);
+                               toMatrix(initial_protein), previousE, true);
       std::cout << "\nError backtrace using characteristicTimeStep: \n"
                 << std::endl;
       lineSearchErrorBacktrace(characteristicTimeStep,
                                toMatrix(system.vpg->inputVertexPositions),
-                               initial_protein, previousE, true);
+                               toMatrix(initial_protein), previousE, true);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -238,10 +238,11 @@ double Integrator::chemicalBacktrack(
 
     // backtracking time step
     alpha *= rho;
-    system.proteinDensity.raw() = initial_protein + alpha * chemicalDirection;
+    system.proteinDensity.raw() =
+        toMatrix(initial_protein) + alpha * chemicalDirection;
     system.time = init_time + alpha;
     system.updateConfigurations(false);
-    system.computePotentialEnergy();
+    system.computeTotalEnergy();
 
     // count the number of iterations
     count++;
@@ -254,18 +255,18 @@ double Integrator::chemicalBacktrack(
   }
 
   // If needed to test force-energy test
-  const bool isDebug = true;
+  const bool isDebug = false;
   if (isDebug) {
     std::cout << "\nchemicalBacktrack: debugging \n" << std::endl;
     lineSearchErrorBacktrace(alpha, toMatrix(system.vpg->inputVertexPositions),
-                             initial_protein, previousE, isDebug);
+                             toMatrix(initial_protein), previousE, isDebug);
   }
 
   // recover the initial configuration
   system.time = init_time;
-  system.proteinDensity.raw() = initial_protein;
+  system.proteinDensity = initial_protein;
   system.updateConfigurations(false);
-  system.computePotentialEnergy();
+  system.computeTotalEnergy();
   return alpha;
 }
 
@@ -276,26 +277,26 @@ double Integrator::mechanicalBacktrack(
   // cache energy of the last time step
   const Energy previousE = system.energy;
 
-  auto physicalForceVec = toMatrix(system.forces.mechanicalForceVec);
-
   // validate the directions
   double positionProjection = 0;
-  positionProjection =
-      (physicalForceVec.array() * positionDirection.array()).sum();
+  positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
+                        positionDirection.array())
+                           .sum();
   if (positionProjection < 0) {
     std::cout
         << "\nmechanicalBacktrack line search: positional velocity on uphill "
            "direction, use bare "
            "gradient! \n"
         << std::endl;
-    positionDirection = physicalForceVec;
-    positionProjection =
-        (physicalForceVec.array() * positionDirection.array()).sum();
+    positionDirection = toMatrix(system.forces.mechanicalForceVec);
+    positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
+                          positionDirection.array())
+                             .sum();
   }
 
   // calculate initial energy as reference level
-  const Eigen::Matrix<double, Eigen::Dynamic, 3> initial_pos =
-      toMatrix(system.vpg->inputVertexPositions);
+  gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
+  initial_pos = system.vpg->inputVertexPositions;
   const double init_time = system.time;
 
   // declare variables used in backtracking iterations
@@ -306,7 +307,7 @@ double Integrator::mechanicalBacktrack(
   toMatrix(system.vpg->inputVertexPositions) += alpha * positionDirection;
   system.time += alpha;
   system.updateConfigurations(false);
-  system.computePotentialEnergy();
+  system.computeTotalEnergy();
 
   while (true) {
     // Wolfe condition fulfillment
@@ -322,11 +323,11 @@ double Integrator::mechanicalBacktrack(
                    "stopped. \n"
                 << std::endl;
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
-      lineSearchErrorBacktrace(alpha, initial_pos, system.proteinDensity.raw(),
-                               previousE, true);
+      lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
+                               system.proteinDensity.raw(), previousE, true);
       std::cout << "\nError backtrace using characterisiticTimeStep: \n"
                 << std::endl;
-      lineSearchErrorBacktrace(characteristicTimeStep, initial_pos,
+      lineSearchErrorBacktrace(characteristicTimeStep, toMatrix(initial_pos),
                                system.proteinDensity.raw(), previousE, true);
       EXIT = true;
       SUCCESS = false;
@@ -336,11 +337,11 @@ double Integrator::mechanicalBacktrack(
     // backtracking time step
     alpha *= rho;
     toMatrix(system.vpg->inputVertexPositions) =
-        initial_pos + alpha * positionDirection;
+        toMatrix(initial_pos) + alpha * positionDirection;
 
     system.time = init_time + alpha;
     system.updateConfigurations(false);
-    system.computePotentialEnergy();
+    system.computeTotalEnergy();
 
     // count the number of iterations
     count++;
@@ -353,18 +354,18 @@ double Integrator::mechanicalBacktrack(
   }
 
   // If needed to test force-energy test
-  const bool isDebug = true;
+  const bool isDebug = false;
   if (isDebug) {
     std::cout << "\nmechanicalBacktrack: debugging \n" << std::endl;
-    lineSearchErrorBacktrace(alpha, initial_pos, system.proteinDensity.raw(),
-                             previousE, isDebug);
+    lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
+                             system.proteinDensity.raw(), previousE, isDebug);
   }
 
   // recover the initial configuration
   system.time = init_time;
-  toMatrix(system.vpg->inputVertexPositions) = initial_pos;
+  system.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations(false);
-  system.computePotentialEnergy();
+  system.computeTotalEnergy();
   return alpha;
 }
 
@@ -780,7 +781,7 @@ void Integrator::lineSearchErrorBacktrace(
   }
 }
 
-void Integrator::finitenessErrorBacktrack() {
+void Integrator::finitenessErrorBacktrace() {
 
   if (!std::isfinite(timeStep)) {
     EXIT = true;
