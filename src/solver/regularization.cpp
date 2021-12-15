@@ -220,10 +220,8 @@ bool System::edgeFlip() {
       bool sucess = mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
-      meshProcessor.meshMutator.markVertices(mutationMarker,
-                                                   he.tailVertex());
-      meshProcessor.meshMutator.markVertices(mutationMarker,
-                                                   he.tipVertex());
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tailVertex());
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tipVertex());
     }
   }
 
@@ -466,8 +464,10 @@ void System::globalUpdateAfterMutation() {
   // update the velocity
   velocity = forces.maskForce(velocity); // important: velocity interpolation
                                          // contaminate the zero velocity
-  double oldKE = energy.kineticEnergy;
-  velocity *= pow(oldKE / computeKineticEnergy(), 0.5);
+  if (computeKineticEnergy() != 0) {
+    double oldKE = energy.kineticEnergy;
+    velocity *= pow(oldKE / computeKineticEnergy(), 0.5);
+  }
 
   // Update mask when topology changes (likely not necessary, just for safety)
   if (isOpenMesh) {
