@@ -1297,6 +1297,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                           R"delim(
           get coefficient of penalty coefficient
       )delim");
+  selfAvoidance.def_readwrite("n", &Parameters::SelfAvoidance::n,
+                          R"delim(
+          get the number excluding neighborhood layers 
+      )delim");
 
   py::class_<Parameters::Point> point(pymem3dg, "Point",
                                       R"delim(

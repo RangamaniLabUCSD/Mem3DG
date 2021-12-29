@@ -114,12 +114,13 @@ void System::computeProteinInteriorPenalty() {
 void System::computeSelfAvoidanceEnergy() {
   const double d0 = parameters.selfAvoidance.d;
   const double mu = parameters.selfAvoidance.mu;
+  const double n = parameters.selfAvoidance.n;
   double e = 0.0;
   projectedCollideTime = std::numeric_limits<double>::infinity();
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex vi{mesh->vertex(i)};
     gc::VertexData<bool> neighborList(*mesh, false);
-    meshProcessor.meshMutator.markVertices(neighborList, vi, 1);
+    meshProcessor.meshMutator.markVertices(neighborList, vi, n);
     for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
       if (neighborList[j])
         continue;
@@ -207,10 +208,11 @@ double System::computePotentialEnergy() {
   }
 
   // summerize internal potential energy
-  energy.potentialEnergy =
-      energy.bendingEnergy + energy.surfaceEnergy + energy.pressureEnergy +
-      energy.adsorptionEnergy + energy.dirichletEnergy + energy.aggregationEnergy +
-      energy.selfAvoidancePenalty + energy.proteinInteriorPenalty;
+  energy.potentialEnergy = energy.bendingEnergy + energy.surfaceEnergy +
+                           energy.pressureEnergy + energy.adsorptionEnergy +
+                           energy.dirichletEnergy + energy.aggregationEnergy +
+                           energy.selfAvoidancePenalty +
+                           energy.proteinInteriorPenalty;
   return energy.potentialEnergy;
 }
 

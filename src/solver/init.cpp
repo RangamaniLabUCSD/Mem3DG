@@ -262,7 +262,8 @@ void System::checkConfiguration() {
     for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
       gc::Vertex vi{mesh->vertex(i)};
       gc::VertexData<bool> neighborList(*mesh, false);
-      meshProcessor.meshMutator.markVertices(neighborList, vi, 1);
+      meshProcessor.meshMutator.markVertices(neighborList, vi,
+                                             parameters.selfAvoidance.n);
       for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
         if (neighborList[j])
           continue;
