@@ -370,10 +370,11 @@ void System::computeSelfAvoidanceForce() {
   forces.selfAvoidanceForceVec.fill({0, 0, 0});
   const double d0 = parameters.selfAvoidance.d;
   const double mu = parameters.selfAvoidance.mu;
+  const double n = parameters.selfAvoidance.n;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex vi{mesh->vertex(i)};
     gc::VertexData<bool> neighborList(*mesh, false);
-    meshProcessor.meshMutator.markVertices(neighborList, vi, 1);
+    meshProcessor.meshMutator.markVertices(neighborList, vi, n);
     for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
       if (neighborList[j])
         continue;
