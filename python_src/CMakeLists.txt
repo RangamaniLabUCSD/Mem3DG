@@ -46,19 +46,20 @@ set_target_properties(mem3dg_static
 )
 
 set(PYMEM3DG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/pymem3dg.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 )
 
-pybind11_add_module(pymem3dg MODULE ${PYMEM3DG_SOURCES})
-target_link_libraries(pymem3dg PRIVATE mem3dg_static polyscope igl::core)
+pybind11_add_module(_core MODULE ${PYMEM3DG_SOURCES})
+target_link_libraries(_core PRIVATE mem3dg_static polyscope igl::core)
 if(WITH_NETCDF)
-  target_compile_definitions(pymem3dg PUBLIC -DMEM3DG_WITH_NETCDF)
+  target_compile_definitions(_core PUBLIC -DMEM3DG_WITH_NETCDF)
 endif()
 
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-             INPUT ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)
+install(TARGETS _core DESTINATION .)
+# file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+#              INPUT ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)
 
-if(SKBUILD)
-  install(TARGETS pymem3dg LIBRARY DESTINATION pymem3dg)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py DESTINATION pymem3dg)
-endif()
+# if(SKBUILD)
+#   install(TARGETS pymem3dg LIBRARY DESTINATION pymem3dg)
+#   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py DESTINATION pymem3dg)
+# endif()
