@@ -55,7 +55,7 @@ if(WITH_NETCDF)
   target_compile_definitions(_core PUBLIC -DMEM3DG_WITH_NETCDF)
 endif()
 
-install(TARGETS _core DESTINATION .)
+# install(TARGETS _core DESTINATION .)
 # file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
 #              INPUT ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)
 
