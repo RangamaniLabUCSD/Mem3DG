@@ -130,6 +130,8 @@ struct Parameters {
     double mu = 1;
     // neighborhood layers
     std::size_t n = 1;
+    // period factor of computation
+    double p = 1;
   };
 
   struct External {

@@ -1301,6 +1301,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                           R"delim(
           get the number excluding neighborhood layers 
       )delim");
+  selfAvoidance.def_readwrite("p", &Parameters::SelfAvoidance::p,
+                          R"delim(
+          get the period factor of self-avoidance computation
+      )delim");
 
   py::class_<Parameters::Point> point(pymem3dg, "Point",
                                       R"delim(

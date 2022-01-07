@@ -66,9 +66,12 @@ bool Euler::integrate() {
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
+
+      // optional: compute self-avoidance every data writeout
       system.parameters.selfAvoidance.mu = avoidStrength;
       system.computeTotalEnergy();
       system.computeSelfAvoidanceForce();
+
       saveData();
     }
 
@@ -98,16 +101,19 @@ bool Euler::integrate() {
       march();
     }
 
-    // Compute Avoiding force
+    // turn on/off self-avoidance
     if ((system.time - lastComputeAvoidingForce) >
-            0.1 * (system.projectedCollideTime) ||
+            system.parameters.selfAvoidance.p * system.projectedCollideTime ||
         (system.time - lastComputeAvoidingForce > 5 * savePeriod)) {
       lastComputeAvoidingForce = system.time;
       system.parameters.selfAvoidance.mu = avoidStrength;
-      system.computeTotalEnergy();
+      std::cout << "computing avoiding force at "
+                << "t = " << system.time << std::endl;
+      std::cout << "projected collision is " << system.projectedCollideTime
+                << std::endl;
+      std::cout << "time step is " << timeStep << std::endl;
     } else {
       system.parameters.selfAvoidance.mu = 0;
-      system.computeTotalEnergy();
     }
   }
 
