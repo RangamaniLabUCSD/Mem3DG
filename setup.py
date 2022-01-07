@@ -164,21 +164,28 @@ except ImportError:
 
 tests_require = ["pytest"]
 
+from setuptools import find_packages
+
 setup(
-    name='pymem3dg',
+    name="pymem3dg",
     version=version,
-    maintainer='Cuncheng Zhu and Christopher T. Lee',
-    maintainer_email='cuzhu@ucsd.edu, ctlee@ucsd.edu',
-    author='The Mem3DG Team',
-    author_email='cuzhu@ucsd.edu, ctlee@ucsd.edu',
-    url='https://github.com/RangamaniLabUCSD/Mem3DG',
-    packages=["pymem3dg"],
+    maintainer="Cuncheng Zhu and Christopher T. Lee",
+    maintainer_email="cuzhu@ucsd.edu, ctlee@ucsd.edu",
+    author="The Mem3DG Team",
+    author_email="cuzhu@ucsd.edu, ctlee@ucsd.edu",
+    url="https://github.com/RangamaniLabUCSD/Mem3DG",
+    packages=find_packages(where="python_src"),
+    package_dir={"": "python_src"},
+    cmake_install_dir="python_src/pymem3dg",    
+    include_package_data=True,
+    extras_require={"test": ["pytest"]},
+
     description=DOCLINES[0],
-    long_description=open('README.md', encoding='utf8').read(),
+    long_description=open("README.md", encoding="utf8").read(),
     long_description_content_type="text/markdown",
     platforms=["Windows", "Linux", "Mac OS-X", "Unix"],
-    classifiers=[c for c in CLASSIFIERS.split('\n') if c],
-    keywords='meshing membrane mechanics',
+    classifiers=[c for c in CLASSIFIERS.split("\n") if c],
+    keywords="meshing membrane mechanics",
     cmake_args=cmake_args,
     zip_safe=False,
 )

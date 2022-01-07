@@ -127,7 +127,9 @@ target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
 if(BUILD_PYMEM3DG)
   find_package(Python COMPONENTS Interpreter Development REQUIRED)
   add_subdirectory(python_src)
+  install(TARGETS _core DESTINATION .)
 endif()
+
 
 enable_testing()
 add_subdirectory(tests)
