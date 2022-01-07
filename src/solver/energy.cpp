@@ -125,12 +125,14 @@ void System::computeSelfAvoidanceEnergy() {
       if (neighborList[j])
         continue;
       gc::Vertex vj{mesh->vertex(j)};
+
       // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
       //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
       // double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
       double penalty = mu;
       // double penalty = mu * vpg->vertexDualAreas[vi] *
       // vpg->vertexDualAreas[vj];
+      
       gc::Vector3 r =
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
       double distance = gc::norm(r) - d0;
@@ -142,9 +144,6 @@ void System::computeSelfAvoidanceEnergy() {
     }
   }
   energy.selfAvoidancePenalty = e;
-  std::cout << "computing avoiding force at "
-            << "t = " << time << ", next will be " << projectedCollideTime
-            << " later" << std::endl;
 }
 
 void System::computeDirichletEnergy() {
