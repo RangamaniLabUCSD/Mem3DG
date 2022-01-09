@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import sph_harm
-
+from ._core import *
 
 def rowwise_normalize(matrix):
     """
