@@ -713,7 +713,6 @@ void Integrator::lineSearchErrorBacktrace(
   // test if dirichlet energy increases
   if (runAll || system.energy.selfAvoidancePenalty >
                     previousEnergy.selfAvoidancePenalty) {
-    std::cout << "!!!!!!!!!!!!!!!!!! mu is" << system.parameters.selfAvoidance.mu << std::endl;
 
     // report the finding
     std::cout << "\nWith F_tol, selfE has increased "
