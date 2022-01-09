@@ -66,12 +66,6 @@ bool Euler::integrate() {
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
-
-      // optional: compute self-avoidance every data writeout
-      system.parameters.selfAvoidance.mu = avoidStrength;
-      system.computeTotalEnergy();
-      system.computeSelfAvoidanceForce();
-
       saveData();
     }
 
