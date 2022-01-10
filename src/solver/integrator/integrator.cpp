@@ -314,9 +314,10 @@ double Integrator::mechanicalBacktrack(
 
   while (true) {
     // Wolfe condition fulfillment
-    if (system.energy.potentialEnergy <
-        (previousE.potentialEnergy + system.computeIntegratedPower(alpha) -
-         c1 * alpha * positionProjection)) {
+    if ((system.energy.potentialEnergy <
+         (previousE.potentialEnergy + system.computeIntegratedPower(alpha) -
+          c1 * alpha * positionProjection)) &&
+        std::isfinite(system.energy.potentialEnergy)) {
       break;
     }
 
