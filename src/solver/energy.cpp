@@ -137,7 +137,8 @@ void System::computeSelfAvoidanceEnergy() {
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
       double distance = gc::norm(r) - d0;
       double collideTime = distance / gc::dot(velocity[vi] - velocity[vj], r);
-      if (collideTime < projectedCollideTime && collideTime > 0)
+      if (collideTime < projectedCollideTime &&
+          gc::dot(velocity[vi] - velocity[vj], r) > 0)
         projectedCollideTime = collideTime;
       e -= penalty * log(distance);
       // e = penalty / distance;
