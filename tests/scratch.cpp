@@ -29,7 +29,7 @@ int main() {
   // Eigen::Matrix<double, Eigen::Dynamic, 3> vpg;
   mem3dg::solver::Parameters p;
   // std::tie(mesh, vpg) = mem3dg::getCylinderMatrix(1, 16, 60, 7.5, 0);
-  std::string inputMesh = "/home/cuzhu/Mem3DG/tests/frame20.ply";
+  std::string inputMesh = "/home/cuzhu/Mem3DG/tests/frame9.ply";
 
   /// physical parameters
   p.proteinMobility = 10;
@@ -41,7 +41,7 @@ int main() {
 
   p.proteinDistribution.profile = "none";
   p.proteinDistribution.protein0.resize(1);
-  p.proteinDistribution.protein0 << 0.5;
+  p.proteinDistribution.protein0 << -1;
   p.proteinDistribution.lambdaPhi = 1e-7;
 
   p.boundary.shapeBoundaryCondition = "fixed";
@@ -94,7 +94,7 @@ int main() {
   mP.meshMutator.collapseSkinny = true;
 
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
-  mem3dg::solver::System system(inputMesh, p, mP, 0, false);
+  mem3dg::solver::System system(inputMesh, p, mP, 0, true);
 
   const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2, verbosity = 5;
   const std::string outputDir = "/tmp";
