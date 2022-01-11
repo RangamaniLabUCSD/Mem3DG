@@ -302,31 +302,33 @@ bool System::growMesh() {
       // collapse the edge
       gcs::Vertex newVertex = mesh->collapseEdgeTriangular(e);
 
-      count++;
-      // update quantities
-      // Note: think about conservation of energy, momentum and angular
-      // momentum
-      vpg->vertexPositions[newVertex] =
-          gc::sum(vertex1ForceMask) < 2.5   ? vertex1Pos
-          : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
-                                            : (vertex1Pos + vertex2Pos) / 2;
-      // averageData(velocity, vertex1, vertex2, newVertex);
-      // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
-      // averageData(proteinDensity, vertex1, vertex2, newVertex);
-      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-      geodesicDistanceFromPtInd[newVertex] =
-          0.5 * (vertex1GeoDist + vertex2GeoDist);
-      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-      thePointTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
+      if (newVertex != gcs::Vertex()) {
+        count++;
+        // update quantities
+        // Note: think about conservation of energy, momentum and angular
+        // momentum
+        vpg->vertexPositions[newVertex] =
+            gc::sum(vertex1ForceMask) < 2.5   ? vertex1Pos
+            : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
+                                              : (vertex1Pos + vertex2Pos) / 2;
+        // averageData(velocity, vertex1, vertex2, newVertex);
+        // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+        // averageData(proteinDensity, vertex1, vertex2, newVertex);
+        velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+        geodesicDistanceFromPtInd[newVertex] =
+            0.5 * (vertex1GeoDist + vertex2GeoDist);
+        proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+        thePointTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
 
-      // isOrigVertex[newVertex] = false;
-      for (gcs::Edge e : newVertex.adjacentEdges()) {
-        isOrigEdge[e] = false;
+        // isOrigVertex[newVertex] = false;
+        for (gcs::Edge e : newVertex.adjacentEdges()) {
+          isOrigEdge[e] = false;
+        }
+
+        meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
+
+        isGrown = true;
       }
-
-      meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
-
-      isGrown = true;
     }
   }
   if (isGrown)
