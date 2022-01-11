@@ -271,7 +271,6 @@ void System::checkConfiguration() {
         gc::Vector3 r =
             vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
         double distance = gc::norm(r);
-        gc::Vector3 grad = r.normalize();
         if (distance < parameters.selfAvoidance.d)
           mem3dg_runtime_error(
               "Input mesh violates the self avoidance constraint!");
