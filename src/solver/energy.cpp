@@ -116,7 +116,7 @@ void System::computeSelfAvoidanceEnergy() {
   const double mu = parameters.selfAvoidance.mu;
   const double n = parameters.selfAvoidance.n;
   double e = 0.0;
-  projectedCollideTime = std::numeric_limits<double>::infinity();
+  projectedCollideTime = std::numeric_limits<double>::max();
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex vi{mesh->vertex(i)};
     gc::VertexData<bool> neighborList(*mesh, false);
