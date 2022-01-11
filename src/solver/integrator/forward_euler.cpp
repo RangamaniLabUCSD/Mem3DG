@@ -59,14 +59,35 @@ bool Euler::integrate() {
   const double avoidStrength = system.parameters.selfAvoidance.mu;
   for (;;) {
 
+    // turn on/off self-avoidance; outside status-march-cycle; before savedata to write selfAvoidance 
+    if ((system.time - lastComputeAvoidingForce) >
+            system.parameters.selfAvoidance.p * system.projectedCollideTime ||
+        system.time - lastSave >= savePeriod ||
+        system.time == initialTime || EXIT) {
+      lastComputeAvoidingForce = system.time;
+      system.parameters.selfAvoidance.mu = avoidStrength;
+      std::cout << "computing avoiding force at "
+                << "t = " << system.time << std::endl;
+      std::cout << "projected collision is " << system.projectedCollideTime
+                << std::endl;
+      std::cout << "time step is " << timeStep << std::endl;
+    } else {
+      system.parameters.selfAvoidance.mu = 0;
+    }
+
     // Evaluate and threhold status data
     status();
 
-    // Save files every tSave period and print some info
+    // Save files every tSave period and print some info; save data before exit
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
       saveData();
+    }
+
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      break;
     }
 
     // Process mesh every tProcessMesh period
@@ -81,26 +102,6 @@ bool Euler::integrate() {
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
       system.updateConfigurations(true);
-    }
-
-    // break loop if EXIT flag is on
-    if (EXIT) {
-      break;
-    }
-    // turn on/off self-avoidance
-    if ((system.time - lastComputeAvoidingForce) >
-            system.parameters.selfAvoidance.p * system.projectedCollideTime ||
-        system.time - lastComputeAvoidingForce >= savePeriod ||
-        system.time == initialTime || EXIT) {
-      lastComputeAvoidingForce = system.time;
-      system.parameters.selfAvoidance.mu = avoidStrength;
-      std::cout << "computing avoiding force at "
-                << "t = " << system.time << std::endl;
-      std::cout << "projected collision is " << system.projectedCollideTime
-                << std::endl;
-      std::cout << "time step is " << timeStep << std::endl;
-    } else {
-      system.parameters.selfAvoidance.mu = 0;
     }
 
     // step forward
