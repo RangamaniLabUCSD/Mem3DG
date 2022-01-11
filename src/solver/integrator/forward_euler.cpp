@@ -87,14 +87,6 @@ bool Euler::integrate() {
     if (EXIT) {
       break;
     }
-
-    // step forward
-    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
-      system.time += 1e-10 * characteristicTimeStep;
-    } else {
-      march();
-    }
-
     // turn on/off self-avoidance
     if ((system.time - lastComputeAvoidingForce) >
             system.parameters.selfAvoidance.p * system.projectedCollideTime ||
@@ -109,6 +101,13 @@ bool Euler::integrate() {
       std::cout << "time step is " << timeStep << std::endl;
     } else {
       system.parameters.selfAvoidance.mu = 0;
+    }
+
+    // step forward
+    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
+      system.time += 1e-10 * characteristicTimeStep;
+    } else {
+      march();
     }
   }
 
