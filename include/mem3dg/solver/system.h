@@ -141,9 +141,8 @@ public:
   /// "the vertex"
   gcs::SurfacePoint thePoint;
   gcs::VertexData<bool> thePointTracker;
-  /// projected time of collision 
+  /// projected time of collision
   double projectedCollideTime;
-
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -727,7 +726,7 @@ public:
   /**
    * @brief Compute DPD forces of the system
    */
-   void computeDPDForces(double dt);
+  void computeDPDForces(double dt);
 
   /**
    * @brief Compute damping forces of the system

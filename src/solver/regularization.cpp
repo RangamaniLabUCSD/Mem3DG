@@ -237,69 +237,92 @@ bool System::growMesh() {
   bool isGrown = false;
   int count = 0;
   gcs::EdgeData<bool> isOrigEdge(*mesh, true);
-  gcs::VertexData<bool> isOrigVertex(*mesh, true);
+  // gcs::VertexData<bool> isOrigVertex(*mesh, true);
 
   // expand the mesh when area is too large
   for (gcs::Edge e : mesh->edges()) {
 
-    // alias the neighboring vertices
-    gcs::Halfedge he = e.halfedge();
-    const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
-
+    // don't keep processing new edges
     if (!isOrigEdge[e])
       continue;
-    if (gc::sum(forces.forceMask[vertex1] + forces.forceMask[vertex2]) < 0.5)
+
+    // alias the halfedge
+    gcs::Halfedge he = e.halfedge();
+
+    // gather both vertices and their properties
+    gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
+    gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
+    gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
+    gc::Vector3 vertex1Vel = velocity[vertex1];
+    gc::Vector3 vertex2Vel = velocity[vertex2];
+    double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
+    double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+    double vertex1Phi = proteinDensity[vertex1];
+    double vertex2Phi = proteinDensity[vertex2];
+    gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
+    gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
+    bool vertex1PointTracker = thePointTracker[vertex1];
+    bool vertex2PointTracker = thePointTracker[vertex2];
+
+    // don't keep processing static vertices
+    if (gc::sum(vertex1ForceMask + vertex2ForceMask) < 0.5)
       continue;
 
     // Spltting
     if (meshProcessor.meshMutator.ifSplit(e, *vpg)) {
       count++;
       // split the edge
-      const auto &newVertex = mesh->splitEdgeTriangular(e).vertex();
-      isOrigVertex[newVertex] = false;
-      for (gcs::Edge e : newVertex.adjacentEdges()) {
-        isOrigEdge[e] = false;
-      }
+      gcs::Vertex newVertex = mesh->splitEdgeTriangular(e).vertex();
+
       // update quantities
       // Note: think about conservation of energy, momentum and angular
       // momentum
-      averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
-      averageData(velocity, vertex1, vertex2, newVertex);
-      averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
-      averageData(proteinDensity, vertex1, vertex2, newVertex);
+      // averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
+      // averageData(velocity, vertex1, vertex2, newVertex);
+      // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+      // averageData(proteinDensity, vertex1, vertex2, newVertex);
+      vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
+      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+      geodesicDistanceFromPtInd[newVertex] =
+          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
       thePointTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
+
+      // isOrigVertex[newVertex] = false;
+      for (gcs::Edge e : newVertex.adjacentEdges()) {
+        isOrigEdge[e] = false;
+      }
 
       meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
       // mutationMarker[newVertex] = true;
 
       isGrown = true;
     } else if (meshProcessor.meshMutator.ifCollapse(e, *vpg)) { // Collapsing
-      // precached pre-mutation values or flag
-      gc::Vector3 collapsedPosition =
-          gc::sum(forces.forceMask[vertex1]) < 2.5
-              ? vpg->inputVertexPositions[vertex1]
-          : gc::sum(forces.forceMask[vertex2]) < 2.5
-              ? vpg->inputVertexPositions[vertex2]
-              : (vpg->inputVertexPositions[vertex1] +
-                 vpg->inputVertexPositions[vertex2]) /
-                    2;
-      bool isThePoint = thePointTracker[vertex1] || thePointTracker[vertex2];
-
       // collapse the edge
-      auto newVertex = mesh->collapseEdgeTriangular(e);
-      isOrigVertex[newVertex] = false;
+      gcs::Vertex newVertex = mesh->collapseEdgeTriangular(e);
+
+      count++;
+      // update quantities
+      // Note: think about conservation of energy, momentum and angular
+      // momentum
+      vpg->vertexPositions[newVertex] =
+          gc::sum(vertex1ForceMask) < 2.5   ? vertex1Pos
+          : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
+                                            : (vertex1Pos + vertex2Pos) / 2;
+      // averageData(velocity, vertex1, vertex2, newVertex);
+      // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+      // averageData(proteinDensity, vertex1, vertex2, newVertex);
+      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+      geodesicDistanceFromPtInd[newVertex] =
+          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+      thePointTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
+
+      // isOrigVertex[newVertex] = false;
       for (gcs::Edge e : newVertex.adjacentEdges()) {
         isOrigEdge[e] = false;
       }
-      // update quantities
-      vpg->inputVertexPositions[newVertex] = collapsedPosition;
-      thePointTracker[newVertex] = isThePoint;
-      // Note: think about conservation of energy, momentum and angular
-      // momentum
-      averageData(velocity, vertex1, vertex2, newVertex);
-      averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
-      averageData(proteinDensity, vertex1, vertex2, newVertex);
 
       meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
 
@@ -426,7 +449,7 @@ void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
     double localLapH1 = 0;
     double localLapH2 = 0;
 
-    auto v = he.tailVertex();
+    gcs::Vertex v = he.tailVertex();
     for (gcs::Corner c : v.adjacentCorners()) {
       vertexNormal1 += vpg->cornerAngle(c) * vpg->faceNormal(c.face());
     }
