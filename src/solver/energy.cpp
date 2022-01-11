@@ -144,6 +144,8 @@ void System::computeSelfAvoidanceEnergy() {
       // e = penalty / distance;
     }
   }
+  if (projectedCollideTime == std::numeric_limits<double>::max())
+    projectedCollideTime = 0;
   energy.selfAvoidancePenalty = e;
 }
 
