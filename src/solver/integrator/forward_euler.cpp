@@ -98,7 +98,8 @@ bool Euler::integrate() {
     // turn on/off self-avoidance
     if ((system.time - lastComputeAvoidingForce) >
             system.parameters.selfAvoidance.p * system.projectedCollideTime ||
-        (system.time - lastComputeAvoidingForce > 5 * savePeriod)) {
+        system.time - lastComputeAvoidingForce >= savePeriod ||
+        system.time == initialTime || EXIT) {
       lastComputeAvoidingForce = system.time;
       system.parameters.selfAvoidance.mu = avoidStrength;
       std::cout << "computing avoiding force at "
