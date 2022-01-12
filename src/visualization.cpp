@@ -853,10 +853,18 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
               ptrRichData->getVertexProperty<double>("aggregation_force"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
+    if (options.avoidance_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "avoidance_force",
+              ptrRichData->getVertexProperty<double>("avoidance_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
     if (options.mask) {
       polyscopeMesh
           ->addVertexScalarQuantity(
-              "force_mask", ptrRichData->getVertexProperty<double>("force_mask"))
+              "force_mask",
+              ptrRichData->getVertexProperty<double>("force_mask"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
     if (options.smoothing_mask) {
