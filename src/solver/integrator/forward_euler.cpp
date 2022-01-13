@@ -59,20 +59,23 @@ bool Euler::integrate() {
   const double avoidStrength = system.parameters.selfAvoidance.mu;
   for (;;) {
 
-    // turn on/off self-avoidance; outside status-march-cycle; before savedata to write selfAvoidance 
-    if ((system.time - lastComputeAvoidingForce) >
-            system.parameters.selfAvoidance.p * system.projectedCollideTime ||
-        system.time - lastSave >= savePeriod ||
-        system.time == initialTime || EXIT) {
-      lastComputeAvoidingForce = system.time;
-      system.parameters.selfAvoidance.mu = avoidStrength;
-      std::cout << "computing avoiding force at "
-                << "t = " << system.time << std::endl;
-      std::cout << "projected collision is " << system.projectedCollideTime
-                << std::endl;
-      std::cout << "time step is " << timeStep << std::endl;
-    } else {
-      system.parameters.selfAvoidance.mu = 0;
+    // turn on/off self-avoidance; outside status-march-cycle; before savedata
+    // to write selfAvoidance
+    if (avoidStrength != 0) {
+      if ((system.time - lastComputeAvoidingForce) >
+              system.parameters.selfAvoidance.p * system.projectedCollideTime ||
+          system.time - lastSave >= savePeriod || system.time == initialTime ||
+          EXIT) {
+        lastComputeAvoidingForce = system.time;
+        system.parameters.selfAvoidance.mu = avoidStrength;
+        std::cout << "computing avoiding force at "
+                  << "t = " << system.time << std::endl;
+        std::cout << "projected collision is " << system.projectedCollideTime
+                  << std::endl;
+        std::cout << "time step is " << timeStep << std::endl;
+      } else {
+        system.parameters.selfAvoidance.mu = 0;
+      }
     }
 
     // Evaluate and threhold status data
