@@ -389,6 +389,15 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
   double tol = gradNorm * target;
 
   while (gradNorm > tol && !isSmooth) {
+    if (stepSize < 1e-8 * initStep) {
+      mem3dg_runtime_error("smoothing operation diverges!");
+      break;
+    }
+    if (num_iter == maxIteration) {
+      mem3dg_runtime_error("smoothing operation exceeds max iteration!");
+      break;
+    }
+    
     // compute bending force if smoothingMask is true
     vpg->refreshQuantities();
     forces.bendingForceVec.fill({0, 0, 0});
@@ -411,10 +420,7 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
     pastGradNorm = gradNorm;
     pastForceVec = toMatrix(forces.bendingForceVec);
     num_iter++;
-    if (num_iter == maxIteration) {
-      mem3dg_runtime_error("smoothing operation exceeds max iteration!");
-      break;
-    }
+
   };
 
   return smoothingMask;
