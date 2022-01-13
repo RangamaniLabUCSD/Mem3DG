@@ -53,6 +53,9 @@ struct MeshProcessor {
     // whether has reference mesh
     bool ifHasRefMesh;
 
+    // whether conduct smoothing 
+    bool isSmoothenMesh = false;
+
     /// triangle ratio constant
     double Kst = 0;
     /// Local stretching modulus

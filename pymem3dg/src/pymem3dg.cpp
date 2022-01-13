@@ -582,6 +582,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                       R"delim(
        meshmutator constructor
       )delim");
+  meshregularizer.def_readwrite("isSmoothenMesh", &MeshProcessor::MeshRegularizer::isSmoothenMesh,
+                                R"delim(
+          whether conduct mesh smoothing operation
+      )delim");
   meshregularizer.def_readwrite("Kst", &MeshProcessor::MeshRegularizer::Kst,
                                 R"delim(
           get Vertex shifting constant 
