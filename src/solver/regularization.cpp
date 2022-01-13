@@ -355,8 +355,8 @@ void System::mutateMesh() {
   // linear edge flip for non-Delauney triangles
   if (meshProcessor.meshMutator.isEdgeFlip) {
     isFlipped = edgeFlip();
-    edgeFlip();
-    edgeFlip();
+    isFlipped = edgeFlip() || isFlipped;
+    isFlipped = edgeFlip() || isFlipped;
   }
 
   // globally update quantities
