@@ -381,22 +381,22 @@ void System::computeSelfAvoidanceForce() {
       gc::Vertex vj{mesh->vertex(j)};
       // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
       //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
-      // double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
-      double penalty = mu;
+      double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
+      // double penalty = mu;
       // double penalty = mu * vpg->vertexDualAreas[vi] *
       // vpg->vertexDualAreas[vj];;
       gc::Vector3 r =
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
       double distance = gc::norm(r) - d0;
       gc::Vector3 grad = r.normalize();
-      forces.selfAvoidanceForceVec[i] -=
-          forces.maskForce(penalty / distance * grad, i);
-      forces.selfAvoidanceForceVec[j] +=
-          forces.maskForce(penalty / distance * grad, j);
       // forces.selfAvoidanceForceVec[i] -=
-      //     forces.maskForce(penalty / distance / distance * grad, i);
+      //     forces.maskForce(penalty / distance * grad, i);
       // forces.selfAvoidanceForceVec[j] +=
-      //     forces.maskForce(penalty / distance / distance * grad, j);
+      //     forces.maskForce(penalty / distance * grad, j);
+      forces.selfAvoidanceForceVec[i] -=
+          forces.maskForce(penalty / distance / distance * grad, i);
+      forces.selfAvoidanceForceVec[j] +=
+          forces.maskForce(penalty / distance / distance * grad, j);
     }
   }
   forces.selfAvoidanceForce = forces.ontoNormal(forces.selfAvoidanceForceVec);

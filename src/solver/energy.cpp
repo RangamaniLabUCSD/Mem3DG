@@ -128,8 +128,8 @@ void System::computeSelfAvoidanceEnergy() {
 
       // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
       //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
-      // double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
-      double penalty = mu;
+      double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
+      // double penalty = mu;
       // double penalty = mu * vpg->vertexDualAreas[vi] *
       // vpg->vertexDualAreas[vj];
       
@@ -140,8 +140,8 @@ void System::computeSelfAvoidanceEnergy() {
       if (collideTime < projectedCollideTime &&
           gc::dot(velocity[vi] - velocity[vj], r) > 0)
         projectedCollideTime = collideTime;
-      e -= penalty * log(distance);
-      // e = penalty / distance;
+      // e -= penalty * log(distance);
+      e += penalty / distance;
     }
   }
   if (projectedCollideTime == std::numeric_limits<double>::max())
