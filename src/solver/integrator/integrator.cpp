@@ -1057,6 +1057,7 @@ void Integrator::saveData() {
               << (system.vpg->vertexGaussianCurvatures.raw().array() /
                   system.vpg->vertexDualAreas.raw().array())
                      .maxCoeff()
+              << "]"
               << "\n"
               << "phi: [" << system.proteinDensity.raw().minCoeff() << ","
               << system.proteinDensity.raw().maxCoeff() << "]" << std::endl;
