@@ -308,15 +308,31 @@ void System::computeMechanicalForces(size_t i) {
         (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2) -
         (Kdi * Hi * Hi / 3 + Kdj * Hj * Hj * 2 / 3) * areaGrad +
         (Kdi * Hi + Kdj * Hj) * gaussVec;
+
+    bool interiorTwinHalfedge = he.twin().isInterior();
+    if (interiorHalfedge) {
+      bendForceVec_deviatoric_gauss -=
+          4 * Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
+          4 * Kdj * cornerAngleGradient(he.next().corner(), he.vertex());
+    }
+    if (interiorTwinHalfedge) {
+      bendForceVec_deviatoric_gauss -=
+          4 * Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
+    }
   }
 
-  bendForceVec =
-      bendForceVec_areaGrad + bendForceVec_gaussVec + bendForceVec_schlafliVec;
+  bendForceVec = bendForceVec_areaGrad + bendForceVec_gaussVec +
+                 bendForceVec_schlafliVec + bendForceVec_deviatoric_mean +
+                 bendForceVec_deviatoric_gauss;
 
   // masking
   bendForceVec_areaGrad = forces.maskForce(bendForceVec_areaGrad, i);
   bendForceVec_gaussVec = forces.maskForce(bendForceVec_gaussVec, i);
   bendForceVec_schlafliVec = forces.maskForce(bendForceVec_schlafliVec, i);
+  bendForceVec_deviatoric_mean =
+      forces.maskForce(bendForceVec_deviatoric_mean, i);
+  bendForceVec_deviatoric_gauss =
+      forces.maskForce(bendForceVec_deviatoric_gauss, i);
   bendForceVec = forces.maskForce(bendForceVec, i);
 
   osmoticForceVec = forces.maskForce(osmoticForceVec, i);
@@ -430,6 +446,7 @@ void System::computeSelfAvoidanceForce() {
 void System::computeChemicalPotentials() {
   gcs::VertexData<double> dH0dphi(*mesh, 0);
   gcs::VertexData<double> dKbdphi(*mesh, 0);
+  gcs::VertexData<double> dKddphi(*mesh, 0);
   auto meanCurvDiff = (vpg->vertexMeanCurvatures.raw().array() /
                        vpg->vertexDualAreas.raw().array()) -
                       H0.raw().array();
@@ -450,10 +467,16 @@ void System::computeChemicalPotentials() {
             .matrix();
   }
 
+  dKddphi = 5 * dKbdphi;
+  auto deviatoric = -dKddphi.raw().array() *
+                    (vpg->vertexMeanCurvatures.raw().array().square() /
+                         vpg->vertexDualAreas.raw().array() -
+                     4 * vpg->vertexGaussianCurvatures.raw().array());
   forces.bendingPotential.raw() = forces.maskProtein(
-      -vpg->vertexDualAreas.raw().array() *
-      (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
-       2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
+      deviatoric -
+      vpg->vertexDualAreas.raw().array() *
+          (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
+           2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
 
   if (parameters.adsorption.epsilon != 0)
     forces.adsorptionPotential.raw() = forces.maskProtein(

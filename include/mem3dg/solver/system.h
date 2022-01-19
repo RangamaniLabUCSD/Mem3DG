@@ -695,6 +695,11 @@ public:
   computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
                                 gc::Halfedge &he);
 
+  /**
+   * @brief Helper functions to compute geometric derivatives
+   */
+  gc::Vector3 cornerAngleGradient(gcs::Corner c, gcs::Vertex v);
+
   // ==========================================================
   // ================        Pressure        ==================
   // ==========================================================
@@ -735,12 +740,6 @@ public:
    * @brief Compute damping forces of the system
    */
   gc::VertexData<gc::Vector3> computeDampingForce();
-
-  /**
-   * @brief Helper functions to compute geometric derivatives
-   */
-  gc::Vector3 cornerAngleGradient(gcs::Corner c, gcs::Vertex v);
-
   // ==========================================================
   // ================        Energy          ==================
   // ==========================================================
