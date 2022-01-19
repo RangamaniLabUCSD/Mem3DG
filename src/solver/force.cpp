@@ -43,6 +43,26 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+gc::Vector3 System::cornerAngleGradient(gcs::Corner c, gcs::Vertex v) {
+  gcs::Halfedge he = c.halfedge();
+  gc::Vector3 n = vpg->faceNormals[c.face()];
+  gc::Vector3 ej = vecFromHalfedge(he, *vpg);
+  gc::Vector3 ei = vecFromHalfedge(he.next(), *vpg);
+  gc::Vector3 ek = vecFromHalfedge(he.next().next(), *vpg);
+  if (c.vertex() == v) { // vi
+    gc::Vector3 grad_anglek = -gc::cross(n, ej).normalize() / gc::norm(ej);
+    gc::Vector3 grad_anglej = -gc::cross(n, ek).normalize() / gc::norm(ek);
+    return -(grad_anglek + grad_anglej);
+  } else if (he.next().vertex() == v) { // vk
+    return -gc::cross(n, ej).normalize() / gc::norm(ej);
+  } else if (he.next().next().vertex() == v) { // vj
+    return -gc::cross(n, ek).normalize() / gc::norm(ek);
+  } else {
+    mem3dg_runtime_error("Unexpected combination of corner and vertex!");
+    return gc::Vector3{0, 0, 0};
+  }
+}
+
 std::tuple<gc::Vector3, gc::Vector3>
 System::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
                                       gc::Halfedge &he) {
@@ -220,6 +240,8 @@ void System::computeMechanicalForces(size_t i) {
   gc::Vector3 bendForceVec_areaGrad{0, 0, 0};
   gc::Vector3 bendForceVec_gaussVec{0, 0, 0};
   gc::Vector3 bendForceVec_schlafliVec{0, 0, 0};
+  gc::Vector3 bendForceVec_deviatoric_mean{0, 0, 0};
+  gc::Vector3 bendForceVec_deviatoric_gauss{0, 0, 0};
 
   gc::Vector3 capillaryForceVec{0, 0, 0};
   gc::Vector3 osmoticForceVec{0, 0, 0};
@@ -229,6 +251,7 @@ void System::computeMechanicalForces(size_t i) {
   double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
   double H0i = H0[i];
   double Kbi = Kb[i];
+  double Kdi = Kd[i];
   double proteinDensityi = proteinDensity[i];
   bool boundaryVertex = v.isBoundary();
 
@@ -243,6 +266,7 @@ void System::computeMechanicalForces(size_t i) {
     double Hj = vpg->vertexMeanCurvatures[i_vj] / vpg->vertexDualAreas[i_vj];
     double H0j = H0[i_vj];
     double Kbj = Kb[i_vj];
+    double Kdj = Kd[i_vj];
     double proteinDensityj = proteinDensity[i_vj];
     bool interiorHalfedge = he.isInterior();
 
@@ -280,13 +304,14 @@ void System::computeMechanicalForces(size_t i) {
                               Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
                              areaGrad;
     bendForceVec_gaussVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
-    bendForceVec -=
-        (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec +
-        (Kbi * (H0i * H0i - Hi * Hi) / 3 +
-         Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
-            areaGrad +
-        (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
+    bendForceVec_deviatoric_mean -=
+        (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2) -
+        (Kdi * Hi * Hi / 3 + Kdj * Hj * Hj * 2 / 3) * areaGrad +
+        (Kdi * Hi + Kdj * Hj) * gaussVec;
   }
+
+  bendForceVec =
+      bendForceVec_areaGrad + bendForceVec_gaussVec + bendForceVec_schlafliVec;
 
   // masking
   bendForceVec_areaGrad = forces.maskForce(bendForceVec_areaGrad, i);
@@ -542,9 +567,14 @@ gc::Vector3 System::computeGradientNorm2Gradient(
     gc::Vector3 grad_eknorm = ek.normalize();
 
     // gradient of exterior angle wrt he.vertex()
-    gc::Vector3 grad_anglek = gc::cross(n, ej).normalize() / gc::norm(ej);
-    gc::Vector3 grad_anglej = gc::cross(n, ek).normalize() / gc::norm(ek);
-    gc::Vector3 grad_anglei = -(grad_anglek + grad_anglej);
+    gc::Vector3 grad_anglek =
+        -cornerAngleGradient(he.next().corner(), he.vertex());
+    gc::Vector3 grad_anglej =
+        -cornerAngleGradient(he.next().next().corner(), he.vertex());
+    gc::Vector3 grad_anglei = -cornerAngleGradient(he.corner(), he.vertex());
+    // gc::Vector3 grad_anglek = gc::cross(n, ej).normalize() / gc::norm(ej);
+    // gc::Vector3 grad_anglej = gc::cross(n, ek).normalize() / gc::norm(ek);
+    // gc::Vector3 grad_anglei = -(grad_anglek + grad_anglej);
 
     // chain rule
     gc::Vector3 grad_cosanglek = -sin(anglek) * grad_anglek;
