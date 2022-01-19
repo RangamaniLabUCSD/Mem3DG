@@ -440,6 +440,12 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
    * @brief Mechanical force
    */
   forces.def(
+      "getDeviatoricForce", [](Forces &s) { return toMatrix(s.deviatoricForceVec); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the deviatoric force of the system
+      )delim");
+  forces.def(
       "getBendingForce", [](Forces &s) { return toMatrix(s.bendingForceVec); },
       py::return_value_policy::copy,
       R"delim(
@@ -530,6 +536,13 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       py::return_value_policy::copy,
       R"delim(
           get the bending potential
+      )delim");
+  forces.def(
+      "getDeviatoricPotential",
+      [](Forces &s) { return toMatrix(s.deviatoricPotential); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the deviatoric potential
       )delim");
   forces.def(
       "getInteriorPenaltyPotential",
@@ -1458,6 +1471,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   energy.def_readwrite("bendingEnergy", &Energy::bendingEnergy,
                        R"delim(
           get bending energy of the membrane  
+      )delim");
+  energy.def_readwrite("deviatoricEnergy", &Energy::deviatoricEnergy,
+                       R"delim(
+          get deviatoric energy of the membrane  
       )delim");
   energy.def_readwrite("surfaceEnergy", &Energy::surfaceEnergy,
                        R"delim(

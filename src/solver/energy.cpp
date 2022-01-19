@@ -56,16 +56,19 @@ void System::computeBendingEnergy() {
   energy.bendingEnergy =
       (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
        H_difference.array().square())
-          .sum() +
-      (Kd.raw().array() * vpg->vertexMeanCurvatures.raw().array().square() /
-       vpg->vertexDualAreas.raw().array())
-          .sum() -
-      (4 * Kd.raw().array() * vpg->vertexGaussianCurvatures.raw().array())
           .sum();
 
   // when considering topological changes, additional term of gauss curvature
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
   // K).sum();
+}
+
+void System::computeDeviatoricEnergy() {
+  energy.deviatoricEnergy =
+      (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
+                               vpg->vertexDualAreas.raw().array() -
+                           4 * vpg->vertexGaussianCurvatures.raw().array()))
+          .sum();
 }
 
 void System::computeSurfaceEnergy() {
@@ -184,6 +187,7 @@ void System::computeDirichletEnergy() {
 double System::computePotentialEnergy() {
   // fundamental internal potential energy
   energy.bendingEnergy = 0;
+  energy.deviatoricEnergy = 0;
   energy.surfaceEnergy = 0;
   energy.pressureEnergy = 0;
   energy.adsorptionEnergy = 0;
@@ -197,6 +201,7 @@ double System::computePotentialEnergy() {
   computePressureEnergy();
 
   // optional internal potential energy
+  computeDeviatoricEnergy();
   if (parameters.adsorption.epsilon != 0) {
     computeAdsorptionEnergy();
   }
@@ -215,11 +220,11 @@ double System::computePotentialEnergy() {
   }
 
   // summerize internal potential energy
-  energy.potentialEnergy = energy.bendingEnergy + energy.surfaceEnergy +
-                           energy.pressureEnergy + energy.adsorptionEnergy +
-                           energy.dirichletEnergy + energy.aggregationEnergy +
-                           energy.selfAvoidancePenalty +
-                           energy.proteinInteriorPenalty;
+  energy.potentialEnergy =
+      energy.bendingEnergy + energy.deviatoricEnergy + energy.surfaceEnergy +
+      energy.pressureEnergy + energy.adsorptionEnergy + energy.dirichletEnergy +
+      energy.aggregationEnergy + energy.selfAvoidancePenalty +
+      energy.proteinInteriorPenalty;
   return energy.potentialEnergy;
 }
 
