@@ -236,12 +236,14 @@ void System::computeMechanicalForces(gcs::Vertex &v) {
 
 void System::computeMechanicalForces(size_t i) {
   gc::Vertex v{mesh->vertex(i)};
-  gc::Vector3 bendForceVec{0, 0, 0};
-  gc::Vector3 bendForceVec_areaGrad{0, 0, 0};
-  gc::Vector3 bendForceVec_gaussVec{0, 0, 0};
-  gc::Vector3 bendForceVec_schlafliVec{0, 0, 0};
-  gc::Vector3 bendForceVec_deviatoric_mean{0, 0, 0};
-  gc::Vector3 bendForceVec_deviatoric_gauss{0, 0, 0};
+  gc::Vector3 bendingForceVec{0, 0, 0};
+  gc::Vector3 bendingForceVec_areaGrad{0, 0, 0};
+  gc::Vector3 bendingForceVec_gaussVec{0, 0, 0};
+  gc::Vector3 bendingForceVec_schlafliVec{0, 0, 0};
+
+  gc::Vector3 deviatoricForceVec{0, 0, 0};
+  gc::Vector3 deviatoricForceVec_mean{0, 0, 0};
+  gc::Vector3 deviatoricForceVec_gauss{0, 0, 0};
 
   gc::Vector3 capillaryForceVec{0, 0, 0};
   gc::Vector3 osmoticForceVec{0, 0, 0};
@@ -298,42 +300,45 @@ void System::computeMechanicalForces(size_t i) {
         parameters.dirichlet.eta *
         (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
 
-    bendForceVec_schlafliVec -=
+    bendingForceVec_schlafliVec -=
         (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
-    bendForceVec_areaGrad -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
-                              Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
-                             areaGrad;
-    bendForceVec_gaussVec -= (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
-    bendForceVec_deviatoric_mean -=
+    bendingForceVec_areaGrad -= (Kbi * (H0i * H0i - Hi * Hi) / 3 +
+                                 Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
+                                areaGrad;
+    bendingForceVec_gaussVec -=
+        (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
+
+    deviatoricForceVec_mean -=
         (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2) -
         (Kdi * Hi * Hi / 3 + Kdj * Hj * Hj * 2 / 3) * areaGrad +
         (Kdi * Hi + Kdj * Hj) * gaussVec;
-
     bool interiorTwinHalfedge = he.twin().isInterior();
     if (interiorHalfedge) {
-      bendForceVec_deviatoric_gauss -=
+      deviatoricForceVec_gauss -=
           4 * Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
           4 * Kdj * cornerAngleGradient(he.next().corner(), he.vertex());
     }
     if (interiorTwinHalfedge) {
-      bendForceVec_deviatoric_gauss -=
+      deviatoricForceVec_gauss -=
           4 * Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
     }
   }
 
-  bendForceVec = bendForceVec_areaGrad + bendForceVec_gaussVec +
-                 bendForceVec_schlafliVec + bendForceVec_deviatoric_mean +
-                 bendForceVec_deviatoric_gauss;
+  bendingForceVec = bendingForceVec_areaGrad + bendingForceVec_gaussVec +
+                    bendingForceVec_schlafliVec;
+
+  deviatoricForceVec = deviatoricForceVec_mean + deviatoricForceVec_gauss;
 
   // masking
-  bendForceVec_areaGrad = forces.maskForce(bendForceVec_areaGrad, i);
-  bendForceVec_gaussVec = forces.maskForce(bendForceVec_gaussVec, i);
-  bendForceVec_schlafliVec = forces.maskForce(bendForceVec_schlafliVec, i);
-  bendForceVec_deviatoric_mean =
-      forces.maskForce(bendForceVec_deviatoric_mean, i);
-  bendForceVec_deviatoric_gauss =
-      forces.maskForce(bendForceVec_deviatoric_gauss, i);
-  bendForceVec = forces.maskForce(bendForceVec, i);
+  bendingForceVec_areaGrad = forces.maskForce(bendingForceVec_areaGrad, i);
+  bendingForceVec_gaussVec = forces.maskForce(bendingForceVec_gaussVec, i);
+  bendingForceVec_schlafliVec =
+      forces.maskForce(bendingForceVec_schlafliVec, i);
+  bendingForceVec = forces.maskForce(bendingForceVec, i);
+
+  deviatoricForceVec_mean = forces.maskForce(deviatoricForceVec_mean, i);
+  deviatoricForceVec_gauss = forces.maskForce(deviatoricForceVec_gauss, i);
+  deviatoricForceVec = forces.maskForce(deviatoricForceVec, i);
 
   osmoticForceVec = forces.maskForce(osmoticForceVec, i);
   capillaryForceVec = forces.maskForce(capillaryForceVec, i);
@@ -342,11 +347,12 @@ void System::computeMechanicalForces(size_t i) {
   aggregationForceVec = forces.maskForce(aggregationForceVec, i);
 
   // Combine to one
-  forces.bendingForceVec_areaGrad[i] = bendForceVec_areaGrad;
-  forces.bendingForceVec_gaussVec[i] = bendForceVec_gaussVec;
-  forces.bendingForceVec_schlafliVec[i] = bendForceVec_schlafliVec;
-  forces.bendingForceVec[i] = bendForceVec;
+  forces.bendingForceVec_areaGrad[i] = bendingForceVec_areaGrad;
+  forces.bendingForceVec_gaussVec[i] = bendingForceVec_gaussVec;
+  forces.bendingForceVec_schlafliVec[i] = bendingForceVec_schlafliVec;
+  forces.bendingForceVec[i] = bendingForceVec;
 
+  forces.deviatoricForceVec[i] = deviatoricForceVec;
   forces.capillaryForceVec[i] = capillaryForceVec;
   forces.osmoticForceVec[i] = osmoticForceVec;
   forces.lineCapillaryForceVec[i] = lineCapForceVec;
@@ -354,7 +360,8 @@ void System::computeMechanicalForces(size_t i) {
   forces.aggregationForceVec[i] = aggregationForceVec;
 
   // Scalar force by projection to angle-weighted normal
-  forces.bendingForce[i] = forces.ontoNormal(bendForceVec, i);
+  forces.bendingForce[i] = forces.ontoNormal(bendingForceVec, i);
+  forces.deviatoricForce[i] = forces.ontoNormal(deviatoricForceVec, i);
   forces.capillaryForce[i] = forces.ontoNormal(capillaryForceVec, i);
   forces.osmoticForce[i] = forces.ontoNormal(osmoticForceVec, i);
   forces.lineCapillaryForce[i] = forces.ontoNormal(lineCapForceVec, i);
@@ -467,17 +474,17 @@ void System::computeChemicalPotentials() {
             .matrix();
   }
 
-  dKddphi = 5 * dKbdphi;
-  auto deviatoric = -dKddphi.raw().array() *
-                    (vpg->vertexMeanCurvatures.raw().array().square() /
-                         vpg->vertexDualAreas.raw().array() -
-                     4 * vpg->vertexGaussianCurvatures.raw().array());
   forces.bendingPotential.raw() = forces.maskProtein(
-      deviatoric -
-      vpg->vertexDualAreas.raw().array() *
-          (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
-           2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
+      -vpg->vertexDualAreas.raw().array() *
+      (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
+       2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
 
+  dKddphi = 5 * dKbdphi;
+  forces.deviatoricPotential.raw() =
+      -dKddphi.raw().array() *
+      (vpg->vertexMeanCurvatures.raw().array().square() /
+           vpg->vertexDualAreas.raw().array() -
+       4 * vpg->vertexGaussianCurvatures.raw().array());
   if (parameters.adsorption.epsilon != 0)
     forces.adsorptionPotential.raw() = forces.maskProtein(
         -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
@@ -654,6 +661,8 @@ void System::computePhysicalForcing() {
   forces.bendingForceVec_gaussVec.fill({0, 0, 0});
   forces.bendingForceVec_schlafliVec.fill({0, 0, 0});
 
+  forces.deviatoricForceVec.fill({0, 0, 0});
+
   forces.capillaryForceVec.fill({0, 0, 0});
   forces.osmoticForceVec.fill({0, 0, 0});
   forces.lineCapillaryForceVec.fill({0, 0, 0});
@@ -667,6 +676,7 @@ void System::computePhysicalForcing() {
 
   forces.mechanicalForce.raw().setZero();
   forces.bendingForce.raw().setZero();
+  forces.deviatoricForce.raw().setZero();
   forces.capillaryForce.raw().setZero();
   forces.lineCapillaryForce.raw().setZero();
   forces.externalForce.raw().setZero();
@@ -679,6 +689,7 @@ void System::computePhysicalForcing() {
 
   forces.diffusionPotential.raw().setZero();
   forces.bendingPotential.raw().setZero();
+  forces.deviatoricPotential.raw().setZero();
   forces.adsorptionPotential.raw().setZero();
   forces.aggregationPotential.raw().setZero();
   forces.interiorPenaltyPotential.raw().setZero();
@@ -693,9 +704,10 @@ void System::computePhysicalForcing() {
     }
     forces.mechanicalForceVec =
         forces.osmoticForceVec + forces.capillaryForceVec +
-        forces.bendingForceVec + forces.lineCapillaryForceVec +
-        forces.adsorptionForceVec + forces.aggregationForceVec +
-        forces.externalForceVec + forces.selfAvoidanceForceVec;
+        forces.bendingForceVec + forces.deviatoricForceVec +
+        forces.lineCapillaryForceVec + forces.adsorptionForceVec +
+        forces.aggregationForceVec + forces.externalForceVec +
+        forces.selfAvoidanceForceVec;
     if (parameters.damping != 0)
       forces.mechanicalForceVec += computeDampingForce();
     forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
@@ -705,8 +717,8 @@ void System::computePhysicalForcing() {
     computeChemicalPotentials();
     forces.chemicalPotential =
         forces.adsorptionPotential + forces.aggregationPotential +
-        forces.bendingPotential + forces.diffusionPotential +
-        forces.interiorPenaltyPotential;
+        forces.bendingPotential + forces.deviatoricPotential +
+        forces.diffusionPotential + forces.interiorPenaltyPotential;
   }
 
   // compute the mechanical error norm

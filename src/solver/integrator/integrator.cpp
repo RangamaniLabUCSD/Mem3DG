@@ -358,7 +358,7 @@ double Integrator::mechanicalBacktrack(
   }
 
   // If needed to test force-energy test
-  const bool isDebug = false;
+  const bool isDebug = true;
   if (isDebug) {
     std::cout << "\nmechanicalBacktrack: debugging \n" << std::endl;
     lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
@@ -463,6 +463,68 @@ void Integrator::lineSearchErrorBacktrace(
                   << -alpha * system.parameters.proteinMobility *
                          system.forces
                              .maskProtein(system.forces.bendingPotential.raw())
+                             .squaredNorm()
+                  << std::endl;
+      }
+    }
+
+    // test if deviatoric energy increases
+    if (runAll ||
+        totalForceEnergy.deviatoricEnergy > previousEnergy.deviatoricEnergy) {
+
+      // report the finding
+      std::cout << "\nWith F_tol, DevE has increased "
+                << totalForceEnergy.deviatoricEnergy -
+                       previousEnergy.deviatoricEnergy
+                << " from " << previousEnergy.deviatoricEnergy << " to "
+                << totalForceEnergy.deviatoricEnergy << std::endl;
+
+      // test single-force-energy computation
+      // perturb the configuration
+      system.proteinDensity.raw() = currentProteinDensity;
+      toMatrix(system.vpg->inputVertexPositions) =
+          currentPosition + alpha * system.forces.maskForce(toMatrix(
+                                        system.forces.deviatoricForceVec));
+      system.updateConfigurations(false);
+
+      // test if deviatoric energy increases
+      system.computeDeviatoricEnergy();
+      if (runAll ||
+          system.energy.deviatoricEnergy > previousEnergy.deviatoricEnergy) {
+        std::cout << "With only deviatoric force, DevE has increased "
+                  << system.energy.deviatoricEnergy -
+                         previousEnergy.deviatoricEnergy
+                  << " from " << previousEnergy.deviatoricEnergy << " to "
+                  << system.energy.deviatoricEnergy << ", expected dDevE: "
+                  << -alpha * system.forces
+                                  .maskForce(toMatrix(
+                                      system.forces.deviatoricForceVec))
+                                  .squaredNorm()
+                  << std::endl;
+      }
+
+      // perturb the configuration
+      toMatrix(system.vpg->inputVertexPositions) = currentPosition;
+      system.proteinDensity.raw() =
+          currentProteinDensity +
+          alpha * system.parameters.proteinMobility *
+              system.forces.maskProtein(
+                  system.forces.deviatoricPotential.raw());
+      system.updateConfigurations(false);
+
+      // test if deviatoric energy increases
+      system.computeDeviatoricEnergy();
+      if (runAll ||
+          system.energy.deviatoricEnergy > previousEnergy.deviatoricEnergy) {
+        std::cout << "With only deviatoric potential, DevE has increased "
+                  << system.energy.deviatoricEnergy -
+                         previousEnergy.deviatoricEnergy
+                  << " from " << previousEnergy.deviatoricEnergy << " to "
+                  << system.energy.deviatoricEnergy << ", expected dDevE: "
+                  << -alpha * system.parameters.proteinMobility *
+                         system.forces
+                             .maskProtein(
+                                 system.forces.deviatoricPotential.raw())
                              .squaredNorm()
                   << std::endl;
       }

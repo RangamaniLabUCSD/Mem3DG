@@ -67,6 +67,8 @@ struct Energy {
   double potentialEnergy = 0;
   /// bending energy of the membrane
   double bendingEnergy = 0;
+  /// deviatoric energy of the membrane
+  double deviatoricEnergy = 0;
   /// stretching energy of the membrane
   double surfaceEnergy = 0;
   /// work of pressure within membrane
@@ -747,6 +749,11 @@ public:
    * @brief Compute bending energy
    */
   void computeBendingEnergy();
+
+  /**
+   * @brief Compute deviatoric energy
+   */
+  void computeDeviatoricEnergy();
 
   /**
    * @brief Compute surface energy

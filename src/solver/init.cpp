@@ -210,6 +210,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
     // write pressures
     richData.addVertexProperty("bending_force", forces.bendingForce);
+    richData.addVertexProperty("deviatoric_force", forces.deviatoricForce);
     richData.addVertexProperty("capillary_force", forces.capillaryForce);
     richData.addVertexProperty("line_tension_force", forces.lineCapillaryForce);
     richData.addVertexProperty("osmotic_force", forces.osmoticForce);
@@ -223,6 +224,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("diffusion_potential",
                                forces.diffusionPotential);
     richData.addVertexProperty("bending_potential", forces.bendingPotential);
+    richData.addVertexProperty("deviatoric_potential", forces.deviatoricPotential);
     richData.addVertexProperty("adsorption_potential",
                                forces.adsorptionPotential);
     richData.addVertexProperty("aggregation_potential",
