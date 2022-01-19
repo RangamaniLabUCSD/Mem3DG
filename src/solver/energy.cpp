@@ -55,7 +55,10 @@ void System::computeBendingEnergy() {
           H0.raw().array());
   energy.bendingEnergy =
       (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
-       H_difference.array().square())
+           H_difference.array().square() +
+       Kd.raw().array() * vpg->vertexMeanCurvatures.raw().array().square() /
+           vpg->vertexDualAreas.raw().array() -
+       4 * Kd.raw().array() * vpg->vertexGaussianCurvatures.raw().array())
           .sum();
 
   // when considering topological changes, additional term of gauss curvature
@@ -132,7 +135,7 @@ void System::computeSelfAvoidanceEnergy() {
       // double penalty = mu;
       // double penalty = mu * vpg->vertexDualAreas[vi] *
       // vpg->vertexDualAreas[vj];
-      
+
       gc::Vector3 r =
           vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
       double distance = gc::norm(r) - d0;

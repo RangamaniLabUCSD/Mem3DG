@@ -470,6 +470,7 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
   } else {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }
+  Kd.fill(0);
 
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;

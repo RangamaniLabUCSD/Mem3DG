@@ -131,6 +131,8 @@ public:
   gcs::VertexData<double> H0;
   /// Bending rigidity of the membrane
   gcs::VertexData<double> Kb;
+  /// deviatoric rigidity of the membrane
+  gcs::VertexData<double> Kd;
 
   /// is Smooth
   bool isSmooth;
@@ -491,6 +493,7 @@ private:
     proteinVelocity = gcs::VertexData<double>(*mesh, 0);
     H0 = gcs::VertexData<double>(*mesh);
     Kb = gcs::VertexData<double>(*mesh);
+    Kd = gcs::VertexData<double>(*mesh);
 
     geodesicDistanceFromPtInd = gcs::VertexData<double>(*mesh, 0);
 
@@ -733,6 +736,11 @@ public:
    */
   gc::VertexData<gc::Vector3> computeDampingForce();
 
+  /**
+   * @brief Helper functions to compute geometric derivatives
+   */
+  gc::Vector3 cornerAngleGradient(gcs::Corner c, gcs::Vertex v);
+
   // ==========================================================
   // ================        Energy          ==================
   // ==========================================================
@@ -864,7 +872,8 @@ public:
    * @param maxIteration maximum number of iteration
    */
   Eigen::Matrix<bool, Eigen::Dynamic, 1>
-  smoothenMesh(double initStep, double target = 0.7, size_t maxIteration = 1000);
+  smoothenMesh(double initStep, double target = 0.7,
+               size_t maxIteration = 1000);
   /**
    * @brief pointwise smoothing after mutation of the mesh
    */
