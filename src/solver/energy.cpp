@@ -55,10 +55,12 @@ void System::computeBendingEnergy() {
           H0.raw().array());
   energy.bendingEnergy =
       (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
-           H_difference.array().square() +
-       Kd.raw().array() * vpg->vertexMeanCurvatures.raw().array().square() /
-           vpg->vertexDualAreas.raw().array() -
-       4 * Kd.raw().array() * vpg->vertexGaussianCurvatures.raw().array())
+       H_difference.array().square())
+          .sum() +
+      (Kd.raw().array() * vpg->vertexMeanCurvatures.raw().array().square() /
+       vpg->vertexDualAreas.raw().array())
+          .sum() -
+      (4 * Kd.raw().array() * vpg->vertexGaussianCurvatures.raw().array())
           .sum();
 
   // when considering topological changes, additional term of gauss curvature
