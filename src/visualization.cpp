@@ -686,6 +686,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
           "bending_force",
           ptrRichData->getVertexProperty<double>("bending_force"));
     }
+    if (options.deviatoric_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "deviatoric_force",
+          ptrRichData->getVertexProperty<double>("deviatoric_force"));
+    }
     if (options.line_force) {
       polyscopeMesh->addVertexScalarQuantity(
           "line_tension_force",
@@ -732,6 +737,12 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
       polyscopeMesh->addVertexScalarQuantity(
           "bending_potentialx1000",
           ptrRichData->getVertexProperty<double>("bending_potential") * 1000);
+    }
+    if (options.deviatoric_potential) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "deviatoric_potentialx1000",
+          ptrRichData->getVertexProperty<double>("deviatoric_potential") *
+              1000);
     }
     if (options.diffusion_potential) {
       polyscopeMesh->addVertexScalarQuantity(
@@ -825,6 +836,13 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
               ptrRichData->getVertexProperty<double>("bending_force"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
+    if (options.deviatoric_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "deviatoric_force",
+              ptrRichData->getVertexProperty<double>("deviatoric_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
     if (options.line_force) {
       polyscopeMesh
           ->addVertexScalarQuantity(
@@ -887,6 +905,14 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
           ->addVertexScalarQuantity(
               "bending_potentialx1000",
               ptrRichData->getVertexProperty<double>("bending_potential") *
+                  1000)
+          ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
+    }
+    if (options.deviatoric_potential) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "deviatoric_potentialx1000",
+              ptrRichData->getVertexProperty<double>("deviatoric_potential") *
                   1000)
           ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
     }

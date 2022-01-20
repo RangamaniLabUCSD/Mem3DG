@@ -1603,6 +1603,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
                            R"delim(
         visualize bending force
       )delim");
+  quantities.def_readwrite("deviatoric_force", &Quantities::deviatoric_force,
+                           R"delim(
+        visualize deviatoric force
+      )delim");
   quantities.def_readwrite("line_force", &Quantities::line_force,
                            R"delim(
        visualize line tension force
@@ -1639,6 +1643,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   quantities.def_readwrite("bending_potential", &Quantities::bending_potential,
                            R"delim(
         visualize bending component of chemical potential
+      )delim");
+  quantities.def_readwrite("deviatoric_potential", &Quantities::deviatoric_potential,
+                           R"delim(
+        visualize deviatoric component of chemical potential
       )delim");
   quantities.def_readwrite("diffusion_potential",
                            &Quantities::diffusion_potential,

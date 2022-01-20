@@ -358,7 +358,7 @@ double Integrator::mechanicalBacktrack(
   }
 
   // If needed to test force-energy test
-  const bool isDebug = true;
+  const bool isDebug = false;
   if (isDebug) {
     std::cout << "\nmechanicalBacktrack: debugging \n" << std::endl;
     lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
@@ -891,6 +891,9 @@ void Integrator::finitenessErrorBacktrace() {
       if (!std::isfinite(toMatrix(system.forces.bendingForceVec).norm())) {
         std::cout << "Bending force is not finite!" << std::endl;
       }
+      if (!std::isfinite(toMatrix(system.forces.deviatoricForceVec).norm())) {
+        std::cout << "Deviatoric force is not finite!" << std::endl;
+      }
       if (!std::isfinite(toMatrix(system.forces.osmoticForceVec).norm())) {
         std::cout << "Osmotic force is not finite!" << std::endl;
       }
@@ -919,6 +922,9 @@ void Integrator::finitenessErrorBacktrace() {
     if (!std::isfinite(toMatrix(system.forces.chemicalPotential).norm())) {
       if (!std::isfinite(toMatrix(system.forces.bendingPotential).norm())) {
         std::cout << "Bending Potential is not finite!" << std::endl;
+      }
+      if (!std::isfinite(toMatrix(system.forces.deviatoricPotential).norm())) {
+        std::cout << "Deviatoric Potential is not finite!" << std::endl;
       }
       if (!std::isfinite(
               toMatrix(system.forces.interiorPenaltyPotential).norm())) {
