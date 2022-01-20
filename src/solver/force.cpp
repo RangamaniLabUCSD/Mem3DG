@@ -474,18 +474,21 @@ void System::computeChemicalPotentials() {
          ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
             .matrix();
   }
+  dKddphi.fill(0);
 
   forces.bendingPotential.raw() = forces.maskProtein(
       -vpg->vertexDualAreas.raw().array() *
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
        2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
 
-  dKddphi.fill(0);
-  forces.deviatoricPotential.raw() =
-      -dKddphi.raw().array() *
-      (vpg->vertexMeanCurvatures.raw().array().square() /
-           vpg->vertexDualAreas.raw().array() -
-       4 * vpg->vertexGaussianCurvatures.raw().array());
+  if (parameters.bending.Kd != 0) {
+    forces.deviatoricPotential.raw() =
+        -dKddphi.raw().array() *
+        (vpg->vertexMeanCurvatures.raw().array().square() /
+             vpg->vertexDualAreas.raw().array() -
+         4 * vpg->vertexGaussianCurvatures.raw().array());
+  }
+  
   if (parameters.adsorption.epsilon != 0)
     forces.adsorptionPotential.raw() = forces.maskProtein(
         -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array() /

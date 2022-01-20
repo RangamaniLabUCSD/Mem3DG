@@ -297,7 +297,8 @@ bool MeshProcessor::MeshMutator::ifSplit(
 }
 
 void MeshProcessor::MeshMutator::markVertices(
-    gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v, const size_t layer) {
+    gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v,
+    const size_t layer) {
   if (layer > 2)
     mem3dg_runtime_error("max layer number is 2!");
   mutationMarker[v] = true;
