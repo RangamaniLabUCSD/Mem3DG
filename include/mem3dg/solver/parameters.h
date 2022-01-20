@@ -56,6 +56,8 @@ namespace solver {
 
 struct Parameters {
   struct Bending {
+    /// Deviatoric modulus
+    double Kd = 0;
     /// Bending modulus
     double Kb = 0;
     /// Constant of bending modulus vs protein density

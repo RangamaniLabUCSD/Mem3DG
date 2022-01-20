@@ -1176,6 +1176,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
         The bending parameters
     )delim");
   bending.def(py::init<>());
+  bending.def_readwrite("Kd", &Parameters::Bending::Kd,
+                        R"delim(
+          get deviatoric rigidity of the membrane 
+      )delim");
   bending.def_readwrite("Kb", &Parameters::Bending::Kb,
                         R"delim(
           get Bending rigidity of the bare membrane 
