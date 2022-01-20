@@ -190,7 +190,7 @@ public:
     initConstants();
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -219,7 +219,7 @@ public:
     initConstants();
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -270,7 +270,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -307,7 +307,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -359,7 +359,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -394,7 +394,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -626,7 +626,7 @@ public:
   /**
    * @brief Mesh mutation
    */
-  void mutateMesh();
+  void mutateMesh(size_t nRepetition = 1);
 
   /**
    * @brief Update the vertex position and recompute cached values
