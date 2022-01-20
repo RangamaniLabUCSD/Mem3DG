@@ -309,9 +309,10 @@ void System::computeMechanicalForces(size_t i) {
         (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
 
     deviatoricForceVec_mean -=
-        (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2) -
-        (Kdi * Hi * Hi / 3 + Kdj * Hj * Hj * 2 / 3) * areaGrad +
-        (Kdi * Hi + Kdj * Hj) * gaussVec;
+        (Kdi * Hi + Kdj * Hj) * gaussVec +
+        (Kdi * (-Hi * Hi) / 3 + Kdj * (-Hj * Hj) * 2 / 3) * areaGrad +
+        (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2);
+
     bool interiorTwinHalfedge = he.twin().isInterior();
     if (interiorHalfedge) {
       deviatoricForceVec_gauss -=
@@ -479,7 +480,7 @@ void System::computeChemicalPotentials() {
       (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
        2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
 
-  dKddphi = 5 * dKbdphi;
+  dKddphi.fill(0);
   forces.deviatoricPotential.raw() =
       -dKddphi.raw().array() *
       (vpg->vertexMeanCurvatures.raw().array().square() /

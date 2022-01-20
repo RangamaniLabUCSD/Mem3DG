@@ -224,7 +224,8 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("diffusion_potential",
                                forces.diffusionPotential);
     richData.addVertexProperty("bending_potential", forces.bendingPotential);
-    richData.addVertexProperty("deviatoric_potential", forces.deviatoricPotential);
+    richData.addVertexProperty("deviatoric_potential",
+                               forces.deviatoricPotential);
     richData.addVertexProperty("adsorption_potential",
                                forces.adsorptionPotential);
     richData.addVertexProperty("aggregation_potential",
@@ -459,6 +460,9 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
     H0.raw() = proteinDensity.raw() * parameters.bending.H0c;
     Kb.raw() = parameters.bending.Kb +
                parameters.bending.Kbc * proteinDensity.raw().array();
+    // Kd.raw() = 4 * parameters.bending.Kb +
+    //            parameters.bending.Kbc * proteinDensity.raw().array();
+    Kd.fill(parameters.bending.Kb);
   } else if (parameters.bending.relation == "hill") {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
@@ -472,7 +476,6 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
   } else {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }
-  Kd = 5 * Kb;
 
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
