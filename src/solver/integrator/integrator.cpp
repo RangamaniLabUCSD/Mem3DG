@@ -35,8 +35,23 @@ double Integrator::updateAdaptiveCharacteristicStep() {
       system.parameters.variation.isShapeVariation
           ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
           : toMatrix(system.forces.chemicalPotential).cwiseAbs().maxCoeff();
-  return (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
-         (initialMaximumForce / currentMaximumForce);
+
+  double dt = (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
+              (initialMaximumForce / currentMaximumForce);
+
+  if (characteristicTimeStep / dt > 1e2) {
+    mem3dg_runtime_message("Time step too small! May consider restarting the "
+                           "simulation in small time scale");
+    std::cout << "Current size / initial size = "
+              << currentMinimumSize /
+                     pow(characteristicTimeStep / dt_size2_ratio, 0.5)
+              << std::endl;
+    std::cout << "Current force / initial force = "
+              << currentMaximumForce / initialMaximumForce << std::endl;
+    EXIT = true;
+    SUCCESS = false;
+  }
+  return dt;
 }
 
 double Integrator::backtrack(
@@ -114,9 +129,8 @@ double Integrator::backtrack(
 
     // limit of backtraking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
-      std::cout << "\nbacktrack: line search failure! Simulation "
-                   "stopped. \n"
-                << std::endl;
+      mem3dg_runtime_message("line search failure! Simulation "
+                             "stopped. \n");
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
                                toMatrix(initial_protein), previousE, true);
@@ -221,9 +235,9 @@ double Integrator::chemicalBacktrack(
 
     // limit of backtraking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
-      std::cout << "\nchemicalBacktrack: line search failure! Simulation "
-                   "stopped. \n"
-                << std::endl;
+      mem3dg_runtime_message(
+          "\nchemicalBacktrack: line search failure! Simulation "
+          "stopped. \n");
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
                                toMatrix(initial_protein), previousE, true);
@@ -323,9 +337,9 @@ double Integrator::mechanicalBacktrack(
 
     // limit of backtraking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
-      std::cout << "\nmechanicalBacktrack: line search failure! Simulation "
-                   "stopped. \n"
-                << std::endl;
+      mem3dg_runtime_message(
+          "\nmechanicalBacktrack: line search failure! Simulation "
+          "stopped. \n");
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha, toMatrix(initial_pos),
                                toMatrix(initial_protein), previousE, true);
@@ -867,7 +881,7 @@ void Integrator::finitenessErrorBacktrace() {
   if (!std::isfinite(timeStep)) {
     EXIT = true;
     SUCCESS = false;
-    std::cout << "time step is not finite!" << std::endl;
+    mem3dg_runtime_message("time step is not finite!");
   }
 
   if (!std::isfinite(system.mechErrorNorm)) {
@@ -875,38 +889,38 @@ void Integrator::finitenessErrorBacktrace() {
     SUCCESS = false;
 
     if (!std::isfinite(toMatrix(system.velocity).norm())) {
-      std::cout << "Velocity is not finite!" << std::endl;
+      mem3dg_runtime_message("Velocity is not finite!");
     }
 
     if (!std::isfinite(toMatrix(system.forces.mechanicalForceVec).norm())) {
       if (!std::isfinite(toMatrix(system.forces.capillaryForceVec).norm())) {
-        std::cout << "Capillary force is not finite!" << std::endl;
+        mem3dg_runtime_message("Capillary force is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.adsorptionForceVec).norm())) {
-        std::cout << "Adsorption force is not finite!" << std::endl;
+        mem3dg_runtime_message("Adsorption force is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.aggregationForceVec).norm())) {
-        std::cout << "Aggregation force is not finite!" << std::endl;
+        mem3dg_runtime_message("Aggregation force is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.bendingForceVec).norm())) {
-        std::cout << "Bending force is not finite!" << std::endl;
+        mem3dg_runtime_message("Bending force is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.deviatoricForceVec).norm())) {
-        std::cout << "Deviatoric force is not finite!" << std::endl;
+        mem3dg_runtime_message("Deviatoric force is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.osmoticForceVec).norm())) {
-        std::cout << "Osmotic force is not finite!" << std::endl;
+        mem3dg_runtime_message("Osmotic force is not finite!");
       }
       if (!std::isfinite(
               toMatrix(system.forces.lineCapillaryForceVec).norm())) {
-        std::cout << "Line capillary force is not finite!" << std::endl;
+        mem3dg_runtime_message("Line capillary force is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.externalForceVec).norm())) {
-        std::cout << "External force is not finite!" << std::endl;
+        mem3dg_runtime_message("External force is not finite!");
       }
       if (!std::isfinite(
               toMatrix(system.forces.selfAvoidanceForceVec).norm())) {
-        std::cout << "Self avoidance force is not finite!" << std::endl;
+        mem3dg_runtime_message("Self avoidance force is not finite!");
       }
     }
   }
@@ -916,29 +930,29 @@ void Integrator::finitenessErrorBacktrace() {
     SUCCESS = false;
 
     if (!std::isfinite(toMatrix(system.proteinVelocity).norm())) {
-      std::cout << "Protein velocity is not finite!" << std::endl;
+      mem3dg_runtime_message("Protein velocity is not finite!");
     }
 
     if (!std::isfinite(toMatrix(system.forces.chemicalPotential).norm())) {
       if (!std::isfinite(toMatrix(system.forces.bendingPotential).norm())) {
-        std::cout << "Bending Potential is not finite!" << std::endl;
+        mem3dg_runtime_message("Bending Potential is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.deviatoricPotential).norm())) {
-        std::cout << "Deviatoric Potential is not finite!" << std::endl;
+        mem3dg_runtime_message("Deviatoric Potential is not finite!");
       }
       if (!std::isfinite(
               toMatrix(system.forces.interiorPenaltyPotential).norm())) {
-        std::cout << "Protein interior penalty potential is not finite!"
-                  << std::endl;
+        mem3dg_runtime_message(
+            "Protein interior penalty potential is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.diffusionPotential).norm())) {
-        std::cout << "Diffusion potential is not finite!" << std::endl;
+        mem3dg_runtime_message("Diffusion potential is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.adsorptionPotential).norm())) {
-        std::cout << "Adsorption potential is not finite!" << std::endl;
+        mem3dg_runtime_message("Adsorption potential is not finite!");
       }
       if (!std::isfinite(toMatrix(system.forces.aggregationPotential).norm())) {
-        std::cout << "Aggregation potential is not finite!" << std::endl;
+        mem3dg_runtime_message("Aggregation potential is not finite!");
       }
     }
   }
@@ -947,37 +961,40 @@ void Integrator::finitenessErrorBacktrace() {
     EXIT = true;
     SUCCESS = false;
     if (!std::isfinite(system.energy.kineticEnergy)) {
-      std::cout << "Kinetic energy is not finite!" << std::endl;
+      mem3dg_runtime_message("Kinetic energy is not finite!");
     }
     if (!std::isfinite(system.energy.externalWork)) {
-      std::cout << "External work is not finite!" << std::endl;
+      mem3dg_runtime_message("External work is not finite!");
     }
     if (!std::isfinite(system.energy.potentialEnergy)) {
       if (!std::isfinite(system.energy.bendingEnergy)) {
-        std::cout << "Bending energy is not finite!" << std::endl;
+        mem3dg_runtime_message("Bending energy is not finite!");
+      }
+      if (!std::isfinite(system.energy.deviatoricEnergy)) {
+        mem3dg_runtime_message("Deviatoric energy is not finite!");
       }
       if (!std::isfinite(system.energy.surfaceEnergy)) {
-        std::cout << "Surface energy is not finite!" << std::endl;
+        mem3dg_runtime_message("Surface energy is not finite!");
       }
       if (!std::isfinite(system.energy.pressureEnergy)) {
-        std::cout << "Pressure energy is not finite!" << std::endl;
+        mem3dg_runtime_message("Pressure energy is not finite!");
       }
       if (!std::isfinite(system.energy.adsorptionEnergy)) {
-        std::cout << "Adsorption energy is not finite!" << std::endl;
+        mem3dg_runtime_message("Adsorption energy is not finite!");
       }
       if (!std::isfinite(system.energy.aggregationEnergy)) {
-        std::cout << "Aggregation energy is not finite!" << std::endl;
+        mem3dg_runtime_message("Aggregation energy is not finite!");
       }
       if (!std::isfinite(system.energy.dirichletEnergy)) {
-        std::cout << "Line tension energy is not finite!" << std::endl;
+        mem3dg_runtime_message("Line tension energy is not finite!");
       }
       if (!std::isfinite(system.energy.proteinInteriorPenalty)) {
-        std::cout << "Protein interior penalty energy is not finite!"
-                  << std::endl;
+        mem3dg_runtime_message(
+            "Protein interior penalty energy is not finite!");
       }
       if (!std::isfinite(system.energy.selfAvoidancePenalty)) {
-        std::cout << "Membrane self-avoidance penalty energy is not finite!"
-                  << std::endl;
+        mem3dg_runtime_message(
+            "Membrane self-avoidance penalty energy is not finite!");
       }
     }
   }
