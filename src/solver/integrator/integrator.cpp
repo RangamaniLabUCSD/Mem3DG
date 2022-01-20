@@ -39,7 +39,7 @@ double Integrator::updateAdaptiveCharacteristicStep() {
   double dt = (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
               (initialMaximumForce / currentMaximumForce);
 
-  if (characteristicTimeStep / dt > 1e2) {
+  if (characteristicTimeStep / dt > 1e3) {
     mem3dg_runtime_message("Time step too small! May consider restarting the "
                            "simulation in small time scale");
     std::cout << "Current size / initial size = "

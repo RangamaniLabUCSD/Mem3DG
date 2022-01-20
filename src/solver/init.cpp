@@ -462,7 +462,7 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
                parameters.bending.Kbc * proteinDensity.raw().array();
     // Kd.raw() = 4 * parameters.bending.Kb +
     //            parameters.bending.Kbc * proteinDensity.raw().array();
-    Kd.fill(5 * parameters.bending.Kb);
+    Kd.fill(parameters.bending.Kd);
   } else if (parameters.bending.relation == "hill") {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
