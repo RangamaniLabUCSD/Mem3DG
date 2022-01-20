@@ -336,32 +336,33 @@ bool System::growMesh() {
   return isGrown;
 }
 
-void System::mutateMesh() {
+void System::mutateMesh(size_t nRepetition) {
+  for (size_t i = 0; i < nRepetition; ++i) {
+    bool isGrown = false, isFlipped = false;
+    mutationMarker.fill(false);
 
-  bool isGrown = false, isFlipped = false;
-  mutationMarker.fill(false);
+    // vertex shift for regularization
+    if (meshProcessor.meshMutator.shiftVertex) {
+      vertexShift();
+    }
 
-  // vertex shift for regularization
-  if (meshProcessor.meshMutator.shiftVertex) {
-    vertexShift();
-  }
+    // split edge and collapse edge
+    if (meshProcessor.meshMutator.isSplitEdge ||
+        meshProcessor.meshMutator.isCollapseEdge) {
+      isGrown = isGrown || growMesh();
+    }
 
-  // split edge and collapse edge
-  if (meshProcessor.meshMutator.isSplitEdge ||
-      meshProcessor.meshMutator.isCollapseEdge) {
-    isGrown = growMesh();
-  }
+    // linear edge flip for non-Delauney triangles
+    if (meshProcessor.meshMutator.isEdgeFlip) {
+      isFlipped = edgeFlip();
+      isFlipped = edgeFlip() || isFlipped;
+      isFlipped = edgeFlip() || isFlipped;
+    }
 
-  // linear edge flip for non-Delauney triangles
-  if (meshProcessor.meshMutator.isEdgeFlip) {
-    isFlipped = edgeFlip();
-    isFlipped = edgeFlip() || isFlipped;
-    isFlipped = edgeFlip() || isFlipped;
-  }
-
-  // globally update quantities
-  if (isGrown || isFlipped) {
-    globalUpdateAfterMutation();
+    // globally update quantities
+    if (isGrown || isFlipped) {
+      globalUpdateAfterMutation();
+    }
   }
 }
 
@@ -397,7 +398,7 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
       mem3dg_runtime_error("smoothing operation exceeds max iteration!");
       break;
     }
-    
+
     // compute bending force if smoothingMask is true
     vpg->refreshQuantities();
     forces.bendingForceVec.fill({0, 0, 0});
@@ -420,7 +421,7 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
     pastGradNorm = gradNorm;
     pastForceVec = toMatrix(forces.bendingForceVec);
     num_iter++;
-
+    
   };
 
   return smoothingMask;
