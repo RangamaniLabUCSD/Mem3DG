@@ -94,7 +94,7 @@ bool Euler::integrate() {
     }
 
     // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > processMeshPeriod) {
+    if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
       lastProcessMesh = system.time;
       system.mutateMesh();
       if (system.meshProcessor.meshRegularizer.isSmoothenMesh)
@@ -103,7 +103,7 @@ bool Euler::integrate() {
     }
 
     // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
+    if (system.time - lastUpdateGeodesics > (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
       system.updateConfigurations(true);
     }
