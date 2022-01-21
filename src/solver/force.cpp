@@ -316,12 +316,12 @@ void System::computeMechanicalForces(size_t i) {
     bool interiorTwinHalfedge = he.twin().isInterior();
     if (interiorHalfedge) {
       deviatoricForceVec_gauss -=
-          4 * Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
-          4 * Kdj * cornerAngleGradient(he.next().corner(), he.vertex());
+          Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
+          Kdj * cornerAngleGradient(he.next().corner(), he.vertex());
     }
     if (interiorTwinHalfedge) {
       deviatoricForceVec_gauss -=
-          4 * Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
+          Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
     }
   }
 
@@ -486,9 +486,9 @@ void System::computeChemicalPotentials() {
         -dKddphi.raw().array() *
         (vpg->vertexMeanCurvatures.raw().array().square() /
              vpg->vertexDualAreas.raw().array() -
-         4 * vpg->vertexGaussianCurvatures.raw().array());
+         vpg->vertexGaussianCurvatures.raw().array());
   }
-  
+
   if (parameters.adsorption.epsilon != 0)
     forces.adsorptionPotential.raw() = forces.maskProtein(
         -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array() /
