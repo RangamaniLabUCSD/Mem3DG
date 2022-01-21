@@ -67,7 +67,7 @@ void System::computeDeviatoricEnergy() {
   energy.deviatoricEnergy =
       (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
                                vpg->vertexDualAreas.raw().array() -
-                           4 * vpg->vertexGaussianCurvatures.raw().array()))
+                           vpg->vertexGaussianCurvatures.raw().array()))
           .sum();
 }
 
