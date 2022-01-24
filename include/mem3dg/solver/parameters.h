@@ -223,6 +223,8 @@ struct Parameters {
   double proteinMobility = 0;
   /// Temperature
   double temperature = 293;
+  /// damping coefficient
+  double damping = 0;
 
   /**
    * @brief check parameter conflicts
