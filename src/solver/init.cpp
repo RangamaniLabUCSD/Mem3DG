@@ -183,7 +183,6 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
     // write protein distribution
     richData.addVertexProperty("protein_density", proteinDensity);
-    richData.addVertexProperty("velocity", forces.ontoNormal(velocity));
 
     // write bool
     gcs::VertexData<double> msk(*mesh);

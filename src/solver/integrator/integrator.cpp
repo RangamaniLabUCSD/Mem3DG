@@ -29,14 +29,15 @@ namespace mem3dg {
 namespace solver {
 namespace integrator {
 
-double Integrator::updateAdaptiveCharacteristicStep() {
+void Integrator::updateAdaptiveCharacteristicStep() {
   double currentMinimumSize = system.vpg->edgeLengths.raw().minCoeff();
   double currentMaximumForce =
       system.parameters.variation.isShapeVariation
           ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
           : toMatrix(system.forces.chemicalPotential).cwiseAbs().maxCoeff();
-  return (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
-         (initialMaximumForce / currentMaximumForce);
+  characteristicTimeStep =
+      (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
+      (initialMaximumForce / currentMaximumForce);
 }
 
 double Integrator::backtrack(
@@ -118,14 +119,8 @@ double Integrator::backtrack(
       std::cout << "\nbacktrack: line search failure! Simulation "
                    "stopped. \n"
                 << std::endl;
-      std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha, initial_pos, initial_protein, previousE,
                                true);
-      std::cout << "\nError backtrace using characteristicTimeStep: \n"
-                << std::endl;
-      lineSearchErrorBacktrace(characteristicTimeStep,
-                               toMatrix(system.vpg->inputVertexPositions),
-                               initial_protein, previousE, true);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -223,13 +218,7 @@ double Integrator::chemicalBacktrack(
       std::cout << "\nchemicalBacktrack: line search failure! Simulation "
                    "stopped. \n"
                 << std::endl;
-      std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha,
-                               toMatrix(system.vpg->inputVertexPositions),
-                               initial_protein, previousE, true);
-      std::cout << "\nError backtrace using characteristicTimeStep: \n"
-                << std::endl;
-      lineSearchErrorBacktrace(characteristicTimeStep,
                                toMatrix(system.vpg->inputVertexPositions),
                                initial_protein, previousE, true);
       EXIT = true;
@@ -322,13 +311,8 @@ double Integrator::mechanicalBacktrack(
       std::cout << "\nmechanicalBacktrack: line search failure! Simulation "
                    "stopped. \n"
                 << std::endl;
-      std::cout << "\nError backtrace using alpha: \n" << std::endl;
       lineSearchErrorBacktrace(alpha, initial_pos, system.proteinDensity.raw(),
                                previousE, true);
-      std::cout << "\nError backtrace using characterisiticTimeStep: \n"
-                << std::endl;
-      lineSearchErrorBacktrace(characteristicTimeStep, initial_pos,
-                               system.proteinDensity.raw(), previousE, true);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -758,12 +742,6 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(toMatrix(system.forces.capillaryForceVec).norm())) {
         std::cout << "Capillary force is not finite!" << std::endl;
       }
-      if (!std::isfinite(toMatrix(system.forces.adsorptionForceVec).norm())) {
-        std::cout << "Adsorption force is not finite!" << std::endl;
-      }
-      if (!std::isfinite(toMatrix(system.forces.aggregationForceVec).norm())) {
-        std::cout << "Aggregation force is not finite!" << std::endl;
-      }
       if (!std::isfinite(toMatrix(system.forces.bendingForceVec).norm())) {
         std::cout << "Bending force is not finite!" << std::endl;
       }
@@ -803,9 +781,6 @@ void Integrator::finitenessErrorBacktrack() {
       if (!std::isfinite(toMatrix(system.forces.adsorptionPotential).norm())) {
         std::cout << "Adsorption potential is not finite!" << std::endl;
       }
-      if (!std::isfinite(toMatrix(system.forces.aggregationPotential).norm())) {
-        std::cout << "Aggregation potential is not finite!" << std::endl;
-      }
     }
   }
 
@@ -843,6 +818,26 @@ void Integrator::finitenessErrorBacktrack() {
       }
     }
   }
+}
+
+void Integrator::getForces() {
+  system.computePhysicalForcing();
+  if (system.parameters.dpd.gamma != 0) {
+    system.computeDPDForces(timeStep);
+    dpdForce = rowwiseDotProduct(
+        system.forces.maskForce(toMatrix(system.forces.dampingForce) +
+                                toMatrix(system.forces.stochasticForce)),
+        toMatrix(system.vpg->vertexNormals));
+  }
+
+  // if (!f.mesh->hasBoundary()) {
+  //   removeTranslation(physicalForceVec);
+  //   removeRotation(toMatrix(f.vpg->inputVertexPositions),
+  //                  physicalForceVec);
+  //   // removeTranslation(DPDPressure);
+  //   // removeRotation(toMatrix(f.vpg->inputVertexPositions),
+  //   // DPDPressure);
+  // }
 }
 
 void Integrator::pressureConstraintThreshold(bool &EXIT,
