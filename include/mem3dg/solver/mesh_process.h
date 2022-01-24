@@ -53,6 +53,9 @@ struct MeshProcessor {
     // whether has reference mesh
     bool ifHasRefMesh;
 
+    // whether conduct smoothing 
+    bool isSmoothenMesh = false;
+
     /// triangle ratio constant
     double Kst = 0;
     /// Local stretching modulus
@@ -161,12 +164,11 @@ struct MeshProcessor {
      */
     bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
 
-    void markAllNeighboring(gcs::VertexData<bool> &mutationMarker,
-                            const gcs::Vertex v);
+    void markVertices(gcs::VertexData<bool> &mutationMarker,
+                            const gcs::Vertex v, const size_t layer = 0);
 
-    void neighborAreaSum(const gcs::Edge e,
-                         const gcs::VertexPositionGeometry &vpg, double &area,
-                         std::size_t &num_neighbor);
+    std::tuple<double, std::size_t>
+    neighborAreaSum(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
 
     double
     computeCurvatureThresholdLength(const gcs::Edge e,

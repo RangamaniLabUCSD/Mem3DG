@@ -63,6 +63,14 @@ void System::computeBendingEnergy() {
   // K).sum();
 }
 
+void System::computeDeviatoricEnergy() {
+  energy.deviatoricEnergy =
+      (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
+                               vpg->vertexDualAreas.raw().array() -
+                           vpg->vertexGaussianCurvatures.raw().array()))
+          .sum();
+}
+
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
   double A_difference = surfaceArea - parameters.tension.At;
@@ -91,16 +99,13 @@ void System::computePressureEnergy() {
 
 void System::computeAdsorptionEnergy() {
   energy.adsorptionEnergy =
-      parameters.adsorption.epsilon *
-      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
+      parameters.adsorption.epsilon * (proteinDensity.raw().array()).sum();
 }
 
 void System::computeAggregationEnergy() {
   energy.aggregationEnergy =
       parameters.aggregation.chi *
-      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
-       proteinDensity.raw().array())
-          .sum();
+      (proteinDensity.raw().array() * proteinDensity.raw().array()).sum();
 }
 
 void System::computeProteinInteriorPenalty() {
@@ -109,6 +114,44 @@ void System::computeProteinInteriorPenalty() {
       -parameters.proteinDistribution.lambdaPhi *
       ((proteinDensity.raw().array()).log().sum() +
        (1 - proteinDensity.raw().array()).log().sum());
+}
+
+void System::computeSelfAvoidanceEnergy() {
+  const double d0 = parameters.selfAvoidance.d;
+  const double mu = parameters.selfAvoidance.mu;
+  const double n = parameters.selfAvoidance.n;
+  double e = 0.0;
+  projectedCollideTime = std::numeric_limits<double>::max();
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    gc::Vertex vi{mesh->vertex(i)};
+    gc::VertexData<bool> neighborList(*mesh, false);
+    meshProcessor.meshMutator.markVertices(neighborList, vi, n);
+    for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+      if (neighborList[j])
+        continue;
+      gc::Vertex vj{mesh->vertex(j)};
+
+      // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
+      //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
+      // double penalty = mu;
+      // double penalty = mu * vpg->vertexDualAreas[vi] *
+      // vpg->vertexDualAreas[vj];
+
+      gc::Vector3 r =
+          vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+      double distance = gc::norm(r) - d0;
+      double collideTime = distance / gc::dot(velocity[vi] - velocity[vj], r);
+      if (collideTime < projectedCollideTime &&
+          gc::dot(velocity[vi] - velocity[vj], r) > 0)
+        projectedCollideTime = collideTime;
+      // e -= penalty * log(distance);
+      e += penalty / distance;
+    }
+  }
+  if (projectedCollideTime == std::numeric_limits<double>::max())
+    projectedCollideTime = 0;
+  energy.selfAvoidancePenalty = e;
 }
 
 void System::computeDirichletEnergy() {
@@ -132,7 +175,8 @@ void System::computeDirichletEnergy() {
   }
 
   // alternative dirichlet energy after integration by part
-  // E.dE = 0.5 * P.eta * proteinDensity.raw().transpose() * vpg->cotanLaplacian
+  // E.dE = 0.5 * P.eta * proteinDensity.raw().transpose() *
+  // vpg->cotanLaplacian
   // *
   //        proteinDensity.raw();
 }
@@ -140,36 +184,44 @@ void System::computeDirichletEnergy() {
 double System::computePotentialEnergy() {
   // fundamental internal potential energy
   energy.bendingEnergy = 0;
-  computeBendingEnergy();
+  energy.deviatoricEnergy = 0;
   energy.surfaceEnergy = 0;
-  computeSurfaceEnergy();
   energy.pressureEnergy = 0;
+  energy.adsorptionEnergy = 0;
+  energy.aggregationEnergy = 0;
+  energy.dirichletEnergy = 0;
+  energy.selfAvoidancePenalty = 0;
+  energy.proteinInteriorPenalty = 0;
+
+  computeBendingEnergy();
+  computeSurfaceEnergy();
   computePressureEnergy();
 
   // optional internal potential energy
+  computeDeviatoricEnergy();
   if (parameters.adsorption.epsilon != 0) {
-    energy.adsorptionEnergy = 0;
     computeAdsorptionEnergy();
   }
   if (parameters.aggregation.chi != 0) {
-    energy.aggregationEnergy = 0;
     computeAggregationEnergy();
   }
   if (parameters.dirichlet.eta != 0) {
-    energy.dirichletEnergy = 0;
     computeDirichletEnergy();
+  }
+  if (parameters.selfAvoidance.mu != 0) {
+    computeSelfAvoidanceEnergy();
   }
   if (parameters.variation.isProteinVariation &&
       parameters.proteinDistribution.lambdaPhi != 0) {
-    energy.proteinInteriorPenalty = 0;
     computeProteinInteriorPenalty();
   }
 
   // summerize internal potential energy
-  energy.potentialEnergy = energy.bendingEnergy + energy.surfaceEnergy +
-                           energy.pressureEnergy + energy.adsorptionEnergy +
-                           energy.dirichletEnergy +
-                           energy.proteinInteriorPenalty;
+  energy.potentialEnergy =
+      energy.bendingEnergy + energy.deviatoricEnergy + energy.surfaceEnergy +
+      energy.pressureEnergy + energy.adsorptionEnergy + energy.dirichletEnergy +
+      energy.aggregationEnergy + energy.selfAvoidancePenalty +
+      energy.proteinInteriorPenalty;
   return energy.potentialEnergy;
 }
 
@@ -192,13 +244,12 @@ double System::computeExternalWork(double currentTime, double dt) {
 }
 
 double System::computeKineticEnergy() {
-  // auto velocity =
-  //     rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
-  //                       gc::EigenMap<double, 3>(vpg->inputVertexPositions));
   energy.kineticEnergy =
-      0.5 * (vpg->vertexLumpedMassMatrix *
-             Eigen::square(toMatrix(velocity).array()).matrix())
-                .sum();
+      0.5 * Eigen::square(toMatrix(velocity).array()).matrix().sum();
+  // energy.kineticEnergy =
+  //     0.5 * rowwiseScalarProduct(toMatrix(vpg->vertexDualAreas).array(),
+  //                                Eigen::square(toMatrix(velocity).array()))
+  //               .sum();
   return energy.kineticEnergy;
 }
 

@@ -29,6 +29,16 @@ void throw_runtime_error(const char *function, const char *file, const int line,
   ss << " in function " << function << " at " << file << ":" << line;
   throw std::runtime_error(ss.str());
 }
+template <typename... T>
+void throw_runtime_message(const char *function, const char *file, const int line,
+                         T &&...ts) {
+  std::stringstream ss;
+  ss << "Message: ";
+  int dummy[] = {0, ((ss << std::forward<T>(ts)), 0)...};
+  static_cast<void>(dummy); // Avoid warning for unused variable
+  ss << " in function " << function << " at " << file << ":" << line;
+  std::cout << ss.str() << std::endl;
+}
 } // namespace internal
 } // namespace mem3dg
 
@@ -38,6 +48,10 @@ void throw_runtime_error(const char *function, const char *file, const int line,
 
 #define mem3dg_runtime_error(...)                                              \
   mem3dg::internal::throw_runtime_error(__PRETTY_FUNCTION__, __FILE__,         \
+                                        __LINE__, __VA_ARGS__);
+
+#define mem3dg_runtime_message(...)                                              \
+  mem3dg::internal::throw_runtime_message(__PRETTY_FUNCTION__, __FILE__,         \
                                         __LINE__, __VA_ARGS__);
 
 #if defined _WIN32 || defined __CYGWIN__

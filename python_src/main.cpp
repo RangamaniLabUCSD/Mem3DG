@@ -92,6 +92,40 @@ PYBIND11_MODULE(_core, pymem3dg) {
       R"delim(
         Velocity Verlet integrator constructor
       )delim");
+
+  velocityverlet.def_readwrite("updateGeodesicsPeriod",
+                               &VelocityVerlet::updateGeodesicsPeriod,
+                               R"delim(
+          period of update geodesics
+      )delim");
+  velocityverlet.def_readwrite("processMeshPeriod",
+                               &VelocityVerlet::processMeshPeriod,
+                               R"delim(
+          period of processing mesh
+      )delim");
+  velocityverlet.def_readwrite("trajFileName", &VelocityVerlet::trajFileName,
+                               R"delim(
+          name of the trajectory file 
+      )delim");
+  velocityverlet.def_readwrite("isAdaptiveStep",
+                               &VelocityVerlet::isAdaptiveStep,
+                               R"delim(
+          option to scale time step according to mesh size
+      )delim");
+  velocityverlet.def_readwrite("isCapEnergy", &VelocityVerlet::isCapEnergy,
+                               R"delim(
+          option to exit if exceed initial energy cap
+      )delim");
+  velocityverlet.def_readwrite("outputDirectory",
+                               &VelocityVerlet::outputDirectory,
+                               R"delim(
+        collapse small triangles
+      )delim");
+  velocityverlet.def_readwrite("verbosity", &VelocityVerlet::verbosity,
+                               R"delim(
+           verbosity level of integrator
+      )delim");
+
   velocityverlet.def("integrate", &VelocityVerlet::integrate,
                      R"delim(
           integrate 
@@ -406,6 +440,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Mechanical force
    */
   forces.def(
+      "getDeviatoricForce", [](Forces &s) { return toMatrix(s.deviatoricForceVec); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the deviatoric force of the system
+      )delim");
+  forces.def(
       "getBendingForce", [](Forces &s) { return toMatrix(s.bendingForceVec); },
       py::return_value_policy::copy,
       R"delim(
@@ -498,6 +538,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the bending potential
       )delim");
   forces.def(
+      "getDeviatoricPotential",
+      [](Forces &s) { return toMatrix(s.deviatoricPotential); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the deviatoric potential
+      )delim");
+  forces.def(
       "getInteriorPenaltyPotential",
       [](Forces &s) { return toMatrix(s.interiorPenaltyPotential); },
       py::return_value_policy::copy,
@@ -547,6 +594,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
   meshregularizer.def(py::init<>(),
                       R"delim(
        meshmutator constructor
+      )delim");
+  meshregularizer.def_readwrite("isSmoothenMesh", &MeshProcessor::MeshRegularizer::isSmoothenMesh,
+                                R"delim(
+          whether conduct mesh smoothing operation
       )delim");
   meshregularizer.def_readwrite("Kst", &MeshProcessor::MeshRegularizer::Kst,
                                 R"delim(
@@ -983,8 +1034,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: force computation
    */
-  system.def("computePhysicalForcing", &System::computePhysicalForcing,
-             R"delim(
+  system.def(
+      "computePhysicalForcing",
+      static_cast<void (System::*)(double)>(&System::computePhysicalForcing),
+      py::arg("timeStep") = 0,
+      R"delim(
             compute all the forces
         )delim");
   //   system.def("computeBendingForce", &System::computeBendingForce,
@@ -1019,7 +1073,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
             prescribe the External Force
         )delim");
   system.def("computeDPDForces", &System::computeDPDForces, py::arg("dt"),
-             py::return_value_policy::copy,
              R"delim(
             compute the DPDForces
         )delim");
@@ -1123,6 +1176,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The bending parameters
     )delim");
   bending.def(py::init<>());
+  bending.def_readwrite("Kd", &Parameters::Bending::Kd,
+                        R"delim(
+          get deviatoric rigidity of the membrane 
+      )delim");
   bending.def_readwrite("Kb", &Parameters::Bending::Kb,
                         R"delim(
           get Bending rigidity of the bare membrane 
@@ -1249,6 +1306,27 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get coefficient
       )delim");
 
+  py::class_<Parameters::SelfAvoidance> selfAvoidance(pymem3dg, "SelfAvoidance",
+                                              R"delim(
+        The SelfAvoidance energy parameters
+    )delim");
+  selfAvoidance.def_readwrite("d", &Parameters::SelfAvoidance::d,
+                          R"delim(
+          get coefficient of limit distance
+      )delim");
+  selfAvoidance.def_readwrite("mu", &Parameters::SelfAvoidance::mu,
+                          R"delim(
+          get coefficient of penalty coefficient
+      )delim");
+  selfAvoidance.def_readwrite("n", &Parameters::SelfAvoidance::n,
+                          R"delim(
+          get the number excluding neighborhood layers 
+      )delim");
+  selfAvoidance.def_readwrite("p", &Parameters::SelfAvoidance::p,
+                          R"delim(
+          get the period factor of self-avoidance computation
+      )delim");
+
   py::class_<Parameters::Point> point(pymem3dg, "Point",
                                       R"delim(
         The Point energy parameters
@@ -1331,6 +1409,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                            R"delim(
           dirichlet parameters
       )delim");
+  parameters.def_readwrite("selfAvoidance", &Parameters::selfAvoidance,
+                           R"delim(
+          selfAvoidance parameters
+      )delim");
   parameters.def_readwrite("dpd", &Parameters::dpd,
                            R"delim(
           dpd parameters
@@ -1364,6 +1446,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                            R"delim(
           get protein mobility constant 
       )delim");
+  parameters.def_readwrite("damping", &Parameters::damping,
+                           R"delim(
+          get damping constant 
+      )delim");
 #pragma endregion parameters
 
 #pragma region energy
@@ -1389,6 +1475,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
   energy.def_readwrite("bendingEnergy", &Energy::bendingEnergy,
                        R"delim(
           get bending energy of the membrane  
+      )delim");
+  energy.def_readwrite("deviatoricEnergy", &Energy::deviatoricEnergy,
+                       R"delim(
+          get deviatoric energy of the membrane  
       )delim");
   energy.def_readwrite("surfaceEnergy", &Energy::surfaceEnergy,
                        R"delim(
@@ -1471,7 +1561,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The quantities for visualization
     )delim");
   quantities.def(py::init<>());
-  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool,
+  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool, bool,
                           bool, bool, bool, bool>());
   quantities.def_readwrite("ref_coord", &Quantities::ref_coord,
                            R"delim(
@@ -1497,6 +1587,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                            R"delim(
         visualize external force
       )delim");
+  quantities.def_readwrite("avoidance_force", &Quantities::avoidance_force,
+                           R"delim(
+        visualize self avoidance force
+      )delim");
   quantities.def_readwrite("physical_force", &Quantities::physical_force,
                            R"delim(
         visualize (total) physical force
@@ -1512,6 +1606,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
   quantities.def_readwrite("bending_force", &Quantities::bending_force,
                            R"delim(
         visualize bending force
+      )delim");
+  quantities.def_readwrite("deviatoric_force", &Quantities::deviatoric_force,
+                           R"delim(
+        visualize deviatoric force
       )delim");
   quantities.def_readwrite("line_force", &Quantities::line_force,
                            R"delim(
@@ -1549,6 +1647,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
   quantities.def_readwrite("bending_potential", &Quantities::bending_potential,
                            R"delim(
         visualize bending component of chemical potential
+      )delim");
+  quantities.def_readwrite("deviatoric_potential", &Quantities::deviatoric_potential,
+                           R"delim(
+        visualize deviatoric component of chemical potential
       )delim");
   quantities.def_readwrite("diffusion_potential",
                            &Quantities::diffusion_potential,

@@ -165,7 +165,7 @@ void System::vertexShift() {
         }
         if (n_vAdj != 2) {
           mem3dg_runtime_error(
-              "vertexShift: number of neighbor vertices on boundary is not 2!");
+              "Number of neighbor vertices on boundary is not 2!");
         }
         baryCenter =
             (vpg->inputVertexPositions[v1] + vpg->inputVertexPositions[v2]) / 2;
@@ -220,10 +220,8 @@ bool System::edgeFlip() {
       bool sucess = mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
-                                                   he.tailVertex());
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
-                                                   he.tipVertex());
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tailVertex());
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tipVertex());
     }
   }
 
@@ -239,75 +237,98 @@ bool System::growMesh() {
   bool isGrown = false;
   int count = 0;
   gcs::EdgeData<bool> isOrigEdge(*mesh, true);
-  gcs::VertexData<bool> isOrigVertex(*mesh, true);
+  // gcs::VertexData<bool> isOrigVertex(*mesh, true);
 
   // expand the mesh when area is too large
   for (gcs::Edge e : mesh->edges()) {
 
-    // alias the neighboring vertices
-    gcs::Halfedge he = e.halfedge();
-    const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
+    // don't keep processing new edges
+    if (!isOrigEdge[e])
+      continue;
 
-    if (!isOrigEdge[e]) {
+    // alias the halfedge
+    gcs::Halfedge he = e.halfedge();
+
+    // gather both vertices and their properties
+    gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
+    gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
+    gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
+    gc::Vector3 vertex1Vel = velocity[vertex1];
+    gc::Vector3 vertex2Vel = velocity[vertex2];
+    double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
+    double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+    double vertex1Phi = proteinDensity[vertex1];
+    double vertex2Phi = proteinDensity[vertex2];
+    gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
+    gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
+    bool vertex1PointTracker = thePointTracker[vertex1];
+    bool vertex2PointTracker = thePointTracker[vertex2];
+
+    // don't keep processing static vertices
+    if (gc::sum(vertex1ForceMask + vertex2ForceMask) < 0.5)
       continue;
-    }
-    if (gc::sum(forces.forceMask[vertex1] + forces.forceMask[vertex2]) < 0.5) {
-      continue;
-    }
 
     // Spltting
     if (meshProcessor.meshMutator.ifSplit(e, *vpg)) {
       count++;
       // split the edge
-      const auto &newVertex = mesh->splitEdgeTriangular(e).vertex();
-      isOrigVertex[newVertex] = false;
-      for (gcs::Edge e : newVertex.adjacentEdges()) {
-        isOrigEdge[e] = false;
-      }
+      gcs::Vertex newVertex = mesh->splitEdgeTriangular(e).vertex();
+
       // update quantities
       // Note: think about conservation of energy, momentum and angular
       // momentum
-      averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
-      averageData(velocity, vertex1, vertex2, newVertex);
-      averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
-      averageData(proteinDensity, vertex1, vertex2, newVertex);
+      // averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
+      // averageData(velocity, vertex1, vertex2, newVertex);
+      // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+      // averageData(proteinDensity, vertex1, vertex2, newVertex);
+      vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
+      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+      geodesicDistanceFromPtInd[newVertex] =
+          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
       thePointTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
+      // isOrigVertex[newVertex] = false;
+      for (gcs::Edge e : newVertex.adjacentEdges()) {
+        isOrigEdge[e] = false;
+      }
+
+      meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
       // mutationMarker[newVertex] = true;
 
       isGrown = true;
     } else if (meshProcessor.meshMutator.ifCollapse(e, *vpg)) { // Collapsing
-      // precached pre-mutation values or flag
-      gc::Vector3 collapsedPosition =
-          gc::sum(forces.forceMask[vertex1]) < 2.5
-              ? vpg->inputVertexPositions[vertex1]
-          : gc::sum(forces.forceMask[vertex2]) < 2.5
-              ? vpg->inputVertexPositions[vertex2]
-              : (vpg->inputVertexPositions[vertex1] +
-                 vpg->inputVertexPositions[vertex2]) /
-                    2;
-      bool isThePoint = thePointTracker[vertex1] || thePointTracker[vertex2];
-
       // collapse the edge
-      auto newVertex = mesh->collapseEdgeTriangular(e);
-      isOrigVertex[newVertex] = false;
-      for (gcs::Edge e : newVertex.adjacentEdges()) {
-        isOrigEdge[e] = false;
+      gcs::Vertex newVertex = mesh->collapseEdgeTriangular(e);
+
+      if (newVertex != gcs::Vertex()) {
+        count++;
+        // update quantities
+        // Note: think about conservation of energy, momentum and angular
+        // momentum
+        vpg->vertexPositions[newVertex] =
+            gc::sum(vertex1ForceMask) < 2.5   ? vertex1Pos
+            : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
+                                              : (vertex1Pos + vertex2Pos) / 2;
+        // averageData(velocity, vertex1, vertex2, newVertex);
+        // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+        // averageData(proteinDensity, vertex1, vertex2, newVertex);
+        velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+        geodesicDistanceFromPtInd[newVertex] =
+            0.5 * (vertex1GeoDist + vertex2GeoDist);
+        proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+        thePointTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
+
+        // isOrigVertex[newVertex] = false;
+        for (gcs::Edge e : newVertex.adjacentEdges()) {
+          isOrigEdge[e] = false;
+        }
+
+        meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
+
+        isGrown = true;
       }
-      // update quantities
-      vpg->inputVertexPositions[newVertex] = collapsedPosition;
-      thePointTracker[newVertex] = isThePoint;
-      // Note: think about conservation of energy, momentum and angular
-      // momentum
-      averageData(velocity, vertex1, vertex2, newVertex);
-      averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
-      averageData(proteinDensity, vertex1, vertex2, newVertex);
-
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
-
-      isGrown = true;
     }
   }
   if (isGrown)
@@ -315,32 +336,33 @@ bool System::growMesh() {
   return isGrown;
 }
 
-void System::mutateMesh() {
+void System::mutateMesh(size_t nRepetition) {
+  for (size_t i = 0; i < nRepetition; ++i) {
+    bool isGrown = false, isFlipped = false;
+    mutationMarker.fill(false);
 
-  bool isGrown = false, isFlipped = false;
-  mutationMarker.fill(false);
+    // vertex shift for regularization
+    if (meshProcessor.meshMutator.shiftVertex) {
+      vertexShift();
+    }
 
-  // vertex shift for regularization
-  if (meshProcessor.meshMutator.shiftVertex) {
-    vertexShift();
-  }
+    // split edge and collapse edge
+    if (meshProcessor.meshMutator.isSplitEdge ||
+        meshProcessor.meshMutator.isCollapseEdge) {
+      isGrown = isGrown || growMesh();
+    }
 
-  // split edge and collapse edge
-  if (meshProcessor.meshMutator.isSplitEdge ||
-      meshProcessor.meshMutator.isCollapseEdge) {
-    isGrown = growMesh();
-  }
+    // linear edge flip for non-Delauney triangles
+    if (meshProcessor.meshMutator.isEdgeFlip) {
+      isFlipped = edgeFlip();
+      isFlipped = edgeFlip() || isFlipped;
+      isFlipped = edgeFlip() || isFlipped;
+    }
 
-  // linear edge flip for non-Delauney triangles
-  if (meshProcessor.meshMutator.isEdgeFlip) {
-    isFlipped = edgeFlip();
-    edgeFlip();
-    edgeFlip();
-  }
-
-  // globally update quantities
-  if (isGrown || isFlipped) {
-    globalUpdateAfterMutation();
+    // globally update quantities
+    if (isGrown || isFlipped) {
+      globalUpdateAfterMutation();
+    }
   }
 }
 
@@ -368,6 +390,15 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
   double tol = gradNorm * target;
 
   while (gradNorm > tol && !isSmooth) {
+    if (stepSize < 1e-8 * initStep) {
+      mem3dg_runtime_error("smoothing operation diverges!");
+      break;
+    }
+    if (num_iter == maxIteration) {
+      mem3dg_runtime_error("smoothing operation exceeds max iteration!");
+      break;
+    }
+
     // compute bending force if smoothingMask is true
     vpg->refreshQuantities();
     forces.bendingForceVec.fill({0, 0, 0});
@@ -390,10 +421,7 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
     pastGradNorm = gradNorm;
     pastForceVec = toMatrix(forces.bendingForceVec);
     num_iter++;
-    if (num_iter == maxIteration) {
-      mem3dg_runtime_error("smoothing operation exceeds max iteration!");
-      break;
-    }
+    
   };
 
   return smoothingMask;
@@ -430,7 +458,7 @@ void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
     double localLapH1 = 0;
     double localLapH2 = 0;
 
-    auto v = he.tailVertex();
+    gcs::Vertex v = he.tailVertex();
     for (gcs::Corner c : v.adjacentCorners()) {
       vertexNormal1 += vpg->cornerAngle(c) * vpg->faceNormal(c.face());
     }
@@ -465,17 +493,13 @@ void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
 }
 
 void System::globalUpdateAfterMutation() {
-  // // Update the distribution matrix when topology changes
-  // if (P.eta != 0) {
-  //   D = vpg->d0.transpose().cwiseAbs() / 2;
-  //   // D = vpg->d0.transpose();
-  //   // for (int k = 0; k < D.outerSize(); ++k) {
-  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
-  //   {
-  //   //     it.valueRef() = 0.5;
-  //   //   }
-  //   // }
-  // }
+  // update the velocity
+  velocity = forces.maskForce(velocity); // important: velocity interpolation
+                                         // contaminate the zero velocity
+  if (computeKineticEnergy() != 0) {
+    double oldKE = energy.kineticEnergy;
+    velocity *= pow(oldKE / computeKineticEnergy(), 0.5);
+  }
 
   // Update mask when topology changes (likely not necessary, just for safety)
   if (isOpenMesh) {
@@ -492,13 +516,6 @@ void System::globalUpdateAfterMutation() {
     // }
   }
 
-  // Update spontaneous curvature and bending rigidity when topology changes
-  // if (!O.isHeterogeneous) {
-  //   proteinDensity.raw().se
-  //   // H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
-  //   // Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
-  // }
-
   // Update the vertex when topology changes
   if (!parameters.point.isFloatVertex) {
     for (gcs::Vertex v : mesh->vertices()) {
@@ -511,6 +528,25 @@ void System::globalUpdateAfterMutation() {
                            "unique/existing \"the\" point!");
     }
   }
+
+  // // Update the distribution matrix when topology changes
+  // if (P.eta != 0) {
+  //   D = vpg->d0.transpose().cwiseAbs() / 2;
+  //   // D = vpg->d0.transpose();
+  //   // for (int k = 0; k < D.outerSize(); ++k) {
+  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
+  //   {
+  //   //     it.valueRef() = 0.5;
+  //   //   }
+  //   // }
+  // }
+
+  // Update spontaneous curvature and bending rigidity when topology changes
+  // if (!O.isHeterogeneous) {
+  //   proteinDensity.raw().se
+  //   // H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+  //   // Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
+  // }
 }
 
 } // namespace solver

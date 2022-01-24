@@ -57,6 +57,8 @@ struct Forces {
 
   /// Cached bending force
   gcs::VertexData<double> bendingForce;
+  /// Cached deviatoric force
+  gcs::VertexData<double> deviatoricForce;
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
   /// Cached tension-induced capillary force
@@ -69,6 +71,8 @@ struct Forces {
   gcs::VertexData<double> aggregationForce;
   /// Cached externally-applied force
   gcs::VertexData<double> externalForce;
+  /// Cached self avoidance force
+  gcs::VertexData<double> selfAvoidanceForce;
   /// Cached mechanical force
   gcs::VertexData<double> mechanicalForce;
   /// Cached osmotic pressure
@@ -84,6 +88,8 @@ struct Forces {
   gcs::VertexData<gc::Vector3> bendingForceVec_gaussVec;
   /// Cached bending force schlafliVec component
   gcs::VertexData<gc::Vector3> bendingForceVec_schlafliVec;
+  /// Cached deviatoric force
+  gcs::VertexData<gc::Vector3> deviatoricForceVec;
 
   /// Cached tension-induced capillary force
   gcs::VertexData<gc::Vector3> capillaryForceVec;
@@ -97,20 +103,25 @@ struct Forces {
   gcs::VertexData<gc::Vector3> aggregationForceVec;
   /// Cached external localized force
   gcs::VertexData<gc::Vector3> externalForceVec;
+  /// Cached self avoidance force
+  gcs::VertexData<gc::Vector3> selfAvoidanceForceVec;
   /// Cached mechanical force
   gcs::VertexData<gc::Vector3> mechanicalForceVec;
 
+  /// Cached damping forces
+  gcs::VertexData<gc::Vector3> dampingForceVec;
+  /// Cached stochastic forces
+  gcs::VertexData<gc::Vector3> stochasticForceVec;
+
   /// Cached local stretching forces (in-plane regularization)
   gcs::VertexData<gc::Vector3> regularizationForce;
-  /// Cached damping forces
-  gcs::VertexData<gc::Vector3> dampingForce;
-  /// Cached stochastic forces
-  gcs::VertexData<gc::Vector3> stochasticForce;
 
   /// Cached interior penalty chemical potential
   gcs::VertexData<double> interiorPenaltyPotential;
   /// Cached bending related chemical potential
   gcs::VertexData<double> bendingPotential;
+  /// Cached deviatoric related chemical potential
+  gcs::VertexData<double> deviatoricPotential;
   /// Cached adsorption related chemical potential
   gcs::VertexData<double> adsorptionPotential;
   /// Cached dirichlet energy related chemical potential
@@ -128,19 +139,23 @@ struct Forces {
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
       : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
         mechanicalForceVec(mesh, {0, 0, 0}), bendingForceVec(mesh, {0, 0, 0}),
+        deviatoricForceVec(mesh, {0, 0, 0}),
         bendingForceVec_areaGrad(mesh, {0, 0, 0}),
         bendingForceVec_gaussVec(mesh, {0, 0, 0}),
         bendingForceVec_schlafliVec(mesh, {0, 0, 0}),
         capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
         adsorptionForceVec(mesh, {0, 0, 0}),
         aggregationForceVec(mesh, {0, 0, 0}), externalForceVec(mesh, {0, 0, 0}),
+        selfAvoidanceForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
-        capillaryForce(mesh, 0), surfaceTension(0), lineCapillaryForce(mesh, 0),
-        adsorptionForce(mesh, 0), aggregationForce(mesh, 0),
-        externalForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
-        regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
-        dampingForce(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
-        bendingPotential(mesh, 0), adsorptionPotential(mesh, 0),
+        deviatoricForce(mesh, 0), capillaryForce(mesh, 0), surfaceTension(0),
+        lineCapillaryForce(mesh, 0), adsorptionForce(mesh, 0),
+        aggregationForce(mesh, 0), externalForce(mesh, 0),
+        selfAvoidanceForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
+        regularizationForce(mesh, {0, 0, 0}),
+        stochasticForceVec(mesh, {0, 0, 0}), dampingForceVec(mesh, {0, 0, 0}),
+        interiorPenaltyPotential(mesh, 0), bendingPotential(mesh, 0),
+        deviatoricPotential(mesh, 0), adsorptionPotential(mesh, 0),
         aggregationPotential(mesh, 0), diffusionPotential(mesh, 0),
         chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
         proteinMask(mesh, 1) {}
