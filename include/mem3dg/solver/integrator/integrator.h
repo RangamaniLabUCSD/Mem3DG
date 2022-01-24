@@ -52,8 +52,6 @@ protected:
   double lastUpdateGeodesics;
   /// last time processing mesh
   double lastProcessMesh;
-  /// numerical dissipative particle dynamics force to the system
-  Eigen::Matrix<double, Eigen::Dynamic, 1> dpdForce;
   /// Starting time of the simulation
   double initialTime;
   /// Flag of success of the simulation
@@ -130,19 +128,15 @@ public:
                      std::pow(system.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
-    getForces();
+    system.computePhysicalForcing(timeStep);
     initialMaximumForce =
         system.parameters.variation.isShapeVariation
             ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
             : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
     // Initialize geometry constraints
-    areaDifference = 1e10;
-    volumeDifference = 1e10;
-
-    // Initialize system summarized forces
-    dpdForce.resize(system.mesh->nVertices(), 1);
-    dpdForce.setZero();
+    areaDifference = std::numeric_limits<double>::infinity();
+    volumeDifference = std::numeric_limits<double>::infinity();
   }
 
   // ==========================================================
@@ -263,9 +257,10 @@ public:
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double mechanicalBacktrack(const double energy_pre,
-                   Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-                   double rho = 0.7, double c1 = 0.001);
+  double mechanicalBacktrack(
+      const double energy_pre,
+      Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
+      double rho = 0.7, double c1 = 0.001);
 
   /**
    * @brief Backtracking algorithm that dynamically adjust step size based on
@@ -277,17 +272,10 @@ public:
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double chemicalBacktrack(const double energy_pre,
-                   Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
-                   double rho = 0.7, double c1 = 0.001);
-
-  /**
-   * @brief Summerize forces into 3 categories: physcialPressure, DPDPressure
-   * and regularizationForce. Note that the forces has been removed rigid body
-   * mode and masked for integration
-   * @return
-   */
-  void getForces();
+  double chemicalBacktrack(
+      const double energy_pre,
+      Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
+      double rho = 0.7, double c1 = 0.001);
 
   /**
    * @brief Check finiteness of simulation states and backtrack for error in
@@ -307,10 +295,10 @@ public:
                                 const Energy &previousE, bool runAll = false);
 
   /**
-   * @brief update adaptive time step
+   * @brief get adaptive characteristic time step
    * @return
    */
-  void updateAdaptiveCharacteristicStep();
+  double updateAdaptiveCharacteristicStep();
 };
 } // namespace integrator
 } // namespace solver

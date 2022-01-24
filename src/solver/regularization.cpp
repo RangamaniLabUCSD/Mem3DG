@@ -165,7 +165,7 @@ void System::vertexShift() {
         }
         if (n_vAdj != 2) {
           mem3dg_runtime_error(
-              "vertexShift: number of neighbor vertices on boundary is not 2!");
+              "Number of neighbor vertices on boundary is not 2!");
         }
         baryCenter =
             (vpg->inputVertexPositions[v1] + vpg->inputVertexPositions[v2]) / 2;
@@ -220,10 +220,8 @@ bool System::edgeFlip() {
       bool sucess = mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
-                                                   he.tailVertex());
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker,
-                                                   he.tipVertex());
+      meshProcessor.meshMutator.markMutation(mutationMarker, he.tailVertex());
+      meshProcessor.meshMutator.markMutation(mutationMarker, he.tipVertex());
     }
   }
 
@@ -248,12 +246,10 @@ bool System::growMesh() {
     gcs::Halfedge he = e.halfedge();
     const auto &vertex1 = he.tipVertex(), &vertex2 = he.tailVertex();
 
-    if (!isOrigEdge[e]) {
+    if (!isOrigEdge[e])
       continue;
-    }
-    if (gc::sum(forces.forceMask[vertex1] + forces.forceMask[vertex2]) < 0.5) {
+    if (gc::sum(forces.forceMask[vertex1] + forces.forceMask[vertex2]) < 0.5)
       continue;
-    }
 
     // Spltting
     if (meshProcessor.meshMutator.ifSplit(e, *vpg)) {
@@ -274,8 +270,7 @@ bool System::growMesh() {
       thePointTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
-      // mutationMarker[newVertex] = true;
+      meshProcessor.meshMutator.markMutation(mutationMarker, newVertex);
 
       isGrown = true;
     } else if (meshProcessor.meshMutator.ifCollapse(e, *vpg)) { // Collapsing
@@ -305,7 +300,7 @@ bool System::growMesh() {
       averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
       averageData(proteinDensity, vertex1, vertex2, newVertex);
 
-      meshProcessor.meshMutator.markAllNeighboring(mutationMarker, newVertex);
+      meshProcessor.meshMutator.markMutation(mutationMarker, newVertex);
 
       isGrown = true;
     }
@@ -465,17 +460,11 @@ void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
 }
 
 void System::globalUpdateAfterMutation() {
-  // // Update the distribution matrix when topology changes
-  // if (P.eta != 0) {
-  //   D = vpg->d0.transpose().cwiseAbs() / 2;
-  //   // D = vpg->d0.transpose();
-  //   // for (int k = 0; k < D.outerSize(); ++k) {
-  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
-  //   {
-  //   //     it.valueRef() = 0.5;
-  //   //   }
-  //   // }
-  // }
+  // update the velocity
+  velocity = forces.maskForce(velocity); // important: velocity interpolation
+                                         // contaminate the zero velocity
+  double oldKE = energy.kineticEnergy;
+  velocity *= pow(oldKE / computeKineticEnergy(), 0.5);
 
   // Update mask when topology changes (likely not necessary, just for safety)
   if (isOpenMesh) {
@@ -492,13 +481,6 @@ void System::globalUpdateAfterMutation() {
     // }
   }
 
-  // Update spontaneous curvature and bending rigidity when topology changes
-  // if (!O.isHeterogeneous) {
-  //   proteinDensity.raw().se
-  //   // H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
-  //   // Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
-  // }
-
   // Update the vertex when topology changes
   if (!parameters.point.isFloatVertex) {
     for (gcs::Vertex v : mesh->vertices()) {
@@ -511,6 +493,25 @@ void System::globalUpdateAfterMutation() {
                            "unique/existing \"the\" point!");
     }
   }
+
+  // // Update the distribution matrix when topology changes
+  // if (P.eta != 0) {
+  //   D = vpg->d0.transpose().cwiseAbs() / 2;
+  //   // D = vpg->d0.transpose();
+  //   // for (int k = 0; k < D.outerSize(); ++k) {
+  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
+  //   {
+  //   //     it.valueRef() = 0.5;
+  //   //   }
+  //   // }
+  // }
+
+  // Update spontaneous curvature and bending rigidity when topology changes
+  // if (!O.isHeterogeneous) {
+  //   proteinDensity.raw().se
+  //   // H0.raw().setConstant(mesh->nVertices(), 1, P.H0);
+  //   // Kb.raw().setConstant(mesh->nVertices(), 1, P.Kb);
+  // }
 }
 
 } // namespace solver
