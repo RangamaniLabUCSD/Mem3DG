@@ -114,9 +114,6 @@ void BFGS::checkParameters() {
     mem3dg_runtime_error("Protein mobility constant should "
                          "be set to 1 for optimization!");
   }
-  if (system.parameters.damping != 0) {
-    mem3dg_runtime_error("Damping to be 0 for euler integration!");
-  }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
       mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
@@ -133,7 +130,7 @@ void BFGS::status() {
   auto physicalForce = toMatrix(system.forces.mechanicalForce);
 
   // compute summerized forces
-  system.computePhysicalForcing(timeStep);
+  getForces();
 
   // update
   if (system.time != initialTime || ifRestart) {

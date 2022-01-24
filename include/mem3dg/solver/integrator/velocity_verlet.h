@@ -26,13 +26,14 @@ namespace integrator {
  */
 class DLL_PUBLIC VelocityVerlet : public Integrator {
 private:
-  // previous force
-  gcs::VertexData<gc::Vector3> pastMechanicalForceVec;
+  // total pressure
+  Eigen::Matrix<double, Eigen::Dynamic, 3> totalPressure;
+  // total pressure of new iteration
+  Eigen::Matrix<double, Eigen::Dynamic, 3> newTotalPressure;
   // total energy of the system
   double initialTotalEnergy;
 
 public:
-  bool isCapEnergy = true;
   VelocityVerlet(System &system_, double characteristicTimeStep_,
                  double totalTime_, double savePeriod_, double tolerance_,
                  std::string outputDirectory_)
@@ -45,11 +46,12 @@ public:
     // check the validity of parameter
     checkParameters();
 
-    pastMechanicalForceVec =
-        gc::VertexData<gc::Vector3>(*system.mesh, {0, 0, 0});
+    totalPressure.resize(system.mesh->nVertices(), 3);
+    newTotalPressure.resize(system.mesh->nVertices(), 3);
+    totalPressure.setZero();
+    newTotalPressure.setZero();
 
     initialTotalEnergy = system.computeTotalEnergy();
-    initialTotalEnergy -= system.energy.proteinInteriorPenalty;
   }
 
   /**

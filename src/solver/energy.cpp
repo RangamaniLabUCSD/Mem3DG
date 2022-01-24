@@ -192,12 +192,13 @@ double System::computeExternalWork(double currentTime, double dt) {
 }
 
 double System::computeKineticEnergy() {
+  // auto velocity =
+  //     rowwiseDotProduct(gc::EigenMap<double, 3>(vel),
+  //                       gc::EigenMap<double, 3>(vpg->inputVertexPositions));
   energy.kineticEnergy =
-      0.5 * Eigen::square(toMatrix(velocity).array()).matrix().sum();
-  // energy.kineticEnergy =
-  //     0.5 * rowwiseScalarProduct(toMatrix(vpg->vertexDualAreas).array(),
-  //                                Eigen::square(toMatrix(velocity).array()))
-  //               .sum();
+      0.5 * (vpg->vertexLumpedMassMatrix *
+             Eigen::square(toMatrix(velocity).array()).matrix())
+                .sum();
   return energy.kineticEnergy;
 }
 
