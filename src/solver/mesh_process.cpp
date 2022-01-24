@@ -197,12 +197,13 @@ bool MeshProcessor::MeshMutator::ifCollapse(
   if (collapseSmall) {
     double areaSum;
     std::size_t num_neighbor;
-    std::tie(areaSum, num_neighbor) = neighborAreaSum(e, vpg);
-
-    size_t gap = isBoundary ? 1 : 2;
-    is2Small =
-        (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
-        (num_neighbor - gap) * targetFaceArea;
+    neighborAreaSum(e, vpg, areaSum, num_neighbor);
+    is2Small = (isBoundary) ? ((areaSum - vpg.faceArea(he.face()) -
+                                vpg.faceArea(he.twin().face())) <
+                               (num_neighbor - 1) * targetFaceArea)
+                            : ((areaSum - vpg.faceArea(he.face()) -
+                                vpg.faceArea(he.twin().face())) <
+                               (num_neighbor - 2) * targetFaceArea);
     if (collapseSmallNeedFlat) {
       isFlat =
           vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
@@ -296,25 +297,25 @@ bool MeshProcessor::MeshMutator::ifSplit(
   return condition;
 }
 
-void MeshProcessor::MeshMutator::markMutation(
-    gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v, bool includeNeighborhood) {
+void MeshProcessor::MeshMutator::markAllNeighboring(
+    gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v) {
   mutationMarker[v] = true;
   for (gc::Vertex nv : v.adjacentVertices()) {
     mutationMarker[nv] = true;
   }
 }
 
-std::tuple<double, std::size_t> MeshProcessor::MeshMutator::neighborAreaSum(
-    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
-  double area = 0;
-  std::size_t num_neighbor = -2;
+void MeshProcessor::MeshMutator::neighborAreaSum(
+    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg, double &area,
+    std::size_t &num_neighbor) {
+  area = 0;
+  num_neighbor = -2;
   for (gcs::Vertex v : e.adjacentVertices()) {
     for (gcs::Face f : v.adjacentFaces()) {
       area += vpg.faceArea(f);
       num_neighbor++;
     }
   }
-  return std::tie(area, num_neighbor);
 }
 
 double MeshProcessor::MeshMutator::computeCurvatureThresholdLength(
