@@ -56,35 +56,56 @@ bool Euler::integrate() {
 #endif
 
   // time integration loop
+  const double avoidStrength = system.parameters.selfAvoidance.mu;
   for (;;) {
+
+    // turn on/off self-avoidance; outside status-march-cycle; before savedata
+    // to write selfAvoidance
+    if (avoidStrength != 0) {
+      if ((system.time - lastComputeAvoidingForce) >
+              system.parameters.selfAvoidance.p * system.projectedCollideTime ||
+          system.time - lastSave >= savePeriod || system.time == initialTime ||
+          EXIT) {
+        lastComputeAvoidingForce = system.time;
+        system.parameters.selfAvoidance.mu = avoidStrength;
+        std::cout << "computing avoiding force at "
+                  << "t = " << system.time << std::endl;
+        std::cout << "projected collision is " << system.projectedCollideTime
+                  << std::endl;
+        std::cout << "time step is " << timeStep << std::endl;
+      } else {
+        system.parameters.selfAvoidance.mu = 0;
+      }
+    }
 
     // Evaluate and threhold status data
     status();
 
-    // Save files every tSave period and print some info
+    // Save files every tSave period and print some info; save data before exit
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
       saveData();
     }
 
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      break;
+    }
+
     // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > processMeshPeriod) {
+    if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      system.smoothenMesh(timeStep);
+      if (system.meshProcessor.meshRegularizer.isSmoothenMesh)
+        system.smoothenMesh(timeStep);
       system.updateConfigurations(false);
     }
 
     // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
+    if (system.time - lastUpdateGeodesics > (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
       system.updateConfigurations(true);
-    }
-
-    // break loop if EXIT flag is on
-    if (EXIT) {
-      break;
     }
 
     // step forward
@@ -119,6 +140,9 @@ void Euler::checkParameters() {
   if (system.parameters.dpd.gamma != 0) {
     mem3dg_runtime_error("DPD has to be turned off for euler integration!");
   }
+  if (system.parameters.damping != 0) {
+    mem3dg_runtime_error("Damping to be 0 for euler integration!");
+  }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
       mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
@@ -128,9 +152,9 @@ void Euler::checkParameters() {
 
 void Euler::status() {
   // compute summerized forces
-  getForces();
+  system.computePhysicalForcing(timeStep);
 
-  // compute the area contraint error
+  // compute the contraint error
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
   volumeDifference = (system.parameters.osmotic.isPreferredVolume)
                          ? abs(system.volume / system.parameters.osmotic.Vt - 1)
@@ -157,7 +181,7 @@ void Euler::status() {
   system.computeTotalEnergy();
 
   // backtracking for error
-  finitenessErrorBacktrack();
+  finitenessErrorBacktrace();
 }
 
 void Euler::march() {
@@ -168,20 +192,19 @@ void Euler::march() {
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    updateAdaptiveCharacteristicStep();
+    characteristicTimeStep = updateAdaptiveCharacteristicStep();
   }
 
   // time stepping on vertex position
   if (isBacktrack) {
-    double timeStep_mech, timeStep_chem = characteristicTimeStep;
+    double timeStep_mech,
+        timeStep_chem = std::numeric_limits<double>::infinity();
     if (system.parameters.variation.isShapeVariation)
-      timeStep_mech = mechanicalBacktrack(system.energy.potentialEnergy,
-                                          toMatrix(system.velocity), rho, c1);
+      timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity), rho, c1);
     if (system.parameters.variation.isProteinVariation)
       timeStep_chem =
-          chemicalBacktrack(system.energy.potentialEnergy,
-                            toMatrix(system.proteinVelocity), rho, c1);
-    timeStep = timeStep_chem < timeStep_mech ? timeStep_chem : timeStep_mech;
+          chemicalBacktrack(toMatrix(system.proteinVelocity), rho, c1);
+    timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
   }

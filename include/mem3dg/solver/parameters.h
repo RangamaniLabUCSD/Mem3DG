@@ -56,6 +56,8 @@ namespace solver {
 
 struct Parameters {
   struct Bending {
+    /// Deviatoric modulus
+    double Kd = 0;
     /// Bending modulus
     double Kb = 0;
     /// Constant of bending modulus vs protein density
@@ -121,6 +123,17 @@ struct Parameters {
   struct Dirichlet {
     /// Smooothing coefficients
     double eta = 0;
+  };
+
+  struct SelfAvoidance {
+    /// limit distance
+    double d = 0.005;
+    /// penalty coefficient
+    double mu = 1;
+    // neighborhood layers
+    std::size_t n = 1;
+    // period factor of computation
+    double p = 1;
   };
 
   struct External {
@@ -206,6 +219,8 @@ struct Parameters {
   Aggregation aggregation;
   /// protein dirichlet energy parameters
   Dirichlet dirichlet;
+  /// self avoidance energy parameters
+  SelfAvoidance selfAvoidance;
   /// external force parameters
   External external;
   /// DPD parameters
@@ -223,6 +238,8 @@ struct Parameters {
   double proteinMobility = 0;
   /// Temperature
   double temperature = 293;
+  /// damping coefficient
+  double damping = 0;
 
   /**
    * @brief check parameter conflicts

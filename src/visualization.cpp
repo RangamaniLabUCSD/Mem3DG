@@ -646,6 +646,10 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
       //         ptrRichData->getVertexProperty<double>("mean_curvature"))
       //     ->setMapRange(std::make_pair(-2.54, 10.29));
     }
+    if (options.velocity) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "velocity", ptrRichData->getVertexProperty<double>("velocity"));
+    }
     if (options.gauss_curvature) {
       polyscopeMesh->addVertexScalarQuantity(
           "gauss_curvature",
@@ -662,6 +666,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
           "external_force",
           ptrRichData->getVertexProperty<double>("external_force"));
     }
+    if (options.avoidance_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "avoidance_force",
+          ptrRichData->getVertexProperty<double>("avoidance_force"));
+    }
     if (options.physical_force) {
       polyscopeMesh->addVertexScalarQuantity(
           "physical_force",
@@ -676,6 +685,11 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
       polyscopeMesh->addVertexScalarQuantity(
           "bending_force",
           ptrRichData->getVertexProperty<double>("bending_force"));
+    }
+    if (options.deviatoric_force) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "deviatoric_force",
+          ptrRichData->getVertexProperty<double>("deviatoric_force"));
     }
     if (options.line_force) {
       polyscopeMesh->addVertexScalarQuantity(
@@ -699,7 +713,7 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
     }
     if (options.mask) {
       polyscopeMesh->addVertexScalarQuantity(
-          "mask", ptrRichData->getVertexProperty<double>("mask"));
+          "force_mask", ptrRichData->getVertexProperty<double>("force_mask"));
     }
     if (options.the_point) {
       polyscopeMesh
@@ -723,6 +737,12 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
       polyscopeMesh->addVertexScalarQuantity(
           "bending_potentialx1000",
           ptrRichData->getVertexProperty<double>("bending_potential") * 1000);
+    }
+    if (options.deviatoric_potential) {
+      polyscopeMesh->addVertexScalarQuantity(
+          "deviatoric_potentialx1000",
+          ptrRichData->getVertexProperty<double>("deviatoric_potential") *
+              1000);
     }
     if (options.diffusion_potential) {
       polyscopeMesh->addVertexScalarQuantity(
@@ -765,6 +785,12 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
           ->addVertexScalarQuantity(
               "mean_curvature",
               ptrRichData->getVertexProperty<double>("mean_curvature"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
+    if (options.velocity) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "velocity", ptrRichData->getVertexProperty<double>("velocity"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
     if (options.gauss_curvature) {
@@ -810,6 +836,13 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
               ptrRichData->getVertexProperty<double>("bending_force"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
+    if (options.deviatoric_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "deviatoric_force",
+              ptrRichData->getVertexProperty<double>("deviatoric_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
     if (options.line_force) {
       polyscopeMesh
           ->addVertexScalarQuantity(
@@ -838,10 +871,18 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
               ptrRichData->getVertexProperty<double>("aggregation_force"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
+    if (options.avoidance_force) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "avoidance_force",
+              ptrRichData->getVertexProperty<double>("avoidance_force"))
+          ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
+    }
     if (options.mask) {
       polyscopeMesh
           ->addVertexScalarQuantity(
-              "mask", ptrRichData->getVertexProperty<double>("mask"))
+              "force_mask",
+              ptrRichData->getVertexProperty<double>("force_mask"))
           ->setMapRange(std::make_pair(mapMinLim, mapMaxLim));
     }
     if (options.smoothing_mask) {
@@ -864,6 +905,14 @@ polyscope::SurfaceMesh *registerSurfaceMesh(std::string plyName,
           ->addVertexScalarQuantity(
               "bending_potentialx1000",
               ptrRichData->getVertexProperty<double>("bending_potential") *
+                  1000)
+          ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
+    }
+    if (options.deviatoric_potential) {
+      polyscopeMesh
+          ->addVertexScalarQuantity(
+              "deviatoric_potentialx1000",
+              ptrRichData->getVertexProperty<double>("deviatoric_potential") *
                   1000)
           ->setMapRange(std::make_pair(mapMinLim * 1000, mapMaxLim * 1000));
     }
