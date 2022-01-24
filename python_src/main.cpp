@@ -38,7 +38,7 @@ namespace integrator {
 namespace py = pybind11;
 
 // Initialize the `pymem3dg` module
-PYBIND11_MODULE(pymem3dg, pymem3dg) {
+PYBIND11_MODULE(_core, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
 
 #pragma region integrators
