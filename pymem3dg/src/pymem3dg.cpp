@@ -92,6 +92,40 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
       R"delim(
         Velocity Verlet integrator constructor
       )delim");
+
+  velocityverlet.def_readwrite("updateGeodesicsPeriod",
+                               &VelocityVerlet::updateGeodesicsPeriod,
+                               R"delim(
+          period of update geodesics
+      )delim");
+  velocityverlet.def_readwrite("processMeshPeriod",
+                               &VelocityVerlet::processMeshPeriod,
+                               R"delim(
+          period of processing mesh
+      )delim");
+  velocityverlet.def_readwrite("trajFileName", &VelocityVerlet::trajFileName,
+                               R"delim(
+          name of the trajectory file 
+      )delim");
+  velocityverlet.def_readwrite("isAdaptiveStep",
+                               &VelocityVerlet::isAdaptiveStep,
+                               R"delim(
+          option to scale time step according to mesh size
+      )delim");
+  velocityverlet.def_readwrite("isCapEnergy", &VelocityVerlet::isCapEnergy,
+                               R"delim(
+          option to exit if exceed initial energy cap
+      )delim");
+  velocityverlet.def_readwrite("outputDirectory",
+                               &VelocityVerlet::outputDirectory,
+                               R"delim(
+        collapse small triangles
+      )delim");
+  velocityverlet.def_readwrite("verbosity", &VelocityVerlet::verbosity,
+                               R"delim(
+           verbosity level of integrator
+      )delim");
+
   velocityverlet.def("integrate", &VelocityVerlet::integrate,
                      R"delim(
           integrate 
@@ -983,8 +1017,11 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   /**
    * @brief Method: force computation
    */
-  system.def("computePhysicalForcing", &System::computePhysicalForcing,
-             R"delim(
+  system.def(
+      "computePhysicalForcing",
+      static_cast<void (System::*)(double)>(&System::computePhysicalForcing),
+      py::arg("timeStep") = 0,
+      R"delim(
             compute all the forces
         )delim");
   //   system.def("computeBendingForce", &System::computeBendingForce,
@@ -1019,7 +1056,6 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
             prescribe the External Force
         )delim");
   system.def("computeDPDForces", &System::computeDPDForces, py::arg("dt"),
-             py::return_value_policy::copy,
              R"delim(
             compute the DPDForces
         )delim");
@@ -1363,6 +1399,10 @@ PYBIND11_MODULE(pymem3dg, pymem3dg) {
   parameters.def_readwrite("proteinMobility", &Parameters::proteinMobility,
                            R"delim(
           get protein mobility constant 
+      )delim");
+  parameters.def_readwrite("damping", &Parameters::damping,
+                           R"delim(
+          get damping constant 
       )delim");
 #pragma endregion parameters
 

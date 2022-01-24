@@ -100,12 +100,13 @@ struct Forces {
   /// Cached mechanical force
   gcs::VertexData<gc::Vector3> mechanicalForceVec;
 
+  /// Cached damping forces
+  gcs::VertexData<gc::Vector3> dampingForceVec;
+  /// Cached stochastic forces
+  gcs::VertexData<gc::Vector3> stochasticForceVec;
+
   /// Cached local stretching forces (in-plane regularization)
   gcs::VertexData<gc::Vector3> regularizationForce;
-  /// Cached damping forces
-  gcs::VertexData<gc::Vector3> dampingForce;
-  /// Cached stochastic forces
-  gcs::VertexData<gc::Vector3> stochasticForce;
 
   /// Cached interior penalty chemical potential
   gcs::VertexData<double> interiorPenaltyPotential;
@@ -138,8 +139,8 @@ struct Forces {
         capillaryForce(mesh, 0), surfaceTension(0), lineCapillaryForce(mesh, 0),
         adsorptionForce(mesh, 0), aggregationForce(mesh, 0),
         externalForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
-        regularizationForce(mesh, {0, 0, 0}), stochasticForce(mesh, {0, 0, 0}),
-        dampingForce(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
+        regularizationForce(mesh, {0, 0, 0}), stochasticForceVec(mesh, {0, 0, 0}),
+        dampingForceVec(mesh, {0, 0, 0}), interiorPenaltyPotential(mesh, 0),
         bendingPotential(mesh, 0), adsorptionPotential(mesh, 0),
         aggregationPotential(mesh, 0), diffusionPotential(mesh, 0),
         chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),

@@ -161,12 +161,11 @@ struct MeshProcessor {
      */
     bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
 
-    void markAllNeighboring(gcs::VertexData<bool> &mutationMarker,
-                            const gcs::Vertex v);
+    void markMutation(gcs::VertexData<bool> &mutationMarker,
+                            const gcs::Vertex v, bool includeNeighborhood = true);
 
-    void neighborAreaSum(const gcs::Edge e,
-                         const gcs::VertexPositionGeometry &vpg, double &area,
-                         std::size_t &num_neighbor);
+    std::tuple<double, std::size_t>
+    neighborAreaSum(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
 
     double
     computeCurvatureThresholdLength(const gcs::Edge e,
