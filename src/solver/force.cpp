@@ -336,10 +336,8 @@ EigenVectorX3dr System::prescribeExternalForce() {
         parameters.external.Kf *
         (1 + sin(freq * 2 * constants::PI / totalHeight *
                  vpg->inputVertexPositions[v].z));
-    forces.externalForceVec[i] =
-        forces.maskForce(externalPressureMagnitude * vpg->vertexDualArea(v) *
-                             direction.normalize(),
-                         i);
+    forces.externalForceVec[i] = externalPressureMagnitude *
+                                 vpg->vertexDualArea(v) * direction.normalize();
   }
 
 #elif MODE == 1 // anchor force
@@ -354,11 +352,9 @@ EigenVectorX3dr System::prescribeExternalForce() {
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     forces.externalForceVec[i] =
-        forces.maskForce(exp(-time / decayTime) * parameters.external.Kf *
-                             gaussianDistribution(geodesicDistanceFromPtInd[v],
-                                                  standardDeviation) *
-                             vpg->vertexDualArea(v) * direction,
-                         i);
+        exp(-time / decayTime) * parameters.external.Kf *
+        gaussianDistribution(geodesicDistanceFromPtInd[v], standardDeviation) *
+        vpg->vertexDualArea(v) * direction;
   }
 #endif
   forces.externalForce = forces.ontoNormal(forces.externalForceVec);
@@ -366,7 +362,7 @@ EigenVectorX3dr System::prescribeExternalForce() {
   return toMatrix(forces.externalForceVec);
 }
 
-void System::computeChemicalPotentials() {
+EigenVectorX1d System::computeChemicalPotential() {
   gcs::VertexData<double> dH0dphi(*mesh, 0);
   gcs::VertexData<double> dKbdphi(*mesh, 0);
   auto meanCurvDiff = (vpg->vertexMeanCurvatures.raw().array() /
@@ -407,11 +403,16 @@ void System::computeChemicalPotentials() {
     forces.diffusionPotential.raw() = forces.maskProtein(
         -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
 
-  if (parameters.proteinDistribution.lambdaPhi != 0)
+  if (parameters.proteinDistribution.lambdaPhi!= 0)
     forces.interiorPenaltyPotential.raw() =
         forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
                            (1 / proteinDensity.raw().array() -
                             1 / (1 - proteinDensity.raw().array())));
+  forces.chemicalPotential.raw() =
+      forces.adsorptionPotential.raw() + forces.aggregationPotential.raw() +
+      forces.bendingPotential.raw() + forces.diffusionPotential.raw() +
+      forces.interiorPenaltyPotential.raw();
+
   // F.chemicalPotential.raw().array() =
   //     -vpg->vertexDualAreas.raw().array() *
   //     (P.adsorption.epsilon - 2 * Kb.raw().array() * meanCurvDiff *
@@ -420,11 +421,23 @@ void System::computeChemicalPotentials() {
   // F.chemicalPotential.raw().array() +=
   //     P.proteinDistribution.lambdaPhi * (1 / proteinDensity.raw().array() -
   //                    1 / (1 - proteinDensity.raw().array()));
+
+  return forces.chemicalPotential.raw();
 }
 
-void System::computeDPDForces(double dt) {
-  toMatrix(forces.dampingForceVec).setZero();
-  toMatrix(forces.stochasticForceVec).setZero();
+std::tuple<EigenVectorX3dr, EigenVectorX3dr>
+System::computeDPDForces(double dt) {
+
+  auto dampingForce_e = EigenMap<double, 3>(forces.dampingForce);
+  auto stochasticForce_e = EigenMap<double, 3>(forces.stochasticForce);
+
+  // Reset forces to zero
+  dampingForce_e.setZero();
+  stochasticForce_e.setZero();
+
+  // alias positions
+  const auto &pos = vpg->inputVertexPositions;
+
   // std::default_random_engine random_generator;
   // gcs::EdgeData<double> random_var(mesh);
   double sigma = sqrt(2 * parameters.dpd.gamma * mem3dg::constants::kBoltzmann *
@@ -437,21 +450,19 @@ void System::computeDPDForces(double dt) {
     gcs::Vertex v2 = he.next().vertex();
 
     gc::Vector3 dVel12 = velocity[v1] - velocity[v2];
-    gc::Vector3 direction =
-        (vpg->inputVertexPositions[v1] - vpg->inputVertexPositions[v2])
-            .normalize();
-    // gc::Vector3 direction =
-    //     (vpg->vertexNormals[v1] + vpg->vertexNormals[v2]).normalize();
+    gc::Vector3 dPos12_n = (pos[v1] - pos[v2]).normalize();
 
-    gc::Vector3 df =
-        parameters.dpd.gamma * (gc::dot(dVel12, direction) * direction);
-    forces.dampingForceVec[v1] -= df;
-    forces.dampingForceVec[v2] += df;
+    if (parameters.dpd.gamma != 0) {
+      gc::Vector3 df =
+          parameters.dpd.gamma * (gc::dot(dVel12, dPos12_n) * dPos12_n);
+      forces.dampingForce[v1] -= df;
+      forces.dampingForce[v2] += df;
+    }
 
     if (sigma != 0) {
       double noise = normal_dist(rng);
-      forces.stochasticForceVec[v1] += noise * direction;
-      forces.stochasticForceVec[v2] -= noise * direction;
+      forces.stochasticForce[v1] += noise * dPos12_n;
+      forces.stochasticForce[v2] -= noise * dPos12_n;
     }
 
     // gc::Vector3 dVel21 = vel[v2] - vel[v1];
@@ -463,16 +474,8 @@ void System::computeDPDForces(double dt) {
     //           << " == " << -gamma * (gc::dot(dVel21, dPos21_n) * dPos21_n)
     //           << std::endl;
   }
-  forces.dampingForceVec = forces.maskForce(forces.dampingForceVec);
-  forces.stochasticForceVec = forces.maskForce(forces.stochasticForceVec);
-  // dampingForce_e =
-  //     forces.maskForce(forces.addNormal(forces.ontoNormal(dampingForce_e)));
-  // stochasticForce_e =
-  //     forces.maskForce(forces.addNormal(forces.ontoNormal(stochasticForce_e)));
-}
 
-gc::VertexData<gc::Vector3> System::computeDampingForce() {
-  return -parameters.damping * velocity;
+  return std::tie(dampingForce_e, stochasticForce_e);
 }
 
 gc::Vector3 System::computeGradientNorm2Gradient(
@@ -570,9 +573,6 @@ void System::computePhysicalForcing() {
   forces.aggregationForceVec.fill({0, 0, 0});
   forces.externalForceVec.fill({0, 0, 0});
 
-  forces.dampingForceVec.fill({0, 0, 0});
-  forces.stochasticForceVec.fill({0, 0, 0});
-
   forces.bendingForce.raw().setZero();
   forces.capillaryForce.raw().setZero();
   forces.lineCapillaryForce.raw().setZero();
@@ -585,7 +585,6 @@ void System::computePhysicalForcing() {
   forces.diffusionPotential.raw().setZero();
   forces.bendingPotential.raw().setZero();
   forces.adsorptionPotential.raw().setZero();
-  forces.aggregationPotential.raw().setZero();
   forces.interiorPenaltyPotential.raw().setZero();
 
   if (parameters.variation.isShapeVariation) {
@@ -598,17 +597,11 @@ void System::computePhysicalForcing() {
         forces.bendingForceVec + forces.lineCapillaryForceVec +
         forces.adsorptionForceVec + forces.aggregationForceVec +
         forces.externalForceVec;
-    if (parameters.damping != 0)
-      forces.mechanicalForceVec += computeDampingForce();
     forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
   }
 
   if (parameters.variation.isProteinVariation) {
-    computeChemicalPotentials();
-    forces.chemicalPotential =
-        forces.adsorptionPotential + forces.aggregationPotential +
-        forces.bendingPotential + forces.diffusionPotential +
-        forces.interiorPenaltyPotential;
+    computeChemicalPotential();
   }
 
   // compute the mechanical error norm
@@ -620,24 +613,6 @@ void System::computePhysicalForcing() {
   chemErrorNorm = parameters.variation.isProteinVariation
                       ? computeNorm(forces.chemicalPotential.raw())
                       : 0;
-}
-
-void System::computePhysicalForcing(double timeStep) {
-  computePhysicalForcing();
-  if (parameters.variation.isShapeVariation && parameters.dpd.gamma != 0) {
-    computeDPDForces(timeStep);
-    forces.mechanicalForceVec +=
-        forces.dampingForceVec + forces.stochasticForceVec;
-  }
-
-  // if (!f.mesh->hasBoundary()) {
-  //   removeTranslation(physicalForceVec);
-  //   removeRotation(toMatrix(f.vpg->inputVertexPositions),
-  //                  physicalForceVec);
-  //   // removeTranslation(DPDPressure);
-  //   // removeRotation(toMatrix(f.vpg->inputVertexPositions),
-  //   // DPDPressure);
-  // }
 }
 
 } // namespace solver
