@@ -67,6 +67,8 @@ struct Energy {
   double potentialEnergy = 0;
   /// bending energy of the membrane
   double bendingEnergy = 0;
+  /// deviatoric energy of the membrane
+  double deviatoricEnergy = 0;
   /// stretching energy of the membrane
   double surfaceEnergy = 0;
   /// work of pressure within membrane
@@ -81,6 +83,8 @@ struct Energy {
   double externalWork = 0;
   /// protein interior penalty energy
   double proteinInteriorPenalty = 0;
+  /// membrane self-avoidance penalty energy
+  double selfAvoidancePenalty = 0;
 };
 
 class DLL_PUBLIC System {
@@ -129,6 +133,8 @@ public:
   gcs::VertexData<double> H0;
   /// Bending rigidity of the membrane
   gcs::VertexData<double> Kb;
+  /// deviatoric rigidity of the membrane
+  gcs::VertexData<double> Kd;
 
   /// is Smooth
   bool isSmooth;
@@ -139,6 +145,8 @@ public:
   /// "the vertex"
   gcs::SurfacePoint thePoint;
   gcs::VertexData<bool> thePointTracker;
+  /// projected time of collision
+  double projectedCollideTime;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -182,7 +190,7 @@ public:
     initConstants();
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -211,7 +219,7 @@ public:
     initConstants();
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -262,7 +270,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -299,7 +307,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -351,7 +359,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -386,7 +394,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh();
+    mutateMesh(10);
 
     /// compute nonconstant values during simulation
     updateConfigurations();
@@ -479,7 +487,7 @@ private:
         forces(*mesh, *vpg) {
 
     time = 0;
-    energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     proteinDensity = gc::VertexData<double>(*mesh, 0);
     proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
@@ -487,6 +495,7 @@ private:
     proteinVelocity = gcs::VertexData<double>(*mesh, 0);
     H0 = gcs::VertexData<double>(*mesh);
     Kb = gcs::VertexData<double>(*mesh);
+    Kd = gcs::VertexData<double>(*mesh);
 
     geodesicDistanceFromPtInd = gcs::VertexData<double>(*mesh, 0);
 
@@ -617,7 +626,7 @@ public:
   /**
    * @brief Mesh mutation
    */
-  void mutateMesh();
+  void mutateMesh(size_t nRepetition = 1);
 
   /**
    * @brief Update the vertex position and recompute cached values
@@ -688,18 +697,29 @@ public:
   computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
                                 gc::Halfedge &he);
 
+  /**
+   * @brief Helper functions to compute geometric derivatives
+   */
+  gc::Vector3 cornerAngleGradient(gcs::Corner c, gcs::Vertex v);
+
   // ==========================================================
   // ================        Pressure        ==================
   // ==========================================================
   /**
-   * @brief Compute all forcing of the system
+   * @brief Compute all forcing of the system, include DPD if given time step
    */
   void computePhysicalForcing();
+  void computePhysicalForcing(double timeStep);
 
   /**
    * @brief Compute chemical potential of the system
    */
-  EigenVectorX1d computeChemicalPotential();
+  void computeChemicalPotentials();
+
+  /**
+   * @brief Compute Self Avoidance force
+   */
+  void computeSelfAvoidanceForce();
 
   /**
    * @brief Compute mechanical forces
@@ -716,8 +736,12 @@ public:
   /**
    * @brief Compute DPD forces of the system
    */
-  std::tuple<EigenVectorX3dr, EigenVectorX3dr> computeDPDForces(double dt);
+  void computeDPDForces(double dt);
 
+  /**
+   * @brief Compute damping forces of the system
+   */
+  gc::VertexData<gc::Vector3> computeDampingForce();
   // ==========================================================
   // ================        Energy          ==================
   // ==========================================================
@@ -725,6 +749,11 @@ public:
    * @brief Compute bending energy
    */
   void computeBendingEnergy();
+
+  /**
+   * @brief Compute deviatoric energy
+   */
+  void computeDeviatoricEnergy();
 
   /**
    * @brief Compute surface energy
@@ -755,6 +784,11 @@ public:
    * @brief Compute Dirichlet energy
    */
   void computeDirichletEnergy();
+
+  /**
+   * @brief Compute self-avoidance energy
+   */
+  void computeSelfAvoidanceEnergy();
 
   /**
    * @brief Compute external work
@@ -844,7 +878,8 @@ public:
    * @param maxIteration maximum number of iteration
    */
   Eigen::Matrix<bool, Eigen::Dynamic, 1>
-  smoothenMesh(double initStep, double target = 0.7, size_t maxIteration = 100);
+  smoothenMesh(double initStep, double target = 0.7,
+               size_t maxIteration = 1000);
   /**
    * @brief pointwise smoothing after mutation of the mesh
    */

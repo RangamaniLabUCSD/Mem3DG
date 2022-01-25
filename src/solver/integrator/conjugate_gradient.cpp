@@ -127,6 +127,9 @@ void ConjugateGradient::checkParameters() {
     mem3dg_runtime_error("Protein mobility constant should "
                          "be set to 1 for optimization!");
   }
+  if (system.parameters.damping != 0) {
+    mem3dg_runtime_error("Damping to be 0 for euler integration!");
+  }
   if (isBacktrack) {
     if (rho >= 1 || rho <= 0 || c1 >= 1 || c1 <= 0) {
       mem3dg_runtime_error("To backtrack, 0<rho<1 and 0<c1<1!");
@@ -149,7 +152,7 @@ void ConjugateGradient::status() {
   auto physicalForce = toMatrix(system.forces.mechanicalForce);
 
   // compute summerized forces
-  getForces();
+  system.computePhysicalForcing(timeStep);
 
   // compute the area contraint error
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
@@ -175,8 +178,8 @@ void ConjugateGradient::status() {
   // compute the free energy of the system
   system.computeTotalEnergy();
 
-  // backtracking for error
-  finitenessErrorBacktrack();
+  // backtracing for error
+  finitenessErrorBacktrace();
 }
 
 void ConjugateGradient::march() {
@@ -217,9 +220,8 @@ void ConjugateGradient::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    timeStep =
-        backtrack(system.energy.potentialEnergy, toMatrix(system.velocity),
-                  toMatrix(system.proteinVelocity), rho, c1);
+    timeStep = backtrack(toMatrix(system.velocity),
+                         toMatrix(system.proteinVelocity), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
   }

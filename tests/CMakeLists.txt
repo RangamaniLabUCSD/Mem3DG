@@ -44,7 +44,7 @@ elseif(BUILD_PYMEM3DG)
     # Add a test for pytest
     add_test(NAME Mem3DG_Python_Tests
       COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
-      WORKING_DIRECTORY $<TARGET_FILE_DIR:pymem3dg>
+      WORKING_DIRECTORY $<TARGET_FILE_DIR:_core>
     )
 endif()
 

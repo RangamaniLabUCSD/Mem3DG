@@ -150,3 +150,6 @@ pymem3dg/__init__.py
 
 docs/src/_pythonapi/
 docs/src/conf.py
+
+python_src/pymem3dg/include
+python_src/pymem3dg/lib

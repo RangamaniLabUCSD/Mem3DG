@@ -13,7 +13,7 @@ graft libraries
 graft include 
 
 # PyMem3DG sources
-graft pymem3dg
+graft python_src
 
 # Documentation
 graft docs

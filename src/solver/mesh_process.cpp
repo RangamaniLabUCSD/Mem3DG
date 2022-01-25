@@ -197,13 +197,12 @@ bool MeshProcessor::MeshMutator::ifCollapse(
   if (collapseSmall) {
     double areaSum;
     std::size_t num_neighbor;
-    neighborAreaSum(e, vpg, areaSum, num_neighbor);
-    is2Small = (isBoundary) ? ((areaSum - vpg.faceArea(he.face()) -
-                                vpg.faceArea(he.twin().face())) <
-                               (num_neighbor - 1) * targetFaceArea)
-                            : ((areaSum - vpg.faceArea(he.face()) -
-                                vpg.faceArea(he.twin().face())) <
-                               (num_neighbor - 2) * targetFaceArea);
+    std::tie(areaSum, num_neighbor) = neighborAreaSum(e, vpg);
+
+    size_t gap = isBoundary ? 1 : 2;
+    is2Small =
+        (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
+        (num_neighbor - gap) * targetFaceArea;
     if (collapseSmallNeedFlat) {
       isFlat =
           vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
@@ -297,25 +296,35 @@ bool MeshProcessor::MeshMutator::ifSplit(
   return condition;
 }
 
-void MeshProcessor::MeshMutator::markAllNeighboring(
-    gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v) {
+void MeshProcessor::MeshMutator::markVertices(
+    gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v,
+    const size_t layer) {
+  if (layer > 2)
+    mem3dg_runtime_error("max layer number is 2!");
   mutationMarker[v] = true;
-  for (gc::Vertex nv : v.adjacentVertices()) {
-    mutationMarker[nv] = true;
+  if (layer > 0) {
+    for (gc::Vertex nv : v.adjacentVertices()) {
+      mutationMarker[nv] = true;
+      if (layer > 1) {
+        for (gc::Vertex nnv : nv.adjacentVertices()) {
+          mutationMarker[nnv] = true;
+        }
+      }
+    }
   }
 }
 
-void MeshProcessor::MeshMutator::neighborAreaSum(
-    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg, double &area,
-    std::size_t &num_neighbor) {
-  area = 0;
-  num_neighbor = -2;
+std::tuple<double, std::size_t> MeshProcessor::MeshMutator::neighborAreaSum(
+    const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
+  double area = 0;
+  std::size_t num_neighbor = -2;
   for (gcs::Vertex v : e.adjacentVertices()) {
     for (gcs::Face f : v.adjacentFaces()) {
       area += vpg.faceArea(f);
       num_neighbor++;
     }
   }
+  return std::tie(area, num_neighbor);
 }
 
 double MeshProcessor::MeshMutator::computeCurvatureThresholdLength(

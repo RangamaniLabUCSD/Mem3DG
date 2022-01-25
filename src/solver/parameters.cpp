@@ -80,11 +80,11 @@ void Parameters::Point::checkParameters() {
         "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
         "coordinate)");
   }
-  if (pt.rows() == 2) {
-    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
-                 "lead to ambiguity! Please check by visualizing it first!\n"
-              << std::endl;
-  }
+  // if (pt.rows() == 2) {
+  //   std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
+  //                "lead to ambiguity! Please check by visualizing it first!\n"
+  //             << std::endl;
+  // }
   if (isFloatVertex) {
     if (pt.rows() == 1) {
       mem3dg_runtime_error(
@@ -114,8 +114,9 @@ void Parameters::ProteinDistribution::checkParameters(size_t nVertex) {
     if (protein0[2] == protein0[3]) {
       mem3dg_runtime_error("Please switch to {phi} for homogeneous membrane!");
     }
-    if (profile != "gaussian" && profile != "tanh"){
-      mem3dg_runtime_error("Please choose the profile type, 'gaussian' or 'tanh'!")
+    if (profile != "gaussian" && profile != "tanh") {
+      mem3dg_runtime_error(
+          "Please choose the profile type, 'gaussian' or 'tanh'!")
     }
   } else if (protein0.rows() == nVertex && (protein0.array() > 0).all() &&
              (protein0.array() < 1).all()) {
@@ -213,10 +214,12 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
       }
     } else {
       if (proteinDistribution.protein0[0] != 1 || bending.Kb != 0 ||
-          dirichlet.eta != 0 || adsorption.epsilon != 0) {
+          dirichlet.eta != 0 || adsorption.epsilon != 0 ||
+          aggregation.chi != 0) {
         mem3dg_runtime_error(
             "For homogenous membrane simulation, good practice is to set "
-            "proteinDensity.protein0 = 1, Kb = 0, eta  = 0, epsilon = 0 to "
+            "proteinDensity.protein0 = 1, Kb = 0, eta  = 0, epsilon = 0, chi = "
+            "0 to "
             "avoid ambiguity & save computation!");
       }
     }
