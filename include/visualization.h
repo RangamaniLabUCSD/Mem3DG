@@ -35,6 +35,8 @@ struct DLL_PUBLIC Quantities {
   bool spon_curvature = false;
   /// vertex external force
   bool ext_force = false;
+  /// vertex self avoidance force
+  bool avoidance_force = false;
   /// vertex (total) physical force
   bool physical_force = false;
   /// vertex capillary force
@@ -43,6 +45,8 @@ struct DLL_PUBLIC Quantities {
   bool osmotic_force = false;
   /// vertex bending force
   bool bending_force = false;
+  /// vertex deviatoric force
+  bool deviatoric_force = false;
   /// vertex adsorption force
   bool adsorption_force = false;
   /// vertex aggregation force
@@ -61,6 +65,8 @@ struct DLL_PUBLIC Quantities {
   bool chemical_potential = false;
   /// bending chemical potential
   bool bending_potential = false;
+  /// deviatoric chemical potential
+  bool deviatoric_potential = false;
   /// diffusion chemical potential
   bool diffusion_potential = false;
   /// adsorption chemical potential

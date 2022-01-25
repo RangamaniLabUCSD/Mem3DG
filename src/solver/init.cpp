@@ -183,6 +183,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
     // write protein distribution
     richData.addVertexProperty("protein_density", proteinDensity);
+    richData.addVertexProperty("velocity", forces.ontoNormal(velocity));
 
     // write bool
     gcs::VertexData<double> msk(*mesh);
@@ -209,18 +210,22 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
     // write pressures
     richData.addVertexProperty("bending_force", forces.bendingForce);
+    richData.addVertexProperty("deviatoric_force", forces.deviatoricForce);
     richData.addVertexProperty("capillary_force", forces.capillaryForce);
     richData.addVertexProperty("line_tension_force", forces.lineCapillaryForce);
     richData.addVertexProperty("osmotic_force", forces.osmoticForce);
     richData.addVertexProperty("adsorption_force", forces.adsorptionForce);
     richData.addVertexProperty("aggregation_force", forces.aggregationForce);
     richData.addVertexProperty("external_force", forces.externalForce);
+    richData.addVertexProperty("avoidance_force", forces.selfAvoidanceForce);
     richData.addVertexProperty("physical_force", forces.mechanicalForce);
 
     // write chemical potential
     richData.addVertexProperty("diffusion_potential",
                                forces.diffusionPotential);
     richData.addVertexProperty("bending_potential", forces.bendingPotential);
+    richData.addVertexProperty("deviatoric_potential",
+                               forces.deviatoricPotential);
     richData.addVertexProperty("adsorption_potential",
                                forces.adsorptionPotential);
     richData.addVertexProperty("aggregation_potential",
@@ -250,6 +255,30 @@ void System::checkConfiguration() {
         mesh->nFaces() != meshProcessor.meshRegularizer.nFace))) {
     mem3dg_runtime_error("For topologically different reference mesh, mesh "
                          "regularization cannot be applied!");
+  }
+  if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
+    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may"
+                 "lead to ambiguity! Please check by visualizing it first!\n"
+              << std::endl;
+  }
+  if (parameters.selfAvoidance.mu != 0) {
+    for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+      gc::Vertex vi{mesh->vertex(i)};
+      gc::VertexData<bool> neighborList(*mesh, false);
+      meshProcessor.meshMutator.markVertices(neighborList, vi,
+                                             parameters.selfAvoidance.n);
+      for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+        if (neighborList[j])
+          continue;
+        gc::Vertex vj{mesh->vertex(j)};
+        gc::Vector3 r =
+            vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+        double distance = gc::norm(r);
+        if (distance < parameters.selfAvoidance.d)
+          mem3dg_runtime_error(
+              "Input mesh violates the self avoidance constraint!");
+      }
+    }
   }
 }
 
@@ -290,6 +319,10 @@ void System::initConstants() {
   //   //   }
   //   // }
   // }
+
+  // Kd.raw() = 4 * parameters.bending.Kb +
+  //            parameters.bending.Kbc * proteinDensity.raw().array();
+  Kd.fill(parameters.bending.Kd);
 
   // Find "the" vertex
   findThePoint(*vpg, geodesicDistanceFromPtInd, 1e18);
@@ -378,10 +411,6 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
   // refresh cached quantities after regularization
   vpg->refreshQuantities();
 
-  // EigenMap commonly used matrices
-  auto vertexAngleNormal_e = gc::EigenMap<double, 3>(vpg->vertexNormals);
-  auto positions = gc::EigenMap<double, 3>(vpg->inputVertexPositions);
-
   // recompute floating "the vertex"
   if (parameters.point.isFloatVertex && isUpdateGeodesics) {
     findThePoint(
@@ -425,7 +454,7 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
     proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
   }
 
-  // compute face gradient of spontaneous curvature
+  // compute face gradient of protein density
   if (parameters.dirichlet.eta != 0) {
     computeGradient(proteinDensity, proteinDensityGradient);
   }
