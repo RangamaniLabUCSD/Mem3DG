@@ -787,7 +787,7 @@ void Integrator::lineSearchErrorBacktrace(
     }
   }
 
-  // test if dirichlet energy increases
+  // test if self avoidance energy increases
   if (runAll || system.energy.selfAvoidancePenalty >
                     previousEnergy.selfAvoidancePenalty) {
 

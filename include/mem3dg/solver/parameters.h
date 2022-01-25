@@ -127,13 +127,13 @@ struct Parameters {
 
   struct SelfAvoidance {
     /// limit distance
-    double d = 0.005;
+    double d = 0;
     /// penalty coefficient
-    double mu = 1;
+    double mu = 1e-5;
     // neighborhood layers
     std::size_t n = 1;
     // period factor of computation
-    double p = 1;
+    double p = 0;
   };
 
   struct External {
