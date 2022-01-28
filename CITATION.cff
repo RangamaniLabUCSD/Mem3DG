@@ -12,8 +12,8 @@ authors:
   orcid: "https://orcid.org/0000-0001-5953-4347"
 title: "Mem3DG"
 version: 0.0.3
-# doi: 10.5281/zenodo.1234
-# date-released: 2017-12-18
+doi: 10.5281/zenodo.1234
+date-released: 2017-12-18
 url: "https://github.com/RangamaniLabUCSD/Mem3DG/"
 preferred-citation:
   type: article
@@ -33,6 +33,6 @@ preferred-citation:
   start: 1 # First page number
   end: 40 # Last page number
   title: "Mem3DG: Modeling Membrane Mechanochemical Dynamics in 3D using Discrete Differential Geometry"
-#   issue: 1
-#   volume: 1
+  issue: 1
+  volume: 1
   year: 2021
