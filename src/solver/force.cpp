@@ -222,6 +222,12 @@ void System::computeMechanicalForces() {
     computeMechanicalForces(i);
   }
 
+  std::cout << "all part: " << toMatrix(forces.deviatoricForceVec).norm()
+            << std::endl;
+  std::cout << "mean part: " << toMatrix(forces.deviatoricForceVec_mean).norm()
+            << std::endl;
+  std::cout << "gauss part: "
+            << toMatrix(forces.deviatoricForceVec_gauss).norm() << std::endl;
   // measure smoothness
   // if (meshProcessor.meshMutator.isSplitEdge ||
   //     meshProcessor.meshMutator.isCollapseEdge) {
@@ -313,14 +319,20 @@ void System::computeMechanicalForces(size_t i) {
         (Kdi * (-Hi * Hi) / 3 + Kdj * (-Hj * Hj) * 2 / 3) * areaGrad +
         (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2);
 
-    bool interiorTwinHalfedge = he.twin().isInterior();
-    if (interiorHalfedge) {
+    // bool interiorTwinHalfedge = he.twin().isInterior();
+    // if (interiorHalfedge) {
+    //   deviatoricForceVec_gauss -=
+    //       Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
+    //       Kdj * cornerAngleGradient(he.next().corner(), he.vertex());
+    // }
+    // if (interiorTwinHalfedge) {
+    //   deviatoricForceVec_gauss -=
+    //       Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
+    // }
+    if (!boundaryVertex) {
       deviatoricForceVec_gauss -=
           Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
-          Kdj * cornerAngleGradient(he.next().corner(), he.vertex());
-    }
-    if (interiorTwinHalfedge) {
-      deviatoricForceVec_gauss -=
+          Kdj * cornerAngleGradient(he.next().corner(), he.vertex()) +
           Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
     }
   }
@@ -328,7 +340,9 @@ void System::computeMechanicalForces(size_t i) {
   bendingForceVec = bendingForceVec_areaGrad + bendingForceVec_gaussVec +
                     bendingForceVec_schlafliVec;
 
-  deviatoricForceVec = deviatoricForceVec_mean + deviatoricForceVec_gauss;
+  deviatoricForceVec = deviatoricForceVec_gauss;
+  // deviatoricForceVec = deviatoricForceVec_mean + deviatoricForceVec_gauss;
+  // deviatoricForceVec = deviatoricForceVec_mean;
 
   // masking
   bendingForceVec_areaGrad = forces.maskForce(bendingForceVec_areaGrad, i);
@@ -354,6 +368,9 @@ void System::computeMechanicalForces(size_t i) {
   forces.bendingForceVec[i] = bendingForceVec;
 
   forces.deviatoricForceVec[i] = deviatoricForceVec;
+  forces.deviatoricForceVec_mean[i] = deviatoricForceVec_mean;
+  forces.deviatoricForceVec_gauss[i] = deviatoricForceVec_gauss;
+
   forces.capillaryForceVec[i] = capillaryForceVec;
   forces.osmoticForceVec[i] = osmoticForceVec;
   forces.lineCapillaryForceVec[i] = lineCapForceVec;
