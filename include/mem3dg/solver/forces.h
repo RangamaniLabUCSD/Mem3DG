@@ -88,8 +88,13 @@ struct Forces {
   gcs::VertexData<gc::Vector3> bendingForceVec_gaussVec;
   /// Cached bending force schlafliVec component
   gcs::VertexData<gc::Vector3> bendingForceVec_schlafliVec;
+
   /// Cached deviatoric force
   gcs::VertexData<gc::Vector3> deviatoricForceVec;
+  /// Cached deviatoric force
+  gcs::VertexData<gc::Vector3> deviatoricForceVec_mean;
+  /// Cached deviatoric force
+  gcs::VertexData<gc::Vector3> deviatoricForceVec_gauss;
 
   /// Cached tension-induced capillary force
   gcs::VertexData<gc::Vector3> capillaryForceVec;
@@ -140,6 +145,8 @@ struct Forces {
       : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
         mechanicalForceVec(mesh, {0, 0, 0}), bendingForceVec(mesh, {0, 0, 0}),
         deviatoricForceVec(mesh, {0, 0, 0}),
+        deviatoricForceVec_mean(mesh, {0, 0, 0}),
+        deviatoricForceVec_gauss(mesh, {0, 0, 0}),
         bendingForceVec_areaGrad(mesh, {0, 0, 0}),
         bendingForceVec_gaussVec(mesh, {0, 0, 0}),
         bendingForceVec_schlafliVec(mesh, {0, 0, 0}),
