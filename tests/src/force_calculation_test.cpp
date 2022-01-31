@@ -58,6 +58,7 @@ protected:
     p.proteinDistribution.tanhSharpness = 3;
 
     p.bending.Kd = 8.22e-6;
+    p.bending.Kdc = 0;
     p.bending.Kb = 8.22e-5;
     p.bending.Kbc = 0;
     p.bending.H0c = -1;
