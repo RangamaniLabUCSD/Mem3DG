@@ -63,6 +63,33 @@ gc::Vector3 System::cornerAngleGradient(gcs::Corner c, gcs::Vertex v) {
   }
 }
 
+gc::Vector3 System::dihedralAngleGradient(gcs::Halfedge he, gcs::Vertex v) {
+  double l = vpg->edgeLengths[he.edge()];
+  if (he.edge().isBoundary()) {
+    return gc::Vector3{0, 0, 0};
+  } else if (he.vertex() == v) {
+    return (vpg->halfedgeCotanWeights[he.next().next()] *
+                vpg->faceNormals[he.face()] +
+            vpg->halfedgeCotanWeights[he.twin().next()] *
+                vpg->faceNormals[he.twin().face()]) /
+           l;
+  } else if (he.next().vertex() == v) {
+    return (vpg->halfedgeCotanWeights[he.twin().next().next()] *
+                vpg->faceNormals[he.twin().face()] +
+            vpg->halfedgeCotanWeights[he.next()] *
+                vpg->faceNormals[he.face()]) /
+           l;
+  } else if (he.next().next().vertex() == v) {
+    return (-(vpg->halfedgeCotanWeights[he.next().next()] +
+              vpg->halfedgeCotanWeights[he.next()]) *
+            vpg->faceNormals[he.face()]) /
+           l;
+  } else {
+    mem3dg_runtime_error("Unexpected combination of halfedge and vertex!");
+    return gc::Vector3{0, 0, 0};
+  }
+}
+
 std::tuple<gc::Vector3, gc::Vector3>
 System::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
                                       gc::Halfedge &he) {
@@ -222,12 +249,6 @@ void System::computeMechanicalForces() {
     computeMechanicalForces(i);
   }
 
-  std::cout << "all part: " << toMatrix(forces.deviatoricForceVec).norm()
-            << std::endl;
-  std::cout << "mean part: " << toMatrix(forces.deviatoricForceVec_mean).norm()
-            << std::endl;
-  std::cout << "gauss part: "
-            << toMatrix(forces.deviatoricForceVec_gauss).norm() << std::endl;
   // measure smoothness
   // if (meshProcessor.meshMutator.isSplitEdge ||
   //     meshProcessor.meshMutator.isCollapseEdge) {
@@ -277,13 +298,23 @@ void System::computeMechanicalForces(size_t i) {
     double Kdj = Kd[i_vj];
     double proteinDensityj = proteinDensity[i_vj];
     bool interiorHalfedge = he.isInterior();
+    bool boundaryEdge = he.edge().isBoundary();
 
     gc::Vector3 areaGrad = 2 * computeHalfedgeMeanCurvatureVector(*vpg, he);
     gc::Vector3 gaussVec = computeHalfedgeGaussianCurvatureVector(*vpg, he);
     gc::Vector3 schlafliVec1;
     gc::Vector3 schlafliVec2;
-    std::tie(schlafliVec1, schlafliVec2) =
-        computeHalfedgeSchlafliVector(*vpg, he);
+    // std::tie(schlafliVec1, schlafliVec2) =
+    //     computeHalfedgeSchlafliVector(*vpg, he);
+    schlafliVec1 =
+        vpg->edgeLengths[he.edge()] * dihedralAngleGradient(he, he.vertex());
+    schlafliVec2 =
+        vpg->edgeLengths[he.twin().edge()] *
+            dihedralAngleGradient(he.twin(), he.vertex()) +
+        vpg->edgeLengths[he.next().edge()] *
+            dihedralAngleGradient(he.next(), he.vertex()) +
+        vpg->edgeLengths[he.twin().next().next().edge()] *
+            dihedralAngleGradient(he.twin().next().next(), he.vertex());
     gc::Vector3 oneSidedAreaGrad{0, 0, 0};
     gc::Vector3 dirichletVec{0, 0, 0};
     if (interiorHalfedge) {
@@ -329,7 +360,12 @@ void System::computeMechanicalForces(size_t i) {
     //   deviatoricForceVec_gauss -=
     //       Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
     // }
-    if (!boundaryVertex) {
+    if (boundaryVertex) {
+      if (!boundaryEdge)
+        deviatoricForceVec_gauss -=
+            Kdj * cornerAngleGradient(he.next().corner(), he.vertex()) +
+            Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
+    } else {
       deviatoricForceVec_gauss -=
           Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
           Kdj * cornerAngleGradient(he.next().corner(), he.vertex()) +
@@ -340,8 +376,9 @@ void System::computeMechanicalForces(size_t i) {
   bendingForceVec = bendingForceVec_areaGrad + bendingForceVec_gaussVec +
                     bendingForceVec_schlafliVec;
 
-  deviatoricForceVec = deviatoricForceVec_gauss;
-  // deviatoricForceVec = deviatoricForceVec_mean + deviatoricForceVec_gauss;
+  // deviatoricForceVec = deviatoricForceVec_gauss;
+  // std::cout << "gauss force: " << deviatoricForceVec_gauss << std::ends;
+  deviatoricForceVec = deviatoricForceVec_mean + deviatoricForceVec_gauss;
   // deviatoricForceVec = deviatoricForceVec_mean;
 
   // masking
