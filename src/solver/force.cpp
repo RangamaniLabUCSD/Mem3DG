@@ -143,9 +143,8 @@ System::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
 gc::Vector3
 System::computeHalfedgeGaussianCurvatureVector(gcs::VertexPositionGeometry &vpg,
                                                gc::Halfedge &he) {
-  bool boundaryEdge = he.edge().isBoundary();
   gc::Vector3 gaussVec{0, 0, 0};
-  if (!boundaryEdge) {
+  if (!he.edge().isBoundary()) {
     // gc::Vector3 eji{} = -vecFromHalfedge(he, *vpg);
     gaussVec = 0.5 * vpg.edgeDihedralAngles[he.edge()] *
                (-vecFromHalfedge(he, vpg)).unit();
