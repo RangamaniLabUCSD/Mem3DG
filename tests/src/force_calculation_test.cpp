@@ -57,7 +57,7 @@ protected:
     p.proteinDistribution.protein0 << 1, 1, 0.7, 0.2;
     p.proteinDistribution.tanhSharpness = 3;
 
-    p.bending.Kd = 8.22e-5;
+    p.bending.Kd = 8.22e-6;
     p.bending.Kb = 8.22e-5;
     p.bending.Kbc = 0;
     p.bending.H0c = -1;
@@ -80,8 +80,8 @@ protected:
     p.osmotic.n = 1;
     p.osmotic.lambdaV = 0;
 
-    p.boundary.shapeBoundaryCondition = "roller";
-    p.boundary.proteinBoundaryCondition = "pin";
+    p.boundary.shapeBoundaryCondition = "none";
+    p.boundary.proteinBoundaryCondition = "none";
 
     p.proteinMobility = 1;
 
@@ -172,9 +172,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.bendingEnergy <= previousE.bendingEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
-      << "bending force: (expected - actual) / expected = "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "bending force: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
 
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
@@ -201,9 +201,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.bendingEnergy <= previousE.bendingEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
       << "bending potential: (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+      << difference_h / (abs(actualEnergyDecrease));
 
   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   f.proteinDensity.raw() =
@@ -235,9 +235,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   EXPECT_TRUE(f.energy.deviatoricEnergy <= previousE.deviatoricEnergy)
       << "deviatoricPre vs now: " << previousE.deviatoricEnergy
       << f.energy.deviatoricEnergy << "\n";
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
-      << "deviatoric force: (expected - actual) / expected = "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  EXPECT_TRUE(difference_h + 100 < tolerance * (abs(actualEnergyDecrease)))
+      << "deviatoric force: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
 
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
@@ -268,9 +268,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   //   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   //   EXPECT_TRUE(f.energy.deviatoricEnergy <= previousE.deviatoricEnergy);
   //   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) +
-  //   1e-6))
+  //   1e-12))
   //       << "deviatoric potential: (expected - actual) / expected: "
-  //       << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  //       << difference_h / (abs(actualEnergyDecrease) );
 
   //   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   //   f.proteinDensity.raw() =
@@ -300,9 +300,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.surfaceEnergy + previousE.surfaceEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.surfaceEnergy <= previousE.surfaceEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
-      << "capillary force: (expected - actual) / expected = "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "capillary force: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
 
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
@@ -328,9 +328,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.pressureEnergy + previousE.pressureEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.pressureEnergy <= previousE.pressureEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
-      << "osmotic force: (expected - actual) / expected = "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "osmotic force: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
 
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
@@ -361,9 +361,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   //   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   //   EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
   //   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) +
-  //   1e-6))
+  //   1e-12))
   //       << "adsorption force: (expected - actual) / expected = "
-  //       << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  //       << difference_h / (abs(actualEnergyDecrease) );
 
   //   f.proteinDensity.raw() = current_proteinDensity;
   //   toMatrix(f.vpg->inputVertexPositions) =
@@ -395,9 +395,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
-      << "adsorption potential: (expected - actual) / expected = "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "adsorption potential: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
 
   //   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   //   f.proteinDensity.raw() =
@@ -430,9 +430,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   //   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   //   EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
   //   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) +
-  //   1e-6))
+  //   1e-12))
   //       << "aggregation force: (expected - actual) / expected = "
-  //       << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  //       << difference_h / (abs(actualEnergyDecrease) );
 
   //   f.proteinDensity.raw() = current_proteinDensity;
   //   toMatrix(f.vpg->inputVertexPositions) =
@@ -464,9 +464,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
-      << "aggregation potential: (expected - actual) / expected = "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "aggregation potential: expected vs. actual: "
+      << expectedEnergyDecrease << ", " << actualEnergyDecrease << std::endl;
 
   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   f.proteinDensity.raw() =
@@ -496,9 +496,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
       << "line tension force = (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+      << difference_h / (abs(actualEnergyDecrease));
 
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
@@ -528,9 +528,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
       << "diffusion potential = (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+      << difference_h / (abs(actualEnergyDecrease));
 
   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   f.proteinDensity.raw() =
@@ -560,9 +560,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.selfAvoidancePenalty + previousE.selfAvoidancePenalty;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.selfAvoidancePenalty <= previousE.selfAvoidancePenalty);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
       << "self avoidance penalty = (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+      << difference_h / (abs(actualEnergyDecrease));
 
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
@@ -596,9 +596,9 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.proteinInteriorPenalty <=
               previousE.proteinInteriorPenalty);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-6))
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
       << "interior penalty potential = (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease) + 1e-6);
+      << difference_h / (abs(actualEnergyDecrease));
 
   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   f.proteinDensity.raw() =
