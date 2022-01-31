@@ -58,6 +58,8 @@ struct Parameters {
   struct Bending {
     /// Deviatoric modulus
     double Kd = 0;
+    /// Constant of deviatoric modulus vs protein density
+    double Kdc = 0;
     /// Bending modulus
     double Kb = 0;
     /// Constant of bending modulus vs protein density
