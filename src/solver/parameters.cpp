@@ -178,13 +178,13 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   if (hasBoundary) {
     if (boundary.shapeBoundaryCondition == "none" &&
         variation.isShapeVariation) {
-      mem3dg_runtime_error(
+      mem3dg_runtime_message(
           "Shape boundary condition type (roller, pin or fixed) "
           "has not been specified for open boundary mesh!");
     }
     if (boundary.proteinBoundaryCondition != "pin" &&
         variation.isProteinVariation) {
-      mem3dg_runtime_error("Protein boundary condition type (pin) "
+      mem3dg_runtime_message("Protein boundary condition type (pin) "
                            "has not been specified for open boundary mesh!");
     }
   } else {

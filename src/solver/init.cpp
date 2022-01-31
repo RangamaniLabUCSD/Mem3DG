@@ -257,9 +257,9 @@ void System::checkConfiguration() {
                          "regularization cannot be applied!");
   }
   if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
-    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may"
-                 "lead to ambiguity! Please check by visualizing it first!\n"
-              << std::endl;
+    mem3dg_runtime_message(
+        "specifying x-y coordinate on closed surface may"
+        "lead to ambiguity! Please check by visualizing it first!");
   }
   if (parameters.selfAvoidance.mu != 0) {
     for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
