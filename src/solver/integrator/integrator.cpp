@@ -117,7 +117,7 @@ double Integrator::backtrack(
   }
   system.time += alpha;
   system.updateConfigurations(false);
-  system.computeTotalEnergy();
+  system.computePotentialEnergy();
 
   while (true) {
     // Wolfe condition fulfillment
@@ -156,7 +156,7 @@ double Integrator::backtrack(
     }
     system.time = init_time + alpha;
     system.updateConfigurations(false);
-    system.computeTotalEnergy();
+    system.computePotentialEnergy();
 
     // count the number of iterations
     count++;
@@ -182,7 +182,7 @@ double Integrator::backtrack(
   system.proteinDensity = initial_protein;
   system.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations(false);
-  system.computeTotalEnergy();
+  system.computePotentialEnergy();
   return alpha;
 }
 double Integrator::chemicalBacktrack(
@@ -224,7 +224,7 @@ double Integrator::chemicalBacktrack(
   system.proteinDensity.raw() += alpha * chemicalDirection;
   system.time += alpha;
   system.updateConfigurations(false);
-  system.computeTotalEnergy();
+  system.computePotentialEnergy();
 
   while (true) {
     // Wolfe condition fulfillment
@@ -256,7 +256,7 @@ double Integrator::chemicalBacktrack(
         toMatrix(initial_protein) + alpha * chemicalDirection;
     system.time = init_time + alpha;
     system.updateConfigurations(false);
-    system.computeTotalEnergy();
+    system.computePotentialEnergy();
 
     // count the number of iterations
     count++;
@@ -281,7 +281,7 @@ double Integrator::chemicalBacktrack(
   system.proteinDensity = initial_protein;
   system.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations(false);
-  system.computeTotalEnergy();
+  system.computePotentialEnergy();
   return alpha;
 }
 
@@ -324,7 +324,7 @@ double Integrator::mechanicalBacktrack(
   toMatrix(system.vpg->inputVertexPositions) += alpha * positionDirection;
   system.time += alpha;
   system.updateConfigurations(false);
-  system.computeTotalEnergy();
+  system.computePotentialEnergy();
 
   while (true) {
     // Wolfe condition fulfillment
@@ -359,7 +359,7 @@ double Integrator::mechanicalBacktrack(
 
     system.time = init_time + alpha;
     system.updateConfigurations(false);
-    system.computeTotalEnergy();
+    system.computePotentialEnergy();
 
     // count the number of iterations
     count++;
@@ -384,7 +384,7 @@ double Integrator::mechanicalBacktrack(
   system.proteinDensity = initial_protein;
   system.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations(false);
-  system.computeTotalEnergy();
+  system.computePotentialEnergy();
   return alpha;
 }
 
@@ -659,7 +659,7 @@ void Integrator::lineSearchErrorBacktrace(
                   << system.energy.adsorptionEnergy -
                          previousEnergy.adsorptionEnergy
                   << " from " << previousEnergy.adsorptionEnergy << " to "
-                  << system.energy.adsorptionEnergy << ", expected dBE: "
+                  << system.energy.adsorptionEnergy << ", expected daE: "
                   << -alpha * system.parameters.proteinMobility *
                          system.forces
                              .maskProtein(
@@ -718,7 +718,7 @@ void Integrator::lineSearchErrorBacktrace(
                   << system.energy.aggregationEnergy -
                          previousEnergy.aggregationEnergy
                   << " from " << previousEnergy.aggregationEnergy << " to "
-                  << system.energy.aggregationEnergy << ", expected dBE: "
+                  << system.energy.aggregationEnergy << ", expected daggE: "
                   << -alpha * system.parameters.proteinMobility *
                          system.forces
                              .maskProtein(
