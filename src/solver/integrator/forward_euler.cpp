@@ -103,7 +103,8 @@ bool Euler::integrate() {
     }
 
     // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics > (updateGeodesicsPeriod * timeStep)) {
+    if (system.time - lastUpdateGeodesics >
+        (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
       system.updateConfigurations(true);
     }
