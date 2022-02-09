@@ -10,7 +10,7 @@ target_compile_features(autodiff INTERFACE cxx_std_17)
 # Add the include paths to the Reaktoro target
 target_include_directories(autodiff
     INTERFACE
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 

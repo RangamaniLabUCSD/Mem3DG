@@ -84,7 +84,7 @@ option(M3DG_GET_OWN_PYBIND11 "Download own pybind11" ON)
 # ##############################################################################
 add_subdirectory(libraries)
 
-set(LINKED_LIBS geometry-central polyscope pcg::pcg igl::core)
+set(LINKED_LIBS geometry-central polyscope pcg::pcg igl::core autodiff)
 
 if(WITH_NETCDF)
   find_package(netCDF REQUIRED)
