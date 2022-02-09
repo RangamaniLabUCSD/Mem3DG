@@ -195,7 +195,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "bending force convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Deviatoric        ==================
@@ -216,9 +217,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   EXPECT_TRUE(f.energy.deviatoricEnergy <= previousE.deviatoricEnergy)
       << "deviatoricPre vs now: " << previousE.deviatoricEnergy
       << f.energy.deviatoricEnergy << "\n";
-  EXPECT_TRUE(difference_h + 100 < tolerance * (abs(actualEnergyDecrease)))
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
       << "deviatoric force: expected vs. actual: " << expectedEnergyDecrease
       << ", " << actualEnergyDecrease << std::endl;
+  //   << f.forces.maskForce(toMatrix(f.forces.deviatoricForceVec)) <<
+  //   std::endl;
 
   // test convergence rate
   f.proteinDensity.raw() = current_proteinDensity;
@@ -233,8 +236,12 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease =
       -f.energy.deviatoricEnergy + previousE.deviatoricEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(difference_xh < tolerance * (abs(actualEnergyDecrease)))
+      << "deviatoric force 1/2: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "deviatoric force convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Capillary         ==================
@@ -269,7 +276,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.surfaceEnergy + previousE.surfaceEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "capillary force convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Osmotic           ==================
@@ -302,7 +310,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.pressureEnergy + previousE.pressureEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "osmotic force convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Adsorption        ==================
@@ -339,7 +348,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "adsorption force convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Aggregation       ==================
@@ -376,7 +386,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "aggregation force convergence rate" << std::endl;
 
   // ==========================================================
   // ================   Self-avoidance       ==================
@@ -415,7 +426,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.selfAvoidancePenalty + previousE.selfAvoidancePenalty;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "self-avoidance force convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Dirichlet         ==================
@@ -452,7 +464,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "dirichlet force convergence rate" << std::endl;
 #pragma endregion force
 #pragma region potential
   // ==========================================================
@@ -487,7 +500,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "bending potential convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Deviatoric        ==================
@@ -510,21 +524,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       << "deviatoric potential: expected vs. actual: " << expectedEnergyDecrease
       << ", " << actualEnergyDecrease << std::endl;
 
-  // test convergence rate
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      stepFold * h * f.forces.maskProtein(f.forces.deviatoricPotential.raw());
-  f.updateConfigurations(false);
-  f.computeDeviatoricEnergy();
-  expectedEnergyDecrease =
-      stepFold * h *
-      f.forces.maskProtein(f.forces.deviatoricPotential.raw()).squaredNorm();
-  actualEnergyDecrease =
-      -f.energy.deviatoricEnergy + previousE.deviatoricEnergy;
-  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+  // no need to test convergence rate, expect exact since it is linear function
 
   // ==========================================================
   // ================      Adsorption        ==================
@@ -584,7 +584,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "aggregation potential convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Dirichlet         ==================
@@ -618,7 +619,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "diffusion potential convergence rate" << std::endl;
 
   // ==========================================================
   // ================     Interior Penalty   ==================
@@ -658,7 +660,8 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.proteinInteriorPenalty + previousE.proteinInteriorPenalty;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "interior penalty convergence rate" << std::endl;
 
 #pragma endregion potential
 };
