@@ -528,7 +528,7 @@ void System::computeChemicalPotentials() {
   if (parameters.bending.relation == "linear") {
     dH0dphi.fill(parameters.bending.H0c);
     dKbdphi.fill(parameters.bending.Kbc);
-    dKbdphi.fill(parameters.bending.Kdc);
+    dKddphi.fill(parameters.bending.Kdc);
   } else if (parameters.bending.relation == "hill") {
     EigenVectorX1d proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
