@@ -298,6 +298,7 @@ void System::computeMechanicalForces(size_t i) {
     double proteinDensityj = proteinDensity[i_vj];
     bool interiorHalfedge = he.isInterior();
     bool boundaryEdge = he.edge().isBoundary();
+    bool boundaryNeighborVertex = he.next().vertex().isBoundary();
 
     gc::Vector3 areaGrad = 2 * computeHalfedgeMeanCurvatureVector(*vpg, he);
     gc::Vector3 gaussVec = computeHalfedgeGaussianCurvatureVector(*vpg, he);
@@ -365,10 +366,15 @@ void System::computeMechanicalForces(size_t i) {
             Kdj * cornerAngleGradient(he.next().corner(), he.vertex()) +
             Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
     } else {
-      deviatoricForceVec_gauss -=
-          Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
-          Kdj * cornerAngleGradient(he.next().corner(), he.vertex()) +
-          Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
+      if (boundaryNeighborVertex) {
+        deviatoricForceVec_gauss -=
+            Kdi * cornerAngleGradient(he.corner(), he.vertex());
+      } else {
+        deviatoricForceVec_gauss -=
+            Kdi * cornerAngleGradient(he.corner(), he.vertex()) +
+            Kdj * cornerAngleGradient(he.next().corner(), he.vertex()) +
+            Kdj * cornerAngleGradient(he.twin().corner(), he.vertex());
+      }
     }
   }
 
@@ -447,14 +453,13 @@ EigenVectorX3dr System::prescribeExternalForce() {
 #elif MODE == 1 // anchor force
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
-    forces.externalForceVec[i] =
-        forces.maskForce(parameters.external.Kf *
-                             ((vpg->vertexGaussianCurvatures[v] <
-                               -700 * vpg->vertexDualAreas[v])
-                                  ? vpg->vertexGaussianCurvatures[v]
-                                  : 0) *
-                             vpg->vertexDualAreas[v] * vpg->vertexNormals[v],
-                         i);
+    forces.externalForceVec[i] = forces.maskForce(
+        parameters.external.Kf *
+            ((vpg->vertexGaussianCurvatures[v] < -700 * vpg->vertexDualAreas[v])
+                 ? vpg->vertexGaussianCurvatures[v]
+                 : 0) *
+            vpg->vertexDualAreas[v] * vpg->vertexNormals[v],
+        i);
   }
 
 #elif MODE == 2 // anchor force
