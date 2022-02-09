@@ -64,11 +64,11 @@ void System::computeBendingEnergy() {
 }
 
 void System::computeDeviatoricEnergy() {
-  // energy.deviatoricEnergy =
-  //     (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
-  //                              vpg->vertexDualAreas.raw().array() -
-  //                          vpg->vertexGaussianCurvatures.raw().array()))
-  //         .sum();
+  energy.deviatoricEnergy =
+      (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
+                               vpg->vertexDualAreas.raw().array() -
+                           vpg->vertexGaussianCurvatures.raw().array()))
+          .sum();
   // energy.deviatoricEnergy =
   //     (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
   //                          vpg->vertexDualAreas.raw().array()))

@@ -57,8 +57,8 @@ protected:
     p.proteinDistribution.protein0 << 1, 1, 0.7, 0.2;
     p.proteinDistribution.tanhSharpness = 3;
 
-    p.bending.Kd = 8.22e-6;
-    p.bending.Kdc = 0;
+    p.bending.Kd = 8.22e-5;
+    p.bending.Kdc = 8.22e-5;
     p.bending.Kb = 8.22e-5;
     p.bending.Kbc = 0;
     p.bending.H0c = -1;
@@ -81,8 +81,8 @@ protected:
     p.osmotic.n = 1;
     p.osmotic.lambdaV = 0;
 
-    p.boundary.shapeBoundaryCondition = "none";
-    p.boundary.proteinBoundaryCondition = "none";
+    p.boundary.shapeBoundaryCondition = "pin";
+    p.boundary.proteinBoundaryCondition = "pin";
 
     p.proteinMobility = 1;
 
@@ -95,7 +95,8 @@ protected:
     p.external.Kf = 0;
 
     // Create mesh and geometry objects
-    std::tie(topologyMatrix, vertexMatrix) = getCylinderMatrix(1, 10, 10);
+    std::tie(topologyMatrix, vertexMatrix) =
+        getCylinderMatrix(1, 10, 10, 5, 0.3);
   }
 };
 
@@ -162,7 +163,11 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
 
   f.computePhysicalForcing();
 
-  // bending force
+#pragma region force
+  // ==========================================================
+  // ================        Bending         ==================
+  // ==========================================================
+  // test energy decrease and closeness
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos + h * f.forces.maskForce(toMatrix(f.forces.bendingForceVec));
@@ -177,6 +182,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       << "bending force: expected vs. actual: " << expectedEnergyDecrease
       << ", " << actualEnergyDecrease << std::endl;
 
+  // test convergence rate
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -189,38 +195,13 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
-  // bending potential
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      h * f.forces.maskProtein(f.forces.bendingPotential.raw());
-  f.updateConfigurations(false);
-  f.computeBendingEnergy();
-  expectedEnergyDecrease =
-      h * f.forces.maskProtein(f.forces.bendingPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
-  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.bendingEnergy <= previousE.bendingEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
-      << "bending potential: (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease));
+              tolerance)
+      << "bending force convergence rate" << std::endl;
 
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      stepFold * h * f.forces.maskProtein(f.forces.bendingPotential.raw());
-  f.updateConfigurations(false);
-  f.computeBendingEnergy();
-  expectedEnergyDecrease =
-      stepFold * h *
-      f.forces.maskProtein(f.forces.bendingPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
-  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
-
-  // deviatoric force
+  // ==========================================================
+  // ================      Deviatoric        ==================
+  // ==========================================================
+  // test energy decrease and closeness
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -236,10 +217,13 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   EXPECT_TRUE(f.energy.deviatoricEnergy <= previousE.deviatoricEnergy)
       << "deviatoricPre vs now: " << previousE.deviatoricEnergy
       << f.energy.deviatoricEnergy << "\n";
-  EXPECT_TRUE(difference_h + 100 < tolerance * (abs(actualEnergyDecrease)))
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
       << "deviatoric force: expected vs. actual: " << expectedEnergyDecrease
       << ", " << actualEnergyDecrease << std::endl;
+  //   << f.forces.maskForce(toMatrix(f.forces.deviatoricForceVec)) <<
+  //   std::endl;
 
+  // test convergence rate
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -252,43 +236,17 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease =
       -f.energy.deviatoricEnergy + previousE.deviatoricEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(difference_xh < tolerance * (abs(actualEnergyDecrease)))
+      << "deviatoric force 1/2: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
-  // deviatoric potential
-  //   toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  //   f.proteinDensity.raw() =
-  //       current_proteinDensity +
-  //       h * f.forces.maskProtein(f.forces.deviatoricPotential.raw());
-  //   f.updateConfigurations(false);
-  //   f.computeDeviatoricEnergy();
-  //   expectedEnergyDecrease =
-  //       h *
-  //       f.forces.maskProtein(f.forces.deviatoricPotential.raw()).squaredNorm();
-  //   actualEnergyDecrease =
-  //       -f.energy.deviatoricEnergy + previousE.deviatoricEnergy;
-  //   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  //   EXPECT_TRUE(f.energy.deviatoricEnergy <= previousE.deviatoricEnergy);
-  //   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) +
-  //   1e-12))
-  //       << "deviatoric potential: (expected - actual) / expected: "
-  //       << difference_h / (abs(actualEnergyDecrease) );
+              tolerance)
+      << "deviatoric force convergence rate" << std::endl;
 
-  //   toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  //   f.proteinDensity.raw() =
-  //       current_proteinDensity +
-  //       stepFold * h *
-  //       f.forces.maskProtein(f.forces.deviatoricPotential.raw());
-  //   f.updateConfigurations(false);
-  //   f.computeDeviatoricEnergy();
-  //   expectedEnergyDecrease =
-  //       stepFold * h *
-  //       f.forces.maskProtein(f.forces.deviatoricPotential.raw()).squaredNorm();
-  //   actualEnergyDecrease =
-  //       -f.energy.deviatoricEnergy + previousE.deviatoricEnergy;
-  //   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  //   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-  //               tolerance);
-  // capillary force
+  // ==========================================================
+  // ================      Capillary         ==================
+  // ==========================================================
+  // test energy decrease and closeness
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -305,6 +263,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       << "capillary force: expected vs. actual: " << expectedEnergyDecrease
       << ", " << actualEnergyDecrease << std::endl;
 
+  // test convergence rate
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -317,8 +276,13 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.surfaceEnergy + previousE.surfaceEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
-  // osmotic force
+              tolerance)
+      << "capillary force convergence rate" << std::endl;
+
+  // ==========================================================
+  // ================      Osmotic           ==================
+  // ==========================================================
+  // test energy decrease and closeness
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos + h * f.forces.maskForce(toMatrix(f.forces.osmoticForceVec));
@@ -333,6 +297,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       << "osmotic force: expected vs. actual: " << expectedEnergyDecrease
       << ", " << actualEnergyDecrease << std::endl;
 
+  // test convergence rate
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -345,209 +310,89 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   actualEnergyDecrease = -f.energy.pressureEnergy + previousE.pressureEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "osmotic force convergence rate" << std::endl;
 
-  // adsorption force
-  //   f.proteinDensity.raw() = current_proteinDensity;
-  //   toMatrix(f.vpg->inputVertexPositions) =
-  //       current_pos +
-  //       h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
-  //   f.updateConfigurations(false);
-  //   f.computeAdsorptionEnergy();
-  //   expectedEnergyDecrease =
-  //       h *
-  //       f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
-  //   actualEnergyDecrease =
-  //       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
-  //   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  //   EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
-  //   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) +
-  //   1e-12))
-  //       << "adsorption force: (expected - actual) / expected = "
-  //       << difference_h / (abs(actualEnergyDecrease) );
-
-  //   f.proteinDensity.raw() = current_proteinDensity;
-  //   toMatrix(f.vpg->inputVertexPositions) =
-  //       current_pos +
-  //       stepFold * h *
-  //       f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
-  //   f.updateConfigurations(false);
-  //   f.computeAdsorptionEnergy();
-  //   expectedEnergyDecrease =
-  //       stepFold * h *
-  //       f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
-  //   actualEnergyDecrease =
-  //       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
-  //   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  //   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-  //               tolerance);
-
-  // adsorption potential
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      h * f.forces.maskProtein(f.forces.adsorptionPotential.raw());
+  // ==========================================================
+  // ================      Adsorption        ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
   f.updateConfigurations(false);
   f.computeAdsorptionEnergy();
   expectedEnergyDecrease =
       h *
-      f.forces.maskProtein(f.forces.adsorptionPotential.raw()).squaredNorm();
+      f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
   actualEnergyDecrease =
       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
-      << "adsorption potential: expected vs. actual: " << expectedEnergyDecrease
-      << ", " << actualEnergyDecrease << std::endl;
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-12))
+      << "adsorption force: (expected - actual) / expected = "
+      << difference_h / (abs(actualEnergyDecrease));
 
-  //   toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  //   f.proteinDensity.raw() =
-  //       current_proteinDensity +
-  //       stepFold * h *
-  //       f.forces.maskProtein(f.forces.adsorptionPotential.raw());
-  //   f.updateConfigurations(false);
-  //   f.computeAdsorptionEnergy();
-  //   expectedEnergyDecrease =
-  //       stepFold * h *
-  //       f.forces.maskProtein(f.forces.adsorptionPotential.raw()).squaredNorm();
-  //   actualEnergyDecrease =
-  //       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
-  //   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  //   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-  //               tolerance)
-  //       << ;
-  //   // aggregation force
-  //   f.proteinDensity.raw() = current_proteinDensity;
-  //   toMatrix(f.vpg->inputVertexPositions) =
-  //       current_pos +
-  //       h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
-  //   f.updateConfigurations(false);
-  //   f.computeAggregationEnergy();
-  //   expectedEnergyDecrease =
-  //       h *
-  //       f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
-  //   actualEnergyDecrease =
-  //       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
-  //   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  //   EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
-  //   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) +
-  //   1e-12))
-  //       << "aggregation force: (expected - actual) / expected = "
-  //       << difference_h / (abs(actualEnergyDecrease) );
+  // test convergence rate
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      stepFold * h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
+  f.updateConfigurations(false);
+  f.computeAdsorptionEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "adsorption force convergence rate" << std::endl;
 
-  //   f.proteinDensity.raw() = current_proteinDensity;
-  //   toMatrix(f.vpg->inputVertexPositions) =
-  //       current_pos +
-  //       stepFold * h *
-  //       f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
-  //   f.updateConfigurations(false);
-  //   f.computeAggregationEnergy();
-  //   expectedEnergyDecrease =
-  //       stepFold * h *
-  //       f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
-  //   actualEnergyDecrease =
-  //       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
-  //   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  //   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-  //               tolerance)
-  //       ;
-  // aggregation potential
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
+  // ==========================================================
+  // ================      Aggregation       ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
   f.updateConfigurations(false);
   f.computeAggregationEnergy();
   expectedEnergyDecrease =
       h *
-      f.forces.maskProtein(f.forces.aggregationPotential.raw()).squaredNorm();
+      f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
   actualEnergyDecrease =
       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
-      << "aggregation potential: expected vs. actual: "
-      << expectedEnergyDecrease << ", " << actualEnergyDecrease << std::endl;
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-12))
+      << "aggregation force: (expected - actual) / expected = "
+      << difference_h / (abs(actualEnergyDecrease));
 
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      stepFold * h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
+  // test convergence rate
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      stepFold * h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
   f.updateConfigurations(false);
   f.computeAggregationEnergy();
   expectedEnergyDecrease =
       stepFold * h *
-      f.forces.maskProtein(f.forces.aggregationPotential.raw()).squaredNorm();
+      f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
   actualEnergyDecrease =
       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "aggregation force convergence rate" << std::endl;
 
-  // line tension force
-  f.proteinDensity.raw() = current_proteinDensity;
-  toMatrix(f.vpg->inputVertexPositions) =
-      current_pos +
-      h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
-  f.updateConfigurations(false);
-  f.computeDirichletEnergy();
-  expectedEnergyDecrease =
-      h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec))
-              .squaredNorm();
-  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
-  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
-      << "line tension force = (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease));
-
-  f.proteinDensity.raw() = current_proteinDensity;
-  toMatrix(f.vpg->inputVertexPositions) =
-      current_pos +
-      stepFold * h *
-          f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
-  f.updateConfigurations(false);
-  f.computeDirichletEnergy();
-  expectedEnergyDecrease =
-      stepFold * h *
-      f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec))
-          .squaredNorm();
-  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
-  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
-
-  // diffusion potential
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
-  f.updateConfigurations(false);
-  f.computeDirichletEnergy();
-  expectedEnergyDecrease =
-      h * f.forces.maskProtein(f.forces.diffusionPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
-  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
-  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
-      << "diffusion potential = (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease));
-
-  toMatrix(f.vpg->inputVertexPositions) = current_pos;
-  f.proteinDensity.raw() =
-      current_proteinDensity +
-      stepFold * h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
-  f.updateConfigurations(false);
-  f.computeDirichletEnergy();
-  expectedEnergyDecrease =
-      stepFold * h *
-      f.forces.maskProtein(f.forces.diffusionPotential.raw()).squaredNorm();
-  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
-  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
-
-  // self-avoidance force
+  // ==========================================================
+  // ================   Self-avoidance       ==================
+  // ==========================================================
+  // test energy decrease and closeness
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -565,6 +410,7 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       << "self avoidance penalty = (expected - actual) / expected: "
       << difference_h / (abs(actualEnergyDecrease));
 
+  // test convergence rate
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
@@ -580,9 +426,206 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.selfAvoidancePenalty + previousE.selfAvoidancePenalty;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "self-avoidance force convergence rate" << std::endl;
 
-  // interior penalty potential
+  // ==========================================================
+  // ================      Dirichlet         ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
+  f.updateConfigurations(false);
+  f.computeDirichletEnergy();
+  expectedEnergyDecrease =
+      h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec))
+              .squaredNorm();
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "line tension force = (expected - actual) / expected: "
+      << difference_h / (abs(actualEnergyDecrease));
+
+  // test convergence rate
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      stepFold * h *
+          f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
+  f.updateConfigurations(false);
+  f.computeDirichletEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec))
+          .squaredNorm();
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "dirichlet force convergence rate" << std::endl;
+#pragma endregion force
+#pragma region potential
+  // ==========================================================
+  // ================        Bending         ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.forces.maskProtein(f.forces.bendingPotential.raw());
+  f.updateConfigurations(false);
+  f.computeBendingEnergy();
+  expectedEnergyDecrease =
+      h * f.forces.maskProtein(f.forces.bendingPotential.raw()).squaredNorm();
+  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.bendingEnergy <= previousE.bendingEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "bending potential: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
+
+  // test convergence rate
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      stepFold * h * f.forces.maskProtein(f.forces.bendingPotential.raw());
+  f.updateConfigurations(false);
+  f.computeBendingEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskProtein(f.forces.bendingPotential.raw()).squaredNorm();
+  actualEnergyDecrease = -f.energy.bendingEnergy + previousE.bendingEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "bending potential convergence rate" << std::endl;
+
+  // ==========================================================
+  // ================      Deviatoric        ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.forces.maskProtein(f.forces.deviatoricPotential.raw());
+  f.updateConfigurations(false);
+  f.computeDeviatoricEnergy();
+  expectedEnergyDecrease =
+      h *
+      f.forces.maskProtein(f.forces.deviatoricPotential.raw()).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.deviatoricEnergy + previousE.deviatoricEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.deviatoricEnergy <= previousE.deviatoricEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "deviatoric potential: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
+
+  // no need to test convergence rate, expect exact since it is linear function
+
+  // ==========================================================
+  // ================      Adsorption        ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.forces.maskProtein(f.forces.adsorptionPotential.raw());
+  f.updateConfigurations(false);
+  f.computeAdsorptionEnergy();
+  expectedEnergyDecrease =
+      h *
+      f.forces.maskProtein(f.forces.adsorptionPotential.raw()).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "adsorption force: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
+
+  // no need to test convergence rate, expect exact since it is linear function
+
+  // ==========================================================
+  // ================      Aggregation       ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
+  f.updateConfigurations(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      h *
+      f.forces.maskProtein(f.forces.aggregationPotential.raw()).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "aggregation potential: expected vs. actual: "
+      << expectedEnergyDecrease << ", " << actualEnergyDecrease << std::endl;
+
+  // test convergence rate
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      stepFold * h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
+  f.updateConfigurations(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskProtein(f.forces.aggregationPotential.raw()).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "aggregation potential convergence rate" << std::endl;
+
+  // ==========================================================
+  // ================      Dirichlet         ==================
+  // ==========================================================
+  // test energy decrease and closeness
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
+  f.updateConfigurations(false);
+  f.computeDirichletEnergy();
+  expectedEnergyDecrease =
+      h * f.forces.maskProtein(f.forces.diffusionPotential.raw()).squaredNorm();
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.dirichletEnergy <= previousE.dirichletEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
+      << "diffusion potential: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
+
+  // test convergence rate
+  toMatrix(f.vpg->inputVertexPositions) = current_pos;
+  f.proteinDensity.raw() =
+      current_proteinDensity +
+      stepFold * h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
+  f.updateConfigurations(false);
+  f.computeDirichletEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskProtein(f.forces.diffusionPotential.raw()).squaredNorm();
+  actualEnergyDecrease = -f.energy.dirichletEnergy + previousE.dirichletEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "diffusion potential convergence rate" << std::endl;
+
+  // ==========================================================
+  // ================     Interior Penalty   ==================
+  // ==========================================================
+  // test energy decrease and closeness
   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   f.proteinDensity.raw() =
       current_proteinDensity +
@@ -598,9 +641,10 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
   EXPECT_TRUE(f.energy.proteinInteriorPenalty <=
               previousE.proteinInteriorPenalty);
   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease)))
-      << "interior penalty potential = (expected - actual) / expected: "
-      << difference_h / (abs(actualEnergyDecrease));
+      << "interior penalty: expected vs. actual: " << expectedEnergyDecrease
+      << ", " << actualEnergyDecrease << std::endl;
 
+  // test convergence rate
   toMatrix(f.vpg->inputVertexPositions) = current_pos;
   f.proteinDensity.raw() =
       current_proteinDensity +
@@ -616,7 +660,10 @@ TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
       -f.energy.proteinInteriorPenalty + previousE.proteinInteriorPenalty;
   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-              tolerance);
+              tolerance)
+      << "interior penalty convergence rate" << std::endl;
+
+#pragma endregion potential
 };
 } // namespace solver
 } // namespace mem3dg
