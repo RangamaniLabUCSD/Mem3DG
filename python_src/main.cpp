@@ -1180,6 +1180,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                         R"delim(
           get deviatoric rigidity of the membrane 
       )delim");
+  bending.def_readwrite("Kdc", &Parameters::Bending::Kdc,
+                        R"delim(
+          get constant of deviatoric modulus vs protein density
+      )delim");
   bending.def_readwrite("Kb", &Parameters::Bending::Kb,
                         R"delim(
           get Bending rigidity of the bare membrane 

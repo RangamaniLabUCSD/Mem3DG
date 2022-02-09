@@ -701,6 +701,7 @@ public:
    * @brief Helper functions to compute geometric derivatives
    */
   gc::Vector3 cornerAngleGradient(gcs::Corner c, gcs::Vertex v);
+  gc::Vector3 dihedralAngleGradient(gcs::Halfedge he, gcs::Vertex v);
 
   // ==========================================================
   // ================        Pressure        ==================
