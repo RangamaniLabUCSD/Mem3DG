@@ -104,3 +104,5 @@ endif()
 # Until then we can configure with this module
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libigl/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/libigl/cmake/libigl.cmake)
+
+add_subdirectory(autodiff)
