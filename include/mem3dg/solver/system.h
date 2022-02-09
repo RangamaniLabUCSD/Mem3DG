@@ -167,7 +167,7 @@ public:
     // Initialize reference values
     initConstants();
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
   };
 
@@ -192,7 +192,7 @@ public:
     // Process the mesh by regularization and mutation
     mutateMesh(10);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -221,7 +221,7 @@ public:
     // Process the mesh by regularization and mutation
     mutateMesh(10);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -239,7 +239,7 @@ public:
     // Initialize reference values
     initConstants();
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
   };
 
@@ -272,7 +272,7 @@ public:
     // Process the mesh by regularization and mutation
     mutateMesh(10);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -309,7 +309,7 @@ public:
     // Process the mesh by regularization and mutation
     mutateMesh(10);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -330,7 +330,7 @@ public:
     // Initialize reference values
     initConstants();
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
   };
 
@@ -361,7 +361,7 @@ public:
     // Process the mesh by regularization and mutation
     mutateMesh(10);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -396,7 +396,7 @@ public:
     // Process the mesh by regularization and mutation
     mutateMesh(10);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
