@@ -158,10 +158,11 @@ public:
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
-         std::size_t nSub)
+         std::size_t nSub, std::size_t nMutation)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub)) {
 
     // Initialize reference values
@@ -178,10 +179,11 @@ public:
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param p             Parameter of simulation
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         std::size_t nSub)
+         std::size_t nSub, std::size_t nMutation)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p) {
     // Check incompatible configuration
     checkConfiguration();
@@ -190,7 +192,7 @@ public:
     initConstants();
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -207,10 +209,11 @@ public:
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         MeshProcessor &mp, std::size_t nSub)
+         MeshProcessor &mp, std::size_t nSub, std::size_t nMutation)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p, mp) {
     // Check incompatible configuration
     checkConfiguration();
@@ -219,7 +222,7 @@ public:
     initConstants();
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -233,8 +236,9 @@ public:
    *
    * @param inputMesh     Input Mesh
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    */
-  System(std::string inputMesh, std::size_t nSub)
+  System(std::string inputMesh, std::size_t nSub, std::size_t nMutation)
       : System(readMeshes(inputMesh, nSub)) {
     // Initialize reference values
     initConstants();
@@ -250,9 +254,10 @@ public:
    * @param p             Parameter of simulation
    * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
+   * @param nMutation     Number of mutation
    */
   System(std::string inputMesh, Parameters &p, std::size_t nSub,
-         bool isContinue)
+         std::size_t nMutation, bool isContinue)
       : System(readMeshes(inputMesh, nSub), p) {
 
     // Check incompatible configuration
@@ -270,7 +275,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -286,10 +291,11 @@ public:
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    * @param isContinue    Wether continue simulation
    */
   System(std::string inputMesh, Parameters &p, MeshProcessor &mp,
-         std::size_t nSub, bool isContinue)
+         std::size_t nSub, std::size_t nMutation, bool isContinue)
       : System(readMeshes(inputMesh, nSub), p, mp) {
 
     // Check incompatible configuration
@@ -307,7 +313,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -323,8 +329,10 @@ public:
    * @param trajFile      Netcdf trajectory file
    * @param startingFrame Starting frame for the input mesh
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    */
-  System(std::string trajFile, int startingFrame, std::size_t nSub)
+  System(std::string trajFile, int startingFrame, std::size_t nSub,
+         std::size_t nMutation)
       : System(readTrajFile(trajFile, startingFrame, nSub)) {
 
     // Initialize reference values
@@ -341,10 +349,11 @@ public:
    * @param startingFrame Starting frame for the input mesh
    * @param p             Parameter of simulation
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p,
-         std::size_t nSub, bool isContinue)
+         std::size_t nSub, std::size_t nMutation, bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p) {
 
     // Check incompatible configuration
@@ -359,7 +368,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -376,10 +385,12 @@ public:
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p,
-         MeshProcessor &mp, std::size_t nSub, bool isContinue)
+         MeshProcessor &mp, std::size_t nSub, std::size_t nMutation,
+         bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, mp) {
 
     // Check incompatible configuration
@@ -394,7 +405,7 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
     // compute nonconstant values during simulation
     updateConfigurations();

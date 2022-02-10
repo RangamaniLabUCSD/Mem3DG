@@ -46,7 +46,7 @@ int main() {
   p.variation.isProteinVariation = false;
   p.point.isFloatVertex = false;
 
-  mem3dg::solver::System f(inputMesh, p, 0, false);
+  mem3dg::solver::System f(inputMesh, p, 0, 0, false);
 
   double T = 3, h = 1e-5, eps = 0.002, closeZone = 1000, increment = 0,
          tSave = 1e-1, tMollify = 100, errorJumpLim = 600;
