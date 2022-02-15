@@ -167,7 +167,7 @@ public:
     // Initialize reference values
     initConstants();
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
   };
 
@@ -189,10 +189,7 @@ public:
     // Initialize reference values
     initConstants();
 
-    // Process the mesh by regularization and mutation
-    mutateMesh(10);
-
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -207,10 +204,11 @@ public:
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         MeshProcessor &mp, std::size_t nSub)
+         MeshProcessor &mp, std::size_t nSub, std::size_t nMutation)
       : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p, mp) {
     // Check incompatible configuration
     checkConfiguration();
@@ -219,9 +217,9 @@ public:
     initConstants();
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -239,7 +237,7 @@ public:
     // Initialize reference values
     initConstants();
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
   };
 
@@ -269,10 +267,7 @@ public:
       mapContinuationVariables(inputMesh);
     }
 
-    // Process the mesh by regularization and mutation
-    mutateMesh(10);
-
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -286,10 +281,11 @@ public:
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    * @param isContinue    Wether continue simulation
    */
   System(std::string inputMesh, Parameters &p, MeshProcessor &mp,
-         std::size_t nSub, bool isContinue)
+         std::size_t nSub, std::size_t nMutation, bool isContinue)
       : System(readMeshes(inputMesh, nSub), p, mp) {
 
     // Check incompatible configuration
@@ -307,9 +303,9 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -330,7 +326,7 @@ public:
     // Initialize reference values
     initConstants();
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
   };
 
@@ -358,10 +354,7 @@ public:
       mapContinuationVariables(trajFile, startingFrame);
     }
 
-    // Process the mesh by regularization and mutation
-    mutateMesh(10);
-
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -376,10 +369,12 @@ public:
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
    * @param nSub          Number of subdivision
+   * @param nMutation     Number of mutation
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p,
-         MeshProcessor &mp, std::size_t nSub, bool isContinue)
+         MeshProcessor &mp, std::size_t nSub, std::size_t nMutation,
+         bool isContinue)
       : System(readTrajFile(trajFile, startingFrame, nSub), p, mp) {
 
     // Check incompatible configuration
@@ -394,9 +389,9 @@ public:
     }
 
     // Process the mesh by regularization and mutation
-    mutateMesh(10);
+    mutateMesh(nMutation);
 
-    /// compute nonconstant values during simulation
+    // compute nonconstant values during simulation
     updateConfigurations();
 
     // Smoothen the mesh using bending force
@@ -701,6 +696,7 @@ public:
    * @brief Helper functions to compute geometric derivatives
    */
   gc::Vector3 cornerAngleGradient(gcs::Corner c, gcs::Vertex v);
+  gc::Vector3 dihedralAngleGradient(gcs::Halfedge he, gcs::Vertex v);
 
   // ==========================================================
   // ================        Pressure        ==================

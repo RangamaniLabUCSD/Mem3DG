@@ -81,7 +81,8 @@ void Parameters::Point::checkParameters() {
         "coordinate)");
   }
   // if (pt.rows() == 2) {
-  //   std::cout << "\nWARNING: specifying x-y coordinate on closed surface may "
+  //   std::cout << "\nWARNING: specifying x-y coordinate on closed surface may
+  //   "
   //                "lead to ambiguity! Please check by visualizing it first!\n"
   //             << std::endl;
   // }
@@ -178,14 +179,15 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   if (hasBoundary) {
     if (boundary.shapeBoundaryCondition == "none" &&
         variation.isShapeVariation) {
-      mem3dg_runtime_error(
+      mem3dg_runtime_message(
           "Shape boundary condition type (roller, pin or fixed) "
-          "has not been specified for open boundary mesh!");
+          "has not been specified for open boundary mesh! May result in "
+          "unexpected behavior(e.g. osmotic force). ");
     }
     if (boundary.proteinBoundaryCondition != "pin" &&
         variation.isProteinVariation) {
-      mem3dg_runtime_error("Protein boundary condition type (pin) "
-                           "has not been specified for open boundary mesh!");
+      mem3dg_runtime_message("Protein boundary condition type (pin) "
+                             "has not been specified for open boundary mesh!");
     }
   } else {
     if (tension.A_res != 0 || osmotic.V_res != 0) {
