@@ -58,6 +58,8 @@ struct Parameters {
   struct Bending {
     /// Deviatoric modulus
     double Kd = 0;
+    /// Constant of deviatoric modulus vs protein density
+    double Kdc = 0;
     /// Bending modulus
     double Kb = 0;
     /// Constant of bending modulus vs protein density
@@ -127,13 +129,13 @@ struct Parameters {
 
   struct SelfAvoidance {
     /// limit distance
-    double d = 0.005;
+    double d = 0;
     /// penalty coefficient
-    double mu = 1;
+    double mu = 0;
     // neighborhood layers
     std::size_t n = 1;
     // period factor of computation
-    double p = 1;
+    double p = 0;
   };
 
   struct External {

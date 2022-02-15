@@ -69,6 +69,13 @@ void System::computeDeviatoricEnergy() {
                                vpg->vertexDualAreas.raw().array() -
                            vpg->vertexGaussianCurvatures.raw().array()))
           .sum();
+  // energy.deviatoricEnergy =
+  //     (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
+  //                          vpg->vertexDualAreas.raw().array()))
+  //         .sum();
+  // energy.deviatoricEnergy =
+  //     (Kd.raw().array() *
+  //     (-vpg->vertexGaussianCurvatures.raw().array())).sum();
 }
 
 void System::computeSurfaceEnergy() {
@@ -97,15 +104,29 @@ void System::computePressureEnergy() {
   }
 }
 
+// void System::computeAdsorptionEnergy() {
+//   energy.adsorptionEnergy =
+//       parameters.adsorption.epsilon * (proteinDensity.raw().array()).sum();
+// }
+
+// void System::computeAggregationEnergy() {
+//   energy.aggregationEnergy =
+//       parameters.aggregation.chi *
+//       (proteinDensity.raw().array() * proteinDensity.raw().array()).sum();
+// }
+
 void System::computeAdsorptionEnergy() {
   energy.adsorptionEnergy =
-      parameters.adsorption.epsilon * (proteinDensity.raw().array()).sum();
+      parameters.adsorption.epsilon *
+      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
 }
 
 void System::computeAggregationEnergy() {
   energy.aggregationEnergy =
       parameters.aggregation.chi *
-      (proteinDensity.raw().array() * proteinDensity.raw().array()).sum();
+      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
+       proteinDensity.raw().array())
+          .sum();
 }
 
 void System::computeProteinInteriorPenalty() {

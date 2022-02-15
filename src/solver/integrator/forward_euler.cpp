@@ -68,11 +68,13 @@ bool Euler::integrate() {
           EXIT) {
         lastComputeAvoidingForce = system.time;
         system.parameters.selfAvoidance.mu = avoidStrength;
-        std::cout << "computing avoiding force at "
-                  << "t = " << system.time << std::endl;
-        std::cout << "projected collision is " << system.projectedCollideTime
-                  << std::endl;
-        std::cout << "time step is " << timeStep << std::endl;
+        if (verbosity > 2) {
+          std::cout << "computing avoiding force at "
+                    << "t = " << system.time << std::endl;
+          std::cout << "projected collision is " << system.projectedCollideTime
+                    << std::endl;
+          std::cout << "time step is " << timeStep << std::endl;
+        }
       } else {
         system.parameters.selfAvoidance.mu = 0;
       }
@@ -103,7 +105,8 @@ bool Euler::integrate() {
     }
 
     // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics > (updateGeodesicsPeriod * timeStep)) {
+    if (system.time - lastUpdateGeodesics >
+        (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
       system.updateConfigurations(true);
     }

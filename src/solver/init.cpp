@@ -257,9 +257,9 @@ void System::checkConfiguration() {
                          "regularization cannot be applied!");
   }
   if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
-    std::cout << "\nWARNING: specifying x-y coordinate on closed surface may"
-                 "lead to ambiguity! Please check by visualizing it first!\n"
-              << std::endl;
+    mem3dg_runtime_message(
+        "specifying x-y coordinate on closed surface may"
+        "lead to ambiguity! Please check by visualizing it first!");
   }
   if (parameters.selfAvoidance.mu != 0) {
     for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
@@ -319,10 +319,6 @@ void System::initConstants() {
   //   //   }
   //   // }
   // }
-
-  // Kd.raw() = 4 * parameters.bending.Kb +
-  //            parameters.bending.Kbc * proteinDensity.raw().array();
-  Kd.fill(parameters.bending.Kd);
 
   // Find "the" vertex
   findThePoint(*vpg, geodesicDistanceFromPtInd, 1e18);
@@ -464,6 +460,8 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
     H0.raw() = proteinDensity.raw() * parameters.bending.H0c;
     Kb.raw() = parameters.bending.Kb +
                parameters.bending.Kbc * proteinDensity.raw().array();
+    Kd.raw() = parameters.bending.Kd +
+               parameters.bending.Kdc * proteinDensity.raw().array();
   } else if (parameters.bending.relation == "hill") {
     Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
@@ -471,6 +469,10 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
                 (1 + proteinDensitySq.array()))
                    .matrix();
     Kb.raw() = (parameters.bending.Kb + parameters.bending.Kbc *
+                                            proteinDensitySq.array() /
+                                            (1 + proteinDensitySq.array()))
+                   .matrix();
+    Kd.raw() = (parameters.bending.Kd + parameters.bending.Kdc *
                                             proteinDensitySq.array() /
                                             (1 + proteinDensitySq.array()))
                    .matrix();
