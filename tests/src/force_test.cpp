@@ -34,7 +34,7 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-class ForceCalculationTest : public testing::Test {
+class ForceTest : public testing::Test {
 protected:
   // initialize mesh and vpg
   // std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
@@ -44,7 +44,7 @@ protected:
   Parameters p;
   double h = 0.1;
 
-  ForceCalculationTest() {
+  ForceTest() {
 
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;
@@ -88,6 +88,8 @@ protected:
 
     p.dirichlet.eta = 0.001;
 
+    p.selfAvoidance.mu = 1e-5;
+
     p.dpd.gamma = 0;
 
     p.temperature = 0;
@@ -101,14 +103,14 @@ protected:
 };
 
 /**
- * @brief Test whether passive force is conservative: result need to be the same
+ * @brief Test whether force is conservative: result need to be the same
  * when computed twice
  *
  */
-TEST_F(ForceCalculationTest, ConsistentForcesTest) {
+TEST_F(ForceTest, ConsistentForcesTest) {
   // Instantiate system object
-  std::size_t nSub = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
+  std::size_t nSub, nMutation = 0;
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub, nMutation);
   // First time calculation of force
   f.computePhysicalForcing();
   f.computeRegularizationForce();
@@ -138,11 +140,11 @@ TEST_F(ForceCalculationTest, ConsistentForcesTest) {
  * 1. decrease in energy
  * 2. decrease in second order (or exact)
  */
-TEST_F(ForceCalculationTest, ConsistentForceEnergy) {
+TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
-  std::size_t nSub = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
+  std::size_t nSub, nMutation = 0;
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub, nMutation);
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.velocity);
