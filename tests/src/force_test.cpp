@@ -107,28 +107,24 @@ protected:
  * when computed twice
  *
  */
-TEST_F(ForceTest, ConsistentForcesTest) {
+TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
-  std::size_t nSub, nMutation = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub, nMutation);
+  std::size_t nSub = 0;
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
   // First time calculation of force
   f.computePhysicalForcing();
   f.computeRegularizationForce();
   EigenVectorX3dr mechanicalForceVec1 = toMatrix(f.forces.mechanicalForceVec);
   EigenVectorX1d chemicalPotential1 = toMatrix(f.forces.chemicalPotential);
-  EigenVectorX3dr regularizationForce1 = toMatrix(f.forces.regularizationForce);
-
   // Second time calculation of force
   f.computePhysicalForcing();
   f.computeRegularizationForce();
   EigenVectorX3dr mechanicalForceVec2 = toMatrix(f.forces.mechanicalForceVec);
   EigenVectorX1d chemicalPotential2 = toMatrix(f.forces.chemicalPotential);
-  EigenVectorX3dr regularizationForce2 = toMatrix(f.forces.regularizationForce);
 
   // Comparison of 2 force calculations
   EXPECT_TRUE(mechanicalForceVec1.isApprox(mechanicalForceVec2));
   EXPECT_TRUE(chemicalPotential1.isApprox(chemicalPotential2));
-  EXPECT_TRUE(regularizationForce1.isApprox(regularizationForce2));
   //   EXPECT_TRUE((mechanicalForceVec1 - mechanicalForceVec2).norm() < 1e-12);
   //   EXPECT_TRUE((chemicalPotential1 - chemicalPotential2).norm() < 1e-12);
   //   EXPECT_TRUE((regularizationForce1 - regularizationForce2).norm() <
@@ -143,8 +139,8 @@ TEST_F(ForceTest, ConsistentForcesTest) {
 TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
-  std::size_t nSub, nMutation = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub, nMutation);
+  std::size_t nSub = 0;
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.velocity);
