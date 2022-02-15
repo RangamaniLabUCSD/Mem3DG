@@ -50,7 +50,7 @@ public:
 };
 
 TEST_F(IntegratorTest, EulerIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, 0, 0);
+  mem3dg::solver::System f(mesh, vpg, p, 0);
   mem3dg::solver::integrator::Euler integrator{f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
   integrator.verbosity = verbosity;
@@ -58,7 +58,7 @@ TEST_F(IntegratorTest, EulerIntegratorTest) {
 }
 
 TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, 0, 0);
+  mem3dg::solver::System f(mesh, vpg, p, 0);
   mem3dg::solver::integrator::ConjugateGradient integrator{
       f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
@@ -75,7 +75,7 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
 // }
 
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, 0, 0);
+  mem3dg::solver::System f(mesh, vpg, p, 0);
   mem3dg::solver::integrator::VelocityVerlet integrator{f,     dt,  1,
                                                         tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
