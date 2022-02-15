@@ -785,17 +785,16 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by .ply file
    */
-  system.def(py::init<std::string, std::size_t, std::size_t>(),
-             py::arg("inputMesh"), py::arg("nSub") = 0,
-             py::arg("nMutation") = 0,
+  system.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
+             py::arg("nSub") = 0,
+
              R"delim(
         System constructor with .ply files
       )delim");
-  system.def(
-      py::init<std::string, Parameters &, std::size_t, std::size_t, bool>(),
-      py::arg("inputMesh"), py::arg("p"), py::arg("nSub") = 0,
-      py::arg("nMutation") = 0, py::arg("isContinue") = false,
-      R"delim(
+  system.def(py::init<std::string, Parameters &, std::size_t, bool>(),
+             py::arg("inputMesh"), py::arg("p"), py::arg("nSub") = 0,
+             py::arg("isContinue") = false,
+             R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
@@ -812,21 +811,20 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by matrices
    */
-  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t,
-                      std::size_t>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("nSub") = 0, py::arg("nMutation") = 0,
-             R"delim(
+  system.def(
+      py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t>(),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("nSub") = 0,
+      R"delim(
         System constructor with Matrices. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
 
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      std::size_t, std::size_t>(),
+                      std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
-             py::arg("nSub") = 0, py::arg("nMutation") = 0,
+             py::arg("nSub") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -843,17 +841,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int, std::size_t, std::size_t>(),
-             py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub") = 0,
-             py::arg("nMutation") = 0,
+  system.def(py::init<std::string, int, std::size_t>(), py::arg("trajFile"),
+             py::arg("startingFrame"), py::arg("nSub") = 0,
+
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
-  system.def(py::init<std::string, int, Parameters &, std::size_t, std::size_t,
-                      bool>(),
+  system.def(py::init<std::string, int, Parameters &, std::size_t, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
-             py::arg("nSub") = 0, py::arg("nMutation") = 0,
-             py::arg("isContinue") = false,
+             py::arg("nSub") = 0, py::arg("isContinue") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
@@ -1368,7 +1364,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get (initial) protein density
       )delim");
   proteindistribution.def_readwrite(
-      "tanhSharpness", &Parameters::ProteinDistribution::tanhSharpness, R"delim(
+      "tanhSharpness", &Parameters::ProteinDistribution::tanhSharpness,
+      R"delim(
           get protein density sharpness of tanh transition
       )delim");
   proteindistribution.def_readwrite(
