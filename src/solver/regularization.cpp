@@ -391,11 +391,11 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
 
   while (gradNorm > tol && !isSmooth) {
     if (stepSize < 1e-8 * initStep) {
-      mem3dg_runtime_error("smoothing operation diverges!");
+      mem3dg_runtime_message("smoothing operation diverges!");
       break;
     }
     if (num_iter == maxIteration) {
-      mem3dg_runtime_error("smoothing operation exceeds max iteration!");
+      mem3dg_runtime_message("smoothing operation exceeds max iteration!");
       break;
     }
 

@@ -440,7 +440,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Mechanical force
    */
   forces.def(
-      "getDeviatoricForce", [](Forces &s) { return toMatrix(s.deviatoricForceVec); },
+      "getDeviatoricForce",
+      [](Forces &s) { return toMatrix(s.deviatoricForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the deviatoric force of the system
@@ -595,7 +596,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                       R"delim(
        meshmutator constructor
       )delim");
-  meshregularizer.def_readwrite("isSmoothenMesh", &MeshProcessor::MeshRegularizer::isSmoothenMesh,
+  meshregularizer.def_readwrite("isSmoothenMesh",
+                                &MeshProcessor::MeshRegularizer::isSmoothenMesh,
                                 R"delim(
           whether conduct mesh smoothing operation
       )delim");
@@ -783,23 +785,26 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by .ply file
    */
-  system.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
-             py::arg("nSub") = 0,
+  system.def(py::init<std::string, std::size_t, std::size_t>(),
+             py::arg("inputMesh"), py::arg("nSub") = 0,
+             py::arg("nMutation") = 0,
              R"delim(
         System constructor with .ply files
       )delim");
-  system.def(py::init<std::string, Parameters &, std::size_t, bool>(),
-             py::arg("inputMesh"), py::arg("p"), py::arg("nSub") = 0,
-             py::arg("isContinue") = false,
-             R"delim(
+  system.def(
+      py::init<std::string, Parameters &, std::size_t, std::size_t, bool>(),
+      py::arg("inputMesh"), py::arg("p"), py::arg("nSub") = 0,
+      py::arg("nMutation") = 0, py::arg("isContinue") = false,
+      R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(
-      py::init<std::string, Parameters &, MeshProcessor &, std::size_t, bool>(),
-      py::arg("inputMesh"), py::arg("p"), py::arg("mp"), py::arg("nSub") = 0,
-      py::arg("isContinue") = false,
-      R"delim(
+  system.def(py::init<std::string, Parameters &, MeshProcessor &, std::size_t,
+                      std::size_t, bool>(),
+             py::arg("inputMesh"), py::arg("p"), py::arg("mp"),
+             py::arg("nSub") = 0, py::arg("nMutation") = 0,
+             py::arg("isContinue") = false,
+             R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
@@ -807,28 +812,29 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by matrices
    */
-  system.def(
-      py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t>(),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("nSub") = 0,
-      R"delim(
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t,
+                      std::size_t>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("nSub") = 0, py::arg("nMutation") = 0,
+             R"delim(
         System constructor with Matrices. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
 
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      std::size_t>(),
+                      std::size_t, std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
-             py::arg("nSub") = 0,
+             py::arg("nSub") = 0, py::arg("nMutation") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      MeshProcessor &, std::size_t>(),
+                      MeshProcessor &, std::size_t, std::size_t>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
-             py::arg("mp"), py::arg("nSub") = 0,
+             py::arg("mp"), py::arg("nSub") = 0, py::arg("nMutation") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -837,21 +843,25 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int, std::size_t>(), py::arg("trajFile"),
-             py::arg("startingFrame"), py::arg("nSub") = 0,
+  system.def(py::init<std::string, int, std::size_t, std::size_t>(),
+             py::arg("trajFile"), py::arg("startingFrame"), py::arg("nSub") = 0,
+             py::arg("nMutation") = 0,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
-  system.def(py::init<std::string, int, Parameters &, std::size_t, bool>(),
+  system.def(py::init<std::string, int, Parameters &, std::size_t, std::size_t,
+                      bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
-             py::arg("nSub") = 0, py::arg("isContinue") = false,
+             py::arg("nSub") = 0, py::arg("nMutation") = 0,
+             py::arg("isContinue") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
   system.def(py::init<std::string, int, Parameters &, MeshProcessor &,
-                      std::size_t, bool>(),
+                      std::size_t, std::size_t, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
-             py::arg("mp"), py::arg("nSub") = 0, py::arg("isContinue") = false,
+             py::arg("mp"), py::arg("nSub") = 0, py::arg("nMutation") = 0,
+             py::arg("isContinue") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
@@ -1311,23 +1321,23 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   py::class_<Parameters::SelfAvoidance> selfAvoidance(pymem3dg, "SelfAvoidance",
-                                              R"delim(
+                                                      R"delim(
         The SelfAvoidance energy parameters
     )delim");
   selfAvoidance.def_readwrite("d", &Parameters::SelfAvoidance::d,
-                          R"delim(
+                              R"delim(
           get coefficient of limit distance
       )delim");
   selfAvoidance.def_readwrite("mu", &Parameters::SelfAvoidance::mu,
-                          R"delim(
+                              R"delim(
           get coefficient of penalty coefficient
       )delim");
   selfAvoidance.def_readwrite("n", &Parameters::SelfAvoidance::n,
-                          R"delim(
+                              R"delim(
           get the number excluding neighborhood layers 
       )delim");
   selfAvoidance.def_readwrite("p", &Parameters::SelfAvoidance::p,
-                          R"delim(
+                              R"delim(
           get the period factor of self-avoidance computation
       )delim");
 
@@ -1565,8 +1575,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The quantities for visualization
     )delim");
   quantities.def(py::init<>());
-  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool, bool,
-                          bool, bool, bool, bool>());
+  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool,
+                          bool, bool, bool, bool, bool>());
   quantities.def_readwrite("ref_coord", &Quantities::ref_coord,
                            R"delim(
         visualize reference coordinate 
@@ -1652,7 +1662,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                            R"delim(
         visualize bending component of chemical potential
       )delim");
-  quantities.def_readwrite("deviatoric_potential", &Quantities::deviatoric_potential,
+  quantities.def_readwrite("deviatoric_potential",
+                           &Quantities::deviatoric_potential,
                            R"delim(
         visualize deviatoric component of chemical potential
       )delim");

@@ -131,7 +131,7 @@ struct Parameters {
     /// limit distance
     double d = 0;
     /// penalty coefficient
-    double mu = 1e-5;
+    double mu = 0;
     // neighborhood layers
     std::size_t n = 1;
     // period factor of computation
