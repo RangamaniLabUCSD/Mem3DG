@@ -124,9 +124,14 @@ void System::computeAdsorptionEnergy() {
 void System::computeAggregationEnergy() {
   energy.aggregationEnergy =
       parameters.aggregation.chi *
-      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
-       proteinDensity.raw().array())
+      (vpg->vertexDualAreas.raw().array() *
+       ((2 * proteinDensity.raw().array() - 1).square() - 1).square())
           .sum();
+  // energy.aggregationEnergy =
+  //     parameters.aggregation.chi *
+  //     (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
+  //      proteinDensity.raw().array())
+  //         .sum();
 }
 
 void System::computeProteinInteriorPenalty() {
