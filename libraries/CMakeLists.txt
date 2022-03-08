@@ -16,6 +16,7 @@ include(FetchContent)
 
 add_subdirectory(pcg)
 
+
 if(M3DG_GET_OWN_EIGEN)
   # ############################################################################
   # GET EIGEN
@@ -23,7 +24,7 @@ if(M3DG_GET_OWN_EIGEN)
   FetchContent_Declare(
     eigen
     GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
-    GIT_TAG         3.3.7
+    GIT_TAG         3.3.9
     GIT_SHALLOW     TRUE
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-build"
@@ -43,6 +44,7 @@ if(M3DG_GET_OWN_EIGEN)
 else()
   find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 endif()
+
 
 # #############################################################################
 # GET GEOMETRY CENTRAL
@@ -88,3 +90,17 @@ if(BUILD_PYMEM3DG)
   #   set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
   # endif()
 endif()
+
+
+# ############################################################################
+# Configure libigl
+# ############################################################################
+
+# CMakeList in root is for testing and enables things we don't need
+# We can restore this in libigl v3.0.0 when conventional behavior is restored.
+
+# add_subdirectory(libigl)
+
+# Until then we can configure with this module
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libigl/cmake")
+include(${CMAKE_CURRENT_SOURCE_DIR}/libigl/cmake/libigl.cmake)

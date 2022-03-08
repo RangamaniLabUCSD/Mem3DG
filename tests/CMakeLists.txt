@@ -17,40 +17,45 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG release-1.10.0
+  GIT_TAG origin/main
   GIT_SHALLOW TRUE
   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-src" 
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
 )
 # Prevent overriding the parent project's compiler/linker settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-  FetchContent_Populate(googletest)
-  # Add googletest directly to our build. This defines the gtest and gtest_main
-  # targets.
-  add_subdirectory(
-    ${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL
-  )
-endif()
-
-set_property(TARGET gtest PROPERTY CXX_STANDARD 11)
+FetchContent_MakeAvailable(googletest)
 
 # Build the tests
-set(TEST_SRCS src/main_test.cpp src/dotproduct_test.cpp
-              src/force_calculation_test.cpp
+set(MEM3DG_TEST_SRCS src/main_test.cpp src/product_test.cpp
+        src/force_test.cpp src/integrator_test.cpp src/mutable_trajfile_test.cpp
 )
 
-add_executable(Mem3DG-tests "${TEST_SRCS}")
+add_executable(Mem3DG-tests "${MEM3DG_TEST_SRCS}")
 target_link_libraries(Mem3DG-tests mem3dg gtest_main)
 
 add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
 
+# Configure testing of Python module 
+# find_package(pytest)
+# if(NOT PYTEST_FOUND AND BUILD_PYMEM3DG)
+#     message(WARNING "pytest could not be found! Please install pytest to run python tests.")
+# elseif(BUILD_PYMEM3DG)
+#     # Add a test for pytest
+#     add_test(NAME Mem3DG_Python_Tests
+#       COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
+#       WORKING_DIRECTORY $<TARGET_FILE_DIR:_core>
+#     )
+# endif()
 
 # ##############################################################################
 # Main DDG target
 # ##############################################################################
-# add_executable(ddg scratch.cpp) target_link_libraries(ddg PRIVATE
-# mem3dg polyscope) set_target_properties(ddg PROPERTIES
-# CXX_VISIBILITY_PRESET hidden)
+add_executable(ddg scratch.cpp) 
+target_link_libraries(ddg PRIVATE mem3dg) 
+
+add_executable(ddg_patch scratch_patch.cpp) 
+target_link_libraries(ddg_patch PRIVATE mem3dg) 
+
+add_executable(scratch_ctl scratch_ctl.cpp) 
+target_link_libraries(scratch_ctl PRIVATE mem3dg) 
