@@ -21,6 +21,8 @@
 #include <Eigen/Core>
 #include <cmath>
 
+#include <queue>
+
 namespace mem3dg {
 namespace solver {
 
@@ -231,6 +233,61 @@ bool System::edgeFlip() {
   return isFlipped;
 }
 
+bool isDelaunay(gcs::VertexPositionGeometry& geometry, gc::Edge e)
+{
+    float angle1 = geometry.cornerAngle(e.halfedge().next().next().corner());
+    float angle2 = geometry.cornerAngle(e.halfedge().twin().next().next().corner());
+    return angle1 + angle2 <= mem3dg::constants::PI;
+}
+
+void System::fixDelaunay() {
+  // queue of edges to check if Delaunay
+  std::queue<gc::Edge> toCheck;
+  // true if edge is currently in toCheck
+  gc::EdgeData<bool> inQueue(*mesh);
+  // start with all edges
+  for (gc::Edge e : mesh->edges()) {
+    toCheck.push(e);
+    inQueue[e] = true;
+  }
+  // counter and limit for number of flips
+  int flipMax = 100 * mesh->nVertices();
+  int flipCnt = 0;
+  while (!toCheck.empty() && flipCnt < flipMax) {
+    gc::Edge e = toCheck.front();
+    toCheck.pop();
+    inQueue[e] = false;
+    // if not Delaunay, flip edge and enqueue the surrounding "diamond" edges
+    // (if not already)
+    if (!e.isBoundary() && !isDelaunay(*vpg, e)) {
+      flipCnt++;
+      gc::Halfedge he = e.halfedge();
+      gc::Halfedge he1 = he.next();
+      gc::Halfedge he2 = he1.next();
+      gc::Halfedge he3 = he.twin().next();
+      gc::Halfedge he4 = he3.next();
+
+      if (!inQueue[he1.edge()]) {
+        toCheck.push(he1.edge());
+        inQueue[he1.edge()] = true;
+      }
+      if (!inQueue[he2.edge()]) {
+        toCheck.push(he2.edge());
+        inQueue[he2.edge()] = true;
+      }
+      if (!inQueue[he3.edge()]) {
+        toCheck.push(he3.edge());
+        inQueue[he3.edge()] = true;
+      }
+      if (!inQueue[he4.edge()]) {
+        toCheck.push(he4.edge());
+        inQueue[he4.edge()] = true;
+      }
+      mesh->flip(e);
+    }
+  }
+}
+
 bool System::growMesh() {
   // Note in regularization, it is preferred to use immediate calculation rather
   // than cached one
@@ -421,7 +478,6 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
     pastGradNorm = gradNorm;
     pastForceVec = toMatrix(forces.bendingForceVec);
     num_iter++;
-    
   };
 
   return smoothingMask;
