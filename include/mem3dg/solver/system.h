@@ -837,6 +837,7 @@ public:
    * @brief Edge flip if not Delaunay
    */
   bool edgeFlip();
+  void fixDelaunay();
 
   /**
    * @brief Get regularization pressure component of the system
