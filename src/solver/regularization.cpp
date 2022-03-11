@@ -233,11 +233,11 @@ bool System::edgeFlip() {
   return isFlipped;
 }
 
-bool isDelaunay(gcs::VertexPositionGeometry& geometry, gc::Edge e)
-{
-    float angle1 = geometry.cornerAngle(e.halfedge().next().next().corner());
-    float angle2 = geometry.cornerAngle(e.halfedge().twin().next().next().corner());
-    return angle1 + angle2 <= mem3dg::constants::PI;
+bool isDelaunay(gcs::VertexPositionGeometry &geometry, gc::Edge e) {
+  float angle1 = geometry.cornerAngle(e.halfedge().next().next().corner());
+  float angle2 =
+      geometry.cornerAngle(e.halfedge().twin().next().next().corner());
+  return angle1 + angle2 <= mem3dg::constants::PI;
 }
 
 void System::fixDelaunay() {
@@ -267,6 +267,11 @@ void System::fixDelaunay() {
       gc::Halfedge he3 = he.twin().next();
       gc::Halfedge he4 = he3.next();
 
+      if (gc::sum(forces.forceMask[he.vertex()] +
+                  forces.forceMask[he.twin().vertex()]) < 0.5) {
+        continue;
+      }
+
       if (!inQueue[he1.edge()]) {
         toCheck.push(he1.edge());
         inQueue[he1.edge()] = true;
@@ -284,6 +289,8 @@ void System::fixDelaunay() {
         inQueue[he4.edge()] = true;
       }
       mesh->flip(e);
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tailVertex());
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tipVertex());
     }
   }
 }
@@ -411,9 +418,10 @@ void System::mutateMesh(size_t nRepetition) {
 
     // linear edge flip for non-Delauney triangles
     if (meshProcessor.meshMutator.isEdgeFlip) {
-      isFlipped = edgeFlip();
-      isFlipped = edgeFlip() || isFlipped;
-      isFlipped = edgeFlip() || isFlipped;
+      // isFlipped = edgeFlip();
+      // isFlipped = edgeFlip() || isFlipped;
+      // isFlipped = edgeFlip() || isFlipped;
+      fixDelaunay();
     }
 
     // globally update quantities
