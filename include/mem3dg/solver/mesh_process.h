@@ -131,6 +131,8 @@ struct MeshProcessor {
     bool splitFat = false;
     /// split poor aspected triangle that is still Delaunay
     bool splitSkinnyDelaunay = false;
+    /// min edge length
+    double minimumEdgeLength = 0.001;
 
     /// collapse skinny triangles
     bool collapseSkinny = false;

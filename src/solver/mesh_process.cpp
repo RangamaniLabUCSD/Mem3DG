@@ -221,6 +221,11 @@ bool MeshProcessor::MeshMutator::ifCollapse(
 
 bool MeshProcessor::MeshMutator::ifSplit(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
+
+  if (vpg.edgeLength(e) <= minimumEdgeLength) {
+    return false;
+  }
+
   gcs::Halfedge he = e.halfedge();
   bool isBoundary = e.isBoundary();
   if (!he.isInterior()) {

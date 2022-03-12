@@ -716,6 +716,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
                             R"delim(
           split poor aspected triangle that is still Delaunay
       )delim");
+  meshmutator.def_readwrite("minimumEdgeLength",
+                            &MeshProcessor::MeshMutator::minimumEdgeLength,
+                            R"delim(
+          minimum edge length 
+      )delim");
 
   /**
    * @brief collapsing criterion
