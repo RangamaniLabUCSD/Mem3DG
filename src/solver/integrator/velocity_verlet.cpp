@@ -199,8 +199,9 @@ void VelocityVerlet::march() {
 
   // time stepping on protein density
   if (system.parameters.variation.isProteinVariation) {
-    system.proteinVelocity =
-        system.parameters.proteinMobility * system.forces.chemicalPotential;
+    system.proteinVelocity = system.parameters.proteinMobility *
+                             system.forces.chemicalPotential /
+                             system.vpg->vertexDualAreas;
     system.proteinDensity += system.proteinVelocity * timeStep;
   }
 
