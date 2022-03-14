@@ -190,8 +190,9 @@ void Euler::status() {
 void Euler::march() {
   // compute force, which is equivalent to velocity
   system.velocity = system.forces.mechanicalForceVec;
-  system.proteinVelocity =
-      system.parameters.proteinMobility * system.forces.chemicalPotential;
+  system.proteinVelocity = system.parameters.proteinMobility *
+                           system.forces.chemicalPotential /
+                           system.vpg->vertexDualAreas;
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
