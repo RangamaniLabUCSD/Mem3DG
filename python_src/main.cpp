@@ -1743,6 +1743,9 @@ PYBIND11_MODULE(_core, pymem3dg) {
   pymem3dg.def("processSoup", &processSoup, "process polygon soup",
                py::arg("meshName"));
 
+  pymem3dg.def("stripRichData", &stripRichData, "process polygon soup",
+               py::arg("meshName"));
+
 #pragma endregion mesh_io
 };
 } // namespace integrator

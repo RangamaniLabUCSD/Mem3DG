@@ -516,6 +516,8 @@ private:
     vpg->requireEdgeDihedralAngles();
     vpg->requireHalfedgeCotanWeights();
     vpg->requireEdgeCotanWeights();
+    vpg->requireVertexPrincipalCurvatureDirections();
+    vpg->requireVertexTangentBasis();
     // vpg->requireVertexTangentBasis();
   }
 
@@ -545,6 +547,8 @@ public:
     vpg->unrequireEdgeDihedralAngles();
     vpg->unrequireHalfedgeCotanWeights();
     vpg->unrequireEdgeCotanWeights();
+    vpg->unrequireVertexPrincipalCurvatureDirections();
+    vpg->unrequireVertexTangentBasis();
   }
 
   // ==========================================================

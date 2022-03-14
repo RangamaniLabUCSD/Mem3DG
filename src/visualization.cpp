@@ -66,23 +66,35 @@ void visualize(mem3dg::solver::System &f) {
        f.forces.osmoticForce.raw() + f.forces.externalForce.raw() +
        f.forces.lineCapillaryForce.raw();
 
+  gcs::VertexData<gc::Vector3> myTangentVector(*f.mesh);
+  for (gcs::Vertex v : f.mesh->vertices()) {
+    gc::Vector2 field = f.vpg->vertexPrincipalCurvatureDirections[v] /
+                        f.vpg->vertexDualAreas[v];
+
+    gc::Vector3 basisX = f.vpg->vertexTangentBasis[v][0];
+    gc::Vector3 basisY = f.vpg->vertexTangentBasis[v][1];
+
+    myTangentVector[v] = basisX * field.x + basisY * field.y;
+  }
+
   /// Read element data
   polyscope::getSurfaceMesh("Membrane")
-      ->addVertexScalarQuantity("mean_curvature",
-                                f.vpg->vertexMeanCurvatures.raw().array() /
-                                    f.vpg->vertexDualAreas.raw().array());
+      ->addVertexVectorQuantity("principal_direction", myTangentVector);
+  polyscope::getSurfaceMesh("Membrane")
+      ->addVertexScalarQuantity("mean_curvature", f.vpg->vertexMeanCurvatures /
+                                                      f.vpg->vertexDualAreas);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("gauss_curvature",
-                                f.vpg->vertexGaussianCurvatures.raw().array() /
-                                    f.vpg->vertexDualAreas.raw().array());
+                                f.vpg->vertexGaussianCurvatures /
+                                    f.vpg->vertexDualAreas);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("spon_curvature", f.H0);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("external_Force", f.forces.externalForce);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("line_tension_pressure",
-                                f.forces.lineCapillaryForce.raw().array() /
-                                    f.vpg->vertexDualAreas.raw().array());
+                                f.forces.lineCapillaryForce /
+                                    f.vpg->vertexDualAreas);
   polyscope::getSurfaceMesh("Membrane")
       ->addVertexScalarQuantity("physical_force", fn);
   polyscope::getSurfaceMesh("Membrane")

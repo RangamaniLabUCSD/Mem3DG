@@ -305,6 +305,38 @@ void System::pcg_test() {
 }
 
 void System::initConstants() {
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    gc::Vertex v{mesh->vertex(i)};
+    std::cout << "mean curvature: "
+              << vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i]
+              << std::endl;
+    std::cout << "gaussian curvature: "
+              << vpg->vertexGaussianCurvatures[i] / vpg->vertexDualAreas[i]
+              << std::endl;
+    std::cout << "principal curvatures: " << vpg->vertexMinPrincipalCurvature(v)
+              << " and " << vpg->vertexMaxPrincipalCurvature(v)
+              << "and diff/2: "
+              << (vpg->vertexMaxPrincipalCurvature(v) -
+                  vpg->vertexMinPrincipalCurvature(v)) /
+                     2
+              << std::endl;
+    std::cout << "principal direction length: "
+              << vpg->vertexPrincipalCurvatureDirections[v].norm() << std::endl;
+    std::cout << "principal direction length/A: "
+              << vpg->vertexPrincipalCurvatureDirections[v].norm() /
+                     vpg->vertexDualAreas[i]
+              << std::endl;
+    std::cout << "sqrt(principal direction length)/A: "
+              << pow(vpg->vertexPrincipalCurvatureDirections[v].norm(), 0.5) /
+                     vpg->vertexDualAreas[i]
+              << std::endl;
+    std::cout << "sqrt(principal direction length/A): "
+              << pow(vpg->vertexPrincipalCurvatureDirections[v].norm() /
+                         vpg->vertexDualAreas[i],
+                     0.5)
+              << std::endl;
+  }
+
   // Initialize random number generator
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);

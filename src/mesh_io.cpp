@@ -449,8 +449,8 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> readData(std::string &plyName,
                                     .getProperty<double>(propertyName);
   if (rawData.size() != ptrRichData->plyData.getElement(elementName).count) {
     mem3dg_runtime_error("Property " + propertyName +
-                             " does not have size equal to number of " +
-                             elementName);
+                         " does not have size equal to number of " +
+                         elementName);
   }
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> property;
@@ -497,6 +497,24 @@ processSoup(std::string &plyName) {
       soup.polygons, soup.vertexCoordinates);
   meshMatrix = ptrMesh->getFaceVertexMatrix<size_t>();
   vertexMatrix = gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions);
+  return std::tie(meshMatrix, vertexMatrix);
+}
+
+std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
+           Eigen::Matrix<double, Eigen::Dynamic, 3>>
+stripRichData(std::string &plyName) {
+  Eigen::Matrix<size_t, Eigen::Dynamic, 3> meshMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrData;
+  std::tie(ptrMesh, ptrData) =
+      gcs::RichSurfaceMeshData::readMeshAndData(plyName);
+  std::cout << "success!" << std::endl;
+  ptrVpg = ptrData->getGeometry();
+  meshMatrix = ptrMesh->getFaceVertexMatrix<size_t>();
+  vertexMatrix = gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions);
+  std::cout << "vertexMatrix: " << vertexMatrix << std::endl;
   return std::tie(meshMatrix, vertexMatrix);
 }
 } // namespace mem3dg
