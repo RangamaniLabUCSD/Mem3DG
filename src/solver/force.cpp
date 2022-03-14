@@ -467,16 +467,17 @@ EigenVectorX3dr System::prescribeExternalForce() {
   }
 
 #elif MODE == 2 // anchor force
-  double decayTime = 500;
+  double decayTime = 2000;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
   double standardDeviation = 0.02;
 
   // gc::Vector3 anchor{0, 0, 1};
-  gc::Vector3 direction{0, 0, 1};
+  // gc::Vector3 direction{0, 0, -1};
   // direction = anchor - vpg->inputVertexPositions[thePoint.nearestVertex()];
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
+    gc::Vector3 direction = -vpg->vertexPositions[v].normalize();
     forces.externalForceVec[i] =
         forces.maskForce(exp(-time / decayTime) * parameters.external.Kf *
                              gaussianDistribution(geodesicDistanceFromPtInd[v],
@@ -577,18 +578,6 @@ void System::computeChemicalPotentials() {
         -32 * parameters.aggregation.chi * (proteinDensity.raw().array() - 1) *
         (2 * proteinDensity.raw().array() - 1) * proteinDensity.raw().array() *
         vpg->vertexDualAreas.raw().array());
-  // forces.aggregationPotential.raw() = forces.maskProtein(
-  //     -2 * parameters.aggregation.chi * proteinDensity.raw().array() *
-  //     vpg->vertexDualAreas.raw().array());
-
-  // if (parameters.adsorption.epsilon != 0)
-  //   forces.adsorptionPotential.raw() = forces.maskProtein(
-  //       -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array() /
-  //       vpg->vertexDualAreas.raw().array());
-
-  // if (parameters.aggregation.chi != 0)
-  //   forces.aggregationPotential.raw() = forces.maskProtein(
-  //       -2 * parameters.aggregation.chi * proteinDensity.raw().array());
 
   if (parameters.dirichlet.eta != 0)
     forces.diffusionPotential.raw() = forces.maskProtein(
@@ -599,14 +588,6 @@ void System::computeChemicalPotentials() {
         forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
                            (1 / proteinDensity.raw().array() -
                             1 / (1 - proteinDensity.raw().array())));
-  // F.chemicalPotential.raw().array() =
-  //     -vpg->vertexDualAreas.raw().array() *
-  //     (P.adsorption.epsilon - 2 * Kb.raw().array() * meanCurvDiff *
-  //     dH0dphi.raw().array() +
-  //      meanCurvDiff * meanCurvDiff * dKbdphi.raw().array());
-  // F.chemicalPotential.raw().array() +=
-  //     P.proteinDistribution.lambdaPhi * (1 / proteinDensity.raw().array() -
-  //                    1 / (1 - proteinDensity.raw().array()));
 }
 
 void System::computeDPDForces(double dt) {
