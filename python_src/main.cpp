@@ -735,10 +735,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                             R"delim(
           collapse small triangles
       )delim");
-  meshmutator.def_readwrite("collapseSmallNeedFlat",
-                            &MeshProcessor::MeshMutator::collapseSmallNeedFlat,
+  meshmutator.def_readwrite("collapseFlat",
+                            &MeshProcessor::MeshMutator::collapseFlat,
                             R"delim(
-         whether require flatness condition when collapsing small edge
+         collapse flat edge
       )delim");
   meshmutator.def_readwrite("curvTol", &MeshProcessor::MeshMutator::curvTol,
                             R"delim(

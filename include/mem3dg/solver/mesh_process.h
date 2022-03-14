@@ -141,7 +141,7 @@ struct MeshProcessor {
     /// target face area
     double targetFaceArea = 0.001;
     /// whether require flatness condition when collapsing small edge
-    bool collapseSmallNeedFlat = false;
+    bool collapseFlat = false;
 
     /// tolerance for curvature approximation
     double curvTol = 0.0012;
