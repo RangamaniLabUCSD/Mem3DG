@@ -328,12 +328,12 @@ void System::computeMechanicalForces(size_t i) {
     osmoticForceVec +=
         forces.osmoticPressure * computeHalfedgeVolumeVariationVector(*vpg, he);
     capillaryForceVec -= forces.surfaceTension * areaGrad;
-    // adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
-    //                       parameters.adsorption.epsilon * areaGrad;
-    // aggregationForceVec -=
-    //     (pow(pow(2 * proteinDensityi - 1, 2) - 1, 2) / 3 +
-    //      pow(pow(2 * proteinDensityj - 1, 2) - 1, 2) * 2 / 3) *
-    //     parameters.aggregation.chi * areaGrad;
+    adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
+                          parameters.adsorption.epsilon * areaGrad;
+    aggregationForceVec -=
+        (pow(pow(2 * proteinDensityi - 1, 2) - 1, 2) / 3 +
+         pow(pow(2 * proteinDensityj - 1, 2) - 1, 2) * 2 / 3) *
+        parameters.aggregation.chi * areaGrad;
     // aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
     //                         proteinDensityj * proteinDensityj * 2 / 3) *
     //                        parameters.aggregation.chi * areaGrad;
@@ -434,7 +434,7 @@ void System::computeMechanicalForces(size_t i) {
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-#define MODE 2
+#define MODE 1
 #if MODE == 0 // axial sinusoidal force
   double freq = 5;
   double totalHeight = toMatrix(vpg->inputVertexPositions).col(2).maxCoeff() -
@@ -569,25 +569,15 @@ void System::computeChemicalPotentials() {
          vpg->vertexGaussianCurvatures.raw().array());
   }
 
-  // if (parameters.adsorption.epsilon != 0)
-  //   forces.adsorptionPotential.raw() = forces.maskProtein(
-  //       -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
-
-  // if (parameters.aggregation.chi != 0)
-  //   forces.aggregationPotential.raw() = forces.maskProtein(
-  //       -32 * parameters.aggregation.chi * (proteinDensity.raw().array() - 1)
-  //       * (2 * proteinDensity.raw().array() - 1) *
-  //       proteinDensity.raw().array() * vpg->vertexDualAreas.raw().array());
-
   if (parameters.adsorption.epsilon != 0)
     forces.adsorptionPotential.raw() = forces.maskProtein(
-        -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array() /
-        vpg->vertexDualAreas.raw().array());
+        -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
 
   if (parameters.aggregation.chi != 0)
     forces.aggregationPotential.raw() = forces.maskProtein(
         -32 * parameters.aggregation.chi * (proteinDensity.raw().array() - 1) *
-        (2 * proteinDensity.raw().array() - 1) * proteinDensity.raw().array());
+        (2 * proteinDensity.raw().array() - 1) * proteinDensity.raw().array() *
+        vpg->vertexDualAreas.raw().array());
 
   if (parameters.dirichlet.eta != 0)
     forces.diffusionPotential.raw() = forces.maskProtein(
@@ -598,14 +588,6 @@ void System::computeChemicalPotentials() {
         forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
                            (1 / proteinDensity.raw().array() -
                             1 / (1 - proteinDensity.raw().array())));
-  // F.chemicalPotential.raw().array() =
-  //     -vpg->vertexDualAreas.raw().array() *
-  //     (P.adsorption.epsilon - 2 * Kb.raw().array() * meanCurvDiff *
-  //     dH0dphi.raw().array() +
-  //      meanCurvDiff * meanCurvDiff * dKbdphi.raw().array());
-  // F.chemicalPotential.raw().array() +=
-  //     P.proteinDistribution.lambdaPhi * (1 / proteinDensity.raw().array() -
-  //                    1 / (1 - proteinDensity.raw().array()));
 }
 
 void System::computeDPDForces(double dt) {
