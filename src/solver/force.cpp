@@ -434,7 +434,7 @@ void System::computeMechanicalForces(size_t i) {
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-#define MODE 1
+#define MODE 2
 #if MODE == 0 // axial sinusoidal force
   double freq = 5;
   double totalHeight = toMatrix(vpg->inputVertexPositions).col(2).maxCoeff() -
