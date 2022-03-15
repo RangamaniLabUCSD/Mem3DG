@@ -467,7 +467,7 @@ EigenVectorX3dr System::prescribeExternalForce() {
   }
 
 #elif MODE == 2 // anchor force
-  double decayTime = 2000;
+  double decayTime = 1000;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
   double standardDeviation = 0.02;
