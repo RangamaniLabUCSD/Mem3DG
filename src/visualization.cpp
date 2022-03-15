@@ -562,10 +562,10 @@ polyscope::SurfaceMesh *registerSurfaceMesh(mem3dg::solver::MutableTrajFile &fd,
                                            fd.getProteinDensity(idx));
   }
   if (options.velocity) {
-    polyscopeMesh->addVertexScalarQuantity("velocity", fd.getVelocity(idx));
+    polyscopeMesh->addVertexVectorQuantity("velocity", fd.getVelocity(idx));
   }
   if (options.ext_force) {
-    polyscopeMesh->addVertexScalarQuantity("external_force",
+    polyscopeMesh->addVertexVectorQuantity("external_force",
                                            fd.getExternalForce(idx));
   }
 
