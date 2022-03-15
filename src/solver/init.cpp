@@ -190,12 +190,12 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     msk.fromVector(toMatrix(forces.forceMask).rowwise().sum());
     richData.addVertexProperty("force_mask", msk);
     richData.addVertexProperty("protein_mask", forces.proteinMask);
-    // gcs::VertexData<int> mutMkr(*mesh);
-    // mutMkr.fromVector(mutationMarker.raw().cast<int>());
-    // richData.addVertexProperty("smoothing_mask", mutMkr);
     gcs::VertexData<int> tkr(*mesh);
     tkr.fromVector(thePointTracker.raw().cast<int>());
     richData.addVertexProperty("the_point", tkr);
+    // gcs::VertexData<int> mutMkr(*mesh);
+    // mutMkr.fromVector(mutationMarker.raw().cast<int>());
+    // richData.addVertexProperty("smoothing_mask", mutMkr);
 
     // write geometry
     gcs::VertexData<double> meanCurv(*mesh);
@@ -207,6 +207,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
                          vpg->vertexDualAreas.raw().array());
     richData.addVertexProperty("gauss_curvature", gaussCurv);
     richData.addVertexProperty("spon_curvature", H0);
+    richData.addVertexProperty("dual_area", vpg->vertexDualAreas);
 
     // write pressures
     richData.addVertexProperty("bending_force", forces.bendingForce);
