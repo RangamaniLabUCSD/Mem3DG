@@ -29,6 +29,98 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+inline bool ifFoldover(gc::Vector3 a, gc::Vector3 b, gc::Vector3 c,
+                       gc::Vector3 x, double angle) {
+  gc::Vector3 n1 = gc::cross(b - a, c - a);
+  gc::Vector3 n2 = gc::cross(b - x, a - x);
+  return gc::angle(n1, n2) > angle;
+}
+
+bool ifFoldover(gcs::ManifoldSurfaceMesh &mesh,
+                gcs::VertexPositionGeometry &geometry, gcs::Edge e) {
+  std::vector<gcs::Halfedge> toCheck;
+  gcs::Vertex v1 = e.halfedge().vertex();
+  gcs::Vertex v2 = e.halfedge().twin().vertex();
+  gc::Vector3 midpoint =
+      (geometry.inputVertexPositions[e.halfedge().tailVertex()] +
+       geometry.inputVertexPositions[e.halfedge().tipVertex()]) /
+      2;
+  // find (halfedge) link around the edge, starting with those surrounding v1
+  gcs::Halfedge he = v1.halfedge();
+  gcs::Halfedge st = he;
+  do {
+    he = he.next();
+    if (he.vertex() != v2 && he.next().vertex() != v2) {
+      toCheck.push_back(he);
+    }
+    he = he.next().twin();
+  } while (he != st);
+  // link around v2
+  he = v2.halfedge();
+  st = he;
+  do {
+    he = he.next();
+    if (he.vertex() != v1 && he.next().vertex() != v1) {
+      toCheck.push_back(he);
+    }
+    he = he.next().twin();
+  } while (he != st);
+
+  // see if the point that would form after a collapse would cause a major
+  // foldover with surrounding edges
+  for (gcs::Halfedge he0 : toCheck) {
+    gcs::Halfedge heT = he0.twin();
+    gcs::Vertex v1 = heT.vertex();
+    gcs::Vertex v2 = heT.next().vertex();
+    gcs::Vertex v3 = heT.next().next().vertex();
+    gc::Vector3 a = geometry.inputVertexPositions[v1];
+    gc::Vector3 b = geometry.inputVertexPositions[v2];
+    gc::Vector3 c = geometry.inputVertexPositions[v3];
+    if (ifFoldover(a, b, c, midpoint, 0.5)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void System::mutateMesh(size_t nRepetition) {
+  for (size_t i = 0; i < nRepetition; ++i) {
+    bool isGrown = false, isFlipped = false;
+    mutationMarker.fill(false);
+
+    // vertex shift for regularization
+    if (meshProcessor.meshMutator.shiftVertex) {
+      vertexShift();
+    }
+    // linear edge flip for non-Delauney triangles
+    if (meshProcessor.meshMutator.isEdgeFlip) {
+      // isFlipped = edgeFlip();
+      // isFlipped = edgeFlip() || isFlipped;
+      // isFlipped = edgeFlip() || isFlipped;
+      flipEdge();
+    }
+
+    // split edge and collapse edge
+    if (meshProcessor.meshMutator.isSplitEdge ||
+        meshProcessor.meshMutator.isCollapseEdge) {
+      isGrown = isGrown || growMesh();
+    }
+
+    // linear edge flip for non-Delauney triangles
+    if (meshProcessor.meshMutator.isEdgeFlip) {
+      // isFlipped = edgeFlip();
+      // isFlipped = edgeFlip() || isFlipped;
+      // isFlipped = edgeFlip() || isFlipped;
+      flipEdge();
+    }
+
+    // globally update quantities
+    if (isGrown || isFlipped) {
+      globalUpdateAfterMutation();
+    }
+  }
+}
+
 void System::computeRegularizationForce() {
   // Note in regularization, it is preferred to use immediate calculation rather
   // than cached one
@@ -233,157 +325,6 @@ bool System::edgeFlip() {
   return isFlipped;
 }
 
-inline bool ifFoldover(gc::Vector3 a, gc::Vector3 b, gc::Vector3 c,
-                       gc::Vector3 x, double angle) {
-  gc::Vector3 n1 = gc::cross(b - a, c - a);
-  gc::Vector3 n2 = gc::cross(b - x, a - x);
-  return gc::angle(n1, n2) > angle;
-}
-
-bool ifFoldover(gcs::ManifoldSurfaceMesh &mesh,
-                gcs::VertexPositionGeometry &geometry, gcs::Edge e) {
-  std::vector<gcs::Halfedge> toCheck;
-  gcs::Vertex v1 = e.halfedge().vertex();
-  gcs::Vertex v2 = e.halfedge().twin().vertex();
-  gc::Vector3 midpoint =
-      (geometry.inputVertexPositions[e.halfedge().tailVertex()] +
-       geometry.inputVertexPositions[e.halfedge().tipVertex()]) /
-      2;
-  // find (halfedge) link around the edge, starting with those surrounding v1
-  gcs::Halfedge he = v1.halfedge();
-  gcs::Halfedge st = he;
-  do {
-    he = he.next();
-    if (he.vertex() != v2 && he.next().vertex() != v2) {
-      toCheck.push_back(he);
-    }
-    he = he.next().twin();
-  } while (he != st);
-  // link around v2
-  he = v2.halfedge();
-  st = he;
-  do {
-    he = he.next();
-    if (he.vertex() != v1 && he.next().vertex() != v1) {
-      toCheck.push_back(he);
-    }
-    he = he.next().twin();
-  } while (he != st);
-
-  // see if the point that would form after a collapse would cause a major
-  // foldover with surrounding edges
-  for (gcs::Halfedge he0 : toCheck) {
-    gcs::Halfedge heT = he0.twin();
-    gcs::Vertex v1 = heT.vertex();
-    gcs::Vertex v2 = heT.next().vertex();
-    gcs::Vertex v3 = heT.next().next().vertex();
-    gc::Vector3 a = geometry.inputVertexPositions[v1];
-    gc::Vector3 b = geometry.inputVertexPositions[v2];
-    gc::Vector3 c = geometry.inputVertexPositions[v3];
-    if (ifFoldover(a, b, c, midpoint, 0.5)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool System::adjustEdgeLengths() {
-  bool didSplitOrCollapse = false;
-  // queues of edges to CHECK to change
-  std::vector<gcs::Edge> toSplit;
-  std::vector<gcs::Edge> toCollapse;
-
-  for (gc::Edge e : mesh->edges()) {
-    toSplit.push_back(e);
-  }
-
-  // actually splitting
-  while (!toSplit.empty()) {
-    gcs::Edge e = toSplit.back();
-    toSplit.pop_back();
-
-    gcs::Halfedge he = e.halfedge();
-    gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
-    gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
-    gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
-    gc::Vector3 vertex1Vel = velocity[vertex1];
-    gc::Vector3 vertex2Vel = velocity[vertex2];
-    double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
-    double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
-    double vertex1Phi = proteinDensity[vertex1];
-    double vertex2Phi = proteinDensity[vertex2];
-    gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
-    gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
-    bool vertex1PointTracker = thePointTracker[vertex1];
-    bool vertex2PointTracker = thePointTracker[vertex2];
-
-    if (meshProcessor.meshMutator.ifSplit(e, *vpg) &&
-        gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5) {
-
-      gcs::Halfedge newHe = mesh->splitEdgeTriangular(e);
-      didSplitOrCollapse = true;
-      gcs::Vertex newVertex = newHe.vertex();
-
-      vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
-      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-      geodesicDistanceFromPtInd[newVertex] =
-          0.5 * (vertex1GeoDist + vertex2GeoDist);
-      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-      thePointTracker[newVertex] = false;
-      forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
-
-      meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
-    } else {
-      toCollapse.push_back(e);
-    }
-  }
-  // actually collapsing
-  while (!toCollapse.empty()) {
-    gcs::Edge e = toCollapse.back();
-    toCollapse.pop_back();
-    if (e.halfedge().next().getIndex() !=
-        gc::INVALID_IND) { // make sure it exists
-      gcs::Halfedge he = e.halfedge();
-      gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
-      gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
-      gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
-      gc::Vector3 vertex1Vel = velocity[vertex1];
-      gc::Vector3 vertex2Vel = velocity[vertex2];
-      double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
-      double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
-      double vertex1Phi = proteinDensity[vertex1];
-      double vertex2Phi = proteinDensity[vertex2];
-      gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
-      gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
-      bool vertex1PointTracker = thePointTracker[vertex1];
-      bool vertex2PointTracker = thePointTracker[vertex2];
-
-      if (meshProcessor.meshMutator.ifCollapse(e, *vpg) &&
-          gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5 &&
-          !ifFoldover(*mesh, *vpg, e)) {
-        gcs::Vertex newVertex = mesh->collapseEdgeTriangular(e);
-        didSplitOrCollapse = true;
-        if (newVertex != gcs::Vertex()) {
-          vpg->vertexPositions[newVertex] =
-              gc::sum(vertex1ForceMask) < 2.5   ? vertex1Pos
-              : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
-                                                : (vertex1Pos + vertex2Pos) / 2;
-          velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-          geodesicDistanceFromPtInd[newVertex] =
-              0.5 * (vertex1GeoDist + vertex2GeoDist);
-          proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-          thePointTracker[newVertex] =
-              vertex1PointTracker || vertex2PointTracker;
-          meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
-        }
-      }
-    }
-  }
-  if (didSplitOrCollapse)
-    mesh->compress();
-  return didSplitOrCollapse;
-}
-
 void System::flipEdge() {
   // queue of edges to check if Delaunay
   std::queue<gc::Edge> toCheck;
@@ -439,7 +380,7 @@ void System::flipEdge() {
   }
 }
 
-bool System::growMesh() {
+bool System::meshGrowth() {
   // Note in regularization, it is preferred to use immediate calculation rather
   // than cached one
   bool isGrown = false;
@@ -544,42 +485,101 @@ bool System::growMesh() {
   return isGrown;
 }
 
-void System::mutateMesh(size_t nRepetition) {
-  for (size_t i = 0; i < nRepetition; ++i) {
-    bool isGrown = false, isFlipped = false;
-    mutationMarker.fill(false);
+bool System::growMesh() {
+  bool didSplitOrCollapse = false;
+  // queues of edges to CHECK to change
+  std::vector<gcs::Edge> toSplit;
+  std::vector<gcs::Edge> toCollapse;
 
-    // vertex shift for regularization
-    if (meshProcessor.meshMutator.shiftVertex) {
-      vertexShift();
-    }
-    // linear edge flip for non-Delauney triangles
-    if (meshProcessor.meshMutator.isEdgeFlip) {
-      // isFlipped = edgeFlip();
-      // isFlipped = edgeFlip() || isFlipped;
-      // isFlipped = edgeFlip() || isFlipped;
-      flipEdge();
-    }
+  for (gc::Edge e : mesh->edges()) {
+    toSplit.push_back(e);
+  }
 
-    // split edge and collapse edge
-    if (meshProcessor.meshMutator.isSplitEdge ||
-        meshProcessor.meshMutator.isCollapseEdge) {
-      isGrown = isGrown || adjustEdgeLengths();
-    }
+  // actually splitting
+  while (!toSplit.empty()) {
+    gcs::Edge e = toSplit.back();
+    toSplit.pop_back();
 
-    // linear edge flip for non-Delauney triangles
-    if (meshProcessor.meshMutator.isEdgeFlip) {
-      // isFlipped = edgeFlip();
-      // isFlipped = edgeFlip() || isFlipped;
-      // isFlipped = edgeFlip() || isFlipped;
-      flipEdge();
-    }
+    gcs::Halfedge he = e.halfedge();
+    gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
+    gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
+    gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
+    gc::Vector3 vertex1Vel = velocity[vertex1];
+    gc::Vector3 vertex2Vel = velocity[vertex2];
+    double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
+    double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+    double vertex1Phi = proteinDensity[vertex1];
+    double vertex2Phi = proteinDensity[vertex2];
+    gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
+    gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
+    bool vertex1PointTracker = thePointTracker[vertex1];
+    bool vertex2PointTracker = thePointTracker[vertex2];
 
-    // globally update quantities
-    if (isGrown || isFlipped) {
-      globalUpdateAfterMutation();
+    if (meshProcessor.meshMutator.ifSplit(e, *vpg) &&
+        gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5) {
+
+      gcs::Halfedge newHe = mesh->splitEdgeTriangular(e);
+      didSplitOrCollapse = true;
+      gcs::Vertex newVertex = newHe.vertex();
+
+      vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
+      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+      geodesicDistanceFromPtInd[newVertex] =
+          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+      thePointTracker[newVertex] = false;
+      forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
+
+      meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
+    } else {
+      toCollapse.push_back(e);
     }
   }
+  // actually collapsing
+  while (!toCollapse.empty()) {
+    gcs::Edge e = toCollapse.back();
+    toCollapse.pop_back();
+    if (e.halfedge().next().getIndex() !=
+        gc::INVALID_IND) { // make sure it exists
+      gcs::Halfedge he = e.halfedge();
+      gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
+      gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
+      gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
+      gc::Vector3 vertex1Vel = velocity[vertex1];
+      gc::Vector3 vertex2Vel = velocity[vertex2];
+      double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
+      double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+      double vertex1Phi = proteinDensity[vertex1];
+      double vertex2Phi = proteinDensity[vertex2];
+      gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
+      gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
+      bool vertex1PointTracker = thePointTracker[vertex1];
+      bool vertex2PointTracker = thePointTracker[vertex2];
+
+      if (meshProcessor.meshMutator.ifCollapse(e, *vpg) &&
+          gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5 &&
+          !ifFoldover(*mesh, *vpg, e)) {
+        gcs::Vertex newVertex = mesh->collapseEdgeTriangular(e);
+        didSplitOrCollapse = true;
+        if (newVertex != gcs::Vertex()) {
+          vpg->vertexPositions[newVertex] =
+              gc::sum(vertex1ForceMask) < 2.5   ? vertex1Pos
+              : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
+                                                : (vertex1Pos + vertex2Pos) / 2;
+          velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+          geodesicDistanceFromPtInd[newVertex] =
+              0.5 * (vertex1GeoDist + vertex2GeoDist);
+          proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+          thePointTracker[newVertex] =
+              vertex1PointTracker || vertex2PointTracker;
+          meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
+        }
+      }
+    }
+  }
+  if (didSplitOrCollapse)
+    mesh->compress();
+  return didSplitOrCollapse;
 }
 
 Eigen::Matrix<bool, Eigen::Dynamic, 1>
