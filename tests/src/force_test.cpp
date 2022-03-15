@@ -70,7 +70,7 @@ protected:
 
     p.adsorption.epsilon = -1e-2;
 
-    p.aggregation.chi = -1e-2;
+    p.aggregation.chi = -1e-4;
 
     p.osmotic.isPreferredVolume = false;
     p.osmotic.isConstantOsmoticPressure = true;

@@ -1572,8 +1572,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The quantities for visualization
     )delim");
   quantities.def(py::init<>());
-  quantities.def(py::init<bool, bool, bool, bool, bool, bool, bool, bool, bool,
-                          bool, bool, bool, bool, bool>());
+  quantities.def_readwrite("protein_density", &Quantities::protein_density,
+                           R"delim(
+        visualize protein density
+      )delim");
   quantities.def_readwrite("ref_coord", &Quantities::ref_coord,
                            R"delim(
         visualize reference coordinate 
