@@ -842,9 +842,9 @@ public:
   /**
    * @brief Get regularization pressure component of the system
    */
-  bool growMesh();
+  bool meshGrowth();
 
-  bool adjustEdgeLengths();
+  bool growMesh();
 
   // ==========================================================
   // =============          Helpers             ===============
