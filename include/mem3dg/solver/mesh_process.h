@@ -53,9 +53,6 @@ struct MeshProcessor {
     // whether has reference mesh
     bool ifHasRefMesh;
 
-    // whether conduct smoothing 
-    bool isSmoothenMesh = false;
-
     /// triangle ratio constant
     double Kst = 0;
     /// Local stretching modulus
@@ -114,6 +111,9 @@ struct MeshProcessor {
     /// whether vertex shift
     bool shiftVertex = false;
 
+    // whether conduct smoothing
+    bool isSmoothenMesh = false;
+
     /// flip non-delaunay edge
     bool flipNonDelaunay = false;
     /// whether require flatness condition when flipping non-Delaunay edge
@@ -131,6 +131,8 @@ struct MeshProcessor {
     bool splitFat = false;
     /// split poor aspected triangle that is still Delaunay
     bool splitSkinnyDelaunay = false;
+    /// min edge length
+    double minimumEdgeLength = 0.001;
 
     /// collapse skinny triangles
     bool collapseSkinny = false;
@@ -139,7 +141,7 @@ struct MeshProcessor {
     /// target face area
     double targetFaceArea = 0.001;
     /// whether require flatness condition when collapsing small edge
-    bool collapseSmallNeedFlat = false;
+    bool collapseFlat = false;
 
     /// tolerance for curvature approximation
     double curvTol = 0.0012;
@@ -165,7 +167,7 @@ struct MeshProcessor {
     bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
 
     void markVertices(gcs::VertexData<bool> &mutationMarker,
-                            const gcs::Vertex v, const size_t layer = 0);
+                      const gcs::Vertex v, const size_t layer = 0);
 
     std::tuple<double, std::size_t>
     neighborAreaSum(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);

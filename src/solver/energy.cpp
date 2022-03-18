@@ -117,22 +117,16 @@ void System::computePressureEnergy() {
 
 void System::computeAdsorptionEnergy() {
   energy.adsorptionEnergy =
-      parameters.adsorption.epsilon * proteinDensity.raw().array().sum();
-  // energy.adsorptionEnergy =
-  //     parameters.adsorption.epsilon *
-  //     (vpg->vertexDualAreas.raw().array() *
-  //     proteinDensity.raw().array()).sum();
+      parameters.adsorption.epsilon *
+      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
 }
 
 void System::computeAggregationEnergy() {
   energy.aggregationEnergy =
       parameters.aggregation.chi *
-      ((2 * proteinDensity.raw().array() - 1).square() - 1).square().sum();
-  // energy.aggregationEnergy =
-  //     parameters.aggregation.chi *
-  //     (vpg->vertexDualAreas.raw().array() *
-  //      ((2 * proteinDensity.raw().array() - 1).square() - 1).square())
-  //         .sum();
+      (vpg->vertexDualAreas.raw().array() *
+       ((2 * proteinDensity.raw().array() - 1).square() - 1).square())
+          .sum();
   // energy.aggregationEnergy =
   //     parameters.aggregation.chi *
   //     (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
