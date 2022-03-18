@@ -1221,8 +1221,8 @@ void Integrator::createNetcdfFile() {
 void Integrator::createMutableNetcdfFile() {
   // initialize netcdf traj file
   if (system.isContinuation) {
-    trajFile = MutableTrajFile::openRW(outputDirectory + "/" + trajFileName);
-    std::cout << "write!!" << std::endl;
+    mutableTrajFile.open(outputDirectory + "/" + trajFileName,
+                           TrajFile::NcFile::write);
   } else {
     mutableTrajFile.createNewFile(outputDirectory + "/" + trajFileName,
                                   TrajFile::NcFile::replace);

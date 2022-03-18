@@ -582,7 +582,7 @@ private:
 
   template <typename T>
   EigenVectorX1_T<T> getVar1d(const nc::NcVar &var,
-                                const std::size_t idx) const {
+                              const std::size_t idx) const {
     assert(idx < nFrames());
 
     nc_vlen_t vlenData;
@@ -591,7 +591,8 @@ private:
     // Initialize an Eigen object and copy the data over
     EigenVectorX1_T<T> vec(vlenData.len);
     // Bind to nc_vlen_t memory and copy data over
-    vec = AlignedEigenMap_T<T, 1, Eigen::ColMajor>(static_cast<T *>(vlenData.p), vlenData.len);
+    vec = AlignedEigenMap_T<T, 1, Eigen::ColMajor>(static_cast<T *>(vlenData.p),
+                                                   vlenData.len);
     return vec;
   }
 
