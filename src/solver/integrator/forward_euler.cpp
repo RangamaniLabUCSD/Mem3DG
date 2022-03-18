@@ -99,8 +99,6 @@ bool Euler::integrate() {
     if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      if (system.meshProcessor.meshRegularizer.isSmoothenMesh)
-        system.smoothenMesh(timeStep);
       system.updateConfigurations(false);
     }
 
