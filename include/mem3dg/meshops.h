@@ -698,6 +698,23 @@ tanhDistribution(EigenVectorX1d &distribution,
 }
 
 /**
+ * @brief Slice string using two deliminator
+ *
+ */
+DLL_PUBLIC inline std::string sliceString(std::string fileName,
+                                                     std::string delim1,
+                                                     std::string delim2) {
+  // int start = 0;
+  int start = fileName.find_last_of(delim1) + 1;
+  int end = fileName.find_last_of(delim2);
+  std::string string;
+  if (start != -1 && end != -1 && end > start) {
+    string = fileName.substr(start, end - start);
+  }
+  return string;
+}
+
+/**
  * @brief height = 1 fo jump step domain
  *
  * @param (double) sharpness of transition
@@ -706,10 +723,11 @@ tanhDistribution(EigenVectorX1d &distribution,
  * @param (vertexPositionGeometry) vpg
  *
  */
-inline double jumpDistribution(const double &distance,
-                               const gc::Vector3 &vertexPositionFromPtInd,
-                               const std::array<gc::Vector3, 2> &tangentBasis,
-                               const std::array<double, 2> &axes) {
+DLL_PUBLIC inline double
+jumpDistribution(const double &distance,
+                 const gc::Vector3 &vertexPositionFromPtInd,
+                 const std::array<gc::Vector3, 2> &tangentBasis,
+                 const std::array<double, 2> &axes) {
   double x = gc::dot(vertexPositionFromPtInd, tangentBasis[0]);
   double y = gc::dot(vertexPositionFromPtInd, tangentBasis[1]);
   double cos_t = 1.0;

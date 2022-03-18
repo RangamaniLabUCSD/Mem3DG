@@ -99,8 +99,6 @@ bool Euler::integrate() {
     if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      if (system.meshProcessor.meshRegularizer.isSmoothenMesh)
-        system.smoothenMesh(timeStep);
       system.updateConfigurations(false);
     }
 
@@ -190,8 +188,9 @@ void Euler::status() {
 void Euler::march() {
   // compute force, which is equivalent to velocity
   system.velocity = system.forces.mechanicalForceVec;
-  system.proteinVelocity =
-      system.parameters.proteinMobility * system.forces.chemicalPotential;
+  system.proteinVelocity = system.parameters.proteinMobility *
+                           system.forces.chemicalPotential /
+                           system.vpg->vertexDualAreas;
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {

@@ -155,7 +155,7 @@ void MeshProcessor::MeshMutator::summarizeStatus() {
   isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
   isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
                  splitSkinnyDelaunay);
-  isCollapseEdge = (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
+  isCollapseEdge = (collapseSkinny || collapseSmall || collapseFlat);
   isChangeTopology = isEdgeFlip || isSplitEdge || isCollapseEdge;
 };
 
@@ -203,15 +203,16 @@ bool MeshProcessor::MeshMutator::ifCollapse(
     is2Small =
         (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
         (num_neighbor - gap) * targetFaceArea;
-    if (collapseSmallNeedFlat) {
-      isFlat =
-          vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
-      is2Small = is2Small && isFlat;
-    }
     // isSmooth =
     //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
     //     targetdH0);
     condition = condition || is2Small;
+  }
+
+  if (collapseFlat) {
+    isFlat =
+        vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
+    condition = condition || isFlat;
   }
 
   // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
@@ -221,6 +222,11 @@ bool MeshProcessor::MeshMutator::ifCollapse(
 
 bool MeshProcessor::MeshMutator::ifSplit(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
+
+  if (vpg.edgeLength(e) <= minimumEdgeLength) {
+    return false;
+  }
+
   gcs::Halfedge he = e.halfedge();
   bool isBoundary = e.isBoundary();
   if (!he.isInterior()) {

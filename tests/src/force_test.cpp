@@ -70,7 +70,7 @@ protected:
 
     p.adsorption.epsilon = -1e-2;
 
-    p.aggregation.chi = -1e-5;
+    p.aggregation.chi = -1e-4;
 
     p.osmotic.isPreferredVolume = false;
     p.osmotic.isConstantOsmoticPressure = true;
@@ -109,8 +109,7 @@ protected:
  */
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
-  std::size_t nSub = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p);
   // First time calculation of force
   f.computePhysicalForcing();
   f.computeRegularizationForce();
@@ -139,8 +138,7 @@ TEST_F(ForceTest, ConservativeForcesTest) {
 TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
-  std::size_t nSub = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p);
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.velocity);
@@ -314,78 +312,78 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   // ==========================================================
   // ================      Adsorption        ==================
   // ==========================================================
-//   // test energy decrease and closeness
-//   f.proteinDensity.raw() = current_proteinDensity;
-//   toMatrix(f.vpg->inputVertexPositions) =
-//       current_pos +
-//       h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
-//   f.updateConfigurations(false);
-//   f.computeAdsorptionEnergy();
-//   expectedEnergyDecrease =
-//       h *
-//       f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
-//   actualEnergyDecrease =
-//       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
-//   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-//   EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
-//   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-12))
-//       << "adsorption force: (expected - actual) / expected = "
-//       << difference_h / (abs(actualEnergyDecrease));
+  // test energy decrease and closeness
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
+  f.updateConfigurations(false);
+  f.computeAdsorptionEnergy();
+  expectedEnergyDecrease =
+      h *
+      f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.adsorptionEnergy <= previousE.adsorptionEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-12))
+      << "adsorption force: (expected - actual) / expected = "
+      << difference_h / (abs(actualEnergyDecrease));
 
-//   // test convergence rate
-//   f.proteinDensity.raw() = current_proteinDensity;
-//   toMatrix(f.vpg->inputVertexPositions) =
-//       current_pos +
-//       stepFold * h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
-//   f.updateConfigurations(false);
-//   f.computeAdsorptionEnergy();
-//   expectedEnergyDecrease =
-//       stepFold * h *
-//       f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
-//   actualEnergyDecrease =
-//       -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
-//   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-//   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-//               tolerance)
-//       << "adsorption force convergence rate" << std::endl;
+  // test convergence rate
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      stepFold * h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
+  f.updateConfigurations(false);
+  f.computeAdsorptionEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec)).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.adsorptionEnergy + previousE.adsorptionEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "adsorption force convergence rate" << std::endl;
 
   // ==========================================================
   // ================      Aggregation       ==================
   // ==========================================================
-//   // test energy decrease and closeness
-//   f.proteinDensity.raw() = current_proteinDensity;
-//   toMatrix(f.vpg->inputVertexPositions) =
-//       current_pos +
-//       h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
-//   f.updateConfigurations(false);
-//   f.computeAggregationEnergy();
-//   expectedEnergyDecrease =
-//       h *
-//       f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
-//   actualEnergyDecrease =
-//       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
-//   difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
-//   EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
-//   EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-12))
-//       << "aggregation force: (expected - actual) / expected = "
-//       << difference_h / (abs(actualEnergyDecrease));
+  // test energy decrease and closeness
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
+  f.updateConfigurations(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      h *
+      f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_h = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_TRUE(f.energy.aggregationEnergy <= previousE.aggregationEnergy);
+  EXPECT_TRUE(difference_h < tolerance * (abs(actualEnergyDecrease) + 1e-12))
+      << "aggregation force: (expected - actual) / expected = "
+      << difference_h / (abs(actualEnergyDecrease));
 
-//   // test convergence rate
-//   f.proteinDensity.raw() = current_proteinDensity;
-//   toMatrix(f.vpg->inputVertexPositions) =
-//       current_pos +
-//       stepFold * h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
-//   f.updateConfigurations(false);
-//   f.computeAggregationEnergy();
-//   expectedEnergyDecrease =
-//       stepFold * h *
-//       f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
-//   actualEnergyDecrease =
-//       -f.energy.aggregationEnergy + previousE.aggregationEnergy;
-//   difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
-//   EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
-//               tolerance)
-//       << "aggregation force convergence rate" << std::endl;
+  // test convergence rate
+  f.proteinDensity.raw() = current_proteinDensity;
+  toMatrix(f.vpg->inputVertexPositions) =
+      current_pos +
+      stepFold * h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
+  f.updateConfigurations(false);
+  f.computeAggregationEnergy();
+  expectedEnergyDecrease =
+      stepFold * h *
+      f.forces.maskForce(toMatrix(f.forces.aggregationForceVec)).squaredNorm();
+  actualEnergyDecrease =
+      -f.energy.aggregationEnergy + previousE.aggregationEnergy;
+  difference_xh = abs(expectedEnergyDecrease - actualEnergyDecrease);
+  EXPECT_NEAR(difference_xh / difference_h, pow(stepFold, expectRate),
+              tolerance)
+      << "aggregation force convergence rate" << std::endl;
 
   // ==========================================================
   // ================   Self-avoidance       ==================
