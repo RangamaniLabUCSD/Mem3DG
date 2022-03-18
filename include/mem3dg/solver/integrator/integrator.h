@@ -60,8 +60,6 @@ protected:
   bool SUCCESS = true;
   /// Flag for terminating the simulation
   bool EXIT = false;
-  /// Frame index of the trajectory output
-  std::size_t frame = 0;
   /// Normalized area difference to reference mesh
   double areaDifference;
   /// Normalized volume/osmotic pressure difference

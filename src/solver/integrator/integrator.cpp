@@ -1099,8 +1099,8 @@ void Integrator::saveData() {
   // save variable to richData and save ply file
   if (verbosity > outputPly) {
     char buffer[50];
-    sprintf(buffer, isJustGeometryPly ? "/frame%d.obj" : "/frame%d.ply",
-            (int)frame);
+    sprintf(buffer, isJustGeometryPly ? "/t%d_f%d_.obj" : "/t%d_f%d_.ply",
+            (int)system.time, (int)system.frame);
     system.saveRichData(outputDirectory + "/" + std::string(buffer),
                         isJustGeometryPly);
   }
@@ -1109,7 +1109,7 @@ void Integrator::saveData() {
   if (verbosity > 1) {
     std::cout << "\n"
               << "t: " << system.time << ", "
-              << "n: " << frame << ", "
+              << "n: " << system.frame << ", "
               << "isSmooth: " << system.isSmooth << "\n"
               << "dA/Area: " << areaDifference << "/" << system.surfaceArea
               << ", "
@@ -1163,7 +1163,7 @@ void Integrator::saveData() {
     }
   }
 
-  frame++;
+  system.frame++;
 }
 
 void Integrator::markFileName(std::string marker_str) {
@@ -1205,11 +1205,16 @@ void Integrator::markFileName(std::string marker_str) {
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::createNetcdfFile() {
   // initialize netcdf traj file
-  trajFile.createNewFile(outputDirectory + "/" + trajFileName, *system.mesh,
-                         *system.vpg, TrajFile::NcFile::replace);
-  trajFile.writeMask(toMatrix(system.forces.forceMask).rowwise().sum());
-  if (!system.mesh->hasBoundary()) {
-    trajFile.writeRefSurfArea(system.parameters.tension.At);
+  if (system.isContinue) {
+    trajFile.open(outputDirectory + "/" + trajFileName,
+                  TrajFile::NcFile::write);
+  } else {
+    trajFile.createNewFile(outputDirectory + "/" + trajFileName, *system.mesh,
+                           *system.vpg, TrajFile::NcFile::replace);
+    trajFile.writeMask(toMatrix(system.forces.forceMask).rowwise().sum());
+    if (!system.mesh->hasBoundary()) {
+      trajFile.writeRefSurfArea(system.parameters.tension.At);
+    }
   }
 }
 
@@ -1224,91 +1229,95 @@ void Integrator::createMutableNetcdfFile() {
 }
 
 void Integrator::saveNetcdfData() {
-  std::size_t idx = trajFile.nFrames();
-
   // scalar quantities
   // write time
-  trajFile.writeTime(idx, system.time);
-  trajFile.writeIsSmooth(idx, system.isSmooth);
+  trajFile.writeTime(system.frame, system.time);
+  trajFile.writeIsSmooth(system.frame, system.isSmooth);
   // write geometry
-  trajFile.writeVolume(idx, system.volume);
-  trajFile.writeSurfArea(idx,
+  trajFile.writeVolume(system.frame, system.volume);
+  trajFile.writeSurfArea(system.frame,
                          system.mesh->hasBoundary()
                              ? system.surfaceArea - system.parameters.tension.At
                              : system.surfaceArea);
   trajFile.writeHeight(
-      idx, toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff());
+      system.frame,
+      toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff());
   // write energies
-  trajFile.writeBendEnergy(idx, system.energy.bendingEnergy);
-  trajFile.writeSurfEnergy(idx, system.energy.surfaceEnergy);
-  trajFile.writePressEnergy(idx, system.energy.pressureEnergy);
-  trajFile.writeKineEnergy(idx, system.energy.kineticEnergy);
-  trajFile.writeAdspEnergy(idx, system.energy.adsorptionEnergy);
-  trajFile.writeLineEnergy(idx, system.energy.dirichletEnergy);
-  trajFile.writeTotalEnergy(idx, system.energy.totalEnergy);
+  trajFile.writeBendEnergy(system.frame, system.energy.bendingEnergy);
+  trajFile.writeSurfEnergy(system.frame, system.energy.surfaceEnergy);
+  trajFile.writePressEnergy(system.frame, system.energy.pressureEnergy);
+  trajFile.writeKineEnergy(system.frame, system.energy.kineticEnergy);
+  trajFile.writeAdspEnergy(system.frame, system.energy.adsorptionEnergy);
+  trajFile.writeLineEnergy(system.frame, system.energy.dirichletEnergy);
+  trajFile.writeTotalEnergy(system.frame, system.energy.totalEnergy);
   // write Norms
-  trajFile.writeErrorNorm(idx, system.mechErrorNorm);
-  trajFile.writeChemErrorNorm(idx, system.chemErrorNorm);
-  trajFile.writeBendNorm(idx,
+  trajFile.writeErrorNorm(system.frame, system.mechErrorNorm);
+  trajFile.writeChemErrorNorm(system.frame, system.chemErrorNorm);
+  trajFile.writeBendNorm(system.frame,
                          system.computeNorm(system.forces.bendingForce.raw()));
   trajFile.writeSurfNorm(
-      idx, system.computeNorm(system.forces.capillaryForce.raw()));
-  trajFile.writePressNorm(idx,
+      system.frame, system.computeNorm(system.forces.capillaryForce.raw()));
+  trajFile.writePressNorm(system.frame,
                           system.computeNorm(system.forces.osmoticForce.raw()));
   trajFile.writeLineNorm(
-      idx, system.computeNorm(system.forces.lineCapillaryForce.raw()));
+      system.frame, system.computeNorm(system.forces.lineCapillaryForce.raw()));
 
   // vector quantities
   if (!system.meshProcessor.meshMutator.isSplitEdge &&
       !system.meshProcessor.meshMutator.isCollapseEdge) {
     // write velocity
-    trajFile.writeVelocity(idx, toMatrix(system.velocity));
+    trajFile.writeVelocity(system.frame, toMatrix(system.velocity));
     // write protein density distribution
-    trajFile.writeProteinDensity(idx, system.proteinDensity.raw());
+    trajFile.writeProteinDensity(system.frame, system.proteinDensity.raw());
 
     // write geometry
-    trajFile.writeCoords(idx, toMatrix(system.vpg->inputVertexPositions));
-    trajFile.writeTopoFrame(idx,
-                            system.mesh->getFaceVertexMatrix<std::uint32_t>());
-    trajFile.writeMeanCurvature(idx,
+    trajFile.writeCoords(system.frame,
+                         toMatrix(system.vpg->inputVertexPositions));
+    trajFile.writeToposystem.Frame(
+        system.frame, system.mesh->getFaceVertexMatrix<std::uint32_t>());
+    trajFile.writeMeanCurvature(system.frame,
                                 system.vpg->vertexMeanCurvatures.raw().array() /
                                     system.vpg->vertexDualAreas.raw().array());
     trajFile.writeGaussCurvature(
-        idx, system.vpg->vertexGaussianCurvatures.raw().array() /
-                 system.vpg->vertexDualAreas.raw().array());
-    trajFile.writeSponCurvature(idx, system.H0.raw());
-    // fd.writeAngles(idx, f.vpg.cornerAngles.raw());
-    // fd.writeH_H0_diff(idx,
+        system.frame, system.vpg->vertexGaussianCurvatures.raw().array() /
+                          system.vpg->vertexDualAreas.raw().array());
+    trajFile.writeSponCurvature(system.frame, system.H0.raw());
+    // fd.writeAngles(system.frame, f.vpg.cornerAngles.raw());
+    // fd.writeH_H0_diff(system.frame,
     //                   ((f.H - f.H0).array() * (f.H -
     //                   f.H0).array()).matrix());
 
     // write pressures
-    trajFile.writeBendingForce(idx, system.forces.bendingForce.raw());
-    trajFile.writeCapillaryForce(idx, system.forces.capillaryForce.raw());
-    trajFile.writeLineForce(idx, system.forces.lineCapillaryForce.raw());
-    trajFile.writeOsmoticForce(idx, system.forces.osmoticForce.raw());
-    trajFile.writeExternalForce(idx, system.forces.externalForce.raw());
-    trajFile.writePhysicalForce(idx, system.forces.mechanicalForce.raw());
-    trajFile.writeChemicalPotential(idx, system.forces.chemicalPotential.raw());
+    trajFile.writeBendingForce(system.frame, system.forces.bendingForce.raw());
+    trajFile.writeCapillaryForce(system.frame,
+                                 system.forces.capillaryForce.raw());
+    trajFile.writeLineForce(system.frame,
+                            system.forces.lineCapillaryForce.raw());
+    trajFile.writeOsmoticForce(system.frame, system.forces.osmoticForce.raw());
+    trajFile.writeExternalForce(system.frame,
+                                system.forces.externalForce.raw());
+    trajFile.writePhysicalForce(system.frame,
+                                system.forces.mechanicalForce.raw());
+    trajFile.writeChemicalPotential(system.frame,
+                                    system.forces.chemicalPotential.raw());
   }
 }
 
 void Integrator::saveMutableNetcdfData() {
-  std::size_t idx = mutableTrajFile.nFrames();
-
   // scalar quantities
   // write time
-  mutableTrajFile.writeTime(idx, system.time);
+  mutableTrajFile.writeTime(system.frame, system.time);
 
   // write dynamic properties
-  mutableTrajFile.writeVelocity(idx, system.velocity);
+  mutableTrajFile.writeVelocity(system.frame, system.velocity);
   if (system.parameters.external.Kf != 0)
-    mutableTrajFile.writeExternalForce(idx, system.forces.externalForceVec);
+    mutableTrajFile.writeExternalForce(system.frame,
+                                       system.forces.externalForceVec);
 
   // write static properties
-  mutableTrajFile.writeCoords(idx, *system.vpg);
-  mutableTrajFile.writeTopology(idx, *system.mesh);
-  mutableTrajFile.writeProteinDensity(idx, system.proteinDensity);
+  mutableTrajFile.writeCoords(system.frame, *system.vpg);
+  mutableTrajFile.writeTopology(system.frame, *system.mesh);
+  mutableTrajFile.writeProteinDensity(system.frame, system.proteinDensity);
   mutableTrajFile.sync();
 }
 #endif
