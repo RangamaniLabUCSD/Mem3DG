@@ -53,9 +53,6 @@ struct MeshProcessor {
     // whether has reference mesh
     bool ifHasRefMesh;
 
-    // whether conduct smoothing 
-    bool isSmoothenMesh = false;
-
     /// triangle ratio constant
     double Kst = 0;
     /// Local stretching modulus
@@ -114,6 +111,9 @@ struct MeshProcessor {
     /// whether vertex shift
     bool shiftVertex = false;
 
+    // whether conduct smoothing
+    bool isSmoothenMesh = false;
+
     /// flip non-delaunay edge
     bool flipNonDelaunay = false;
     /// whether require flatness condition when flipping non-Delaunay edge
@@ -167,7 +167,7 @@ struct MeshProcessor {
     bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
 
     void markVertices(gcs::VertexData<bool> &mutationMarker,
-                            const gcs::Vertex v, const size_t layer = 0);
+                      const gcs::Vertex v, const size_t layer = 0);
 
     std::tuple<double, std::size_t>
     neighborAreaSum(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);

@@ -109,8 +109,7 @@ void System::mapContinuationVariables(std::string plyFile) {
 #ifdef MEM3DG_WITH_NETCDF
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readTrajFile(std::string trajFile, int startingFrame,
-                     std::size_t nSub) {
+System::readTrajFile(std::string trajFile, int startingFrame) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -126,11 +125,11 @@ System::readTrajFile(std::string trajFile, int startingFrame,
             << startingFrame << std::endl;
 
   /// Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    mem3dg::loopSubdivide(mesh, vpg, nSub);
-    std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
-              << std::endl;
-  }
+  // if (nSub > 0) {
+  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
+  //   std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
+  //             << std::endl;
+  // }
 
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
@@ -138,7 +137,7 @@ System::readTrajFile(std::string trajFile, int startingFrame,
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(std::string inputMesh, std::size_t nSub) {
+System::readMeshes(std::string inputMesh) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -148,12 +147,12 @@ System::readMeshes(std::string inputMesh, std::size_t nSub) {
   std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
   std::cout << "Loaded input mesh " << inputMesh << std::endl;
 
-  // Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    // mem3dg::subdivide(mesh, vpg, nSub);
-    mem3dg::loopSubdivide(mesh, vpg, nSub);
-    std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
-  }
+  // // Subdivide the mesh and geometry objects
+  // if (nSub > 0) {
+  //   // mem3dg::subdivide(mesh, vpg, nSub);
+  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
+  //   std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
+  // }
 
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
@@ -162,7 +161,7 @@ std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
 System::readMeshes(
     Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, std::size_t nSub) {
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix) {
 
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -174,11 +173,11 @@ System::readMeshes(
   std::cout << "Loaded input mesh " << std::endl;
 
   // Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    // mem3dg::subdivide(mesh, vpg, nSub);
-    mem3dg::loopSubdivide(mesh, vpg, nSub);
-    std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
-  }
+  // if (nSub > 0) {
+  //   // mem3dg::subdivide(mesh, vpg, nSub);
+  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
+  //   std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
+  // }
 
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }

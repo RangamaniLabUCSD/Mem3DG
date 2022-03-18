@@ -191,9 +191,6 @@ public:
 
     // compute nonconstant values during simulation
     updateConfigurations();
-
-    // Smoothen the mesh using bending force
-    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -220,9 +217,6 @@ public:
 
     // compute nonconstant values during simulation
     updateConfigurations();
-
-    // Smoothen the mesh using bending force
-    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -265,9 +259,6 @@ public:
 
     // compute nonconstant values during simulation
     updateConfigurations();
-
-    // Smoothen the mesh using bending force
-    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -280,7 +271,7 @@ public:
    * @param isContinue    Wether continue simulation
    */
   System(std::string inputMesh, Parameters &p, MeshProcessor &mp,
-         std::size_t nSub, std::size_t nMutation, bool isContinue)
+         std::size_t nMutation, bool isContinue)
       : System(readMeshes(inputMesh), p, mp) {
 
     // Check incompatible configuration
@@ -303,9 +294,6 @@ public:
 
     // compute nonconstant values during simulation
     updateConfigurations();
-
-    // Smoothen the mesh using bending force
-    smoothenMesh(0.01, 0.1, 1000);
   };
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -331,7 +319,6 @@ public:
    * @param trajFile      Netcdf trajectory file
    * @param startingFrame Starting frame for the input mesh
    * @param p             Parameter of simulation
-   * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p,
@@ -352,9 +339,6 @@ public:
 
     // compute nonconstant values during simulation
     updateConfigurations();
-
-    // Smoothen the mesh using bending force
-    smoothenMesh(0.01, 0.1, 1000);
   };
 
   /**
@@ -364,7 +348,6 @@ public:
    * @param startingFrame Starting frame for the input mesh
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
-   * @param nSub          Number of subdivision
    * @param nMutation     Number of mutation
    * @param isContinue    Wether continue simulation
    */
@@ -389,9 +372,6 @@ public:
 
     // compute nonconstant values during simulation
     updateConfigurations();
-
-    // Smoothen the mesh using bending force
-    smoothenMesh(0.01, 0.1, 1000);
   };
 #endif
 
@@ -874,7 +854,7 @@ public:
    * @param maxIteration maximum number of iteration
    */
   Eigen::Matrix<bool, Eigen::Dynamic, 1>
-  smoothenMesh(double initStep, double target = 0.7,
+  smoothenMesh(double initStep = 0.01, double target = 0.1,
                size_t maxIteration = 1000);
   /**
    * @brief pointwise smoothing after mutation of the mesh

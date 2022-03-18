@@ -596,11 +596,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
                       R"delim(
        meshmutator constructor
       )delim");
-  meshregularizer.def_readwrite("isSmoothenMesh",
-                                &MeshProcessor::MeshRegularizer::isSmoothenMesh,
-                                R"delim(
-          whether conduct mesh smoothing operation
-      )delim");
   meshregularizer.def_readwrite("Kst", &MeshProcessor::MeshRegularizer::Kst,
                                 R"delim(
           get Vertex shifting constant 
@@ -668,6 +663,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
                             &MeshProcessor::MeshMutator::shiftVertex,
                             R"delim(
           get the option of whether do vertex shift  
+      )delim");
+
+  /**
+   * @brief mesh smoothing
+   */
+  meshmutator.def_readwrite("isSmoothenMesh",
+                            &MeshProcessor::MeshMutator::isSmoothenMesh,
+                            R"delim(
+          whether conduct mesh smoothing operation
       )delim");
 
   /**
@@ -821,12 +825,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
 
-  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      std::size_t>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
+  system.def(
+      py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+               Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &>(),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
 
-             R"delim(
+      R"delim(
         System constructor with Matrices 
       )delim");
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
@@ -842,19 +846,19 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, std::size_t>(), py::arg("trajFile"),
+  system.def(py::init<std::string, int>(), py::arg("trajFile"),
              py::arg("startingFrame"),
 
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
-  system.def(py::init<std::string, std::size_t, Parameters &, bool>(),
+  system.def(py::init<std::string, int, Parameters &, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
              py::arg("isContinue") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
-  system.def(py::init<std::string, std::size_t, Parameters &, MeshProcessor &,
+  system.def(py::init<std::string, int, Parameters &, MeshProcessor &,
                       std::size_t, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
              py::arg("mp"), py::arg("nMutation") = 0,
