@@ -148,7 +148,7 @@ public:
   /// projected time of collision
   double projectedCollideTime;
   /// is continuation
-  bool isContinue;
+  bool isContinuation;
   /// starting frame index for netcdf
   std::size_t frame;
 
@@ -268,7 +268,7 @@ public:
       std::cout << "\nWARNING: isContinue is on and make sure mesh file "
                    "supports richData!"
                 << std::endl;
-      isContinue = true;
+      isContinuation = true;
       mapContinuationVariables(inputMesh);
     }
 
@@ -304,7 +304,7 @@ public:
       std::cout << "\nWARNING: isContinue is on and make sure mesh file "
                    "supports richData!"
                 << std::endl;
-      isContinue = true;
+      isContinuation = true;
       mapContinuationVariables(inputMesh);
     }
 
@@ -357,7 +357,7 @@ public:
 
     // Map continuation variables
     if (isContinue) {
-      isContinue = true;
+      isContinuation = true;
       mapContinuationVariables(trajFile, startingFrame);
     }
 
@@ -392,7 +392,7 @@ public:
 
     // Map continuation variables
     if (isContinue) {
-      isContinue = true;
+      isContinuation = true;
       mapContinuationVariables(trajFile, startingFrame);
     }
 
@@ -506,7 +506,7 @@ private:
     isSmooth = true;
     mutationMarker = gc::VertexData<bool>(*mesh, false);
     thePointTracker = gc::VertexData<bool>(*mesh, false);
-    isContinue = false;
+    isContinuation = false;
 
     // GC computed properties
     vpg->requireFaceNormals();

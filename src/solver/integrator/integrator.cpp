@@ -1205,7 +1205,7 @@ void Integrator::markFileName(std::string marker_str) {
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::createNetcdfFile() {
   // initialize netcdf traj file
-  if (system.isContinue) {
+  if (system.isContinuation) {
     trajFile.open(outputDirectory + "/" + trajFileName,
                   TrajFile::NcFile::write);
   } else {
@@ -1220,8 +1220,13 @@ void Integrator::createNetcdfFile() {
 
 void Integrator::createMutableNetcdfFile() {
   // initialize netcdf traj file
-  mutableTrajFile.createNewFile(outputDirectory + "/" + trajFileName,
-                                TrajFile::NcFile::replace);
+  if (system.isContinuation) {
+    trajFile = MutableTrajFile::openRW(outputDirectory + "/" + trajFileName);
+    std::cout << "write!!" << std::endl;
+  } else {
+    mutableTrajFile.createNewFile(outputDirectory + "/" + trajFileName,
+                                  TrajFile::NcFile::replace);
+  }
   // mutableTrajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
   // if (!f.mesh->hasBoundary()) {
   //   mutableTrajFile.writeRefSurfArea(f.parameters.tension.At);
