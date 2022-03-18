@@ -70,7 +70,7 @@ protected:
 
     p.adsorption.epsilon = -1e-2;
 
-    p.aggregation.chi = -1e-2;
+    p.aggregation.chi = -1e-4;
 
     p.osmotic.isPreferredVolume = false;
     p.osmotic.isConstantOsmoticPressure = true;
@@ -109,8 +109,7 @@ protected:
  */
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
-  std::size_t nSub = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p);
   // First time calculation of force
   f.computePhysicalForcing();
   f.computeRegularizationForce();
@@ -139,8 +138,7 @@ TEST_F(ForceTest, ConservativeForcesTest) {
 TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
-  std::size_t nSub = 0;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, nSub);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p);
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.velocity);

@@ -41,7 +41,6 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 #ifdef MEM3DG_WITH_NETCDF
-
 void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Open netcdf file
@@ -55,91 +54,23 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
         mesh->nVertices() == fd.getCoords(startingFrame).rows())) {
     throw std::logic_error(
         "Topology for continuation parameters mapping is not consistent!");
+  } else {
+    // Map continuation variables
+    time = fd.getTime(startingFrame);
+    energy.time = time;
+    frame = startingFrame;
+    toMatrix(velocity) = fd.getVelocity(startingFrame);
+    // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
+    if (parameters.proteinDistribution.protein0.rows() == 1 &&
+        parameters.proteinDistribution.protein0[0] == -1) {
+      proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+    } else {
+      throw std::logic_error("proteinDensity.protein0 has to be disabled "
+                             "(=[-1]) for continuing simulations!");
+    }
   }
-
-  // Map continuation variables
-  time = fd.getTime(startingFrame);
-  energy.time = time;
-  proteinDensity.raw() = fd.getProteinDensity(startingFrame);
-  toMatrix(velocity) = fd.getVelocity(startingFrame);
-  // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readTrajFile(std::string trajFile, int startingFrame,
-                     std::size_t nSub) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-
-  // TrajFile fd = TrajFile::openReadOnly(trajFile);
-  // fd.getNcFrame(startingFrame);
-  MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
-  fd.getNcFrame(startingFrame);
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      fd.getCoords(startingFrame), fd.getTopology(startingFrame));
-  std::cout << "Loaded input mesh from " << trajFile << " of frame "
-            << startingFrame << std::endl;
-
-  /// Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    mem3dg::loopSubdivide(mesh, vpg, nSub);
-    std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
-              << std::endl;
-  }
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 #endif
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(std::string inputMesh, std::size_t nSub) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  std::cout << "Loaded input mesh " << inputMesh << std::endl;
-
-  // Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    // mem3dg::subdivide(mesh, vpg, nSub);
-    mem3dg::loopSubdivide(mesh, vpg, nSub);
-    std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
-  }
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshes(
-    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, std::size_t nSub) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(vertexMatrix, topologyMatrix);
-  std::cout << "Loaded input mesh " << std::endl;
-
-  // Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    // mem3dg::subdivide(mesh, vpg, nSub);
-    mem3dg::loopSubdivide(mesh, vpg, nSub);
-    std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
-  }
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
-}
 
 void System::mapContinuationVariables(std::string plyFile) {
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh_local;
@@ -156,6 +87,9 @@ void System::mapContinuationVariables(std::string plyFile) {
         "Topology for continuation parameters mapping is not consistent!");
   } else {
     // Map continuation variables
+    time = std::stod(sliceString(plyFile, "t", "_"));
+    energy.time = time;
+    frame = std::stod(sliceString(plyFile, "f", "_"));
     if (parameters.proteinDistribution.protein0.rows() == 1 &&
         parameters.proteinDistribution.protein0[0] == -1) {
       proteinDensity =
@@ -170,6 +104,82 @@ void System::mapContinuationVariables(std::string plyFile) {
                              "(=[-1]) for continuing simulations!");
     }
   }
+}
+
+#ifdef MEM3DG_WITH_NETCDF
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readTrajFile(std::string trajFile, int startingFrame) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+
+  // TrajFile fd = TrajFile::openReadOnly(trajFile);
+  // fd.getNcFrame(startingFrame);
+  MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
+  fd.getNcFrame(startingFrame);
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      fd.getCoords(startingFrame), fd.getTopology(startingFrame));
+  std::cout << "Loaded input mesh from " << trajFile << " of frame "
+            << startingFrame << std::endl;
+
+  /// Subdivide the mesh and geometry objects
+  // if (nSub > 0) {
+  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
+  //   std::cout << "Subdivided input and reference mesh " << nSub << " time(s)"
+  //             << std::endl;
+  // }
+
+  return std::make_tuple(std::move(mesh), std::move(vpg));
+}
+#endif
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readMeshes(std::string inputMesh) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::cout << "Loaded input mesh " << inputMesh << std::endl;
+
+  // // Subdivide the mesh and geometry objects
+  // if (nSub > 0) {
+  //   // mem3dg::subdivide(mesh, vpg, nSub);
+  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
+  //   std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
+  // }
+
+  return std::make_tuple(std::move(mesh), std::move(vpg));
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readMeshes(
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(vertexMatrix, topologyMatrix);
+  std::cout << "Loaded input mesh " << std::endl;
+
+  // Subdivide the mesh and geometry objects
+  // if (nSub > 0) {
+  //   // mem3dg::subdivide(mesh, vpg, nSub);
+  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
+  //   std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
+  // }
+
+  return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
 void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
@@ -190,12 +200,12 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     msk.fromVector(toMatrix(forces.forceMask).rowwise().sum());
     richData.addVertexProperty("force_mask", msk);
     richData.addVertexProperty("protein_mask", forces.proteinMask);
-    // gcs::VertexData<int> mutMkr(*mesh);
-    // mutMkr.fromVector(mutationMarker.raw().cast<int>());
-    // richData.addVertexProperty("smoothing_mask", mutMkr);
     gcs::VertexData<int> tkr(*mesh);
     tkr.fromVector(thePointTracker.raw().cast<int>());
     richData.addVertexProperty("the_point", tkr);
+    // gcs::VertexData<int> mutMkr(*mesh);
+    // mutMkr.fromVector(mutationMarker.raw().cast<int>());
+    // richData.addVertexProperty("smoothing_mask", mutMkr);
 
     // write geometry
     gcs::VertexData<double> meanCurv(*mesh);
@@ -207,6 +217,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
                          vpg->vertexDualAreas.raw().array());
     richData.addVertexProperty("gauss_curvature", gaussCurv);
     richData.addVertexProperty("spon_curvature", H0);
+    richData.addVertexProperty("dual_area", vpg->vertexDualAreas);
 
     // write pressures
     richData.addVertexProperty("bending_force", forces.bendingForce);
@@ -345,7 +356,8 @@ void System::initConstants() {
   // if (P.dirichlet.eta != 0) {
   //   D = localVpg->d0.transpose().cwiseAbs() / 2;
   //   // for (int k = 0; k < D.outerSize(); ++k) {
-  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
+  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it;
+  //   ++it)
   //   {
   //   //     it.valueRef() = 0.5;
   //   //   }
@@ -549,7 +561,8 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
     // this is under the case where the resolution is low. This is where the
     // extra vpg->edgeLength comes from!!!
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
-    // F.lineTension.raw() = P.dirichlet.eta * vpg->edgeLengths.raw().array() *
+    // F.lineTension.raw() = P.dirichlet.eta * vpg->edgeLengths.raw().array()
+    // *
     //                       (vpg->d0 * H0.raw()).cwiseAbs().array();
     // lineTension.raw() = P.dirichlet.eta * (vpg->d0 *
     // H0.raw()).cwiseAbs().array();
@@ -596,8 +609,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
           gc::Vector2 v3{vpg.inputVertexPositions[he.next().next().vertex()].x,
                          vpg.inputVertexPositions[he.next().next().vertex()].y};
           gc::Vector2 v{parameters.point.pt[0], parameters.point.pt[1]};
-          // find the inverse barycentric mapping based on the cartesian vertex
-          // coordinates
+          // find the inverse barycentric mapping based on the cartesian
+          // vertex coordinates
           gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
 
           if (baryCoords_.x > 0 && baryCoords_.y > 0 &&
@@ -607,8 +620,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
                 he.face(), correspondBarycentricCoordinates(baryCoords_, he));
             isUpdated = true;
             break;
-          } else { // B. avoid the floating point comparision, find the best by
-                   // looping over the whole fan
+          } else { // B. avoid the floating point comparision, find the best
+                   // by looping over the whole fan
             baryCoords_ =
                 gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
             baryCoords_ /= gc::sum(baryCoords_);
