@@ -1099,8 +1099,8 @@ void Integrator::saveData() {
   // save variable to richData and save ply file
   if (verbosity > outputPly) {
     char buffer[50];
-    sprintf(buffer, isJustGeometryPly ? "/t%d_f%d_.obj" : "/t%d_f%d_.ply",
-            (int)system.time, (int)system.frame);
+    sprintf(buffer, isJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
+            (int)system.frame, (int)system.time);
     system.saveRichData(outputDirectory + "/" + std::string(buffer),
                         isJustGeometryPly);
   }
