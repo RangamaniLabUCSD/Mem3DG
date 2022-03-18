@@ -161,12 +161,10 @@ public:
    *
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
-   * @param nSub          Number of subdivision
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
-         std::size_t nSub)
-      : System(readMeshes(topologyMatrix, vertexMatrix, nSub)) {
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix)
+      : System(readMeshes(topologyMatrix, vertexMatrix)) {
 
     // Initialize reference values
     initConstants();
@@ -181,12 +179,10 @@ public:
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param p             Parameter of simulation
-   * @param nSub          Number of subdivision
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         std::size_t nSub)
-      : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p) {
+         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p)
+      : System(readMeshes(topologyMatrix, vertexMatrix), p) {
     // Check incompatible configuration
     checkConfiguration();
 
@@ -207,13 +203,12 @@ public:
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
-   * @param nSub          Number of subdivision
    * @param nMutation     Number of mutation
    */
   System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
          Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         MeshProcessor &mp, std::size_t nSub, std::size_t nMutation)
-      : System(readMeshes(topologyMatrix, vertexMatrix, nSub), p, mp) {
+         MeshProcessor &mp, std::size_t nMutation)
+      : System(readMeshes(topologyMatrix, vertexMatrix), p, mp) {
     // Check incompatible configuration
     checkConfiguration();
 
@@ -234,10 +229,8 @@ public:
    * @brief Construct a new (geometry) System by reading mesh file path
    *
    * @param inputMesh     Input Mesh
-   * @param nSub          Number of subdivision
    */
-  System(std::string inputMesh, std::size_t nSub)
-      : System(readMeshes(inputMesh, nSub)) {
+  System(std::string inputMesh) : System(readMeshes(inputMesh)) {
     // Initialize reference values
     initConstants();
 
@@ -250,12 +243,10 @@ public:
    *
    * @param inputMesh     Input Mesh
    * @param p             Parameter of simulation
-   * @param nSub          Number of subdivision
    * @param isContinue    Wether continue simulation
    */
-  System(std::string inputMesh, Parameters &p, std::size_t nSub,
-         bool isContinue)
-      : System(readMeshes(inputMesh, nSub), p) {
+  System(std::string inputMesh, Parameters &p, bool isContinue)
+      : System(readMeshes(inputMesh), p) {
 
     // Check incompatible configuration
     checkConfiguration();
@@ -285,13 +276,12 @@ public:
    * @param inputMesh     Input Mesh
    * @param p             Parameter of simulation
    * @param mp         Setting for mesh processing
-   * @param nSub          Number of subdivision
    * @param nMutation     Number of mutation
    * @param isContinue    Wether continue simulation
    */
   System(std::string inputMesh, Parameters &p, MeshProcessor &mp,
          std::size_t nSub, std::size_t nMutation, bool isContinue)
-      : System(readMeshes(inputMesh, nSub), p, mp) {
+      : System(readMeshes(inputMesh), p, mp) {
 
     // Check incompatible configuration
     checkConfiguration();
@@ -324,10 +314,9 @@ public:
    *
    * @param trajFile      Netcdf trajectory file
    * @param startingFrame Starting frame for the input mesh
-   * @param nSub          Number of subdivision
    */
-  System(std::string trajFile, int startingFrame, std::size_t nSub)
-      : System(readTrajFile(trajFile, startingFrame, nSub)) {
+  System(std::string trajFile, int startingFrame)
+      : System(readTrajFile(trajFile, startingFrame)) {
 
     // Initialize reference values
     initConstants();
@@ -346,8 +335,8 @@ public:
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p,
-         std::size_t nSub, bool isContinue)
-      : System(readTrajFile(trajFile, startingFrame, nSub), p) {
+         bool isContinue)
+      : System(readTrajFile(trajFile, startingFrame), p) {
 
     // Check incompatible configuration
     checkConfiguration();
@@ -380,9 +369,8 @@ public:
    * @param isContinue    Wether continue simulation
    */
   System(std::string trajFile, int startingFrame, Parameters &p,
-         MeshProcessor &mp, std::size_t nSub, std::size_t nMutation,
-         bool isContinue)
-      : System(readTrajFile(trajFile, startingFrame, nSub), p, mp) {
+         MeshProcessor &mp, std::size_t nMutation, bool isContinue)
+      : System(readTrajFile(trajFile, startingFrame), p, mp) {
 
     // Check incompatible configuration
     checkConfiguration();
@@ -569,8 +557,7 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readMeshes(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
-             Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexPositionMatrix,
-             std::size_t nSub);
+             Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexPositionMatrix);
 
   /**
    * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
@@ -578,7 +565,7 @@ public:
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(std::string inputMesh, std::size_t nSub);
+  readMeshes(std::string inputMesh);
 
   /**
    * @brief Map the continuation variables
@@ -599,7 +586,7 @@ public:
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readTrajFile(std::string trajFile, int startingFrame, std::size_t nSub);
+  readTrajFile(std::string trajFile, int startingFrame);
   /**
    * @brief Map the continuation variables
    *
