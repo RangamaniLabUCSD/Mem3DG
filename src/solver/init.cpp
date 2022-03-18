@@ -58,6 +58,7 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
     // Map continuation variables
     time = fd.getTime(startingFrame);
     energy.time = time;
+    frame = startingFrame;
     toMatrix(velocity) = fd.getVelocity(startingFrame);
     // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
     if (parameters.proteinDistribution.protein0.rows() == 1 &&
@@ -86,6 +87,9 @@ void System::mapContinuationVariables(std::string plyFile) {
         "Topology for continuation parameters mapping is not consistent!");
   } else {
     // Map continuation variables
+    time = std::stod(sliceString(plyFile, "t", "_"));
+    energy.time = time;
+    frame = std::stod(sliceString(plyFile, "f", "_"));
     if (parameters.proteinDistribution.protein0.rows() == 1 &&
         parameters.proteinDistribution.protein0[0] == -1) {
       proteinDensity =

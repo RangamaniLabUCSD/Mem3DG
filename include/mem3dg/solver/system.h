@@ -147,6 +147,10 @@ public:
   gcs::VertexData<bool> thePointTracker;
   /// projected time of collision
   double projectedCollideTime;
+  /// is continuation
+  bool isContinue;
+  /// starting frame index for netcdf
+  std::size_t frame;
 
   // ==========================================================
   // =============        Constructors           ==============
@@ -264,6 +268,7 @@ public:
       std::cout << "\nWARNING: isContinue is on and make sure mesh file "
                    "supports richData!"
                 << std::endl;
+      isContinue = true;
       mapContinuationVariables(inputMesh);
     }
 
@@ -299,6 +304,7 @@ public:
       std::cout << "\nWARNING: isContinue is on and make sure mesh file "
                    "supports richData!"
                 << std::endl;
+      isContinue = true;
       mapContinuationVariables(inputMesh);
     }
 
@@ -351,6 +357,7 @@ public:
 
     // Map continuation variables
     if (isContinue) {
+      isContinue = true;
       mapContinuationVariables(trajFile, startingFrame);
     }
 
@@ -385,6 +392,7 @@ public:
 
     // Map continuation variables
     if (isContinue) {
+      isContinue = true;
       mapContinuationVariables(trajFile, startingFrame);
     }
 
@@ -482,6 +490,7 @@ private:
         forces(*mesh, *vpg) {
 
     time = 0;
+    frame = 0;
     energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     proteinDensity = gc::VertexData<double>(*mesh, 0);
@@ -497,6 +506,7 @@ private:
     isSmooth = true;
     mutationMarker = gc::VertexData<bool>(*mesh, false);
     thePointTracker = gc::VertexData<bool>(*mesh, false);
+    isContinue = false;
 
     // GC computed properties
     vpg->requireFaceNormals();
