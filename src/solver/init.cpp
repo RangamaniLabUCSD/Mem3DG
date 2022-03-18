@@ -41,7 +41,6 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 #ifdef MEM3DG_WITH_NETCDF
-
 void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
 
   // Open netcdf file
@@ -55,16 +54,55 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
         mesh->nVertices() == fd.getCoords(startingFrame).rows())) {
     throw std::logic_error(
         "Topology for continuation parameters mapping is not consistent!");
+  } else {
+    // Map continuation variables
+    time = fd.getTime(startingFrame);
+    energy.time = time;
+    toMatrix(velocity) = fd.getVelocity(startingFrame);
+    // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
+    if (parameters.proteinDistribution.protein0.rows() == 1 &&
+        parameters.proteinDistribution.protein0[0] == -1) {
+      proteinDensity.raw() = fd.getProteinDensity(startingFrame);
+    } else {
+      throw std::logic_error("proteinDensity.protein0 has to be disabled "
+                             "(=[-1]) for continuing simulations!");
+    }
   }
+}
+#endif
 
-  // Map continuation variables
-  time = fd.getTime(startingFrame);
-  energy.time = time;
-  proteinDensity.raw() = fd.getProteinDensity(startingFrame);
-  toMatrix(velocity) = fd.getVelocity(startingFrame);
-  // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
+void System::mapContinuationVariables(std::string plyFile) {
+  std::unique_ptr<gcs::SurfaceMesh> ptrMesh_local;
+  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData_local;
+
+  // Open mesh file
+  std::tie(ptrMesh_local, ptrRichData_local) =
+      gcs::RichSurfaceMeshData::readMeshAndData(plyFile);
+
+  // Check consistent topology for continuation
+  if (mesh->nFaces() != ptrMesh_local->nFaces() ||
+      mesh->nVertices() != ptrMesh_local->nVertices()) {
+    throw std::logic_error(
+        "Topology for continuation parameters mapping is not consistent!");
+  } else {
+    // Map continuation variables
+    if (parameters.proteinDistribution.protein0.rows() == 1 &&
+        parameters.proteinDistribution.protein0[0] == -1) {
+      proteinDensity =
+          ptrRichData_local->getVertexProperty<double>("protein_density")
+              .reinterpretTo(*mesh);
+      // vel_protein =
+      //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
+      //         .reinterpretTo(*mesh);
+      ;
+    } else {
+      throw std::logic_error("proteinDensity.protein0 has to be disabled "
+                             "(=[-1]) for continuing simulations!");
+    }
+  }
 }
 
+#ifdef MEM3DG_WITH_NETCDF
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
 System::readTrajFile(std::string trajFile, int startingFrame,
@@ -139,37 +177,6 @@ System::readMeshes(
   }
 
   return std::make_tuple(std::move(mesh), std::move(vpg));
-}
-
-void System::mapContinuationVariables(std::string plyFile) {
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh_local;
-  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData_local;
-
-  // Open mesh file
-  std::tie(ptrMesh_local, ptrRichData_local) =
-      gcs::RichSurfaceMeshData::readMeshAndData(plyFile);
-
-  // Check consistent topology for continuation
-  if (mesh->nFaces() != ptrMesh_local->nFaces() ||
-      mesh->nVertices() != ptrMesh_local->nVertices()) {
-    throw std::logic_error(
-        "Topology for continuation parameters mapping is not consistent!");
-  } else {
-    // Map continuation variables
-    if (parameters.proteinDistribution.protein0.rows() == 1 &&
-        parameters.proteinDistribution.protein0[0] == -1) {
-      proteinDensity =
-          ptrRichData_local->getVertexProperty<double>("protein_density")
-              .reinterpretTo(*mesh);
-      // vel_protein =
-      //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
-      //         .reinterpretTo(*mesh);
-      ;
-    } else {
-      throw std::logic_error("proteinDensity.protein0 has to be disabled "
-                             "(=[-1]) for continuing simulations!");
-    }
-  }
 }
 
 void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
@@ -314,7 +321,8 @@ void System::initConstants() {
   // if (P.dirichlet.eta != 0) {
   //   D = localVpg->d0.transpose().cwiseAbs() / 2;
   //   // for (int k = 0; k < D.outerSize(); ++k) {
-  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it; ++it)
+  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it;
+  //   ++it)
   //   {
   //   //     it.valueRef() = 0.5;
   //   //   }
@@ -518,7 +526,8 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
     // this is under the case where the resolution is low. This is where the
     // extra vpg->edgeLength comes from!!!
     // WIP The unit of line tension is in force*length (e.g. XXNewton)
-    // F.lineTension.raw() = P.dirichlet.eta * vpg->edgeLengths.raw().array() *
+    // F.lineTension.raw() = P.dirichlet.eta * vpg->edgeLengths.raw().array()
+    // *
     //                       (vpg->d0 * H0.raw()).cwiseAbs().array();
     // lineTension.raw() = P.dirichlet.eta * (vpg->d0 *
     // H0.raw()).cwiseAbs().array();
@@ -565,8 +574,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
           gc::Vector2 v3{vpg.inputVertexPositions[he.next().next().vertex()].x,
                          vpg.inputVertexPositions[he.next().next().vertex()].y};
           gc::Vector2 v{parameters.point.pt[0], parameters.point.pt[1]};
-          // find the inverse barycentric mapping based on the cartesian vertex
-          // coordinates
+          // find the inverse barycentric mapping based on the cartesian
+          // vertex coordinates
           gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
 
           if (baryCoords_.x > 0 && baryCoords_.y > 0 &&
@@ -576,8 +585,8 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
                 he.face(), correspondBarycentricCoordinates(baryCoords_, he));
             isUpdated = true;
             break;
-          } else { // B. avoid the floating point comparision, find the best by
-                   // looping over the whole fan
+          } else { // B. avoid the floating point comparision, find the best
+                   // by looping over the whole fan
             baryCoords_ =
                 gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
             baryCoords_ /= gc::sum(baryCoords_);
