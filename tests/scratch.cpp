@@ -94,7 +94,7 @@ int main() {
   mP.meshMutator.collapseSkinny = true;
 
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
-  mem3dg::solver::System system(inputMesh, p, mP, 0, 0, true);
+  mem3dg::solver::System system(inputMesh, p, mP, 0, true);
 
   const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2, verbosity = 5;
   const std::string outputDir = "/tmp";

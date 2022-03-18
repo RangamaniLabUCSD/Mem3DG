@@ -114,6 +114,10 @@ void System::mutateMesh(size_t nRepetition) {
       flipEdge();
     }
 
+    if (meshProcessor.meshMutator.isSmoothenMesh) {
+      smoothenMesh();
+    }
+
     // globally update quantities
     if (isGrown || isFlipped) {
       globalUpdateAfterMutation();
