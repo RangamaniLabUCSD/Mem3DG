@@ -1273,8 +1273,8 @@ void Integrator::saveNetcdfData() {
     // write geometry
     trajFile.writeCoords(system.frame,
                          toMatrix(system.vpg->inputVertexPositions));
-    trajFile.writeToposystem.Frame(
-        system.frame, system.mesh->getFaceVertexMatrix<std::uint32_t>());
+    trajFile.writeTopoFrame(system.frame,
+                            system.mesh->getFaceVertexMatrix<std::uint32_t>());
     trajFile.writeMeanCurvature(system.frame,
                                 system.vpg->vertexMeanCurvatures.raw().array() /
                                     system.vpg->vertexDualAreas.raw().array());
