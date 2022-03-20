@@ -26,7 +26,7 @@ def rowwiseDotProduct(a, b):
     return np.sum(a*b, axis=1)
 
 
-def spherical_harmonics_perturbation(coordinate, m, n, amplitude, origin=None):
+def sphericalHarmonicsPerturbation(coordinate, m, n, amplitude, origin=None):
     if origin == None:
         origin = [0, 0, 0]
     x = coordinate[:, 0]
@@ -49,3 +49,7 @@ def smooth(y, box_pts):
     """ more advanced """
     # from scipy.signal import savgol_filter
     # return savgol_filter(y, box_pts+1, 2)
+
+def linearSampling(a_list, numPts):
+    indices = np.linspace(0, len(a_list)-1, num=numPts)
+    return np.array([a_list[index] for index in indices])
