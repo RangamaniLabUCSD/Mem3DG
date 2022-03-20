@@ -21,7 +21,7 @@ def constructSystemByMatrix(trajnc, frame, parameters):
 
 
 def readMeshByNc(trajNc, frame):
-    with nc.Dataset(trajNc + ".nc") as ds:
+    with nc.Dataset(trajNc) as ds:
         coordinates = np.array(
             ds.groups['Trajectory'].variables['coordinates'][frame])
         topology = np.array(
@@ -34,7 +34,7 @@ def readMeshByNc(trajNc, frame):
 
 def readMeshDataByNc(trajNc, frame, group, variable, num_col):
     """ example: proteinDensity = readMeshDataByPly(meshList[i], "Trajectory", "proteindensity") """
-    with nc.Dataset(trajNc + ".nc") as ds:
+    with nc.Dataset(trajNc) as ds:
         data = np.array(
             ds.groups[group].variables[variable][frame])
         # -1 to dynamically allocate size
@@ -49,6 +49,6 @@ def readMeshByPly(ply):
 
 def readMeshDataByPly(ply, dataType, dataName):
     """ example: proteinDensity = readMeshDataByPly(meshList[i], "vertex", "protein_density") """
-    data = dg.readData(ply + ".ply",
+    data = dg.readData(ply,
                        dataType, dataName)
     return data

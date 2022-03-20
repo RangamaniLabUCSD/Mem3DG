@@ -196,7 +196,7 @@ int animate_ply(std::string frameDir, const Quantities &options,
   // Initialize visualization variables
   int prevFrame = frameNum[0];
   int currFrame = frameNum[0];
-  bool isStart = false;
+  bool isPlay = false;
   bool isRecord = false;
   int maxFrame = frameNum[1];
   int maxWaitTime = 500;
@@ -240,7 +240,7 @@ int animate_ply(std::string frameDir, const Quantities &options,
 
     // Define buttons
     if (ImGui::Button("Play/Pause")) {
-      isStart = !isStart;
+      isPlay = !isPlay;
     }
     if (ImGui::Button("Screenshot")) {
       char buff[50];
@@ -270,8 +270,8 @@ int animate_ply(std::string frameDir, const Quantities &options,
            frameNum, mapMinLim, mapMaxLim);
       prevFrame = currFrame;
     }
-    if (isStart) {
-      play(polyscopeMesh, frameDir, currFrame, waitTime, options, isStart,
+    if (isPlay) {
+      play(polyscopeMesh, frameDir, currFrame, waitTime, options, isPlay,
            frameNum, mapMinLim, mapMaxLim);
       prevFrame = currFrame;
     }
@@ -302,7 +302,7 @@ int animate_nc(std::string &filename, const Quantities &options,
   // Initialize visualization variables
   int prevFrame = 0;
   int currFrame = 0;
-  bool isStart = false;
+  bool isPlay = false;
   bool isRecord = false;
   int maxFrame = fd.nFrames() - 1;
   int maxWaitTime = 500;
@@ -341,7 +341,7 @@ int animate_nc(std::string &filename, const Quantities &options,
 
     // Define buttons
     if (ImGui::Button("Play/Pause")) {
-      isStart = !isStart;
+      isPlay = !isPlay;
     }
     if (ImGui::Button("Screenshot")) {
       char buff[50];
@@ -365,8 +365,8 @@ int animate_nc(std::string &filename, const Quantities &options,
       play(polyscopeMesh, fd, currFrame, waitTime, options, isRecord);
       prevFrame = currFrame;
     }
-    if (isStart) {
-      play(polyscopeMesh, fd, currFrame, waitTime, options, isStart);
+    if (isPlay) {
+      play(polyscopeMesh, fd, currFrame, waitTime, options, isPlay);
       prevFrame = currFrame;
     }
 
@@ -865,7 +865,6 @@ void play(polyscope::SurfaceMesh *&polyscopeMesh, mem3dg::solver::TrajFile &fd,
 void play(polyscope::SurfaceMesh *&polyscopeMesh,
           mem3dg::solver::MutableTrajFile &fd, int &idx, int &waitTime,
           Quantities options, bool &toggle) {
-
   polyscopeMesh = registerSurfaceMesh(fd, idx, options);
   idx++;
   if (idx >= fd.nFrames()) {
