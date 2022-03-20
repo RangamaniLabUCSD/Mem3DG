@@ -71,7 +71,7 @@ def animate(trajNc, **kwargs):
     prevFrame = 0
     currFrame = 0
     isPlay = False
-    transparency = 0.4
+    transparency = 1
     maxFrame = dg_read.sizeOf(trajNc) - 1
 
     if buildSystem:
