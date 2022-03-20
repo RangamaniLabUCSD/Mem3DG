@@ -488,7 +488,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the interfacial line tension
       )delim");
   forces.def(
-      "getExternalForce", [](Forces &s) { return toMatrix(s.externalForce); },
+      "getExternalForce", [](Forces &s) { return toMatrix(s.externalForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the externally-applied Force
@@ -885,7 +885,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
-   * @brief    Geometric properties (Geometry central)
+   * @brief    Geometric properties (Geometry central) getter
    */
   system.def_readwrite("surfaceArea", &System::surfaceArea,
                        R"delim(
@@ -909,7 +909,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the Cotan Laplacian matrix of the mesh
       )delim");
   system.def(
-      "getAngleWeightedNormal",
+      "getVertexNormal",
       [](System &s) { return toMatrix(s.vpg->vertexNormals); },
       py::return_value_policy::copy,
       R"delim(
@@ -951,7 +951,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get vertex dual area
       )delim");
   system.def(
-      "getMeanCurvature",
+      "getVertexMeanCurvature",
       [](System &s) {
         s.vpg->requireVertexMeanCurvatures();
         return s.vpg->vertexMeanCurvatures.raw();
@@ -961,7 +961,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the integrated scalar mean curvature
       )delim");
   system.def(
-      "getGaussianCurvature",
+      "getVertexGaussianCurvature",
       [](System &s) {
         s.vpg->requireVertexGaussianCurvatures();
         return s.vpg->vertexGaussianCurvatures.raw();
@@ -1009,6 +1009,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::return_value_policy::copy,
       R"delim(
           get the integrated vector Laplcian H
+      )delim");
+
+  /**
+   * @brief    geometry setter
+   */
+  system.def(
+      "setVertexPositionMatrix",
+      [](System &s, Eigen::Matrix<double, Eigen::Dynamic, 3> &newGeo) {
+        gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
+      },
+      R"delim(
+          get the vertex position matrix
       )delim");
 
   /**
