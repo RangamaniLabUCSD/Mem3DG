@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 import pymem3dg as dg
 import pymem3dg.read as dg_read
@@ -9,14 +10,14 @@ import polyscope as ps
 import polyscope.imgui as psim
 
 
-def matplotlibStyle(small=6, medium=8, large=10):
+def matplotlibStyle(s=6, m=8, l=10):
     """ Formatting style of matplotlib """
     plt.rcParams['font.sans-serif'] = "Arial"
     plt.rcParams['font.family'] = "sans-serif"
     # mpl.rcParams.update({'font.size': 8})
-    SMALL_SIZE = small
-    MEDIUM_SIZE = medium
-    BIGGER_SIZE = large
+    SMALL_SIZE = s
+    MEDIUM_SIZE = m
+    BIGGER_SIZE = l
     plt.rc('font', size=BIGGER_SIZE)          # controls default text sizes
     plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
     plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
@@ -34,6 +35,26 @@ def getColorMap(fig, range, orient="horizontal", num_points=100):
     Temp = np.linspace(range[0], range[1], num=num_points)
     plt.scatter(x, y, c=Temp)
     plt.colorbar(orientation=orient)
+    plt.tight_layout()
+    return fig
+
+
+def overlayColorMap(pngFile, clim, label):
+    img = mpimg.imread(pngFile)
+
+    fig, ax = plt.subplots(1)
+    matplotlibStyle()
+    inchPerPixel = 1 / plt.rcParams['figure.dpi']
+    fig.set_size_inches(492 * inchPerPixel, 276 * inchPerPixel)
+    ax.axis("off")
+
+    plt.imshow(img)
+    plt.clim(clim[0], clim[1])
+    cbar = plt.colorbar(fraction=0.046, pad=0.04, orientation="horizontal")
+    # cbar.formatter.set_powerlimits((0, 0))
+    cbar.set_label(label)
+    # plt.title("$t=$"+"{time: .1f}".format(time = tSave * frame))
+
     plt.tight_layout()
     return fig
 
