@@ -887,11 +887,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief    Geometric properties (Geometry central) getter
    */
-  system.def_readwrite("surfaceArea", &System::surfaceArea,
+  system.def_readonly("surfaceArea", &System::surfaceArea,
                        R"delim(
           get the surface area of the mesh
       )delim");
-  system.def_readwrite("volume", &System::volume,
+  system.def_readonly("volume", &System::volume,
                        R"delim(
           get the enclosed volume of the mesh
       )delim");
