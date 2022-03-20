@@ -73,6 +73,12 @@ def animate(trajNc, **kwargs):
             if hasParameters:
                 system = dg.System(trajNc, currFrame, parameters, True)
                 system.computePhysicalForcing()
+                if (kwargs.get('mechanicalForce')):
+                    mechanicalForce = system.forces.getMechanicalForce()
+                    mesh.add_vector_quantity(
+                        "mechanicalForce", mechanicalForce)
+                    mesh.add_scalar_quantity("<mechanicalForce,n>", dg_util.rowwiseDotProduct(
+                        mechanicalForce, system.getVertexNormal()))
                 if (kwargs.get('bendingForce')):
                     bendingForce = system.forces.getBendingForce()
                     mesh.add_vector_quantity("bendingForce", bendingForce)
@@ -83,11 +89,6 @@ def animate(trajNc, **kwargs):
                     mesh.add_vector_quantity("externalForce", externalForce)
                     mesh.add_scalar_quantity("<externalForce,n>", dg_util.rowwiseDotProduct(
                         externalForce, system.getVertexNormal()))
-                if (kwargs.get('mechanicalForce')):
-                    mechanicalForce = system.forces.getMechanicalForce()
-                    mesh.add_vector_quantity("mechanicalForce", mechanicalForce)
-                    mesh.add_scalar_quantity("<mechanicalForce,n>", dg_util.rowwiseDotProduct(
-                        mechanicalForce, system.getVertexNormal()))
                 if (kwargs.get('capillaryForce')):
                     capillaryForce = system.forces.getCapillaryForce()
                     mesh.add_vector_quantity("capillaryForce", capillaryForce)
@@ -95,7 +96,8 @@ def animate(trajNc, **kwargs):
                         capillaryForce, system.getVertexNormal()))
                 if (kwargs.get('lineCapillaryForce')):
                     lineCapillaryForce = system.forces.getLineCapillaryForce()
-                    mesh.add_vector_quantity("lineCapillaryForce", lineCapillaryForce)
+                    mesh.add_vector_quantity(
+                        "lineCapillaryForce", lineCapillaryForce)
                     mesh.add_scalar_quantity("<lineCapillaryForce,n>", dg_util.rowwiseDotProduct(
                         lineCapillaryForce, system.getVertexNormal()))
                 if (kwargs.get('osmoticForce')):
@@ -103,18 +105,52 @@ def animate(trajNc, **kwargs):
                     mesh.add_vector_quantity("osmoticForce", osmoticForce)
                     mesh.add_scalar_quantity("<osmoticForce,n>", dg_util.rowwiseDotProduct(
                         osmoticForce, system.getVertexNormal()))
+                if (kwargs.get('adsorptionForce')):
+                    adsorptionForce = system.forces.getAdsorptionForce()
+                    mesh.add_vector_quantity(
+                        "adsorptionForce", adsorptionForce)
+                    mesh.add_scalar_quantity("<adsorptionForce,n>", dg_util.rowwiseDotProduct(
+                        adsorptionForce, system.getVertexNormal()))
+                if (kwargs.get('aggregationForce')):
+                    aggregationForce = system.forces.getAggregationForce()
+                    mesh.add_vector_quantity(
+                        "aggregationForce", aggregationForce)
+                    mesh.add_scalar_quantity("<aggregationForce,n>", dg_util.rowwiseDotProduct(
+                        aggregationForce, system.getVertexNormal()))
+
+                if (kwargs.get('chemicalPotential')):
+                    chemicalPotential = system.forces.getChemicalPotential()
+                    mesh.add_scalar_quantity(
+                        "chemicalPotential", chemicalPotential)
+                if (kwargs.get('bendingPotential')):
+                    bendingPotential = system.forces.getBendingPotential()
+                    mesh.add_scalar_quantity(
+                        "bendingPotential", bendingPotential)
+                if (kwargs.get('aggregationPotential')):
+                    aggregationPotential = system.forces.getAggregationPotential()
+                    mesh.add_scalar_quantity(
+                        "aggregationPotential", aggregationPotential)
+                if (kwargs.get('diffusionPotential')):
+                    diffusionPotential = system.forces.getDiffusionPotential()
+                    mesh.add_scalar_quantity(
+                        "diffusionPotential", bendingPotential)
+                if (kwargs.get('adsorptionPotential')):
+                    adsorptionPotential = system.forces.getAdsorptionPotential()
+                    mesh.add_scalar_quantity(
+                        "adsorptionPotential", adsorptionPotential)
             else:
                 system = dg.System(trajNc, currFrame)
-                
+
             if (kwargs.get('meanCurvature')):
                 meanCurvature = system.getVertexMeanCurvature()
                 mesh.add_scalar_quantity("meanCurvature", meanCurvature)
             if (kwargs.get('gaussianCurvature')):
                 gaussianCurvature = system.getVertexGaussianCurvature()
-                mesh.add_scalar_quantity("gaussianCurvature", gaussianCurvature)
+                mesh.add_scalar_quantity(
+                    "gaussianCurvature", gaussianCurvature)
 
     show(trajNc)
-    
+
     def callback():
         psim.PushItemWidth(100)
         nonlocal prevFrame, currFrame, isPlay, transparency
@@ -125,6 +161,8 @@ def animate(trajNc, **kwargs):
             isPlay = ~isPlay
         if (prevFrame != currFrame | changed):
             show(trajNc)
+            changed = False
+            prevFrame = currFrame
         if isPlay:
             currFrame = currFrame + 1
             if currFrame >= maxFrame:
