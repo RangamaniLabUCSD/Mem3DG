@@ -53,8 +53,9 @@ def readMeshDataByPly(ply, dataType, dataName):
                        dataType, dataName)
     return data
 
-def zeroPadding(frame, length = 6, padding = "0"):
-  out = str(frame)
-  while len(out) < length:
-    out = padding + out
-  return out
+
+def zeroPadding(frame, length=6, padding="0"):
+    out = str(frame)
+    while len(out) < length:
+        out = padding + out
+    return out
