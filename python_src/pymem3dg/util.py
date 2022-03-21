@@ -41,6 +41,7 @@ def sphericalHarmonicsPerturbation(coordinate, m, n, amplitude, origin=None):
         rowwiseScaling(harmonics.real, unit_vector)
     return coordinate
 
+
 def smooth(y, box_pts):
     """moving average"""
     box = np.ones(box_pts) / box_pts
@@ -49,6 +50,7 @@ def smooth(y, box_pts):
     """ more advanced """
     # from scipy.signal import savgol_filter
     # return savgol_filter(y, box_pts+1, 2)
+
 
 def linearSampling(a_list, numPts):
     indices = np.linspace(0, len(a_list)-1, num=numPts)
