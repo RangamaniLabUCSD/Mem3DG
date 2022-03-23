@@ -1,8 +1,14 @@
 from scipy.special import sph_harm
 import pymem3dg as dg
 import numpy as np
+from contextlib import contextmanager
 
-
+@contextmanager
+def integrator(g_prolate, h, T, tSave, eps, outputDir):
+    i = dg.Euler(g_prolate, h, T, tSave, eps, outputDir)
+    yield i 
+    del i
+        
 def rowwiseNormalize(matrix):
     # print("norm:", rowwiseNorm(matrix))
     return rowwiseScaling(rowwiseNorm(matrix)**(-1), matrix)

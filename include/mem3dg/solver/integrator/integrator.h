@@ -140,6 +140,13 @@ public:
     volumeDifference = std::numeric_limits<double>::infinity();
   }
 
+  /**
+   * @brief Destroy the Integrator
+   *
+   */
+  ~Integrator() {
+  }
+
   // ==========================================================
   // =================   Template functions    ================
   // ==========================================================
