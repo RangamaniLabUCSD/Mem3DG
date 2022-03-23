@@ -75,13 +75,14 @@ bool VelocityVerlet::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.smoothenMesh(timeStep);
-      system.updateConfigurations(false);
+      system.updateConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
-      system.updateConfigurations(true);
+      system.updateGeodesics();
+      system.updateConfigurations();
     }
 
     // break loop if EXIT flag is on
@@ -213,7 +214,7 @@ void VelocityVerlet::march() {
   }
 
   // recompute cached values
-  system.updateConfigurations(false);
+  system.updateConfigurations();
 }
 } // namespace integrator
 } // namespace solver

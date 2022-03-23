@@ -99,14 +99,14 @@ bool Euler::integrate() {
     if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      system.updateConfigurations(false);
+      system.updateConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics >
         (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
-      system.updateConfigurations(true);
+      system.updateConfigurations();
     }
 
     // step forward
@@ -222,7 +222,7 @@ void Euler::march() {
   }
 
   // recompute cached values
-  system.updateConfigurations(false);
+  system.updateConfigurations();
 }
 } // namespace integrator
 } // namespace solver

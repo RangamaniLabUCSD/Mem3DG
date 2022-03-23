@@ -604,10 +604,10 @@ public:
    * @brief Update the vertex position and recompute cached values
    * (all quantities that characterizes the current energy state)
    * Careful: 1. when using eigenMap: memory address may change after update!!
-   * Careful: 2. choosing to update geodesics and spatial properties may lead to
-   * failing in backtrack!!
    */
-  void updateConfigurations(bool isUpdateGeodesics = false);
+  void updateConfigurations();
+
+  void updateGeodesics();
 
   // ==========================================================
   // ================   Variational vectors  ==================
