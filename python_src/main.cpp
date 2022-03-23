@@ -225,10 +225,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief methods
    */
-  euler.def("integrate", &Euler::integrate,
-            R"delim(
-          integrate 
-      )delim");
+    euler.def("integrate", &Euler::integrate,
+              R"delim(
+            integrate
+        )delim");
 
   euler.def("status", &Euler::status,
             R"delim(
@@ -246,6 +246,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
             R"delim(
           step for n iterations
       )delim");
+
+#ifdef MEM3DG_WITH_NETCDF
+  euler.def("createMutableNetcdfFile", &Euler::createMutableNetcdfFile,
+            R"delim(
+          create netcdf file
+      )delim");
+  euler.def("saveMutableNetcdfData", &Euler::saveMutableNetcdfData,
+            R"delim(
+          save netcdf file
+      )delim");
+
+#endif
 
   // ==========================================================
   // =============     Conjugate Gradient       ===============
