@@ -92,10 +92,6 @@ bool Euler::integrate() {
 
     // break loop if EXIT flag is on
     if (EXIT) {
-#ifdef MEM3DG_WITH_NETCDF
-      trajFile.~TrajFile();
-      mutableTrajFile.~MutableTrajFile();
-#endif
       break;
     }
 
