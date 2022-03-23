@@ -206,7 +206,8 @@ void BFGS::march() {
   if (system.time == lastSave && system.time != initialTime) {
     // process the mesh with regularization or mutation
     system.mutateMesh();
-    system.updateConfigurations(true);
+    system.updateGeodesics();
+    system.updateConfigurations();
 
     system.time += 1e-10 * characteristicTimeStep;
     ifRestart = true;
@@ -246,7 +247,7 @@ void BFGS::march() {
     }
 
     // recompute cached values
-    system.updateConfigurations(false);
+    system.updateConfigurations();
   }
 }
 } // namespace integrator

@@ -167,7 +167,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos + h * f.forces.maskForce(toMatrix(f.forces.bendingForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeBendingEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskForce(toMatrix(f.forces.bendingForceVec)).squaredNorm();
@@ -183,7 +183,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.bendingForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeBendingEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -202,7 +202,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.deviatoricForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeDeviatoricEnergy();
   expectedEnergyDecrease =
       h *
@@ -224,7 +224,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.deviatoricForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeDeviatoricEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -247,7 +247,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.capillaryForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeSurfaceEnergy();
   expectedEnergyDecrease =
       h *
@@ -264,7 +264,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.capillaryForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeSurfaceEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -282,7 +282,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() = current_proteinDensity;
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos + h * f.forces.maskForce(toMatrix(f.forces.osmoticForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computePressureEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskForce(toMatrix(f.forces.osmoticForceVec)).squaredNorm();
@@ -298,7 +298,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.osmoticForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computePressureEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -317,7 +317,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeAdsorptionEnergy();
   expectedEnergyDecrease =
       h *
@@ -335,7 +335,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.adsorptionForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeAdsorptionEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -355,7 +355,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeAggregationEnergy();
   expectedEnergyDecrease =
       h *
@@ -373,7 +373,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       stepFold * h * f.forces.maskForce(toMatrix(f.forces.aggregationForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeAggregationEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -393,7 +393,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.selfAvoidanceForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeSelfAvoidanceEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskForce(toMatrix(f.forces.selfAvoidanceForceVec))
@@ -412,7 +412,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
       current_pos +
       stepFold * h *
           f.forces.maskForce(toMatrix(f.forces.selfAvoidanceForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeSelfAvoidanceEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -433,7 +433,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   toMatrix(f.vpg->inputVertexPositions) =
       current_pos +
       h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeDirichletEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec))
@@ -451,7 +451,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
       current_pos +
       stepFold * h *
           f.forces.maskForce(toMatrix(f.forces.lineCapillaryForceVec));
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeDirichletEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -472,7 +472,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.bendingPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeBendingEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskProtein(f.forces.bendingPotential.raw()).squaredNorm();
@@ -488,7 +488,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       stepFold * h * f.forces.maskProtein(f.forces.bendingPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeBendingEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -507,7 +507,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.deviatoricPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeDeviatoricEnergy();
   expectedEnergyDecrease =
       h *
@@ -530,7 +530,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.adsorptionPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeAdsorptionEnergy();
   expectedEnergyDecrease =
       h *
@@ -553,7 +553,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeAggregationEnergy();
   expectedEnergyDecrease =
       h *
@@ -571,7 +571,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       stepFold * h * f.forces.maskProtein(f.forces.aggregationPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeAggregationEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -591,7 +591,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeDirichletEnergy();
   expectedEnergyDecrease =
       h * f.forces.maskProtein(f.forces.diffusionPotential.raw()).squaredNorm();
@@ -607,7 +607,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       stepFold * h * f.forces.maskProtein(f.forces.diffusionPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeDirichletEnergy();
   expectedEnergyDecrease =
       stepFold * h *
@@ -626,7 +626,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   f.proteinDensity.raw() =
       current_proteinDensity +
       h * f.forces.maskProtein(f.forces.interiorPenaltyPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeProteinInteriorPenalty();
   expectedEnergyDecrease =
       h * f.forces.maskProtein(f.forces.interiorPenaltyPotential.raw())
@@ -646,7 +646,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
       current_proteinDensity +
       stepFold * h *
           f.forces.maskProtein(f.forces.interiorPenaltyPotential.raw());
-  f.updateConfigurations(false);
+  f.updateConfigurations();
   f.computeProteinInteriorPenalty();
   expectedEnergyDecrease =
       stepFold * h *

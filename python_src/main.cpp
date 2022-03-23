@@ -488,7 +488,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the interfacial line tension
       )delim");
   forces.def(
-      "getExternalForce", [](Forces &s) { return toMatrix(s.externalForceVec); },
+      "getExternalForce",
+      [](Forces &s) { return toMatrix(s.externalForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the externally-applied Force
@@ -888,11 +889,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief    Geometric properties (Geometry central) getter
    */
   system.def_readonly("surfaceArea", &System::surfaceArea,
-                       R"delim(
+                      R"delim(
           get the surface area of the mesh
       )delim");
   system.def_readonly("volume", &System::volume,
-                       R"delim(
+                      R"delim(
           get the enclosed volume of the mesh
       )delim");
   system.def(
@@ -1122,10 +1123,17 @@ PYBIND11_MODULE(_core, pymem3dg) {
   //         )delim");
 
   /**
+   * @brief Method: updateGeodesics
+   */
+  system.def("updateGeodesics", &System::updateGeodesics,
+             R"delim(
+          update the geodesics and related configurations
+      )delim");
+
+  /**
    * @brief Method: updateVertexPosition
    */
   system.def("updateConfigurations", &System::updateConfigurations,
-             py::arg("isUpdateGeodesics") = false,
              R"delim(
           update the system configuration due to changes in state variables (e.g vertex positions or protein density)
       )delim");

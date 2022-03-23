@@ -414,32 +414,26 @@ void System::initConstants() {
   std::cout << "vol_init = " << volume << std::endl;
 }
 
-void System::updateConfigurations(bool isUpdateGeodesics) {
-
-  // refresh cached quantities after regularization
-  vpg->refreshQuantities();
-
+void System::updateGeodesics() {
   // recompute floating "the vertex"
-  if (parameters.point.isFloatVertex && isUpdateGeodesics) {
+  if (parameters.point.isFloatVertex) {
     findThePoint(
         *vpg, geodesicDistanceFromPtInd,
         3 * vpg->edgeLength(thePoint.nearestVertex().halfedge().edge()));
   }
 
   // update geodesic distance
-  if (isUpdateGeodesics) {
-    gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-    geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
-  }
+  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
+  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
 
   // initialize/update external force
-  if (parameters.external.Kf != 0 && isUpdateGeodesics) {
+  if (parameters.external.Kf != 0) {
     prescribeExternalForce();
   }
 
   // update protein density
   if (parameters.proteinDistribution.protein0.rows() == 4 &&
-      !parameters.variation.isProteinVariation && isUpdateGeodesics) {
+      !parameters.variation.isProteinVariation) {
     std::array<double, 2> r_heter{parameters.proteinDistribution.protein0[0],
                                   parameters.proteinDistribution.protein0[1]};
     vpg->requireVertexTangentBasis();
@@ -461,6 +455,12 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
                             parameters.proteinDistribution.protein0[3];
     proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
   }
+}
+
+void System::updateConfigurations() {
+
+  // refresh cached quantities after regularization
+  vpg->refreshQuantities();
 
   // compute face gradient of protein density
   if (parameters.dirichlet.eta != 0) {
@@ -519,22 +519,6 @@ void System::updateConfigurations(bool isUpdateGeodesics) {
                                         (surfaceArea - parameters.tension.At) /
                                         parameters.tension.At +
                                     parameters.tension.lambdaSG;
-
-  // initialize/update line tension (on dual edge)
-  if (parameters.dirichlet.eta != 0 && false) {
-    mem3dg_runtime_error(
-        "updateVertexPosition: out of data implementation on line tension, "
-        "shouldn't be called!");
-    // scale the dH0 such that it is integrated over the edge
-    // this is under the case where the resolution is low. This is where the
-    // extra vpg->edgeLength comes from!!!
-    // WIP The unit of line tension is in force*length (e.g. XXNewton)
-    // F.lineTension.raw() = P.dirichlet.eta * vpg->edgeLengths.raw().array()
-    // *
-    //                       (vpg->d0 * H0.raw()).cwiseAbs().array();
-    // lineTension.raw() = P.dirichlet.eta * (vpg->d0 *
-    // H0.raw()).cwiseAbs().array();
-  }
 }
 
 double System::inferTargetSurfaceArea() {

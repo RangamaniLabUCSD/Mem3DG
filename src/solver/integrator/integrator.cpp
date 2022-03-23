@@ -116,7 +116,7 @@ double Integrator::backtrack(
     system.proteinDensity.raw() += alpha * chemicalDirection;
   }
   system.time += alpha;
-  system.updateConfigurations(false);
+  system.updateConfigurations();
   system.computePotentialEnergy();
 
   while (true) {
@@ -155,7 +155,7 @@ double Integrator::backtrack(
           toMatrix(initial_protein) + alpha * chemicalDirection;
     }
     system.time = init_time + alpha;
-    system.updateConfigurations(false);
+    system.updateConfigurations();
     system.computePotentialEnergy();
 
     // count the number of iterations
@@ -181,7 +181,7 @@ double Integrator::backtrack(
   system.time = init_time;
   system.proteinDensity = initial_protein;
   system.vpg->inputVertexPositions = initial_pos;
-  system.updateConfigurations(false);
+  system.updateConfigurations();
   system.computePotentialEnergy();
   return alpha;
 }
@@ -223,7 +223,7 @@ double Integrator::chemicalBacktrack(
   // zeroth iteration
   system.proteinDensity.raw() += alpha * chemicalDirection;
   system.time += alpha;
-  system.updateConfigurations(false);
+  system.updateConfigurations();
   system.computePotentialEnergy();
 
   while (true) {
@@ -255,7 +255,7 @@ double Integrator::chemicalBacktrack(
     system.proteinDensity.raw() =
         toMatrix(initial_protein) + alpha * chemicalDirection;
     system.time = init_time + alpha;
-    system.updateConfigurations(false);
+    system.updateConfigurations();
     system.computePotentialEnergy();
 
     // count the number of iterations
@@ -280,7 +280,7 @@ double Integrator::chemicalBacktrack(
   system.time = init_time;
   system.proteinDensity = initial_protein;
   system.vpg->inputVertexPositions = initial_pos;
-  system.updateConfigurations(false);
+  system.updateConfigurations();
   system.computePotentialEnergy();
   return alpha;
 }
@@ -323,7 +323,7 @@ double Integrator::mechanicalBacktrack(
   // zeroth iteration
   toMatrix(system.vpg->inputVertexPositions) += alpha * positionDirection;
   system.time += alpha;
-  system.updateConfigurations(false);
+  system.updateConfigurations();
   system.computePotentialEnergy();
 
   while (true) {
@@ -358,7 +358,7 @@ double Integrator::mechanicalBacktrack(
         toMatrix(initial_pos) + alpha * positionDirection;
 
     system.time = init_time + alpha;
-    system.updateConfigurations(false);
+    system.updateConfigurations();
     system.computePotentialEnergy();
 
     // count the number of iterations
@@ -383,7 +383,7 @@ double Integrator::mechanicalBacktrack(
   system.time = init_time;
   system.proteinDensity = initial_protein;
   system.vpg->inputVertexPositions = initial_pos;
-  system.updateConfigurations(false);
+  system.updateConfigurations();
   system.computePotentialEnergy();
   return alpha;
 }
@@ -408,7 +408,7 @@ void Integrator::lineSearchErrorBacktrace(
   //                 toMatrix(system.forces.externalForceVec) +
   //                 toMatrix(system.forces.selfAvoidanceForceVec));
   // // * toMatrix(system.forces.mechanicalForceVec);
-  // system.updateConfigurations(false);
+  // system.updateConfigurations();
   if (system.parameters.external.Kf != 0)
     system.computeExternalWork(system.time, alpha);
   system.computeTotalEnergy();
@@ -441,7 +441,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.bendingForceVec));
-      system.updateConfigurations(false);
+      system.updateConfigurations();
 
       // test if bending energy increases
       system.computeBendingEnergy();
@@ -464,7 +464,7 @@ void Integrator::lineSearchErrorBacktrace(
           currentProteinDensity +
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(system.forces.bendingPotential.raw());
-      system.updateConfigurations(false);
+      system.updateConfigurations();
 
       // test if bending energy increases
       system.computeBendingEnergy();
@@ -499,7 +499,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.deviatoricForceVec));
-      system.updateConfigurations(false);
+      system.updateConfigurations();
 
       // test if deviatoric energy increases
       system.computeDeviatoricEnergy();
@@ -524,7 +524,7 @@ void Integrator::lineSearchErrorBacktrace(
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(
                   system.forces.deviatoricPotential.raw());
-      system.updateConfigurations(false);
+      system.updateConfigurations();
 
       // test if deviatoric energy increases
       system.computeDeviatoricEnergy();
@@ -560,7 +560,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.capillaryForceVec));
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computeSurfaceEnergy();
       if (runAll ||
           system.energy.surfaceEnergy > previousEnergy.surfaceEnergy) {
@@ -593,7 +593,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.osmoticForceVec));
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computePressureEnergy();
       if (runAll ||
           system.energy.pressureEnergy > previousEnergy.pressureEnergy) {
@@ -627,7 +627,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.adsorptionForceVec));
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computeAdsorptionEnergy();
       if (runAll ||
           system.energy.adsorptionEnergy > previousEnergy.adsorptionEnergy) {
@@ -651,7 +651,7 @@ void Integrator::lineSearchErrorBacktrace(
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(
                   system.forces.adsorptionPotential.raw());
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computeAdsorptionEnergy();
       if (runAll ||
           system.energy.adsorptionEnergy > previousEnergy.adsorptionEnergy) {
@@ -686,7 +686,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.aggregationForceVec));
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computeAggregationEnergy();
       if (runAll ||
           system.energy.aggregationEnergy > previousEnergy.aggregationEnergy) {
@@ -710,7 +710,7 @@ void Integrator::lineSearchErrorBacktrace(
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(
                   system.forces.aggregationPotential.raw());
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computeAggregationEnergy();
       if (runAll ||
           system.energy.aggregationEnergy > previousEnergy.aggregationEnergy) {
@@ -745,7 +745,7 @@ void Integrator::lineSearchErrorBacktrace(
       toMatrix(system.vpg->inputVertexPositions) =
           currentPosition + alpha * system.forces.maskForce(toMatrix(
                                         system.forces.lineCapillaryForceVec));
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computeDirichletEnergy();
       if (runAll ||
           system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
@@ -768,7 +768,7 @@ void Integrator::lineSearchErrorBacktrace(
           currentProteinDensity +
           alpha * system.parameters.proteinMobility *
               system.forces.maskProtein(system.forces.diffusionPotential.raw());
-      system.updateConfigurations(false);
+      system.updateConfigurations();
       system.computeDirichletEnergy();
       if (runAll ||
           system.energy.dirichletEnergy > previousEnergy.dirichletEnergy) {
@@ -804,7 +804,7 @@ void Integrator::lineSearchErrorBacktrace(
     toMatrix(system.vpg->inputVertexPositions) =
         currentPosition + alpha * system.forces.maskForce(toMatrix(
                                       system.forces.selfAvoidanceForceVec));
-    system.updateConfigurations(false);
+    system.updateConfigurations();
     system.computeSelfAvoidanceEnergy();
     if (runAll || system.energy.selfAvoidancePenalty >
                       previousEnergy.selfAvoidancePenalty) {
@@ -841,7 +841,7 @@ void Integrator::lineSearchErrorBacktrace(
         alpha * system.parameters.proteinMobility *
             system.forces.maskProtein(
                 system.forces.interiorPenaltyPotential.raw());
-    system.updateConfigurations(false);
+    system.updateConfigurations();
     system.computeProteinInteriorPenalty();
     if (runAll || system.energy.proteinInteriorPenalty >
                       previousEnergy.proteinInteriorPenalty) {
@@ -1222,7 +1222,7 @@ void Integrator::createMutableNetcdfFile() {
   // initialize netcdf traj file
   if (system.isContinuation) {
     mutableTrajFile.open(outputDirectory + "/" + trajFileName,
-                           TrajFile::NcFile::write);
+                         TrajFile::NcFile::write);
   } else {
     mutableTrajFile.createNewFile(outputDirectory + "/" + trajFileName,
                                   TrajFile::NcFile::replace);
