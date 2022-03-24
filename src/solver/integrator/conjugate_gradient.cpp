@@ -157,14 +157,15 @@ void ConjugateGradient::status() {
 
   // compute the area contraint error
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
+  volumeDifference = (system.parameters.osmotic.isPreferredVolume)
+                         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+                         : abs(system.parameters.osmotic.n / system.volume /
+                                   system.parameters.osmotic.cam -
+                               1.0);
   if (system.parameters.osmotic.isPreferredVolume) {
-    volumeDifference = abs(system.volume / system.parameters.osmotic.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference,
                            volumeDifference, constraintTolerance, 1.3);
   } else {
-    volumeDifference = abs(system.parameters.osmotic.n / system.volume /
-                               system.parameters.osmotic.cam -
-                           1.0);
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference,
                                 constraintTolerance, 1.3);
   }
@@ -241,11 +242,9 @@ void ConjugateGradient::march() {
   system.updateConfigurations();
 }
 
-void ConjugateGradient::pressureConstraintThreshold(bool &EXIT,
-                                             const bool isAugmentedLagrangian,
-                                             const double dArea,
-                                             const double ctol,
-                                             double increment) {
+void ConjugateGradient::pressureConstraintThreshold(
+    bool &EXIT, const bool isAugmentedLagrangian, const double dArea,
+    const double ctol, double increment) {
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     if (isAugmentedLagrangian) { // augmented Lagrangian method
       if (dArea < ctol) {        // exit if fulfilled all constraints
@@ -276,11 +275,9 @@ void ConjugateGradient::pressureConstraintThreshold(bool &EXIT,
   }
 }
 
-void ConjugateGradient::reducedVolumeThreshold(bool &EXIT,
-                                        const bool isAugmentedLagrangian,
-                                        const double dArea,
-                                        const double dVolume, const double ctol,
-                                        double increment) {
+void ConjugateGradient::reducedVolumeThreshold(
+    bool &EXIT, const bool isAugmentedLagrangian, const double dArea,
+    const double dVolume, const double ctol, double increment) {
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     if (isAugmentedLagrangian) {            // augmented Lagrangian method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints

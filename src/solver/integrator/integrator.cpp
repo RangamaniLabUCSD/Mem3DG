@@ -1028,10 +1028,11 @@ void Integrator::saveData() {
               << "t: " << system.time << ", "
               << "n: " << system.frame << ", "
               << "isSmooth: " << system.isSmooth << "\n"
-              << "dA/Area: " << areaDifference << "/" << system.surfaceArea
+              << "A, At: " << system.surfaceArea << ", "
+              << system.parameters.tension.At << "/" << system.surfaceArea
               << ", "
-              << "dVP/Volume: " << volumeDifference << "/" << system.volume
-              << ", "
+              << "V, Vt: " << system.volume << ", "
+              << system.parameters.osmotic.Vt << "/" << system.volume << ", "
               << "h: "
               << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff()
               << "\n"

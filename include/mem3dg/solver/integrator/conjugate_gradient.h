@@ -33,6 +33,10 @@ class DLL_PUBLIC ConjugateGradient : public Integrator {
 private:
   double currentNormSquared;
   double pastNormSquared;
+  /// Normalized area difference to reference mesh
+  double areaDifference;
+  /// Normalized volume/osmotic pressure difference
+  double volumeDifference;
 
   std::size_t countCG = 0;
 
@@ -54,6 +58,10 @@ public:
 
     // print to console
     std::cout << "Running Conjugate Gradient propagator ..." << std::endl;
+
+    // Initialize geometry constraints
+    areaDifference = std::numeric_limits<double>::infinity();
+    volumeDifference = std::numeric_limits<double>::infinity();
 
     // check the validity of parameter
     checkParameters();

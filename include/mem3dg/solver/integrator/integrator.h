@@ -56,10 +56,6 @@ protected:
   double initialTime;
   /// Flag of success of the simulation
   bool SUCCESS = true;
-  /// Normalized area difference to reference mesh
-  double areaDifference;
-  /// Normalized volume/osmotic pressure difference
-  double volumeDifference;
   /// ratio of time step to the squared mesh size
   double dt_size2_ratio;
   /// initial maximum force
@@ -134,10 +130,6 @@ public:
         system.parameters.variation.isShapeVariation
             ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
             : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
-
-    // Initialize geometry constraints
-    areaDifference = std::numeric_limits<double>::infinity();
-    volumeDifference = std::numeric_limits<double>::infinity();
   }
 
   /**

@@ -155,14 +155,6 @@ void Euler::status() {
   // compute summerized forces
   system.computePhysicalForcing(timeStep);
 
-  // compute the contraint error
-  areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
-  volumeDifference = (system.parameters.osmotic.isPreferredVolume)
-                         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
-                         : abs(system.parameters.osmotic.n / system.volume /
-                                   system.parameters.osmotic.cam -
-                               1.0);
-
   // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     std::cout << "\nError norm smaller than tolerance." << std::endl;
