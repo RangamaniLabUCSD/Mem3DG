@@ -38,12 +38,6 @@ bool Euler::integrate() {
 
   signal(SIGINT, signalHandler);
 
-#ifdef __linux__
-  // start the timer
-  struct timeval start;
-  gettimeofday(&start, NULL);
-#endif
-
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (verbosity > 0) {
@@ -125,14 +119,6 @@ bool Euler::integrate() {
       markFileName("_failed");
     }
   }
-  // stop the timer and report time spent
-#ifdef __linux__
-  double duration = getDuration(start);
-  if (verbosity > 0) {
-    std::cout << "\nTotal integration time: " << duration << " seconds"
-              << std::endl;
-  }
-#endif
 
   return SUCCESS;
 }
@@ -186,7 +172,7 @@ void Euler::march() {
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    characteristicTimeStep = updateAdaptiveCharacteristicStep();
+    characteristicTimeStep = updateAdaptiveCharacteristicTimeStep();
   }
 
   // time stepping on vertex position

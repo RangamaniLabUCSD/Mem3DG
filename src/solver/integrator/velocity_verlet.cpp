@@ -39,12 +39,6 @@ namespace gc = ::geometrycentral;
 bool VelocityVerlet::integrate() {
   signal(SIGINT, signalHandler);
 
-#ifdef __linux__
-  // start the timer
-  struct timeval start;
-  gettimeofday(&start, NULL);
-#endif
-
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (verbosity > 0) {
@@ -74,7 +68,6 @@ bool VelocityVerlet::integrate() {
     if (system.time - lastProcessMesh > processMeshPeriod) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      system.smoothenMesh(timeStep);
       system.updateConfigurations();
     }
 
@@ -102,15 +95,6 @@ bool VelocityVerlet::integrate() {
   if (!SUCCESS) {
     markFileName("_failed");
   }
-
-  // stop the timer and report time spent
-#ifdef __linux__
-  double duration = getDuration(start);
-  if (verbosity > 0) {
-    std::cout << "\nTotal integration time: " << duration << " seconds"
-              << std::endl;
-  }
-#endif
 
   return SUCCESS;
 }
@@ -163,7 +147,7 @@ void VelocityVerlet::status() {
 void VelocityVerlet::march() {
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    characteristicTimeStep = updateAdaptiveCharacteristicStep();
+    characteristicTimeStep = updateAdaptiveCharacteristicTimeStep();
     timeStep = characteristicTimeStep;
   }
 
