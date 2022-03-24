@@ -157,7 +157,7 @@ public:
   /**
    * @brief Initialize netcdf traj file
    */
-  void createMutableNetcdfFile();
+  void createMutableNetcdfFile(bool isContinue);
 
   /**
    * @brief Save data to netcdf traj file

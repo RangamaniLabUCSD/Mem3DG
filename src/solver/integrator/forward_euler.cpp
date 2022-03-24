@@ -41,8 +41,7 @@ bool Euler::integrate() {
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (verbosity > 0) {
-    // createNetcdfFile();
-    createMutableNetcdfFile();
+    createMutableNetcdfFile(system.isContinuation);
     // print to console
     std::cout << "Initialized NetCDF file at "
               << outputDirectory + "/" + trajFileName << std::endl;
