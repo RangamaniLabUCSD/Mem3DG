@@ -93,10 +93,13 @@ bool VelocityVerlet::integrate() {
     }
   }
 
-  // return if optimization is sucessful
-  if (!SUCCESS) {
-    markFileName(outputDirectory, trajFileName, "_failed");
+#ifdef MEM3DG_WITH_NETCDF
+  if (verbosity > 0) {
+    closeMutableNetcdfFile();
+    std::cout << "Closed NetCDF file" << std::endl;
   }
+#endif
+
   // return if optimization is sucessful
   if (!SUCCESS) {
     std::string filePath = outputDirectory;

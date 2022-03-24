@@ -1099,6 +1099,12 @@ void Integrator::createMutableNetcdfFile(bool isContinue) {
   // }
 }
 
+void Integrator::closeMutableNetcdfFile() {
+  if (&mutableTrajFile != nullptr) {
+    mutableTrajFile.close();
+  }
+}
+
 void Integrator::saveMutableNetcdfData() {
   // scalar quantities
   // write time

@@ -147,6 +147,11 @@ public:
   void createMutableNetcdfFile(bool isContinue);
 
   /**
+   * @brief close netcdf traj file
+   */
+  void closeMutableNetcdfFile();
+
+  /**
    * @brief Save data to netcdf traj file
    */
   void saveMutableNetcdfData();

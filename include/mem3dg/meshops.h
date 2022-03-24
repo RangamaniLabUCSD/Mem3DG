@@ -731,7 +731,6 @@ DLL_PUBLIC inline void markFileName(std::string filePath,
     filePath.erase(0, pos + delimiter.length());
   }
 
-  std::cout << "token: " << token << std::endl;
   std::string newFilePath = token, oldFilePath = token;
   oldFilePath.append(delimiter);
   oldFilePath.append(filePath);
@@ -740,8 +739,6 @@ DLL_PUBLIC inline void markFileName(std::string filePath,
   newFilePath.append(filePath);
 
   // rename file
-  std::cout << "old path: " << oldFilePath << std::endl;
-  std::cout << "new path: " << newFilePath << std::endl;
   int result = rename(oldFilePath.c_str(), newFilePath.c_str());
   if (result != 0)
     mem3dg_runtime_error("Error renaming the file!");
