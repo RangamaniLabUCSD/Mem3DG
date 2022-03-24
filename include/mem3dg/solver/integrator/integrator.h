@@ -184,20 +184,6 @@ public:
    */
   void markFileName(std::string marker_str);
 
-  /**
-   * @brief Save parameters to txt file
-   * @return
-   */
-  void getParameterLog(std::string inputMesh);
-
-  /**
-   * @brief Save status log to txt file
-   * @return
-   */
-  void getStatusLog(std::string nameOfFile, std::size_t frame, double areaError,
-                    double volumeError, double bendingError, double faceError,
-                    std::string inputMesh);
-
   // ==========================================================
   // =============     Helper functions          ==============
   // ==========================================================
