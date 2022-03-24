@@ -250,7 +250,7 @@ public:
    * @brief get adaptive characteristic time step
    * @return
    */
-  double updateAdaptiveCharacteristicStep();
+  double updateAdaptiveCharacteristicTimeStep();
 };
 } // namespace integrator
 } // namespace solver
