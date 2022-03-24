@@ -21,7 +21,6 @@
 #include <cmath>
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
-#include <fstream>
 #include <iostream>
 #include <stdexcept>
 
@@ -1084,41 +1083,6 @@ void Integrator::saveData() {
   system.frame++;
 }
 
-void Integrator::markFileName(std::string marker_str) {
-  std::string dirPath = outputDirectory;
-
-  const char *marker = marker_str.c_str();
-
-  char *file = new char[trajFileName.size() + 1];
-  std::copy(trajFileName.begin(), trajFileName.end(), file);
-  file[trajFileName.size()] = '\0';
-
-  char fileMarked[50]{"/"}, oldNC[150]{"/"}, newNC[150]{"/"};
-
-  // sprintf(fileMarked, "/traj_H_%d_VP_%d_failed.nc", int(H * 100),
-  //         int(VP * 100));
-
-  // split the extension and file name
-  const char *ext = strchr(file, '.');
-
-  // name fileMarked to be the file name
-  std::strncpy(fileMarked, file, ext - file);
-
-  // name fileMarked to be file name + the marker + extension
-  std::strcat(fileMarked, marker);
-  std::strcat(fileMarked, ext);
-  fileMarked[ext - file + sizeof(marker) + sizeof(ext)] = '\0';
-
-  // append the directory path and copy to oldNC and newNC
-  std::strcpy(oldNC, dirPath.c_str());
-  std::strcpy(newNC, dirPath.c_str());
-  std::strcat(oldNC, file);
-  std::strcat(newNC, fileMarked);
-
-  // rename file
-  rename(oldNC, newNC);
-  delete[] file;
-}
 
 #ifdef MEM3DG_WITH_NETCDF
 void Integrator::createNetcdfFile() {

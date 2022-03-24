@@ -174,16 +174,6 @@ public:
 
 #endif
 
-  /**
-   * @brief Mark the file name
-   *
-   * @param dirPath path of the directory
-   * @param file name of the file, for example in the form of "/traj.nc"
-   * @param marker_str marker used to mark the file, such as marker = "_failed"
-   * results in new file name of "/traj_failed.nc"
-   */
-  void markFileName(std::string marker_str);
-
   // ==========================================================
   // =============     Helper functions          ==============
   // ==========================================================

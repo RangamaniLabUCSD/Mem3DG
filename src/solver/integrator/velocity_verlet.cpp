@@ -91,9 +91,9 @@ bool VelocityVerlet::integrate() {
     }
   }
 
-  // return if physical simulation is sucessful
+  // return if optimization is sucessful
   if (!SUCCESS) {
-    markFileName("_failed");
+    markFileName(outputDirectory, trajFileName, "_failed");
   }
 
   return SUCCESS;
