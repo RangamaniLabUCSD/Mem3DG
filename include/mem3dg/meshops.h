@@ -721,27 +721,27 @@ sliceString(std::string fileName, std::string delim1, std::string delim2) {
  * @param marker_str marker used to mark the file, such as marker = "_failed"
  * results in new file name of "/traj_failed.nc"
  */
-DLL_PUBLIC inline void markFileName(std::string outputDirectory,
-                                    std::string fileName,
+DLL_PUBLIC inline void markFileName(std::string filePath,
                                     std::string marker_str,
                                     std::string delimiter = ".") {
   size_t pos = 0;
   std::string token;
-  if ((pos = fileName.find_last_of(delimiter)) != std::string::npos) {
-    token = fileName.substr(0, pos);
-    fileName.erase(0, pos + delimiter.length());
+  if ((pos = filePath.find_last_of(delimiter)) != std::string::npos) {
+    token = filePath.substr(0, pos);
+    filePath.erase(0, pos + delimiter.length());
   }
 
-  std::string newFilePath = outputDirectory, oldFilePath = outputDirectory;
-  oldFilePath.append(token);
+  std::cout << "token: " << token << std::endl;
+  std::string newFilePath = token, oldFilePath = token;
   oldFilePath.append(delimiter);
-  oldFilePath.append(fileName);
-  newFilePath.append(token);
+  oldFilePath.append(filePath);
   newFilePath.append(marker_str);
   newFilePath.append(delimiter);
-  newFilePath.append(fileName);
+  newFilePath.append(filePath);
 
   // rename file
+  std::cout << "old path: " << oldFilePath << std::endl;
+  std::cout << "new path: " << newFilePath << std::endl;
   int result = rename(oldFilePath.c_str(), newFilePath.c_str());
   if (result != 0)
     mem3dg_runtime_error("Error renaming the file!");

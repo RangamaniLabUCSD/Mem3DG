@@ -43,58 +43,48 @@ namespace integrator {
 // =============        Integrator             ==============
 // ==========================================================
 class DLL_PUBLIC Integrator {
-protected:
-  /// last time saving the data
-  double lastSave;
-  /// last time updating geodesics
-  double lastUpdateGeodesics;
-  /// last time processing mesh
-  double lastProcessMesh;
-  /// last time compute avoiding force
-  double lastComputeAvoidingForce;
-  /// Starting time of the simulation
-  double initialTime;
-  /// Flag of success of the simulation
-  bool SUCCESS = true;
-  /// ratio of time step to the squared mesh size
-  double dt_size2_ratio;
+public:
+  // read-only
   /// initial maximum force
   double initialMaximumForce;
-  /// TrajFile
-#ifdef MEM3DG_WITH_NETCDF
-  MutableTrajFile mutableTrajFile;
-#endif
-
-public:
+  /// ratio of time step to the squared mesh size
+  double dt_size2_ratio;
+  /// Flag of success of the simulation
+  bool SUCCESS = true;
   /// Flag for terminating the simulation
   bool EXIT = false;
   /// time step
   double timeStep;
   /// System object to be integrated
   System &system;
+  /// TrajFile
+#ifdef MEM3DG_WITH_NETCDF
+  MutableTrajFile mutableTrajFile;
+#endif
+
+  // read/write
   /// characterisitic time step
   double characteristicTimeStep;
   // total simulation time
   double totalTime;
-  /// period of saving output data
-  double savePeriod;
+  /// option to scale time step according to mesh size
+  bool isAdaptiveStep = true;
   /// tolerance for termination
   double tolerance;
-  /// path to the output directory
-  std::string outputDirectory;
-
+  /// period of saving output data
+  double savePeriod;
   /// period of saving output data
   double updateGeodesicsPeriod;
   /// period of saving output data
   double processMeshPeriod;
-  /// name of the trajectory file
-  std::string trajFileName = "traj.nc";
-  /// option to scale time step according to mesh size
-  bool isAdaptiveStep = true;
   /// verbosity level of integrator
   size_t verbosity = 3;
   /// just save geometry .ply file
   bool isJustGeometryPly = false;
+  /// path to the output directory
+  std::string outputDirectory;
+  /// name of the trajectory file
+  std::string trajFileName = "traj.nc";
 
   // ==========================================================
   // =============        Constructor            ==============
@@ -114,10 +104,7 @@ public:
       : system(system_), characteristicTimeStep(characteristicTimeStep_),
         totalTime(totalTime_), savePeriod(savePeriod_), tolerance(tolerance_),
         updateGeodesicsPeriod(totalTime_), processMeshPeriod(totalTime_),
-        outputDirectory(outputDirectory_), initialTime(system_.time),
-        lastUpdateGeodesics(system_.time), lastProcessMesh(system_.time),
-        lastComputeAvoidingForce(system_.time), lastSave(system_.time),
-        timeStep(characteristicTimeStep_) {
+        outputDirectory(outputDirectory_), timeStep(characteristicTimeStep_) {
 
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio = characteristicTimeStep /
