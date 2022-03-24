@@ -261,6 +261,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
 #ifdef MEM3DG_WITH_NETCDF
   euler.def("createMutableNetcdfFile", &Euler::createMutableNetcdfFile,
+            py::arg("isContinue"),
             R"delim(
           create netcdf file
       )delim");

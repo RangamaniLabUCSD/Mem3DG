@@ -1083,11 +1083,10 @@ void Integrator::saveData() {
   system.frame++;
 }
 
-
 #ifdef MEM3DG_WITH_NETCDF
-void Integrator::createMutableNetcdfFile() {
+void Integrator::createMutableNetcdfFile(bool isContinue) {
   // initialize netcdf traj file
-  if (system.isContinuation) {
+  if (isContinue) {
     mutableTrajFile.open(outputDirectory + "/" + trajFileName,
                          TrajFile::NcFile::write);
   } else {
