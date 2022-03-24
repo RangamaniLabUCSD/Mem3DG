@@ -854,7 +854,7 @@ public:
    * @param maxIteration maximum number of iteration
    */
   Eigen::Matrix<bool, Eigen::Dynamic, 1>
-  smoothenMesh(double initStep = 0.01, double target = 0.1,
+  smoothenMesh(double initStep = 0.01, double target = 0.5,
                size_t maxIteration = 1000);
   /**
    * @brief pointwise smoothing after mutation of the mesh

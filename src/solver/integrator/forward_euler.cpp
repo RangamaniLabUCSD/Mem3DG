@@ -38,6 +38,10 @@ bool Euler::integrate() {
 
   signal(SIGINT, signalHandler);
 
+  double initialTime = system.time, lastUpdateGeodesics = system.time,
+         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+         lastSave = system.time;
+
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (verbosity > 0) {
@@ -112,10 +116,13 @@ bool Euler::integrate() {
 
   // return if optimization is sucessful
   if (!SUCCESS) {
+    std::string filePath = outputDirectory;
+    filePath.append("/");
+    filePath.append(trajFileName);
     if (tolerance == 0) {
-      markFileName(outputDirectory, trajFileName, "_most");
+      markFileName(filePath, "_most", ".");
     } else {
-      markFileName(outputDirectory, trajFileName, "_failed");
+      markFileName(filePath, "_failed", ".");
     }
   }
 

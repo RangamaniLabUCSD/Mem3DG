@@ -39,6 +39,10 @@ namespace gc = ::geometrycentral;
 bool VelocityVerlet::integrate() {
   signal(SIGINT, signalHandler);
 
+  double initialTime = system.time, lastUpdateGeodesics = system.time,
+         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+         lastSave = system.time;
+
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (verbosity > 0) {
@@ -56,7 +60,6 @@ bool VelocityVerlet::integrate() {
     status();
 
     // Save files every tSave period and print some info
-    static double lastSave;
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
@@ -93,6 +96,13 @@ bool VelocityVerlet::integrate() {
   // return if optimization is sucessful
   if (!SUCCESS) {
     markFileName(outputDirectory, trajFileName, "_failed");
+  }
+  // return if optimization is sucessful
+  if (!SUCCESS) {
+    std::string filePath = outputDirectory;
+    filePath.append("/");
+    filePath.append(trajFileName);
+    markFileName(filePath, "_failed", ".");
   }
 
   return SUCCESS;
