@@ -44,8 +44,6 @@ namespace integrator {
 // ==========================================================
 class DLL_PUBLIC Integrator {
 protected:
-  /// time step
-  double timeStep;
   /// last time saving the data
   double lastSave;
   /// last time updating geodesics
@@ -58,8 +56,6 @@ protected:
   double initialTime;
   /// Flag of success of the simulation
   bool SUCCESS = true;
-  /// Flag for terminating the simulation
-  bool EXIT = false;
   /// Normalized area difference to reference mesh
   double areaDifference;
   /// Normalized volume/osmotic pressure difference
@@ -75,6 +71,10 @@ protected:
 #endif
 
 public:
+  /// Flag for terminating the simulation
+  bool EXIT = false;
+  /// time step
+  double timeStep;
   /// System object to be integrated
   System &system;
   /// characterisitic time step
@@ -144,8 +144,7 @@ public:
    * @brief Destroy the Integrator
    *
    */
-  ~Integrator() {
-  }
+  ~Integrator() {}
 
   // ==========================================================
   // =================   Template functions    ================

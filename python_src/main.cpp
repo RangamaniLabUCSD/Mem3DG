@@ -163,6 +163,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
+   * @brief state variable
+   */
+  euler.def_readonly("EXIT", &Euler::EXIT,
+                     R"delim(
+          Flag for terminating the simulation
+      )delim");
+  euler.def_readonly("timeStep", &Euler::timeStep,
+                     R"delim(
+          time step
+      )delim");
+
+  /**
    * @brief attributes, integration options
    */
   euler.def_readonly("characteristicTimeStep", &Euler::characteristicTimeStep,
@@ -225,8 +237,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief methods
    */
-    euler.def("integrate", &Euler::integrate,
-              R"delim(
+  euler.def("integrate", &Euler::integrate,
+            R"delim(
             integrate
         )delim");
 
@@ -1162,7 +1174,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: mutate the mesh
    */
-  system.def("mutateMesh", &System::mutateMesh,
+  system.def("mutateMesh", &System::mutateMesh, py::arg("nRepetition") = 1,
              R"delim(
           mutate the mesh 
       )delim");
