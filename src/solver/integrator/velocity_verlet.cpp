@@ -159,7 +159,7 @@ void VelocityVerlet::status() {
 void VelocityVerlet::march() {
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    characteristicTimeStep = updateAdaptiveCharacteristicTimeStep();
+    characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
     timeStep = characteristicTimeStep;
   }
 
