@@ -241,6 +241,89 @@ void ConjugateGradient::march() {
   system.updateConfigurations();
 }
 
+void ConjugateGradient::pressureConstraintThreshold(bool &EXIT,
+                                             const bool isAugmentedLagrangian,
+                                             const double dArea,
+                                             const double ctol,
+                                             double increment) {
+  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
+    if (isAugmentedLagrangian) { // augmented Lagrangian method
+      if (dArea < ctol) {        // exit if fulfilled all constraints
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        std::cout << "\n[lambdaSG] = [" << system.parameters.tension.lambdaSG
+                  << ", "
+                  << "]";
+        system.parameters.tension.lambdaSG +=
+            system.parameters.tension.Ksg *
+            (system.surfaceArea - system.parameters.tension.At) /
+            system.parameters.tension.At;
+        std::cout << " -> [" << system.parameters.tension.lambdaSG << "]"
+                  << std::endl;
+      }
+    } else {              // incremental harmonic penalty method
+      if (dArea < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
+        system.parameters.tension.Ksg *= increment;
+        std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                  << std::endl;
+      }
+    }
+  }
+}
+
+void ConjugateGradient::reducedVolumeThreshold(bool &EXIT,
+                                        const bool isAugmentedLagrangian,
+                                        const double dArea,
+                                        const double dVolume, const double ctol,
+                                        double increment) {
+  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
+    if (isAugmentedLagrangian) {            // augmented Lagrangian method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        std::cout << "\n.tension[lambdaSG, lambdaV] = ["
+                  << system.parameters.tension.lambdaSG << ", "
+                  << system.parameters.osmotic.lambdaV << "]";
+        system.parameters.tension.lambdaSG +=
+            system.parameters.tension.Ksg *
+            (system.surfaceArea - system.parameters.tension.At) /
+            system.parameters.tension.At;
+        system.parameters.osmotic.lambdaV +=
+            system.parameters.osmotic.Kv *
+            (system.volume - system.parameters.osmotic.Vt) /
+            system.parameters.osmotic.Vt;
+        std::cout << " -> [" << system.parameters.tension.lambdaSG << ", "
+                  << system.parameters.osmotic.lambdaV << "]" << std::endl;
+      }
+    } else { // incremental harmonic penalty method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
+        std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      }
+
+      // iterate if not
+      if (dArea > ctol) {
+        std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
+        system.parameters.tension.Ksg *= 1.3;
+        std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                  << std::endl;
+      }
+      if (dVolume > ctol) {
+        std::cout << "\n[Kv] = [" << system.parameters.osmotic.Kv << "]";
+        system.parameters.osmotic.Kv *= 1.3;
+        std::cout << " -> [" << system.parameters.osmotic.Kv << "]"
+                  << std::endl;
+      }
+    }
+  }
+}
+
 } // namespace integrator
 } // namespace solver
 } // namespace mem3dg

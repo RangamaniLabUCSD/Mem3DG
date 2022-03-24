@@ -88,6 +88,34 @@ public:
       march();
     }
   }
+
+  /**
+   * @brief Thresholding when adopting reduced volume parametrization
+   * @param EXIT, reference to the exit flag
+   * @param isAugmentedLagrangian, whether using augmented lagrangian method
+   * @param dArea, normalized area difference
+   * @param dVolume, normalized volume difference
+   * @param ctol, exit criterion for constraint
+   * @param increment, increment coefficient of penalty when using incremental
+   * penalty method
+   * @return
+   */
+  void reducedVolumeThreshold(bool &EXIT, const bool isAugmentedLagrangian,
+                              const double dArea, const double dVolume,
+                              const double ctol, double increment);
+  /**
+   * @brief Thresholding when adopting ambient pressure constraint
+   * @param EXIT, reference to the exit flag
+   * @param isAugmentedLagrangian, whether using augmented lagrangian method
+   * @param dArea, normalized area difference
+   * @param ctol, exit criterion for constraint
+   * @param increment, increment coefficient of penalty when using incremental
+   * penalty method
+   * @return
+   */
+  void pressureConstraintThreshold(bool &EXIT, const bool isAugmentedLagrangian,
+                                   const double dArea, const double ctol,
+                                   double increment);
 };
 } // namespace integrator
 } // namespace solver
