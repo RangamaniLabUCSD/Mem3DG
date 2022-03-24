@@ -215,7 +215,7 @@ void ConjugateGradient::march() {
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (isAdaptiveStep) {
-    updateAdaptiveCharacteristicTimeStep();
+    characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
   // time stepping on vertex position

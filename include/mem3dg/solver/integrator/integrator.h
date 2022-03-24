@@ -44,7 +44,7 @@ namespace integrator {
 // ==========================================================
 class DLL_PUBLIC Integrator {
 public:
-  // read-only
+  // variables (read-only)
   /// initial maximum force
   double initialMaximumForce;
   /// ratio of time step to the squared mesh size
@@ -62,17 +62,21 @@ public:
   MutableTrajFile mutableTrajFile;
 #endif
 
-  // read/write
+  // key parameters (read/write)
   /// characterisitic time step
   double characteristicTimeStep;
   // total simulation time
   double totalTime;
-  /// option to scale time step according to mesh size
-  bool isAdaptiveStep = true;
-  /// tolerance for termination
-  double tolerance;
   /// period of saving output data
   double savePeriod;
+  /// tolerance for termination
+  double tolerance;
+  /// option to scale time step according to mesh size
+  bool isAdaptiveStep = true;
+  /// path to the output directory
+  std::string outputDirectory;
+  
+  // defaulted parameters (read/write)
   /// period of saving output data
   double updateGeodesicsPeriod;
   /// period of saving output data
@@ -81,8 +85,6 @@ public:
   size_t verbosity = 3;
   /// just save geometry .ply file
   bool isJustGeometryPly = false;
-  /// path to the output directory
-  std::string outputDirectory;
   /// name of the trajectory file
   std::string trajFileName = "traj.nc";
 
@@ -224,7 +226,7 @@ public:
    * @brief get adaptive characteristic time step
    * @return
    */
-  double updateAdaptiveCharacteristicTimeStep();
+  double getAdaptiveCharacteristicTimeStep();
 };
 } // namespace integrator
 } // namespace solver

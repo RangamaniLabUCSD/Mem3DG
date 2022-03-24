@@ -28,7 +28,7 @@ namespace mem3dg {
 namespace solver {
 namespace integrator {
 
-double Integrator::updateAdaptiveCharacteristicTimeStep() {
+double Integrator::getAdaptiveCharacteristicTimeStep() {
   double currentMinimumSize = system.vpg->edgeLengths.raw().minCoeff();
   double currentMaximumForce =
       system.parameters.variation.isShapeVariation
