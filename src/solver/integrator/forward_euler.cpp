@@ -114,9 +114,9 @@ bool Euler::integrate() {
   // return if optimization is sucessful
   if (!SUCCESS) {
     if (tolerance == 0) {
-      markFileName("_most");
+      markFileName(outputDirectory, trajFileName, "_most");
     } else {
-      markFileName("_failed");
+      markFileName(outputDirectory, trajFileName, "_failed");
     }
   }
 

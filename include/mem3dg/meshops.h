@@ -701,9 +701,8 @@ tanhDistribution(EigenVectorX1d &distribution,
  * @brief Slice string using two deliminator
  *
  */
-DLL_PUBLIC inline std::string sliceString(std::string fileName,
-                                                     std::string delim1,
-                                                     std::string delim2) {
+DLL_PUBLIC inline std::string
+sliceString(std::string fileName, std::string delim1, std::string delim2) {
   // int start = 0;
   int start = fileName.find_last_of(delim1) + 1;
   int end = fileName.find_last_of(delim2);
@@ -712,6 +711,52 @@ DLL_PUBLIC inline std::string sliceString(std::string fileName,
     string = fileName.substr(start, end - start);
   }
   return string;
+}
+
+/**
+ * @brief Mark the file name
+ *
+ * @param dirPath path of the directory
+ * @param file name of the file, for example in the form of "/traj.nc"
+ * @param marker_str marker used to mark the file, such as marker = "_failed"
+ * results in new file name of "/traj_failed.nc"
+ */
+DLL_PUBLIC inline void markFileName(std::string outputDirectory,
+                                    std::string fileName,
+                                    std::string marker_str) {
+  std::string dirPath = outputDirectory;
+
+  const char *marker = marker_str.c_str();
+
+  char *file = new char[fileName.size() + 1];
+  std::copy(fileName.begin(), fileName.end(), file);
+  file[fileName.size()] = '\0';
+
+  char fileMarked[50]{"/"}, oldNC[150]{"/"}, newNC[150]{"/"};
+
+  // sprintf(fileMarked, "/traj_H_%d_VP_%d_failed.nc", int(H * 100),
+  //         int(VP * 100));
+
+  // split the extension and file name
+  const char *ext = strchr(file, '.');
+
+  // name fileMarked to be the file name
+  std::strncpy(fileMarked, file, ext - file);
+
+  // name fileMarked to be file name + the marker + extension
+  std::strcat(fileMarked, marker);
+  std::strcat(fileMarked, ext);
+  fileMarked[ext - file + sizeof(marker) + sizeof(ext)] = '\0';
+
+  // append the directory path and copy to oldNC and newNC
+  std::strcpy(oldNC, dirPath.c_str());
+  std::strcpy(newNC, dirPath.c_str());
+  std::strcat(oldNC, file);
+  std::strcat(newNC, fileMarked);
+
+  // rename file
+  rename(oldNC, newNC);
+  delete[] file;
 }
 
 /**
