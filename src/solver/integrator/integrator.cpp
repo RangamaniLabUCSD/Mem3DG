@@ -1085,21 +1085,6 @@ void Integrator::saveData() {
 
 
 #ifdef MEM3DG_WITH_NETCDF
-void Integrator::createNetcdfFile() {
-  // initialize netcdf traj file
-  if (system.isContinuation) {
-    trajFile.open(outputDirectory + "/" + trajFileName,
-                  TrajFile::NcFile::write);
-  } else {
-    trajFile.createNewFile(outputDirectory + "/" + trajFileName, *system.mesh,
-                           *system.vpg, TrajFile::NcFile::replace);
-    trajFile.writeMask(toMatrix(system.forces.forceMask).rowwise().sum());
-    if (!system.mesh->hasBoundary()) {
-      trajFile.writeRefSurfArea(system.parameters.tension.At);
-    }
-  }
-}
-
 void Integrator::createMutableNetcdfFile() {
   // initialize netcdf traj file
   if (system.isContinuation) {
@@ -1113,81 +1098,6 @@ void Integrator::createMutableNetcdfFile() {
   // if (!f.mesh->hasBoundary()) {
   //   mutableTrajFile.writeRefSurfArea(f.parameters.tension.At);
   // }
-}
-
-void Integrator::saveNetcdfData() {
-  // scalar quantities
-  // write time
-  trajFile.writeTime(system.frame, system.time);
-  trajFile.writeIsSmooth(system.frame, system.isSmooth);
-  // write geometry
-  trajFile.writeVolume(system.frame, system.volume);
-  trajFile.writeSurfArea(system.frame,
-                         system.mesh->hasBoundary()
-                             ? system.surfaceArea - system.parameters.tension.At
-                             : system.surfaceArea);
-  trajFile.writeHeight(
-      system.frame,
-      toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff());
-  // write energies
-  trajFile.writeBendEnergy(system.frame, system.energy.bendingEnergy);
-  trajFile.writeSurfEnergy(system.frame, system.energy.surfaceEnergy);
-  trajFile.writePressEnergy(system.frame, system.energy.pressureEnergy);
-  trajFile.writeKineEnergy(system.frame, system.energy.kineticEnergy);
-  trajFile.writeAdspEnergy(system.frame, system.energy.adsorptionEnergy);
-  trajFile.writeLineEnergy(system.frame, system.energy.dirichletEnergy);
-  trajFile.writeTotalEnergy(system.frame, system.energy.totalEnergy);
-  // write Norms
-  trajFile.writeErrorNorm(system.frame, system.mechErrorNorm);
-  trajFile.writeChemErrorNorm(system.frame, system.chemErrorNorm);
-  trajFile.writeBendNorm(system.frame,
-                         system.computeNorm(system.forces.bendingForce.raw()));
-  trajFile.writeSurfNorm(
-      system.frame, system.computeNorm(system.forces.capillaryForce.raw()));
-  trajFile.writePressNorm(system.frame,
-                          system.computeNorm(system.forces.osmoticForce.raw()));
-  trajFile.writeLineNorm(
-      system.frame, system.computeNorm(system.forces.lineCapillaryForce.raw()));
-
-  // vector quantities
-  if (!system.meshProcessor.meshMutator.isSplitEdge &&
-      !system.meshProcessor.meshMutator.isCollapseEdge) {
-    // write velocity
-    trajFile.writeVelocity(system.frame, toMatrix(system.velocity));
-    // write protein density distribution
-    trajFile.writeProteinDensity(system.frame, system.proteinDensity.raw());
-
-    // write geometry
-    trajFile.writeCoords(system.frame,
-                         toMatrix(system.vpg->inputVertexPositions));
-    trajFile.writeTopoFrame(system.frame,
-                            system.mesh->getFaceVertexMatrix<std::uint32_t>());
-    trajFile.writeMeanCurvature(system.frame,
-                                system.vpg->vertexMeanCurvatures.raw().array() /
-                                    system.vpg->vertexDualAreas.raw().array());
-    trajFile.writeGaussCurvature(
-        system.frame, system.vpg->vertexGaussianCurvatures.raw().array() /
-                          system.vpg->vertexDualAreas.raw().array());
-    trajFile.writeSponCurvature(system.frame, system.H0.raw());
-    // fd.writeAngles(system.frame, f.vpg.cornerAngles.raw());
-    // fd.writeH_H0_diff(system.frame,
-    //                   ((f.H - f.H0).array() * (f.H -
-    //                   f.H0).array()).matrix());
-
-    // write pressures
-    trajFile.writeBendingForce(system.frame, system.forces.bendingForce.raw());
-    trajFile.writeCapillaryForce(system.frame,
-                                 system.forces.capillaryForce.raw());
-    trajFile.writeLineForce(system.frame,
-                            system.forces.lineCapillaryForce.raw());
-    trajFile.writeOsmoticForce(system.frame, system.forces.osmoticForce.raw());
-    trajFile.writeExternalForce(system.frame,
-                                system.forces.externalForce.raw());
-    trajFile.writePhysicalForce(system.frame,
-                                system.forces.mechanicalForce.raw());
-    trajFile.writeChemicalPotential(system.frame,
-                                    system.forces.chemicalPotential.raw());
-  }
 }
 
 void Integrator::saveMutableNetcdfData() {

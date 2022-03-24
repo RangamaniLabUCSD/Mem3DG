@@ -62,7 +62,6 @@ protected:
   double initialMaximumForce;
   /// TrajFile
 #ifdef MEM3DG_WITH_NETCDF
-  TrajFile trajFile;
   MutableTrajFile mutableTrajFile;
 #endif
 
@@ -158,15 +157,8 @@ public:
   /**
    * @brief Initialize netcdf traj file
    */
-  void createNetcdfFile();
-  /**
-   * @brief Initialize netcdf traj file
-   */
   void createMutableNetcdfFile();
-  /**
-   * @brief Save data to netcdf traj file
-   */
-  void saveNetcdfData();
+
   /**
    * @brief Save data to netcdf traj file
    */
