@@ -18,7 +18,6 @@
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/utilities/vector3.h"
 #include "mem3dg/constants.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/solver/mutable_trajfile.h"
 #include <cmath>
 #include <stdexcept>
