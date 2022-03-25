@@ -93,6 +93,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
         Velocity Verlet integrator constructor
       )delim");
 
+  velocityverlet.def_readwrite("ifOutputTrajFile",
+                               &VelocityVerlet::ifOutputTrajFile, R"delim(
+          if output trajectory file
+      )delim");
+  velocityverlet.def_readwrite("ifOutputMeshFile",
+                               &VelocityVerlet::ifOutputMeshFile, R"delim(
+          if output mesh file
+      )delim");
+  velocityverlet.def_readwrite("ifPrintToConsole",
+                               &VelocityVerlet::ifPrintToConsole, R"delim(
+          if print to console
+      )delim");
   velocityverlet.def_readwrite("updateGeodesicsPeriod",
                                &VelocityVerlet::updateGeodesicsPeriod,
                                R"delim(
@@ -190,6 +202,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
   euler.def_readonly("tolerance", &Euler::tolerance,
                      R"delim(
           tolerance for termination
+      )delim");
+  euler.def_readwrite("ifOutputTrajFile", &Euler::ifOutputTrajFile, R"delim(
+          if output trajectory file
+      )delim");
+  euler.def_readwrite("ifOutputMeshFile", &Euler::ifOutputMeshFile, R"delim(
+          if output mesh file
+      )delim");
+  euler.def_readwrite("ifPrintToConsole", &Euler::ifPrintToConsole, R"delim(
+          if print to console
       )delim");
   euler.def_readwrite("updateGeodesicsPeriod", &Euler::updateGeodesicsPeriod,
                       R"delim(
@@ -304,6 +325,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                  R"delim(
           tolerance for termination
       )delim");
+  conjugategradient.def_readwrite(
+      "ifOutputTrajFile", &ConjugateGradient::ifOutputTrajFile, R"delim(
+          if output trajectory file
+      )delim");
+  conjugategradient.def_readwrite(
+      "ifOutputMeshFile", &ConjugateGradient::ifOutputMeshFile, R"delim(
+          if output mesh file
+      )delim");
+  conjugategradient.def_readwrite(
+      "ifPrintToConsole", &ConjugateGradient::ifPrintToConsole, R"delim(
+          if print to console
+      )delim");
   conjugategradient.def_readwrite("updateGeodesicsPeriod",
                                   &ConjugateGradient::updateGeodesicsPeriod,
                                   R"delim(
@@ -417,89 +450,91 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Mechanical force
    */
   forces.def(
-      "getDeviatoricForce",
+      "getDeviatoricForceVec",
       [](Forces &s) { return toMatrix(s.deviatoricForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the deviatoric force of the system
       )delim");
   forces.def(
-      "getBendingForce", [](Forces &s) { return toMatrix(s.bendingForceVec); },
+      "getBendingForceVec",
+      [](Forces &s) { return toMatrix(s.bendingForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the bending force of the system
       )delim");
   forces.def(
-      "getBendingForce_areaGrad",
+      "getBendingForceVec_areaGrad",
       [](Forces &s) { return toMatrix(s.bendingForceVec_areaGrad); },
       py::return_value_policy::copy,
       R"delim(
           get the area gradient component of the bending force of the system
       )delim");
   forces.def(
-      "getBendingForce_gaussVec",
+      "getBendingForceVec_gaussVec",
       [](Forces &s) { return toMatrix(s.bendingForceVec_gaussVec); },
       py::return_value_policy::copy,
       R"delim(
           get the the gaussian curvature vector component of the bending force of the system
       )delim");
   forces.def(
-      "getBendingForce_schlafliVec",
+      "getBendingForceVec_schlafliVec",
       [](Forces &s) { return toMatrix(s.bendingForceVec_schlafliVec); },
       py::return_value_policy::copy,
       R"delim(
           get the Schlaflic (smoothing) component of the bending force of the system
       )delim");
   forces.def(
-      "getCapillaryForce",
+      "getCapillaryForceVec",
       [](Forces &s) { return toMatrix(s.capillaryForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the tension-induced capillary Force
       )delim");
   forces.def(
-      "getLineCapillaryForce",
+      "getLineCapillaryForceVec",
       [](Forces &s) { return toMatrix(s.lineCapillaryForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the interfacial line tension
       )delim");
   forces.def(
-      "getExternalForce",
+      "getExternalForceVec",
       [](Forces &s) { return toMatrix(s.externalForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the externally-applied Force
       )delim");
   forces.def(
-      "getOsmoticForce", [](Forces &s) { return toMatrix(s.osmoticForceVec); },
+      "getOsmoticForceVec",
+      [](Forces &s) { return toMatrix(s.osmoticForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the osmotic force
       )delim");
   forces.def(
-      "getAdsorptionForce",
+      "getAdsorptionForceVec",
       [](Forces &s) { return toMatrix(s.adsorptionForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the adsorption force
       )delim");
   forces.def(
-      "getAggregationForce",
+      "getAggregationForceVec",
       [](Forces &s) { return toMatrix(s.aggregationForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the aggregation force
       )delim");
   forces.def(
-      "getExternalForce",
+      "getExternalForceVec",
       [](Forces &s) { return toMatrix(s.externalForceVec); },
       py::return_value_policy::copy,
       R"delim(
           get the external force
       )delim");
   forces.def(
-      "getMechanicalForce",
+      "getMechanicalForceVec",
       [](Forces &s) { return toMatrix(s.mechanicalForceVec); },
       py::return_value_policy::copy,
       R"delim(
@@ -890,14 +925,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the Cotan Laplacian matrix of the mesh
       )delim");
   system.def(
-      "getVertexNormal",
+      "getVertexNormals",
       [](System &s) { return toMatrix(s.vpg->vertexNormals); },
       py::return_value_policy::copy,
       R"delim(
           get angle-weighted normal on vertices
       )delim");
   system.def(
-      "getVertexPositionMatrix",
+      "getInputVertexPositions",
       [](System &s) {
         return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
       },
@@ -925,14 +960,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the signed F-E edge adjacency matrix, equivalent of d1 operator
       )delim");
   system.def(
-      "getVertexDualArea",
+      "getVertexDualAreas",
       [](System &s) { return s.vpg->vertexDualAreas.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get vertex dual area
       )delim");
   system.def(
-      "getVertexMeanCurvature",
+      "getVertexMeanCurvatures",
       [](System &s) {
         s.vpg->requireVertexMeanCurvatures();
         return s.vpg->vertexMeanCurvatures.raw();
@@ -942,7 +977,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the integrated scalar mean curvature
       )delim");
   system.def(
-      "getVertexGaussianCurvature",
+      "getVertexGaussianCurvatures",
       [](System &s) {
         s.vpg->requireVertexGaussianCurvatures();
         return s.vpg->vertexGaussianCurvatures.raw();
@@ -952,9 +987,9 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the integrated scalar Gaussian Curvature
       )delim");
   system.def(
-      "getGaussianCurvatureVector",
+      "getVertexGaussianCurvatureVectors",
       [](System &s) {
-        auto vector = s.computeVertexGaussianCurvatureVector();
+        auto vector = s.computeVertexGaussianCurvatureVectors();
         return toMatrix(vector);
       },
       py::return_value_policy::copy,
@@ -962,9 +997,9 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the integrated vector Gaussian Curvature
       )delim");
   system.def(
-      "getVolumeVariationVector",
+      "getVertexVolumeVariationVectors",
       [](System &s) {
-        auto vector = s.computeVertexVolumeVariationVector();
+        auto vector = s.computeVertexVolumeVariationVectors();
         return toMatrix(vector);
       },
       py::return_value_policy::copy,
@@ -972,9 +1007,9 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the integrated vector Volume Variation (dual area)
       )delim");
   system.def(
-      "getMeanCurvatureVector",
+      "getVertexMeanCurvatureVectors",
       [](System &s) {
-        auto vector = s.computeVertexMeanCurvatureVector();
+        auto vector = s.computeVertexMeanCurvatureVectors();
         return toMatrix(vector);
       },
       py::return_value_policy::copy,
@@ -982,22 +1017,22 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the integrated vector Mean Curvature
       )delim");
   system.def(
-      "getLaplacianMeanCurvatureVector",
+      "getVertexSchlafliVectors",
       [](System &s) {
-        auto vector = s.computeVertexSchlafliVector();
+        auto vector = s.computeVertexSchlafliVectors();
         return toMatrix(vector);
       },
       py::return_value_policy::copy,
       R"delim(
-          get the integrated vector Laplcian H
+          get the vertex Schlafli Vectors
       )delim");
 
   /**
    * @brief    geometry setter
    */
   system.def(
-      "setVertexPositionMatrix",
-      [](System &s, Eigen::Matrix<double, Eigen::Dynamic, 3> &newGeo) {
+      "setInputVertexPositions",
+      [](System &s, Eigen::Matrix<double, Eigen::Dynamic, 3> newGeo) {
         gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
       },
       R"delim(
@@ -1007,13 +1042,17 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Membrane dynamics properties (Mem3DG)
    */
-  system.def_readwrite("energy", &System::energy,
-                       R"delim(
-          get the Energy components struct
+  system.def(
+      "getForces", [](System &s) { return s.forces; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the pointwise spontaneous curvature
       )delim");
-  system.def_readonly("forces", &System::forces,
-                      R"delim(
-          get the force component struct
+  system.def(
+      "getEnergy", [](System &s) { return s.energy; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the pointwise spontaneous curvature
       )delim");
   system.def(
       "getSpontaneousCurvature", [](System &s) { return s.H0.raw(); },
@@ -1022,7 +1061,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the pointwise spontaneous curvature
       )delim");
   system.def(
-      "getVertexVelocityMatrix",
+      "getVelocity",
       [](System &s) { return gc::EigenMap<double, 3>(s.velocity); },
       py::return_value_policy::copy,
       R"delim(
@@ -1133,6 +1172,25 @@ PYBIND11_MODULE(_core, pymem3dg) {
   system.def("mutateMesh", &System::mutateMesh, py::arg("nRepetition") = 1,
              R"delim(
           mutate the mesh 
+      )delim");
+
+  /**
+   * @brief Method: test force computation
+   */
+  system.def("testForceComputation",
+             py::overload_cast<const double, const EigenVectorX3dr,
+                               const EigenVectorX1d, const Energy>(
+                 &System::testForceComputation),
+             py::arg("timeStep"), py::arg("previousPosition"),
+             py::arg("previousProteinDensity"), py::arg("previousEnergy"),
+             R"delim(
+          test force computation by validating energy decrease (reverse mode)
+      )delim");
+  system.def("testForceComputation",
+             py::overload_cast<const double>(&System::testForceComputation),
+             py::arg("timeStep"),
+             R"delim(
+          test force computation by validating energy decrease (forward mode)
       )delim");
 
   /**

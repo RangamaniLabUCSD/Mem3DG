@@ -165,7 +165,7 @@ System::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
   return volGrad;
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
+gc::VertexData<gc::Vector3> System::computeVertexSchlafliVectors() {
   mesh->compress();
   gc::VertexData<gc::Vector3> vector(*mesh, {0, 0, 0});
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
@@ -185,17 +185,17 @@ gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
   return vector;
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVector() {
+gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeGaussianCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVector() {
+gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeMeanCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVector() {
+gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeVolumeVariationVector);
 }
