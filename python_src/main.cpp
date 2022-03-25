@@ -1144,7 +1144,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: updateGeodesics
    */
-  system.def("updateGeodesics", &System::updateGeodesics,
+  system.def("updateGeodesicsDistance", &System::updateGeodesicsDistance,
              R"delim(
           update the geodesics and related configurations
       )delim");

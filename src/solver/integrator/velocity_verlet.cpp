@@ -76,7 +76,13 @@ bool VelocityVerlet::integrate() {
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
-      system.updateGeodesics();
+      if (system.parameters.point.isFloatVertex)
+        system.findFloatCenter(
+            *system.vpg, system.geodesicDistance,
+            3 * system.vpg->edgeLength(
+                    system.center.nearestVertex().halfedge().edge()));
+      system.updateGeodesicsDistance();
+      system.prescribeProteinDensity();
       system.updateConfigurations();
     }
 

@@ -98,26 +98,6 @@ void System::prescribeMasks() {
   }
 };
 
-void System::updateGeodesics() {
-  // recompute floating "the vertex"
-  if (parameters.point.isFloatVertex) {
-    findFloatCenter(
-        *vpg, geodesicDistance,
-        3 * vpg->edgeLength(center.nearestVertex().halfedge().edge()));
-  }
-
-  // update geodesic distance
-  updateGeodesicsDistance();
-
-  // initialize/update external force
-  if (parameters.external.Kf != 0) {
-    prescribeExternalForce();
-  }
-
-  // update protein density
-  prescribeProteinDensity();
-}
-
 void System::testForceComputation(const double timeStep,
                                   const EigenVectorX3dr previousPosition,
                                   const EigenVectorX1d previousProteinDensity,
