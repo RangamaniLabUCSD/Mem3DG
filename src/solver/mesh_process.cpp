@@ -33,7 +33,8 @@ void MeshProcessor::summarizeStatus() {
 
   isMeshRegularize = (meshRegularizer.Kst != 0) || (meshRegularizer.Ksl != 0) ||
                      (meshRegularizer.Kse != 0);
-  isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
+  isMeshMutate = meshMutator.isChangeTopology || meshMutator.isShiftVertex ||
+                 meshMutator.isSmoothenMesh;
 
   if (!meshRegularizer.ifHasRefMesh && isMeshRegularize) {
     mem3dg_runtime_error(
@@ -152,11 +153,11 @@ bool MeshProcessor::MeshMutator::ifFlip(
 }
 
 void MeshProcessor::MeshMutator::summarizeStatus() {
-  isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
+  isFlipEdge = (flipNonDelaunay || flipNonDelaunayRequireFlat);
   isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
                  splitSkinnyDelaunay);
   isCollapseEdge = (collapseSkinny || collapseSmall || collapseFlat);
-  isChangeTopology = isEdgeFlip || isSplitEdge || isCollapseEdge;
+  isChangeTopology = isFlipEdge || isSplitEdge || isCollapseEdge;
 };
 
 bool MeshProcessor::MeshMutator::ifCollapse(

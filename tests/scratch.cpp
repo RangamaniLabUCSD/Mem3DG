@@ -84,7 +84,7 @@ int main() {
   p.external.Kf = 0;
 
   mem3dg::solver::MeshProcessor mP;
-  mP.meshMutator.shiftVertex = true;
+  mP.meshMutator.isShiftVertex = true;
   mP.meshMutator.flipNonDelaunay = true;
   // mP.meshMutator.splitLarge = true;
   mP.meshMutator.splitFat = true;

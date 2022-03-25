@@ -648,8 +648,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                   R"delim(
        meshmutator constructor
       )delim");
-  meshmutator.def_readonly("isEdgeFlip",
-                           &MeshProcessor::MeshMutator::isEdgeFlip,
+  meshmutator.def_readonly("isFlipEdge",
+                           &MeshProcessor::MeshMutator::isFlipEdge,
                            R"delim(
           get the option of whether do edge flip
       )delim");
@@ -672,8 +672,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief vertex shifting
    */
-  meshmutator.def_readwrite("shiftVertex",
-                            &MeshProcessor::MeshMutator::shiftVertex,
+  meshmutator.def_readwrite("isShiftVertex",
+                            &MeshProcessor::MeshMutator::isShiftVertex,
                             R"delim(
           get the option of whether do vertex shift  
       )delim");
@@ -1169,7 +1169,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: mutate the mesh
    */
-  system.def("mutateMesh", &System::mutateMesh, py::arg("nRepetition") = 1,
+  system.def("mutateMesh", &System::mutateMesh, py::arg("nMutation") = 1,
              R"delim(
           mutate the mesh 
       )delim");

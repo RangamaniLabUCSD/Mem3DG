@@ -175,7 +175,7 @@ public:
       : System(readMeshes(topologyMatrix, vertexMatrix), isMute) {
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -196,7 +196,7 @@ public:
     checkConfiguration();
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -219,7 +219,7 @@ public:
     checkConfiguration();
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // Process the mesh by regularization and mutation
     mutateMesh(nMutation);
@@ -236,7 +236,7 @@ public:
   System(std::string inputMesh, bool isMute)
       : System(readMeshes(inputMesh), isMute) {
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -257,7 +257,7 @@ public:
     checkConfiguration();
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // Map continuation variables
     if (isContinue) {
@@ -286,7 +286,7 @@ public:
     checkConfiguration();
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // Map continuation variables
     if (isContinue) {
@@ -312,7 +312,7 @@ public:
       : System(readTrajFile(trajFile, startingFrame), isMute) {
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // compute nonconstant values during simulation
     updateConfigurations();
@@ -334,7 +334,7 @@ public:
     checkConfiguration();
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // Map continuation variables
     if (isContinue) {
@@ -365,7 +365,7 @@ public:
     checkConfiguration();
 
     // Initialize reference values
-    initConstants();
+    initializeConstants();
 
     // Map continuation variables
     if (isContinue) {
@@ -593,10 +593,16 @@ public:
   void checkConfiguration();
 
   /**
+   * @brief Initialize system
+   *
+   */
+  void initialize(std::size_t nMutation);
+
+  /**
    * @brief Initialize all constant values (on refVpg) needed for computation
    *
    */
-  void initConstants();
+  void initializeConstants();
 
   /**
    * @brief Update the vertex position and recompute cached values
@@ -809,7 +815,7 @@ public:
   /**
    * @brief Mesh mutation
    */
-  void mutateMesh(size_t nRepetition = 1);
+  void mutateMesh(size_t nMutation = 1);
 
   /**
    * @brief Apply vertex shift by moving the vertices chosen for integration to
