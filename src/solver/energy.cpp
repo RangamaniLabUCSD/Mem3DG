@@ -11,23 +11,8 @@
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
-#include <iostream>
 
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/simple_polygon_mesh.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/eigen_interop_helpers.h>
-#include <geometrycentral/utilities/vector3.h>
-
-#include <Eigen/Core>
-
-#include "Eigen/src/Core/GlobalFunctions.h"
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/constants.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
 namespace solver {

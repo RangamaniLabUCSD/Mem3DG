@@ -12,30 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-// uncomment to disable assert()
-// #define NDEBUG
-#include <cassert>
-#include <cmath>
-#include <iostream>
-
-#include <geometrycentral/numerical/linear_solvers.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/eigen_interop_helpers.h>
-#include <geometrycentral/utilities/vector3.h>
-
-#include "Eigen/src/Core/Matrix.h"
-#include "Eigen/src/Core/util/Constants.h"
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/type_utilities.h"
-#include <Eigen/Core>
-#include <math.h>
-#include <pcg_random.hpp>
-#include <stdexcept>
 
 namespace mem3dg {
 namespace solver {
