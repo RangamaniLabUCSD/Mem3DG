@@ -14,7 +14,6 @@
 
 #include "mem3dg/solver/system.h"
 
-
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
@@ -158,6 +157,17 @@ System::readMeshes(
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
+void System::initialize(std::size_t nMutation) {
+  initializeConstants();
+  meshProcessor.summarizeStatus();
+  if (!meshProcessor.isMeshMutate && nMutation != 0) {
+    mem3dg_runtime_message("mesh mutator not activated!");
+  } else {
+    mutateMesh(nMutation);
+  }
+  updateConfigurations();
+}
+
 void System::checkConfiguration() {
 
   isOpenMesh = mesh->hasBoundary();
@@ -204,8 +214,8 @@ void System::checkConfiguration() {
   }
 }
 
-void System::initConstants() {
-  // Initialize random number generator
+void System::initializeConstants() {
+  // InitialiinitializeConstantsber generator
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
@@ -234,8 +244,8 @@ void System::initConstants() {
             geodesicDistanceFromPtInd.raw().maxCoeff() ||
         parameters.variation.radius <
             geodesicDistanceFromPtInd.raw().minCoeff()) {
-      mem3dg_runtime_error("initConstants: either all vertices or none is "
-                           "included within integration disk, "
+      mem3dg_runtime_error("either all vertices or none is "
+                           "initializeConstantsin integration disk, "
                            "set radius = -1 to disable!");
     }
     for (gcs::Vertex v : mesh->vertices()) {

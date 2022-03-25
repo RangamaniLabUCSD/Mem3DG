@@ -89,11 +89,11 @@ void System::mutateMesh(size_t nRepetition) {
     mutationMarker.fill(false);
 
     // vertex shift for regularization
-    if (meshProcessor.meshMutator.shiftVertex) {
+    if (meshProcessor.meshMutator.isShiftVertex) {
       vertexShift();
     }
     // linear edge flip for non-Delauney triangles
-    if (meshProcessor.meshMutator.isEdgeFlip) {
+    if (meshProcessor.meshMutator.isFlipEdge) {
       // isFlipped = edgeFlip();
       // isFlipped = edgeFlip() || isFlipped;
       // isFlipped = edgeFlip() || isFlipped;
@@ -107,7 +107,7 @@ void System::mutateMesh(size_t nRepetition) {
     }
 
     // linear edge flip for non-Delauney triangles
-    if (meshProcessor.meshMutator.isEdgeFlip) {
+    if (meshProcessor.meshMutator.isFlipEdge) {
       // isFlipped = edgeFlip();
       // isFlipped = edgeFlip() || isFlipped;
       // isFlipped = edgeFlip() || isFlipped;
