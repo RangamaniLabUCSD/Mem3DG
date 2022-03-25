@@ -105,7 +105,7 @@ void visualize(mem3dg::solver::System &f) {
   polyscope::getSurfaceMesh("Membrane")
       ->addFaceCountQuantity(
           "the point", std::vector<std::pair<std::size_t, int>>{std::make_pair(
-                           f.thePoint.inSomeFace().face.getIndex(), 1)})
+                           f.center.inSomeFace().face.getIndex(), 1)})
       ->setPointRadius(sqrt(f.surfaceArea / f.mesh->nFaces() * 4 / sqrt(3)) / 2,
                        false);
 

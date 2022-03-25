@@ -446,18 +446,18 @@ EigenVectorX3dr System::prescribeExternalForce() {
 #elif MODE == 2 // anchor force
   double decayTime = 1000;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
+  geodesicDistance = heatSolver.computeDistance(center);
   double standardDeviation = 0.02;
 
   // gc::Vector3 anchor{0, 0, 1};
   // gc::Vector3 direction{0, 0, -1};
-  // direction = anchor - vpg->inputVertexPositions[thePoint.nearestVertex()];
+  // direction = anchor - vpg->inputVertexPositions[center.nearestVertex()];
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     gc::Vector3 direction = -vpg->vertexPositions[v].normalize();
     forces.externalForceVec[i] =
         forces.maskForce(exp(-time / decayTime) * parameters.external.Kf *
-                             gaussianDistribution(geodesicDistanceFromPtInd[v],
+                             gaussianDistribution(geodesicDistance[v],
                                                   standardDeviation) *
                              vpg->vertexDualArea(v) * direction,
                          i);

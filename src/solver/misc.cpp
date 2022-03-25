@@ -42,6 +42,82 @@ void System::testForceComputation(const double timeStep) {
   computePhysicalForcing();
 }
 
+void System::updateGeodesicsDistance() {
+  // update geodesic distance
+  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
+  geodesicDistance = heatSolver.computeDistance(center);
+}
+
+void System::prescribeProteinDensity() {
+  if (parameters.proteinDistribution.protein0.size() == 1) {
+    proteinDensity.raw().setConstant(
+        mesh->nVertices(), 1, parameters.proteinDistribution.protein0[0]);
+  } else if (parameters.proteinDistribution.protein0.rows() ==
+             proteinDensity.raw().rows()) {
+    proteinDensity.raw() = parameters.proteinDistribution.protein0;
+  } else if (parameters.proteinDistribution.protein0.size() == 4) {
+    std::array<double, 2> r_heter{parameters.proteinDistribution.protein0[0],
+                                  parameters.proteinDistribution.protein0[1]};
+    vpg->requireVertexTangentBasis();
+    if (parameters.proteinDistribution.profile == "gaussian") {
+      gaussianDistribution(
+          proteinDensity.raw(), geodesicDistance.raw(),
+          vpg->inputVertexPositions -
+              vpg->inputVertexPositions[center.nearestVertex()],
+          vpg->vertexTangentBasis[center.nearestVertex()], r_heter);
+    } else if (parameters.proteinDistribution.profile == "tanh") {
+      tanhDistribution(proteinDensity.raw(), geodesicDistance.raw(),
+                       vpg->inputVertexPositions -
+                           vpg->inputVertexPositions[center.nearestVertex()],
+                       vpg->vertexTangentBasis[center.nearestVertex()],
+                       parameters.proteinDistribution.tanhSharpness, r_heter);
+    }
+    vpg->unrequireVertexTangentBasis();
+    proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
+                            parameters.proteinDistribution.protein0[3];
+    proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
+  }
+}
+
+void System::prescribeMasks() {
+  // Initialize the constant mask based on distance from the point specified
+  if (parameters.variation.radius != -1) {
+    if (parameters.variation.radius > geodesicDistance.raw().maxCoeff() ||
+        parameters.variation.radius < geodesicDistance.raw().minCoeff()) {
+      mem3dg_runtime_error("either all vertices or none is "
+                           "initializeConstantsin integration disk, "
+                           "set radius = -1 to disable!");
+    }
+    for (gcs::Vertex v : mesh->vertices()) {
+      forces.forceMask[v] = (geodesicDistance[v] < parameters.variation.radius)
+                                ? gc::Vector3{1, 1, 1}
+                                : gc::Vector3{0, 0, 0};
+      forces.proteinMask[v] =
+          (geodesicDistance[v] < parameters.variation.radius) ? 1 : 0;
+    }
+  }
+};
+
+void System::updateGeodesics() {
+  // recompute floating "the vertex"
+  if (parameters.point.isFloatVertex) {
+    findFloatCenter(
+        *vpg, geodesicDistance,
+        3 * vpg->edgeLength(center.nearestVertex().halfedge().edge()));
+  }
+
+  // update geodesic distance
+  updateGeodesicsDistance();
+
+  // initialize/update external force
+  if (parameters.external.Kf != 0) {
+    prescribeExternalForce();
+  }
+
+  // update protein density
+  prescribeProteinDensity();
+}
+
 void System::testForceComputation(const double timeStep,
                                   const EigenVectorX3dr previousPosition,
                                   const EigenVectorX1d previousProteinDensity,
@@ -107,7 +183,7 @@ void System::testForceComputation(const double timeStep,
             << previousEnergy.bendingEnergy << " to " << energy.bendingEnergy
             << ", expected dBE: "
             << -timeStep * forces.maskForce(toMatrix(forces.bendingForceVec))
-                            .squaredNorm()
+                               .squaredNorm()
             << std::endl;
 
   // =======================================
@@ -162,7 +238,7 @@ void System::testForceComputation(const double timeStep,
             << " from " << previousEnergy.deviatoricEnergy << " to "
             << energy.deviatoricEnergy << ", expected dDevE: "
             << -timeStep * forces.maskForce(toMatrix(forces.deviatoricForceVec))
-                            .squaredNorm()
+                               .squaredNorm()
             << std::endl;
 
   // =======================================
@@ -215,7 +291,7 @@ void System::testForceComputation(const double timeStep,
             << previousEnergy.surfaceEnergy << " to " << energy.surfaceEnergy
             << ", expected dsE: "
             << -timeStep * forces.maskForce(toMatrix(forces.capillaryForceVec))
-                            .squaredNorm()
+                               .squaredNorm()
             << std::endl;
 
   // ==========================================================
@@ -245,7 +321,7 @@ void System::testForceComputation(const double timeStep,
             << previousEnergy.pressureEnergy << " to " << energy.pressureEnergy
             << ", expected dpE: "
             << -timeStep * forces.maskForce(toMatrix(forces.osmoticForceVec))
-                            .squaredNorm()
+                               .squaredNorm()
             << std::endl;
 
   // ==========================================================
@@ -276,7 +352,7 @@ void System::testForceComputation(const double timeStep,
             << " from " << previousEnergy.adsorptionEnergy << " to "
             << energy.adsorptionEnergy << ", expected daE: "
             << -timeStep * forces.maskForce(toMatrix(forces.adsorptionForceVec))
-                            .squaredNorm()
+                               .squaredNorm()
             << std::endl;
 
   // =======================================
@@ -326,8 +402,9 @@ void System::testForceComputation(const double timeStep,
             << energy.aggregationEnergy - previousEnergy.aggregationEnergy
             << " from " << previousEnergy.aggregationEnergy << " to "
             << energy.aggregationEnergy << ", expected daggE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.aggregationForceVec))
-                            .squaredNorm()
+            << -timeStep *
+                   forces.maskForce(toMatrix(forces.aggregationForceVec))
+                       .squaredNorm()
             << std::endl;
 
   // test single-force-energy computation
@@ -375,8 +452,9 @@ void System::testForceComputation(const double timeStep,
             << energy.dirichletEnergy - previousEnergy.dirichletEnergy
             << " from " << previousEnergy.dirichletEnergy << " to "
             << energy.dirichletEnergy << ", expected ddE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.lineCapillaryForceVec))
-                            .squaredNorm()
+            << -timeStep *
+                   forces.maskForce(toMatrix(forces.lineCapillaryForceVec))
+                       .squaredNorm()
             << std::endl;
 
   // test single-force-energy computation
@@ -424,8 +502,9 @@ void System::testForceComputation(const double timeStep,
             << energy.selfAvoidancePenalty - previousEnergy.selfAvoidancePenalty
             << " from " << previousEnergy.selfAvoidancePenalty << " to "
             << energy.selfAvoidancePenalty << ", expected dselfE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.selfAvoidanceForceVec))
-                            .squaredNorm()
+            << -timeStep *
+                   forces.maskForce(toMatrix(forces.selfAvoidanceForceVec))
+                       .squaredNorm()
             << std::endl;
 
   // ==========================================================
@@ -503,7 +582,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("force_mask", msk);
     richData.addVertexProperty("protein_mask", forces.proteinMask);
     gcs::VertexData<int> tkr(*mesh);
-    tkr.fromVector(thePointTracker.raw().cast<int>());
+    tkr.fromVector(centerTracker.raw().cast<int>());
     richData.addVertexProperty("the_point", tkr);
     // gcs::VertexData<int> mutMkr(*mesh);
     // mutMkr.fromVector(mutationMarker.raw().cast<int>());
@@ -697,9 +776,46 @@ double System::inferTargetSurfaceArea() {
   return targetArea;
 }
 
-void System::findThePoint(gcs::VertexPositionGeometry &vpg,
-                          gcs::VertexData<double> &geodesicDistance,
-                          double range) {
+void System::findVertexCenter(gcs::VertexPositionGeometry &vpg,
+                              gcs::VertexData<double> &geodesicDistance,
+                              double range) {
+  if (parameters.point.isFloatVertex)
+    mem3dg_runtime_error("parameters.point.isFloatVertex is activated!");
+  bool isUpdated = false;
+  switch (parameters.point.pt.rows()) {
+  case 1: {
+    // Assign surface point as the indexed vertex
+    center =
+        gc::SurfacePoint(mesh->vertex((std::size_t)parameters.point.pt[0]));
+    isUpdated = true;
+    break;
+  }
+  case 2: {
+    // Find the cloest vertex to the point in the x-y plane
+    center = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.point.pt,
+                                                geodesicDistance, range));
+    isUpdated = true;
+    break;
+  }
+  case 3: {
+    center = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.point.pt,
+                                                geodesicDistance, range));
+    isUpdated = true;
+    break;
+  }
+    centerTracker[center.vertex] = true;
+  }
+
+  if (!isUpdated) {
+    mem3dg_runtime_error("Surface point is not updated!");
+  }
+}
+
+void System::findFloatCenter(gcs::VertexPositionGeometry &vpg,
+                             gcs::VertexData<double> &geodesicDistance,
+                             double range) {
+  if (!parameters.point.isFloatVertex)
+    mem3dg_runtime_error("parameters.point.isFloatVertex is not activated!");
   bool isUpdated = false;
   if (parameters.point.isFloatVertex) {
     switch (parameters.point.pt.rows()) {
@@ -731,7 +847,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
           if (baryCoords_.x > 0 && baryCoords_.y > 0 &&
               baryCoords_.z > 0) { // A. set the surface point when the point
                                    // lays within the triangle
-            thePoint = gcs::SurfacePoint(
+            center = gcs::SurfacePoint(
                 he.face(), correspondBarycentricCoordinates(baryCoords_, he));
             isUpdated = true;
             break;
@@ -749,7 +865,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
                      someSurfacePoint.interpolate(vpg.inputVertexPositions).y})
                     .norm();
             if (distance < shortestDistance) {
-              thePoint = someSurfacePoint;
+              center = someSurfacePoint;
               shortestDistance = distance;
               isUpdated = true;
             }
@@ -767,7 +883,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
       gc::Vector3 vertexToPoint =
           embeddedPoint - vpg.inputVertexPositions[closestVertex];
       // initialize the surface point as the closest vertex
-      // thePoint = gc::SurfacePoint(closestVertex);
+      // center = gc::SurfacePoint(closestVertex);
       // double shortestDistance = vertexToPoint.norm();
       double shortestDistance = 1e18;
       // loop over every faces around the vertex
@@ -822,7 +938,7 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
                                                  vpg.inputVertexPositions))
                                 .norm();
           if (distance < shortestDistance) {
-            thePoint = someSurfacePoint;
+            center = someSurfacePoint;
             shortestDistance = distance;
             isUpdated = true;
           }
@@ -832,34 +948,10 @@ void System::findThePoint(gcs::VertexPositionGeometry &vpg,
     }
     }
     // mark three vertex on the face
-    thePointTracker.fill(false);
-    thePointTracker[thePoint.face.halfedge().vertex()] = true;
-    thePointTracker[thePoint.face.halfedge().next().vertex()] = true;
-    thePointTracker[thePoint.face.halfedge().next().next().vertex()] = true;
-  } else {
-    switch (parameters.point.pt.rows()) {
-    case 1: {
-      // Assign surface point as the indexed vertex
-      thePoint =
-          gc::SurfacePoint(mesh->vertex((std::size_t)parameters.point.pt[0]));
-      isUpdated = true;
-      break;
-    }
-    case 2: {
-      // Find the cloest vertex to the point in the x-y plane
-      thePoint = gc::SurfacePoint(closestVertexToPt(
-          *mesh, vpg, parameters.point.pt, geodesicDistance, range));
-      isUpdated = true;
-      break;
-    }
-    case 3: {
-      thePoint = gc::SurfacePoint(closestVertexToPt(
-          *mesh, vpg, parameters.point.pt, geodesicDistance, range));
-      isUpdated = true;
-      break;
-    }
-    }
-    thePointTracker[thePoint.vertex] = true;
+    centerTracker.fill(false);
+    centerTracker[center.face.halfedge().vertex()] = true;
+    centerTracker[center.face.halfedge().next().vertex()] = true;
+    centerTracker[center.face.halfedge().next().next().vertex()] = true;
   }
 
   if (!isUpdated) {
