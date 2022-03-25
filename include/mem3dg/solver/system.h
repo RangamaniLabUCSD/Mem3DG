@@ -21,9 +21,14 @@
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
+#include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/surface/manifold_surface_mesh.h"
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include "geometrycentral/utilities/vector2.h"
+#include "geometrycentral/utilities/vector3.h"
 
 #include <Eigen/Core>
 #include <Eigen/SparseLU>
@@ -35,19 +40,19 @@
 #include <math.h>
 #include <vector>
 
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/manifold_surface_mesh.h"
-#include "geometrycentral/utilities/vector2.h"
-#include "geometrycentral/utilities/vector3.h"
-
 #include "mem3dg/constants.h"
 #include "mem3dg/macros.h"
 #include "mem3dg/mesh_io.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/type_utilities.h"
+
 #include "mem3dg/solver/forces.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/parameters.h"
-#include "mem3dg/type_utilities.h"
+#ifdef MEM3DG_WITH_NETCDF
+#include "mem3dg/solver/mutable_trajfile.h"
+#include "mem3dg/solver/trajfile.h"
+#endif
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -597,7 +602,7 @@ public:
    * @brief testing of random number generator pcg
    *
    */
-  void pcg_test();
+  void check_pcg();
 
   /**
    * @brief Initialize all constant values (on refVpg) needed for computation
@@ -830,7 +835,6 @@ public:
    * @brief Get regularization pressure component of the system
    */
   bool meshGrowth();
-
   bool growMesh();
 
   // ==========================================================

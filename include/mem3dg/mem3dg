@@ -26,6 +26,8 @@
 #include "solver/mesh_process.h"
 #include "solver/trajfile.h"
 #include "solver/mutable_trajfile.h"
+#include "solver/trajfile_constants.h"
+#include "solver/parameters.h"
 
 #include "solver/integrator/integrator.h"
 #include "solver/integrator/velocity_verlet.h"
