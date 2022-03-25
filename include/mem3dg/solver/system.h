@@ -16,19 +16,19 @@
 
 // #include <cassert>
 
+#include "geometrycentral/surface/halfedge_element_types.h"
+#include "geometrycentral/surface/manifold_surface_mesh.h"
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/heat_method_distance.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/manifold_surface_mesh.h"
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 
-#include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include "geometrycentral/utilities/vector2.h"
 #include "geometrycentral/utilities/vector3.h"
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include <Eigen/Core>
 #include <Eigen/SparseLU>
@@ -593,27 +593,10 @@ public:
   void checkConfiguration();
 
   /**
-   * @brief Check finiteness of forcing and energy
-   * @return whether the system is finite
-   */
-  bool checkFiniteness();
-
-  /**
-   * @brief testing of random number generator pcg
-   *
-   */
-  void check_pcg();
-
-  /**
    * @brief Initialize all constant values (on refVpg) needed for computation
    *
    */
   void initConstants();
-
-  /**
-   * @brief Mesh mutation
-   */
-  void mutateMesh(size_t nRepetition = 1);
 
   /**
    * @brief Update the vertex position and recompute cached values
@@ -621,8 +604,17 @@ public:
    * Careful: 1. when using eigenMap: memory address may change after update!!
    */
   void updateConfigurations();
-
   void updateGeodesics();
+
+  /**
+   * @brief test force computation by validating energy decrease
+   * @return
+   */
+  void testForceComputation(const double timeStep,
+                            const EigenVectorX3dr previousPosition,
+                            const EigenVectorX1d previousProteinDensity,
+                            const Energy previousEnergy);
+  void testForceComputation(const double timeStep);
 
   // ==========================================================
   // ================   Variational vectors  ==================
@@ -639,7 +631,7 @@ public:
   /**
    * @brief Compute vertex volume variation vector
    */
-  gcs::VertexData<gc::Vector3> computeVertexVolumeVariationVector();
+  gcs::VertexData<gc::Vector3> computeVertexVolumeVariationVectors();
 
   /**
    * @brief Compute halfedge volume variation vector
@@ -651,7 +643,7 @@ public:
   /**
    * @brief Compute vertex mean curvature vector using cotan
    */
-  gcs::VertexData<gc::Vector3> computeVertexMeanCurvatureVector();
+  gcs::VertexData<gc::Vector3> computeVertexMeanCurvatureVectors();
 
   /**
    * @brief Compute halfedge mean curvature vector using cotan
@@ -663,7 +655,7 @@ public:
   /**
    * @brief Compute vertex Gaussian curvature vector
    */
-  gcs::VertexData<gc::Vector3> computeVertexGaussianCurvatureVector();
+  gcs::VertexData<gc::Vector3> computeVertexGaussianCurvatureVectors();
 
   /**
    * @brief Compute halfedge Gaussian curvature vector
@@ -675,7 +667,7 @@ public:
   /**
    * @brief Compute vertex Schlafli vector
    */
-  gcs::VertexData<gc::Vector3> computeVertexSchlafliVector();
+  gcs::VertexData<gc::Vector3> computeVertexSchlafliVectors();
 
   /**
    * @brief Compute halfedge Schlafli vector
@@ -815,6 +807,11 @@ public:
   // =============        Regularization        ===============
   // ==========================================================
   /**
+   * @brief Mesh mutation
+   */
+  void mutateMesh(size_t nRepetition = 1);
+
+  /**
    * @brief Apply vertex shift by moving the vertices chosen for integration to
    * the Barycenter of the it neighbors
    */
@@ -887,6 +884,18 @@ public:
    * @brief infer the target surface area of the system
    */
   double inferTargetSurfaceArea();
+
+  /**
+   * @brief Check finiteness of forcing and energy
+   * @return whether the system is finite
+   */
+  bool checkFiniteness();
+
+  /**
+   * @brief testing of random number generator pcg
+   *
+   */
+  void check_pcg();
 };
 } // namespace solver
 } // namespace mem3dg

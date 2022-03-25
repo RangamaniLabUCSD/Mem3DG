@@ -210,18 +210,8 @@ public:
       double rho = 0.7, double c1 = 0.001);
 
   /**
-   * @brief Backtrack the line search failure by inspecting specific
-   * energy-force relation
-   * @return
-   */
-  void lineSearchErrorBacktrace(const double alpha,
-                                const EigenVectorX3dr initial_pos,
-                                const EigenVectorX1d init_proteinDensity,
-                                const Energy previousE, bool runAll = false);
-
-  /**
    * @brief get adaptive characteristic time step
-   * @return
+   * @return characteristic time step
    */
   double getAdaptiveCharacteristicTimeStep();
 };
