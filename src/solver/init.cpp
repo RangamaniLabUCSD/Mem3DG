@@ -190,7 +190,7 @@ void System::checkConfiguration() {
   }
   if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
     mem3dg_runtime_message(
-        "specifying x-y coordinate on closed surface may"
+        "specifying x-y coordinate on closed surface may "
         "lead to ambiguity! Please check by visualizing it first!");
   }
   if (parameters.selfAvoidance.mu != 0) {
@@ -233,9 +233,9 @@ void System::initializeConstants() {
 
   // Find "the" vertex
   if (parameters.point.isFloatVertex) {
-    findFloatCenter(*vpg, geodesicDistance, 1e18);
+    findFloatCenter(*vpg, geodesicDistance);
   } else {
-    findVertexCenter(*vpg, geodesicDistance, 1e18);
+    findVertexCenter(*vpg, geodesicDistance);
   }
 
   // Initialize const geodesic distance

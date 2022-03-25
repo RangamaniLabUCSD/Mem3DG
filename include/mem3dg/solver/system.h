@@ -900,10 +900,10 @@ public:
    */
   void findFloatCenter(gcs::VertexPositionGeometry &vpg,
                        gcs::VertexData<double> &geodesicDistance,
-                       double range = 1e10);
+                       double range = std::numeric_limits<double>::max());
   void findVertexCenter(gcs::VertexPositionGeometry &vpg,
                         gcs::VertexData<double> &geodesicDistance,
-                        double range = 1e10);
+                        double range = std::numeric_limits<double>::max());
   void updateGeodesicsDistance();
   void prescribeProteinDensity();
   void prescribeMasks();
