@@ -94,8 +94,6 @@ struct Energy {
 
 class DLL_PUBLIC System {
 protected:
-  /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistance;
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -143,6 +141,8 @@ public:
   /// deviatoric rigidity of the membrane
   gcs::VertexData<double> Kd;
 
+  /// Cached geodesic distance
+  gcs::VertexData<double> geodesicDistance;
   /// is Smooth
   bool isSmooth;
   /// if being mutated
@@ -902,9 +902,8 @@ public:
                        gcs::VertexData<double> &geodesicDistance,
                        double range = 1e10);
   void findVertexCenter(gcs::VertexPositionGeometry &vpg,
-                  gcs::VertexData<double> &geodesicDistance,
-                  double range = 1e10);
-  void updateGeodesics();
+                        gcs::VertexData<double> &geodesicDistance,
+                        double range = 1e10);
   void updateGeodesicsDistance();
   void prescribeProteinDensity();
   void prescribeMasks();
