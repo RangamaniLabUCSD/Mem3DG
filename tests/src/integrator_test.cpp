@@ -45,29 +45,29 @@ public:
   mem3dg::solver::Parameters p;
 
   const double dt = 0.5, T = 50, eps = 0, tSave = 10;
-  const size_t verbosity = 0;
   const std::string outputDir = "/tmp";
 };
 
 TEST_F(IntegratorTest, EulerIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p);
+  bool mute = true;
+  mem3dg::solver::System f(mesh, vpg, p, mute);
   mem3dg::solver::integrator::Euler integrator{f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
-  integrator.verbosity = verbosity;
   integrator.integrate();
 }
 
 TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p);
+  bool mute = true;
+  mem3dg::solver::System f(mesh, vpg, p, mute);
   mem3dg::solver::integrator::ConjugateGradient integrator{
       f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
-  integrator.verbosity = verbosity;
   integrator.integrate();
 }
 
 // TEST_F(IntegratorTest, BFGSIntegratorTest) {
 //   mem3dg::solver::System f(mesh, vpg, p, o);
+//
 //   mem3dg::solver::integrator::BFGS integrator{
 //       f,         dt,        T,     tSave, eps, outputDir, true,
 //       "traj.nc", 0, false, 1,     1,   0.01,      false};
@@ -75,10 +75,10 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
 // }
 
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p);
+  bool mute = true;
+  mem3dg::solver::System f(mesh, vpg, p, mute);
   mem3dg::solver::integrator::VelocityVerlet integrator{f,     dt,  1,
                                                         tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
-  integrator.verbosity = verbosity;
   integrator.integrate();
 }

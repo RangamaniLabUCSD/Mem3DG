@@ -65,7 +65,7 @@ bool Euler::integrate() {
           EXIT) {
         lastComputeAvoidingForce = system.time;
         system.parameters.selfAvoidance.mu = avoidStrength;
-        if (verbosity > 2) {
+        if (ifPrintToConsole) {
           std::cout << "computing avoiding force at "
                     << "t = " << system.time << std::endl;
           std::cout << "projected collision is " << system.projectedCollideTime
@@ -84,7 +84,7 @@ bool Euler::integrate() {
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
-      saveData();
+      saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
 
     // break loop if EXIT flag is on
@@ -115,14 +115,14 @@ bool Euler::integrate() {
   }
 
 #ifdef MEM3DG_WITH_NETCDF
-if (verbosity > 0) {
-  closeMutableNetcdfFile();
-  std::cout << "Closed NetCDF file" << std::endl;
-}
+  if (ifOutputTrajFile) {
+    closeMutableNetcdfFile();
+    std::cout << "Closed NetCDF file" << std::endl;
+  }
 #endif
 
   // return if optimization is sucessful
-  if (!SUCCESS) {
+  if (!SUCCESS && ifOutputTrajFile) {
     std::string filePath = outputDirectory;
     filePath.append("/");
     filePath.append(trajFileName);
@@ -156,13 +156,15 @@ void Euler::status() {
 
   // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
-    std::cout << "\nError norm smaller than tolerance." << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "\nError norm smaller than tolerance." << std::endl;
     EXIT = true;
   }
 
   // exit if reached time
   if (system.time > totalTime) {
-    std::cout << "\nReached time." << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "\nReached time." << std::endl;
     EXIT = true;
     SUCCESS = false;
   }
@@ -184,7 +186,7 @@ void Euler::march() {
                            system.vpg->vertexDualAreas;
 
   // adjust time step if adopt adaptive time step based on mesh size
-  if (isAdaptiveStep) {
+  if (ifAdaptiveStep) {
     characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 

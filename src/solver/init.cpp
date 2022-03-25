@@ -120,8 +120,6 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology(startingFrame));
-  std::cout << "Loaded input mesh from " << trajFile << " of frame "
-            << startingFrame << std::endl;
 
   /// Subdivide the mesh and geometry objects
   // if (nSub > 0) {
@@ -144,7 +142,6 @@ System::readMeshes(std::string inputMesh) {
 
   // Load input mesh and geometry
   std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  std::cout << "Loaded input mesh " << inputMesh << std::endl;
 
   // // Subdivide the mesh and geometry objects
   // if (nSub > 0) {
@@ -169,7 +166,6 @@ System::readMeshes(
   // Load input mesh and geometry
   std::tie(mesh, vpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(vertexMatrix, topologyMatrix);
-  std::cout << "Loaded input mesh " << std::endl;
 
   // Subdivide the mesh and geometry objects
   // if (nSub > 0) {
@@ -398,19 +394,23 @@ void System::initConstants() {
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
-  std::cout << "area_init = " << surfaceArea << std::endl;
+  if (!ifMute)
+    std::cout << "area_init = " << surfaceArea << std::endl;
 
   // Initialize the constant reference volume
-  std::cout << "Characteristic volume wrt to At = "
-            << (isOpenMesh
-                    ? parameters.osmotic.V_res
-                    : std::pow(parameters.tension.At / constants::PI / 4, 1.5) *
-                          (4 * constants::PI / 3))
-            << std::endl;
+  if (!ifMute)
+    std::cout << "Characteristic volume wrt to At = "
+              << (isOpenMesh
+                      ? parameters.osmotic.V_res
+                      : std::pow(parameters.tension.At / constants::PI / 4,
+                                 1.5) *
+                            (4 * constants::PI / 3))
+              << std::endl;
 
   /// initialize/update enclosed volume
   volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
-  std::cout << "vol_init = " << volume << std::endl;
+  if (!ifMute)
+    std::cout << "vol_init = " << volume << std::endl;
 }
 
 void System::updateGeodesics() {

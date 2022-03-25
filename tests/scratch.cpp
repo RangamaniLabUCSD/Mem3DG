@@ -96,15 +96,14 @@ int main() {
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
   mem3dg::solver::System system(inputMesh, p, mP, 0, true);
 
-  const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2, verbosity = 5;
+  const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2, 
   const std::string outputDir = "/tmp";
 
   mem3dg::solver::integrator::Euler integrator{system, dt,  T,
                                                tSave,  eps, outputDir};
   integrator.processMeshPeriod = 0.1;
   integrator.isBacktrack = true;
-  integrator.isAdaptiveStep = true;
-  integrator.verbosity = verbosity;
+  integrator.ifAdaptiveStep = true;
   integrator.integrate();
   return 0;
 }

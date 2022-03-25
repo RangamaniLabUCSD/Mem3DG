@@ -53,7 +53,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
   //                           bool, std::string, std::size_t>(),
   //                  py::arg("f"), py::arg("dt"), py::arg("total_time"),
   //                  py::arg("tSave"), py::arg("tolerance"),
-  //                  py::arg("outputDir"), py::arg("isAdaptiveStep") = true,
+  //                  py::arg("outputDir"), py::arg("ifAdaptiveStep") = true,
   //                  py::arg("trajFileName") = "traj.nc", py::arg("verbosity")
   //                  = 3, R"delim(
   //         Integrator constructor
@@ -107,8 +107,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                R"delim(
           name of the trajectory file 
       )delim");
-  velocityverlet.def_readwrite("isAdaptiveStep",
-                               &VelocityVerlet::isAdaptiveStep,
+  velocityverlet.def_readwrite("ifAdaptiveStep",
+                               &VelocityVerlet::ifAdaptiveStep,
                                R"delim(
           option to scale time step according to mesh size
       )delim");
@@ -120,10 +120,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                &VelocityVerlet::outputDirectory,
                                R"delim(
         collapse small triangles
-      )delim");
-  velocityverlet.def_readwrite("verbosity", &VelocityVerlet::verbosity,
-                               R"delim(
-           verbosity level of integrator
       )delim");
 
   velocityverlet.def("integrate", &VelocityVerlet::integrate,
@@ -139,6 +135,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
           stepping forward 
       )delim");
   velocityverlet.def("saveData", &VelocityVerlet::saveData,
+                     py::arg("ifTrajFile"), py::arg("ifMeshFile"),
+                     py::arg("ifPrint"),
                      R"delim(
           save data to output directory
       )delim");
@@ -205,7 +203,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
                       R"delim(
           name of the trajectory file 
       )delim");
-  euler.def_readwrite("isAdaptiveStep", &Euler::isAdaptiveStep,
+  euler.def_readwrite("ifAdaptiveStep", &Euler::ifAdaptiveStep,
                       R"delim(
           option to scale time step according to mesh size
       )delim");
@@ -213,11 +211,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
                       R"delim(
         collapse small triangles
       )delim");
-  euler.def_readwrite("verbosity", &Euler::verbosity,
-                      R"delim(
-           verbosity level of integrator
-      )delim");
-  euler.def_readwrite("isJustGeometryPly", &Euler::isJustGeometryPly,
+  euler.def_readwrite("ifJustGeometryPly", &Euler::ifJustGeometryPly,
                       R"delim(
            save .ply with just geometry
       )delim");
@@ -250,7 +244,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
             R"delim(
           stepping forward 
       )delim");
-  euler.def("saveData", &Euler::saveData,
+  euler.def("saveData", &Euler::saveData, py::arg("ifTrajFile"),
+            py::arg("ifMeshFile"), py::arg("ifPrint"),
             R"delim(
           save data to output directory
       )delim");
@@ -324,8 +319,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                   R"delim(
           name of the trajectory file 
       )delim");
-  conjugategradient.def_readwrite("isAdaptiveStep",
-                                  &ConjugateGradient::isAdaptiveStep,
+  conjugategradient.def_readwrite("ifAdaptiveStep",
+                                  &ConjugateGradient::ifAdaptiveStep,
                                   R"delim(
           option to scale time step according to mesh size
       )delim");
@@ -334,12 +329,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                   R"delim(
         collapse small triangles
       )delim");
-  conjugategradient.def_readwrite("verbosity", &ConjugateGradient::verbosity,
-                                  R"delim(
-           verbosity level of integrator
-      )delim");
-  conjugategradient.def_readwrite("isJustGeometryPly",
-                                  &ConjugateGradient::isJustGeometryPly,
+  conjugategradient.def_readwrite("ifJustGeometryPly",
+                                  &ConjugateGradient::ifJustGeometryPly,
                                   R"delim(
            save .ply with just geometry
       )delim");
@@ -389,6 +380,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
           stepping forward 
       )delim");
   conjugategradient.def("saveData", &ConjugateGradient::saveData,
+                        py::arg("ifTrajFile"), py::arg("ifMeshFile"),
+                        py::arg("ifPrint"),
                         R"delim(
           save data to output directory
       )delim");
@@ -779,22 +772,24 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by .ply file
    */
-  system.def(py::init<std::string>(), py::arg("inputMesh"),
-
+  system.def(py::init<std::string, bool>(), py::arg("inputMesh"),
+             py::arg("isMute") = false,
              R"delim(
         System constructor with .ply files
       )delim");
-  system.def(py::init<std::string, Parameters &, bool>(), py::arg("inputMesh"),
-             py::arg("p"), py::arg("isContinue") = false,
+  system.def(py::init<std::string, Parameters &, bool, bool>(),
+             py::arg("inputMesh"), py::arg("p"), py::arg("isContinue") = false,
+             py::arg("isMute") = false,
              R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(
-      py::init<std::string, Parameters &, MeshProcessor &, std::size_t, bool>(),
-      py::arg("inputMesh"), py::arg("p"), py::arg("mp"),
-      py::arg("nMutation") = 0, py::arg("isContinue") = false,
-      R"delim(
+  system.def(py::init<std::string, Parameters &, MeshProcessor &, std::size_t,
+                      bool, bool>(),
+             py::arg("inputMesh"), py::arg("p"), py::arg("mp"),
+             py::arg("nMutation") = 0, py::arg("isContinue") = false,
+             py::arg("isMute") = false,
+             R"delim(
         System constructor with .ply files. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
@@ -803,26 +798,28 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by matrices
    */
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &>(),
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, bool>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("isMute") = false,
              R"delim(
         System constructor with Matrices. 
         Implicitly refering to the inputMesh as the reference mesh.
       )delim");
 
-  system.def(
-      py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-               Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &>(),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
+  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
+                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
+                      bool>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
+             py::arg("isMute") = false,
 
-      R"delim(
+             R"delim(
         System constructor with Matrices 
       )delim");
   system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                       Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      MeshProcessor &, std::size_t>(),
+                      MeshProcessor &, std::size_t, bool>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
-             py::arg("mp"), py::arg("nMutation") = 0,
+             py::arg("mp"), py::arg("nMutation") = 0, py::arg("isMute") = false,
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -839,7 +836,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
   system.def(py::init<std::string, int, Parameters &, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
-             py::arg("isContinue") = false,
+             py::arg("isContinue") = false, py::arg("isMute") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
@@ -847,7 +844,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
                       std::size_t, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
              py::arg("mp"), py::arg("nMutation") = 0,
-             py::arg("isContinue") = false,
+             py::arg("isContinue") = false, py::arg("isMute") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");

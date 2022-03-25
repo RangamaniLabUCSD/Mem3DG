@@ -72,19 +72,23 @@ public:
   /// tolerance for termination
   double tolerance;
   /// option to scale time step according to mesh size
-  bool isAdaptiveStep = true;
+  bool ifAdaptiveStep = true;
   /// path to the output directory
   std::string outputDirectory;
-  
+
   // defaulted parameters (read/write)
   /// period of saving output data
   double updateGeodesicsPeriod;
   /// period of saving output data
   double processMeshPeriod;
-  /// verbosity level of integrator
-  size_t verbosity = 3;
-  /// just save geometry .ply file
-  bool isJustGeometryPly = false;
+  /// if just save geometry .ply file
+  bool ifJustGeometryPly = false;
+  /// if output netcdf traj file
+  bool ifOutputTrajFile = false;
+  /// if output .ply file
+  bool ifOutputMeshFile = false;
+  /// if print to console
+  bool ifPrintToConsole = false;
   /// name of the trajectory file
   std::string trajFileName = "traj.nc";
 
@@ -140,7 +144,7 @@ public:
   /**
    * @brief Save trajectory, mesh and print to console
    */
-  void saveData();
+  void saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint);
 
 #ifdef MEM3DG_WITH_NETCDF
   /**
