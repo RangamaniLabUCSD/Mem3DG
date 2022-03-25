@@ -588,6 +588,12 @@ public:
   void checkConfiguration();
 
   /**
+   * @brief Check finiteness of forcing and energy
+   * @return whether the system is finite
+   */
+  bool checkFiniteness();
+
+  /**
    * @brief testing of random number generator pcg
    *
    */

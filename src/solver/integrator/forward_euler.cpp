@@ -44,11 +44,11 @@ bool Euler::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
+  if (ifOutputTrajFile) {
     createMutableNetcdfFile(system.isContinuation);
-    // print to console
-    std::cout << "Initialized NetCDF file at "
-              << outputDirectory + "/" + trajFileName << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "Initialized NetCDF file at "
+                << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
@@ -117,7 +117,8 @@ bool Euler::integrate() {
 #ifdef MEM3DG_WITH_NETCDF
   if (ifOutputTrajFile) {
     closeMutableNetcdfFile();
-    std::cout << "Closed NetCDF file" << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "Closed NetCDF file" << std::endl;
   }
 #endif
 
@@ -174,8 +175,13 @@ void Euler::status() {
     system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 
-  // backtracking for error
-  finitenessErrorBacktrace();
+  // check finiteness
+  if (!std::isfinite(timeStep) || !system.checkFiniteness()) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(timeStep))
+      mem3dg_runtime_message("time step is not finite!");
+  }
 }
 
 void Euler::march() {

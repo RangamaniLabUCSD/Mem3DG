@@ -828,20 +828,19 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int>(), py::arg("trajFile"),
-             py::arg("startingFrame"),
-
+  system.def(py::init<std::string, int, bool>(), py::arg("trajFile"),
+             py::arg("startingFrame"), py::arg("isMute") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
-  system.def(py::init<std::string, int, Parameters &, bool>(),
+  system.def(py::init<std::string, int, Parameters &, bool, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
              py::arg("isContinue") = false, py::arg("isMute") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
   system.def(py::init<std::string, int, Parameters &, MeshProcessor &,
-                      std::size_t, bool>(),
+                      std::size_t, bool, bool>(),
              py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
              py::arg("mp"), py::arg("nMutation") = 0,
              py::arg("isContinue") = false, py::arg("isMute") = false,

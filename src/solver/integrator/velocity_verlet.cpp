@@ -45,9 +45,8 @@ bool VelocityVerlet::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
+  if (ifOutputTrajFile) {
     createMutableNetcdfFile(system.isContinuation);
-    // print to console
     if (ifPrintToConsole)
       std::cout << "Initialized NetCDF file at "
                 << outputDirectory + "/" + trajFileName << std::endl;
@@ -141,8 +140,13 @@ void VelocityVerlet::status() {
     system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 
-  // backtracking for error
-  finitenessErrorBacktrace();
+  // check finiteness
+  if (!std::isfinite(timeStep) || !system.checkFiniteness()) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(timeStep))
+      mem3dg_runtime_message("time step is not finite!");
+  }
 
   // check energy increase
   if (isCapEnergy) {
