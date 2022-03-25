@@ -1236,7 +1236,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
                           R"delim(
           get the option of whether simulate shape variation
       )delim");
-  variation.def_readwrite("radius", &Parameters::Variation::radius,
+  variation.def_readwrite("geodesicMask", &Parameters::Variation::geodesicMask,
                           R"delim(
           get domain of shape variation
       )delim");
@@ -1413,26 +1413,25 @@ PYBIND11_MODULE(_core, pymem3dg) {
           whether use floating vertex option
       )delim");
 
-  py::class_<Parameters::ProteinDistribution> proteindistribution(
-      pymem3dg, "ProteinDistribution",
-      R"delim(
+  py::class_<Parameters::Protein> protein(pymem3dg, "Protein",
+                                          R"delim(
         The protein distribution parameters
     )delim");
-  proteindistribution.def_readwrite(
-      "profile", &Parameters::ProteinDistribution::profile, R"delim(
+  protein.def_readwrite("profile", &Parameters::Protein::profile, R"delim(
           get the profile type: 'gaussian' or 'tanh'
       )delim");
-  proteindistribution.def_readwrite(
-      "protein0", &Parameters::ProteinDistribution::protein0, R"delim(
+  protein.def_readwrite(
+      "geodesicProteinDensityDistribution",
+      &Parameters::Protein::geodesicProteinDensityDistribution, R"delim(
           get (initial) protein density
       )delim");
-  proteindistribution.def_readwrite(
-      "tanhSharpness", &Parameters::ProteinDistribution::tanhSharpness,
-      R"delim(
+  protein.def_readwrite("tanhSharpness", &Parameters::Protein::tanhSharpness,
+                        R"delim(
           get protein density sharpness of tanh transition
       )delim");
-  proteindistribution.def_readwrite(
-      "lambdaPhi", &Parameters::ProteinDistribution::lambdaPhi, R"delim(
+  protein.def_readwrite("proteinInteriorPenalty",
+                        &Parameters::Protein::proteinInteriorPenalty,
+                        R"delim(
           get interior point parameter for protein density
       )delim");
 
@@ -1457,8 +1456,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   //       py::arg("pt") = Eigen::MatrixXd::Constant(1, 1, 1), py::arg("Kf") =
   //       0, py::arg("conc") = -1, py::arg("height") = 0, py::arg("radius") =
   //       0, py::arg("lambdaSG") = 0, py::arg("lambdaV") = 0,
-  //       py::arg("lambdaPhi") = 1e-7, py::arg("sharpness") = 20,
-  //       py::arg("relation") = "linear");
+  //       py::arg("proteinInteriorPenalty") = 1e-7, py::arg("sharpness") =
+  //       20, py::arg("relation") = "linear");
   parameters.def_readwrite("bending", &Parameters::bending,
                            R"delim(
           bending parameters
@@ -1503,10 +1502,9 @@ PYBIND11_MODULE(_core, pymem3dg) {
                            R"delim(
           point parameters
       )delim");
-  parameters.def_readwrite("proteinDistribution",
-                           &Parameters::proteinDistribution,
+  parameters.def_readwrite("protein", &Parameters::protein,
                            R"delim(
-          proteinDistribution parameters
+          protein parameters
       )delim");
   parameters.def_readwrite("variation", &Parameters::variation,
                            R"delim(

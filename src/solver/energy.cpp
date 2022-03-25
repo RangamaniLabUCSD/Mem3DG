@@ -122,7 +122,7 @@ void System::computeAggregationEnergy() {
 void System::computeProteinInteriorPenalty() {
   // interior method to constrain protein density to remain from 0 to 1
   energy.proteinInteriorPenalty =
-      -parameters.proteinDistribution.lambdaPhi *
+      -parameters.protein.proteinInteriorPenalty *
       ((proteinDensity.raw().array()).log().sum() +
        (1 - proteinDensity.raw().array()).log().sum());
 }
@@ -223,7 +223,7 @@ double System::computePotentialEnergy() {
     computeSelfAvoidanceEnergy();
   }
   if (parameters.variation.isProteinVariation &&
-      parameters.proteinDistribution.lambdaPhi != 0) {
+      parameters.protein.proteinInteriorPenalty != 0) {
     computeProteinInteriorPenalty();
   }
 

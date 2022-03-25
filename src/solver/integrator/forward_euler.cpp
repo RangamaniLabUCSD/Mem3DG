@@ -109,7 +109,8 @@ bool Euler::integrate() {
             3 * system.vpg->edgeLength(
                     system.center.nearestVertex().halfedge().edge()));
       system.updateGeodesicsDistance();
-      system.prescribeProteinDensity();
+      if (system.parameters.protein.ifPrescribe)
+        system.prescribeGeodesicProteinDensityDistribution();
       system.updateConfigurations();
     }
 

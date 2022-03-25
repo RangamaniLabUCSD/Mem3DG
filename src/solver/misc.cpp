@@ -48,52 +48,47 @@ void System::updateGeodesicsDistance() {
   geodesicDistance = heatSolver.computeDistance(center);
 }
 
-void System::prescribeProteinDensity() {
-  if (parameters.proteinDistribution.protein0.size() == 1) {
-    proteinDensity.raw().setConstant(
-        mesh->nVertices(), 1, parameters.proteinDistribution.protein0[0]);
-  } else if (parameters.proteinDistribution.protein0.rows() ==
-             proteinDensity.raw().rows()) {
-    proteinDensity.raw() = parameters.proteinDistribution.protein0;
-  } else if (parameters.proteinDistribution.protein0.size() == 4) {
-    std::array<double, 2> r_heter{parameters.proteinDistribution.protein0[0],
-                                  parameters.proteinDistribution.protein0[1]};
-    vpg->requireVertexTangentBasis();
-    if (parameters.proteinDistribution.profile == "gaussian") {
-      gaussianDistribution(
-          proteinDensity.raw(), geodesicDistance.raw(),
-          vpg->inputVertexPositions -
-              vpg->inputVertexPositions[center.nearestVertex()],
-          vpg->vertexTangentBasis[center.nearestVertex()], r_heter);
-    } else if (parameters.proteinDistribution.profile == "tanh") {
-      tanhDistribution(proteinDensity.raw(), geodesicDistance.raw(),
-                       vpg->inputVertexPositions -
-                           vpg->inputVertexPositions[center.nearestVertex()],
-                       vpg->vertexTangentBasis[center.nearestVertex()],
-                       parameters.proteinDistribution.tanhSharpness, r_heter);
-    }
-    vpg->unrequireVertexTangentBasis();
-    proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
-                            parameters.proteinDistribution.protein0[3];
-    proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
+void System::prescribeGeodesicProteinDensityDistribution() {
+  std::array<double, 2> r_heter{
+      parameters.protein.geodesicProteinDensityDistribution[0],
+      parameters.protein.geodesicProteinDensityDistribution[1]};
+  vpg->requireVertexTangentBasis();
+  if (parameters.protein.profile == "gaussian") {
+    gaussianDistribution(proteinDensity.raw(), geodesicDistance.raw(),
+                         vpg->inputVertexPositions -
+                             vpg->inputVertexPositions[center.nearestVertex()],
+                         vpg->vertexTangentBasis[center.nearestVertex()],
+                         r_heter);
+  } else if (parameters.protein.profile == "tanh") {
+    tanhDistribution(proteinDensity.raw(), geodesicDistance.raw(),
+                     vpg->inputVertexPositions -
+                         vpg->inputVertexPositions[center.nearestVertex()],
+                     vpg->vertexTangentBasis[center.nearestVertex()],
+                     parameters.protein.tanhSharpness, r_heter);
   }
+  vpg->unrequireVertexTangentBasis();
+  proteinDensity.raw() *=
+      parameters.protein.geodesicProteinDensityDistribution[2] -
+      parameters.protein.geodesicProteinDensityDistribution[3];
+  proteinDensity.raw().array() +=
+      parameters.protein.geodesicProteinDensityDistribution[3];
 }
 
-void System::prescribeMasks() {
+void System::prescribeGeodesicMasks() {
   // Initialize the constant mask based on distance from the point specified
-  if (parameters.variation.radius != -1) {
-    if (parameters.variation.radius > geodesicDistance.raw().maxCoeff() ||
-        parameters.variation.radius < geodesicDistance.raw().minCoeff()) {
+  if (parameters.variation.geodesicMask != -1) {
+    if (parameters.variation.geodesicMask > geodesicDistance.raw().maxCoeff() ||
+        parameters.variation.geodesicMask < geodesicDistance.raw().minCoeff()) {
       mem3dg_runtime_error("either all vertices or none is "
                            "initializeConstantsin integration disk, "
                            "set radius = -1 to disable!");
     }
     for (gcs::Vertex v : mesh->vertices()) {
-      forces.forceMask[v] = (geodesicDistance[v] < parameters.variation.radius)
+      forces.forceMask[v] = (geodesicDistance[v] < parameters.variation.geodesicMask)
                                 ? gc::Vector3{1, 1, 1}
                                 : gc::Vector3{0, 0, 0};
       forces.proteinMask[v] =
-          (geodesicDistance[v] < parameters.variation.radius) ? 1 : 0;
+          (geodesicDistance[v] < parameters.variation.geodesicMask) ? 1 : 0;
     }
   }
 };

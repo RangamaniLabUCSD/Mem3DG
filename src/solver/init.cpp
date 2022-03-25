@@ -40,13 +40,7 @@ void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
     frame = startingFrame;
     toMatrix(velocity) = fd.getVelocity(startingFrame);
     // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
-    if (parameters.proteinDistribution.protein0.rows() == 1 &&
-        parameters.proteinDistribution.protein0[0] == -1) {
-      proteinDensity.raw() = fd.getProteinDensity(startingFrame);
-    } else {
-      throw std::logic_error("proteinDensity.protein0 has to be disabled "
-                             "(=[-1]) for continuing simulations!");
-    }
+    proteinDensity.raw() = fd.getProteinDensity(startingFrame);
   }
 }
 #endif
@@ -69,19 +63,12 @@ void System::mapContinuationVariables(std::string plyFile) {
     time = std::stod(sliceString(plyFile, "t", "_"));
     energy.time = time;
     frame = std::stod(sliceString(plyFile, "f", "_"));
-    if (parameters.proteinDistribution.protein0.rows() == 1 &&
-        parameters.proteinDistribution.protein0[0] == -1) {
-      proteinDensity =
-          ptrRichData_local->getVertexProperty<double>("protein_density")
-              .reinterpretTo(*mesh);
-      // vel_protein =
-      //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
-      //         .reinterpretTo(*mesh);
-      ;
-    } else {
-      throw std::logic_error("proteinDensity.protein0 has to be disabled "
-                             "(=[-1]) for continuing simulations!");
-    }
+    proteinDensity =
+        ptrRichData_local->getVertexProperty<double>("protein_density")
+            .reinterpretTo(*mesh);
+    // vel_protein =
+    //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
+    //         .reinterpretTo(*mesh);
   }
 }
 
@@ -212,6 +199,24 @@ void System::checkConfiguration() {
       }
     }
   }
+
+  if ((proteinDensity - proteinDensity[0]).raw().norm() ==
+      0) { // homogeneous distribution
+    if (parameters.variation.isProteinVariation) {
+      if (proteinDensity[0] <= 0 || proteinDensity[0] >= 1)
+        mem3dg_runtime_error("{0<phi<1}");
+    } else {
+      if (proteinDensity[0] != 1 || parameters.bending.Kb != 0 ||
+          parameters.dirichlet.eta != 0 || parameters.adsorption.epsilon != 0 ||
+          parameters.aggregation.chi != 0)
+        mem3dg_runtime_error(
+            "For homogenous membrane simulation, good practice is to set "
+            "proteinDensity = 1, Kb = 0, eta  = 0, "
+            "epsilon = 0, chi = "
+            "0 to "
+            "avoid ambiguity & save computation!");
+    }
+  }
 }
 
 void System::initializeConstants() {
@@ -242,10 +247,10 @@ void System::initializeConstants() {
   updateGeodesicsDistance();
 
   // Initialize the constant mask based on distance from the point specified
-  prescribeMasks();
+  prescribeGeodesicMasks();
 
   // Initialize protein density
-  prescribeProteinDensity();
+  prescribeGeodesicProteinDensityDistribution();
 
   // Mask boundary elementF
   if (mesh->hasBoundary()) {

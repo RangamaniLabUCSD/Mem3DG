@@ -455,12 +455,11 @@ EigenVectorX3dr System::prescribeExternalForce() {
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     gc::Vector3 direction = -vpg->vertexPositions[v].normalize();
-    forces.externalForceVec[i] =
-        forces.maskForce(exp(-time / decayTime) * parameters.external.Kf *
-                             gaussianDistribution(geodesicDistance[v],
-                                                  standardDeviation) *
-                             vpg->vertexDualArea(v) * direction,
-                         i);
+    forces.externalForceVec[i] = forces.maskForce(
+        exp(-time / decayTime) * parameters.external.Kf *
+            gaussianDistribution(geodesicDistance[v], standardDeviation) *
+            vpg->vertexDualArea(v) * direction,
+        i);
   }
 #endif
   forces.externalForce = forces.ontoNormal(forces.externalForceVec);
@@ -560,9 +559,9 @@ void System::computeChemicalPotentials() {
     forces.diffusionPotential.raw() = forces.maskProtein(
         -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
 
-  if (parameters.proteinDistribution.lambdaPhi != 0)
+  if (parameters.protein.proteinInteriorPenalty != 0)
     forces.interiorPenaltyPotential.raw() =
-        forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
+        forces.maskProtein(parameters.protein.proteinInteriorPenalty *
                            (1 / proteinDensity.raw().array() -
                             1 / (1 - proteinDensity.raw().array())));
 }
