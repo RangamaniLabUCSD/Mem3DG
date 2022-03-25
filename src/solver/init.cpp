@@ -232,61 +232,20 @@ void System::initializeConstants() {
   // }
 
   // Find "the" vertex
-  findThePoint(*vpg, geodesicDistanceFromPtInd, 1e18);
+  if (parameters.point.isFloatVertex) {
+    findFloatCenter(*vpg, geodesicDistance, 1e18);
+  } else {
+    findVertexCenter(*vpg, geodesicDistance, 1e18);
+  }
 
   // Initialize const geodesic distance
-  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
+  updateGeodesicsDistance();
 
   // Initialize the constant mask based on distance from the point specified
-  if (parameters.variation.radius != -1) {
-    if (parameters.variation.radius >
-            geodesicDistanceFromPtInd.raw().maxCoeff() ||
-        parameters.variation.radius <
-            geodesicDistanceFromPtInd.raw().minCoeff()) {
-      mem3dg_runtime_error("either all vertices or none is "
-                           "initializeConstantsin integration disk, "
-                           "set radius = -1 to disable!");
-    }
-    for (gcs::Vertex v : mesh->vertices()) {
-      forces.forceMask[v] =
-          (geodesicDistanceFromPtInd[v] < parameters.variation.radius)
-              ? gc::Vector3{1, 1, 1}
-              : gc::Vector3{0, 0, 0};
-      forces.proteinMask[v] =
-          (geodesicDistanceFromPtInd[v] < parameters.variation.radius) ? 1 : 0;
-    }
-  }
+  prescribeMasks();
 
   // Initialize protein density
-  if (parameters.proteinDistribution.protein0.size() == 1) {
-    proteinDensity.raw().setConstant(
-        mesh->nVertices(), 1, parameters.proteinDistribution.protein0[0]);
-  } else if (parameters.proteinDistribution.protein0.rows() ==
-             proteinDensity.raw().rows()) {
-    proteinDensity.raw() = parameters.proteinDistribution.protein0;
-  } else if (parameters.proteinDistribution.protein0.size() == 4) {
-    std::array<double, 2> r_heter{parameters.proteinDistribution.protein0[0],
-                                  parameters.proteinDistribution.protein0[1]};
-    vpg->requireVertexTangentBasis();
-    if (parameters.proteinDistribution.profile == "gaussian") {
-      gaussianDistribution(
-          proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
-          vpg->inputVertexPositions -
-              vpg->inputVertexPositions[thePoint.nearestVertex()],
-          vpg->vertexTangentBasis[thePoint.nearestVertex()], r_heter);
-    } else if (parameters.proteinDistribution.profile == "tanh") {
-      tanhDistribution(proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
-                       vpg->inputVertexPositions -
-                           vpg->inputVertexPositions[thePoint.nearestVertex()],
-                       vpg->vertexTangentBasis[thePoint.nearestVertex()],
-                       parameters.proteinDistribution.tanhSharpness, r_heter);
-    }
-    vpg->unrequireVertexTangentBasis();
-    proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
-                            parameters.proteinDistribution.protein0[3];
-    proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
-  }
+  prescribeProteinDensity();
 
   // Mask boundary elementF
   if (mesh->hasBoundary()) {
@@ -315,49 +274,6 @@ void System::initializeConstants() {
   volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
   if (!ifMute)
     std::cout << "vol_init = " << volume << std::endl;
-}
-
-void System::updateGeodesics() {
-  // recompute floating "the vertex"
-  if (parameters.point.isFloatVertex) {
-    findThePoint(
-        *vpg, geodesicDistanceFromPtInd,
-        3 * vpg->edgeLength(thePoint.nearestVertex().halfedge().edge()));
-  }
-
-  // update geodesic distance
-  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
-
-  // initialize/update external force
-  if (parameters.external.Kf != 0) {
-    prescribeExternalForce();
-  }
-
-  // update protein density
-  if (parameters.proteinDistribution.protein0.rows() == 4 &&
-      !parameters.variation.isProteinVariation) {
-    std::array<double, 2> r_heter{parameters.proteinDistribution.protein0[0],
-                                  parameters.proteinDistribution.protein0[1]};
-    vpg->requireVertexTangentBasis();
-    if (parameters.proteinDistribution.profile == "gaussian") {
-      gaussianDistribution(
-          proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
-          vpg->inputVertexPositions -
-              vpg->inputVertexPositions[thePoint.nearestVertex()],
-          vpg->vertexTangentBasis[thePoint.nearestVertex()], r_heter);
-    } else if (parameters.proteinDistribution.profile == "tanh") {
-      tanhDistribution(proteinDensity.raw(), geodesicDistanceFromPtInd.raw(),
-                       vpg->inputVertexPositions -
-                           vpg->inputVertexPositions[thePoint.nearestVertex()],
-                       vpg->vertexTangentBasis[thePoint.nearestVertex()],
-                       parameters.proteinDistribution.tanhSharpness, r_heter);
-    }
-    vpg->unrequireVertexTangentBasis();
-    proteinDensity.raw() *= parameters.proteinDistribution.protein0[2] -
-                            parameters.proteinDistribution.protein0[3];
-    proteinDensity.raw().array() += parameters.proteinDistribution.protein0[3];
-  }
 }
 
 void System::updateConfigurations() {

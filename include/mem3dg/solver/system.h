@@ -95,7 +95,7 @@ struct Energy {
 class DLL_PUBLIC System {
 protected:
   /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistanceFromPtInd;
+  gcs::VertexData<double> geodesicDistance;
   /// Random number engine
   pcg32 rng;
   std::normal_distribution<double> normal_dist;
@@ -150,8 +150,8 @@ public:
   /// if has boundary
   bool isOpenMesh;
   /// "the vertex"
-  gcs::SurfacePoint thePoint;
-  gcs::VertexData<bool> thePointTracker;
+  gcs::SurfacePoint center;
+  gcs::VertexData<bool> centerTracker;
   /// projected time of collision
   double projectedCollideTime;
   /// is continuation
@@ -478,11 +478,11 @@ private:
     Kb = gcs::VertexData<double>(*mesh);
     Kd = gcs::VertexData<double>(*mesh);
 
-    geodesicDistanceFromPtInd = gcs::VertexData<double>(*mesh, 0);
+    geodesicDistance = gcs::VertexData<double>(*mesh, 0);
 
     isSmooth = true;
     mutationMarker = gc::VertexData<bool>(*mesh, false);
-    thePointTracker = gc::VertexData<bool>(*mesh, false);
+    centerTracker = gc::VertexData<bool>(*mesh, false);
     isContinuation = false;
 
     // GC computed properties
@@ -610,7 +610,6 @@ public:
    * Careful: 1. when using eigenMap: memory address may change after update!!
    */
   void updateConfigurations();
-  void updateGeodesics();
 
   /**
    * @brief test force computation by validating energy decrease
@@ -858,13 +857,6 @@ public:
                                const gcs::VertexData<double> &quantities);
 
   /**
-   * @brief Find "the" vertex
-   */
-  void findThePoint(gcs::VertexPositionGeometry &vpg,
-                    gcs::VertexData<double> &geodesicDistance,
-                    double range = 1e10);
-
-  /**
    * @brief global smoothing after mutation of the mesh
    * @param initStep init guess of time step
    * @param target target reduce of force norm
@@ -902,6 +894,20 @@ public:
    *
    */
   void check_pcg();
+
+  /**
+   * @brief Find "the" vertex
+   */
+  void findFloatCenter(gcs::VertexPositionGeometry &vpg,
+                       gcs::VertexData<double> &geodesicDistance,
+                       double range = 1e10);
+  void findVertexCenter(gcs::VertexPositionGeometry &vpg,
+                  gcs::VertexData<double> &geodesicDistance,
+                  double range = 1e10);
+  void updateGeodesics();
+  void updateGeodesicsDistance();
+  void prescribeProteinDensity();
+  void prescribeMasks();
 };
 } // namespace solver
 } // namespace mem3dg

@@ -408,14 +408,14 @@ bool System::meshGrowth() {
     gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
     gc::Vector3 vertex1Vel = velocity[vertex1];
     gc::Vector3 vertex2Vel = velocity[vertex2];
-    double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
-    double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+    double vertex1GeoDist = geodesicDistance[vertex1];
+    double vertex2GeoDist = geodesicDistance[vertex2];
     double vertex1Phi = proteinDensity[vertex1];
     double vertex2Phi = proteinDensity[vertex2];
     gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
     gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
-    bool vertex1PointTracker = thePointTracker[vertex1];
-    bool vertex2PointTracker = thePointTracker[vertex2];
+    bool vertex1PointTracker = centerTracker[vertex1];
+    bool vertex2PointTracker = centerTracker[vertex2];
 
     // don't keep processing static vertices
     if (gc::sum(vertex1ForceMask + vertex2ForceMask) < 0.5)
@@ -432,14 +432,14 @@ bool System::meshGrowth() {
       // momentum
       // averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
       // averageData(velocity, vertex1, vertex2, newVertex);
-      // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+      // averageData(geodesicDistance, vertex1, vertex2, newVertex);
       // averageData(proteinDensity, vertex1, vertex2, newVertex);
       vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
       velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-      geodesicDistanceFromPtInd[newVertex] =
+      geodesicDistance[newVertex] =
           0.5 * (vertex1GeoDist + vertex2GeoDist);
       proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-      thePointTracker[newVertex] = false;
+      centerTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
       // isOrigVertex[newVertex] = false;
@@ -465,13 +465,13 @@ bool System::meshGrowth() {
             : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
                                               : (vertex1Pos + vertex2Pos) / 2;
         // averageData(velocity, vertex1, vertex2, newVertex);
-        // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+        // averageData(geodesicDistance, vertex1, vertex2, newVertex);
         // averageData(proteinDensity, vertex1, vertex2, newVertex);
         velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-        geodesicDistanceFromPtInd[newVertex] =
+        geodesicDistance[newVertex] =
             0.5 * (vertex1GeoDist + vertex2GeoDist);
         proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-        thePointTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
+        centerTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
 
         // isOrigVertex[newVertex] = false;
         for (gcs::Edge e : newVertex.adjacentEdges()) {
@@ -510,14 +510,14 @@ bool System::growMesh() {
     gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
     gc::Vector3 vertex1Vel = velocity[vertex1];
     gc::Vector3 vertex2Vel = velocity[vertex2];
-    double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
-    double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+    double vertex1GeoDist = geodesicDistance[vertex1];
+    double vertex2GeoDist = geodesicDistance[vertex2];
     double vertex1Phi = proteinDensity[vertex1];
     double vertex2Phi = proteinDensity[vertex2];
     gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
     gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
-    bool vertex1PointTracker = thePointTracker[vertex1];
-    bool vertex2PointTracker = thePointTracker[vertex2];
+    bool vertex1PointTracker = centerTracker[vertex1];
+    bool vertex2PointTracker = centerTracker[vertex2];
 
     if (meshProcessor.meshMutator.ifSplit(e, *vpg) &&
         gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5) {
@@ -528,10 +528,10 @@ bool System::growMesh() {
 
       vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
       velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-      geodesicDistanceFromPtInd[newVertex] =
+      geodesicDistance[newVertex] =
           0.5 * (vertex1GeoDist + vertex2GeoDist);
       proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-      thePointTracker[newVertex] = false;
+      centerTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
       meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
@@ -551,14 +551,14 @@ bool System::growMesh() {
       gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
       gc::Vector3 vertex1Vel = velocity[vertex1];
       gc::Vector3 vertex2Vel = velocity[vertex2];
-      double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
-      double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+      double vertex1GeoDist = geodesicDistance[vertex1];
+      double vertex2GeoDist = geodesicDistance[vertex2];
       double vertex1Phi = proteinDensity[vertex1];
       double vertex2Phi = proteinDensity[vertex2];
       gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
       gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
-      bool vertex1PointTracker = thePointTracker[vertex1];
-      bool vertex2PointTracker = thePointTracker[vertex2];
+      bool vertex1PointTracker = centerTracker[vertex1];
+      bool vertex2PointTracker = centerTracker[vertex2];
 
       if (meshProcessor.meshMutator.ifCollapse(e, *vpg) &&
           gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5 &&
@@ -571,10 +571,10 @@ bool System::growMesh() {
               : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
                                                 : (vertex1Pos + vertex2Pos) / 2;
           velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-          geodesicDistanceFromPtInd[newVertex] =
+          geodesicDistance[newVertex] =
               0.5 * (vertex1GeoDist + vertex2GeoDist);
           proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-          thePointTracker[newVertex] =
+          centerTracker[newVertex] =
               vertex1PointTracker || vertex2PointTracker;
           meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
         }
@@ -738,11 +738,11 @@ void System::globalUpdateAfterMutation() {
   // Update the vertex when topology changes
   if (!parameters.point.isFloatVertex) {
     for (gcs::Vertex v : mesh->vertices()) {
-      if (thePointTracker[v]) {
-        thePoint = gcs::SurfacePoint(v);
+      if (centerTracker[v]) {
+        center = gcs::SurfacePoint(v);
       }
     }
-    if (thePointTracker.raw().cast<int>().sum() != 1) {
+    if (centerTracker.raw().cast<int>().sum() != 1) {
       mem3dg_runtime_error("globalUpdateAfterMutation: there is no "
                            "unique/existing \"the\" point!");
     }
