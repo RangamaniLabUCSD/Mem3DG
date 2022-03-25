@@ -95,45 +95,45 @@ def animate(trajNc, **kwargs):
                 system = dg.System(trajNc, currFrame, parameters, True)
                 system.computePhysicalForcing()
                 if (kwargs.get('mechanicalForce')):
-                    mechanicalForce = system.forces.getMechanicalForce()
+                    mechanicalForce = system.forces.getMechanicalForceVec()
                     mesh.add_vector_quantity(
                         "mechanicalForce", mechanicalForce)
                     mesh.add_scalar_quantity("<mechanicalForce,n>", dg_util.rowwiseDotProduct(
                         mechanicalForce, system.getVertexNormal()))
                 if (kwargs.get('bendingForce')):
-                    bendingForce = system.forces.getBendingForce()
+                    bendingForce = system.forces.getBendingForceVec()
                     mesh.add_vector_quantity("bendingForce", bendingForce)
                     mesh.add_scalar_quantity("<bendingForce,n>", dg_util.rowwiseDotProduct(
                         bendingForce, system.getVertexNormal()))
                 if (kwargs.get('externalForce')):
-                    externalForce = system.forces.getExternalForce()
+                    externalForce = system.forces.getExternalForceVec()
                     mesh.add_vector_quantity("externalForce", externalForce)
                     mesh.add_scalar_quantity("<externalForce,n>", dg_util.rowwiseDotProduct(
                         externalForce, system.getVertexNormal()))
                 if (kwargs.get('capillaryForce')):
-                    capillaryForce = system.forces.getCapillaryForce()
+                    capillaryForce = system.forces.getCapillaryForceVec()
                     mesh.add_vector_quantity("capillaryForce", capillaryForce)
                     mesh.add_scalar_quantity("<capillaryForce,n>", dg_util.rowwiseDotProduct(
                         capillaryForce, system.getVertexNormal()))
                 if (kwargs.get('lineCapillaryForce')):
-                    lineCapillaryForce = system.forces.getLineCapillaryForce()
+                    lineCapillaryForce = system.forces.getLineCapillaryForceVec()
                     mesh.add_vector_quantity(
                         "lineCapillaryForce", lineCapillaryForce)
                     mesh.add_scalar_quantity("<lineCapillaryForce,n>", dg_util.rowwiseDotProduct(
                         lineCapillaryForce, system.getVertexNormal()))
                 if (kwargs.get('osmoticForce')):
-                    osmoticForce = system.forces.getOsmoticForce()
+                    osmoticForce = system.forces.getOsmoticForceVec()
                     mesh.add_vector_quantity("osmoticForce", osmoticForce)
                     mesh.add_scalar_quantity("<osmoticForce,n>", dg_util.rowwiseDotProduct(
                         osmoticForce, system.getVertexNormal()))
                 if (kwargs.get('adsorptionForce')):
-                    adsorptionForce = system.forces.getAdsorptionForce()
+                    adsorptionForce = system.forces.getAdsorptionForceVec()
                     mesh.add_vector_quantity(
                         "adsorptionForce", adsorptionForce)
                     mesh.add_scalar_quantity("<adsorptionForce,n>", dg_util.rowwiseDotProduct(
                         adsorptionForce, system.getVertexNormal()))
                 if (kwargs.get('aggregationForce')):
-                    aggregationForce = system.forces.getAggregationForce()
+                    aggregationForce = system.forces.getAggregationForceVec()
                     mesh.add_vector_quantity(
                         "aggregationForce", aggregationForce)
                     mesh.add_scalar_quantity("<aggregationForce,n>", dg_util.rowwiseDotProduct(
@@ -163,10 +163,10 @@ def animate(trajNc, **kwargs):
                 system = dg.System(trajNc, currFrame)
 
             if (kwargs.get('meanCurvature')):
-                meanCurvature = system.getVertexMeanCurvature()
+                meanCurvature = system.getVertexMeanCurvatures()
                 mesh.add_scalar_quantity("meanCurvature", meanCurvature)
             if (kwargs.get('gaussianCurvature')):
-                gaussianCurvature = system.getVertexGaussianCurvature()
+                gaussianCurvature = system.getVertexGaussianCurvatures()
                 mesh.add_scalar_quantity(
                     "gaussianCurvature", gaussianCurvature)
 
