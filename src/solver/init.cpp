@@ -456,6 +456,119 @@ void System::updateGeodesics() {
   }
 }
 
+bool System::checkFiniteness() {
+  bool finite = true;
+  if (!std::isfinite(mechErrorNorm)) {
+    finite = false;
+    if (!std::isfinite(toMatrix(velocity).norm())) {
+      mem3dg_runtime_message("Velocity is not finite!");
+    }
+
+    if (!std::isfinite(toMatrix(forces.mechanicalForceVec).norm())) {
+      if (!std::isfinite(toMatrix(forces.capillaryForceVec).norm())) {
+        mem3dg_runtime_message("Capillary force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.adsorptionForceVec).norm())) {
+        mem3dg_runtime_message("Adsorption force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.aggregationForceVec).norm())) {
+        mem3dg_runtime_message("Aggregation force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.bendingForceVec).norm())) {
+        mem3dg_runtime_message("Bending force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.deviatoricForceVec).norm())) {
+        mem3dg_runtime_message("Deviatoric force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.osmoticForceVec).norm())) {
+        mem3dg_runtime_message("Osmotic force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.lineCapillaryForceVec).norm())) {
+        mem3dg_runtime_message("Line capillary force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.externalForceVec).norm())) {
+        mem3dg_runtime_message("External force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.selfAvoidanceForceVec).norm())) {
+        mem3dg_runtime_message("Self avoidance force is not finite!");
+      }
+    }
+  }
+
+  if (!std::isfinite(chemErrorNorm)) {
+    finite = false;
+
+    if (!std::isfinite(toMatrix(proteinVelocity).norm())) {
+      mem3dg_runtime_message("Protein velocity is not finite!");
+    }
+
+    if (!std::isfinite(toMatrix(forces.chemicalPotential).norm())) {
+      if (!std::isfinite(toMatrix(forces.bendingPotential).norm())) {
+        mem3dg_runtime_message("Bending Potential is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.deviatoricPotential).norm())) {
+        mem3dg_runtime_message("Deviatoric Potential is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.interiorPenaltyPotential).norm())) {
+        mem3dg_runtime_message(
+            "Protein interior penalty potential is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.diffusionPotential).norm())) {
+        mem3dg_runtime_message("Diffusion potential is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.adsorptionPotential).norm())) {
+        mem3dg_runtime_message("Adsorption potential is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.aggregationPotential).norm())) {
+        mem3dg_runtime_message("Aggregation potential is not finite!");
+      }
+    }
+  }
+
+  if (!std::isfinite(energy.totalEnergy)) {
+    finite = false;
+    if (!std::isfinite(energy.kineticEnergy)) {
+      mem3dg_runtime_message("Kinetic energy is not finite!");
+    }
+    if (!std::isfinite(energy.externalWork)) {
+      mem3dg_runtime_message("External work is not finite!");
+    }
+    if (!std::isfinite(energy.potentialEnergy)) {
+      if (!std::isfinite(energy.bendingEnergy)) {
+        mem3dg_runtime_message("Bending energy is not finite!");
+      }
+      if (!std::isfinite(energy.deviatoricEnergy)) {
+        mem3dg_runtime_message("Deviatoric energy is not finite!");
+      }
+      if (!std::isfinite(energy.surfaceEnergy)) {
+        mem3dg_runtime_message("Surface energy is not finite!");
+      }
+      if (!std::isfinite(energy.pressureEnergy)) {
+        mem3dg_runtime_message("Pressure energy is not finite!");
+      }
+      if (!std::isfinite(energy.adsorptionEnergy)) {
+        mem3dg_runtime_message("Adsorption energy is not finite!");
+      }
+      if (!std::isfinite(energy.aggregationEnergy)) {
+        mem3dg_runtime_message("Aggregation energy is not finite!");
+      }
+      if (!std::isfinite(energy.dirichletEnergy)) {
+        mem3dg_runtime_message("Line tension energy is not finite!");
+      }
+      if (!std::isfinite(energy.proteinInteriorPenalty)) {
+        mem3dg_runtime_message(
+            "Protein interior penalty energy is not finite!");
+      }
+      if (!std::isfinite(energy.selfAvoidancePenalty)) {
+        mem3dg_runtime_message(
+            "Membrane self-avoidance penalty energy is not finite!");
+      }
+    }
+  }
+
+  return finite;
+}
+
 void System::updateConfigurations() {
 
   // refresh cached quantities after regularization

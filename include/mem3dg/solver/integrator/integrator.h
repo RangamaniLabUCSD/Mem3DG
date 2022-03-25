@@ -210,13 +210,6 @@ public:
       double rho = 0.7, double c1 = 0.001);
 
   /**
-   * @brief Check finiteness of simulation states and backtrack for error in
-   * specific component
-   * @return
-   */
-  void finitenessErrorBacktrace();
-
-  /**
    * @brief Backtrack the line search failure by inspecting specific
    * energy-force relation
    * @return

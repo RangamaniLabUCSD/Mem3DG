@@ -180,8 +180,13 @@ void ConjugateGradient::status() {
   // compute the free energy of the system
   system.computeTotalEnergy();
 
-  // backtracing for error
-  finitenessErrorBacktrace();
+  // check finiteness
+  if (!std::isfinite(timeStep) || !system.checkFiniteness()) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(timeStep))
+      mem3dg_runtime_message("time step is not finite!");
+  }
 }
 
 void ConjugateGradient::march() {
