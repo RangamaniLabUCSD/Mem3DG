@@ -905,8 +905,8 @@ public:
                         gcs::VertexData<double> &geodesicDistance,
                         double range = std::numeric_limits<double>::max());
   void updateGeodesicsDistance();
-  void prescribeProteinDensity();
-  void prescribeMasks();
+  void prescribeGeodesicProteinDensityDistribution();
+  void prescribeGeodesicMasks();
 };
 } // namespace solver
 } // namespace mem3dg

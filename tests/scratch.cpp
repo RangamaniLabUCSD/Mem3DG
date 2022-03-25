@@ -39,17 +39,17 @@ int main() {
   p.point.pt << 0, 0;
   p.point.isFloatVertex = false;
 
-  p.proteinDistribution.profile = "none";
-  p.proteinDistribution.protein0.resize(1);
-  p.proteinDistribution.protein0 << -1;
-  p.proteinDistribution.lambdaPhi = 1e-7;
+  p.protein.profile = "none";
+  p.protein.geodesicProteinDensityDistribution.resize(1);
+  p.protein.geodesicProteinDensityDistribution << -1;
+  p.protein.proteinInteriorPenalty = 1e-7;
 
   p.boundary.shapeBoundaryCondition = "fixed";
   p.boundary.proteinBoundaryCondition = "pin";
 
   p.variation.isProteinVariation = true;
   p.variation.isShapeVariation = true;
-  p.variation.radius = -1;
+  p.variation.geodesicMask = -1;
 
   p.bending.Kb = 8.22e-5;
   p.bending.Kbc = 2 * 8.22e-5;

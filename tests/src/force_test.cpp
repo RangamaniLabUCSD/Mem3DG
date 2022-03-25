@@ -48,14 +48,14 @@ protected:
 
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;
-    p.variation.radius = -1;
+    p.variation.geodesicMask = -1;
     p.point.isFloatVertex = false;
     p.point.pt.resize(3, 1);
     p.point.pt << 0, 0, 1;
-    p.proteinDistribution.protein0.resize(4, 1);
-    p.proteinDistribution.profile = "tanh";
-    p.proteinDistribution.protein0 << 1, 1, 0.7, 0.2;
-    p.proteinDistribution.tanhSharpness = 3;
+    p.protein.geodesicProteinDensityDistribution.resize(4, 1);
+    p.protein.profile = "tanh";
+    p.protein.geodesicProteinDensityDistribution << 1, 1, 0.7, 0.2;
+    p.protein.tanhSharpness = 3;
 
     p.bending.Kd = 8.22e-5;
     p.bending.Kdc = 8.22e-5;
