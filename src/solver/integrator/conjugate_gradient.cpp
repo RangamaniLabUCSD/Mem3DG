@@ -46,11 +46,11 @@ bool ConjugateGradient::integrate() {
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
+  if (ifOutputTrajFile) {
     createMutableNetcdfFile(system.isContinuation);
-    // print to console
-    std::cout << "Initialized NetCDF file at "
-              << outputDirectory + "/" + trajFileName << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "Initialized NetCDF file at "
+                << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
@@ -64,7 +64,7 @@ bool ConjugateGradient::integrate() {
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
-      saveData();
+      saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
 
     // Process mesh every tProcessMesh period
@@ -96,14 +96,15 @@ bool ConjugateGradient::integrate() {
   }
 
 #ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
+  if (ifOutputTrajFile) {
     closeMutableNetcdfFile();
-    std::cout << "Closed NetCDF file" << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "Closed NetCDF file" << std::endl;
   }
 #endif
 
   // return if optimization is sucessful
-  if (!SUCCESS) {
+  if (!SUCCESS && ifOutputTrajFile) {
     std::string filePath = outputDirectory;
     filePath.append("/");
     filePath.append(trajFileName);
@@ -170,7 +171,8 @@ void ConjugateGradient::status() {
 
   // exit if reached time
   if (system.time > totalTime) {
-    std::cout << "\nReached time." << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "\nReached time." << std::endl;
     EXIT = true;
     SUCCESS = false;
   }
@@ -214,7 +216,7 @@ void ConjugateGradient::march() {
   }
 
   // adjust time step if adopt adaptive time step based on mesh size
-  if (isAdaptiveStep) {
+  if (ifAdaptiveStep) {
     characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
@@ -245,29 +247,35 @@ void ConjugateGradient::pressureConstraintThreshold(
     const double ctol, double increment) {
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     if (isAugmentedLagrangian) { // augmented Lagrangian method
-      if (dArea < ctol) {        // exit if fulfilled all constraints
-        std::cout << "\nError norm smaller than tolerance." << std::endl;
+      if (dArea < ctol) {
+        if (ifPrintToConsole) // exit if fulfilled all constraints
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n[lambdaSG] = [" << system.parameters.tension.lambdaSG
-                  << ", "
-                  << "]";
+        if (ifPrintToConsole)
+          std::cout << "\n[lambdaSG] = [" << system.parameters.tension.lambdaSG
+                    << ", "
+                    << "]";
         system.parameters.tension.lambdaSG +=
             system.parameters.tension.Ksg *
             (system.surfaceArea - system.parameters.tension.At) /
             system.parameters.tension.At;
-        std::cout << " -> [" << system.parameters.tension.lambdaSG << "]"
-                  << std::endl;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.lambdaSG << "]"
+                    << std::endl;
       }
     } else {              // incremental harmonic penalty method
       if (dArea < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nError norm smaller than tolerance." << std::endl;
+        if (ifPrintToConsole)
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
+        if (ifPrintToConsole)
+          std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
         system.parameters.tension.Ksg *= increment;
-        std::cout << " -> [" << system.parameters.tension.Ksg << "]"
-                  << std::endl;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                    << std::endl;
       }
     }
   }
@@ -279,12 +287,14 @@ void ConjugateGradient::reducedVolumeThreshold(
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     if (isAugmentedLagrangian) {            // augmented Lagrangian method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nError norm smaller than tolerance." << std::endl;
+        if (ifPrintToConsole)
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       } else { // iterate if not
-        std::cout << "\n.tension[lambdaSG, lambdaV] = ["
-                  << system.parameters.tension.lambdaSG << ", "
-                  << system.parameters.osmotic.lambdaV << "]";
+        if (ifPrintToConsole)
+          std::cout << "\n.tension[lambdaSG, lambdaV] = ["
+                    << system.parameters.tension.lambdaSG << ", "
+                    << system.parameters.osmotic.lambdaV << "]";
         system.parameters.tension.lambdaSG +=
             system.parameters.tension.Ksg *
             (system.surfaceArea - system.parameters.tension.At) /
@@ -293,27 +303,33 @@ void ConjugateGradient::reducedVolumeThreshold(
             system.parameters.osmotic.Kv *
             (system.volume - system.parameters.osmotic.Vt) /
             system.parameters.osmotic.Vt;
-        std::cout << " -> [" << system.parameters.tension.lambdaSG << ", "
-                  << system.parameters.osmotic.lambdaV << "]" << std::endl;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.lambdaSG << ", "
+                    << system.parameters.osmotic.lambdaV << "]" << std::endl;
       }
     } else { // incremental harmonic penalty method
       if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        std::cout << "\nError norm smaller than tolerance." << std::endl;
+        if (ifPrintToConsole)
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
         EXIT = true;
       }
 
       // iterate if not
       if (dArea > ctol) {
-        std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
+        if (ifPrintToConsole)
+          std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
         system.parameters.tension.Ksg *= 1.3;
-        std::cout << " -> [" << system.parameters.tension.Ksg << "]"
-                  << std::endl;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                    << std::endl;
       }
       if (dVolume > ctol) {
-        std::cout << "\n[Kv] = [" << system.parameters.osmotic.Kv << "]";
+        if (ifPrintToConsole)
+          std::cout << "\n[Kv] = [" << system.parameters.osmotic.Kv << "]";
         system.parameters.osmotic.Kv *= 1.3;
-        std::cout << " -> [" << system.parameters.osmotic.Kv << "]"
-                  << std::endl;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.osmotic.Kv << "]"
+                    << std::endl;
       }
     }
   }

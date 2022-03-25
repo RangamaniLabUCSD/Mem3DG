@@ -162,7 +162,7 @@ double Integrator::backtrack(
   }
 
   // report the backtracking if verbose
-  if (alpha != characteristicTimeStep && verbosity > 3) {
+  if (alpha != characteristicTimeStep && ifPrintToConsole) {
     std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
               << std::endl;
     // std::cout << "mech norm: " << system.mechErrorNorm << std::endl;
@@ -262,7 +262,7 @@ double Integrator::chemicalBacktrack(
   }
 
   // report the backtracking if verbose
-  if (alpha != characteristicTimeStep && verbosity > 3) {
+  if (alpha != characteristicTimeStep && ifPrintToConsole) {
     std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
               << std::endl;
   }
@@ -365,7 +365,7 @@ double Integrator::mechanicalBacktrack(
   }
 
   // report the backtracking if verbose
-  if (alpha != characteristicTimeStep && verbosity > 3) {
+  if (alpha != characteristicTimeStep && ifPrintToConsole) {
     std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
               << std::endl;
   }
@@ -999,30 +999,9 @@ void Integrator::finitenessErrorBacktrace() {
   }
 }
 
-void Integrator::saveData() {
-  // threshold of verbosity level to output ply file
-  int outputPly = 0;
-
-#ifdef MEM3DG_WITH_NETCDF
-  // save variable to netcdf traj file
-  if (verbosity > 0) {
-    // saveNetcdfData();
-    saveMutableNetcdfData();
-  }
-  outputPly = 3;
-#endif
-
-  // save variable to richData and save ply file
-  if (verbosity > outputPly) {
-    char buffer[50];
-    sprintf(buffer, isJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
-            (int)system.frame, (int)system.time);
-    system.saveRichData(outputDirectory + "/" + std::string(buffer),
-                        isJustGeometryPly);
-  }
-
+void Integrator::saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint) {
   // print in-progress information in the console
-  if (verbosity > 1) {
+  if (ifPrint) {
     std::cout << "\n"
               << "t: " << system.time << ", "
               << "n: " << system.frame << ", "
@@ -1063,21 +1042,25 @@ void Integrator::saveData() {
               << "\n"
               << "phi: [" << system.proteinDensity.raw().minCoeff() << ","
               << system.proteinDensity.raw().maxCoeff() << "]" << std::endl;
-    // << "COM: "
-    // << gc::EigenMap<double,
-    // 3>(f.vpg->inputVertexPositions).colwise().sum() /
-    //         f.vpg->inputVertexPositions.raw().rows()
-    // << "\n"
-  }
-  // break loop if EXIT flag is on
-  if (EXIT) {
-    if (verbosity > 0) {
+
+    if (EXIT)
       std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
                 << ", and data saved to " + outputDirectory << std::endl;
-      if (verbosity > 2) {
-        system.saveRichData(outputDirectory + "/out.ply");
-      }
-    }
+  }
+
+#ifdef MEM3DG_WITH_NETCDF
+  // save variable to netcdf traj file
+  if (ifTrajFile)
+    saveMutableNetcdfData();
+#endif
+
+  // save variable to richData and save ply file
+  if (ifMeshFile) {
+    char buffer[50];
+    sprintf(buffer, ifJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
+            (int)system.frame, (int)system.time);
+    system.saveRichData(outputDirectory + "/" + std::string(buffer),
+                        ifJustGeometryPly);
   }
 
   system.frame++;
