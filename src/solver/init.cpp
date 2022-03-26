@@ -113,6 +113,7 @@ void System::initialize(std::size_t nMutation) {
   if (!meshProcessor.isMeshMutate && nMutation != 0) {
     mem3dg_runtime_message("mesh mutator not activated!");
   } else {
+    updateConfigurations();
     mutateMesh(nMutation);
   }
   updateConfigurations();
@@ -183,39 +184,18 @@ void System::checkConfiguration() {
 }
 
 void System::initializeConstants() {
-  // InitialiinitializeConstantsber generator
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
-  // // Initialize V-E distribution matrix for line tension calculation
-  // if (P.dirichlet.eta != 0) {
-  //   D = localVpg->d0.transpose().cwiseAbs() / 2;
-  //   // for (int k = 0; k < D.outerSize(); ++k) {
-  //   //   for (Eigen::SparseMatrix<double>::InnerIterator it(D, k); it;
-  //   ++it)
-  //   {
-  //   //     it.valueRef() = 0.5;
-  //   //   }
-  //   // }
-  // }
-
-  // Find "the" vertex
   if (parameters.point.isFloatVertex) {
     findFloatCenter(*vpg, geodesicDistance);
   } else {
     findVertexCenter(*vpg, geodesicDistance);
   }
-
-  // Initialize const geodesic distance
   updateGeodesicsDistance();
-
-  // Initialize the constant mask based on distance from the point specified
   prescribeGeodesicMasks();
-
-  // Initialize protein density
   prescribeGeodesicProteinDensityDistribution();
 
-  // Mask boundary elementF
   if (mesh->hasBoundary()) {
     boundaryForceMask(*mesh, forces.forceMask,
                       parameters.boundary.shapeBoundaryCondition);
@@ -223,13 +203,11 @@ void System::initializeConstants() {
                         parameters.boundary.proteinBoundaryCondition);
   }
 
-  // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
-  if (!ifMute)
+  volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
+  if (!ifMute) {
     std::cout << "area_init = " << surfaceArea << std::endl;
-
-  // Initialize the constant reference volume
-  if (!ifMute)
+    std::cout << "vol_init = " << volume << std::endl;
     std::cout << "Characteristic volume wrt to At = "
               << (isOpenMesh
                       ? parameters.osmotic.V_res
@@ -237,11 +215,7 @@ void System::initializeConstants() {
                                  1.5) *
                             (4 * constants::PI / 3))
               << std::endl;
-
-  /// initialize/update enclosed volume
-  volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
-  if (!ifMute)
-    std::cout << "vol_init = " << volume << std::endl;
+  }
 }
 
 void System::updateConfigurations() {
