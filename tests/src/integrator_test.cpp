@@ -51,6 +51,7 @@ public:
 TEST_F(IntegratorTest, EulerIntegratorTest) {
   bool mute = true;
   mem3dg::solver::System f(mesh, vpg, p, 0, mute);
+  f.initialize();
   mem3dg::solver::integrator::Euler integrator{f,   dt,        T, tSave,
                                                eps, outputDir, 0};
   integrator.trajFileName = "traj.nc";
@@ -60,6 +61,7 @@ TEST_F(IntegratorTest, EulerIntegratorTest) {
 TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
   bool mute = true;
   mem3dg::solver::System f(mesh, vpg, p, 0, mute);
+  f.initialize();
   mem3dg::solver::integrator::ConjugateGradient integrator{
       f, dt, T, tSave, eps, outputDir, 0};
   integrator.trajFileName = "traj.nc";
@@ -78,6 +80,7 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
   bool mute = true;
   mem3dg::solver::System f(mesh, vpg, p, 0, mute);
+  f.initialize();
   mem3dg::solver::integrator::VelocityVerlet integrator{
       f, dt, 1, tSave, eps, outputDir, 0};
   integrator.trajFileName = "traj.nc";

@@ -112,6 +112,7 @@ TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
   bool mute = true;
   mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, 0, mute);
+  f.initialize();
   // First time calculation of force
   f.computePhysicalForcing();
   f.computeRegularizationForce();
@@ -142,6 +143,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   // initialize the system
   bool mute = true;
   mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, 0, mute);
+  f.initialize();
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.velocity);

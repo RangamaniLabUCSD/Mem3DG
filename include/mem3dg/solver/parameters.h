@@ -198,8 +198,8 @@ struct Parameters {
     double proteinInteriorPenalty = 1e-6;
 
     Protein() {
-      geodesicProteinDensityDistribution.resize(4);
-      geodesicProteinDensityDistribution << -1, -1, -1, -1;
+      geodesicProteinDensityDistribution.resize(1);
+      geodesicProteinDensityDistribution << -1;
     }
     /**
      * @brief check parameter conflicts

@@ -39,6 +39,7 @@
 #include <functional>
 #include <math.h>
 #include <vector>
+#include <iomanip>
 
 #include "mem3dg/constants.h"
 #include "mem3dg/macros.h"
@@ -321,7 +322,7 @@ private:
         ifMute(ifMute_) {
     energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
-    proteinDensity = gc::VertexData<double>(*mesh, 0);
+    proteinDensity = gc::VertexData<double>(*mesh, 1);
     proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
     velocity = gcs::VertexData<gc::Vector3>(*mesh, {0, 0, 0});
     proteinVelocity = gcs::VertexData<double>(*mesh, 0);
@@ -447,7 +448,7 @@ public:
    * @brief Initialize system
    *
    */
-  void initialize(std::size_t nMutation);
+  void initialize(std::size_t nMutation = 0);
 
   /**
    * @brief Initialize all constant values (on refVpg) needed for computation
