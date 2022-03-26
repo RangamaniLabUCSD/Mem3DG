@@ -169,304 +169,107 @@ public:
    * @param topologyMatrix,  topology matrix, F x 3
    * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
    */
-  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix,
+  System(EigenVectorX3ur &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
+         double time_, bool isMute = false)
+      : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
+               velocity_, time_, isMute){};
+
+  System(EigenVectorX3ur &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
+         Parameters &p, double time_, bool isMute = false)
+      : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
+               velocity_, p, time_, isMute){};
+
+  System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
+         EigenVectorX3dr &velocity_, Parameters &p, double time_,
          bool isMute = false)
-      : System(readMeshes(topologyMatrix, vertexMatrix), isMute) {
+      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, p, time_,
+               isMute){};
 
-    // Initialize reference values
-    initializeConstants();
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
-
-  /**
-   * @brief Construct a new System by reading topology and vertex matrices
-   *
-   * @param topologyMatrix,  topology matrix, F x 3
-   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
-   * @param p             Parameter of simulation
-   */
-  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         bool isMute = false)
-      : System(readMeshes(topologyMatrix, vertexMatrix), p, isMute) {
-    // Check incompatible configuration
-    checkConfiguration();
-
-    // Initialize reference values
-    initializeConstants();
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
-
-  /**
-   * @brief Construct a new System by reading topology and vertex matrices
-   *
-   * @param topologyMatrix,  topology matrix, F x 3
-   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
-   * @param p             Parameter of simulation
-   * @param mp         Setting for mesh processing
-   * @param nMutation     Number of mutation
-   */
-  System(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-         Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexMatrix, Parameters &p,
-         MeshProcessor &mp, std::size_t nMutation, bool isMute = false)
-      : System(readMeshes(topologyMatrix, vertexMatrix), p, mp, isMute) {
-    // Check incompatible configuration
-    checkConfiguration();
-
-    // Initialize reference values
-    initializeConstants();
-
-    // Process the mesh by regularization and mutation
-    mutateMesh(nMutation);
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
-
-  /**
-   * @brief Construct a new (geometry) System by reading mesh file path
-   *
-   * @param inputMesh     Input Mesh
-   */
-  System(std::string inputMesh, bool isMute)
-      : System(readMeshes(inputMesh), isMute) {
-    // Initialize reference values
-    initializeConstants();
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
-
-  /**
-   * @brief Construct a new System by reading mesh file path
-   *
-   * @param inputMesh     Input Mesh
-   * @param p             Parameter of simulation
-   * @param isContinue    Wether continue simulation
-   */
-  System(std::string inputMesh, Parameters &p, bool isContinue,
-         bool isMute = false)
-      : System(readMeshes(inputMesh), p, isMute) {
-
-    // Check incompatible configuration
-    checkConfiguration();
-
-    // Initialize reference values
-    initializeConstants();
-
-    // Map continuation variables
-    if (isContinue) {
-      isContinuation = true;
-      mapContinuationVariables(inputMesh);
-    }
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
-
-  /**
-   * @brief Construct a new System by reading mesh file path
-   *
-   * @param inputMesh     Input Mesh
-   * @param p             Parameter of simulation
-   * @param mp         Setting for mesh processing
-   * @param nMutation     Number of mutation
-   * @param isContinue    Wether continue simulation
-   */
-  System(std::string inputMesh, Parameters &p, MeshProcessor &mp,
-         std::size_t nMutation, bool isContinue, bool isMute = false)
-      : System(readMeshes(inputMesh), p, mp, isMute) {
-
-    // Check incompatible configuration
-    checkConfiguration();
-
-    // Initialize reference values
-    initializeConstants();
-
-    // Map continuation variables
-    if (isContinue) {
-      isContinuation = true;
-      mapContinuationVariables(inputMesh);
-    }
-
-    // Process the mesh by regularization and mutation
-    mutateMesh(nMutation);
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
+  System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
+         EigenVectorX3dr &velocity_, double time_, bool isMute = false)
+      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, time_,
+               isMute){};
 
 #ifdef MEM3DG_WITH_NETCDF
-  /**
-   * @brief Construct a new System object by reading netcdf trajectory file path
-   *
-   * @param trajFile      Netcdf trajectory file
-   * @param startingFrame Starting frame for the input mesh
-   */
-  System(std::string trajFile, int startingFrame, bool isMute = false)
-      : System(readTrajFile(trajFile, startingFrame), isMute) {
 
-    // Initialize reference values
-    initializeConstants();
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
-
-  /**
-   * @brief Construct a new System object by reading netcdf trajectory file path
-   *
-   * @param trajFile      Netcdf trajectory file
-   * @param startingFrame Starting frame for the input mesh
-   * @param p             Parameter of simulation
-   * @param isContinue    Wether continue simulation
-   */
   System(std::string trajFile, int startingFrame, Parameters &p,
-         bool isContinue, bool isMute = false)
-      : System(readTrajFile(trajFile, startingFrame), p, isMute) {
-
-    // Check incompatible configuration
-    checkConfiguration();
-
-    // Initialize reference values
-    initializeConstants();
-
-    // Map continuation variables
-    if (isContinue) {
-      isContinuation = true;
-      mapContinuationVariables(trajFile, startingFrame);
-    }
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
-
-  /**
-   * @brief Construct a new System object by reading netcdf trajectory file path
-   *
-   * @param trajFile      Netcdf trajectory file
-   * @param startingFrame Starting frame for the input mesh
-   * @param p             Parameter of simulation
-   * @param mp         Setting for mesh processing
-   * @param nMutation     Number of mutation
-   * @param isContinue    Wether continue simulation
-   */
-  System(std::string trajFile, int startingFrame, Parameters &p,
-         MeshProcessor &mp, std::size_t nMutation, bool isContinue,
          bool isMute = false)
-      : System(readTrajFile(trajFile, startingFrame), p, mp, isMute) {
+      : System(readTrajFile(trajFile, startingFrame), p, isMute){};
 
-    // Check incompatible configuration
-    checkConfiguration();
+  System(std::string trajFile, int startingFrame, bool isMute = false)
+      : System(readTrajFile(trajFile, startingFrame), isMute){};
 
-    // Initialize reference values
-    initializeConstants();
-
-    // Map continuation variables
-    if (isContinue) {
-      isContinuation = true;
-      mapContinuationVariables(trajFile, startingFrame);
-    }
-
-    // Process the mesh by regularization and mutation
-    mutateMesh(nMutation);
-
-    // compute nonconstant values during simulation
-    updateConfigurations();
-  };
 #endif
 
-private:
-  /**
-   * @brief Construct a new System object by reading tuple of unique_ptrs
-   *
-   * @param tuple        Mesh connectivity, Embedding and geometry
-   * information, Mesh rich data
-   * @param p             Parameter of simulation
-   * @param mp         Setting for mesh processing
-   */
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>>
-             meshVpgTuple,
-         Parameters &p, MeshProcessor &mp, bool isMute = false)
-      : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), p, mp, isMute){};
-
-  /**
-   * @brief Construct a new System object by reading tuple of unique_ptrs
-   *
-   * @param tuple        Mesh connectivity, Embedding and geometry
-   * information, Mesh rich data
-   * @param p             Parameter of simulation
-   */
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>>
-             meshVpgTuple,
+                    std::unique_ptr<gcs::VertexPositionGeometry>,
+                    EigenVectorX1d, EigenVectorX3dr, double>
+             initialConditionsTuple,
          Parameters &p, bool isMute = false)
-      : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), p, isMute){};
+      : System(std::move(std::get<0>(initialConditionsTuple)),
+               std::move(std::get<1>(initialConditionsTuple)),
+               std::get<2>(initialConditionsTuple),
+               std::get<3>(initialConditionsTuple), p,
+               std::get<4>(initialConditionsTuple), isMute){};
 
-  /**
-   * @brief Construct a new System object by reading tuple of unique_ptrs
-   *
-   * @param tuple        Mesh connectivity, Embedding and geometry
-   * information, Mesh rich data
-   */
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>,
+                    EigenVectorX1d, EigenVectorX3dr, double>
+             initialConditionsTuple,
+         bool isMute = false)
+      : System(std::move(std::get<0>(initialConditionsTuple)),
+               std::move(std::get<1>(initialConditionsTuple)),
+               std::get<2>(initialConditionsTuple),
+               std::get<3>(initialConditionsTuple),
+               std::get<4>(initialConditionsTuple), isMute){};
+
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
-         bool isMute = false)
+         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
+         Parameters &p, double time_, bool isMute = false)
       : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), isMute){};
+               std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
+               p, time_, isMute){};
 
-  /**
-   * @brief Construct a new System object by reading unique_ptrs to mesh and
-   * geometry objects
-   * @param ptrmesh_         Mesh connectivity
-   * @param ptrvpg_          Embedding and geometry information
-   * @param p             Parameter of simulation
-   * @param mp         Setting for mesh processing
-   */
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>>
+             meshVpgTuple,
+         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
+         double time_, bool isMute = false)
+      : System(std::move(std::get<0>(meshVpgTuple)),
+               std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
+               time_, isMute){};
+
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, Parameters &p,
-         MeshProcessor &mp, bool isMute = false)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), isMute) {
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
+         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
+         Parameters &p, double time_ = 0, bool isMute = false)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), proteinDensity_,
+               velocity_, time_, isMute) {
     parameters = p;
-    meshProcessor = mp;
+    checkConfiguration();
   }
 
-  /**
-   * @brief Construct a new System object by reading unique_ptrs to mesh and
-   * geometry objects
-   * @param ptrmesh_         Mesh connectivity
-   * @param ptrvpg_          Embedding and geometry information
-   * @param p             Parameter of simulation
-   */
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, Parameters &p,
-         bool isMute = false)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), isMute) {
-    parameters = p;
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
+         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
+         double time_ = 0, bool ifMute_ = false)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), ifMute_) {
+    time = time_;
+    energy.time = time_;
+    toMatrix(proteinDensity) = proteinDensity_;
+    toMatrix(velocity) = velocity_;
   }
 
-  /**
-   * @brief Construct a new System object by reading unique_ptrs to mesh and
-   * geometry objects
-   * @param ptrmesh_         Mesh connectivity
-   * @param ptrvpg_          Embedding and geometry information
-   */
+private:
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          bool ifMute_ = false)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)), forces(*mesh, *vpg),
         ifMute(ifMute_) {
-
-    time = 0;
     frame = 0;
     energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
@@ -545,8 +348,8 @@ public:
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faceVertexMatrix,
-             Eigen::Matrix<double, Eigen::Dynamic, 3> &vertexPositionMatrix);
+  readMatrices(EigenVectorX3ur &faceVertexMatrix,
+               EigenVectorX3dr &vertexPositionMatrix);
 
   /**
    * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
@@ -554,7 +357,7 @@ public:
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshes(std::string inputMesh);
+  readMeshFile(std::string inputMesh);
 
   /**
    * @brief Map the continuation variables
@@ -574,7 +377,8 @@ public:
    *
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
+             std::unique_ptr<gcs::VertexPositionGeometry>,
+             EigenVectorX1d, EigenVectorX3dr, double>
   readTrajFile(std::string trajFile, int startingFrame);
   /**
    * @brief Map the continuation variables
