@@ -82,8 +82,8 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
   double initialTime;
-  EigenVectorX3dr initialVelocity(*mesh);
-  EigenVectorX1d initialProteinDensity(*mesh);
+  EigenVectorX3dr initialVelocity;
+  EigenVectorX1d initialProteinDensity;
 
   MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
@@ -125,7 +125,7 @@ System::readMeshFile(std::string inputMesh) {
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMatrices(EigenVectorX3ur &faceVertexMatrix,
+System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
                      EigenVectorX3dr &vertexPositionMatrix) {
 
   // Declare pointers to mesh / geometry objects

@@ -39,8 +39,9 @@ protected:
   // initialize mesh and vpg
   // std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
   // std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
-  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> topologyMatrix;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>
+      topologyMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> vertexMatrix;
   Parameters p;
   double h = 0.1;
 
@@ -110,7 +111,7 @@ protected:
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
   bool mute = true;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, mute);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, 0, mute);
   // First time calculation of force
   f.computePhysicalForcing();
   f.computeRegularizationForce();
@@ -140,7 +141,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
   bool mute = true;
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, mute);
+  mem3dg::solver::System f(topologyMatrix, vertexMatrix, p, 0, mute);
 
   // initialize variables
   auto vel_e = gc::EigenMap<double, 3>(f.velocity);

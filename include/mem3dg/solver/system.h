@@ -162,38 +162,55 @@ public:
   // ==========================================================
   // =============        Constructors           ==============
   // ==========================================================
-  /**
-   * @brief Construct a new (geometry) System by reading topology and vertex
-   * matrices
-   *
-   * @param topologyMatrix,  topology matrix, F x 3
-   * @param vertexMatrix,    input Mesh coordinate matrix, V x 3
-   */
-  System(EigenVectorX3ur &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_, bool isMute = false)
-      : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
-               velocity_, time_, isMute){};
 
-  System(EigenVectorX3ur &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+  // =======================================
+  // =======       Matrices         ========
+  // =======================================
+  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_, bool isMute = false)
+         Parameters &p, double time_ = 0, bool isMute = false)
       : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
                velocity_, p, time_, isMute){};
 
+  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+         Parameters &p, double time_ = 0, bool isMute = false)
+      : System(readMatrices(topologyMatrix, vertexMatrix), p, time_, isMute){};
+
+  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
+         double time_ = 0, bool isMute = false)
+      : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
+               velocity_, time_, isMute){};
+
+  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+         double time_ = 0, bool isMute = false)
+      : System(readMatrices(topologyMatrix, vertexMatrix), time_, isMute){};
+
+  // =======================================
+  // =======       Mesh Files       ========
+  // =======================================
   System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
-         EigenVectorX3dr &velocity_, Parameters &p, double time_,
+         EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0,
          bool isMute = false)
       : System(readMeshFile(inputMesh), proteinDensity_, velocity_, p, time_,
                isMute){};
 
+  System(std::string inputMesh, Parameters &p, double time_ = 0,
+         bool isMute = false)
+      : System(readMeshFile(inputMesh), p, time_, isMute){};
+
   System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
-         EigenVectorX3dr &velocity_, double time_, bool isMute = false)
+         EigenVectorX3dr &velocity_, double time_ = 0, bool isMute = false)
       : System(readMeshFile(inputMesh), proteinDensity_, velocity_, time_,
                isMute){};
 
-#ifdef MEM3DG_WITH_NETCDF
+  System(std::string inputMesh, double time_ = 0, bool isMute = false)
+      : System(readMeshFile(inputMesh), time_, isMute){};
 
+  // =======================================
+  // =======       NetCDF Files     ========
+  // =======================================
+#ifdef MEM3DG_WITH_NETCDF
   System(std::string trajFile, int startingFrame, Parameters &p,
          bool isMute = false)
       : System(readTrajFile(trajFile, startingFrame), p, isMute){};
@@ -203,6 +220,9 @@ public:
 
 #endif
 
+  // =======================================
+  // =======       Tuple            ========
+  // =======================================
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>,
                     EigenVectorX1d, EigenVectorX3dr, double>
@@ -229,7 +249,7 @@ public:
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_, bool isMute = false)
+         Parameters &p, double time_ = 0, bool isMute = false)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
                p, time_, isMute){};
@@ -237,12 +257,30 @@ public:
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
+
+         Parameters &p, double time_ = 0, bool isMute = false)
+      : System(std::move(std::get<0>(meshVpgTuple)),
+               std::move(std::get<1>(meshVpgTuple)), p, time_, isMute){};
+
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>>
+             meshVpgTuple,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_, bool isMute = false)
+         double time_ = 0, bool isMute = false)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
                time_, isMute){};
 
+  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                    std::unique_ptr<gcs::VertexPositionGeometry>>
+             meshVpgTuple,
+         double time_ = 0, bool isMute = false)
+      : System(std::move(std::get<0>(meshVpgTuple)),
+               std::move(std::get<1>(meshVpgTuple)), time_, isMute){};
+
+  // =======================================
+  // =======    Geometry Central    ========
+  // =======================================
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
@@ -254,17 +292,34 @@ public:
   }
 
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, Parameters &p,
+         double time_ = 0, bool isMute = false)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_, isMute) {
+    parameters = p;
+    checkConfiguration();
+  }
+
+  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
          double time_ = 0, bool ifMute_ = false)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), ifMute_) {
-    time = time_;
-    energy.time = time_;
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_, ifMute_) {
     toMatrix(proteinDensity) = proteinDensity_;
     toMatrix(velocity) = velocity_;
   }
 
+  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, double time_ = 0,
+         bool ifMute_ = false)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), ifMute_) {
+    time = time_;
+    energy.time = time_;
+  }
+
 private:
+  // =======================================
+  // =======           Base         ========
+  // =======================================
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          bool ifMute_ = false)
@@ -348,7 +403,7 @@ public:
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMatrices(EigenVectorX3ur &faceVertexMatrix,
+  readMatrices(EigenVectorX3sr &faceVertexMatrix,
                EigenVectorX3dr &vertexPositionMatrix);
 
   /**
@@ -377,8 +432,8 @@ public:
    *
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
-             EigenVectorX1d, EigenVectorX3dr, double>
+             std::unique_ptr<gcs::VertexPositionGeometry>, EigenVectorX1d,
+             EigenVectorX3dr, double>
   readTrajFile(std::string trajFile, int startingFrame);
   /**
    * @brief Map the continuation variables
