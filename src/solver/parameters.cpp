@@ -121,7 +121,7 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
     ifPrescribe = false;
   } else {
     mem3dg_runtime_error("Length = 4, geodesic disk, [r1>0, r2>0, "
-                         "0<phi_in<1, 0<phi_out<1], to disable, [0]");
+                         "0<phi_in<1, 0<phi_out<1], to disable, put [-1]");
     ifPrescribe = false;
   }
 }
