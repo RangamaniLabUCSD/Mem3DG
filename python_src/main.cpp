@@ -325,16 +325,16 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                  R"delim(
           tolerance for termination
       )delim");
-  conjugategradient.def_readwrite(
-      "ifOutputTrajFile", &ConjugateGradient::ifOutputTrajFile, R"delim(
+  conjugategradient.def_readwrite("ifOutputTrajFile",
+                                  &ConjugateGradient::ifOutputTrajFile, R"delim(
           if output trajectory file
       )delim");
-  conjugategradient.def_readwrite(
-      "ifOutputMeshFile", &ConjugateGradient::ifOutputMeshFile, R"delim(
+  conjugategradient.def_readwrite("ifOutputMeshFile",
+                                  &ConjugateGradient::ifOutputMeshFile, R"delim(
           if output mesh file
       )delim");
-  conjugategradient.def_readwrite(
-      "ifPrintToConsole", &ConjugateGradient::ifPrintToConsole, R"delim(
+  conjugategradient.def_readwrite("ifPrintToConsole",
+                                  &ConjugateGradient::ifPrintToConsole, R"delim(
           if print to console
       )delim");
   conjugategradient.def_readwrite("updateGeodesicsPeriod",
@@ -807,54 +807,65 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by .ply file
    */
-  system.def(py::init<std::string, bool>(), py::arg("inputMesh"),
-             py::arg("isMute") = false,
-             R"delim(
-        System constructor with .ply files
-      )delim");
-  system.def(py::init<std::string, Parameters &, bool, bool>(),
-             py::arg("inputMesh"), py::arg("p"), py::arg("isContinue") = false,
+  system.def(py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &,
+                      Parameters &, double, bool>(),
+             py::arg("inputMesh"), py::arg("proteinDensity"),
+             py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
              py::arg("isMute") = false,
              R"delim(
         System constructor with .ply files. 
-        Implicitly refering to the inputMesh as the reference mesh.
       )delim");
-  system.def(py::init<std::string, Parameters &, MeshProcessor &, std::size_t,
-                      bool, bool>(),
-             py::arg("inputMesh"), py::arg("p"), py::arg("mp"),
-             py::arg("nMutation") = 0, py::arg("isContinue") = false,
+  system.def(py::init<std::string, Parameters &, double, bool>(),
+             py::arg("inputMesh"), py::arg("parameters"), py::arg("time") = 0,
              py::arg("isMute") = false,
              R"delim(
         System constructor with .ply files. 
-        Implicitly refering to the inputMesh as the reference mesh.
+      )delim");
+  system.def(py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &, double,
+                      bool>(),
+             py::arg("inputMesh"), py::arg("proteinDensity"),
+             py::arg("velocity"), py::arg("time") = 0,
+             py::arg("isMute") = false,
+             R"delim(
+        System constructor with .ply files. 
+      )delim");
+  system.def(py::init<std::string, double, bool>(), py::arg("inputMesh"),
+             py::arg("time") = 0, py::arg("isMute") = false,
+             R"delim(
+        System constructor with .ply files. 
       )delim");
 
   /**
    * @brief Constructors by matrices
    */
-  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, bool>(),
+  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
+                      EigenVectorX3dr &, Parameters &, double, bool>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("proteinDensity"), py::arg("velocity"),
+             py::arg("parameters"), py::arg("time") = 0,
              py::arg("isMute") = false,
-             R"delim(
-        System constructor with Matrices. 
-        Implicitly refering to the inputMesh as the reference mesh.
-      )delim");
-
-  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      bool>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
-             py::arg("isMute") = false,
-
              R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(py::init<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-                      Eigen::Matrix<double, Eigen::Dynamic, 3> &, Parameters &,
-                      MeshProcessor &, std::size_t, bool>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("p"),
-             py::arg("mp"), py::arg("nMutation") = 0, py::arg("isMute") = false,
+  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, Parameters &,
+                      double, bool>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("parameters"), py::arg("time") = 0,
+             py::arg("isMute") = false,
+             R"delim(
+        System constructor with Matrices 
+      )delim");
+  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
+                      EigenVectorX3dr &, double, bool>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("proteinDensity"), py::arg("velocity"),
+             py::arg("time") = 0, py::arg("isMute") = false,
+             R"delim(
+        System constructor with Matrices 
+      )delim");
+  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, double, bool>(),
+             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+             py::arg("time") = 0, py::arg("isMute") = false,
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -863,22 +874,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
+  system.def(py::init<std::string, int, Parameters &, bool>(),
+             py::arg("trajFile"), py::arg("startingFrame"),
+             py::arg("parameters"), py::arg("isMute") = false,
+             R"delim(
+        System constructor with NetCDF trajectory file
+      )delim");
   system.def(py::init<std::string, int, bool>(), py::arg("trajFile"),
              py::arg("startingFrame"), py::arg("isMute") = false,
-             R"delim(
-        System constructor with NetCDF trajectory file
-      )delim");
-  system.def(py::init<std::string, int, Parameters &, bool, bool>(),
-             py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
-             py::arg("isContinue") = false, py::arg("isMute") = false,
-             R"delim(
-        System constructor with NetCDF trajectory file
-      )delim");
-  system.def(py::init<std::string, int, Parameters &, MeshProcessor &,
-                      std::size_t, bool, bool>(),
-             py::arg("trajFile"), py::arg("startingFrame"), py::arg("p"),
-             py::arg("mp"), py::arg("nMutation") = 0,
-             py::arg("isContinue") = false, py::arg("isMute") = false,
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
@@ -1032,7 +1035,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
    */
   system.def(
       "setInputVertexPositions",
-      [](System &s, Eigen::Matrix<double, Eigen::Dynamic, 3> newGeo) {
+      [](System &s, EigenVectorX3dr newGeo) {
         gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
       },
       R"delim(

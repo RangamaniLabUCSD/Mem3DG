@@ -83,18 +83,17 @@ int main() {
   p.dpd.gamma = 0;
   p.external.Kf = 0;
 
-  mem3dg::solver::MeshProcessor mP;
-  mP.meshMutator.isShiftVertex = true;
-  mP.meshMutator.flipNonDelaunay = true;
-  // mP.meshMutator.splitLarge = true;
-  mP.meshMutator.splitFat = true;
-  mP.meshMutator.splitSkinnyDelaunay = true;
-  mP.meshMutator.splitCurved = true;
-  mP.meshMutator.curvTol = 0.003;
-  mP.meshMutator.collapseSkinny = true;
-
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
-  mem3dg::solver::System system(inputMesh, p, mP, 0, true);
+  mem3dg::solver::System system(inputMesh, p, 0, true);
+
+  system.meshProcessor.meshMutator.isShiftVertex = true;
+  system.meshProcessor.meshMutator.flipNonDelaunay = true;
+  // system.meshProcessor.meshMutator.splitLarge = true;
+  system.meshProcessor.meshMutator.splitFat = true;
+  system.meshProcessor.meshMutator.splitSkinnyDelaunay = true;
+  system.meshProcessor.meshMutator.splitCurved = true;
+  system.meshProcessor.meshMutator.curvTol = 0.003;
+  system.meshProcessor.meshMutator.collapseSkinny = true;
 
   const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2;
   const std::string outputDir = "/tmp";

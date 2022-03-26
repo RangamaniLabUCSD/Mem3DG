@@ -39,8 +39,8 @@ public:
   void SetUp() override {}
   void TearDown() override {}
 
-  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> mesh;
-  Eigen::Matrix<double, Eigen::Dynamic, 3> vpg;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> mesh;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> vpg;
 
   mem3dg::solver::Parameters p;
 
@@ -50,7 +50,7 @@ public:
 
 TEST_F(IntegratorTest, EulerIntegratorTest) {
   bool mute = true;
-  mem3dg::solver::System f(mesh, vpg, p, mute);
+  mem3dg::solver::System f(mesh, vpg, p, 0, mute);
   mem3dg::solver::integrator::Euler integrator{f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
   integrator.integrate();
@@ -58,7 +58,7 @@ TEST_F(IntegratorTest, EulerIntegratorTest) {
 
 TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
   bool mute = true;
-  mem3dg::solver::System f(mesh, vpg, p, mute);
+  mem3dg::solver::System f(mesh, vpg, p, 0, mute);
   mem3dg::solver::integrator::ConjugateGradient integrator{
       f, dt, T, tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
@@ -76,7 +76,7 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
 
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
   bool mute = true;
-  mem3dg::solver::System f(mesh, vpg, p, mute);
+  mem3dg::solver::System f(mesh, vpg, p, 0, mute);
   mem3dg::solver::integrator::VelocityVerlet integrator{f,     dt,  1,
                                                         tSave, eps, outputDir};
   integrator.trajFileName = "traj.nc";
