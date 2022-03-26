@@ -147,6 +147,7 @@ System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
 }
 
 void System::initialize(std::size_t nMutation) {
+  checkConfiguration();
   initializeConstants();
   meshProcessor.summarizeStatus();
   if (!meshProcessor.isMeshMutate && nMutation != 0) {
@@ -205,8 +206,8 @@ void System::checkConfiguration() {
   if ((proteinDensity - proteinDensity[0]).raw().norm() ==
       0) { // homogeneous distribution
     if (parameters.variation.isProteinVariation) {
-      if (proteinDensity[0] <= 0 || proteinDensity[0] >= 1)
-        mem3dg_runtime_error("{0<phi<1}");
+      if (proteinDensity[0] < 0 || proteinDensity[0] > 1)
+        mem3dg_runtime_error("{0<=phi<=1}");
     } else {
       if (proteinDensity[0] != 1 || parameters.bending.Kb != 0 ||
           parameters.dirichlet.eta != 0 || parameters.adsorption.epsilon != 0 ||

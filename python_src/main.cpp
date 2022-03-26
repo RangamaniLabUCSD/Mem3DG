@@ -325,16 +325,16 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                  R"delim(
           tolerance for termination
       )delim");
-  conjugategradient.def_readwrite("ifOutputTrajFile",
-                                  &ConjugateGradient::ifOutputTrajFile, R"delim(
+  conjugategradient.def_readwrite(
+      "ifOutputTrajFile", &ConjugateGradient::ifOutputTrajFile, R"delim(
           if output trajectory file
       )delim");
-  conjugategradient.def_readwrite("ifOutputMeshFile",
-                                  &ConjugateGradient::ifOutputMeshFile, R"delim(
+  conjugategradient.def_readwrite(
+      "ifOutputMeshFile", &ConjugateGradient::ifOutputMeshFile, R"delim(
           if output mesh file
       )delim");
-  conjugategradient.def_readwrite("ifPrintToConsole",
-                                  &ConjugateGradient::ifPrintToConsole, R"delim(
+  conjugategradient.def_readwrite(
+      "ifPrintToConsole", &ConjugateGradient::ifPrintToConsole, R"delim(
           if print to console
       )delim");
   conjugategradient.def_readwrite("updateGeodesicsPeriod",
@@ -1143,6 +1143,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
   //             Args:
   //                   force (:py:class:`list`): mesh vertex force
   //         )delim");
+
+  /**
+   * @brief Method: initialize System
+   */
+  system.def("initialize", &System::initialize, py::arg("nMutation") = 0,
+             R"delim(
+          initialize the system
+      )delim");
 
   /**
    * @brief Method: updateGeodesics

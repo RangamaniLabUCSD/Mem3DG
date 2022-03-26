@@ -288,7 +288,6 @@ public:
       : System(std::move(ptrmesh_), std::move(ptrvpg_), proteinDensity_,
                velocity_, time_, isMute) {
     parameters = p;
-    checkConfiguration();
   }
 
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
@@ -296,7 +295,6 @@ public:
          double time_ = 0, bool isMute = false)
       : System(std::move(ptrmesh_), std::move(ptrvpg_), time_, isMute) {
     parameters = p;
-    checkConfiguration();
   }
 
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
