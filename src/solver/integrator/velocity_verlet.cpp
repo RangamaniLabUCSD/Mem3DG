@@ -46,7 +46,7 @@ bool VelocityVerlet::integrate() {
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (ifOutputTrajFile) {
-    createMutableNetcdfFile(system.isContinuation);
+    createMutableNetcdfFile(isContinuation);
     if (ifPrintToConsole)
       std::cout << "Initialized NetCDF file at "
                 << outputDirectory + "/" + trajFileName << std::endl;

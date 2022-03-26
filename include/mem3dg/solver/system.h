@@ -154,11 +154,7 @@ public:
   gcs::VertexData<bool> centerTracker;
   /// projected time of collision
   double projectedCollideTime;
-  /// is continuation
-  bool isContinuation;
-  /// starting frame index for netcdf
-  std::size_t frame;
-
+  
   // ==========================================================
   // =============        Constructors           ==============
   // ==========================================================
@@ -323,7 +319,6 @@ private:
          bool ifMute_ = false)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)), forces(*mesh, *vpg),
         ifMute(ifMute_) {
-    frame = 0;
     energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     proteinDensity = gc::VertexData<double>(*mesh, 0);
@@ -339,7 +334,6 @@ private:
     isSmooth = true;
     mutationMarker = gc::VertexData<bool>(*mesh, false);
     centerTracker = gc::VertexData<bool>(*mesh, false);
-    isContinuation = false;
 
     // GC computed properties
     vpg->requireFaceNormals();

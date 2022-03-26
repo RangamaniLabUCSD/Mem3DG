@@ -55,6 +55,10 @@ public:
   bool EXIT = false;
   /// time step
   double timeStep;
+  /// frame index
+  size_t frame = 0;
+  /// isContinuation
+  bool isContinuation;
   /// System object to be integrated
   System &system;
   /// TrajFile
@@ -106,11 +110,14 @@ public:
    */
   Integrator(System &system_, double characteristicTimeStep_, double totalTime_,
              double savePeriod_, double tolerance_,
-             std::string outputDirectory_)
+             std::string outputDirectory_, std::size_t frame_ = 0)
       : system(system_), characteristicTimeStep(characteristicTimeStep_),
         totalTime(totalTime_), savePeriod(savePeriod_), tolerance(tolerance_),
         updateGeodesicsPeriod(totalTime_), processMeshPeriod(totalTime_),
-        outputDirectory(outputDirectory_), timeStep(characteristicTimeStep_) {
+        outputDirectory(outputDirectory_), timeStep(characteristicTimeStep_),
+        frame(frame_) {
+
+    isContinuation = (frame != 0);
 
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio = characteristicTimeStep /
