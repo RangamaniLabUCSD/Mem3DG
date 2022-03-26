@@ -52,9 +52,9 @@ public:
 
   ConjugateGradient(System &system_, double characteristicTimeStep_,
                     double totalTime_, double savePeriod_, double tolerance_,
-                    std::string outputDirectory_)
+                    std::string outputDirectory_, std::size_t frame_)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
-                   tolerance_, outputDirectory_) {
+                   tolerance_, outputDirectory_, frame_) {
 
     // print to console
     std::cout << "Running Conjugate Gradient propagator ..." << std::endl;

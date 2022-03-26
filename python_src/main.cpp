@@ -84,12 +84,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
         Velocity Verlet integration
     )delim");
 
-  velocityverlet.def(
-      py::init<System &, double, double, double, double, std::string>(),
-      py::arg("system"), py::arg("characteristicTimeStep"),
-      py::arg("totalTime"), py::arg("savePeriod"), py::arg("tolerance"),
-      py::arg("outputDirectory"),
-      R"delim(
+  velocityverlet.def(py::init<System &, double, double, double, double,
+                              std::string, std::size_t>(),
+                     py::arg("system"), py::arg("characteristicTimeStep"),
+                     py::arg("totalTime"), py::arg("savePeriod"),
+                     py::arg("tolerance"), py::arg("outputDirectory"),
+                     py::arg("frame") = 0,
+                     R"delim(
         Velocity Verlet integrator constructor
       )delim");
 
@@ -164,10 +165,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
         forward euler (gradient descent) integration
     )delim");
 
-  euler.def(py::init<System &, double, double, double, double, std::string>(),
+  euler.def(py::init<System &, double, double, double, double, std::string,
+                     std::size_t>(),
             py::arg("system"), py::arg("characteristicTimeStep"),
             py::arg("totalTime"), py::arg("savePeriod"), py::arg("tolerance"),
-            py::arg("outputDirectory"),
+            py::arg("outputDirectory"), py::arg("frame") = 0,
             R"delim(
         Euler integrator (steepest descent) constructor
       )delim");
@@ -296,12 +298,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
         conjugate Gradient propagator
     )delim");
 
-  conjugategradient.def(
-      py::init<System &, double, double, double, double, std::string>(),
-      py::arg("system"), py::arg("characteristicTimeStep"),
-      py::arg("totalTime"), py::arg("savePeriod"), py::arg("tolerance"),
-      py::arg("outputDirectory"),
-      R"delim(
+  conjugategradient.def(py::init<System &, double, double, double, double,
+                                 std::string, std::size_t>(),
+                        py::arg("system"), py::arg("characteristicTimeStep"),
+                        py::arg("totalTime"), py::arg("savePeriod"),
+                        py::arg("tolerance"), py::arg("outputDirectory"),
+                        py::arg("frame") = 0,
+                        R"delim(
         Conjugate Gradient optimizer constructor
       )delim");
 

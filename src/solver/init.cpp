@@ -19,31 +19,6 @@ namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
 namespace solver {
-#ifdef MEM3DG_WITH_NETCDF
-void System::mapContinuationVariables(std::string trajFile, int startingFrame) {
-
-  // Open netcdf file
-  // TrajFile fd = TrajFile::openReadOnly(trajFile);
-  // fd.getNcFrame(startingFrame);
-  MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
-  fd.getNcFrame(startingFrame);
-
-  // Check consistent topology for continuation
-  if (!(mesh->nFaces() == fd.getTopology(startingFrame).rows() &&
-        mesh->nVertices() == fd.getCoords(startingFrame).rows())) {
-    throw std::logic_error(
-        "Topology for continuation parameters mapping is not consistent!");
-  } else {
-    // Map continuation variables
-    time = fd.getTime(startingFrame);
-    energy.time = time;
-    frame = startingFrame;
-    toMatrix(velocity) = fd.getVelocity(startingFrame);
-    // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
-    proteinDensity.raw() = fd.getProteinDensity(startingFrame);
-  }
-}
-#endif
 
 void System::mapContinuationVariables(std::string plyFile) {
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh_local;
@@ -62,7 +37,7 @@ void System::mapContinuationVariables(std::string plyFile) {
     // Map continuation variables
     time = std::stod(sliceString(plyFile, "t", "_"));
     energy.time = time;
-    frame = std::stod(sliceString(plyFile, "f", "_"));
+    // frame = std::stod(sliceString(plyFile, "f", "_"));
     proteinDensity =
         ptrRichData_local->getVertexProperty<double>("protein_density")
             .reinterpretTo(*mesh);
@@ -92,7 +67,6 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
 
   // Map continuation variables
   initialTime = fd.getTime(startingFrame);
-  frame = startingFrame;
   initialVelocity = fd.getVelocity(startingFrame);
   initialProteinDensity = fd.getProteinDensity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
@@ -113,13 +87,6 @@ System::readMeshFile(std::string inputMesh) {
   // Load input mesh and geometry
   std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
 
-  // // Subdivide the mesh and geometry objects
-  // if (nSub > 0) {
-  //   // mem3dg::subdivide(mesh, vpg, nSub);
-  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
-  //   std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
-  // }
-
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
@@ -135,13 +102,6 @@ System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
   // Load input mesh and geometry
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       vertexPositionMatrix, faceVertexMatrix);
-
-  // Subdivide the mesh and geometry objects
-  // if (nSub > 0) {
-  //   // mem3dg::subdivide(mesh, vpg, nSub);
-  //   mem3dg::loopSubdivide(mesh, vpg, nSub);
-  //   std::cout << "Subdivided input mesh " << nSub << " time(s)" << std::endl;
-  // }
 
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }

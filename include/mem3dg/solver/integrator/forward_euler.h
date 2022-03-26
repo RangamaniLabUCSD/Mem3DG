@@ -34,9 +34,10 @@ public:
   double c1 = 0.0005;
 
   Euler(System &system_, double characteristicTimeStep_, double totalTime_,
-        double savePeriod_, double tolerance_, std::string outputDirectory_)
+        double savePeriod_, double tolerance_, std::string outputDirectory_,
+        std::size_t frame_ = 0)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
-                   tolerance_, outputDirectory_) {
+                   tolerance_, outputDirectory_, frame_) {
 
     // print to console
     std::cout << "Running Forward Euler (steepest descent) propagator ..."

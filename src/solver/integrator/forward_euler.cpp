@@ -45,7 +45,7 @@ bool Euler::integrate() {
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
   if (ifOutputTrajFile) {
-    createMutableNetcdfFile(system.isContinuation);
+    createMutableNetcdfFile(isContinuation);
     if (ifPrintToConsole)
       std::cout << "Initialized NetCDF file at "
                 << outputDirectory + "/" + trajFileName << std::endl;
@@ -135,11 +135,6 @@ bool Euler::integrate() {
     std::string filePath = outputDirectory;
     filePath.append("/");
     filePath.append(trajFileName);
-    if (tolerance == 0) {
-      markFileName(filePath, "_most", ".");
-    } else {
-      markFileName(filePath, "_failed", ".");
-    }
   }
 
   return SUCCESS;

@@ -391,7 +391,7 @@ void Integrator::saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint) {
   if (ifPrint) {
     std::cout << "\n"
               << "t: " << system.time << ", "
-              << "n: " << system.frame << ", "
+              << "n: " << frame << ", "
               << "isSmooth: " << system.isSmooth << "\n"
               << "A, At: " << system.surfaceArea << ", "
               << system.parameters.tension.At << "/" << system.surfaceArea
@@ -445,12 +445,12 @@ void Integrator::saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint) {
   if (ifMeshFile) {
     char buffer[50];
     sprintf(buffer, ifJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
-            (int)system.frame, (int)system.time);
+            (int)frame, (int)system.time);
     system.saveRichData(outputDirectory + "/" + std::string(buffer),
                         ifJustGeometryPly);
   }
 
-  system.frame++;
+  frame++;
 }
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -478,18 +478,17 @@ void Integrator::closeMutableNetcdfFile() {
 void Integrator::saveMutableNetcdfData() {
   // scalar quantities
   // write time
-  mutableTrajFile.writeTime(system.frame, system.time);
+  mutableTrajFile.writeTime(frame, system.time);
 
   // write dynamic properties
-  mutableTrajFile.writeVelocity(system.frame, system.velocity);
+  mutableTrajFile.writeVelocity(frame, system.velocity);
   if (system.parameters.external.Kf != 0)
-    mutableTrajFile.writeExternalForce(system.frame,
-                                       system.forces.externalForceVec);
+    mutableTrajFile.writeExternalForce(frame, system.forces.externalForceVec);
 
   // write static properties
-  mutableTrajFile.writeCoords(system.frame, *system.vpg);
-  mutableTrajFile.writeTopology(system.frame, *system.mesh);
-  mutableTrajFile.writeProteinDensity(system.frame, system.proteinDensity);
+  mutableTrajFile.writeCoords(frame, *system.vpg);
+  mutableTrajFile.writeTopology(frame, *system.mesh);
+  mutableTrajFile.writeProteinDensity(frame, system.proteinDensity);
   mutableTrajFile.sync();
 }
 #endif
