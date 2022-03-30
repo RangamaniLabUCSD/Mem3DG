@@ -811,29 +811,27 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by .ply file
    */
   system.def(py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &,
-                      Parameters &, double, bool>(),
+                      Parameters &, double>(),
              py::arg("inputMesh"), py::arg("proteinDensity"),
              py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
-             py::arg("isMute") = false,
              R"delim(
         System constructor with .ply files. 
       )delim");
-  system.def(py::init<std::string, Parameters &, double, bool>(),
+  system.def(py::init<std::string, Parameters &, double>(),
              py::arg("inputMesh"), py::arg("parameters"), py::arg("time") = 0,
-             py::arg("isMute") = false,
+
              R"delim(
         System constructor with .ply files. 
       )delim");
-  system.def(py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &, double,
-                      bool>(),
-             py::arg("inputMesh"), py::arg("proteinDensity"),
-             py::arg("velocity"), py::arg("time") = 0,
-             py::arg("isMute") = false,
-             R"delim(
+  system.def(
+      py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &, double>(),
+      py::arg("inputMesh"), py::arg("proteinDensity"), py::arg("velocity"),
+      py::arg("time") = 0,
+      R"delim(
         System constructor with .ply files. 
       )delim");
-  system.def(py::init<std::string, double, bool>(), py::arg("inputMesh"),
-             py::arg("time") = 0, py::arg("isMute") = false,
+  system.def(py::init<std::string, double>(), py::arg("inputMesh"),
+             py::arg("time") = 0,
              R"delim(
         System constructor with .ply files. 
       )delim");
@@ -842,33 +840,31 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by matrices
    */
   system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
-                      EigenVectorX3dr &, Parameters &, double, bool>(),
+                      EigenVectorX3dr &, Parameters &, double>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
              py::arg("proteinDensity"), py::arg("velocity"),
              py::arg("parameters"), py::arg("time") = 0,
-             py::arg("isMute") = false,
              R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, Parameters &,
-                      double, bool>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("parameters"), py::arg("time") = 0,
-             py::arg("isMute") = false,
-             R"delim(
+  system.def(
+      py::init<EigenVectorX3sr &, EigenVectorX3dr &, Parameters &, double>(),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("parameters"),
+      py::arg("time") = 0,
+      R"delim(
         System constructor with Matrices 
       )delim");
   system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
-                      EigenVectorX3dr &, double, bool>(),
+                      EigenVectorX3dr &, double>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
              py::arg("proteinDensity"), py::arg("velocity"),
-             py::arg("time") = 0, py::arg("isMute") = false,
+             py::arg("time") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, double, bool>(),
+  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, double>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("time") = 0, py::arg("isMute") = false,
+             py::arg("time") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
@@ -877,14 +873,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Constructors by NetCDF trajectory file
    */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int, Parameters &, bool>(),
-             py::arg("trajFile"), py::arg("startingFrame"),
-             py::arg("parameters"), py::arg("isMute") = false,
+  system.def(py::init<std::string, int, Parameters &>(), py::arg("trajFile"),
+             py::arg("startingFrame"), py::arg("parameters"),
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
-  system.def(py::init<std::string, int, bool>(), py::arg("trajFile"),
-             py::arg("startingFrame"), py::arg("isMute") = false,
+  system.def(py::init<std::string, int>(), py::arg("trajFile"),
+             py::arg("startingFrame"),
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
@@ -1150,7 +1145,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: initialize System
    */
-  system.def("initialize", &System::initialize, py::arg("nMutation") = 0,
+  system.def("initialize", &System::initialize, py::arg("nMutation") = 0, py::arg("ifMute") = false,
              R"delim(
           initialize the system
       )delim");

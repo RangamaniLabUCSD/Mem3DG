@@ -55,10 +55,6 @@ public:
                     std::string outputDirectory_, std::size_t frame_)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
                    tolerance_, outputDirectory_, frame_) {
-
-    // print to console
-    std::cout << "Running Conjugate Gradient propagator ..." << std::endl;
-
     // Initialize geometry constraints
     areaDifference = std::numeric_limits<double>::infinity();
     volumeDifference = std::numeric_limits<double>::infinity();
