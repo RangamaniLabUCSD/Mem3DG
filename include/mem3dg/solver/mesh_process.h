@@ -100,7 +100,7 @@ struct MeshProcessor {
 
   struct MeshMutator {
     /// Whether edge flip
-    bool isEdgeFlip = false;
+    bool isFlipEdge = false;
     /// Whether split edge
     bool isSplitEdge = false;
     /// Whether collapse edge
@@ -109,7 +109,7 @@ struct MeshProcessor {
     bool isChangeTopology = false;
 
     /// whether vertex shift
-    bool shiftVertex = false;
+    bool isShiftVertex = false;
 
     // whether conduct smoothing
     bool isSmoothenMesh = false;

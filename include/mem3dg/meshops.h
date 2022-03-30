@@ -552,12 +552,12 @@ closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
   gcs::Vertex theVertex;
   double shorestDistance = 1e18;
   bool isIntialized = !geodesicDistance.raw().isZero(0);
-  if (!isIntialized) {
-    // std::cout << "\nWARNING: closestVertexToPt: geodesicDistance not "
-    //              "initialized, searching for all "
-    //              "vertices!"
-    //           << std::endl;
-  }
+  // if (!isIntialized) {
+  //   std::cout << "\nWARNING: closestVertexToPt: geodesicDistance not "
+  //                "initialized, searching for all "
+  //                "vertices!"
+  //             << std::endl;
+  // }
   for (gcs::Vertex v : mesh.vertices()) {
     if (geodesicDistance[v] > range) {
       continue;
@@ -701,9 +701,8 @@ tanhDistribution(EigenVectorX1d &distribution,
  * @brief Slice string using two deliminator
  *
  */
-DLL_PUBLIC inline std::string sliceString(std::string fileName,
-                                                     std::string delim1,
-                                                     std::string delim2) {
+DLL_PUBLIC inline std::string
+sliceString(std::string fileName, std::string delim1, std::string delim2) {
   // int start = 0;
   int start = fileName.find_last_of(delim1) + 1;
   int end = fileName.find_last_of(delim2);
@@ -712,6 +711,37 @@ DLL_PUBLIC inline std::string sliceString(std::string fileName,
     string = fileName.substr(start, end - start);
   }
   return string;
+}
+
+/**
+ * @brief Mark the file name
+ *
+ * @param dirPath path of the directory
+ * @param file name of the file, for example in the form of "/traj.nc"
+ * @param marker_str marker used to mark the file, such as marker = "_failed"
+ * results in new file name of "/traj_failed.nc"
+ */
+DLL_PUBLIC inline void markFileName(std::string filePath,
+                                    std::string marker_str,
+                                    std::string delimiter = ".") {
+  size_t pos = 0;
+  std::string token;
+  if ((pos = filePath.find_last_of(delimiter)) != std::string::npos) {
+    token = filePath.substr(0, pos);
+    filePath.erase(0, pos + delimiter.length());
+  }
+
+  std::string newFilePath = token, oldFilePath = token;
+  oldFilePath.append(delimiter);
+  oldFilePath.append(filePath);
+  newFilePath.append(marker_str);
+  newFilePath.append(delimiter);
+  newFilePath.append(filePath);
+
+  // rename file
+  int result = rename(oldFilePath.c_str(), newFilePath.c_str());
+  if (result != 0)
+    mem3dg_runtime_error("Error renaming the file!");
 }
 
 /**

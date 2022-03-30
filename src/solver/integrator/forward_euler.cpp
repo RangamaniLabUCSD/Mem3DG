@@ -38,20 +38,17 @@ bool Euler::integrate() {
 
   signal(SIGINT, signalHandler);
 
-#ifdef __linux__
-  // start the timer
-  struct timeval start;
-  gettimeofday(&start, NULL);
-#endif
+  double initialTime = system.time, lastUpdateGeodesics = system.time,
+         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+         lastSave = system.time;
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
-    // createNetcdfFile();
-    createMutableNetcdfFile();
-    // print to console
-    std::cout << "Initialized NetCDF file at "
-              << outputDirectory + "/" + trajFileName << std::endl;
+  if (ifOutputTrajFile) {
+    createMutableNetcdfFile(isContinuation);
+    if (ifPrintToConsole)
+      std::cout << "Initialized NetCDF file at "
+                << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
@@ -68,7 +65,7 @@ bool Euler::integrate() {
           EXIT) {
         lastComputeAvoidingForce = system.time;
         system.parameters.selfAvoidance.mu = avoidStrength;
-        if (verbosity > 2) {
+        if (ifPrintToConsole) {
           std::cout << "computing avoiding force at "
                     << "t = " << system.time << std::endl;
           std::cout << "projected collision is " << system.projectedCollideTime
@@ -87,7 +84,7 @@ bool Euler::integrate() {
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
-      saveData();
+      saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
 
     // break loop if EXIT flag is on
@@ -99,14 +96,22 @@ bool Euler::integrate() {
     if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      system.updateConfigurations(false);
+      system.updateConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics >
         (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
-      system.updateConfigurations(true);
+      if (system.parameters.point.isFloatVertex)
+        system.findFloatCenter(
+            *system.vpg, system.geodesicDistance,
+            3 * system.vpg->edgeLength(
+                    system.center.nearestVertex().halfedge().edge()));
+      system.updateGeodesicsDistance();
+      if (system.parameters.protein.ifPrescribe)
+        system.prescribeGeodesicProteinDensityDistribution();
+      system.updateConfigurations();
     }
 
     // step forward
@@ -117,22 +122,20 @@ bool Euler::integrate() {
     }
   }
 
-  // return if optimization is sucessful
-  if (!SUCCESS) {
-    if (tolerance == 0) {
-      markFileName("_most");
-    } else {
-      markFileName("_failed");
-    }
-  }
-  // stop the timer and report time spent
-#ifdef __linux__
-  double duration = getDuration(start);
-  if (verbosity > 0) {
-    std::cout << "\nTotal integration time: " << duration << " seconds"
-              << std::endl;
+#ifdef MEM3DG_WITH_NETCDF
+  if (ifOutputTrajFile) {
+    closeMutableNetcdfFile();
+    if (ifPrintToConsole)
+      std::cout << "Closed NetCDF file" << std::endl;
   }
 #endif
+
+  // return if optimization is sucessful
+  if (!SUCCESS && ifOutputTrajFile) {
+    std::string filePath = outputDirectory;
+    filePath.append("/");
+    filePath.append(trajFileName);
+  }
 
   return SUCCESS;
 }
@@ -155,23 +158,17 @@ void Euler::status() {
   // compute summerized forces
   system.computePhysicalForcing(timeStep);
 
-  // compute the contraint error
-  areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
-  volumeDifference = (system.parameters.osmotic.isPreferredVolume)
-                         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
-                         : abs(system.parameters.osmotic.n / system.volume /
-                                   system.parameters.osmotic.cam -
-                               1.0);
-
   // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
-    std::cout << "\nError norm smaller than tolerance." << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "\nError norm smaller than tolerance." << std::endl;
     EXIT = true;
   }
 
   // exit if reached time
   if (system.time > totalTime) {
-    std::cout << "\nReached time." << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "\nReached time." << std::endl;
     EXIT = true;
     SUCCESS = false;
   }
@@ -181,8 +178,13 @@ void Euler::status() {
     system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 
-  // backtracking for error
-  finitenessErrorBacktrace();
+  // check finiteness
+  if (!std::isfinite(timeStep) || !system.checkFiniteness()) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(timeStep))
+      mem3dg_runtime_message("time step is not finite!");
+  }
 }
 
 void Euler::march() {
@@ -193,8 +195,8 @@ void Euler::march() {
                            system.vpg->vertexDualAreas;
 
   // adjust time step if adopt adaptive time step based on mesh size
-  if (isAdaptiveStep) {
-    characteristicTimeStep = updateAdaptiveCharacteristicStep();
+  if (ifAdaptiveStep) {
+    characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
   // time stepping on vertex position
@@ -222,7 +224,7 @@ void Euler::march() {
   }
 
   // recompute cached values
-  system.updateConfigurations(false);
+  system.updateConfigurations();
 }
 } // namespace integrator
 } // namespace solver

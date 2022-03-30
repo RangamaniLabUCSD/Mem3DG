@@ -40,20 +40,17 @@ bool ConjugateGradient::integrate() {
 
   signal(SIGINT, signalHandler);
 
-#ifdef __linux__
-  // start the timer
-  struct timeval start;
-  gettimeofday(&start, NULL);
-#endif
+  double initialTime = system.time, lastUpdateGeodesics = system.time,
+         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+         lastSave = system.time;
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
-    // createNetcdfFile();
-    createMutableNetcdfFile();
-    // print to console
-    std::cout << "Initialized NetCDF file at "
-              << outputDirectory + "/" + trajFileName << std::endl;
+  if (ifOutputTrajFile) {
+    createMutableNetcdfFile(isContinuation);
+    if (ifPrintToConsole)
+      std::cout << "Initialized NetCDF file at "
+                << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
@@ -67,20 +64,28 @@ bool ConjugateGradient::integrate() {
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
-      saveData();
+      saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
 
     // Process mesh every tProcessMesh period
     if (system.time - lastProcessMesh > processMeshPeriod) {
       lastProcessMesh = system.time;
       system.mutateMesh();
-      system.updateConfigurations(false);
+      system.updateConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
-      system.updateConfigurations(true);
+      if (system.parameters.point.isFloatVertex)
+        system.findFloatCenter(
+            *system.vpg, system.geodesicDistance,
+            3 * system.vpg->edgeLength(
+                    system.center.nearestVertex().halfedge().edge()));
+      system.updateGeodesicsDistance();
+      if (system.parameters.protein.ifPrescribe)
+        system.prescribeGeodesicProteinDensityDistribution();
+      system.updateConfigurations();
     }
 
     // break loop if EXIT flag is on
@@ -97,23 +102,25 @@ bool ConjugateGradient::integrate() {
     }
   }
 
-  // return if optimization is sucessful
-  if (!SUCCESS) {
-    if (tolerance == 0) {
-      markFileName("_most");
-    } else {
-      markFileName("_failed");
-    }
-  }
-
-  // stop the timer and report time spent
-#ifdef __linux__
-  double duration = getDuration(start);
-  if (verbosity > 0) {
-    std::cout << "\nTotal integration time: " << duration << " seconds"
-              << std::endl;
+#ifdef MEM3DG_WITH_NETCDF
+  if (ifOutputTrajFile) {
+    closeMutableNetcdfFile();
+    if (ifPrintToConsole)
+      std::cout << "Closed NetCDF file" << std::endl;
   }
 #endif
+
+  // return if optimization is sucessful
+  if (!SUCCESS && ifOutputTrajFile) {
+    std::string filePath = outputDirectory;
+    filePath.append("/");
+    filePath.append(trajFileName);
+    if (tolerance == 0) {
+      markFileName(filePath, "_most", ".");
+    } else {
+      markFileName(filePath, "_failed", ".");
+    }
+  }
 
   return SUCCESS;
 }
@@ -156,21 +163,23 @@ void ConjugateGradient::status() {
 
   // compute the area contraint error
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
+  volumeDifference = (system.parameters.osmotic.isPreferredVolume)
+                         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+                         : abs(system.parameters.osmotic.n / system.volume /
+                                   system.parameters.osmotic.cam -
+                               1.0);
   if (system.parameters.osmotic.isPreferredVolume) {
-    volumeDifference = abs(system.volume / system.parameters.osmotic.Vt - 1);
     reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference,
                            volumeDifference, constraintTolerance, 1.3);
   } else {
-    volumeDifference = abs(system.parameters.osmotic.n / system.volume /
-                               system.parameters.osmotic.cam -
-                           1.0);
     pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference,
                                 constraintTolerance, 1.3);
   }
 
   // exit if reached time
   if (system.time > totalTime) {
-    std::cout << "\nReached time." << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "\nReached time." << std::endl;
     EXIT = true;
     SUCCESS = false;
   }
@@ -178,8 +187,13 @@ void ConjugateGradient::status() {
   // compute the free energy of the system
   system.computeTotalEnergy();
 
-  // backtracing for error
-  finitenessErrorBacktrace();
+  // check finiteness
+  if (!std::isfinite(timeStep) || !system.checkFiniteness()) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(timeStep))
+      mem3dg_runtime_message("time step is not finite!");
+  }
 }
 
 void ConjugateGradient::march() {
@@ -214,8 +228,8 @@ void ConjugateGradient::march() {
   }
 
   // adjust time step if adopt adaptive time step based on mesh size
-  if (isAdaptiveStep) {
-    updateAdaptiveCharacteristicStep();
+  if (ifAdaptiveStep) {
+    characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
   // time stepping on vertex position
@@ -237,7 +251,100 @@ void ConjugateGradient::march() {
   }
 
   // recompute cached values
-  system.updateConfigurations(false);
+  system.updateConfigurations();
+}
+
+void ConjugateGradient::pressureConstraintThreshold(
+    bool &EXIT, const bool isAugmentedLagrangian, const double dArea,
+    const double ctol, double increment) {
+  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
+    if (isAugmentedLagrangian) { // augmented Lagrangian method
+      if (dArea < ctol) {
+        if (ifPrintToConsole) // exit if fulfilled all constraints
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        if (ifPrintToConsole)
+          std::cout << "\n[lambdaSG] = [" << system.parameters.tension.lambdaSG
+                    << ", "
+                    << "]";
+        system.parameters.tension.lambdaSG +=
+            system.parameters.tension.Ksg *
+            (system.surfaceArea - system.parameters.tension.At) /
+            system.parameters.tension.At;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.lambdaSG << "]"
+                    << std::endl;
+      }
+    } else {              // incremental harmonic penalty method
+      if (dArea < ctol) { // exit if fulfilled all constraints
+        if (ifPrintToConsole)
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        if (ifPrintToConsole)
+          std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
+        system.parameters.tension.Ksg *= increment;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                    << std::endl;
+      }
+    }
+  }
+}
+
+void ConjugateGradient::reducedVolumeThreshold(
+    bool &EXIT, const bool isAugmentedLagrangian, const double dArea,
+    const double dVolume, const double ctol, double increment) {
+  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
+    if (isAugmentedLagrangian) {            // augmented Lagrangian method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
+        if (ifPrintToConsole)
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      } else { // iterate if not
+        if (ifPrintToConsole)
+          std::cout << "\n.tension[lambdaSG, lambdaV] = ["
+                    << system.parameters.tension.lambdaSG << ", "
+                    << system.parameters.osmotic.lambdaV << "]";
+        system.parameters.tension.lambdaSG +=
+            system.parameters.tension.Ksg *
+            (system.surfaceArea - system.parameters.tension.At) /
+            system.parameters.tension.At;
+        system.parameters.osmotic.lambdaV +=
+            system.parameters.osmotic.Kv *
+            (system.volume - system.parameters.osmotic.Vt) /
+            system.parameters.osmotic.Vt;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.lambdaSG << ", "
+                    << system.parameters.osmotic.lambdaV << "]" << std::endl;
+      }
+    } else { // incremental harmonic penalty method
+      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
+        if (ifPrintToConsole)
+          std::cout << "\nError norm smaller than tolerance." << std::endl;
+        EXIT = true;
+      }
+
+      // iterate if not
+      if (dArea > ctol) {
+        if (ifPrintToConsole)
+          std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
+        system.parameters.tension.Ksg *= 1.3;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.tension.Ksg << "]"
+                    << std::endl;
+      }
+      if (dVolume > ctol) {
+        if (ifPrintToConsole)
+          std::cout << "\n[Kv] = [" << system.parameters.osmotic.Kv << "]";
+        system.parameters.osmotic.Kv *= 1.3;
+        if (ifPrintToConsole)
+          std::cout << " -> [" << system.parameters.osmotic.Kv << "]"
+                    << std::endl;
+      }
+    }
+  }
 }
 
 } // namespace integrator

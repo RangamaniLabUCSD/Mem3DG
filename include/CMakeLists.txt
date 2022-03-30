@@ -33,6 +33,5 @@ set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/integrator.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/forward_euler.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/conjugate_gradient.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/bfgs.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/integrator/velocity_verlet.h"
     PARENT_SCOPE)
