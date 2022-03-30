@@ -106,9 +106,9 @@ System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
-void System::initialize(std::size_t nMutation) {
+void System::initialize(std::size_t nMutation, bool ifMute) {
   checkConfiguration();
-  initializeConstants();
+  initializeConstants(ifMute);
   meshProcessor.summarizeStatus();
   if (!meshProcessor.isMeshMutate && nMutation != 0) {
     mem3dg_runtime_message("mesh mutator not activated!");
@@ -183,7 +183,7 @@ void System::checkConfiguration() {
   }
 }
 
-void System::initializeConstants() {
+void System::initializeConstants(bool ifMute) {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 

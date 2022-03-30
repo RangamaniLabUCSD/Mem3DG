@@ -38,10 +38,6 @@ public:
                  std::string outputDirectory_, std::size_t frame_ = 0)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
                    tolerance_, outputDirectory_, frame_) {
-
-    // print to console
-    std::cout << "Running Velocity Verlet integrator ..." << std::endl;
-
     // check the validity of parameter
     checkParameters();
 

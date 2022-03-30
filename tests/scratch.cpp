@@ -84,7 +84,8 @@ int main() {
   p.external.Kf = 0;
 
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
-  mem3dg::solver::System system(inputMesh, p, 0, true);
+  mem3dg::solver::System system(inputMesh, p, 0);
+  system.initialize();
 
   system.meshProcessor.meshMutator.isShiftVertex = true;
   system.meshProcessor.meshMutator.flipNonDelaunay = true;

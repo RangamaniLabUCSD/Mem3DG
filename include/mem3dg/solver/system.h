@@ -37,9 +37,9 @@
 #include <random>
 
 #include <functional>
+#include <iomanip>
 #include <math.h>
 #include <vector>
-#include <iomanip>
 
 #include "mem3dg/constants.h"
 #include "mem3dg/macros.h"
@@ -104,8 +104,6 @@ public:
   Parameters parameters;
   /// Mesh processor
   MeshProcessor meshProcessor;
-  /// ifMute
-  bool ifMute;
 
   /// Cached mesh of interest
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
@@ -155,7 +153,7 @@ public:
   gcs::VertexData<bool> centerTracker;
   /// projected time of collision
   double projectedCollideTime;
-  
+
   // ==========================================================
   // =============        Constructors           ==============
   // ==========================================================
@@ -165,55 +163,50 @@ public:
   // =======================================
   System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0, bool isMute = false)
+         Parameters &p, double time_ = 0)
       : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
-               velocity_, p, time_, isMute){};
+               velocity_, p, time_){};
 
   System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         Parameters &p, double time_ = 0, bool isMute = false)
-      : System(readMatrices(topologyMatrix, vertexMatrix), p, time_, isMute){};
+         Parameters &p, double time_ = 0)
+      : System(readMatrices(topologyMatrix, vertexMatrix), p, time_){};
 
   System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_ = 0, bool isMute = false)
+         double time_ = 0)
       : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
-               velocity_, time_, isMute){};
+               velocity_, time_){};
 
   System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         double time_ = 0, bool isMute = false)
-      : System(readMatrices(topologyMatrix, vertexMatrix), time_, isMute){};
+         double time_ = 0)
+      : System(readMatrices(topologyMatrix, vertexMatrix), time_){};
 
   // =======================================
   // =======       Mesh Files       ========
   // =======================================
   System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
-         EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0,
-         bool isMute = false)
-      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, p, time_,
-               isMute){};
+         EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0)
+      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, p, time_){};
 
-  System(std::string inputMesh, Parameters &p, double time_ = 0,
-         bool isMute = false)
-      : System(readMeshFile(inputMesh), p, time_, isMute){};
+  System(std::string inputMesh, Parameters &p, double time_ = 0)
+      : System(readMeshFile(inputMesh), p, time_){};
 
   System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
-         EigenVectorX3dr &velocity_, double time_ = 0, bool isMute = false)
-      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, time_,
-               isMute){};
+         EigenVectorX3dr &velocity_, double time_ = 0)
+      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, time_){};
 
-  System(std::string inputMesh, double time_ = 0, bool isMute = false)
-      : System(readMeshFile(inputMesh), time_, isMute){};
+  System(std::string inputMesh, double time_ = 0)
+      : System(readMeshFile(inputMesh), time_){};
 
   // =======================================
   // =======       NetCDF Files     ========
   // =======================================
 #ifdef MEM3DG_WITH_NETCDF
-  System(std::string trajFile, int startingFrame, Parameters &p,
-         bool isMute = false)
-      : System(readTrajFile(trajFile, startingFrame), p, isMute){};
+  System(std::string trajFile, int startingFrame, Parameters &p)
+      : System(readTrajFile(trajFile, startingFrame), p){};
 
-  System(std::string trajFile, int startingFrame, bool isMute = false)
-      : System(readTrajFile(trajFile, startingFrame), isMute){};
+  System(std::string trajFile, int startingFrame)
+      : System(readTrajFile(trajFile, startingFrame)){};
 
 #endif
 
@@ -224,56 +217,54 @@ public:
                     std::unique_ptr<gcs::VertexPositionGeometry>,
                     EigenVectorX1d, EigenVectorX3dr, double>
              initialConditionsTuple,
-         Parameters &p, bool isMute = false)
+         Parameters &p)
       : System(std::move(std::get<0>(initialConditionsTuple)),
                std::move(std::get<1>(initialConditionsTuple)),
                std::get<2>(initialConditionsTuple),
                std::get<3>(initialConditionsTuple), p,
-               std::get<4>(initialConditionsTuple), isMute){};
+               std::get<4>(initialConditionsTuple)){};
 
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>,
                     EigenVectorX1d, EigenVectorX3dr, double>
-             initialConditionsTuple,
-         bool isMute = false)
+             initialConditionsTuple)
       : System(std::move(std::get<0>(initialConditionsTuple)),
                std::move(std::get<1>(initialConditionsTuple)),
                std::get<2>(initialConditionsTuple),
                std::get<3>(initialConditionsTuple),
-               std::get<4>(initialConditionsTuple), isMute){};
+               std::get<4>(initialConditionsTuple)){};
 
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0, bool isMute = false)
+         Parameters &p, double time_ = 0)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
-               p, time_, isMute){};
+               p, time_){};
 
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
-
-         Parameters &p, double time_ = 0, bool isMute = false)
+         Parameters &p, double time_ = 0)
       : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), p, time_, isMute){};
+               std::move(std::get<1>(meshVpgTuple)), p, time_){};
 
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_ = 0, bool isMute = false)
+         double time_ = 0)
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
-               time_, isMute){};
+               time_){};
 
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
              meshVpgTuple,
-         double time_ = 0, bool isMute = false)
+         double time_ = 0)
       : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), time_, isMute){};
+               std::move(std::get<1>(meshVpgTuple)), time_){};
 
   // =======================================
   // =======    Geometry Central    ========
@@ -281,45 +272,32 @@ public:
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0, bool isMute = false)
+         Parameters &p, double time_ = 0)
       : System(std::move(ptrmesh_), std::move(ptrvpg_), proteinDensity_,
-               velocity_, time_, isMute) {
+               velocity_, time_) {
     parameters = p;
   }
 
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, Parameters &p,
-         double time_ = 0, bool isMute = false)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_, isMute) {
+         double time_ = 0)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_) {
     parameters = p;
   }
 
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
          std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_ = 0, bool ifMute_ = false)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_, ifMute_) {
+         double time_ = 0)
+      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_) {
     toMatrix(proteinDensity) = proteinDensity_;
     toMatrix(velocity) = velocity_;
   }
 
   System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, double time_ = 0,
-         bool ifMute_ = false)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), ifMute_) {
-    time = time_;
-    energy.time = time_;
-  }
-
-private:
-  // =======================================
-  // =======           Base         ========
-  // =======================================
-  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         bool ifMute_ = false)
+         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, double time_ = 0)
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)), forces(*mesh, *vpg),
-        ifMute(ifMute_) {
+        time(time_) {
     energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     proteinDensity = gc::VertexData<double>(*mesh, 1);
@@ -448,13 +426,13 @@ public:
    * @brief Initialize system
    *
    */
-  void initialize(std::size_t nMutation = 0);
+  void initialize(std::size_t nMutation = 0, bool ifMute = false);
 
   /**
    * @brief Initialize all constant values (on refVpg) needed for computation
    *
    */
-  void initializeConstants();
+  void initializeConstants(bool ifMute);
 
   /**
    * @brief Update the vertex position and recompute cached values
