@@ -743,7 +743,7 @@ void System::globalUpdateAfterMutation() {
       }
     }
     if (centerTracker.raw().cast<int>().sum() != 1) {
-      mem3dg_runtime_error("globalUpdateAfterMutation: there is no "
+      mem3dg_runtime_error("there is no "
                            "unique/existing center!");
     }
   }
