@@ -100,34 +100,29 @@ void Parameters::Point::checkParameters() {
   }
 }
 
-void Parameters::ProteinDistribution::checkParameters(size_t nVertex) {
-
-  if (protein0.rows() == 1 && protein0[0] == -1) {
-    typeOfProtein0 = Disabled;
-    std::cout << "Disable protein init, expect continuation simulation."
-              << std::endl;
-  } else if (protein0.rows() == 1 && protein0[0] >= 0 && protein0[0] <= 1) {
-    typeOfProtein0 = Homogeneous;
-  } else if (protein0.rows() == 4 && (protein0[2] >= 0 && protein0[2] <= 1) &&
-             (protein0[3] >= 0 && protein0[3] <= 1) &&
-             (protein0[0] > 0 && protein0[1] > 0)) {
-    typeOfProtein0 = GeodesicPhaseSeparation;
-    if (protein0[2] == protein0[3]) {
-      mem3dg_runtime_error("Please switch to {phi} for homogeneous membrane!");
-    }
-    if (profile != "gaussian" && profile != "tanh") {
+void Parameters::Protein::checkParameters(size_t nVertex) {
+  if (geodesicProteinDensityDistribution.rows() == 4 &&
+      (geodesicProteinDensityDistribution[2] >= 0 &&
+       geodesicProteinDensityDistribution[2] <= 1) &&
+      (geodesicProteinDensityDistribution[3] >= 0 &&
+       geodesicProteinDensityDistribution[3] <= 1) &&
+      (geodesicProteinDensityDistribution[0] > 0 &&
+       geodesicProteinDensityDistribution[1] > 0)) {
+    if (profile != "gaussian" && profile != "tanh")
       mem3dg_runtime_error(
-          "Please choose the profile type, 'gaussian' or 'tanh'!")
-    }
-  } else if (protein0.rows() == nVertex && (protein0.array() > 0).all() &&
-             (protein0.array() < 1).all()) {
-    typeOfProtein0 = VertexWise;
+          "Please choose the profile type, 'gaussian' or 'tanh'!");
+    if (geodesicProteinDensityDistribution[2] ==
+        geodesicProteinDensityDistribution[3])
+      mem3dg_runtime_error(
+          "Please input constant protein distribution in System()!");
+    ifPrescribe = true;
+  } else if (geodesicProteinDensityDistribution.rows() == 1 &&
+             geodesicProteinDensityDistribution[0] == -1) {
+    ifPrescribe = false;
   } else {
-    mem3dg_runtime_error("protein 0 can only be specified in three ways: 1. "
-                         "length = 1, uniform {0<=phi<=1} 2. "
-                         "length = 4, geodesic disk, {r1>0, r2>0, "
-                         "0<phi_in<1, 0<phi_out<1} 3. length "
-                         "= nVertices, user defined. To disable use {-1}");
+    mem3dg_runtime_error("Length = 4, geodesic disk, [r1>0, r2>0, "
+                         "0<phi_in<1, 0<phi_out<1], to disable, put [-1]");
+    ifPrescribe = false;
   }
 }
 
@@ -142,8 +137,8 @@ void Parameters::Boundary::checkParameters() {
 }
 
 void Parameters::Variation::checkParameters() {
-  if (radius <= 0 && radius != -1) {
-    mem3dg_runtime_error("Radius > 0 or radius = 1 to disable!");
+  if (geodesicMask <= 0 && geodesicMask != -1) {
+    mem3dg_runtime_error("Radius > 0 or radius = -1 to disable!");
   }
 }
 
@@ -152,7 +147,7 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   osmotic.checkParameters();
   variation.checkParameters();
   point.checkParameters();
-  proteinDistribution.checkParameters(nVertex);
+  protein.checkParameters(nVertex);
 
   // variation
   if (!variation.isShapeVariation) {
@@ -204,42 +199,6 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
           "Protein boundary condition type should be disable (= \"none\") "
           "for closed boundary mesh!");
     }
-  }
-
-  // protein distribution
-  switch (proteinDistribution.typeOfProtein0) {
-  case ProteinDistribution::Homogeneous: {
-    if (variation.isProteinVariation) {
-      if (proteinDistribution.protein0[0] == 0 ||
-          proteinDistribution.protein0[0] == 1) {
-        mem3dg_runtime_error("{0<phi<1}");
-      }
-    } else {
-      if (proteinDistribution.protein0[0] != 1 || bending.Kb != 0 ||
-          dirichlet.eta != 0 || adsorption.epsilon != 0 ||
-          aggregation.chi != 0) {
-        mem3dg_runtime_error(
-            "For homogenous membrane simulation, good practice is to set "
-            "proteinDensity.protein0 = 1, Kb = 0, eta  = 0, epsilon = 0, chi = "
-            "0 to "
-            "avoid ambiguity & save computation!");
-      }
-    }
-    break;
-  }
-  case ProteinDistribution::GeodesicPhaseSeparation: {
-
-    if (variation.isProteinVariation) {
-      if (proteinDistribution.protein0[2] <= 0 ||
-          proteinDistribution.protein0[2] >= 1 ||
-          proteinDistribution.protein0[3] <= 0 ||
-          proteinDistribution.protein0[3] >= 1) {
-        mem3dg_runtime_error("{0<phi<1}");
-      }
-    }
-    break;
-  }
-  default:;
   }
 }
 

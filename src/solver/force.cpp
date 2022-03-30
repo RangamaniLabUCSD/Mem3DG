@@ -12,30 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-// uncomment to disable assert()
-// #define NDEBUG
-#include <cassert>
-#include <cmath>
-#include <iostream>
-
-#include <geometrycentral/numerical/linear_solvers.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/eigen_interop_helpers.h>
-#include <geometrycentral/utilities/vector3.h>
-
-#include "Eigen/src/Core/Matrix.h"
-#include "Eigen/src/Core/util/Constants.h"
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/type_utilities.h"
-#include <Eigen/Core>
-#include <math.h>
-#include <pcg_random.hpp>
-#include <stdexcept>
 
 namespace mem3dg {
 namespace solver {
@@ -188,7 +165,7 @@ System::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
   return volGrad;
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
+gc::VertexData<gc::Vector3> System::computeVertexSchlafliVectors() {
   mesh->compress();
   gc::VertexData<gc::Vector3> vector(*mesh, {0, 0, 0});
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
@@ -208,17 +185,17 @@ gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
   return vector;
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVector() {
+gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeGaussianCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVector() {
+gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeMeanCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVector() {
+gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeVolumeVariationVector);
 }
@@ -469,21 +446,20 @@ EigenVectorX3dr System::prescribeExternalForce() {
 #elif MODE == 2 // anchor force
   double decayTime = 1000;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
+  geodesicDistance = heatSolver.computeDistance(center);
   double standardDeviation = 0.02;
 
   // gc::Vector3 anchor{0, 0, 1};
   // gc::Vector3 direction{0, 0, -1};
-  // direction = anchor - vpg->inputVertexPositions[thePoint.nearestVertex()];
+  // direction = anchor - vpg->inputVertexPositions[center.nearestVertex()];
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     gc::Vector3 direction = -vpg->vertexPositions[v].normalize();
-    forces.externalForceVec[i] =
-        forces.maskForce(exp(-time / decayTime) * parameters.external.Kf *
-                             gaussianDistribution(geodesicDistanceFromPtInd[v],
-                                                  standardDeviation) *
-                             vpg->vertexDualArea(v) * direction,
-                         i);
+    forces.externalForceVec[i] = forces.maskForce(
+        exp(-time / decayTime) * parameters.external.Kf *
+            gaussianDistribution(geodesicDistance[v], standardDeviation) *
+            vpg->vertexDualArea(v) * direction,
+        i);
   }
 #endif
   forces.externalForce = forces.ontoNormal(forces.externalForceVec);
@@ -583,9 +559,9 @@ void System::computeChemicalPotentials() {
     forces.diffusionPotential.raw() = forces.maskProtein(
         -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
 
-  if (parameters.proteinDistribution.lambdaPhi != 0)
+  if (parameters.protein.proteinInteriorPenalty != 0)
     forces.interiorPenaltyPotential.raw() =
-        forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
+        forces.maskProtein(parameters.protein.proteinInteriorPenalty *
                            (1 / proteinDensity.raw().array() -
                             1 / (1 - proteinDensity.raw().array())));
 }

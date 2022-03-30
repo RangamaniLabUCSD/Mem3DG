@@ -39,17 +39,17 @@ int main() {
   p.point.pt << 0, 0;
   p.point.isFloatVertex = false;
 
-  p.proteinDistribution.profile = "none";
-  p.proteinDistribution.protein0.resize(1);
-  p.proteinDistribution.protein0 << -1;
-  p.proteinDistribution.lambdaPhi = 1e-7;
+  p.protein.profile = "none";
+  p.protein.geodesicProteinDensityDistribution.resize(1);
+  p.protein.geodesicProteinDensityDistribution << -1;
+  p.protein.proteinInteriorPenalty = 1e-7;
 
   p.boundary.shapeBoundaryCondition = "fixed";
   p.boundary.proteinBoundaryCondition = "pin";
 
   p.variation.isProteinVariation = true;
   p.variation.isShapeVariation = true;
-  p.variation.radius = -1;
+  p.variation.geodesicMask = -1;
 
   p.bending.Kb = 8.22e-5;
   p.bending.Kbc = 2 * 8.22e-5;
@@ -83,28 +83,27 @@ int main() {
   p.dpd.gamma = 0;
   p.external.Kf = 0;
 
-  mem3dg::solver::MeshProcessor mP;
-  mP.meshMutator.shiftVertex = true;
-  mP.meshMutator.flipNonDelaunay = true;
-  // mP.meshMutator.splitLarge = true;
-  mP.meshMutator.splitFat = true;
-  mP.meshMutator.splitSkinnyDelaunay = true;
-  mP.meshMutator.splitCurved = true;
-  mP.meshMutator.curvTol = 0.003;
-  mP.meshMutator.collapseSkinny = true;
-
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
-  mem3dg::solver::System system(inputMesh, p, mP, 0, true);
+  mem3dg::solver::System system(inputMesh, p, 0);
+  system.initialize();
 
-  const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2, verbosity = 5;
+  system.meshProcessor.meshMutator.isShiftVertex = true;
+  system.meshProcessor.meshMutator.flipNonDelaunay = true;
+  // system.meshProcessor.meshMutator.splitLarge = true;
+  system.meshProcessor.meshMutator.splitFat = true;
+  system.meshProcessor.meshMutator.splitSkinnyDelaunay = true;
+  system.meshProcessor.meshMutator.splitCurved = true;
+  system.meshProcessor.meshMutator.curvTol = 0.003;
+  system.meshProcessor.meshMutator.collapseSkinny = true;
+
+  const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2;
   const std::string outputDir = "/tmp";
 
   mem3dg::solver::integrator::Euler integrator{system, dt,  T,
                                                tSave,  eps, outputDir};
   integrator.processMeshPeriod = 0.1;
   integrator.isBacktrack = true;
-  integrator.isAdaptiveStep = true;
-  integrator.verbosity = verbosity;
+  integrator.ifAdaptiveStep = true;
   integrator.integrate();
   return 0;
 }
