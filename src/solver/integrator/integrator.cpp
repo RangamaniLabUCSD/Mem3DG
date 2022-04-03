@@ -386,9 +386,10 @@ double Integrator::mechanicalBacktrack(
   return alpha;
 }
 
-void Integrator::saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint) {
+void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
+                          bool ifPrintToConsole) {
   // print in-progress information in the console
-  if (ifPrint) {
+  if (ifPrintToConsole) {
     std::cout << "\n"
               << "t: " << system.time << ", "
               << "n: " << frame << ", "
@@ -436,12 +437,12 @@ void Integrator::saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint) {
 
 #ifdef MEM3DG_WITH_NETCDF
   // save variable to netcdf traj file
-  if (ifTrajFile)
+  if (ifOutputTrajFile)
     saveMutableNetcdfData();
 #endif
 
   // save variable to richData and save ply file
-  if (ifMeshFile) {
+  if (ifOutputMeshFile) {
     char buffer[50];
     sprintf(buffer, ifJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
             (int)frame, (int)system.time);
