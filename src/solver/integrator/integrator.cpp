@@ -394,10 +394,9 @@ void Integrator::saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint) {
               << "n: " << frame << ", "
               << "isSmooth: " << system.isSmooth << "\n"
               << "A, At: " << system.surfaceArea << ", "
-              << system.parameters.tension.At << "/" << system.surfaceArea
-              << ", "
+              << system.parameters.tension.At << ", "
               << "V, Vt: " << system.volume << ", "
-              << system.parameters.osmotic.Vt << "/" << system.volume << ", "
+              << system.parameters.osmotic.Vt << ", "
               << "h: "
               << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff()
               << "\n"

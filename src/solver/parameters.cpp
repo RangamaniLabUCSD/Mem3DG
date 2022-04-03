@@ -119,6 +119,9 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
   } else if (geodesicProteinDensityDistribution.rows() == 1 &&
              geodesicProteinDensityDistribution[0] == -1) {
     ifPrescribe = false;
+    if (profile != "none")
+      mem3dg_runtime_error(
+          "Please disable the profile type as 'none'!");
   } else {
     mem3dg_runtime_error("Length = 4, geodesic disk, [r1>0, r2>0, "
                          "0<phi_in<1, 0<phi_out<1], to disable, put [-1]");

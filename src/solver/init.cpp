@@ -186,7 +186,7 @@ void System::checkConfiguration() {
 void System::initializeConstants(bool ifMute) {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
-  
+
   if (parameters.point.isFloatVertex) {
     findFloatCenter(*vpg, geodesicDistance);
   } else {
@@ -194,7 +194,8 @@ void System::initializeConstants(bool ifMute) {
   }
   updateGeodesicsDistance();
   prescribeGeodesicMasks();
-  prescribeGeodesicProteinDensityDistribution();
+  if (parameters.protein.ifPrescribe)
+    prescribeGeodesicProteinDensityDistribution();
 
   if (mesh->hasBoundary()) {
     boundaryForceMask(*mesh, forces.forceMask,
