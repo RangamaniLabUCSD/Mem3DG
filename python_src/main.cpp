@@ -173,7 +173,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
             R"delim(
         Euler integrator (steepest descent) constructor
       )delim");
-
+  euler.def(py::init<System &, double, double, std::string>(),
+            py::arg("system"), py::arg("characteristicTimeStep"),
+            py::arg("tolerance"), py::arg("outputDirectory"),
+            R"delim(
+        Euler integrator (steepest descent) constructor
+      )delim");
   /**
    * @brief state variable
    */
@@ -187,7 +192,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
-   * @brief attributes, integration options
+   * @brief attributes, integration optionsP
    */
   euler.def_readonly("characteristicTimeStep", &Euler::characteristicTimeStep,
                      R"delim(
@@ -419,10 +424,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                         R"delim(
           stepping forward 
       )delim");
-  conjugategradient.def("saveData", &ConjugateGradient::saveData,
-                        py::arg("ifOutputTrajFile"), py::arg("ifOutputMeshFile"),
-                        py::arg("ifPrintToConsole"),
-                        R"delim(
+  conjugategradient.def(
+      "saveData", &ConjugateGradient::saveData, py::arg("ifOutputTrajFile"),
+      py::arg("ifOutputMeshFile"), py::arg("ifPrintToConsole"),
+      R"delim(
           save data to output directory
       )delim");
   conjugategradient.def("step", &ConjugateGradient::step, py::arg("n"),
@@ -1149,7 +1154,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: initialize System
    */
-  system.def("initialize", &System::initialize, py::arg("nMutation") = 0, py::arg("ifMute") = false,
+  system.def("initialize", &System::initialize, py::arg("nMutation") = 0,
+             py::arg("ifMute") = false,
              R"delim(
           initialize the system
       )delim");
