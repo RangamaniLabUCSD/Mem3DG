@@ -37,7 +37,8 @@ namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool ConjugateGradient::integrate() {
-
+  if (ifDisableIntegrate)
+    mem3dg_runtime_error("integrate() is disabled for current construction!");
   signal(SIGINT, signalHandler);
 
   double initialTime = system.time, lastUpdateGeodesics = system.time,

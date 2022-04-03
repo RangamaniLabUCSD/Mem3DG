@@ -41,6 +41,12 @@ public:
     // check the validity of parameter
     checkParameters();
   }
+  Euler(System &system_, double characteristicTimeStep_, double tolerance_,
+        std::string outputDirectory_)
+      : Integrator(system_, characteristicTimeStep_, tolerance_,
+                   outputDirectory_) {
+    checkParameters();
+  }
 
   /**
    * @brief Forward Euler driver function

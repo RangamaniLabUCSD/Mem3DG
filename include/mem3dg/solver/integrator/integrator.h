@@ -57,8 +57,10 @@ public:
   double timeStep;
   /// frame index
   size_t frame = 0;
-  /// isContinuation
+  /// is continuing simulation
   bool isContinuation;
+  /// whether disable the use of integrate()
+  bool ifDisableIntegrate;
   /// System object to be integrated
   System &system;
   /// TrajFile
@@ -70,7 +72,7 @@ public:
   /// characterisitic time step
   double characteristicTimeStep;
   // total simulation time
-  double totalTime;
+  double totalTime = std::numeric_limits<double>::max();
   /// period of saving output data
   double savePeriod;
   /// tolerance for termination
@@ -82,9 +84,9 @@ public:
 
   // defaulted parameters (read/write)
   /// period of saving output data
-  double updateGeodesicsPeriod;
+  double updateGeodesicsPeriod = std::numeric_limits<double>::max();
   /// period of saving output data
-  double processMeshPeriod;
+  double processMeshPeriod = std::numeric_limits<double>::max();
   /// if just save geometry .ply file
   bool ifJustGeometryPly = false;
   /// if output netcdf traj file
@@ -111,14 +113,23 @@ public:
   Integrator(System &system_, double characteristicTimeStep_, double totalTime_,
              double savePeriod_, double tolerance_,
              std::string outputDirectory_, std::size_t frame_ = 0)
-      : system(system_), characteristicTimeStep(characteristicTimeStep_),
-        totalTime(totalTime_), savePeriod(savePeriod_), tolerance(tolerance_),
-        updateGeodesicsPeriod(totalTime_), processMeshPeriod(totalTime_),
-        outputDirectory(outputDirectory_), timeStep(characteristicTimeStep_),
-        frame(frame_) {
+      : Integrator(system_, characteristicTimeStep_, tolerance_,
+                   outputDirectory_) {
+    totalTime = totalTime_;
+    frame = frame_;
+    savePeriod = savePeriod_;
 
+    ifDisableIntegrate = false;
     isContinuation = (frame != 0);
+  }
 
+  Integrator(System &system_, double characteristicTimeStep_, double tolerance_,
+             std::string outputDirectory_)
+      : system(system_), characteristicTimeStep(characteristicTimeStep_),
+        tolerance(tolerance_), outputDirectory(outputDirectory_),
+        timeStep(characteristicTimeStep_) {
+    ifDisableIntegrate = true;
+    ifPrintToConsole = true;
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio = characteristicTimeStep /
                      std::pow(system.vpg->edgeLengths.raw().minCoeff(), 2);
