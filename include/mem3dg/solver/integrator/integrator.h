@@ -151,7 +151,8 @@ public:
   /**
    * @brief Save trajectory, mesh and print to console
    */
-  void saveData(bool ifTrajFile, bool ifMeshFile, bool ifPrint);
+  void saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
+                bool ifPrintToConsole);
 
 #ifdef MEM3DG_WITH_NETCDF
   /**

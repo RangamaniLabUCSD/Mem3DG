@@ -148,8 +148,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
           stepping forward 
       )delim");
   velocityverlet.def("saveData", &VelocityVerlet::saveData,
-                     py::arg("ifTrajFile"), py::arg("ifMeshFile"),
-                     py::arg("ifPrint"),
+                     py::arg("ifOutputTrajFile"), py::arg("ifOutputMeshFile"),
+                     py::arg("ifPrintToConsole"),
                      R"delim(
           save data to output directory
       )delim");
@@ -267,8 +267,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
             R"delim(
           stepping forward 
       )delim");
-  euler.def("saveData", &Euler::saveData, py::arg("ifTrajFile"),
-            py::arg("ifMeshFile"), py::arg("ifPrint"),
+  euler.def("saveData", &Euler::saveData, py::arg("ifOutputTrajFile"),
+            py::arg("ifOutputMeshFile"), py::arg("ifPrintToConsole"),
             R"delim(
           save data to output directory
       )delim");
@@ -285,7 +285,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
   euler.def("saveMutableNetcdfData", &Euler::saveMutableNetcdfData,
             R"delim(
-          save netcdf file
+          write to netcdf file
+      )delim");
+  euler.def("closeMutableNetcdfFile", &Euler::closeMutableNetcdfFile,
+            R"delim(
+          close netcdf file
       )delim");
 
 #endif
@@ -416,8 +420,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
           stepping forward 
       )delim");
   conjugategradient.def("saveData", &ConjugateGradient::saveData,
-                        py::arg("ifTrajFile"), py::arg("ifMeshFile"),
-                        py::arg("ifPrint"),
+                        py::arg("ifOutputTrajFile"), py::arg("ifOutputMeshFile"),
+                        py::arg("ifPrintToConsole"),
                         R"delim(
           save data to output directory
       )delim");
