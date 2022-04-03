@@ -87,6 +87,7 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central polyscope pcg::pcg igl::core)
 
 if(WITH_NETCDF)
+  message(STATUS "${VCPKG_TARGET_TRIPLET}")
   find_package(netCDF REQUIRED)
   message(DEBUG "netCDF version: ${netCDF_VERSION}")
   message(DEBUG "netCDF dir: ${netCDF_DIR}")
