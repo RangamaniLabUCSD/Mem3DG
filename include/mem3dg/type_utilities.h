@@ -42,6 +42,9 @@ using EigenVectorX3dr =
 using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using EigenVectorX3u = Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
+using EigenVectorX3sr =
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenVectorX3s = Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>;
 
 template <typename T, int k>
 using EigenVectorXkr_T = Eigen::Matrix<T, Eigen::Dynamic, k, Eigen::RowMajor>;

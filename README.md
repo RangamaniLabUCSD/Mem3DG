@@ -44,3 +44,6 @@ The toolchain options can be passed through `setup.py` accordingly:
 
 * Meshes are represented using [Geometry-Central](https://geometry-central.net/).
 * Optional trajectory output uses [NetCDF-cxx4](https://github.com/Unidata/netcdf-cxx4).
+### Visualization
+* Optional trajectory visualization in Python uses [Polyscope](https://polyscope.run/py/).
+* Optional trajectory reading in Python uses [NetCDF4-python](https://github.com/Unidata/netcdf4-python).
