@@ -50,7 +50,7 @@ set(PYMEM3DG_SOURCES
 )
 
 pybind11_add_module(_core MODULE ${PYMEM3DG_SOURCES})
-target_link_libraries(_core PRIVATE mem3dg_static polyscope igl::core)
+target_link_libraries(_core PRIVATE mem3dg_static) # polyscope igl::core)
 if(WITH_NETCDF)
   target_compile_definitions(_core PUBLIC -DMEM3DG_WITH_NETCDF)
 endif()

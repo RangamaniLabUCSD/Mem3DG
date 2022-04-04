@@ -12,30 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-// uncomment to disable assert()
-// #define NDEBUG
-#include <cassert>
-#include <cmath>
-#include <iostream>
-
-#include <geometrycentral/numerical/linear_solvers.h>
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/intrinsic_geometry_interface.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/eigen_interop_helpers.h>
-#include <geometrycentral/utilities/vector3.h>
-
-#include "Eigen/src/Core/Matrix.h"
-#include "Eigen/src/Core/util/Constants.h"
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/type_utilities.h"
-#include <Eigen/Core>
-#include <math.h>
-#include <pcg_random.hpp>
-#include <stdexcept>
 
 namespace mem3dg {
 namespace solver {
@@ -188,7 +165,7 @@ System::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
   return volGrad;
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
+gc::VertexData<gc::Vector3> System::computeVertexSchlafliVectors() {
   mesh->compress();
   gc::VertexData<gc::Vector3> vector(*mesh, {0, 0, 0});
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
@@ -208,17 +185,17 @@ gc::VertexData<gc::Vector3> System::computeVertexSchlafliVector() {
   return vector;
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVector() {
+gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeGaussianCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVector() {
+gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeMeanCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVector() {
+gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeVolumeVariationVector);
 }
@@ -330,9 +307,13 @@ void System::computeMechanicalForces(size_t i) {
     capillaryForceVec -= forces.surfaceTension * areaGrad;
     adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
                           parameters.adsorption.epsilon * areaGrad;
-    aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
-                            proteinDensityj * proteinDensityj * 2 / 3) *
-                           parameters.aggregation.chi * areaGrad;
+    aggregationForceVec -=
+        (pow(pow(2 * proteinDensityi - 1, 2) - 1, 2) / 3 +
+         pow(pow(2 * proteinDensityj - 1, 2) - 1, 2) * 2 / 3) *
+        parameters.aggregation.chi * areaGrad;
+    // aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
+    //                         proteinDensityj * proteinDensityj * 2 / 3) *
+    //                        parameters.aggregation.chi * areaGrad;
     lineCapForceVec -=
         parameters.dirichlet.eta *
         (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
@@ -430,7 +411,7 @@ void System::computeMechanicalForces(size_t i) {
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-#define MODE 1
+#define MODE 2
 #if MODE == 0 // axial sinusoidal force
   double freq = 5;
   double totalHeight = toMatrix(vpg->inputVertexPositions).col(2).maxCoeff() -
@@ -463,22 +444,22 @@ EigenVectorX3dr System::prescribeExternalForce() {
   }
 
 #elif MODE == 2 // anchor force
-  double decayTime = 500;
+  double decayTime = 1000;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  geodesicDistanceFromPtInd = heatSolver.computeDistance(thePoint);
+  geodesicDistance = heatSolver.computeDistance(center);
   double standardDeviation = 0.02;
 
   // gc::Vector3 anchor{0, 0, 1};
-  gc::Vector3 direction{0, 0, 1};
-  // direction = anchor - vpg->inputVertexPositions[thePoint.nearestVertex()];
+  // gc::Vector3 direction{0, 0, -1};
+  // direction = anchor - vpg->inputVertexPositions[center.nearestVertex()];
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
-    forces.externalForceVec[i] =
-        forces.maskForce(exp(-time / decayTime) * parameters.external.Kf *
-                             gaussianDistribution(geodesicDistanceFromPtInd[v],
-                                                  standardDeviation) *
-                             vpg->vertexDualArea(v) * direction,
-                         i);
+    gc::Vector3 direction = -vpg->vertexPositions[v].normalize();
+    forces.externalForceVec[i] = forces.maskForce(
+        exp(-time / decayTime) * parameters.external.Kf *
+            gaussianDistribution(geodesicDistance[v], standardDeviation) *
+            vpg->vertexDualArea(v) * direction,
+        i);
   }
 #endif
   forces.externalForce = forces.ontoNormal(forces.externalForceVec);
@@ -570,35 +551,19 @@ void System::computeChemicalPotentials() {
 
   if (parameters.aggregation.chi != 0)
     forces.aggregationPotential.raw() = forces.maskProtein(
-        -2 * parameters.aggregation.chi * proteinDensity.raw().array() *
+        -32 * parameters.aggregation.chi * (proteinDensity.raw().array() - 1) *
+        (2 * proteinDensity.raw().array() - 1) * proteinDensity.raw().array() *
         vpg->vertexDualAreas.raw().array());
-
-  // if (parameters.adsorption.epsilon != 0)
-  //   forces.adsorptionPotential.raw() = forces.maskProtein(
-  //       -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array() /
-  //       vpg->vertexDualAreas.raw().array());
-
-  // if (parameters.aggregation.chi != 0)
-  //   forces.aggregationPotential.raw() = forces.maskProtein(
-  //       -2 * parameters.aggregation.chi * proteinDensity.raw().array());
 
   if (parameters.dirichlet.eta != 0)
     forces.diffusionPotential.raw() = forces.maskProtein(
         -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
 
-  if (parameters.proteinDistribution.lambdaPhi != 0)
+  if (parameters.protein.proteinInteriorPenalty != 0)
     forces.interiorPenaltyPotential.raw() =
-        forces.maskProtein(parameters.proteinDistribution.lambdaPhi *
+        forces.maskProtein(parameters.protein.proteinInteriorPenalty *
                            (1 / proteinDensity.raw().array() -
                             1 / (1 - proteinDensity.raw().array())));
-  // F.chemicalPotential.raw().array() =
-  //     -vpg->vertexDualAreas.raw().array() *
-  //     (P.adsorption.epsilon - 2 * Kb.raw().array() * meanCurvDiff *
-  //     dH0dphi.raw().array() +
-  //      meanCurvDiff * meanCurvDiff * dKbdphi.raw().array());
-  // F.chemicalPotential.raw().array() +=
-  //     P.proteinDistribution.lambdaPhi * (1 / proteinDensity.raw().array() -
-  //                    1 / (1 - proteinDensity.raw().array()));
 }
 
 void System::computeDPDForces(double dt) {
