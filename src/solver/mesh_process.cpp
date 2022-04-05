@@ -33,7 +33,8 @@ void MeshProcessor::summarizeStatus() {
 
   isMeshRegularize = (meshRegularizer.Kst != 0) || (meshRegularizer.Ksl != 0) ||
                      (meshRegularizer.Kse != 0);
-  isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
+  isMeshMutate = meshMutator.isChangeTopology || meshMutator.isShiftVertex ||
+                 meshMutator.isSmoothenMesh;
 
   if (!meshRegularizer.ifHasRefMesh && isMeshRegularize) {
     mem3dg_runtime_error(
@@ -152,11 +153,11 @@ bool MeshProcessor::MeshMutator::ifFlip(
 }
 
 void MeshProcessor::MeshMutator::summarizeStatus() {
-  isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
+  isFlipEdge = (flipNonDelaunay || flipNonDelaunayRequireFlat);
   isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
                  splitSkinnyDelaunay);
-  isCollapseEdge = (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
-  isChangeTopology = isEdgeFlip || isSplitEdge || isCollapseEdge;
+  isCollapseEdge = (collapseSkinny || collapseSmall || collapseFlat);
+  isChangeTopology = isFlipEdge || isSplitEdge || isCollapseEdge;
 };
 
 bool MeshProcessor::MeshMutator::ifCollapse(
@@ -203,15 +204,16 @@ bool MeshProcessor::MeshMutator::ifCollapse(
     is2Small =
         (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
         (num_neighbor - gap) * targetFaceArea;
-    if (collapseSmallNeedFlat) {
-      isFlat =
-          vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
-      is2Small = is2Small && isFlat;
-    }
     // isSmooth =
     //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
     //     targetdH0);
     condition = condition || is2Small;
+  }
+
+  if (collapseFlat) {
+    isFlat =
+        vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
+    condition = condition || isFlat;
   }
 
   // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
@@ -221,6 +223,11 @@ bool MeshProcessor::MeshMutator::ifCollapse(
 
 bool MeshProcessor::MeshMutator::ifSplit(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
+
+  if (vpg.edgeLength(e) <= minimumEdgeLength) {
+    return false;
+  }
+
   gcs::Halfedge he = e.halfedge();
   bool isBoundary = e.isBoundary();
   if (!he.isInterior()) {

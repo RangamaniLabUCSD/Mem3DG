@@ -35,13 +35,9 @@ public:
   bool isCapEnergy = true;
   VelocityVerlet(System &system_, double characteristicTimeStep_,
                  double totalTime_, double savePeriod_, double tolerance_,
-                 std::string outputDirectory_)
+                 std::string outputDirectory_, std::size_t frame_ = 0)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
-                   tolerance_, outputDirectory_) {
-
-    // print to console
-    std::cout << "Running Velocity Verlet integrator ..." << std::endl;
-
+                   tolerance_, outputDirectory_, frame_) {
     // check the validity of parameter
     checkParameters();
 

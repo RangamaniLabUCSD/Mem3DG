@@ -21,11 +21,109 @@
 #include <Eigen/Core>
 #include <cmath>
 
+#include <queue>
+
 namespace mem3dg {
 namespace solver {
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
+
+inline bool ifFoldover(gc::Vector3 a, gc::Vector3 b, gc::Vector3 c,
+                       gc::Vector3 x, double angle) {
+  gc::Vector3 n1 = gc::cross(b - a, c - a);
+  gc::Vector3 n2 = gc::cross(b - x, a - x);
+  return gc::angle(n1, n2) > angle;
+}
+
+bool ifFoldover(gcs::ManifoldSurfaceMesh &mesh,
+                gcs::VertexPositionGeometry &geometry, gcs::Edge e) {
+  std::vector<gcs::Halfedge> toCheck;
+  gcs::Vertex v1 = e.halfedge().vertex();
+  gcs::Vertex v2 = e.halfedge().twin().vertex();
+  gc::Vector3 midpoint =
+      (geometry.inputVertexPositions[e.halfedge().tailVertex()] +
+       geometry.inputVertexPositions[e.halfedge().tipVertex()]) /
+      2;
+  // find (halfedge) link around the edge, starting with those surrounding v1
+  gcs::Halfedge he = v1.halfedge();
+  gcs::Halfedge st = he;
+  do {
+    he = he.next();
+    if (he.vertex() != v2 && he.next().vertex() != v2) {
+      toCheck.push_back(he);
+    }
+    he = he.next().twin();
+  } while (he != st);
+  // link around v2
+  he = v2.halfedge();
+  st = he;
+  do {
+    he = he.next();
+    if (he.vertex() != v1 && he.next().vertex() != v1) {
+      toCheck.push_back(he);
+    }
+    he = he.next().twin();
+  } while (he != st);
+
+  // see if the point that would form after a collapse would cause a major
+  // foldover with surrounding edges
+  for (gcs::Halfedge he0 : toCheck) {
+    gcs::Halfedge heT = he0.twin();
+    gcs::Vertex v1 = heT.vertex();
+    gcs::Vertex v2 = heT.next().vertex();
+    gcs::Vertex v3 = heT.next().next().vertex();
+    gc::Vector3 a = geometry.inputVertexPositions[v1];
+    gc::Vector3 b = geometry.inputVertexPositions[v2];
+    gc::Vector3 c = geometry.inputVertexPositions[v3];
+    if (ifFoldover(a, b, c, midpoint, 0.5)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void System::mutateMesh(size_t nRepetition) {
+  for (size_t i = 0; i < nRepetition; ++i) {
+    bool isGrown = false, isFlipped = false;
+    mutationMarker.fill(false);
+
+    // vertex shift for regularization
+    if (meshProcessor.meshMutator.isShiftVertex) {
+      vertexShift();
+    }
+    // linear edge flip for non-Delauney triangles
+    if (meshProcessor.meshMutator.isFlipEdge) {
+      // isFlipped = edgeFlip();
+      // isFlipped = edgeFlip() || isFlipped;
+      // isFlipped = edgeFlip() || isFlipped;
+      flipEdge();
+    }
+
+    // split edge and collapse edge
+    if (meshProcessor.meshMutator.isSplitEdge ||
+        meshProcessor.meshMutator.isCollapseEdge) {
+      isGrown = isGrown || growMesh();
+    }
+
+    // linear edge flip for non-Delauney triangles
+    if (meshProcessor.meshMutator.isFlipEdge) {
+      // isFlipped = edgeFlip();
+      // isFlipped = edgeFlip() || isFlipped;
+      // isFlipped = edgeFlip() || isFlipped;
+      flipEdge();
+    }
+
+    if (meshProcessor.meshMutator.isSmoothenMesh) {
+      smoothenMesh();
+    }
+
+    // globally update quantities
+    if (isGrown || isFlipped) {
+      globalUpdateAfterMutation();
+    }
+  }
+}
 
 void System::computeRegularizationForce() {
   // Note in regularization, it is preferred to use immediate calculation rather
@@ -231,7 +329,62 @@ bool System::edgeFlip() {
   return isFlipped;
 }
 
-bool System::growMesh() {
+void System::flipEdge() {
+  // queue of edges to check if Delaunay
+  std::queue<gc::Edge> toCheck;
+  // true if edge is currently in toCheck
+  gc::EdgeData<bool> inQueue(*mesh);
+  // start with all edges
+  for (gc::Edge e : mesh->edges()) {
+    toCheck.push(e);
+    inQueue[e] = true;
+  }
+  // counter and limit for number of flips
+  int flipMax = 100 * mesh->nVertices();
+  int flipCnt = 0;
+  while (!toCheck.empty() && flipCnt < flipMax) {
+    gc::Edge e = toCheck.front();
+    toCheck.pop();
+    inQueue[e] = false;
+    // if not Delaunay, flip edge and enqueue the surrounding "diamond" edges
+    // (if not already)
+    if (meshProcessor.meshMutator.ifFlip(e, *vpg)) {
+      flipCnt++;
+      gc::Halfedge he = e.halfedge();
+      gc::Halfedge he1 = he.next();
+      gc::Halfedge he2 = he1.next();
+      gc::Halfedge he3 = he.twin().next();
+      gc::Halfedge he4 = he3.next();
+
+      if (gc::sum(forces.forceMask[he.vertex()] +
+                  forces.forceMask[he.twin().vertex()]) < 0.5) {
+        continue;
+      }
+
+      if (!inQueue[he1.edge()]) {
+        toCheck.push(he1.edge());
+        inQueue[he1.edge()] = true;
+      }
+      if (!inQueue[he2.edge()]) {
+        toCheck.push(he2.edge());
+        inQueue[he2.edge()] = true;
+      }
+      if (!inQueue[he3.edge()]) {
+        toCheck.push(he3.edge());
+        inQueue[he3.edge()] = true;
+      }
+      if (!inQueue[he4.edge()]) {
+        toCheck.push(he4.edge());
+        inQueue[he4.edge()] = true;
+      }
+      mesh->flip(e);
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tailVertex());
+      meshProcessor.meshMutator.markVertices(mutationMarker, he.tipVertex());
+    }
+  }
+}
+
+bool System::meshGrowth() {
   // Note in regularization, it is preferred to use immediate calculation rather
   // than cached one
   bool isGrown = false;
@@ -255,14 +408,14 @@ bool System::growMesh() {
     gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
     gc::Vector3 vertex1Vel = velocity[vertex1];
     gc::Vector3 vertex2Vel = velocity[vertex2];
-    double vertex1GeoDist = geodesicDistanceFromPtInd[vertex1];
-    double vertex2GeoDist = geodesicDistanceFromPtInd[vertex2];
+    double vertex1GeoDist = geodesicDistance[vertex1];
+    double vertex2GeoDist = geodesicDistance[vertex2];
     double vertex1Phi = proteinDensity[vertex1];
     double vertex2Phi = proteinDensity[vertex2];
     gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
     gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
-    bool vertex1PointTracker = thePointTracker[vertex1];
-    bool vertex2PointTracker = thePointTracker[vertex2];
+    bool vertex1PointTracker = centerTracker[vertex1];
+    bool vertex2PointTracker = centerTracker[vertex2];
 
     // don't keep processing static vertices
     if (gc::sum(vertex1ForceMask + vertex2ForceMask) < 0.5)
@@ -279,14 +432,14 @@ bool System::growMesh() {
       // momentum
       // averageData(vpg->inputVertexPositions, vertex1, vertex2, newVertex);
       // averageData(velocity, vertex1, vertex2, newVertex);
-      // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+      // averageData(geodesicDistance, vertex1, vertex2, newVertex);
       // averageData(proteinDensity, vertex1, vertex2, newVertex);
       vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
       velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-      geodesicDistanceFromPtInd[newVertex] =
+      geodesicDistance[newVertex] =
           0.5 * (vertex1GeoDist + vertex2GeoDist);
       proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-      thePointTracker[newVertex] = false;
+      centerTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
 
       // isOrigVertex[newVertex] = false;
@@ -312,13 +465,13 @@ bool System::growMesh() {
             : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
                                               : (vertex1Pos + vertex2Pos) / 2;
         // averageData(velocity, vertex1, vertex2, newVertex);
-        // averageData(geodesicDistanceFromPtInd, vertex1, vertex2, newVertex);
+        // averageData(geodesicDistance, vertex1, vertex2, newVertex);
         // averageData(proteinDensity, vertex1, vertex2, newVertex);
         velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-        geodesicDistanceFromPtInd[newVertex] =
+        geodesicDistance[newVertex] =
             0.5 * (vertex1GeoDist + vertex2GeoDist);
         proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-        thePointTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
+        centerTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
 
         // isOrigVertex[newVertex] = false;
         for (gcs::Edge e : newVertex.adjacentEdges()) {
@@ -336,34 +489,101 @@ bool System::growMesh() {
   return isGrown;
 }
 
-void System::mutateMesh(size_t nRepetition) {
-  for (size_t i = 0; i < nRepetition; ++i) {
-    bool isGrown = false, isFlipped = false;
-    mutationMarker.fill(false);
+bool System::growMesh() {
+  bool didSplitOrCollapse = false;
+  // queues of edges to CHECK to change
+  std::vector<gcs::Edge> toSplit;
+  std::vector<gcs::Edge> toCollapse;
 
-    // vertex shift for regularization
-    if (meshProcessor.meshMutator.shiftVertex) {
-      vertexShift();
-    }
+  for (gc::Edge e : mesh->edges()) {
+    toSplit.push_back(e);
+  }
 
-    // split edge and collapse edge
-    if (meshProcessor.meshMutator.isSplitEdge ||
-        meshProcessor.meshMutator.isCollapseEdge) {
-      isGrown = isGrown || growMesh();
-    }
+  // actually splitting
+  while (!toSplit.empty()) {
+    gcs::Edge e = toSplit.back();
+    toSplit.pop_back();
 
-    // linear edge flip for non-Delauney triangles
-    if (meshProcessor.meshMutator.isEdgeFlip) {
-      isFlipped = edgeFlip();
-      isFlipped = edgeFlip() || isFlipped;
-      isFlipped = edgeFlip() || isFlipped;
-    }
+    gcs::Halfedge he = e.halfedge();
+    gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
+    gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
+    gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
+    gc::Vector3 vertex1Vel = velocity[vertex1];
+    gc::Vector3 vertex2Vel = velocity[vertex2];
+    double vertex1GeoDist = geodesicDistance[vertex1];
+    double vertex2GeoDist = geodesicDistance[vertex2];
+    double vertex1Phi = proteinDensity[vertex1];
+    double vertex2Phi = proteinDensity[vertex2];
+    gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
+    gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
+    bool vertex1PointTracker = centerTracker[vertex1];
+    bool vertex2PointTracker = centerTracker[vertex2];
 
-    // globally update quantities
-    if (isGrown || isFlipped) {
-      globalUpdateAfterMutation();
+    if (meshProcessor.meshMutator.ifSplit(e, *vpg) &&
+        gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5) {
+
+      gcs::Halfedge newHe = mesh->splitEdgeTriangular(e);
+      didSplitOrCollapse = true;
+      gcs::Vertex newVertex = newHe.vertex();
+
+      vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
+      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+      geodesicDistance[newVertex] =
+          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+      centerTracker[newVertex] = false;
+      forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
+
+      meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
+    } else {
+      toCollapse.push_back(e);
     }
   }
+  // actually collapsing
+  while (!toCollapse.empty()) {
+    gcs::Edge e = toCollapse.back();
+    toCollapse.pop_back();
+    if (e.halfedge().next().getIndex() !=
+        gc::INVALID_IND) { // make sure it exists
+      gcs::Halfedge he = e.halfedge();
+      gcs::Vertex vertex1 = he.tipVertex(), vertex2 = he.tailVertex();
+      gc::Vector3 vertex1Pos = vpg->vertexPositions[vertex1];
+      gc::Vector3 vertex2Pos = vpg->vertexPositions[vertex2];
+      gc::Vector3 vertex1Vel = velocity[vertex1];
+      gc::Vector3 vertex2Vel = velocity[vertex2];
+      double vertex1GeoDist = geodesicDistance[vertex1];
+      double vertex2GeoDist = geodesicDistance[vertex2];
+      double vertex1Phi = proteinDensity[vertex1];
+      double vertex2Phi = proteinDensity[vertex2];
+      gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
+      gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
+      bool vertex1PointTracker = centerTracker[vertex1];
+      bool vertex2PointTracker = centerTracker[vertex2];
+
+      if (meshProcessor.meshMutator.ifCollapse(e, *vpg) &&
+          gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5 &&
+          !ifFoldover(*mesh, *vpg, e)) {
+        gcs::Vertex newVertex = mesh->collapseEdgeTriangular(e);
+        didSplitOrCollapse = true;
+        if (newVertex != gcs::Vertex()) {
+          vpg->vertexPositions[newVertex] =
+              gc::sum(vertex1ForceMask) < 2.5   ? vertex1Pos
+              : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
+                                                : (vertex1Pos + vertex2Pos) / 2;
+          velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+          geodesicDistance[newVertex] =
+              0.5 * (vertex1GeoDist + vertex2GeoDist);
+          proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+          centerTracker[newVertex] =
+              vertex1PointTracker || vertex2PointTracker;
+          meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
+        }
+      }
+    }
+  }
+  if (didSplitOrCollapse)
+    mesh->compress();
+  return didSplitOrCollapse;
 }
 
 Eigen::Matrix<bool, Eigen::Dynamic, 1>
@@ -391,11 +611,11 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
 
   while (gradNorm > tol && !isSmooth) {
     if (stepSize < 1e-8 * initStep) {
-      mem3dg_runtime_error("smoothing operation diverges!");
+      mem3dg_runtime_message("smoothing operation diverges!");
       break;
     }
     if (num_iter == maxIteration) {
-      mem3dg_runtime_error("smoothing operation exceeds max iteration!");
+      mem3dg_runtime_message("smoothing operation exceeds max iteration!");
       break;
     }
 
@@ -421,7 +641,6 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
     pastGradNorm = gradNorm;
     pastForceVec = toMatrix(forces.bendingForceVec);
     num_iter++;
-    
   };
 
   return smoothingMask;
@@ -519,13 +738,13 @@ void System::globalUpdateAfterMutation() {
   // Update the vertex when topology changes
   if (!parameters.point.isFloatVertex) {
     for (gcs::Vertex v : mesh->vertices()) {
-      if (thePointTracker[v]) {
-        thePoint = gcs::SurfacePoint(v);
+      if (centerTracker[v]) {
+        center = gcs::SurfacePoint(v);
       }
     }
-    if (thePointTracker.raw().cast<int>().sum() != 1) {
-      mem3dg_runtime_error("globalUpdateAfterMutation: there is no "
-                           "unique/existing \"the\" point!");
+    if (centerTracker.raw().cast<int>().sum() != 1) {
+      mem3dg_runtime_error("there is no "
+                           "unique/existing center!");
     }
   }
 

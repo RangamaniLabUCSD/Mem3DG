@@ -58,6 +58,8 @@ struct Parameters {
   struct Bending {
     /// Deviatoric modulus
     double Kd = 0;
+    /// Constant of deviatoric modulus vs protein density
+    double Kdc = 0;
     /// Bending modulus
     double Kb = 0;
     /// Constant of bending modulus vs protein density
@@ -127,13 +129,13 @@ struct Parameters {
 
   struct SelfAvoidance {
     /// limit distance
-    double d = 0.005;
+    double d = 0;
     /// penalty coefficient
-    double mu = 1;
+    double mu = 0;
     // neighborhood layers
     std::size_t n = 1;
     // period factor of computation
-    double p = 1;
+    double p = 0;
   };
 
   struct External {
@@ -164,7 +166,7 @@ struct Parameters {
     /// Whether or not consider shape evolution
     bool isShapeVariation = true;
     /// domain of shape variation
-    double radius = -1;
+    double geodesicMask = -1;
 
     /**
      * @brief check parameter conflicts
@@ -184,23 +186,21 @@ struct Parameters {
     void checkParameters();
   };
 
-  struct ProteinDistribution {
-    /// protein boundary condition: pin
+  struct Protein {
+    bool ifPrescribe = false;
+    /// profile type: Gaussian or tanh
     std::string profile = "none";
     /// (initial) protein density
-    EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
+    EigenVectorX1d geodesicProteinDensityDistribution;
     /// sharpness of tanh transition
     double tanhSharpness = 20;
     /// interior point parameter for protein density
-    double lambdaPhi = 1e-6;
-    /// type of input
-    enum TypeOfProtein0 {
-      Disabled,
-      Homogeneous,
-      GeodesicPhaseSeparation,
-      VertexWise
-    };
-    TypeOfProtein0 typeOfProtein0;
+    double proteinInteriorPenalty = 1e-6;
+
+    Protein() {
+      geodesicProteinDensityDistribution.resize(1);
+      geodesicProteinDensityDistribution << -1;
+    }
     /**
      * @brief check parameter conflicts
      */
@@ -232,7 +232,7 @@ struct Parameters {
   /// reference point
   Point point;
   /// protein distribution
-  ProteinDistribution proteinDistribution;
+  Protein protein = Protein();
 
   /// mobility constant
   double proteinMobility = 0;

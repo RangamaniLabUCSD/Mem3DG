@@ -11,23 +11,8 @@
 //     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
-#include <iostream>
 
-#include <geometrycentral/surface/halfedge_mesh.h>
-#include <geometrycentral/surface/simple_polygon_mesh.h>
-#include <geometrycentral/surface/vertex_position_geometry.h>
-#include <geometrycentral/utilities/eigen_interop_helpers.h>
-#include <geometrycentral/utilities/vector3.h>
-
-#include <Eigen/Core>
-
-#include "Eigen/src/Core/GlobalFunctions.h"
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/surface_mesh.h"
-#include "mem3dg/constants.h"
-#include "mem3dg/meshops.h"
 #include "mem3dg/solver/system.h"
-#include "mem3dg/type_utilities.h"
 
 namespace mem3dg {
 namespace solver {
@@ -69,6 +54,13 @@ void System::computeDeviatoricEnergy() {
                                vpg->vertexDualAreas.raw().array() -
                            vpg->vertexGaussianCurvatures.raw().array()))
           .sum();
+  // energy.deviatoricEnergy =
+  //     (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
+  //                          vpg->vertexDualAreas.raw().array()))
+  //         .sum();
+  // energy.deviatoricEnergy =
+  //     (Kd.raw().array() *
+  //     (-vpg->vertexGaussianCurvatures.raw().array())).sum();
 }
 
 void System::computeSurfaceEnergy() {
@@ -97,21 +89,40 @@ void System::computePressureEnergy() {
   }
 }
 
+// void System::computeAdsorptionEnergy() {
+//   energy.adsorptionEnergy =
+//       parameters.adsorption.epsilon * (proteinDensity.raw().array()).sum();
+// }
+
+// void System::computeAggregationEnergy() {
+//   energy.aggregationEnergy =
+//       parameters.aggregation.chi *
+//       (proteinDensity.raw().array() * proteinDensity.raw().array()).sum();
+// }
+
 void System::computeAdsorptionEnergy() {
   energy.adsorptionEnergy =
-      parameters.adsorption.epsilon * (proteinDensity.raw().array()).sum();
+      parameters.adsorption.epsilon *
+      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
 }
 
 void System::computeAggregationEnergy() {
   energy.aggregationEnergy =
       parameters.aggregation.chi *
-      (proteinDensity.raw().array() * proteinDensity.raw().array()).sum();
+      (vpg->vertexDualAreas.raw().array() *
+       ((2 * proteinDensity.raw().array() - 1).square() - 1).square())
+          .sum();
+  // energy.aggregationEnergy =
+  //     parameters.aggregation.chi *
+  //     (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
+  //      proteinDensity.raw().array())
+  //         .sum();
 }
 
 void System::computeProteinInteriorPenalty() {
   // interior method to constrain protein density to remain from 0 to 1
   energy.proteinInteriorPenalty =
-      -parameters.proteinDistribution.lambdaPhi *
+      -parameters.protein.proteinInteriorPenalty *
       ((proteinDensity.raw().array()).log().sum() +
        (1 - proteinDensity.raw().array()).log().sum());
 }
@@ -212,7 +223,7 @@ double System::computePotentialEnergy() {
     computeSelfAvoidanceEnergy();
   }
   if (parameters.variation.isProteinVariation &&
-      parameters.proteinDistribution.lambdaPhi != 0) {
+      parameters.protein.proteinInteriorPenalty != 0) {
     computeProteinInteriorPenalty();
   }
 
