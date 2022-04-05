@@ -84,7 +84,7 @@ option(M3DG_GET_OWN_PYBIND11 "Download own pybind11" ON)
 # ##############################################################################
 add_subdirectory(libraries)
 
-set(LINKED_LIBS geometry-central polyscope pcg::pcg igl::core autodiff)
+set(LINKED_LIBS geometry-central polyscope pcg::pcg igl::core)
 
 if(WITH_NETCDF)
   message(STATUS "${VCPKG_TARGET_TRIPLET}")
