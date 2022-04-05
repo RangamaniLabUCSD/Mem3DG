@@ -1771,12 +1771,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
   pymem3dg.def(
       "getCylinder", &getCylinderMatrix,
       "get topology and vertex position matrix of a non-capped cylinder",
-      py::arg("R"), py::arg("nR"), py::arg("nh"), py::arg("freq") = 1,
-      py::arg("amp") = 0);
+      py::arg("radius"), py::arg("radialSubdivision"),
+      py::arg("axialSubdivision"), py::arg("frequency") = 1,
+      py::arg("amplitude") = 0);
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
                "get topology and vertex position matrix of icosphere",
-               py::arg("R"), py::arg("nSub") = 0);
+               py::arg("Radius"), py::arg("subdivision") = 0);
 
   pymem3dg.def("getTetrahedron", &getTetrahedronMatrix,
                "get topology and vertex position matrix of tetrahedron");
@@ -1787,14 +1788,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
   pymem3dg.def("getHexagon", &getHexagonMatrix,
                "get topology and vertex position matrix of Hexagon",
-               py::arg("R"), py::arg("nSub") = 0);
+               py::arg("radius"), py::arg("subdivision") = 0);
 
   pymem3dg.def(
       "subdivide",
       py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                         Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                         std::size_t>(&subdivide),
-      "subdivide the mesh", py::arg("faces"), py::arg("coords"),
+      "subdivide the mesh", py::arg("face"), py::arg("vertex"),
       py::arg("nSub"));
 
   pymem3dg.def(
@@ -1802,7 +1803,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                         Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                         std::size_t>(&loopSubdivide),
-      "subdivide the mesh in Loop scheme", py::arg("faces"), py::arg("coords"),
+      "subdivide the mesh in Loop scheme", py::arg("face"), py::arg("vertex"),
       py::arg("nSub"));
 
   pymem3dg.def("readMesh", &readMesh,
