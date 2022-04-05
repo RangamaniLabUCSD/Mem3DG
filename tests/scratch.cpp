@@ -13,8 +13,6 @@
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector3.h>
 
-#include <forward/dual.hpp>
-
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
