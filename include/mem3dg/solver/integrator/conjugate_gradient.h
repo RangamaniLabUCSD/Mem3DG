@@ -33,6 +33,10 @@ class DLL_PUBLIC ConjugateGradient : public Integrator {
 private:
   double currentNormSquared;
   double pastNormSquared;
+  /// Normalized area difference to reference mesh
+  double areaDifference;
+  /// Normalized volume/osmotic pressure difference
+  double volumeDifference;
 
   std::size_t countCG = 0;
 
@@ -48,12 +52,12 @@ public:
 
   ConjugateGradient(System &system_, double characteristicTimeStep_,
                     double totalTime_, double savePeriod_, double tolerance_,
-                    std::string outputDirectory_)
+                    std::string outputDirectory_, std::size_t frame_)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
-                   tolerance_, outputDirectory_) {
-
-    // print to console
-    std::cout << "Running Conjugate Gradient propagator ..." << std::endl;
+                   tolerance_, outputDirectory_, frame_) {
+    // Initialize geometry constraints
+    areaDifference = std::numeric_limits<double>::infinity();
+    volumeDifference = std::numeric_limits<double>::infinity();
 
     // check the validity of parameter
     checkParameters();
@@ -88,6 +92,34 @@ public:
       march();
     }
   }
+
+  /**
+   * @brief Thresholding when adopting reduced volume parametrization
+   * @param EXIT, reference to the exit flag
+   * @param isAugmentedLagrangian, whether using augmented lagrangian method
+   * @param dArea, normalized area difference
+   * @param dVolume, normalized volume difference
+   * @param ctol, exit criterion for constraint
+   * @param increment, increment coefficient of penalty when using incremental
+   * penalty method
+   * @return
+   */
+  void reducedVolumeThreshold(bool &EXIT, const bool isAugmentedLagrangian,
+                              const double dArea, const double dVolume,
+                              const double ctol, double increment);
+  /**
+   * @brief Thresholding when adopting ambient pressure constraint
+   * @param EXIT, reference to the exit flag
+   * @param isAugmentedLagrangian, whether using augmented lagrangian method
+   * @param dArea, normalized area difference
+   * @param ctol, exit criterion for constraint
+   * @param increment, increment coefficient of penalty when using incremental
+   * penalty method
+   * @return
+   */
+  void pressureConstraintThreshold(bool &EXIT, const bool isAugmentedLagrangian,
+                                   const double dArea, const double ctol,
+                                   double increment);
 };
 } // namespace integrator
 } // namespace solver
