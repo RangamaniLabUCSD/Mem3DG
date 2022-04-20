@@ -120,6 +120,7 @@ public:
     savePeriod = savePeriod_;
 
     ifDisableIntegrate = false;
+    ifPrintToConsole = false;
     isContinuation = (frame != 0);
   }
 
