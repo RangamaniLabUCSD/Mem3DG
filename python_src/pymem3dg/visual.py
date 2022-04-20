@@ -76,8 +76,10 @@ def animate(trajNc, **kwargs):
 
     if buildSystem:
         system = dg.System(trajNc, currFrame)
+        system.initialize(nMutation = 0, ifMute = True)
         if hasParameters:
-            system = dg.System(trajNc, currFrame, parameters, True)
+            system = dg.System(trajNc, currFrame, parameters)
+            system.initialize(nMutation = 0, ifMute = True)
 
     def show(trajNc):
         nonlocal currFrame, system
@@ -92,75 +94,77 @@ def animate(trajNc, **kwargs):
 
         if buildSystem:
             if hasParameters:
-                system = dg.System(trajNc, currFrame, parameters, True)
+                system = dg.System(trajNc, currFrame, parameters)
+                system.initialize(nMutation = 0, ifMute = True)
                 system.computePhysicalForcing()
                 if (kwargs.get('mechanicalForce')):
-                    mechanicalForce = system.forces.getMechanicalForceVec()
+                    mechanicalForce = system.getForces().getMechanicalForceVec()
                     mesh.add_vector_quantity(
                         "mechanicalForce", mechanicalForce)
                     mesh.add_scalar_quantity("<mechanicalForce,n>", dg_util.rowwiseDotProduct(
-                        mechanicalForce, system.getVertexNormal()))
+                        mechanicalForce, system.getVertexNormals()))
                 if (kwargs.get('bendingForce')):
-                    bendingForce = system.forces.getBendingForceVec()
+                    bendingForce = system.getForces().getBendingForceVec()
                     mesh.add_vector_quantity("bendingForce", bendingForce)
                     mesh.add_scalar_quantity("<bendingForce,n>", dg_util.rowwiseDotProduct(
-                        bendingForce, system.getVertexNormal()))
+                        bendingForce, system.getVertexNormals()))
                 if (kwargs.get('externalForce')):
-                    externalForce = system.forces.getExternalForceVec()
+                    externalForce = system.getForces().getExternalForceVec()
                     mesh.add_vector_quantity("externalForce", externalForce)
                     mesh.add_scalar_quantity("<externalForce,n>", dg_util.rowwiseDotProduct(
-                        externalForce, system.getVertexNormal()))
+                        externalForce, system.getVertexNormals()))
                 if (kwargs.get('capillaryForce')):
-                    capillaryForce = system.forces.getCapillaryForceVec()
+                    capillaryForce = system.getForces().getCapillaryForceVec()
                     mesh.add_vector_quantity("capillaryForce", capillaryForce)
                     mesh.add_scalar_quantity("<capillaryForce,n>", dg_util.rowwiseDotProduct(
-                        capillaryForce, system.getVertexNormal()))
+                        capillaryForce, system.getVertexNormals()))
                 if (kwargs.get('lineCapillaryForce')):
-                    lineCapillaryForce = system.forces.getLineCapillaryForceVec()
+                    lineCapillaryForce = system.getForces().getLineCapillaryForceVec()
                     mesh.add_vector_quantity(
                         "lineCapillaryForce", lineCapillaryForce)
                     mesh.add_scalar_quantity("<lineCapillaryForce,n>", dg_util.rowwiseDotProduct(
-                        lineCapillaryForce, system.getVertexNormal()))
+                        lineCapillaryForce, system.getVertexNormals()))
                 if (kwargs.get('osmoticForce')):
-                    osmoticForce = system.forces.getOsmoticForceVec()
+                    osmoticForce = system.getForces().getOsmoticForceVec()
                     mesh.add_vector_quantity("osmoticForce", osmoticForce)
                     mesh.add_scalar_quantity("<osmoticForce,n>", dg_util.rowwiseDotProduct(
-                        osmoticForce, system.getVertexNormal()))
+                        osmoticForce, system.getVertexNormals()))
                 if (kwargs.get('adsorptionForce')):
-                    adsorptionForce = system.forces.getAdsorptionForceVec()
+                    adsorptionForce = system.getForces().getAdsorptionForceVec()
                     mesh.add_vector_quantity(
                         "adsorptionForce", adsorptionForce)
                     mesh.add_scalar_quantity("<adsorptionForce,n>", dg_util.rowwiseDotProduct(
-                        adsorptionForce, system.getVertexNormal()))
+                        adsorptionForce, system.getVertexNormals()))
                 if (kwargs.get('aggregationForce')):
-                    aggregationForce = system.forces.getAggregationForceVec()
+                    aggregationForce = system.getForces().getAggregationForceVec()
                     mesh.add_vector_quantity(
                         "aggregationForce", aggregationForce)
                     mesh.add_scalar_quantity("<aggregationForce,n>", dg_util.rowwiseDotProduct(
-                        aggregationForce, system.getVertexNormal()))
+                        aggregationForce, system.getVertexNormals()))
 
                 if (kwargs.get('chemicalPotential')):
-                    chemicalPotential = system.forces.getChemicalPotential()
+                    chemicalPotential = system.getForces().getChemicalPotential()
                     mesh.add_scalar_quantity(
                         "chemicalPotential", chemicalPotential)
                 if (kwargs.get('bendingPotential')):
-                    bendingPotential = system.forces.getBendingPotential()
+                    bendingPotential = system.getForces().getBendingPotential()
                     mesh.add_scalar_quantity(
                         "bendingPotential", bendingPotential)
                 if (kwargs.get('aggregationPotential')):
-                    aggregationPotential = system.forces.getAggregationPotential()
+                    aggregationPotential = system.getForces().getAggregationPotential()
                     mesh.add_scalar_quantity(
                         "aggregationPotential", aggregationPotential)
                 if (kwargs.get('diffusionPotential')):
-                    diffusionPotential = system.forces.getDiffusionPotential()
+                    diffusionPotential = system.getForces().getDiffusionPotential()
                     mesh.add_scalar_quantity(
                         "diffusionPotential", bendingPotential)
                 if (kwargs.get('adsorptionPotential')):
-                    adsorptionPotential = system.forces.getAdsorptionPotential()
+                    adsorptionPotential = system.getForces().getAdsorptionPotential()
                     mesh.add_scalar_quantity(
                         "adsorptionPotential", adsorptionPotential)
             else:
                 system = dg.System(trajNc, currFrame)
+                system.initialize(nMutation = 0, ifMute = True)
 
             if (kwargs.get('meanCurvature')):
                 meanCurvature = system.getVertexMeanCurvatures()
