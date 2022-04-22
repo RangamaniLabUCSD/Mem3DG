@@ -25,6 +25,9 @@ def rowwiseScaling(scaling, matrix):
 def rowwiseDotProduct(a, b):
     return np.sum(a*b, axis=1)
 
+def gaussianDistribution(x , mean , sd):
+    prob_density = (np.pi*sd) * np.exp(-0.5*((x-mean)/sd)**2)
+    return prob_density
 
 def sphericalHarmonicsPerturbation(coordinate, m, n, amplitude, origin=None):
     if origin == None:
