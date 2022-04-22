@@ -120,13 +120,17 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
              geodesicProteinDensityDistribution[0] == -1) {
     ifPrescribe = false;
     if (profile != "none")
-      mem3dg_runtime_error(
-          "Please disable the profile type as 'none'!");
+      mem3dg_runtime_error("Please disable the profile type as 'none'!");
   } else {
     mem3dg_runtime_error("Length = 4, geodesic disk, [r1>0, r2>0, "
                          "0<phi_in<1, 0<phi_out<1], to disable, put [-1]");
     ifPrescribe = false;
   }
+}
+
+void Parameters::External::setForm(
+    const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f) {
+  form = f;
 }
 
 void Parameters::Boundary::checkParameters() {

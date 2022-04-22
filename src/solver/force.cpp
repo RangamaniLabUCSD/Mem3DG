@@ -426,7 +426,7 @@ std::function<EigenVectorX3dr()> System::func_ret(
 EigenVectorX3dr System::prescribeExternalForce() {
 #define MODE 0
 #if MODE == 0 // axial sinusoidal force
-  toMatrix(forces.externalForceVec) = externalForceFunctor(
+  toMatrix(forces.externalForceVec) = parameters.external.form(
       toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas));
 
 #elif MODE == 1 // anchor force
