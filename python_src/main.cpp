@@ -14,6 +14,7 @@
 #include <cstdarg>
 #include <cstddef>
 #include <pybind11/eigen.h>
+#include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -877,6 +878,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
              R"delim(
         System constructor with Matrices 
       )delim");
+
+  system.def("func_arg", &System::func_arg);
 
   /**
    * @brief Constructors by NetCDF trajectory file
@@ -1777,7 +1780,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
                "get topology and vertex position matrix of icosphere",
-               py::arg("Radius"), py::arg("subdivision") = 0);
+               py::arg("radius"), py::arg("subdivision") = 0);
 
   pymem3dg.def("getTetrahedron", &getTetrahedronMatrix,
                "get topology and vertex position matrix of tetrahedron");

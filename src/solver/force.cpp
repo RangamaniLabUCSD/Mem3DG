@@ -410,6 +410,11 @@ void System::computeMechanicalForces(size_t i) {
   forces.aggregationForce[i] = forces.ontoNormal(aggregationForceVec, i);
 }
 
+double System::func_arg(const std::function<double(EigenVectorX3dr)> &f) {
+  EigenVectorX3dr vertexPositions = toMatrix(vpg->inputVertexPositions);
+  return f(vertexPositions);
+}
+
 EigenVectorX3dr System::prescribeExternalForce() {
 #define MODE 2
 #if MODE == 0 // axial sinusoidal force
