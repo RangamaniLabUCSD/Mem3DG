@@ -411,9 +411,12 @@ void System::computeMechanicalForces(size_t i) {
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-  toMatrix(forces.externalForceVec) = forces.maskForce(parameters.external.form(
-      toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas)));
-  forces.externalForce = forces.ontoNormal(forces.externalForceVec);
+  if (parameters.external.isActivated) {
+    toMatrix(forces.externalForceVec) = forces.maskForce(
+        parameters.external.form(toMatrix(vpg->inputVertexPositions),
+                                 toMatrix(vpg->vertexDualAreas)));
+    forces.externalForce = forces.ontoNormal(forces.externalForceVec);
+  }
   return toMatrix(forces.externalForceVec);
 
   // #elif MODE == 1 // anchor force
