@@ -154,6 +154,9 @@ public:
   /// projected time of collision
   double projectedCollideTime;
 
+  std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)>
+      externalForceFunctor;
+
   // ==========================================================
   // =============        Constructors           ==============
   // ==========================================================
@@ -547,6 +550,8 @@ public:
    * @brief Compute external force component of the system
    */
   EigenVectorX3dr prescribeExternalForce();
+  void bindExternalForce(
+      const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f);
 
   EigenVectorX3dr func_arg(
       const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f);
