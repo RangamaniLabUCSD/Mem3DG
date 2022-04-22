@@ -128,11 +128,6 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
   }
 }
 
-void Parameters::External::setForm(
-    const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f) {
-  form = f;
-}
-
 void Parameters::Boundary::checkParameters() {
   if (shapeBoundaryCondition != "roller" && shapeBoundaryCondition != "pin" &&
       shapeBoundaryCondition != "fixed" && shapeBoundaryCondition != "none") {

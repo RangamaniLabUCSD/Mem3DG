@@ -1050,7 +1050,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
         gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
       },
       R"delim(
-          get the vertex position matrix
+          set the vertex position matrix
       )delim");
 
   /**
@@ -1383,12 +1383,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
                          R"delim(
           get Magnitude of external force 
       )delim");
-  external.def("setForm", &Parameters::External::setForm,
-             py::arg("externalForceFunction"));
-  //   external.("f", &Parameters::External::f,
-  //                          R"delim(
-  //           get Magnitude of external force
-  //       )delim");
+
+  external.def(
+      "setForm",
+      [](Parameters::External &external,
+         std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)>
+             &externalForceFunction) { external.form = externalForceFunction; },
+      R"delim(
+          get the vertex position matrix
+      )delim");
 
   py::class_<Parameters::DPD> dpd(pymem3dg, "DPD",
                                   R"delim(
