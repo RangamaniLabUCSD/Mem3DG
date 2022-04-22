@@ -547,13 +547,6 @@ public:
    * @brief Compute external force component of the system
    */
   EigenVectorX3dr prescribeExternalForce();
-  void bindExternalForce(
-      const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f);
-
-  EigenVectorX3dr func_arg(
-      const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f);
-  std::function<EigenVectorX3dr()> func_ret(
-      const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f);
 
   /**
    * @brief Compute DPD forces of the system

@@ -410,57 +410,43 @@ void System::computeMechanicalForces(size_t i) {
   forces.aggregationForce[i] = forces.ontoNormal(aggregationForceVec, i);
 }
 
-EigenVectorX3dr System::func_arg(
-    const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f) {
-  return f(toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas));
-}
-
-std::function<EigenVectorX3dr()> System::func_ret(
-    const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f) {
-  return [f, this]() {
-    return f(toMatrix(vpg->inputVertexPositions),
-             toMatrix(vpg->vertexDualAreas));
-  };
-}
-
 EigenVectorX3dr System::prescribeExternalForce() {
-#define MODE 0
-#if MODE == 0 // axial sinusoidal force
-  toMatrix(forces.externalForceVec) = parameters.external.form(
-      toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas));
-
-#elif MODE == 1 // anchor force
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    gc::Vertex v{mesh->vertex(i)};
-    forces.externalForceVec[i] = forces.maskForce(
-        parameters.external.Kf *
-            ((vpg->vertexGaussianCurvatures[v] < -700 * vpg->vertexDualAreas[v])
-                 ? vpg->vertexGaussianCurvatures[v]
-                 : 0) *
-            vpg->vertexDualAreas[v] * vpg->vertexNormals[v],
-        i);
-  }
-
-#elif MODE == 2 // anchor force
-  double decayTime = 1000;
-  double standardDeviation = 0.02;
-
-  // gc::Vector3 anchor{0, 0, 1};
-  // gc::Vector3 direction{0, 0, -1};
-  // direction = anchor - vpg->inputVertexPositions[center.nearestVertex()];
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    gc::Vertex v{mesh->vertex(i)};
-    gc::Vector3 direction = -vpg->vertexPositions[v].normalize();
-    forces.externalForceVec[i] = forces.maskForce(
-        exp(-time / decayTime) * parameters.external.Kf *
-            gaussianDistribution(geodesicDistance[v], standardDeviation) *
-            vpg->vertexDualArea(v) * direction,
-        i);
-  }
-#endif
+  toMatrix(forces.externalForceVec) = forces.maskForce(parameters.external.form(
+      toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas)));
   forces.externalForce = forces.ontoNormal(forces.externalForceVec);
-
   return toMatrix(forces.externalForceVec);
+
+  // #elif MODE == 1 // anchor force
+  //   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+  //     gc::Vertex v{mesh->vertex(i)};
+  //     forces.externalForceVec[i] = forces.maskForce(
+  //         parameters.external.Kf *
+  //             ((vpg->vertexGaussianCurvatures[v] < -700 *
+  //             vpg->vertexDualAreas[v])
+  //                  ? vpg->vertexGaussianCurvatures[v]
+  //                  : 0) *
+  //             vpg->vertexDualAreas[v] * vpg->vertexNormals[v],
+  //         i);
+  //   }
+
+  // #elif MODE == 2 // anchor force
+  //   double decayTime = 1000;
+  //   double standardDeviation = 0.02;
+
+  //   // gc::Vector3 anchor{0, 0, 1};
+  //   // gc::Vector3 direction{0, 0, -1};
+  //   // direction = anchor -
+  //   vpg->inputVertexPositions[center.nearestVertex()]; for (std::size_t i =
+  //   0; i < mesh->nVertices(); ++i) {
+  //     gc::Vertex v{mesh->vertex(i)};
+  //     gc::Vector3 direction = -vpg->vertexPositions[v].normalize();
+  //     forces.externalForceVec[i] = forces.maskForce(
+  //         exp(-time / decayTime) * parameters.external.Kf *
+  //             gaussianDistribution(geodesicDistance[v], standardDeviation) *
+  //             vpg->vertexDualArea(v) * direction,
+  //         i);
+  //   }
+  // #endif
 }
 
 void System::computeSelfAvoidanceForce() {
@@ -701,7 +687,6 @@ double System::computeNorm(
 }
 
 void System::computePhysicalForcing() {
-
   // zero all forces
   forces.mechanicalForceVec.fill({0, 0, 0});
 
