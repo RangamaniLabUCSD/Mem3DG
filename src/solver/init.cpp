@@ -183,6 +183,11 @@ void System::checkConfiguration() {
   }
 }
 
+void System::bindExternalForce(
+    const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f) {
+  externalForceFunctor = f;
+}
+
 void System::initializeConstants(bool ifMute) {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);

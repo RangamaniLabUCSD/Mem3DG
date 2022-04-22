@@ -424,25 +424,10 @@ std::function<EigenVectorX3dr()> System::func_ret(
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-#define MODE 2
+#define MODE 0
 #if MODE == 0 // axial sinusoidal force
-  double freq = 5;
-  double totalHeight = toMatrix(vpg->inputVertexPositions).col(2).maxCoeff() -
-                       toMatrix(vpg->inputVertexPositions).col(2).minCoeff();
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    gc::Vertex v{mesh->vertex(i)};
-    gc::Vector3 direction{vpg->inputVertexPositions[v].x,
-                          vpg->inputVertexPositions[v].y, 0};
-
-    double externalPressureMagnitude =
-        parameters.external.Kf *
-        (1 + sin(freq * 2 * constants::PI / totalHeight *
-                 vpg->inputVertexPositions[v].z));
-    forces.externalForceVec[i] =
-        forces.maskForce(externalPressureMagnitude * vpg->vertexDualArea(v) *
-                             direction.normalize(),
-                         i);
-  }
+  toMatrix(forces.externalForceVec) = externalForceFunctor(
+      toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas));
 
 #elif MODE == 1 // anchor force
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
