@@ -410,9 +410,17 @@ void System::computeMechanicalForces(size_t i) {
   forces.aggregationForce[i] = forces.ontoNormal(aggregationForceVec, i);
 }
 
-double System::func_arg(const std::function<double(EigenVectorX3dr)> &f) {
-  EigenVectorX3dr vertexPositions = toMatrix(vpg->inputVertexPositions);
-  return f(vertexPositions);
+EigenVectorX3dr System::func_arg(
+    const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f) {
+  return f(toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas));
+}
+
+std::function<EigenVectorX3dr()> System::func_ret(
+    const std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> &f) {
+  return [f, this]() {
+    return f(toMatrix(vpg->inputVertexPositions),
+             toMatrix(vpg->vertexDualAreas));
+  };
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
@@ -450,8 +458,6 @@ EigenVectorX3dr System::prescribeExternalForce() {
 
 #elif MODE == 2 // anchor force
   double decayTime = 1000;
-  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  geodesicDistance = heatSolver.computeDistance(center);
   double standardDeviation = 0.02;
 
   // gc::Vector3 anchor{0, 0, 1};
