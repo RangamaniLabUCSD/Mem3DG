@@ -141,6 +141,14 @@ struct Parameters {
   struct External {
     /// Magnitude of external force
     double Kf = 0;
+    /// form of external force
+    std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> form = NULL;
+
+    /**
+     * @brief bind form to python function
+     */
+    void setForm(const std::function<EigenVectorX3dr(EigenVectorX3dr,
+                                                     EigenVectorX1d)> &f);
   };
 
   struct DPD {

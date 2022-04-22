@@ -881,7 +881,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
   system.def("func_arg", &System::func_arg);
   system.def("func_ret", &System::func_ret);
-  system.def("bindExternalForce", &System::bindExternalForce, py::arg("functor"));
 
   /**
    * @brief Constructors by NetCDF trajectory file
@@ -1384,10 +1383,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
                          R"delim(
           get Magnitude of external force 
       )delim");
-//   external.("f", &Parameters::External::f,
-//                          R"delim(
-//           get Magnitude of external force 
-//       )delim");
+  external.def("setForm", &Parameters::External::setForm,
+             py::arg("externalForceFunction"));
+  //   external.("f", &Parameters::External::f,
+  //                          R"delim(
+  //           get Magnitude of external force
+  //       )delim");
 
   py::class_<Parameters::DPD> dpd(pymem3dg, "DPD",
                                   R"delim(
