@@ -128,6 +128,14 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
   }
 }
 
+void Parameters::External::checkParameters() {
+  if (form == NULL) {
+    isActivated = false;
+  } else {
+    isActivated = true;
+  }
+}
+
 void Parameters::Boundary::checkParameters() {
   if (shapeBoundaryCondition != "roller" && shapeBoundaryCondition != "pin" &&
       shapeBoundaryCondition != "fixed" && shapeBoundaryCondition != "none") {

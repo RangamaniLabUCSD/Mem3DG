@@ -114,7 +114,7 @@ void System::testForceComputation(const double timeStep,
   //                 toMatrix(forces.selfAvoidanceForceVec));
   // // * toMatrix(forces.mechanicalForceVec);
   // updateConfigurations();
-  if (parameters.external.Kf != 0)
+  if (parameters.external.isActivated)
     computeExternalWork(time, timeStep);
   computeTotalEnergy();
   const Energy totalForceEnergy{energy};
