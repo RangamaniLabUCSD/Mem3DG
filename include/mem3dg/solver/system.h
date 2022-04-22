@@ -548,6 +548,8 @@ public:
    */
   EigenVectorX3dr prescribeExternalForce();
 
+  double func_arg(const std::function<double(EigenVectorX3dr)> &f);
+
   /**
    * @brief Compute DPD forces of the system
    */
