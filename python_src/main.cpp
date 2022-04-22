@@ -1379,7 +1379,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   external.def(
       "setForm",
       [](Parameters::External &external,
-         std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)>
+         std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
+                                       EigenVectorX1d)>
              &externalForceFunction) { external.form = externalForceFunction; },
       R"delim(
           get the vertex position matrix

@@ -142,7 +142,9 @@ struct Parameters {
     /// Magnitude of external force
     bool isActivated = false;
     /// form of external force
-    std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d)> form = NULL;
+    std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
+                                  EigenVectorX1d)>
+        form = NULL;
 
     /**
      * @brief check parameter conflicts
