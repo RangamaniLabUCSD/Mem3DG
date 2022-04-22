@@ -157,6 +157,7 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   osmotic.checkParameters();
   variation.checkParameters();
   point.checkParameters();
+  external.checkParameters();
   protein.checkParameters(nVertex);
 
   // variation

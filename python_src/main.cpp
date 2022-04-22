@@ -879,9 +879,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
         System constructor with Matrices 
       )delim");
 
-  system.def("func_arg", &System::func_arg);
-  system.def("func_ret", &System::func_ret);
-
   /**
    * @brief Constructors by NetCDF trajectory file
    */
