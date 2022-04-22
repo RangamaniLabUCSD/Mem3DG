@@ -129,11 +129,7 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
 }
 
 void Parameters::External::checkParameters() {
-  if (form == NULL) {
-    isActivated = false;
-  } else {
-    isActivated = true;
-  }
+  isActivated = (form != NULL);
 }
 
 void Parameters::Boundary::checkParameters() {
