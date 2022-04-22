@@ -745,7 +745,7 @@ void System::computePhysicalForcing() {
 
   if (parameters.variation.isShapeVariation) {
     computeMechanicalForces();
-    if (parameters.external.Kf != 0) {
+    if (parameters.external.isActivated) {
       prescribeExternalForce();
     }
     if (parameters.selfAvoidance.mu != 0) {

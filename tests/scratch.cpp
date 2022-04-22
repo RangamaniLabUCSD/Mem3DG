@@ -81,7 +81,6 @@ int main() {
   p.selfAvoidance.p = 0.1;
 
   p.dpd.gamma = 0;
-  p.external.Kf = 0;
 
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
   mem3dg::solver::System system(inputMesh, p, 0);

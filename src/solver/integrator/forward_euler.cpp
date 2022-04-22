@@ -177,7 +177,7 @@ void Euler::status() {
   }
 
   // compute the free energy of the system
-  if (system.parameters.external.Kf != 0)
+  if (system.parameters.external.isActivated)
     system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 

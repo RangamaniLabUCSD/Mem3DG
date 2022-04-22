@@ -1379,11 +1379,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                             R"delim(
         The external force parameters
     )delim");
-  external.def_readwrite("Kf", &Parameters::External::Kf,
-                         R"delim(
-          get Magnitude of external force 
-      )delim");
-
   external.def(
       "setForm",
       [](Parameters::External &external,

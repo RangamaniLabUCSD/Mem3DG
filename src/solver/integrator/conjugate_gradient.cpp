@@ -146,7 +146,7 @@ void ConjugateGradient::checkParameters() {
   if (restartPeriod < 1) {
     mem3dg_runtime_error("restartNum > 0!");
   }
-  if (system.parameters.external.Kf != 0) {
+  if (system.parameters.external.isActivated) {
     mem3dg_runtime_error(
         "External force can not be applied using energy optimization")
   }
