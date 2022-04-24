@@ -43,7 +43,6 @@ void System::testForceComputation(const double timeStep) {
 }
 
 void System::updateGeodesicsDistance() {
-  // update geodesic distance
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   geodesicDistance = heatSolver.computeDistance(center);
 }
