@@ -290,7 +290,7 @@ public:
          EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
          double time_ = 0)
       : System(std::move(ptrmesh_), std::move(ptrvpg_), time_) {
-    toMatrix(proteinDensity) = proteinDensity_;
+    proteinDensity.fromVector(proteinDensity_);
     toMatrix(velocity) = velocity_;
   }
 
