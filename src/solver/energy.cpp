@@ -270,7 +270,7 @@ double System::computeTotalEnergy() {
   if (time == energy.time) {
     energy.totalEnergy =
         energy.kineticEnergy + energy.potentialEnergy - energy.externalWork;
-  } else if (parameters.external.Kf == 0) {
+  } else if (!parameters.external.isActivated) {
     energy.totalEnergy = energy.kineticEnergy + energy.potentialEnergy;
   } else {
     mem3dg_runtime_error("energy.externalWork not updated!")

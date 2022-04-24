@@ -482,7 +482,7 @@ void Integrator::saveMutableNetcdfData() {
 
   // write dynamic properties
   mutableTrajFile.writeVelocity(frame, system.velocity);
-  if (system.parameters.external.Kf != 0)
+  if (system.parameters.external.isActivated)
     mutableTrajFile.writeExternalForce(frame, system.forces.externalForceVec);
 
   // write static properties

@@ -14,6 +14,7 @@
 #include <cstdarg>
 #include <cstddef>
 #include <pybind11/eigen.h>
+#include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -1046,7 +1047,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
         gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
       },
       R"delim(
-          get the vertex position matrix
+          set the vertex position matrix
       )delim");
 
   /**
@@ -1375,9 +1376,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                             R"delim(
         The external force parameters
     )delim");
-  external.def_readwrite("Kf", &Parameters::External::Kf,
-                         R"delim(
-          get Magnitude of external force 
+  external.def(
+      "setForm",
+      [](Parameters::External &external,
+         std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
+                                       EigenVectorX1d)>
+             &externalForceFunction) { external.form = externalForceFunction; },
+      R"delim(
+          get the vertex position matrix
       )delim");
 
   py::class_<Parameters::DPD> dpd(pymem3dg, "DPD",
@@ -1777,7 +1783,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
                "get topology and vertex position matrix of icosphere",
-               py::arg("Radius"), py::arg("subdivision") = 0);
+               py::arg("radius"), py::arg("subdivision") = 0);
 
   pymem3dg.def("getTetrahedron", &getTetrahedronMatrix,
                "get topology and vertex position matrix of tetrahedron");

@@ -94,8 +94,6 @@ protected:
 
     p.temperature = 0;
 
-    p.external.Kf = 0;
-
     // Create mesh and geometry objects
     std::tie(topologyMatrix, vertexMatrix) =
         getCylinderMatrix(1, 10, 10, 5, 0.3);

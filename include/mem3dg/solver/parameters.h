@@ -140,7 +140,16 @@ struct Parameters {
 
   struct External {
     /// Magnitude of external force
-    double Kf = 0;
+    bool isActivated = false;
+    /// form of external force
+    std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
+                                  EigenVectorX1d)>
+        form = NULL;
+
+    /**
+     * @brief check parameter conflicts
+     */
+    void checkParameters();
   };
 
   struct DPD {

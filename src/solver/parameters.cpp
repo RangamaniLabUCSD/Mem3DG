@@ -120,13 +120,16 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
              geodesicProteinDensityDistribution[0] == -1) {
     ifPrescribe = false;
     if (profile != "none")
-      mem3dg_runtime_error(
-          "Please disable the profile type as 'none'!");
+      mem3dg_runtime_error("Please disable the profile type as 'none'!");
   } else {
     mem3dg_runtime_error("Length = 4, geodesic disk, [r1>0, r2>0, "
                          "0<phi_in<1, 0<phi_out<1], to disable, put [-1]");
     ifPrescribe = false;
   }
+}
+
+void Parameters::External::checkParameters() {
+  isActivated = (form != NULL);
 }
 
 void Parameters::Boundary::checkParameters() {
@@ -150,6 +153,7 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   osmotic.checkParameters();
   variation.checkParameters();
   point.checkParameters();
+  external.checkParameters();
   protein.checkParameters(nVertex);
 
   // variation
