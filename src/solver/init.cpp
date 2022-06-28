@@ -49,6 +49,7 @@ void System::mapContinuationVariables(std::string plyFile) {
 
 #ifdef MEM3DG_WITH_NETCDF
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
            std::unique_ptr<gcs::VertexPositionGeometry>, EigenVectorX1d,
            EigenVectorX3dr, double>
 System::readTrajFile(std::string trajFile, int startingFrame) {
@@ -56,6 +57,7 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
   double initialTime;
   EigenVectorX3dr initialVelocity;
   EigenVectorX1d initialProteinDensity;
@@ -64,6 +66,9 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology(startingFrame));
+  const EigenVectorX3dr refVertexPositions = fd.getRefCoords(startingFrame);
+  refVpg =
+      std::make_unique<gcs::VertexPositionGeometry>(*mesh, refVertexPositions);
 
   // Map continuation variables
   initialTime = fd.getTime(startingFrame);
@@ -71,8 +76,8 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   initialProteinDensity = fd.getProteinDensity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 
-  return std::make_tuple(std::move(mesh), std::move(vpg), initialProteinDensity,
-                         initialVelocity, initialTime);
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg),
+                         initialProteinDensity, initialVelocity, initialTime);
 }
 #endif
 
@@ -91,6 +96,25 @@ System::readMeshFile(std::string inputMesh) {
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readMeshFile(std::string inputMesh, std::string referenceMesh) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> refMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::tie(refMesh, refVpg) = gcs::readManifoldSurfaceMesh(referenceMesh);
+  refVpg = refVpg->reinterpretTo(*mesh);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
 System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
                      EigenVectorX3dr &vertexPositionMatrix) {
@@ -106,6 +130,27 @@ System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
+                     EigenVectorX3dr &vertexPositionMatrix,
+                     EigenVectorX3dr &refVertexPositionMatrix) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      vertexPositionMatrix, faceVertexMatrix);
+  refVpg = std::make_unique<gcs::VertexPositionGeometry>(
+      *mesh, refVertexPositionMatrix);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+}
+
 void System::initialize(std::size_t nMutation, bool ifMute) {
   checkConfiguration();
   initializeConstants(ifMute);
@@ -114,9 +159,14 @@ void System::initialize(std::size_t nMutation, bool ifMute) {
     mem3dg_runtime_message("mesh mutator not activated!");
   } else {
     updateConfigurations();
+    updateReferenceConfigurations();
     mutateMesh(nMutation);
   }
-  updateConfigurations();
+  if (nMutation != 0) {
+    updateConfigurations();
+    refVpg = vpg->copy();
+    updateReferenceConfigurations();
+  }
 }
 
 void System::checkConfiguration() {
@@ -131,13 +181,6 @@ void System::checkConfiguration() {
   if (!isOpenMesh && mesh->genus() != 0) {
     mem3dg_runtime_error(
         "Do not support closed mesh with nonzero number of genus!")
-  }
-  if (meshProcessor.isMeshRegularize &&
-      ((mesh->nVertices() != meshProcessor.meshRegularizer.nVertex ||
-        mesh->nEdges() != meshProcessor.meshRegularizer.nEdge ||
-        mesh->nFaces() != meshProcessor.meshRegularizer.nFace))) {
-    mem3dg_runtime_error("For topologically different reference mesh, mesh "
-                         "regularization cannot be applied!");
   }
   if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
     mem3dg_runtime_message(
@@ -216,6 +259,15 @@ void System::initializeConstants(bool ifMute) {
                                  1.5) *
                             (4 * constants::PI / 3))
               << std::endl;
+  }
+}
+
+void System::updateReferenceConfigurations() {
+  refVpg->requireEdgeLengths();
+  refVpg->requireFaceAreas();
+  for (std::size_t i = 0; i < mesh->nHalfedges(); ++i) {
+    gcs::Halfedge he{mesh->halfedge(i)};
+    refLcrs[he] = computeLengthCrossRatio(*refVpg, he);
   }
 }
 

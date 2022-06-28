@@ -20,6 +20,7 @@ def rowwiseScaling(scaling, matrix):
         return matrix * scaling
     else:
         return matrix * scaling[:, None]
+        # return matrix * scaling.reshape((-1, 1))
 
 
 def rowwiseDotProduct(a, b):
@@ -58,3 +59,8 @@ def smooth(y, box_pts):
 def linearSampling(a_list, numPts):
     indices = np.linspace(0, len(a_list)-1, num=numPts)
     return np.array([a_list[index] for index in indices])
+
+def femtoJToKBT(energy, temperature):
+    # temperature = 310
+    kBT = 1.38e-23 * temperature * 1e15  # 1e-15 J
+    return energy / kBT

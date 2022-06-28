@@ -100,6 +100,8 @@ bool Euler::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.updateConfigurations();
+      system.refVpg = system.vpg->copy();
+      system.updateReferenceConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
@@ -193,9 +195,15 @@ void Euler::status() {
 void Euler::march() {
   // compute force, which is equivalent to velocity
   system.velocity = system.forces.mechanicalForceVec;
-  system.proteinVelocity = system.parameters.proteinMobility *
-                           system.forces.chemicalPotential /
-                           system.vpg->vertexDualAreas;
+  if (system.parameters.variation.isProteinConservation) {
+    system.proteinVelocity.raw() = system.parameters.proteinMobility *
+                                   system.vpg->hodge0Inverse *
+                                   system.computeUnitInPlaneFlowRate();
+  } else {
+    system.proteinVelocity = system.parameters.proteinMobility *
+                             system.forces.chemicalPotential /
+                             system.vpg->vertexDualAreas;
+  }
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (ifAdaptiveStep) {
@@ -209,8 +217,7 @@ void Euler::march() {
     if (system.parameters.variation.isShapeVariation)
       timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity), rho, c1);
     if (system.parameters.variation.isProteinVariation)
-      timeStep_chem =
-          chemicalBacktrack(toMatrix(system.proteinVelocity), rho, c1);
+      timeStep_chem = chemicalBacktrack(system.proteinVelocity.raw(), rho, c1);
     timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
@@ -218,13 +225,6 @@ void Euler::march() {
   system.vpg->inputVertexPositions += system.velocity * timeStep;
   system.proteinDensity += system.proteinVelocity * timeStep;
   system.time += timeStep;
-
-  // regularization
-  if (system.meshProcessor.isMeshRegularize) {
-    system.computeRegularizationForce();
-    system.vpg->inputVertexPositions.raw() +=
-        system.forces.regularizationForce.raw();
-  }
 
   // recompute cached values
   system.updateConfigurations();

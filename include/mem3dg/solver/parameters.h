@@ -85,7 +85,7 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Osmotic {
@@ -109,7 +109,7 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Adsorption {
@@ -120,6 +120,11 @@ struct Parameters {
   struct Aggregation {
     /// aggregation energy constant
     double chi = 0;
+  };
+
+  struct Entropy {
+    /// entropy energy constant
+    double xi = 0;
   };
 
   struct Dirichlet {
@@ -149,7 +154,7 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct DPD {
@@ -166,12 +171,14 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Variation {
     /// Whether or not consider protein binding
     bool isProteinVariation = false;
+    /// Whether conserve protein mass;
+    bool isProteinConservation = false;
     /// Whether or not consider shape evolution
     bool isShapeVariation = true;
     /// domain of shape variation
@@ -180,7 +187,7 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Point {
@@ -192,7 +199,7 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Protein {
@@ -213,7 +220,16 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters(size_t nVertex);
+    DLL_PUBLIC void checkParameters(size_t nVertex);
+  };
+
+  struct Spring {
+    /// triangle ratio constant
+    double Kst = 0;
+    /// Local stretching modulus
+    double Ksl = 0;
+    /// Edge spring constant
+    double Kse = 0;
   };
 
   /// bending parameters
@@ -226,6 +242,8 @@ struct Parameters {
   Adsorption adsorption;
   /// protein aggregation parameters
   Aggregation aggregation;
+  /// protein entropy parameters
+  Entropy entropy;
   /// protein dirichlet energy parameters
   Dirichlet dirichlet;
   /// self avoidance energy parameters
@@ -242,6 +260,8 @@ struct Parameters {
   Point point;
   /// protein distribution
   Protein protein = Protein();
+  /// mesh regularizer
+  Spring spring;
 
   /// mobility constant
   double proteinMobility = 0;
@@ -253,7 +273,7 @@ struct Parameters {
   /**
    * @brief check parameter conflicts
    */
-  void checkParameters(bool hasBoundary, size_t nVertex);
+  DLL_PUBLIC void checkParameters(bool hasBoundary, size_t nVertex);
 };
 
 } // namespace solver

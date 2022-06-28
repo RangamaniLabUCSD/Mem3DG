@@ -73,6 +73,36 @@ void System::computeSurfaceEnergy() {
                 parameters.tension.lambdaSG * A_difference / 2;
 }
 
+void System::computeEdgeSpringEnergy() {
+  energy.edgeSpringEnergy =
+      0.5 * parameters.spring.Kse *
+      ((vpg->edgeLengths.raw() - refVpg->edgeLengths.raw()).array() /
+       refVpg->edgeLengths.raw().array())
+          .square()
+          .sum();
+}
+
+void System::computeFaceSpringEnergy() {
+  energy.faceSpringEnergy =
+      0.5 * parameters.spring.Ksl *
+      ((vpg->faceAreas.raw() - refVpg->faceAreas.raw()).array() /
+       refVpg->faceAreas.raw().array())
+          .square()
+          .sum();
+}
+
+void System::computeLcrSpringEnergy() {
+  double E = 0;
+  for (std::size_t i = 0; i < mesh->nEdges(); ++i) {
+    gc::Edge e{mesh->edge(i)};
+    gc::Halfedge he = e.halfedge();
+    double lcr = computeLengthCrossRatio(*vpg, he);
+    E += pow((lcr - refLcrs[he]) / refLcrs[he], 2);
+  }
+  E *= 0.5 * parameters.spring.Kst;
+  energy.lcrSpringEnergy = E;
+}
+
 void System::computePressureEnergy() {
   // Note: area weighted normal is exact volume variation
   if (parameters.osmotic.isPreferredVolume) {
@@ -115,6 +145,22 @@ void System::computeAggregationEnergy() {
   // energy.aggregationEnergy =
   //     parameters.aggregation.chi *
   //     (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
+  //      proteinDensity.raw().array())
+  //         .sum();
+}
+
+void System::computeEntropyEnergy() {
+  energy.entropyEnergy =
+      parameters.entropy.xi *
+      (vpg->vertexDualAreas.raw().array() *
+       (proteinDensity.raw().array().log() * proteinDensity.raw().array() +
+        (1 - proteinDensity.raw().array()).log() *
+            (1 - proteinDensity.raw().array())))
+          .sum();
+  // energy.entropyEnergy =
+  //     parameters.entropy.xi *
+  //     (vpg->vertexDualAreas.raw().array() *
+  //      (proteinDensity.raw().array().log() - 1) *
   //      proteinDensity.raw().array())
   //         .sum();
 }
@@ -200,9 +246,13 @@ double System::computePotentialEnergy() {
   energy.pressureEnergy = 0;
   energy.adsorptionEnergy = 0;
   energy.aggregationEnergy = 0;
+  energy.entropyEnergy = 0;
   energy.dirichletEnergy = 0;
   energy.selfAvoidancePenalty = 0;
   energy.proteinInteriorPenalty = 0;
+  energy.edgeSpringEnergy = 0;
+  energy.faceSpringEnergy = 0;
+  energy.lcrSpringEnergy = 0;
 
   computeBendingEnergy();
   computeSurfaceEnergy();
@@ -216,11 +266,23 @@ double System::computePotentialEnergy() {
   if (parameters.aggregation.chi != 0) {
     computeAggregationEnergy();
   }
+  if (parameters.entropy.xi != 0) {
+    computeEntropyEnergy();
+  }
   if (parameters.dirichlet.eta != 0) {
     computeDirichletEnergy();
   }
   if (parameters.selfAvoidance.mu != 0) {
     computeSelfAvoidanceEnergy();
+  }
+  if (parameters.spring.Kse != 0) {
+    computeEdgeSpringEnergy();
+  }
+  if (parameters.spring.Ksl != 0) {
+    computeFaceSpringEnergy();
+  }
+  if (parameters.spring.Kst != 0) {
+    computeLcrSpringEnergy();
   }
   if (parameters.variation.isProteinVariation &&
       parameters.protein.proteinInteriorPenalty != 0) {
@@ -231,8 +293,10 @@ double System::computePotentialEnergy() {
   energy.potentialEnergy =
       energy.bendingEnergy + energy.deviatoricEnergy + energy.surfaceEnergy +
       energy.pressureEnergy + energy.adsorptionEnergy + energy.dirichletEnergy +
-      energy.aggregationEnergy + energy.selfAvoidancePenalty +
-      energy.proteinInteriorPenalty;
+      energy.aggregationEnergy + energy.entropyEnergy +
+      energy.selfAvoidancePenalty + energy.proteinInteriorPenalty +
+      energy.edgeSpringEnergy + energy.faceSpringEnergy +
+      energy.lcrSpringEnergy;
   return energy.potentialEnergy;
 }
 

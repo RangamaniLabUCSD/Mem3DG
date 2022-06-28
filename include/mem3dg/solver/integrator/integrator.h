@@ -66,6 +66,7 @@ public:
   /// TrajFile
 #ifdef MEM3DG_WITH_NETCDF
   MutableTrajFile mutableTrajFile;
+  bool isMutableNetcdfFileCreated = false;
 #endif
 
   // key parameters (read/write)
@@ -139,7 +140,7 @@ public:
     system.computePhysicalForcing(timeStep);
     initialMaximumForce =
         system.parameters.variation.isShapeVariation
-            ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
+            ? system.forces.mechanicalForce.raw().cwiseAbs().maxCoeff()
             : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
   }
 
@@ -200,7 +201,7 @@ public:
    * @return alpha, line search step size
    */
   double backtrack(Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-                   Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
+                   Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
                    double rho = 0.7, double c1 = 0.001);
 
   /**
@@ -226,7 +227,7 @@ public:
    * @return alpha, line search step size
    */
   double chemicalBacktrack(
-      Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
+      Eigen::Matrix<double, Eigen::Dynamic, 1> & chemicalDirection,
       double rho = 0.7, double c1 = 0.001);
 
   /**

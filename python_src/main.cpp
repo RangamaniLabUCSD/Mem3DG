@@ -26,6 +26,7 @@
 #include "mem3dg/solver/system.h"
 #include "visualization.h"
 
+#include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 
@@ -540,11 +541,17 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the aggregation force
       )delim");
   forces.def(
-      "getExternalForceVec",
-      [](Forces &s) { return toMatrix(s.externalForceVec); },
+      "getEntropyForceVec",
+      [](Forces &s) { return toMatrix(s.entropyForceVec); },
       py::return_value_policy::copy,
       R"delim(
-          get the external force
+          get the entropy force
+      )delim");
+  forces.def(
+      "getSpringForceVec", [](Forces &s) { return toMatrix(s.springForceVec); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the spring force
       )delim");
   forces.def(
       "getMechanicalForceVec",
@@ -558,50 +565,62 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Chemical Potential
    */
   forces.def(
-      "getBendingPotential",
-      [](Forces &s) { return toMatrix(s.bendingPotential); },
+      "getBendingPotential", [](Forces &s) { return s.bendingPotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get the bending potential
       )delim");
   forces.def(
       "getDeviatoricPotential",
-      [](Forces &s) { return toMatrix(s.deviatoricPotential); },
+      [](Forces &s) { return s.deviatoricPotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get the deviatoric potential
       )delim");
   forces.def(
       "getInteriorPenaltyPotential",
-      [](Forces &s) { return toMatrix(s.interiorPenaltyPotential); },
+      [](Forces &s) { return s.interiorPenaltyPotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get the interior point potential
       )delim");
   forces.def(
       "getAdsorptionPotential",
-      [](Forces &s) { return toMatrix(s.adsorptionPotential); },
+      [](Forces &s) { return s.adsorptionPotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get the adsorption potential
       )delim");
   forces.def(
       "getAggregationPotential",
-      [](Forces &s) { return toMatrix(s.aggregationPotential); },
+      [](Forces &s) { return s.aggregationPotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get the aggregation potential
       )delim");
   forces.def(
-      "getDiffusionPotential",
-      [](Forces &s) { return toMatrix(s.diffusionPotential); },
+      "getDirichletPotential",
+      [](Forces &s) { return s.dirichletPotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
-          get the diffusion Potential
+          get the dirichlet Potential
+      )delim");
+  forces.def(
+      "getEntropyPotential", [](Forces &s) { return s.entropyPotential.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the entropy Potential
+      )delim");
+  forces.def(
+      "getInPlaneFluxForm",
+      [](Forces &s) { return s.inPlaneFluxForm.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the inPlaneFluxForm on edge (one-form)
       )delim");
   forces.def(
       "getChemicalPotential",
-      [](Forces &s) { return toMatrix(s.chemicalPotential); },
+      [](Forces &s) { return s.chemicalPotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get the chemical Potential
@@ -613,46 +632,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
   // ==========================================================
   // =============     MeshMutator              ===============
   // ==========================================================
-  py::class_<MeshProcessor::MeshRegularizer> meshregularizer(pymem3dg,
-                                                             "MeshRegularizer",
-                                                             R"delim(
-        The mesh mutator settings 
-    )delim");
-  meshregularizer.def(py::init<>(),
-                      R"delim(
-       meshmutator constructor
-      )delim");
-  meshregularizer.def_readwrite("Kst", &MeshProcessor::MeshRegularizer::Kst,
-                                R"delim(
-          get Vertex shifting constant 
-      )delim");
-  meshregularizer.def_readwrite("Ksl", &MeshProcessor::MeshRegularizer::Ksl,
-                                R"delim(
-          get Local stretching modulus 
-      )delim");
-  meshregularizer.def_readwrite("Kse", &MeshProcessor::MeshRegularizer::Kse,
-                                R"delim(
-          get Edge spring constant 
-      )delim");
-  meshregularizer.def("readReferenceData",
-                      static_cast<void (MeshProcessor::MeshRegularizer::*)(
-                          std::string, std::size_t)>(
-                          &MeshProcessor::MeshRegularizer::readReferenceData),
-                      py::arg("referenceMesh"), py::arg("nSub"),
-                      R"delim(
-          read data from reference mesh
-      )delim");
-  meshregularizer.def(
-      "readReferenceData",
-      static_cast<void (MeshProcessor::MeshRegularizer::*)(
-          Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
-          Eigen::Matrix<double, Eigen::Dynamic, 3> &, std::size_t)>(
-          &MeshProcessor::MeshRegularizer::readReferenceData),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("nSub"),
-      R"delim(
-          read data from reference mesh
-      )delim");
-
   py::class_<MeshProcessor::MeshMutator> meshmutator(pymem3dg, "MeshMutator",
                                                      R"delim(
         The mesh mutator settings 
@@ -792,19 +771,9 @@ PYBIND11_MODULE(_core, pymem3dg) {
                               R"delim(
           meshMutator struct
       )delim");
-  meshprocessor.def_readwrite("meshRegularizer",
-                              &MeshProcessor::meshRegularizer,
-                              R"delim(
-          meshRegularizer struct
-      )delim");
   meshprocessor.def_readonly("isMeshMutate", &MeshProcessor::isMeshMutate,
                              R"delim(
           get the option of whether do mesh mutation
-      )delim");
-  meshprocessor.def_readonly("isMeshRegularize",
-                             &MeshProcessor::isMeshRegularize,
-                             R"delim(
-          get the option of whether do mesh regularization
       )delim");
 #pragma endregion mesh_mutator
 
@@ -820,6 +789,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by .ply file
    */
+  system.def(py::init<std::string, std::string, EigenVectorX1d &,
+                      EigenVectorX3dr &, Parameters &, double>(),
+             py::arg("inputMesh"), py::arg("referenceMesh"),
+             py::arg("proteinDensity"), py::arg("velocity"),
+             py::arg("parameters"), py::arg("time") = 0,
+             R"delim(
+        System constructor with .ply files. 
+      )delim");
   system.def(py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &,
                       Parameters &, double>(),
              py::arg("inputMesh"), py::arg("proteinDensity"),
@@ -849,6 +826,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors by matrices
    */
+  system.def(
+      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
+               EigenVectorX1d &, EigenVectorX3dr &, Parameters &, double>(),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+      py::arg("referenceVertexMatrix"), py::arg("proteinDensity"),
+      py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
+      R"delim(
+        System constructor with Matrices 
+      )delim");
   system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
                       EigenVectorX3dr &, Parameters &, double>(),
              py::arg("topologyMatrix"), py::arg("vertexMatrix"),
@@ -1187,6 +1173,26 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
+   * @brief Method: I/O
+   */
+  system.def(
+      "getPolyscopePermutations",
+      [](System &s) { return gcs::polyscopePermutations(*s.mesh); },
+      R"delim(
+          get polyscope permutation 
+      )delim");
+
+  /**
+   * @brief Method: I/O
+   */
+  system.def(
+      "getPolyscopeEdgeOrientations",
+      [](System &s) { return gcs::polyscopeEdgeOrientations(*s.mesh).raw(); },
+      R"delim(
+          get polyscope edge orientation 
+      )delim");
+
+  /**
    * @brief Method: mutate the mesh
    */
   system.def("mutateMesh", &System::mutateMesh, py::arg("nMutation") = 1,
@@ -1250,6 +1256,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
                           &Parameters::Variation::isProteinVariation,
                           R"delim(
           get the option of whether simulate protein variation
+      )delim");
+  variation.def_readwrite("isProteinConservation",
+                          &Parameters::Variation::isProteinConservation,
+                          R"delim(
+          get the option of whether conserve protein mass
       )delim");
   variation.def_readwrite("isShapeVariation",
                           &Parameters::Variation::isShapeVariation,
@@ -1372,6 +1383,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get aggregation energy 
       )delim");
 
+  py::class_<Parameters::Entropy> entropy(pymem3dg, "Entropy",
+                                          R"delim(
+        The entropy parameters
+    )delim");
+  entropy.def_readwrite("xi", &Parameters::Entropy::xi,
+                        R"delim(
+          get entropy parameters
+      )delim");
+
   py::class_<Parameters::External> external(pymem3dg, "External",
                                             R"delim(
         The external force parameters
@@ -1460,6 +1480,23 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get interior point parameter for protein density
       )delim");
 
+  py::class_<Parameters::Spring> spring(pymem3dg, "spring",
+                                        R"delim(
+        The mesh mutator settings 
+    )delim");
+  spring.def_readwrite("Kst", &Parameters::Spring::Kst,
+                       R"delim(
+          get Vertex shifting constant 
+      )delim");
+  spring.def_readwrite("Ksl", &Parameters::Spring::Ksl,
+                       R"delim(
+          get Local stretching modulus 
+      )delim");
+  spring.def_readwrite("Kse", &Parameters::Spring::Kse,
+                       R"delim(
+          get Edge spring constant 
+      )delim");
+
   py::class_<Parameters> parameters(pymem3dg, "Parameters", R"delim(
         The parameters
     )delim");
@@ -1502,6 +1539,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
   parameters.def_readwrite("aggregation", &Parameters::aggregation,
                            R"delim(
           aggregation parameters
+      )delim");
+  parameters.def_readwrite("entropy", &Parameters::entropy,
+                           R"delim(
+          entropy parameters
       )delim");
   parameters.def_readwrite("dirichlet", &Parameters::dirichlet,
                            R"delim(
@@ -1547,6 +1588,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                            R"delim(
           get damping constant 
       )delim");
+  parameters.def_readwrite("spring", &Parameters::spring,
+                           R"delim(
+          get spring parameters
+      )delim");
 #pragma endregion parameters
 
 #pragma region energy
@@ -1557,53 +1602,68 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The energy
     )delim");
   energy.def(py::init<>());
-  energy.def_readwrite("totalEnergy", &Energy::totalEnergy,
-                       R"delim(
+  energy.def_readonly("totalEnergy", &Energy::totalEnergy,
+                      R"delim(
           get total Energy of the system  
       )delim");
-  energy.def_readwrite("kineticEnergy", &Energy::kineticEnergy,
-                       R"delim(
+  energy.def_readonly("kineticEnergy", &Energy::kineticEnergy,
+                      R"delim(
           get kinetic energy of the membrane  
       )delim");
-  energy.def_readwrite("potentialEnergy", &Energy::potentialEnergy,
-                       R"delim(
+  energy.def_readonly("potentialEnergy", &Energy::potentialEnergy,
+                      R"delim(
           get potential energy of the membrane  
       )delim");
-  energy.def_readwrite("bendingEnergy", &Energy::bendingEnergy,
-                       R"delim(
+  energy.def_readonly("bendingEnergy", &Energy::bendingEnergy,
+                      R"delim(
           get bending energy of the membrane  
       )delim");
-  energy.def_readwrite("deviatoricEnergy", &Energy::deviatoricEnergy,
-                       R"delim(
+  energy.def_readonly("deviatoricEnergy", &Energy::deviatoricEnergy,
+                      R"delim(
           get deviatoric energy of the membrane  
       )delim");
-  energy.def_readwrite("surfaceEnergy", &Energy::surfaceEnergy,
-                       R"delim(
+  energy.def_readonly("surfaceEnergy", &Energy::surfaceEnergy,
+                      R"delim(
           get stretching energy of the membrane  
       )delim");
-  energy.def_readwrite("pressureEnergy", &Energy::pressureEnergy,
-                       R"delim(
+  energy.def_readonly("pressureEnergy", &Energy::pressureEnergy,
+                      R"delim(
           get work of pressure within membrane  
       )delim");
-  energy.def_readwrite("adsorptionEnergy", &Energy::adsorptionEnergy,
-                       R"delim(
+  energy.def_readonly("adsorptionEnergy", &Energy::adsorptionEnergy,
+                      R"delim(
           get adsorption energy of the membrane protein  
       )delim");
-  energy.def_readwrite("aggregationEnergy", &Energy::aggregationEnergy,
-                       R"delim(
+  energy.def_readonly("aggregationEnergy", &Energy::aggregationEnergy,
+                      R"delim(
           get aggregation energy of the membrane protein  
       )delim");
-  energy.def_readwrite("dirichletEnergy", &Energy::dirichletEnergy,
-                       R"delim(
+  energy.def_readonly("entropyEnergy", &Energy::entropyEnergy,
+                      R"delim(
+          get entropy energy of the membrane protein  
+      )delim");
+  energy.def_readonly("edgeSpringEnergy", &Energy::edgeSpringEnergy,
+                      R"delim(
+          get edgeSpring energy of the membrane
+      )delim");
+  energy.def_readonly("faceSpringEnergy", &Energy::faceSpringEnergy,
+                      R"delim(
+          get faceSpring energy of the membrane  
+      )delim");
+  energy.def_readonly("lcrSpringEnergy", &Energy::lcrSpringEnergy,
+                      R"delim(
+          get lcrSpring energy of the membrane  
+      )delim");
+  energy.def_readonly("dirichletEnergy", &Energy::dirichletEnergy,
+                      R"delim(
           get  line tension (dirichlet) energy of interface energy
       )delim");
-  energy.def_readwrite("externalWork", &Energy::externalWork,
-                       R"delim(
+  energy.def_readonly("externalWork", &Energy::externalWork,
+                      R"delim(
           get work of external force 
       )delim");
-  energy.def_readwrite("proteinInteriorPenalty",
-                       &Energy::proteinInteriorPenalty,
-                       R"delim(
+  energy.def_readonly("proteinInteriorPenalty", &Energy::proteinInteriorPenalty,
+                      R"delim(
           get protein interior penalty energy (numerical energy)
       )delim");
 

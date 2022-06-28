@@ -49,54 +49,6 @@ namespace mem3dg {
 namespace solver {
 
 struct MeshProcessor {
-  struct MeshRegularizer {
-    // whether has reference mesh
-    bool ifHasRefMesh;
-
-    /// triangle ratio constant
-    double Kst = 0;
-    /// Local stretching modulus
-    double Ksl = 0;
-    /// Edge spring constant
-    double Kse = 0;
-
-    /// Reference face area
-    EigenVectorX1d refFaceAreas;
-    /// Reference edge length
-    EigenVectorX1d refEdgeLengths;
-    /// Reference Lcr
-    EigenVectorX1d refLcrs;
-    /// Mean target area per face
-    double meanTargetFaceArea;
-    /// Mean target area per face
-    double meanTargetEdgeLength;
-    /// number of edges of reference mesh
-    size_t nEdge = 0;
-    /// number of vertices of the reference mesh
-    size_t nVertex = 0;
-    /// number of faces of the reference face
-    size_t nFace = 0;
-
-    /**
-     * @brief summarizeStatus
-     */
-    void summarizeStatus();
-
-    /**
-     * @brief read needed data from a mesh to perform regularization
-     */
-    void readReferenceData(std::string refMesh, std::size_t nSub);
-    void readReferenceData(
-        Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-        Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-        std::size_t nSub);
-
-    /**
-     * @brief helper function to compute LCR
-     */
-    double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                   gcs::Edge &e) const;
-  };
 
   struct MeshMutator {
     /// Whether edge flip
@@ -179,10 +131,6 @@ struct MeshProcessor {
 
   /// mesh mutator
   MeshMutator meshMutator;
-  /// mesh regularizer
-  MeshRegularizer meshRegularizer;
-  /// Whether regularize mesh
-  bool isMeshRegularize = false;
   /// Whether mutate mesh
   bool isMeshMutate = false;
 

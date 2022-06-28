@@ -340,6 +340,4 @@ inline auto toMatrix(gcs::VertexData<gc::Vector3> &vector) {
   return gc::EigenMap<double, 3>(vector);
 }
 
-inline auto toMatrix(gcs::VertexData<double> &vector) { return vector.raw(); }
-
 } // namespace mem3dg

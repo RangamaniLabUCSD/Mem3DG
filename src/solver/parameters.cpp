@@ -128,9 +128,7 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
   }
 }
 
-void Parameters::External::checkParameters() {
-  isActivated = (form != NULL);
-}
+void Parameters::External::checkParameters() { isActivated = (form != NULL); }
 
 void Parameters::Boundary::checkParameters() {
   if (shapeBoundaryCondition != "roller" && shapeBoundaryCondition != "pin" &&
@@ -175,6 +173,12 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   if (variation.isProteinVariation != (proteinMobility > 0)) {
     mem3dg_runtime_error("proteinMobility value has to be consistent with the "
                          "protein variation option!");
+  }
+
+  if (variation.isProteinConservation) {
+    if (adsorption.epsilon != 0)
+      mem3dg_runtime_message(
+          "protein adsorption has no effect when conserve protein!")
   }
 
   // boundary

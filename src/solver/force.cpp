@@ -20,6 +20,20 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                       gcs::Halfedge &he) const {
+  if (he.edge().isBoundary()) {
+    return 1;
+  } else {
+    gcs::Edge lj = he.next().edge();
+    gcs::Edge ki = he.twin().next().edge();
+    gcs::Edge il = he.next().next().edge();
+    gcs::Edge jk = he.twin().next().next().edge();
+    return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
+           vpg.edgeLengths[lj];
+  }
+}
+
 gc::Vector3 System::cornerAngleGradient(gcs::Corner c, gcs::Vertex v) {
   gcs::Halfedge he = c.halfedge();
   gc::Vector3 n = vpg->faceNormals[c.face()];
@@ -253,6 +267,7 @@ void System::computeMechanicalForces(size_t i) {
   gc::Vector3 lineCapForceVec{0, 0, 0};
   gc::Vector3 adsorptionForceVec{0, 0, 0};
   gc::Vector3 aggregationForceVec{0, 0, 0};
+  gc::Vector3 entropyForceVec{0, 0, 0};
   double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
   double H0i = H0[i];
   double Kbi = Kb[i];
@@ -314,6 +329,17 @@ void System::computeMechanicalForces(size_t i) {
     // aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
     //                         proteinDensityj * proteinDensityj * 2 / 3) *
     //                        parameters.aggregation.chi * areaGrad;
+    entropyForceVec -= ((proteinDensityi * log(proteinDensityi) +
+                         (1 - proteinDensityi) * log(1 - proteinDensityi)) /
+                            3 +
+                        (proteinDensityj * log(proteinDensityj) +
+                         (1 - proteinDensityj) * log(1 - proteinDensityj)) *
+                            2 / 3) *
+                       parameters.entropy.xi * areaGrad;
+    // entropyForceVec -= (proteinDensityi * (log(proteinDensityi) - 1) / 3 +
+    //                     proteinDensityj * (log(proteinDensityj) - 1) * 2 / 3)
+    //                     *
+    //                    parameters.entropy.xi * areaGrad;
     lineCapForceVec -=
         parameters.dirichlet.eta *
         (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
@@ -379,6 +405,7 @@ void System::computeMechanicalForces(size_t i) {
   lineCapForceVec = forces.maskForce(lineCapForceVec, i);
   adsorptionForceVec = forces.maskForce(adsorptionForceVec, i);
   aggregationForceVec = forces.maskForce(aggregationForceVec, i);
+  entropyForceVec = forces.maskForce(entropyForceVec, i);
 
   // Combine to one
   forces.bendingForceVec_areaGrad[i] = bendingForceVec_areaGrad;
@@ -395,6 +422,7 @@ void System::computeMechanicalForces(size_t i) {
   forces.lineCapillaryForceVec[i] = lineCapForceVec;
   forces.adsorptionForceVec[i] = adsorptionForceVec;
   forces.aggregationForceVec[i] = aggregationForceVec;
+  forces.entropyForceVec[i] = entropyForceVec;
 
   // Scalar force by projection to angle-weighted normal
   forces.bendingForce[i] = forces.ontoNormal(bendingForceVec, i);
@@ -404,14 +432,15 @@ void System::computeMechanicalForces(size_t i) {
   forces.lineCapillaryForce[i] = forces.ontoNormal(lineCapForceVec, i);
   forces.adsorptionForce[i] = forces.ontoNormal(adsorptionForceVec, i);
   forces.aggregationForce[i] = forces.ontoNormal(aggregationForceVec, i);
+  forces.entropyForce[i] = forces.ontoNormal(entropyForceVec, i);
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
   if (parameters.external.isActivated) {
     toMatrix(forces.externalForceVec) =
         forces.maskForce(parameters.external.form(
-            toMatrix(vpg->inputVertexPositions), toMatrix(vpg->vertexDualAreas),
-            time, toMatrix(geodesicDistance)));
+            toMatrix(vpg->inputVertexPositions), vpg->vertexDualAreas.raw(),
+            time, geodesicDistance.raw()));
     forces.externalForce = forces.ontoNormal(forces.externalForceVec);
   }
   return toMatrix(forces.externalForceVec);
@@ -505,8 +534,19 @@ void System::computeChemicalPotentials() {
         (2 * proteinDensity.raw().array() - 1) * proteinDensity.raw().array() *
         vpg->vertexDualAreas.raw().array());
 
+  if (parameters.entropy.xi != 0) {
+    forces.entropyPotential.raw() =
+        forces.maskProtein(-parameters.entropy.xi *
+                           (proteinDensity.raw().array().log() -
+                            (1 - proteinDensity.raw().array()).log()) *
+                           vpg->vertexDualAreas.raw().array());
+    // forces.entropyPotential.raw() = forces.maskProtein(
+    //     -parameters.entropy.xi * proteinDensity.raw().array().log() *
+    //     vpg->vertexDualAreas.raw().array());
+  }
+
   if (parameters.dirichlet.eta != 0)
-    forces.diffusionPotential.raw() = forces.maskProtein(
+    forces.dirichletPotential.raw() = forces.maskProtein(
         -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
 
   if (parameters.protein.proteinInteriorPenalty != 0)
@@ -514,6 +554,25 @@ void System::computeChemicalPotentials() {
         forces.maskProtein(parameters.protein.proteinInteriorPenalty *
                            (1 / proteinDensity.raw().array() -
                             1 / (1 - proteinDensity.raw().array())));
+
+  forces.chemicalPotential =
+      forces.adsorptionPotential + forces.aggregationPotential +
+      forces.entropyPotential + forces.bendingPotential +
+      forces.deviatoricPotential + forces.dirichletPotential +
+      forces.interiorPenaltyPotential;
+
+  if (parameters.variation.isProteinConservation) {
+    gcs::EdgeData<double> edgeProteinDensity(*mesh, 0);
+    for (std::size_t i = 0; i < mesh->nEdges(); ++i) {
+      gc::Edge e{mesh->edge(i)};
+      gc::Halfedge he = e.halfedge();
+      edgeProteinDensity[i] = 0.5 * (proteinDensity[he.tailVertex()] +
+                                     proteinDensity[he.tipVertex()]);
+    }
+    forces.inPlaneFluxForm.raw() =
+        vpg->hodge1 * edgeProteinDensity.raw().asDiagonal() * vpg->d0 *
+        vpg->hodge0Inverse * forces.chemicalPotential.raw();
+  }
 }
 
 void System::computeDPDForces(double dt) {
@@ -654,6 +713,94 @@ double System::computeNorm(
   return force.norm();
 }
 
+void System::computeSpringForces() {
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    gc::Vertex v{mesh->vertex(i)};
+    gc::Vector3 edgeSpringForceVec{0, 0, 0};
+    gc::Vector3 lcrSpringForceVec{0, 0, 0};
+    gc::Vector3 faceSpringForceVec{0, 0, 0};
+
+    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+      gcs::Edge e = he.edge();
+
+      // Conformal regularization
+      if (parameters.spring.Kst != 0) {
+        gcs::Halfedge ij = he;
+        if (!ij.edge().isBoundary()) {
+          gcs::Halfedge jl = ij.next();
+          gcs::Halfedge li = jl.next();
+          gcs::Halfedge ik = ij.twin().next();
+          gcs::Halfedge kj = ik.next();
+
+          double lcr = computeLengthCrossRatio(*vpg, ij);
+          double lcr0 = refLcrs[ij];
+          gc::Vector3 grad_li = vecFromHalfedge(li, *vpg).normalize();
+          gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
+          gc::Vector3 lcrGrad = vpg->edgeLengths[kj.edge()] /
+                                vpg->edgeLengths[jl.edge()] *
+                                (grad_li * vpg->edgeLengths[ik.edge()] -
+                                 grad_ik * vpg->edgeLengths[li.edge()]) /
+                                pow(vpg->edgeLengths[ik.edge()], 2);
+          lcrSpringForceVec -=
+              parameters.spring.Kst * lcrGrad * (lcr - lcr0) / lcr0 / lcr0;
+        }
+        ij = he.next();
+        if (!ij.edge().isBoundary()) {
+          gcs::Halfedge jl = ij.next();
+          gcs::Halfedge li = jl.next();
+          gcs::Halfedge ik = ij.twin().next();
+          gcs::Halfedge kj = ik.next();
+
+          double lcr = computeLengthCrossRatio(*vpg, ij);
+          double lcr0 = refLcrs[ij];
+          gc::Vector3 grad_li = vecFromHalfedge(li.twin(), *vpg).normalize();
+          gc::Vector3 grad_jl = vecFromHalfedge(jl, *vpg).normalize();
+          gc::Vector3 lcrGrad = vpg->edgeLengths[kj.edge()] /
+                                vpg->edgeLengths[ik.edge()] *
+                                (grad_li * vpg->edgeLengths[jl.edge()] -
+                                 grad_jl * vpg->edgeLengths[li.edge()]) /
+                                pow(vpg->edgeLengths[jl.edge()], 2);
+          lcrSpringForceVec -=
+              parameters.spring.Kst * lcrGrad * (lcr - lcr0) / lcr0 / lcr0;
+        }
+      }
+
+      // Local area regularization
+      if (parameters.spring.Ksl != 0 && he.isInterior()) {
+        gcs::Halfedge base_he = he.next();
+        gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
+        gc::Vector3 localAreaGradient =
+            0.5 * gc::cross(vpg->faceNormal(he.face()), base_vec);
+        double a0 = refVpg->faceAreas[base_he.face()];
+        faceSpringForceVec -= parameters.spring.Ksl * localAreaGradient *
+                              (vpg->faceAreas[base_he.face()] - a0) / a0 / a0;
+      }
+
+      // local edge regularization
+      if (parameters.spring.Kse != 0) {
+        double l0 = refVpg->edgeLengths[e];
+        gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
+        edgeSpringForceVec -= parameters.spring.Kse * edgeGradient *
+                              (vpg->edgeLengths[e] - l0) / l0 / l0;
+      }
+    }
+
+    edgeSpringForceVec = forces.maskForce(edgeSpringForceVec, i);
+    lcrSpringForceVec = forces.maskForce(lcrSpringForceVec, i);
+    faceSpringForceVec = forces.maskForce(faceSpringForceVec, i);
+
+    // edgeSpringForceVec = forces.toTangent(edgeSpringForceVec, v);
+    // lcrSpringForceVec = forces.toTangent(lcrSpringForceVec, v);
+    // faceSpringForceVec = forces.toTangent(faceSpringForceVec, v);
+
+    forces.edgeSpringForceVec[i] = edgeSpringForceVec;
+    forces.faceSpringForceVec[i] = faceSpringForceVec;
+    forces.lcrSpringForceVec[i] = lcrSpringForceVec;
+    forces.springForceVec[i] =
+        edgeSpringForceVec + faceSpringForceVec + lcrSpringForceVec;
+  }
+}
+
 void System::computePhysicalForcing() {
   // zero all forces
   forces.mechanicalForceVec.fill({0, 0, 0});
@@ -670,8 +817,14 @@ void System::computePhysicalForcing() {
   forces.lineCapillaryForceVec.fill({0, 0, 0});
   forces.adsorptionForceVec.fill({0, 0, 0});
   forces.aggregationForceVec.fill({0, 0, 0});
+  forces.entropyForceVec.fill({0, 0, 0});
   forces.externalForceVec.fill({0, 0, 0});
   forces.selfAvoidanceForceVec.fill({0, 0, 0});
+
+  forces.springForceVec.fill({0, 0, 0});
+  forces.faceSpringForceVec.fill({0, 0, 0});
+  forces.edgeSpringForceVec.fill({0, 0, 0});
+  forces.lcrSpringForceVec.fill({0, 0, 0});
 
   forces.dampingForceVec.fill({0, 0, 0});
   forces.stochasticForceVec.fill({0, 0, 0});
@@ -684,16 +837,19 @@ void System::computePhysicalForcing() {
   forces.externalForce.raw().setZero();
   forces.adsorptionForce.raw().setZero();
   forces.aggregationForce.raw().setZero();
+  forces.entropyForce.raw().setZero();
   forces.osmoticForce.raw().setZero();
   forces.selfAvoidanceForce.raw().setZero();
 
   forces.chemicalPotential.raw().setZero();
+  forces.inPlaneFluxForm.raw().setZero();
 
-  forces.diffusionPotential.raw().setZero();
+  forces.dirichletPotential.raw().setZero();
   forces.bendingPotential.raw().setZero();
   forces.deviatoricPotential.raw().setZero();
   forces.adsorptionPotential.raw().setZero();
   forces.aggregationPotential.raw().setZero();
+  forces.entropyPotential.raw().setZero();
   forces.interiorPenaltyPotential.raw().setZero();
 
   if (parameters.variation.isShapeVariation) {
@@ -704,12 +860,17 @@ void System::computePhysicalForcing() {
     if (parameters.selfAvoidance.mu != 0) {
       computeSelfAvoidanceForce();
     }
+    if (parameters.spring.Kse != 0 || parameters.spring.Ksl != 0 ||
+        parameters.spring.Kst != 0) {
+      computeSpringForces();
+    }
     forces.mechanicalForceVec =
         forces.osmoticForceVec + forces.capillaryForceVec +
         forces.bendingForceVec + forces.deviatoricForceVec +
         forces.lineCapillaryForceVec + forces.adsorptionForceVec +
         forces.aggregationForceVec + forces.externalForceVec +
-        forces.selfAvoidanceForceVec;
+        forces.entropyForceVec + forces.selfAvoidanceForceVec +
+        forces.springForceVec;
     if (parameters.damping != 0)
       forces.mechanicalForceVec += computeDampingForce();
     forces.mechanicalForce = forces.ontoNormal(forces.mechanicalForceVec);
@@ -717,10 +878,6 @@ void System::computePhysicalForcing() {
 
   if (parameters.variation.isProteinVariation) {
     computeChemicalPotentials();
-    forces.chemicalPotential =
-        forces.adsorptionPotential + forces.aggregationPotential +
-        forces.bendingPotential + forces.deviatoricPotential +
-        forces.diffusionPotential + forces.interiorPenaltyPotential;
   }
 
   // compute the mechanical error norm
@@ -750,6 +907,13 @@ void System::computePhysicalForcing(double timeStep) {
   //   // removeRotation(toMatrix(f.vpg->inputVertexPositions),
   //   // DPDPressure);
   // }
+}
+
+EigenVectorX1d System::computeUnitInPlaneFlowRate() {
+  return vpg->d0.transpose() * forces.inPlaneFluxForm.raw();
+  // return vpg->hodge2 * vpg->d1 * vpg->hodge1 *
+  //        edgeProteinDensity.raw().asDiagonal() * vpg->d0 * vpg->hodge0Inverse
+  //        * chemicalPotential;
 }
 
 } // namespace solver

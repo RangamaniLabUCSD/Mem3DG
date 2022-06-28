@@ -37,16 +37,16 @@ target_link_libraries(Mem3DG-tests mem3dg gtest_main)
 add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
 
 # Configure testing of Python module 
-find_package(pytest)
-if(NOT PYTEST_FOUND AND BUILD_PYMEM3DG)
-    message(WARNING "pytest could not be found! Please install pytest to run python tests.")
-elseif(BUILD_PYMEM3DG)
-    # Add a test for pytest
-    add_test(NAME Mem3DG_Python_Tests
-      COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
-      WORKING_DIRECTORY $<TARGET_FILE_DIR:_core>
-    )
-endif()
+# find_package(pytest)
+# if(NOT PYTEST_FOUND AND BUILD_PYMEM3DG)
+#     message(WARNING "pytest could not be found! Please install pytest to run python tests.")
+# elseif(BUILD_PYMEM3DG)
+#     # Add a test for pytest
+#     add_test(NAME Mem3DG_Python_Tests
+#       COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
+#       WORKING_DIRECTORY $<TARGET_FILE_DIR:_core>
+#     )
+# endif()
 
 # ##############################################################################
 # Main DDG target

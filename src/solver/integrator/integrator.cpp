@@ -32,8 +32,8 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
   double currentMinimumSize = system.vpg->edgeLengths.raw().minCoeff();
   double currentMaximumForce =
       system.parameters.variation.isShapeVariation
-          ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
-          : toMatrix(system.forces.chemicalPotential).cwiseAbs().maxCoeff();
+          ? system.forces.mechanicalForce.raw().cwiseAbs().maxCoeff()
+          : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
   double dt = (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
               (initialMaximumForce / currentMaximumForce);
@@ -55,7 +55,7 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
 
 double Integrator::backtrack(
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-    Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection, double rho,
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
     double c1) {
 
   // cache energy of the last time step
@@ -132,12 +132,12 @@ double Integrator::backtrack(
                              "stopped. \n");
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       system.testForceComputation(alpha, toMatrix(initial_pos),
-                                  toMatrix(initial_protein), previousE);
+                                  initial_protein.raw(), previousE);
       std::cout << "\nError backtrace using characteristicTimeStep: \n"
                 << std::endl;
       system.testForceComputation(characteristicTimeStep,
                                   toMatrix(system.vpg->inputVertexPositions),
-                                  toMatrix(initial_protein), previousE);
+                                  initial_protein.raw(), previousE);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -151,7 +151,7 @@ double Integrator::backtrack(
     }
     if (system.parameters.variation.isProteinVariation) {
       system.proteinDensity.raw() =
-          toMatrix(initial_protein) + alpha * chemicalDirection;
+          initial_protein.raw() + alpha * chemicalDirection;
     }
     system.time = init_time + alpha;
     system.updateConfigurations();
@@ -173,7 +173,7 @@ double Integrator::backtrack(
   const bool isDebug = false;
   if (isDebug)
     system.testForceComputation(alpha, toMatrix(initial_pos),
-                                toMatrix(initial_protein), previousE);
+                                initial_protein.raw(), previousE);
 
   // recover the initial configuration
   system.time = init_time;
@@ -184,7 +184,7 @@ double Integrator::backtrack(
   return alpha;
 }
 double Integrator::chemicalBacktrack(
-    Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection, double rho,
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
     double c1) {
 
   // cache energy of the last time step
@@ -238,11 +238,11 @@ double Integrator::chemicalBacktrack(
           "stopped. \n");
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       system.testForceComputation(alpha, toMatrix(initial_pos),
-                                  toMatrix(initial_protein), previousE);
+                                  initial_protein.raw(), previousE);
       std::cout << "\nError backtrace using characteristicTimeStep: \n"
                 << std::endl;
       system.testForceComputation(characteristicTimeStep, toMatrix(initial_pos),
-                                  toMatrix(initial_protein), previousE);
+                                  initial_protein.raw(), previousE);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -251,7 +251,7 @@ double Integrator::chemicalBacktrack(
     // backtracking time step
     alpha *= rho;
     system.proteinDensity.raw() =
-        toMatrix(initial_protein) + alpha * chemicalDirection;
+        initial_protein.raw() + alpha * chemicalDirection;
     system.time = init_time + alpha;
     system.updateConfigurations();
     system.computePotentialEnergy();
@@ -271,7 +271,7 @@ double Integrator::chemicalBacktrack(
   if (isDebug) {
     std::cout << "\nchemicalBacktrack: debugging \n" << std::endl;
     system.testForceComputation(alpha, toMatrix(initial_pos),
-                                toMatrix(initial_protein), previousE);
+                                initial_protein.raw(), previousE);
   }
 
   // recover the initial configuration
@@ -340,11 +340,11 @@ double Integrator::mechanicalBacktrack(
           "stopped. \n");
       std::cout << "\nError backtrace using alpha: \n" << std::endl;
       system.testForceComputation(alpha, toMatrix(initial_pos),
-                                  toMatrix(initial_protein), previousE);
+                                  initial_protein.raw(), previousE);
       std::cout << "\nError backtrace using characterisiticTimeStep: \n"
                 << std::endl;
       system.testForceComputation(characteristicTimeStep, toMatrix(initial_pos),
-                                  toMatrix(initial_protein), previousE);
+                                  initial_protein.raw(), previousE);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -374,7 +374,7 @@ double Integrator::mechanicalBacktrack(
   if (isDebug) {
     std::cout << "\nmechanicalBacktrack: debugging \n" << std::endl;
     system.testForceComputation(alpha, toMatrix(initial_pos),
-                                toMatrix(initial_protein), previousE);
+                                initial_protein.raw(), previousE);
   }
 
   // recover the initial configuration
@@ -390,45 +390,49 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
                           bool ifPrintToConsole) {
   // print in-progress information in the console
   if (ifPrintToConsole) {
-    std::cout << "\n"
-              << "t: " << system.time << ", "
-              << "n: " << frame << ", "
-              << "isSmooth: " << system.isSmooth << "\n"
-              << "A, At: " << system.surfaceArea << ", "
-              << system.parameters.tension.At << ", "
-              << "V, Vt: " << system.volume << ", "
-              << system.parameters.osmotic.Vt << ", "
-              << "h: "
-              << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff()
-              << "\n"
-              << "E_total: " << system.energy.totalEnergy << "\n"
-              << "E_kin: " << system.energy.kineticEnergy << "\n"
-              << "E_pot: " << system.energy.potentialEnergy << "\n"
-              << "W_ext: " << system.energy.externalWork << "\n"
-              << "|e|Mech: " << system.mechErrorNorm << "\n"
-              << "|e|Chem: " << system.chemErrorNorm << "\n"
-              << "H: ["
-              << (system.vpg->vertexMeanCurvatures.raw().array() /
-                  system.vpg->vertexDualAreas.raw().array())
-                     .minCoeff()
-              << ","
-              << (system.vpg->vertexMeanCurvatures.raw().array() /
-                  system.vpg->vertexDualAreas.raw().array())
-                     .maxCoeff()
-              << "]"
-              << "\n"
-              << "K: ["
-              << (system.vpg->vertexGaussianCurvatures.raw().array() /
-                  system.vpg->vertexDualAreas.raw().array())
-                     .minCoeff()
-              << ","
-              << (system.vpg->vertexGaussianCurvatures.raw().array() /
-                  system.vpg->vertexDualAreas.raw().array())
-                     .maxCoeff()
-              << "]"
-              << "\n"
-              << "phi: [" << system.proteinDensity.raw().minCoeff() << ","
-              << system.proteinDensity.raw().maxCoeff() << "]" << std::endl;
+    std::cout
+        << "\n"
+        << "t: " << system.time << ", "
+        << "n: " << frame << ", "
+        << "isSmooth: " << system.isSmooth << "\n"
+        << "A, At: " << system.surfaceArea << ", "
+        << system.parameters.tension.At << ", "
+        << "V, Vt: " << system.volume << ", " << system.parameters.osmotic.Vt
+        << ", "
+        << "h: " << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff()
+        << "\n"
+        << "E_total: " << system.energy.totalEnergy << "\n"
+        << "E_kin: " << system.energy.kineticEnergy << "\n"
+        << "E_pot: " << system.energy.potentialEnergy << "\n"
+        << "W_ext: " << system.energy.externalWork << "\n"
+        << "|e|Mech: " << system.mechErrorNorm << "\n"
+        << "|e|Chem: " << system.chemErrorNorm << "\n"
+        << "H: ["
+        << (system.vpg->vertexMeanCurvatures.raw().array() /
+            system.vpg->vertexDualAreas.raw().array())
+               .minCoeff()
+        << ","
+        << (system.vpg->vertexMeanCurvatures.raw().array() /
+            system.vpg->vertexDualAreas.raw().array())
+               .maxCoeff()
+        << "]"
+        << "\n"
+        << "K: ["
+        << (system.vpg->vertexGaussianCurvatures.raw().array() /
+            system.vpg->vertexDualAreas.raw().array())
+               .minCoeff()
+        << ","
+        << (system.vpg->vertexGaussianCurvatures.raw().array() /
+            system.vpg->vertexDualAreas.raw().array())
+               .maxCoeff()
+        << "]"
+        << "\n"
+        << "phi: [" << system.proteinDensity.raw().minCoeff() << ","
+        << system.proteinDensity.raw().maxCoeff() << "]"
+        << "\n"
+        << "sum_phi: "
+        << (system.proteinDensity * system.vpg->vertexDualAreas).raw().sum()
+        << std::endl;
 
     if (EXIT)
       std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")
@@ -463,6 +467,7 @@ void Integrator::createMutableNetcdfFile(bool isContinue) {
     mutableTrajFile.createNewFile(outputDirectory + "/" + trajFileName,
                                   TrajFile::NcFile::replace);
   }
+  isMutableNetcdfFileCreated = true;
   // mutableTrajFile.writeMask(toMatrix(f.forces.forceMask).rowwise().sum());
   // if (!f.mesh->hasBoundary()) {
   //   mutableTrajFile.writeRefSurfArea(f.parameters.tension.At);
@@ -470,7 +475,7 @@ void Integrator::createMutableNetcdfFile(bool isContinue) {
 }
 
 void Integrator::closeMutableNetcdfFile() {
-  if (&mutableTrajFile != nullptr) {
+  if (isMutableNetcdfFileCreated) {
     mutableTrajFile.close();
   }
 }
@@ -487,6 +492,7 @@ void Integrator::saveMutableNetcdfData() {
 
   // write static properties
   mutableTrajFile.writeCoords(frame, *system.vpg);
+  mutableTrajFile.writeRefCoords(frame, *system.refVpg);
   mutableTrajFile.writeTopology(frame, *system.mesh);
   mutableTrajFile.writeProteinDensity(frame, system.proteinDensity);
   mutableTrajFile.sync();

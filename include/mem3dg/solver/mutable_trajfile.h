@@ -178,6 +178,7 @@ public:
     time_var = traj_group.getVar(TIME_VAR);
     topo_var = traj_group.getVar(TOPO_VAR);
     coord_var = traj_group.getVar(COORD_VAR);
+    refcoord_var = traj_group.getVar(REFCOORD_VAR);
     phi_var = traj_group.getVar(PHI_VAR);
     vel_var = traj_group.getVar(VEL_VAR);
     extF_var = traj_group.getVar(EXTF_VAR);
@@ -251,6 +252,7 @@ public:
     time_var = nc::NcVar{};
     topo_var = nc::NcVar{};
     coord_var = nc::NcVar{};
+    refcoord_var = nc::NcVar{};
     phi_var = nc::NcVar{};
     vel_var = nc::NcVar{};
     extF_var = nc::NcVar{};
@@ -341,6 +343,27 @@ public:
   }
 
   /**
+   * @brief Write the reference coordinates for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex position geometry
+   */
+  void writeRefCoords(const std::size_t idx,
+                      const gc::VertexPositionGeometry &data) {
+    writeVar<gc::Vertex>(refcoord_var, idx, data.inputVertexPositions);
+  }
+
+  /**
+   * @brief Write the reference coordinates for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex position geometry
+   */
+  void writeRefCoords(const std::size_t idx, const EigenVectorX3dr &data) {
+    writeVar<double, 3>(refcoord_var, idx, data);
+  }
+
+  /**
    * @brief Get the coordinates of a given frame
    *
    * @param idx               Index of the frame
@@ -348,6 +371,16 @@ public:
    */
   EigenVectorX3dr getCoords(const std::size_t idx) {
     return getVar<double, SPATIAL_DIMS>(coord_var, idx);
+  }
+
+  /**
+   * @brief Get the reference coordinates of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return EigenVectorX3dr  Coordinates data
+   */
+  EigenVectorX3dr getRefCoords(const std::size_t idx) {
+    return getVar<double, SPATIAL_DIMS>(refcoord_var, idx);
   }
 
   /**
@@ -596,7 +629,6 @@ private:
     return vec;
   }
 
-
   template <typename T,
             typename = std::enable_if_t<std::is_fundamental<T>::value>>
   T getVar(const nc::NcVar &var, const std::size_t idx) const {
@@ -668,6 +700,8 @@ private:
     topo_var.setCompression(true, true, compression_level);
     coord_var = traj_group.addVar(COORD_VAR, double_array_t, {frame_dim});
     coord_var.setCompression(true, true, compression_level);
+    refcoord_var = traj_group.addVar(REFCOORD_VAR, double_array_t, {frame_dim});
+    refcoord_var.setCompression(true, true, compression_level);
     phi_var = traj_group.addVar(PHI_VAR, double_array_t, {frame_dim});
     phi_var.setCompression(true, true, compression_level);
     vel_var = traj_group.addVar(VEL_VAR, double_array_t, {frame_dim});
@@ -696,6 +730,8 @@ private:
   nc::NcVar topo_var;
   /// Vlen variable for coordinates
   nc::NcVar coord_var;
+  /// Vlen variable for reference coordinates
+  nc::NcVar refcoord_var;
   /// Vlen variable for protein density
   nc::NcVar phi_var;
   /// Vlen variable for velocities
