@@ -17,22 +17,30 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+template <typename T>
+using EigenVectorX1_T = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
 using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenVectorX3u = Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
+using EigenVectorX3sr =
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenVectorX3s = Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>;
 
 int main() {
 
-  // Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> mesh;
-  // Eigen::Matrix<double, Eigen::Dynamic, 3> vpg;
+  EigenVectorX3sr mesh;
+  EigenVectorX3dr vpg;
+  EigenVectorX3dr refVpg;
   mem3dg::solver::Parameters p;
-  // std::tie(mesh, vpg) = mem3dg::getCylinderMatrix(1, 16, 60, 7.5, 0);
-  std::string inputMesh = "/home/cuzhu/Mem3DG/tests/frame9.ply";
+  std::tie(mesh, vpg) = mem3dg::getCylinderMatrix(1, 16, 60, 7.5, 0);
+  refVpg = vpg;
+  // std::string inputMesh = "/home/cuzhu/Mem3DG/tests/frame9.ply";
 
   /// physical parameters
-  p.proteinMobility = 10;
+  p.proteinMobility = 0;
   p.temperature = 0;
 
   p.point.pt.resize(2);
@@ -42,16 +50,16 @@ int main() {
   p.protein.profile = "none";
   p.protein.geodesicProteinDensityDistribution.resize(1);
   p.protein.geodesicProteinDensityDistribution << -1;
-  p.protein.proteinInteriorPenalty = 1e-7;
+  p.protein.proteinInteriorPenalty = 0;
 
   p.boundary.shapeBoundaryCondition = "fixed";
-  p.boundary.proteinBoundaryCondition = "pin";
+  p.boundary.proteinBoundaryCondition = "none";
 
-  p.variation.isProteinVariation = true;
+  p.variation.isProteinVariation = false;
   p.variation.isShapeVariation = true;
   p.variation.geodesicMask = -1;
 
-  p.bending.Kb = 8.22e-5;
+  p.bending.Kb = 0;
   p.bending.Kbc = 2 * 8.22e-5;
   p.bending.H0c = -60;
 
@@ -61,30 +69,38 @@ int main() {
   p.tension.At = 3.40904;
   p.tension.lambdaSG = 0;
 
-  p.adsorption.epsilon = -1e-4;
+  p.adsorption.epsilon = 0;
 
-  p.aggregation.chi = -2e-1;
+  p.aggregation.chi = 0;
 
   p.osmotic.isPreferredVolume = false;
   p.osmotic.isConstantOsmoticPressure = true;
-  p.osmotic.Kv = 0;
+  p.osmotic.Kv = 0.01;
   p.osmotic.V_res = 0;
   p.osmotic.n = 1;
   p.osmotic.Vt = -1;
   p.osmotic.cam = -1;
   p.osmotic.lambdaV = 0;
 
-  p.dirichlet.eta = 0.00005;
+  p.dirichlet.eta = 0;
 
   p.selfAvoidance.d = 0.01;
-  p.selfAvoidance.mu = 1e-6;
+  p.selfAvoidance.mu = 0;
   p.selfAvoidance.p = 0.1;
 
   p.dpd.gamma = 0;
 
+  p.spring.Kse = 0.01;
+//   p.spring.Ksl = 0.01;
+//   p.spring.Kst = 0.01;
+
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
-  mem3dg::solver::System system(inputMesh, p, 0);
+  EigenVectorX1d phi = Eigen::MatrixXd::Constant(vpg.rows(), 1, 1);
+  EigenVectorX3dr vel = Eigen::MatrixXd::Constant(vpg.rows(), 3, 0);
+
+  mem3dg::solver::System system(mesh, vpg, refVpg, phi, vel, p, 0);
   system.initialize();
+//   system.testForceComputation(0.001);
 
   system.meshProcessor.meshMutator.isShiftVertex = true;
   system.meshProcessor.meshMutator.flipNonDelaunay = true;
@@ -95,11 +111,14 @@ int main() {
   system.meshProcessor.meshMutator.curvTol = 0.003;
   system.meshProcessor.meshMutator.collapseSkinny = true;
 
-  const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 2;
+  const double dt = 0.01, T = 1000000, eps = 1e-4, tSave = 1;
   const std::string outputDir = "/tmp";
 
   mem3dg::solver::integrator::Euler integrator{system, dt,  T,
                                                tSave,  eps, outputDir};
+  integrator.ifPrintToConsole = true;
+  integrator.ifOutputMeshFile = false;
+  integrator.ifOutputTrajFile = false;
   integrator.processMeshPeriod = 0.1;
   integrator.isBacktrack = true;
   integrator.ifAdaptiveStep = true;

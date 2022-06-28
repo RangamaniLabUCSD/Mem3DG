@@ -74,6 +74,8 @@ bool VelocityVerlet::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.updateConfigurations();
+      system.refVpg = system.vpg->copy();
+      system.updateReferenceConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
@@ -211,13 +213,6 @@ void VelocityVerlet::march() {
                              system.forces.chemicalPotential /
                              system.vpg->vertexDualAreas;
     system.proteinDensity += system.proteinVelocity * timeStep;
-  }
-
-  // regularization
-  if (system.meshProcessor.isMeshRegularize) {
-    system.computeRegularizationForce();
-    system.vpg->inputVertexPositions.raw() +=
-        system.forces.regularizationForce.raw();
   }
 
   // recompute cached values

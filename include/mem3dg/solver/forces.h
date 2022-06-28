@@ -69,6 +69,8 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<double> adsorptionForce;
   /// Cached aggregation induced surface force
   gcs::VertexData<double> aggregationForce;
+  /// Cached entropy induced surface force
+  gcs::VertexData<double> entropyForce;
   /// Cached externally-applied force
   gcs::VertexData<double> externalForce;
   /// Cached self avoidance force
@@ -106,6 +108,8 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<gc::Vector3> adsorptionForceVec;
   /// Cached aggregation driven force
   gcs::VertexData<gc::Vector3> aggregationForceVec;
+  /// Cached entropy driven force
+  gcs::VertexData<gc::Vector3> entropyForceVec;
   /// Cached external localized force
   gcs::VertexData<gc::Vector3> externalForceVec;
   /// Cached self avoidance force
@@ -119,7 +123,10 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<gc::Vector3> stochasticForceVec;
 
   /// Cached local stretching forces (in-plane regularization)
-  gcs::VertexData<gc::Vector3> regularizationForce;
+  gcs::VertexData<gc::Vector3> springForceVec;
+  gcs::VertexData<gc::Vector3> edgeSpringForceVec;
+  gcs::VertexData<gc::Vector3> faceSpringForceVec;
+  gcs::VertexData<gc::Vector3> lcrSpringForceVec;
 
   /// Cached interior penalty chemical potential
   gcs::VertexData<double> interiorPenaltyPotential;
@@ -130,9 +137,13 @@ DLL_PUBLIC struct Forces {
   /// Cached adsorption related chemical potential
   gcs::VertexData<double> adsorptionPotential;
   /// Cached dirichlet energy related chemical potential
-  gcs::VertexData<double> diffusionPotential;
+  gcs::VertexData<double> dirichletPotential;
   /// Cached aggregation related chemical potential
   gcs::VertexData<double> aggregationPotential;
+  /// Cached entropy related chemical potential
+  gcs::VertexData<double> entropyPotential;
+  /// Cached inPlaneFluxForm
+  gcs::EdgeData<double> inPlaneFluxForm;
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
@@ -152,19 +163,23 @@ DLL_PUBLIC struct Forces {
         bendingForceVec_schlafliVec(mesh, {0, 0, 0}),
         capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
         adsorptionForceVec(mesh, {0, 0, 0}),
-        aggregationForceVec(mesh, {0, 0, 0}), externalForceVec(mesh, {0, 0, 0}),
+        aggregationForceVec(mesh, {0, 0, 0}), entropyForceVec(mesh, {0, 0, 0}),
+        externalForceVec(mesh, {0, 0, 0}),
         selfAvoidanceForceVec(mesh, {0, 0, 0}),
         lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
         deviatoricForce(mesh, 0), capillaryForce(mesh, 0), surfaceTension(0),
         lineCapillaryForce(mesh, 0), adsorptionForce(mesh, 0),
-        aggregationForce(mesh, 0), externalForce(mesh, 0),
-        selfAvoidanceForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
-        regularizationForce(mesh, {0, 0, 0}),
+        aggregationForce(mesh, 0), entropyForce(mesh, 0),
+        externalForce(mesh, 0), selfAvoidanceForce(mesh, 0),
+        osmoticForce(mesh, 0), osmoticPressure(0),
+        springForceVec(mesh, {0, 0, 0}), edgeSpringForceVec(mesh, {0, 0, 0}),
+        faceSpringForceVec(mesh, {0, 0, 0}), lcrSpringForceVec(mesh, {0, 0, 0}),
         stochasticForceVec(mesh, {0, 0, 0}), dampingForceVec(mesh, {0, 0, 0}),
         interiorPenaltyPotential(mesh, 0), bendingPotential(mesh, 0),
         deviatoricPotential(mesh, 0), adsorptionPotential(mesh, 0),
-        aggregationPotential(mesh, 0), diffusionPotential(mesh, 0),
-        chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
+        aggregationPotential(mesh, 0), entropyPotential(mesh, 0),
+        dirichletPotential(mesh, 0), chemicalPotential(mesh, 0),
+        inPlaneFluxForm(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
         proteinMask(mesh, 1) {}
 
   ~Forces() {}
@@ -323,24 +338,24 @@ DLL_PUBLIC struct Forces {
    */
   gcs::VertexData<double> maskProtein(gcs::VertexData<double> &potential) {
     gcs::VertexData<double> vertexData(mesh);
-    toMatrix(vertexData).array() =
-        toMatrix(potential).array() * toMatrix(proteinMask).array();
+    vertexData.raw().array() =
+        potential.raw().array() * proteinMask.raw().array();
     return vertexData;
   }
 
   gcs::VertexData<double> maskProtein(gcs::VertexData<double> &&potential) {
     gcs::VertexData<double> vertexData(mesh);
-    toMatrix(vertexData).array() =
-        toMatrix(potential).array() * toMatrix(proteinMask).array();
+    vertexData.raw().array() =
+        potential.raw().array() * proteinMask.raw().array();
     return vertexData;
   }
 
   EigenVectorX1d maskProtein(EigenVectorX1d &potential) {
-    return potential.array() * toMatrix(proteinMask).array();
+    return potential.array() * proteinMask.raw().array();
   }
 
   EigenVectorX1d maskProtein(EigenVectorX1d &&potential) {
-    return potential.array() * toMatrix(proteinMask).array();
+    return potential.array() * proteinMask.raw().array();
   }
 
   double maskProtein(double &potential, gc::Vertex &v) {

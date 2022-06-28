@@ -73,6 +73,8 @@ bool ConjugateGradient::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.updateConfigurations();
+      system.refVpg = system.vpg->copy();
+      system.updateReferenceConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
@@ -157,7 +159,7 @@ void ConjugateGradient::checkParameters() {
 }
 
 void ConjugateGradient::status() {
-  auto physicalForce = toMatrix(system.forces.mechanicalForce);
+  auto physicalForce = system.forces.mechanicalForce.raw();
 
   // compute summerized forces
   system.computePhysicalForcing(timeStep);
@@ -236,20 +238,13 @@ void ConjugateGradient::march() {
   // time stepping on vertex position
   if (isBacktrack) {
     timeStep = backtrack(toMatrix(system.velocity),
-                         toMatrix(system.proteinVelocity), rho, c1);
+                         system.proteinVelocity.raw(), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
   }
   system.vpg->inputVertexPositions += system.velocity * timeStep;
   system.proteinDensity += system.proteinVelocity * timeStep;
   system.time += timeStep;
-
-  // regularization
-  if (system.meshProcessor.isMeshRegularize) {
-    system.computeRegularizationForce();
-    system.vpg->inputVertexPositions.raw() +=
-        system.forces.regularizationForce.raw();
-  }
 
   // recompute cached values
   system.updateConfigurations();
