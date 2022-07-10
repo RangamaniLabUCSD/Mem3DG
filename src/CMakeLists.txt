@@ -14,7 +14,6 @@
 
 set(DDG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/mesh_io.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/visualization.cpp"
     
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/init.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/force.cpp"
