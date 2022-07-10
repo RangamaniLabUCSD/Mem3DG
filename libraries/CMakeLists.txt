@@ -70,28 +70,6 @@ endif()
 add_subdirectory(geometry-central)
 set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-if(BUILD_PYMEM3DG)
-  # ############################################################################
-  # GET polyscope
-  # ############################################################################
-  add_subdirectory(polyscope)
-  set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  # FetchContent_Declare(
-  #   polyscopelib
-  #   GIT_REPOSITORY https://github.com/nmwsharp/polyscope.git
-  #   GIT_SHALLOW TRUE
-  #   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/polyscope-src" 
-  #   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/polyscope-build"
-  # )
-  # FetchContent_GetProperties(polyscopelib)
-  # if(NOT polyscopelib_POPULATED)
-  #   FetchContent_Populate(polyscopelib)
-  #   add_subdirectory(${polyscopelib_SOURCE_DIR} ${polyscopelib_BINARY_DIR})
-  #   set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  # endif()
-endif()
-
-
 # ############################################################################
 # Configure libigl
 # ############################################################################
