@@ -329,13 +329,14 @@ void System::computeMechanicalForces(size_t i) {
     // aggregationForceVec -= (proteinDensityi * proteinDensityi / 3 +
     //                         proteinDensityj * proteinDensityj * 2 / 3) *
     //                        parameters.aggregation.chi * areaGrad;
-    entropyForceVec -= ((proteinDensityi * log(proteinDensityi) +
-                         (1 - proteinDensityi) * log(1 - proteinDensityi)) /
-                            3 +
-                        (proteinDensityj * log(proteinDensityj) +
-                         (1 - proteinDensityj) * log(1 - proteinDensityj)) *
-                            2 / 3) *
-                       parameters.entropy.xi * areaGrad;
+    if (parameters.entropy.xi != 0)
+      entropyForceVec -= ((proteinDensityi * log(proteinDensityi) +
+                           (1 - proteinDensityi) * log(1 - proteinDensityi)) /
+                              3 +
+                          (proteinDensityj * log(proteinDensityj) +
+                           (1 - proteinDensityj) * log(1 - proteinDensityj)) *
+                              2 / 3) *
+                         parameters.entropy.xi * areaGrad;
     // entropyForceVec -= (proteinDensityi * (log(proteinDensityi) - 1) / 3 +
     //                     proteinDensityj * (log(proteinDensityj) - 1) * 2 / 3)
     //                     *
