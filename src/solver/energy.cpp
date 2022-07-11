@@ -255,11 +255,13 @@ double System::computePotentialEnergy() {
   energy.lcrSpringEnergy = 0;
 
   computeBendingEnergy();
-  computeSurfaceEnergy();
-  computePressureEnergy();
-
-  // optional internal potential energy
   computeDeviatoricEnergy();
+  
+  // optional internal potential energy
+  if (parameters.tension.Ksg != 0)
+    computeSurfaceEnergy();
+  if (parameters.osmotic.Kv != 0)
+    computePressureEnergy();
   if (parameters.adsorption.epsilon != 0) {
     computeAdsorptionEnergy();
   }
