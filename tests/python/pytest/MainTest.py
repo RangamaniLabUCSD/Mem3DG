@@ -159,27 +159,7 @@ class TestExampleIntegration(object):
         dg_vis.animate(
             trajNc=self.trajFile,
             parameters=p,
-            frames=[0, 4, 5],
-            meanCurvature=True,
-            gaussianCurvature=True,
-            mechanicalForce=True,
-            spontaneousCurvatureForce=True,
-            deviatoricCurvatureForce=True,
-            externalForce=True,
-            capillaryForce=True,
-            lineCapillaryForce=True,
-            osmoticForce=True,
-            adsorptionForce=True,
-            aggregationForce=True,
-            entropyForce=True,
-            springForce=True,
-            chemicalPotential=True,
-            spontaneousCurvaturePotential=True,
-            aggregationPotential=True,
-            dirichletPotential=True,
-            adsorptionPotential=True,
-            entropyPotential=True,
-            deviatoricCurvaturePotential=True,
+            frames=[0, 4, 5]
         )
         _, ax = plt.subplots(4)
         dg_vis.plotProteinDensity(ax[0], self.trajFile, p)
