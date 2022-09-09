@@ -37,6 +37,7 @@ namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool VelocityVerlet::integrate() {
+
   if (ifDisableIntegrate)
     mem3dg_runtime_error("integrate() is disabled for current construction!");
 
@@ -62,15 +63,20 @@ bool VelocityVerlet::integrate() {
     // Evaluate and threhold status data
     status();
 
-    // Save files every tSave period and print some info
+    // Save files every tSave period and print some info; save data before exit
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
       saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
 
+    // break loop if EXIT flag is on
+    if (EXIT) {
+      break;
+    }
+
     // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > processMeshPeriod) {
+    if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.updateConfigurations();
@@ -79,22 +85,17 @@ bool VelocityVerlet::integrate() {
     }
 
     // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
+    if (system.time - lastUpdateGeodesics >
+        (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
       if (system.parameters.point.isFloatVertex)
         system.findFloatCenter(
-            *system.vpg, system.geodesicDistance,
             3 * system.vpg->edgeLength(
                     system.center.nearestVertex().halfedge().edge()));
-      system.updateGeodesicsDistance();
+      system.geodesicDistance.raw() = system.computeGeodesicDistance();
       if (system.parameters.protein.ifPrescribe)
         system.prescribeGeodesicProteinDensityDistribution();
       system.updateConfigurations();
-    }
-
-    // break loop if EXIT flag is on
-    if (EXIT) {
-      break;
     }
 
     // step forward
@@ -130,13 +131,21 @@ void VelocityVerlet::checkParameters() {
   //   mem3dg_runtime_error(
   //       "Mesh mutations are currently not supported for Velocity Verlet!");
   // }
+  if (system.parameters.damping == 0) {
+    mem3dg_runtime_error("Expect nonzero damping force for Velocity Verlet "
+                         "integration! Note that 0 < damping/time step < 1!");
+  }
+  if (isBacktrack && system.parameters.dpd.gamma != 0) {
+    mem3dg_runtime_message(
+        "Fluctuation can lead to failture in backtracking algorithm!");
+  }
 }
 
 void VelocityVerlet::status() {
-  // exit if under error tol
+  // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     if (ifPrintToConsole)
-      std::cout << "\nError norm smaller than tol." << std::endl;
+      std::cout << "\nError norm smaller than tolerance." << std::endl;
     EXIT = true;
   }
 
@@ -178,42 +187,81 @@ void VelocityVerlet::status() {
 }
 
 void VelocityVerlet::march() {
-  // adjust time step if adopt adaptive time step based on mesh size
+  // compute protein velocity, which is independent of time
+  if (system.parameters.variation.isProteinVariation) {
+    if (system.parameters.variation.isProteinConservation) {
+      system.proteinRateOfChange.raw() =
+          system.parameters.proteinMobility * system.vpg->hodge0Inverse *
+          system.vpg->d0.transpose() *
+          system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
+    } else {
+      system.proteinRateOfChange = system.parameters.proteinMobility *
+                                   system.forces.chemicalPotential /
+                                   system.vpg->vertexDualAreas;
+    }
+    system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
+                            system.forces.chemicalPotential.raw().array())
+                               .sum();
+  }
+
+  // adjust characteristic time step if adopt adaptive time step based on mesh
+  // size
   if (ifAdaptiveStep) {
     characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
+  }
+
+  // backtracking to obtain stable time step or assumed characteristic time
+  // step, ignore higher order acceleration effect
+  if (isBacktrack && system.time > (1e-5 * characteristicTimeStep)) {
+    double timeStep_mech = std::numeric_limits<double>::max(),
+           timeStep_chem = std::numeric_limits<double>::max();
+    if (system.parameters.variation.isShapeVariation)
+      timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity), rho, c1);
+    if (system.parameters.variation.isProteinVariation)
+      timeStep_chem =
+          chemicalBacktrack(system.proteinRateOfChange.raw(), rho, c1);
+    timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
+  } else {
     timeStep = characteristicTimeStep;
   }
 
+  // march the system with increment time step obtained above
   double hdt = 0.5 * timeStep, hdt2 = hdt * timeStep;
 
   // stepping on vertex position
   system.vpg->inputVertexPositions +=
-      system.velocity * timeStep + hdt2 * pastMechanicalForceVec;
+      system.velocity * timeStep +
+      hdt2 *
+          pastMechanicalForceVec; // x_{i+1} = x_i + dt_i * v_i + 0.5 * (dt_i)^2
+                                  // * a_i
 
-  // velocity predictor
-  gc::VertexData<gc::Vector3> oldVelocity(*system.mesh);
-  oldVelocity = system.velocity;
-  system.velocity += hdt * pastMechanicalForceVec;
-
-  // compute summerized forces
-  system.computePhysicalForcing(timeStep);
-
-  // stepping on velocity
-  system.velocity =
-      oldVelocity +
-      (pastMechanicalForceVec + system.forces.mechanicalForceVec) * hdt;
-  pastMechanicalForceVec = system.forces.mechanicalForceVec;
+  // stepping on protein density
+  system.proteinDensity += system.proteinRateOfChange * timeStep;
 
   // stepping on time
-  system.time += timeStep;
+  system.time += timeStep; // t_{i+1} = t_i + dt_i
 
-  // time stepping on protein density
-  if (system.parameters.variation.isProteinVariation) {
-    system.proteinVelocity = system.parameters.proteinMobility *
-                             system.forces.chemicalPotential /
-                             system.vpg->vertexDualAreas;
-    system.proteinDensity += system.proteinVelocity * timeStep;
-  }
+  // velocity predictor for force calculation
+  system.velocity +=
+      timeStep * pastMechanicalForceVec; // v_{i+1} = v_i + a_i * dt_i
+
+  // compute summerized forces
+  system.computeConservativeForcing();
+  system.addNonconservativeForcing(
+      timeStep); // a_{i+1} at (x_{i+1}, v_{i+1}, dt_i)
+
+  // stepping on velocity from velocity predictor
+  system.velocity +=
+      (system.forces.mechanicalForceVec - pastMechanicalForceVec) *
+      hdt; // v_{i+1} = v_{i+1} + 0.5
+           // * (a_{i+1} - a_i) * dt
+
+  system.mechErrorNorm = (toMatrix(system.velocity).array() *
+                          toMatrix(system.forces.mechanicalForceVec).array())
+                             .sum();
+
+  // cache current force
+  pastMechanicalForceVec = system.forces.mechanicalForceVec; // a_i <-- a_{i+1}
 
   // recompute cached values
   system.updateConfigurations();

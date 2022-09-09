@@ -22,12 +22,13 @@ namespace solver {
 namespace integrator {
 /**
  * @brief Conjugate Gradient propagator
- * @param ctol, tolerance for termination (contraints)
- * @param isBacktrack, option to use backtracking line search algorithm
- * @param rho, backtracking coefficient
- * @param c1, Wolfe condition parameter
- * @param isAugmentedLagrangian, option to use Augmented Lagrangian method
- * @return Success, if simulation is sucessful
+ * @param system_ System object to be integrated 
+ * @param characteristicTimeStep_ time step, or the initial time step for backtracking algorithm 
+ * @param totalTime_ total simulation time 
+ * @param savePeriod_ period of saving output data (in the unit of characteristicTimeStep_) 
+ * @param tolerance_ tolerance of force L2 norm for termination 
+ * @param outputDirectory_ path to the output directory  
+ * @param frame_ frame index, if nonzero, enable continuation mode
  */
 class DLL_PUBLIC ConjugateGradient : public Integrator {
 private:
@@ -42,9 +43,6 @@ private:
 
 public:
   std::size_t restartPeriod = 5;
-  bool isBacktrack = true;
-  double rho = 0.9;
-  double c1 = 0.0005;
   double constraintTolerance = 0.01;
   bool isAugmentedLagrangian = false;
 

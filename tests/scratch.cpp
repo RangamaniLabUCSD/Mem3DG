@@ -100,7 +100,7 @@ int main() {
 
   mem3dg::solver::System system(mesh, vpg, refVpg, phi, vel, p, 0);
   system.initialize();
-//   system.testForceComputation(0.001);
+//   system.testConservativeForcing(0.001);
 
   system.meshProcessor.meshMutator.isShiftVertex = true;
   system.meshProcessor.meshMutator.flipNonDelaunay = true;

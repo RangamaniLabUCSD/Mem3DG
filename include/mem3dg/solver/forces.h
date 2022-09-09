@@ -55,10 +55,12 @@ DLL_PUBLIC struct Forces {
   /// Embedding and other geometric details
   gcs::VertexPositionGeometry &vpg;
 
-  /// Cached bending force
-  gcs::VertexData<double> bendingForce;
+  /// Cached spontaneous curvature force
+  gcs::VertexData<double> spontaneousCurvatureForce;
   /// Cached deviatoric force
-  gcs::VertexData<double> deviatoricForce;
+  gcs::VertexData<double> deviatoricCurvatureForce;
+  /// Cached area difference force
+  gcs::VertexData<double> areaDifferenceForce;
   /// Cached osmotic force
   gcs::VertexData<double> osmoticForce;
   /// Cached tension-induced capillary force
@@ -77,26 +79,31 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<double> selfAvoidanceForce;
   /// Cached mechanical force
   gcs::VertexData<double> mechanicalForce;
+  /// Cached conservative force
+  gcs::VertexData<double> conservativeForce;
   /// Cached osmotic pressure
   double osmoticPressure;
   /// Cached Surface tension
   double surfaceTension;
 
-  /// Cached bending force
-  gcs::VertexData<gc::Vector3> bendingForceVec;
-  /// Cached bending force areaGrad component
-  gcs::VertexData<gc::Vector3> bendingForceVec_areaGrad;
-  /// Cached bending force gaussVec component
-  gcs::VertexData<gc::Vector3> bendingForceVec_gaussVec;
-  /// Cached bending force schlafliVec component
-  gcs::VertexData<gc::Vector3> bendingForceVec_schlafliVec;
+  /// Cached spontaneous curvature force
+  gcs::VertexData<gc::Vector3> spontaneousCurvatureForceVec;
+  /// Cached spontaneous curvature force areaGrad component
+  gcs::VertexData<gc::Vector3> spontaneousCurvatureForceVec_areaGrad;
+  /// Cached spontaneous curvature force gaussVec component
+  gcs::VertexData<gc::Vector3> spontaneousCurvatureForceVec_gaussVec;
+  /// Cached spontaneous curvature force schlafliVec component
+  gcs::VertexData<gc::Vector3> spontaneousCurvatureForceVec_schlafliVec;
 
-  /// Cached deviatoric force
-  gcs::VertexData<gc::Vector3> deviatoricForceVec;
-  /// Cached deviatoric force
-  gcs::VertexData<gc::Vector3> deviatoricForceVec_mean;
-  /// Cached deviatoric force
-  gcs::VertexData<gc::Vector3> deviatoricForceVec_gauss;
+  /// Cached deviatoric curvature force
+  gcs::VertexData<gc::Vector3> deviatoricCurvatureForceVec;
+  /// Cached deviatoric curvature force
+  gcs::VertexData<gc::Vector3> deviatoricCurvatureForceVec_mean;
+  /// Cached deviatoric curvature force
+  gcs::VertexData<gc::Vector3> deviatoricCurvatureForceVec_gauss;
+
+  /// Cached area difference force
+  gcs::VertexData<gc::Vector3> areaDifferenceForceVec;
 
   /// Cached tension-induced capillary force
   gcs::VertexData<gc::Vector3> capillaryForceVec;
@@ -114,6 +121,8 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<gc::Vector3> externalForceVec;
   /// Cached self avoidance force
   gcs::VertexData<gc::Vector3> selfAvoidanceForceVec;
+  /// Cached conservative force
+  gcs::VertexData<gc::Vector3> conservativeForceVec;
   /// Cached mechanical force
   gcs::VertexData<gc::Vector3> mechanicalForceVec;
 
@@ -130,10 +139,10 @@ DLL_PUBLIC struct Forces {
 
   /// Cached interior penalty chemical potential
   gcs::VertexData<double> interiorPenaltyPotential;
-  /// Cached bending related chemical potential
-  gcs::VertexData<double> bendingPotential;
-  /// Cached deviatoric related chemical potential
-  gcs::VertexData<double> deviatoricPotential;
+  /// Cached spontaneous curvature related chemical potential
+  gcs::VertexData<double> spontaneousCurvaturePotential;
+  /// Cached deviatoric curvature related chemical potential
+  gcs::VertexData<double> deviatoricCurvaturePotential;
   /// Cached adsorption related chemical potential
   gcs::VertexData<double> adsorptionPotential;
   /// Cached dirichlet energy related chemical potential
@@ -142,8 +151,6 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<double> aggregationPotential;
   /// Cached entropy related chemical potential
   gcs::VertexData<double> entropyPotential;
-  /// Cached inPlaneFluxForm
-  gcs::EdgeData<double> inPlaneFluxForm;
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
@@ -153,33 +160,36 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<double> proteinMask;
 
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
-      : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
-        mechanicalForceVec(mesh, {0, 0, 0}), bendingForceVec(mesh, {0, 0, 0}),
-        deviatoricForceVec(mesh, {0, 0, 0}),
-        deviatoricForceVec_mean(mesh, {0, 0, 0}),
-        deviatoricForceVec_gauss(mesh, {0, 0, 0}),
-        bendingForceVec_areaGrad(mesh, {0, 0, 0}),
-        bendingForceVec_gaussVec(mesh, {0, 0, 0}),
-        bendingForceVec_schlafliVec(mesh, {0, 0, 0}),
+      : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0), conservativeForce(mesh, 0),
+        mechanicalForceVec(mesh, {0, 0, 0}),
+        conservativeForceVec(mesh, {0, 0, 0}),
+        spontaneousCurvatureForceVec(mesh, {0, 0, 0}),
+        areaDifferenceForceVec(mesh, {0, 0, 0}),
+        deviatoricCurvatureForceVec(mesh, {0, 0, 0}),
+        deviatoricCurvatureForceVec_mean(mesh, {0, 0, 0}),
+        deviatoricCurvatureForceVec_gauss(mesh, {0, 0, 0}),
+        spontaneousCurvatureForceVec_areaGrad(mesh, {0, 0, 0}),
+        spontaneousCurvatureForceVec_gaussVec(mesh, {0, 0, 0}),
+        spontaneousCurvatureForceVec_schlafliVec(mesh, {0, 0, 0}),
         capillaryForceVec(mesh, {0, 0, 0}), osmoticForceVec(mesh, {0, 0, 0}),
         adsorptionForceVec(mesh, {0, 0, 0}),
         aggregationForceVec(mesh, {0, 0, 0}), entropyForceVec(mesh, {0, 0, 0}),
         externalForceVec(mesh, {0, 0, 0}),
         selfAvoidanceForceVec(mesh, {0, 0, 0}),
-        lineCapillaryForceVec(mesh, {0, 0, 0}), bendingForce(mesh, 0),
-        deviatoricForce(mesh, 0), capillaryForce(mesh, 0), surfaceTension(0),
-        lineCapillaryForce(mesh, 0), adsorptionForce(mesh, 0),
-        aggregationForce(mesh, 0), entropyForce(mesh, 0),
-        externalForce(mesh, 0), selfAvoidanceForce(mesh, 0),
-        osmoticForce(mesh, 0), osmoticPressure(0),
+        lineCapillaryForceVec(mesh, {0, 0, 0}),
+        spontaneousCurvatureForce(mesh, 0), deviatoricCurvatureForce(mesh, 0),
+        areaDifferenceForce(mesh, 0), capillaryForce(mesh, 0),
+        surfaceTension(0), lineCapillaryForce(mesh, 0),
+        adsorptionForce(mesh, 0), aggregationForce(mesh, 0),
+        entropyForce(mesh, 0), externalForce(mesh, 0),
+        selfAvoidanceForce(mesh, 0), osmoticForce(mesh, 0), osmoticPressure(0),
         springForceVec(mesh, {0, 0, 0}), edgeSpringForceVec(mesh, {0, 0, 0}),
         faceSpringForceVec(mesh, {0, 0, 0}), lcrSpringForceVec(mesh, {0, 0, 0}),
         stochasticForceVec(mesh, {0, 0, 0}), dampingForceVec(mesh, {0, 0, 0}),
-        interiorPenaltyPotential(mesh, 0), bendingPotential(mesh, 0),
-        deviatoricPotential(mesh, 0), adsorptionPotential(mesh, 0),
+        interiorPenaltyPotential(mesh, 0), spontaneousCurvaturePotential(mesh, 0),
+        deviatoricCurvaturePotential(mesh, 0), adsorptionPotential(mesh, 0),
         aggregationPotential(mesh, 0), entropyPotential(mesh, 0),
-        dirichletPotential(mesh, 0), chemicalPotential(mesh, 0),
-        inPlaneFluxForm(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
+        dirichletPotential(mesh, 0), chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
         proteinMask(mesh, 1) {}
 
   ~Forces() {}

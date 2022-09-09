@@ -56,10 +56,18 @@ namespace solver {
 
 struct Parameters {
   struct Bending {
+    /// membrane thickness
+    double D = 0;
+    /// unity modulus 
+    double alpha = 0;
+    /// preferred area difference 
+    double dA0 = 0;
+
     /// Deviatoric modulus
     double Kd = 0;
     /// Constant of deviatoric modulus vs protein density
     double Kdc = 0;
+
     /// Bending modulus
     double Kb = 0;
     /// Constant of bending modulus vs protein density
@@ -68,6 +76,11 @@ struct Parameters {
     double H0c = 0;
     /// type of relation between H0 and protein density, "linear" or "hill"
     std::string relation = "linear";
+
+    /**
+     * @brief check parameter conflicts
+     */
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Tension {

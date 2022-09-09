@@ -644,10 +644,9 @@ DLL_PUBLIC inline void gaussianDistribution(
 /**
  * @brief height = 1 tanh step function with radius r
  *
- * @param (double) sharpness of transition
- * @param (double) radius of height = 1
- * @param (Eigen vector) distance vector
- * @param (vertexPositionGeometry) vpg
+ * @param sharpness sharpness of transition
+ * @param ax radius of height = 1
+ * @param distance distance vector
  *
  */
 inline double tanhDistribution(const double &distance, const double &sharpness,

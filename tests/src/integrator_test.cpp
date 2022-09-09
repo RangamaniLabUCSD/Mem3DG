@@ -66,16 +66,8 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
   integrator.integrate();
 }
 
-// TEST_F(IntegratorTest, BFGSIntegratorTest) {
-//   mem3dg::solver::System f(mesh, vpg, p, o);
-//
-//   mem3dg::solver::integrator::BFGS integrator{
-//       f,         dt,        T,     tSave, eps, outputDir, true,
-//       "traj.nc", 0, false, 1,     1,   0.01,      false};
-//   integrator.integrate();
-// }
-
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
+  p.damping = 0.1 / dt;
   mem3dg::solver::System f(mesh, vpg, p, 0);
   f.initialize(0, true);
   mem3dg::solver::integrator::VelocityVerlet integrator{

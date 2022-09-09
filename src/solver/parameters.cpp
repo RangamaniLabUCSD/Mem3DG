@@ -40,6 +40,13 @@ void Parameters::Tension::checkParameters() {
   }
 };
 
+void Parameters::Bending::checkParameters() {
+  if (alpha != 0) {
+    if (D == 0)
+      mem3dg_runtime_error("Membrane thickness D has to be larger than 0!");
+  }
+}
+
 void Parameters::Osmotic::checkParameters() {
   if (isPreferredVolume && !isConstantOsmoticPressure) {
     if (cam != -1) {
@@ -147,6 +154,7 @@ void Parameters::Variation::checkParameters() {
 }
 
 void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
+  bending.checkParameters();
   tension.checkParameters();
   osmotic.checkParameters();
   variation.checkParameters();

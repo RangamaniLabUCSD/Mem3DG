@@ -79,9 +79,15 @@ public:
   /// tolerance for termination
   double tolerance;
   /// option to scale time step according to mesh size
-  bool ifAdaptiveStep = true;
+  bool ifAdaptiveStep = false;
   /// path to the output directory
   std::string outputDirectory;
+  /// option to use backtracking line search algorithm
+  bool isBacktrack = true;
+  /// backtracking coefficient
+  double rho = 0.7;
+  /// Wolfe condition parameter
+  double c1 = 0.001;
 
   // defaulted parameters (read/write)
   /// period of saving output data
@@ -137,7 +143,8 @@ public:
                      std::pow(system.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
-    system.computePhysicalForcing(timeStep);
+    system.computeConservativeForcing();
+    system.addNonconservativeForcing(timeStep);
     initialMaximumForce =
         system.parameters.variation.isShapeVariation
             ? system.forces.mechanicalForce.raw().cwiseAbs().maxCoeff()
@@ -226,9 +233,9 @@ public:
    * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double chemicalBacktrack(
-      Eigen::Matrix<double, Eigen::Dynamic, 1> & chemicalDirection,
-      double rho = 0.7, double c1 = 0.001);
+  double
+  chemicalBacktrack(Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
+                    double rho = 0.7, double c1 = 0);
 
   /**
    * @brief get adaptive characteristic time step

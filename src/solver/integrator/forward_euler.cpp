@@ -102,6 +102,10 @@ bool Euler::integrate() {
       system.updateConfigurations();
       system.refVpg = system.vpg->copy();
       system.updateReferenceConfigurations();
+      if (system.parameters.point.isFloatVertex)
+        system.findFloatCenter(
+            3 * system.vpg->edgeLength(
+                    system.center.nearestVertex().halfedge().edge()));
     }
 
     // update geodesics every tUpdateGeodesics period
@@ -110,10 +114,9 @@ bool Euler::integrate() {
       lastUpdateGeodesics = system.time;
       if (system.parameters.point.isFloatVertex)
         system.findFloatCenter(
-            *system.vpg, system.geodesicDistance,
             3 * system.vpg->edgeLength(
                     system.center.nearestVertex().halfedge().edge()));
-      system.updateGeodesicsDistance();
+      system.geodesicDistance.raw() = system.computeGeodesicDistance();
       if (system.parameters.protein.ifPrescribe)
         system.prescribeGeodesicProteinDensityDistribution();
       system.updateConfigurations();
@@ -161,7 +164,8 @@ void Euler::checkParameters() {
 
 void Euler::status() {
   // compute summerized forces
-  system.computePhysicalForcing(timeStep);
+  system.computeConservativeForcing();
+  system.addNonconservativeForcing(timeStep);
 
   // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
@@ -175,7 +179,6 @@ void Euler::status() {
     if (ifPrintToConsole)
       std::cout << "\nReached time." << std::endl;
     EXIT = true;
-    SUCCESS = false;
   }
 
   // compute the free energy of the system
@@ -193,16 +196,25 @@ void Euler::status() {
 }
 
 void Euler::march() {
-  // compute force, which is equivalent to velocity
+  // compute velocity, which are independent of time
   system.velocity = system.forces.mechanicalForceVec;
-  if (system.parameters.variation.isProteinConservation) {
-    system.proteinVelocity.raw() = system.parameters.proteinMobility *
-                                   system.vpg->hodge0Inverse *
-                                   system.computeUnitInPlaneFlowRate();
-  } else {
-    system.proteinVelocity = system.parameters.proteinMobility *
-                             system.forces.chemicalPotential /
-                             system.vpg->vertexDualAreas;
+  system.mechErrorNorm = (toMatrix(system.velocity).array() *
+                          toMatrix(system.forces.mechanicalForceVec).array())
+                             .sum();
+  if (system.parameters.variation.isProteinVariation) {
+    if (system.parameters.variation.isProteinConservation) {
+      system.proteinRateOfChange.raw() =
+          system.parameters.proteinMobility * system.vpg->hodge0Inverse *
+          system.vpg->d0.transpose() *
+          system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
+    } else {
+      system.proteinRateOfChange = system.parameters.proteinMobility *
+                                   system.forces.chemicalPotential /
+                                   system.vpg->vertexDualAreas;
+    }
+    system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
+                            system.forces.chemicalPotential.raw().array())
+                               .sum();
   }
 
   // adjust time step if adopt adaptive time step based on mesh size
@@ -210,20 +222,21 @@ void Euler::march() {
     characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
-  // time stepping on vertex position
+  // backtracking to obtain stable time step
   if (isBacktrack) {
-    double timeStep_mech,
-        timeStep_chem = std::numeric_limits<double>::infinity();
+    double timeStep_mech = std::numeric_limits<double>::max(),
+           timeStep_chem = std::numeric_limits<double>::max();
     if (system.parameters.variation.isShapeVariation)
       timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity), rho, c1);
     if (system.parameters.variation.isProteinVariation)
-      timeStep_chem = chemicalBacktrack(system.proteinVelocity.raw(), rho, c1);
+      timeStep_chem =
+          chemicalBacktrack(system.proteinRateOfChange.raw(), rho, c1);
     timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
   }
   system.vpg->inputVertexPositions += system.velocity * timeStep;
-  system.proteinDensity += system.proteinVelocity * timeStep;
+  system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 
   // recompute cached values

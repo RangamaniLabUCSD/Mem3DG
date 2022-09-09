@@ -95,6 +95,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
         Velocity Verlet integrator constructor
       )delim");
 
+  velocityverlet.def_readwrite("isBacktrack", &VelocityVerlet::isBacktrack,
+                               R"delim(
+         whether do backtracking line search
+      )delim");
+  velocityverlet.def_readwrite("rho", &VelocityVerlet::rho,
+                               R"delim(
+          backtracking coefficient
+      )delim");
+  velocityverlet.def_readwrite("c1", &VelocityVerlet::c1,
+                               R"delim(
+          Wolfe condition parameter
+      )delim");
   velocityverlet.def_readwrite("ifOutputTrajFile",
                                &VelocityVerlet::ifOutputTrajFile, R"delim(
           if output trajectory file
@@ -338,16 +350,16 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                  R"delim(
           tolerance for termination
       )delim");
-  conjugategradient.def_readwrite(
-      "ifOutputTrajFile", &ConjugateGradient::ifOutputTrajFile, R"delim(
+  conjugategradient.def_readwrite("ifOutputTrajFile",
+                                  &ConjugateGradient::ifOutputTrajFile, R"delim(
           if output trajectory file
       )delim");
-  conjugategradient.def_readwrite(
-      "ifOutputMeshFile", &ConjugateGradient::ifOutputMeshFile, R"delim(
+  conjugategradient.def_readwrite("ifOutputMeshFile",
+                                  &ConjugateGradient::ifOutputMeshFile, R"delim(
           if output mesh file
       )delim");
-  conjugategradient.def_readwrite(
-      "ifPrintToConsole", &ConjugateGradient::ifPrintToConsole, R"delim(
+  conjugategradient.def_readwrite("ifPrintToConsole",
+                                  &ConjugateGradient::ifPrintToConsole, R"delim(
           if print to console
       )delim");
   conjugategradient.def_readwrite("updateGeodesicsPeriod",
@@ -463,39 +475,52 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Mechanical force
    */
   forces.def(
-      "getDeviatoricForceVec",
-      [](Forces &s) { return toMatrix(s.deviatoricForceVec); },
+      "getDeviatoricCurvatureForceVec",
+      [](Forces &s) { return toMatrix(s.deviatoricCurvatureForceVec); },
       py::return_value_policy::copy,
       R"delim(
-          get the deviatoric force of the system
+          get the deviatoric curvature force of the system
       )delim");
   forces.def(
-      "getBendingForceVec",
-      [](Forces &s) { return toMatrix(s.bendingForceVec); },
+      "getAreaDifferenceForceVec",
+      [](Forces &s) { return toMatrix(s.areaDifferenceForceVec); },
       py::return_value_policy::copy,
       R"delim(
-          get the bending force of the system
+          get the area difference force of the system
       )delim");
   forces.def(
-      "getBendingForceVec_areaGrad",
-      [](Forces &s) { return toMatrix(s.bendingForceVec_areaGrad); },
+      "getSpontaneousCurvatureForceVec",
+      [](Forces &s) { return toMatrix(s.spontaneousCurvatureForceVec); },
       py::return_value_policy::copy,
       R"delim(
-          get the area gradient component of the bending force of the system
+          get the spontaneous curvature force of the system
       )delim");
   forces.def(
-      "getBendingForceVec_gaussVec",
-      [](Forces &s) { return toMatrix(s.bendingForceVec_gaussVec); },
+      "getSpontaneousCurvatureForceVec_areaGrad",
+      [](Forces &s) {
+        return toMatrix(s.spontaneousCurvatureForceVec_areaGrad);
+      },
       py::return_value_policy::copy,
       R"delim(
-          get the the gaussian curvature vector component of the bending force of the system
+          get the area gradient component of the spontaneous curvature force of the system
       )delim");
   forces.def(
-      "getBendingForceVec_schlafliVec",
-      [](Forces &s) { return toMatrix(s.bendingForceVec_schlafliVec); },
+      "getSpontaneousCurvatureForceVec_gaussVec",
+      [](Forces &s) {
+        return toMatrix(s.spontaneousCurvatureForceVec_gaussVec);
+      },
       py::return_value_policy::copy,
       R"delim(
-          get the Schlaflic (smoothing) component of the bending force of the system
+          get the the gaussian curvature vector component of the spontaneous curvature force of the system
+      )delim");
+  forces.def(
+      "getSpontaneousCurvatureForceVec_schlafliVec",
+      [](Forces &s) {
+        return toMatrix(s.spontaneousCurvatureForceVec_schlafliVec);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the Schlaflic (smoothing) component of the spontaneous curvature force of the system
       )delim");
   forces.def(
       "getCapillaryForceVec",
@@ -564,17 +589,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
    * @brief Chemical Potential
    */
   forces.def(
-      "getBendingPotential", [](Forces &s) { return s.bendingPotential.raw(); },
+      "getSpontaneousCurvaturePotential",
+      [](Forces &s) { return s.spontaneousCurvaturePotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
-          get the bending potential
+          get the spontaneous curvature potential
       )delim");
   forces.def(
-      "getDeviatoricPotential",
-      [](Forces &s) { return s.deviatoricPotential.raw(); },
+      "getDeviatoricCurvaturePotential",
+      [](Forces &s) { return s.deviatoricCurvaturePotential.raw(); },
       py::return_value_policy::copy,
       R"delim(
-          get the deviatoric potential
+          get the deviatoric curvature potential
       )delim");
   forces.def(
       "getInteriorPenaltyPotential",
@@ -609,13 +635,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::return_value_policy::copy,
       R"delim(
           get the entropy Potential
-      )delim");
-  forces.def(
-      "getInPlaneFluxForm",
-      [](Forces &s) { return s.inPlaneFluxForm.raw(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get the inPlaneFluxForm on edge (one-form)
       )delim");
   forces.def(
       "getChemicalPotential",
@@ -1000,7 +1019,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
       },
       py::return_value_policy::copy,
       R"delim(
-          get the integrated vector Volume Variation (dual area)
+          get the integrated vector volume variation (dual area)
       )delim");
   system.def(
       "getVertexMeanCurvatureVectors",
@@ -1013,14 +1032,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the integrated vector Mean Curvature
       )delim");
   system.def(
-      "getVertexSchlafliVectors",
+      "getVertexSchlafliLaplacianMeanCurvatureVectors",
       [](System &s) {
-        auto vector = s.computeVertexSchlafliVectors();
+        auto vector = s.computeVertexSchlafliLaplacianMeanCurvatureVectors();
         return toMatrix(vector);
       },
       py::return_value_policy::copy,
       R"delim(
-          get the vertex Schlafli Vectors
+          get the vertex Schlafli based Laplacian of mean curvature Vectors
       )delim");
 
   /**
@@ -1057,6 +1076,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the pointwise spontaneous curvature
       )delim");
   system.def(
+      "getCenterTracker",
+      [](System &s) { return s.centerTracker.raw().cast<double>(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get vertex data to track center, which may or may not be a single vertex
+      )delim");
+  system.def(
       "getVelocity",
       [](System &s) { return gc::EigenMap<double, 3>(s.velocity); },
       py::return_value_policy::copy,
@@ -1069,21 +1095,41 @@ PYBIND11_MODULE(_core, pymem3dg) {
       R"delim(
           get the protein Density
       )delim");
+  system.def(
+      "getProteinRateOfChange",
+      [](System &s) { return s.proteinRateOfChange.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the protein rate of change
+      )delim");
 
   /**
    * @brief Method: force computation
    */
-  system.def(
-      "computePhysicalForcing",
-      static_cast<void (System::*)(double)>(&System::computePhysicalForcing),
-      py::arg("timeStep") = 0,
-      R"delim(
-            compute all the forces
+  system.def("computeInPlaneFluxForm", &System::computeInPlaneFluxForm,
+             py::arg("chemicalPotential"),
+             R"delim(
+            Compute in plane flux form from chemical potential 
+
+            Args:
+                chemicalPotential (npt.NDArray[np.float64]): components (or sum) of chemical potential
+            
+            Returns
+                np.NDArray[np.float64]: in plane flux form on edges  
+        )delim");
+  system.def("computeConservativeForcing", &System::computeConservativeForcing,
+             R"delim(
+            Compute and update all conservative forces, update mechanicalForce(Vec) with conservativeForce(Vec)
+        )delim");
+  system.def("addNonconservativeForcing", &System::addNonconservativeForcing,
+             py::arg("timeStep") = 0,
+             R"delim(
+            Compute and append all non-conservative forces, update mechanicalForce(Vec) and mechErrorNorm
         )delim");
   //   system.def("computeBendingForce", &System::computeBendingForce,
   //              py::return_value_policy::copy,
   //              R"delim(
-  //           compute the bending force
+  //           compute the spontaneous curvature force
   //       )delim");
   //   system.def("computeChemicalPotential", &System::computeChemicalPotential,
   //              py::return_value_policy::copy,
@@ -1106,15 +1152,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
   //              R"delim(
   //           compute the LineTensionForce
   //       )delim");
-  system.def("prescribeExternalForce", &System::prescribeExternalForce,
-             py::return_value_policy::copy,
-             R"delim(
-            prescribe the External Force
-        )delim");
-  system.def("computeDPDForces", &System::computeDPDForces, py::arg("dt"),
-             R"delim(
-            compute the DPDForces
-        )delim");
+  //   system.def("prescribeExternalForce", &System::prescribeExternalForce,
+  //              py::return_value_policy::copy,
+  //              R"delim(
+  //             prescribe the External Force
+  //         )delim");
+  //   system.def("computeDPDForces", &System::computeDPDForces, py::arg("dt"),
+  //              R"delim(
+  //             compute the DPDForces
+  //         )delim");
 
   /**
    * @brief Method: Energy computation
@@ -1147,11 +1193,40 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
-   * @brief Method: updateGeodesics
+   * @brief Method: computeGeodesics
    */
-  system.def("updateGeodesicsDistance", &System::updateGeodesicsDistance,
+  system.def("computeGeodesicDistance", &System::computeGeodesicDistance,
              R"delim(
-          update the geodesics and related configurations
+          
+          compute the geodesic distance centered around Center cached in System
+
+          return: NDarray[double]
+      )delim");
+
+  /**
+   * @brief Method: find float center
+   */
+  system.def("findFloatCenter", &System::findFloatCenter,
+             py::arg("range") = std::numeric_limits<double>::max(),
+             R"delim(
+          find the float center based on Parameter.point.pt using Euclidean distance and cached the floating surface point ("Center") in System object 
+          Args:
+            range (double, optional): range of geodesic distance (if cached in System) to search for the floating center
+          return: 
+            None
+      )delim");
+
+  /**
+   * @brief Method: find vertex center
+   */
+  system.def("findVertexCenter", &System::findVertexCenter,
+             py::arg("range") = std::numeric_limits<double>::max(),
+             R"delim(
+          find the vertex center based on Parameter.point.pt using Euclidean distance and cached the vertex ("Center") in System object 
+          Args:
+            range (double, optional): range of geodesic distance (if cached in System) to search for the floating center
+          return: 
+            None
       )delim");
 
   /**
@@ -1202,20 +1277,27 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: test force computation
    */
-  system.def("testForceComputation",
-             py::overload_cast<const double, const EigenVectorX3dr,
-                               const EigenVectorX1d, const Energy>(
-                 &System::testForceComputation),
-             py::arg("timeStep"), py::arg("previousPosition"),
-             py::arg("previousProteinDensity"), py::arg("previousEnergy"),
+  //   system.def("testConservativeForcing",
+  //              py::overload_cast<const double, const EigenVectorX3dr,
+  //                                const EigenVectorX1d, const Energy>(
+  //                  &System::testConservativeForcing),
+  //              py::arg("timeStep"), py::arg("previousPosition"),
+  //              py::arg("previousProteinDensity"), py::arg("previousEnergy"),
+  //              R"delim(
+  //           test conservative force computation by validating energy decrease
+  //           (reverse mode)
+  //       )delim");
+  //   system.def("testConservativeForcing",
+  //              py::overload_cast<const
+  //              double>(&System::testConservativeForcing),
+  //              py::arg("timeStep"),
+  //              R"delim(
+  //           test conservative force computation by validating energy decrease
+  //           (forward mode)
+  //       )delim");
+  system.def("testConservativeForcing", &System::testConservativeForcing, py::arg("timeStep"),
              R"delim(
-          test force computation by validating energy decrease (reverse mode)
-      )delim");
-  system.def("testForceComputation",
-             py::overload_cast<const double>(&System::testForceComputation),
-             py::arg("timeStep"),
-             R"delim(
-          test force computation by validating energy decrease (forward mode)
+          test conservative force computation by validating energy decrease
       )delim");
 
   /**
@@ -1224,7 +1306,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
   system.def("smoothenMesh", &System::smoothenMesh, py::arg("initStep"),
              py::arg("target"), py::arg("maxIteration"),
              R"delim(
-          smoothen the mesh using bending force
+          smoothen the mesh using spontaneous curvature force
       )delim");
 #pragma endregion system
 
@@ -1275,6 +1357,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The bending parameters
     )delim");
   bending.def(py::init<>());
+  bending.def_readwrite("D", &Parameters::Bending::D,
+                        R"delim(
+          get thickness of the membrane (area difference model)
+      )delim");
+  bending.def_readwrite("alpha", &Parameters::Bending::alpha,
+                        R"delim(
+          get unity modulus of the membrane (area difference model)
+      )delim");
+  bending.def_readwrite("dA0", &Parameters::Bending::dA0,
+                        R"delim(
+          get preferred area difference of the membrane (area difference model)
+      )delim");
   bending.def_readwrite("Kd", &Parameters::Bending::Kd,
                         R"delim(
           get deviatoric rigidity of the membrane 
@@ -1613,13 +1707,19 @@ PYBIND11_MODULE(_core, pymem3dg) {
                       R"delim(
           get potential energy of the membrane  
       )delim");
-  energy.def_readonly("bendingEnergy", &Energy::bendingEnergy,
+  energy.def_readonly("spontaneousCurvatureEnergy",
+                      &Energy::spontaneousCurvatureEnergy,
                       R"delim(
           get bending energy of the membrane  
       )delim");
-  energy.def_readonly("deviatoricEnergy", &Energy::deviatoricEnergy,
+  energy.def_readonly("deviatoricCurvatureEnergy",
+                      &Energy::deviatoricCurvatureEnergy,
                       R"delim(
           get deviatoric energy of the membrane  
+      )delim");
+  energy.def_readonly("areaDifferenceEnergy", &Energy::areaDifferenceEnergy,
+                      R"delim(
+          get area difference energy of the membrane  
       )delim");
   energy.def_readonly("surfaceEnergy", &Energy::surfaceEnergy,
                       R"delim(

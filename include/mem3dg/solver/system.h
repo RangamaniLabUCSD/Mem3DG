@@ -71,10 +71,12 @@ struct Energy {
   double kineticEnergy = 0;
   /// potential energy of the membrane
   double potentialEnergy = 0;
-  /// bending energy of the membrane
-  double bendingEnergy = 0;
-  /// deviatoric energy of the membrane
-  double deviatoricEnergy = 0;
+  /// spontaneous curvature energy of the membrane
+  double spontaneousCurvatureEnergy = 0;
+  /// deviatoric curvature energy of the membrane
+  double deviatoricCurvatureEnergy = 0;
+  /// area difference energy of the membrane
+  double areaDifferenceEnergy = 0;
   /// stretching energy of the membrane
   double surfaceEnergy = 0;
   /// work of pressure within membrane
@@ -143,8 +145,8 @@ public:
   gcs::FaceData<gc::Vector3> proteinDensityGradient;
   /// Cached vertex velocity
   gcs::VertexData<gc::Vector3> velocity;
-  /// Cached vertex protein velocity
-  gcs::VertexData<double> proteinVelocity;
+  /// Cached vertex protein rate of change
+  gcs::VertexData<double> proteinRateOfChange;
   /// Spontaneous curvature of the mesh
   gcs::VertexData<double> H0;
   /// Bending rigidity of the membrane
@@ -292,8 +294,7 @@ public:
       : System(std::move(std::get<0>(meshVpgTuple)),
                std::move(std::get<1>(meshVpgTuple)),
                std::move(std::get<2>(meshVpgTuple)), proteinDensity_, velocity_,
-               p, time_) {
-  };
+               p, time_){};
 
   System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                     std::unique_ptr<gcs::VertexPositionGeometry>>
@@ -387,10 +388,13 @@ public:
     proteinDensity = gc::VertexData<double>(*mesh, 1);
     proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
     velocity = gcs::VertexData<gc::Vector3>(*mesh, {0, 0, 0});
-    proteinVelocity = gcs::VertexData<double>(*mesh, 0);
+    proteinRateOfChange = gcs::VertexData<double>(*mesh, 0);
     H0 = gcs::VertexData<double>(*mesh);
     Kb = gcs::VertexData<double>(*mesh);
     Kd = gcs::VertexData<double>(*mesh);
+
+    chemErrorNorm = 0;
+    mechErrorNorm = 0;
 
     geodesicDistance = gcs::VertexData<double>(*mesh, 0);
 
@@ -448,7 +452,7 @@ public:
   }
 
   // ==========================================================
-  // ================          I/O           ==================
+  // ================          io.cpp        ==================
   // ==========================================================
 
   /**
@@ -503,15 +507,10 @@ public:
              std::unique_ptr<gcs::VertexPositionGeometry>, EigenVectorX1d,
              EigenVectorX3dr, double>
   readTrajFile(std::string trajFile, int startingFrame);
-  /**
-   * @brief Map the continuation variables
-   *
-   */
-  void mapContinuationVariables(std::string trajFile, int startingFrame);
 #endif
 
   // ==========================================================
-  // ================     Initialization     ==================
+  // ================     init.cpp           ==================
   // ==========================================================
   /**
    * @brief Check all conflicting parameters and options
@@ -543,18 +542,8 @@ public:
    */
   void updateReferenceConfigurations();
 
-  /**
-   * @brief test force computation by validating energy decrease
-   * @return
-   */
-  void testForceComputation(const double timeStep,
-                            const EigenVectorX3dr previousPosition,
-                            const EigenVectorX1d previousProteinDensity,
-                            const Energy previousEnergy);
-  void testForceComputation(const double timeStep);
-
   // ==========================================================
-  // ================   Variational vectors  ==================
+  // ================  variation_vector.cpp  ==================
   // ==========================================================
   /**
    * @brief template code for populate verttexwise using halfedge vector
@@ -602,9 +591,10 @@ public:
                                          gc::Halfedge &he);
 
   /**
-   * @brief Compute vertex Schlafli vector
+   * @brief Compute vertex Schlafli-based Laplacian of mean curvature vector
    */
-  gcs::VertexData<gc::Vector3> computeVertexSchlafliVectors();
+  gcs::VertexData<gc::Vector3>
+  computeVertexSchlafliLaplacianMeanCurvatureVectors();
 
   /**
    * @brief Compute halfedge Schlafli vector
@@ -614,36 +604,61 @@ public:
                                 gc::Halfedge &he);
 
   /**
-   * @brief Helper functions to compute geometric derivatives
+   * @brief Helper functions to compute shape variation of corner angles
    */
-  gc::Vector3 cornerAngleGradient(gcs::Corner c, gcs::Vertex v);
-  gc::Vector3 dihedralAngleGradient(gcs::Halfedge he, gcs::Vertex v);
-
-  // ==========================================================
-  // ================        Pressure        ==================
-  // ==========================================================
-  /**
-   * @brief Compute all forcing of the system, include DPD if given time step
-   */
-  void computePhysicalForcing();
-  void computePhysicalForcing(double timeStep);
+  gc::Vector3 computeCornerAngleVariation(gcs::Corner c, gcs::Vertex v);
 
   /**
-   * @brief Compute chemical potential of the system
+   * @brief Helper functions to compute shape variation of dihedral angles
    */
-  void computeChemicalPotentials();
+  gc::Vector3 computeDihedralAngleVariation(gcs::Halfedge he, gcs::Vertex v);
+
+  /**
+   * @brief Compute halfedge |\int grad phi|^2 variation vector
+   */
+  gc::Vector3 computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
+      const gcs::VertexData<double> &quantities, const gcs::Halfedge &he);
+
+  // ==========================================================
+  // ================        Force.cpp       ==================
+  // ==========================================================
+  /**
+   * @brief Compute and update all conservative forces, update
+   * mechanicalForce(Vec) with conservativeForce(Vec)
+   */
+  void computeConservativeForcing();
+
+  /**
+   * @brief Compute and append all non-conservative forces, update
+   * mechanicalForce(Vec) and mechErrorNorm
+   */
+  void addNonconservativeForcing(double timeStep);
+
+  /**
+   * @brief Compute geometric forces, including
+   * - spontaneous curvature force
+   * - deviatoric curvature force
+   * - area difference force
+   * - capillary (surface tension) force
+   * - osmotic force
+   * - line capillary (line tension) force
+   * - adsorption (area expansion) force
+   * - aggregation (area expansion) force
+   * - entropy (area expansion) force
+   */
+  void computeGeometricForces();
+  void computeGeometricForces(size_t i);
+  void computeGeometricForces(gcs::Vertex &v);
+
+  /**
+   * @brief Compute regularization pressure component of the system
+   */
+  void computeSpringForces();
 
   /**
    * @brief Compute Self Avoidance force
    */
   void computeSelfAvoidanceForce();
-
-  /**
-   * @brief Compute mechanical forces
-   */
-  void computeMechanicalForces();
-  void computeMechanicalForces(size_t i);
-  void computeMechanicalForces(gcs::Vertex &v);
 
   /**
    * @brief Compute external force component of the system
@@ -661,28 +676,39 @@ public:
   gc::VertexData<gc::Vector3> computeDampingForce();
 
   /**
-   * @brief Compute unit in-plane flow rate
+   * @brief Compute chemical potential of the system, including
+   * - spontaneous curvature potential
+   * - adsorption potential
+   * - aggregation potential
+   * - entropy potential
+   * - deviatoric curvature potential
+   * - dirichlet potential
+   * - interior penalty potential
    */
-  EigenVectorX1d computeUnitInPlaneFlowRate();
+  void computeChemicalPotentials();
 
   /**
-   * @brief helper function to compute LCR
+   * @brief Compute in plane flux form on edge
    */
-  double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                 gcs::Halfedge &he) const;
+  EigenVectorX1d computeInPlaneFluxForm(EigenVectorX1d &chemicalPotential);
 
   // ==========================================================
-  // ================        Energy          ==================
+  // ================        energy.cpp      ==================
   // ==========================================================
   /**
-   * @brief Compute bending energy
+   * @brief Compute spontaneous curvature energy
    */
-  void computeBendingEnergy();
+  void computeSpontaneousCurvatureEnergy();
 
   /**
-   * @brief Compute deviatoric energy
+   * @brief Compute deviatoric curvature energy
    */
-  void computeDeviatoricEnergy();
+  void computeDeviatoricCurvatureEnergy();
+
+  /**
+   * @brief Compute area difference energy
+   */
+  void computeAreaDifferenceEnergy();
 
   /**
    * @brief Compute surface energy
@@ -760,20 +786,25 @@ public:
   double computeTotalEnergy();
 
   /**
-   * @brief Compute the L1 norm of the pressure
-   */
-  double computeNorm(
-      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &force) const;
-  double computeNorm(
-      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &&force) const;
-  /**
    * @brief Intermediate function to integrate the power
    */
   double computeIntegratedPower(double dt);
   double computeIntegratedPower(double dt, EigenVectorX3dr &&velocity);
 
+  /**
+   * @brief Get tangential derivative of quantities on face
+   */
+  void computeFaceTangentialDerivative(gcs::VertexData<double> &quantities,
+                                       gcs::FaceData<gc::Vector3> &gradient);
+
+  /**
+   * @brief helper function to compute LCR
+   */
+  double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                 gcs::Halfedge &he) const;
+
   // ==========================================================
-  // =============        Regularization        ===============
+  // =============        regularization.cpp    ===============
   // ==========================================================
   /**
    * @brief Mesh mutation
@@ -787,11 +818,6 @@ public:
   void vertexShift();
 
   /**
-   * @brief Compute regularization pressure component of the system
-   */
-  void computeSpringForces();
-
-  /**
    * @brief Edge flip if not Delaunay
    */
   bool edgeFlip();
@@ -802,23 +828,6 @@ public:
    */
   bool meshGrowth();
   bool growMesh();
-
-  // ==========================================================
-  // =============          Helpers             ===============
-  // ==========================================================
-
-  /**
-   * @brief Get gradient of quantities on face
-   */
-  void computeGradient(gcs::VertexData<double> &quantities,
-                       gcs::FaceData<gc::Vector3> &gradient);
-
-  /**
-   * @brief Get gradient of quantities on face
-   */
-  gc::Vector3
-  computeGradientNorm2Gradient(const gcs::Halfedge &he,
-                               const gcs::VertexData<double> &quantities);
 
   /**
    * @brief global smoothing after mutation of the mesh
@@ -842,6 +851,22 @@ public:
    */
   void globalUpdateAfterMutation();
 
+  // ==========================================================
+  // =============          misc.cpp            ===============
+  // ==========================================================
+  /**
+   * @brief test conservative force computation by validating energy decrease
+   * @return
+   */
+  bool testConservativeForcing(const double timeStep);
+
+  /**
+   * @brief backtrace energy increase from the system perturbation
+   * @return
+   */
+  void backtraceEnergyGrowth(const double timeStep,
+                             const Energy previousEnergy);
+
   /**
    * @brief infer the target surface area of the system
    */
@@ -862,14 +887,23 @@ public:
   /**
    * @brief Find "the" vertex
    */
-  void findFloatCenter(gcs::VertexPositionGeometry &vpg,
-                       gcs::VertexData<double> &geodesicDistance,
-                       double range = std::numeric_limits<double>::max());
-  void findVertexCenter(gcs::VertexPositionGeometry &vpg,
-                        gcs::VertexData<double> &geodesicDistance,
-                        double range = std::numeric_limits<double>::max());
-  void updateGeodesicsDistance();
+  void findFloatCenter(double range = std::numeric_limits<double>::max());
+  void findVertexCenter(double range = std::numeric_limits<double>::max());
+
+  /**
+   * @brief update cache of geodesicDistance
+   */
+  EigenVectorX1d computeGeodesicDistance();
+
+  /**
+   * @brief update cache of proteinDensity based on geodesicDistance and
+   * parameters on profile type
+   */
   void prescribeGeodesicProteinDensityDistribution();
+
+  /**
+   * @brief prescribe mask based on geodesic disk
+   */
   void prescribeGeodesicMasks();
 };
 } // namespace solver

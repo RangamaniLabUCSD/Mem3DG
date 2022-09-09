@@ -20,137 +20,6 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 
-void System::mapContinuationVariables(std::string plyFile) {
-  std::unique_ptr<gcs::SurfaceMesh> ptrMesh_local;
-  std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData_local;
-
-  // Open mesh file
-  std::tie(ptrMesh_local, ptrRichData_local) =
-      gcs::RichSurfaceMeshData::readMeshAndData(plyFile);
-
-  // Check consistent topology for continuation
-  if (mesh->nFaces() != ptrMesh_local->nFaces() ||
-      mesh->nVertices() != ptrMesh_local->nVertices()) {
-    throw std::logic_error(
-        "Topology for continuation parameters mapping is not consistent!");
-  } else {
-    // Map continuation variables
-    time = std::stod(sliceString(plyFile, "t", "_"));
-    energy.time = time;
-    // frame = std::stod(sliceString(plyFile, "f", "_"));
-    proteinDensity =
-        ptrRichData_local->getVertexProperty<double>("protein_density")
-            .reinterpretTo(*mesh);
-    // vel_protein =
-    //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
-    //         .reinterpretTo(*mesh);
-  }
-}
-
-#ifdef MEM3DG_WITH_NETCDF
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>, EigenVectorX1d,
-           EigenVectorX3dr, double>
-System::readTrajFile(std::string trajFile, int startingFrame) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-  double initialTime;
-  EigenVectorX3dr initialVelocity;
-  EigenVectorX1d initialProteinDensity;
-
-  MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
-  fd.getNcFrame(startingFrame);
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      fd.getCoords(startingFrame), fd.getTopology(startingFrame));
-  const EigenVectorX3dr refVertexPositions = fd.getRefCoords(startingFrame);
-  refVpg =
-      std::make_unique<gcs::VertexPositionGeometry>(*mesh, refVertexPositions);
-
-  // Map continuation variables
-  initialTime = fd.getTime(startingFrame);
-  initialVelocity = fd.getVelocity(startingFrame);
-  initialProteinDensity = fd.getProteinDensity(startingFrame);
-  // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg),
-                         initialProteinDensity, initialVelocity, initialTime);
-}
-#endif
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshFile(std::string inputMesh) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshFile(std::string inputMesh, std::string referenceMesh) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> refMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  std::tie(refMesh, refVpg) = gcs::readManifoldSurfaceMesh(referenceMesh);
-  refVpg = refVpg->reinterpretTo(*mesh);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
-                     EigenVectorX3dr &vertexPositionMatrix) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      vertexPositionMatrix, faceVertexMatrix);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
-                     EigenVectorX3dr &vertexPositionMatrix,
-                     EigenVectorX3dr &refVertexPositionMatrix) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      vertexPositionMatrix, faceVertexMatrix);
-  refVpg = std::make_unique<gcs::VertexPositionGeometry>(
-      *mesh, refVertexPositionMatrix);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
-}
-
 void System::initialize(std::size_t nMutation, bool ifMute) {
   checkConfiguration();
   initializeConstants(ifMute);
@@ -216,7 +85,7 @@ void System::checkConfiguration() {
       if (proteinDensity[0] != 1 || parameters.bending.Kb != 0 ||
           parameters.dirichlet.eta != 0 || parameters.adsorption.epsilon != 0 ||
           parameters.aggregation.chi != 0)
-        mem3dg_runtime_error(
+        mem3dg_runtime_message(
             "For homogenous membrane simulation, good practice is to set "
             "proteinDensity = 1, Kb = 0, eta  = 0, "
             "epsilon = 0, chi = "
@@ -231,14 +100,12 @@ void System::initializeConstants(bool ifMute) {
   rng = pcg32(seed_source);
 
   if (parameters.point.isFloatVertex) {
-    findFloatCenter(*vpg, geodesicDistance);
+    findFloatCenter();
   } else {
-    findVertexCenter(*vpg, geodesicDistance);
+    findVertexCenter();
   }
-  updateGeodesicsDistance();
+  geodesicDistance.raw() = computeGeodesicDistance();
   prescribeGeodesicMasks();
-  if (parameters.protein.ifPrescribe)
-    prescribeGeodesicProteinDensityDistribution();
 
   if (mesh->hasBoundary()) {
     boundaryForceMask(*mesh, forces.forceMask,
@@ -278,7 +145,7 @@ void System::updateConfigurations() {
 
   // compute face gradient of protein density
   if (parameters.dirichlet.eta != 0) {
-    computeGradient(proteinDensity, proteinDensityGradient);
+    computeFaceTangentialDerivative(proteinDensity, proteinDensityGradient);
   }
 
   // Update protein density dependent quantities
