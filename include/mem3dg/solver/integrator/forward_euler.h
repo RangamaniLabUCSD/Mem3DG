@@ -22,17 +22,18 @@ namespace solver {
 namespace integrator {
 /**
  * @brief Euler (gradient descent) time Integration
- * @param isBacktrack, option to use backtracking line search algorithm
- * @param rho, backtracking coefficient
- * @param c1, Wolfe condition parameter
- * @return Success, if simulation is sucessful
+ * @param system_ System object to be integrated
+ * @param characteristicTimeStep_ time step, or the initial time step for
+ * backtracking algorithm
+ * @param totalTime_ total simulation time
+ * @param savePeriod_ period of saving output data (in the unit of
+ * characteristicTimeStep_)
+ * @param tolerance_ tolerance of force L2 norm for termination
+ * @param outputDirectory_ path to the output directory
+ * @param frame_ frame index, if nonzero, enable continuation mode
  */
 class DLL_PUBLIC Euler : public Integrator {
 public:
-  bool isBacktrack = true;
-  double rho = 0.7;
-  double c1 = 0.0005;
-
   Euler(System &system_, double characteristicTimeStep_, double totalTime_,
         double savePeriod_, double tolerance_, std::string outputDirectory_,
         std::size_t frame_ = 0)

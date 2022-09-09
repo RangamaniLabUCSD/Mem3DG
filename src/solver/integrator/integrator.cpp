@@ -65,35 +65,22 @@ double Integrator::backtrack(
   double positionProjection = 0;
   double chemicalProjection = 0;
   if (system.parameters.variation.isShapeVariation) {
-    positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
+    positionProjection = ((toMatrix(system.forces.conservativeForceVec) +
+                           toMatrix(system.forces.externalForceVec))
+                              .array() *
                           positionDirection.array())
                              .sum();
-    if (positionProjection < 0) {
-      std::cout << "\nBacktracking line search: positional velocity on uphill "
-                   "direction, use bare "
-                   "gradient! \n"
-                << std::endl;
-      positionDirection = toMatrix(system.forces.mechanicalForceVec);
-      positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
-                            positionDirection.array())
-                               .sum();
-    }
+    if (positionProjection < 0)
+      mem3dg_runtime_message("Velocity on energy "
+                             "uphill direction!");
   }
   if (system.parameters.variation.isProteinVariation) {
     chemicalProjection = (system.forces.chemicalPotential.raw().array() *
                           chemicalDirection.array())
                              .sum();
-    if (chemicalProjection < 0) {
-      std::cout << "\nBacktracking line search: chemical direction on "
-                   "uphill direction, "
-                   "use bare "
-                   "gradient! \n"
-                << std::endl;
-      chemicalDirection = system.forces.chemicalPotential.raw();
-      chemicalProjection = (system.forces.chemicalPotential.raw().array() *
-                            chemicalDirection.array())
-                               .sum();
-    }
+    if (chemicalProjection < 0)
+      mem3dg_runtime_message("chemical evolution on energy "
+                             "uphill direction!");
   }
 
   // calculate initial energy as reference level
@@ -120,7 +107,7 @@ double Integrator::backtrack(
 
   while (true) {
     // Wolfe condition fulfillment
-    if (system.energy.potentialEnergy <
+    if (system.energy.potentialEnergy <=
         (previousE.potentialEnergy + system.computeIntegratedPower(alpha) -
          c1 * alpha * (positionProjection + chemicalProjection))) {
       break;
@@ -128,16 +115,17 @@ double Integrator::backtrack(
 
     // limit of backtraking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
-      mem3dg_runtime_message("line search failure! Simulation "
-                             "stopped. \n");
-      std::cout << "\nError backtrace using alpha: \n" << std::endl;
-      system.testForceComputation(alpha, toMatrix(initial_pos),
-                                  initial_protein.raw(), previousE);
-      std::cout << "\nError backtrace using characteristicTimeStep: \n"
+      std::cout << "\n(time=" << system.time
+                << ") line search failure! Simulation "
+                   "stopped."
                 << std::endl;
-      system.testForceComputation(characteristicTimeStep,
-                                  toMatrix(system.vpg->inputVertexPositions),
-                                  initial_protein.raw(), previousE);
+      system.backtraceEnergyGrowth(alpha, previousE);
+      // recover the initial configuration
+      system.time = init_time;
+      system.proteinDensity = initial_protein;
+      system.vpg->inputVertexPositions = initial_pos;
+      system.testConservativeForcing(alpha);
+      system.testConservativeForcing(characteristicTimeStep);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -161,20 +149,6 @@ double Integrator::backtrack(
     count++;
   }
 
-  // report the backtracking if verbose
-  if (alpha != characteristicTimeStep && ifPrintToConsole) {
-    std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
-              << std::endl;
-    // std::cout << "mech norm: " << system.mechErrorNorm << std::endl;
-    // std::cout << "chem norm: " << system.chemErrorNorm << std::endl;
-  }
-
-  // If needed to test force-energy test
-  const bool isDebug = false;
-  if (isDebug)
-    system.testForceComputation(alpha, toMatrix(initial_pos),
-                                initial_protein.raw(), previousE);
-
   // recover the initial configuration
   system.time = init_time;
   system.proteinDensity = initial_protein;
@@ -196,17 +170,9 @@ double Integrator::chemicalBacktrack(
                         chemicalDirection.array())
                            .sum();
   if (chemicalProjection < 0) {
-    std::cout << "\nchemicalBacktracking line search: chemical direction on "
-                 "uphill direction, "
-                 "use bare "
-                 "gradient! \n"
-              << std::endl;
-    chemicalDirection = system.forces.chemicalPotential.raw();
-    chemicalProjection = (system.forces.chemicalPotential.raw().array() *
-                          chemicalDirection.array())
-                             .sum();
+    mem3dg_runtime_message("chemical evolution on energy "
+                           "uphill direction!");
   }
-
   // calculate initial energy as reference level
   gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
   initial_pos = system.vpg->inputVertexPositions;
@@ -226,23 +192,24 @@ double Integrator::chemicalBacktrack(
 
   while (true) {
     // Wolfe condition fulfillment
-    if (system.energy.potentialEnergy <
+    if (system.energy.potentialEnergy <=
         (previousE.potentialEnergy - c1 * alpha * chemicalProjection)) {
       break;
     }
 
     // limit of backtraking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
-      mem3dg_runtime_message(
-          "\nchemicalBacktrack: line search failure! Simulation "
-          "stopped. \n");
-      std::cout << "\nError backtrace using alpha: \n" << std::endl;
-      system.testForceComputation(alpha, toMatrix(initial_pos),
-                                  initial_protein.raw(), previousE);
-      std::cout << "\nError backtrace using characteristicTimeStep: \n"
+      std::cout << "\n(time=" << system.time
+                << ") chemicalBacktrack: line search failure! Simulation "
+                   "stopped."
                 << std::endl;
-      system.testForceComputation(characteristicTimeStep, toMatrix(initial_pos),
-                                  initial_protein.raw(), previousE);
+      system.backtraceEnergyGrowth(alpha, previousE);
+      // recover the initial configuration
+      system.time = init_time;
+      system.proteinDensity = initial_protein;
+      system.vpg->inputVertexPositions = initial_pos;
+      system.testConservativeForcing(alpha);
+      system.testConservativeForcing(characteristicTimeStep);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -258,20 +225,6 @@ double Integrator::chemicalBacktrack(
 
     // count the number of iterations
     count++;
-  }
-
-  // report the backtracking if verbose
-  if (alpha != characteristicTimeStep && ifPrintToConsole) {
-    std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
-              << std::endl;
-  }
-
-  // If needed to test force-energy test
-  const bool isDebug = false;
-  if (isDebug) {
-    std::cout << "\nchemicalBacktrack: debugging \n" << std::endl;
-    system.testForceComputation(alpha, toMatrix(initial_pos),
-                                initial_protein.raw(), previousE);
   }
 
   // recover the initial configuration
@@ -292,20 +245,14 @@ double Integrator::mechanicalBacktrack(
 
   // validate the directions
   double positionProjection = 0;
-  positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
+  positionProjection = ((toMatrix(system.forces.conservativeForceVec) +
+                         toMatrix(system.forces.externalForceVec))
+                            .array() *
                         positionDirection.array())
                            .sum();
-  if (positionProjection < 0) {
-    std::cout
-        << "\nmechanicalBacktrack line search: positional velocity on uphill "
-           "direction, use bare "
-           "gradient! \n"
-        << std::endl;
-    positionDirection = toMatrix(system.forces.mechanicalForceVec);
-    positionProjection = (toMatrix(system.forces.mechanicalForceVec).array() *
-                          positionDirection.array())
-                             .sum();
-  }
+  if (positionProjection < 0)
+    mem3dg_runtime_message("Velocity on energy "
+                           "uphill direction!");
 
   // calculate initial energy as reference level
   gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
@@ -326,7 +273,7 @@ double Integrator::mechanicalBacktrack(
 
   while (true) {
     // Wolfe condition fulfillment
-    if ((system.energy.potentialEnergy <
+    if ((system.energy.potentialEnergy <=
          (previousE.potentialEnergy + system.computeIntegratedPower(alpha) -
           c1 * alpha * positionProjection)) &&
         std::isfinite(system.energy.potentialEnergy)) {
@@ -335,16 +282,17 @@ double Integrator::mechanicalBacktrack(
 
     // limit of backtraking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
-      mem3dg_runtime_message(
-          "\nmechanicalBacktrack: line search failure! Simulation "
-          "stopped. \n");
-      std::cout << "\nError backtrace using alpha: \n" << std::endl;
-      system.testForceComputation(alpha, toMatrix(initial_pos),
-                                  initial_protein.raw(), previousE);
-      std::cout << "\nError backtrace using characterisiticTimeStep: \n"
+      std::cout << "\n(time=" << system.time
+                << ") mechanicalBacktrack: line search failure! Simulation "
+                   "stopped."
                 << std::endl;
-      system.testForceComputation(characteristicTimeStep, toMatrix(initial_pos),
-                                  initial_protein.raw(), previousE);
+      system.backtraceEnergyGrowth(alpha, previousE);
+      // recover the initial configuration
+      system.time = init_time;
+      system.proteinDensity = initial_protein;
+      system.vpg->inputVertexPositions = initial_pos;
+      system.testConservativeForcing(alpha);
+      system.testConservativeForcing(characteristicTimeStep);
       EXIT = true;
       SUCCESS = false;
       break;
@@ -361,20 +309,6 @@ double Integrator::mechanicalBacktrack(
 
     // count the number of iterations
     count++;
-  }
-
-  // report the backtracking if verbose
-  if (alpha != characteristicTimeStep && ifPrintToConsole) {
-    std::cout << "alpha: " << characteristicTimeStep << " -> " << alpha
-              << std::endl;
-  }
-
-  // If needed to test force-energy test
-  const bool isDebug = false;
-  if (isDebug) {
-    std::cout << "\nmechanicalBacktrack: debugging \n" << std::endl;
-    system.testForceComputation(alpha, toMatrix(initial_pos),
-                                initial_protein.raw(), previousE);
   }
 
   // recover the initial configuration
@@ -433,6 +367,12 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << "sum_phi: "
         << (system.proteinDensity * system.vpg->vertexDualAreas).raw().sum()
         << std::endl;
+
+    // report the backtracking if verbose
+    if (timeStep != characteristicTimeStep && ifPrintToConsole) {
+      std::cout << "timeStep: " << characteristicTimeStep << " -> " << timeStep
+                << std::endl;
+    }
 
     if (EXIT)
       std::cout << "Simulation " << (SUCCESS ? "finished" : "failed")

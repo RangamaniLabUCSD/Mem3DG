@@ -17,6 +17,8 @@ set(DDG_SOURCES
     
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/init.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/force.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/variation_vector.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/solver/io.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/energy.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/misc.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/solver/parameters.cpp"

@@ -323,8 +323,7 @@ bool System::meshGrowth() {
       // averageData(proteinDensity, vertex1, vertex2, newVertex);
       vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
       velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-      geodesicDistance[newVertex] =
-          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      geodesicDistance[newVertex] = 0.5 * (vertex1GeoDist + vertex2GeoDist);
       proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
       centerTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
@@ -355,8 +354,7 @@ bool System::meshGrowth() {
         // averageData(geodesicDistance, vertex1, vertex2, newVertex);
         // averageData(proteinDensity, vertex1, vertex2, newVertex);
         velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-        geodesicDistance[newVertex] =
-            0.5 * (vertex1GeoDist + vertex2GeoDist);
+        geodesicDistance[newVertex] = 0.5 * (vertex1GeoDist + vertex2GeoDist);
         proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
         centerTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
 
@@ -415,8 +413,7 @@ bool System::growMesh() {
 
       vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
       velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-      geodesicDistance[newVertex] =
-          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      geodesicDistance[newVertex] = 0.5 * (vertex1GeoDist + vertex2GeoDist);
       proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
       centerTracker[newVertex] = false;
       forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
@@ -458,11 +455,9 @@ bool System::growMesh() {
               : gc::sum(vertex2ForceMask) < 2.5 ? vertex2Pos
                                                 : (vertex1Pos + vertex2Pos) / 2;
           velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
-          geodesicDistance[newVertex] =
-              0.5 * (vertex1GeoDist + vertex2GeoDist);
+          geodesicDistance[newVertex] = 0.5 * (vertex1GeoDist + vertex2GeoDist);
           proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
-          centerTracker[newVertex] =
-              vertex1PointTracker || vertex2PointTracker;
+          centerTracker[newVertex] = vertex1PointTracker || vertex2PointTracker;
           meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
         }
       }
@@ -486,14 +481,14 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
   size_t num_iter = 0;
   // compute bending forces
   vpg->refreshQuantities();
-  computeMechanicalForces();
-  EigenVectorX3dr pastForceVec = toMatrix(forces.bendingForceVec);
+  computeGeometricForces();
+  EigenVectorX3dr pastForceVec = toMatrix(forces.spontaneousCurvatureForceVec);
   // initialize smoothingMask
   Eigen::Matrix<bool, Eigen::Dynamic, 1> smoothingMask =
-      outlierMask(forces.bendingForce.raw(), 0.5);
+      outlierMask(forces.spontaneousCurvatureForce.raw(), 0.5);
   isSmooth = (smoothingMask.cast<int>().sum() == 0);
   // initialize gradient and compute exit tolerance
-  double gradNorm = computeNorm(toMatrix(forces.bendingForceVec));
+  double gradNorm = toMatrix(forces.spontaneousCurvatureForceVec).norm();
   double tol = gradNorm * target;
 
   while (gradNorm > tol && !isSmooth) {
@@ -506,17 +501,17 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
       break;
     }
 
-    // compute bending force if smoothingMask is true
+    // compute spontaneous curvature force if smoothingMask is true
     vpg->refreshQuantities();
-    forces.bendingForceVec.fill({0, 0, 0});
-    forces.bendingForce.raw().setZero();
+    forces.spontaneousCurvatureForceVec.fill({0, 0, 0});
+    forces.spontaneousCurvatureForce.raw().setZero();
     for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
       if (smoothingMask[i]) {
-        computeMechanicalForces(i);
+        computeGeometricForces(i);
       }
     }
-    // compute norm of the bending force
-    gradNorm = computeNorm(toMatrix(forces.bendingForceVec));
+    // compute norm of the spontaneous curvature force
+    gradNorm = toMatrix(forces.spontaneousCurvatureForceVec).norm();
     // recover the position and cut the step size in half
     if (gradNorm > pastGradNorm) {
       toMatrix(vpg->inputVertexPositions) -= pastForceVec * stepSize;
@@ -524,9 +519,9 @@ System::smoothenMesh(double initStep, double target, size_t maxIteration) {
       continue;
     }
     // smoothing step
-    vpg->inputVertexPositions += forces.bendingForceVec * stepSize;
+    vpg->inputVertexPositions += forces.spontaneousCurvatureForceVec * stepSize;
     pastGradNorm = gradNorm;
-    pastForceVec = toMatrix(forces.bendingForceVec);
+    pastForceVec = toMatrix(forces.spontaneousCurvatureForceVec);
     num_iter++;
   };
 

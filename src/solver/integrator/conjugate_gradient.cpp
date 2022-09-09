@@ -82,10 +82,9 @@ bool ConjugateGradient::integrate() {
       lastUpdateGeodesics = system.time;
       if (system.parameters.point.isFloatVertex)
         system.findFloatCenter(
-            *system.vpg, system.geodesicDistance,
             3 * system.vpg->edgeLength(
                     system.center.nearestVertex().halfedge().edge()));
-      system.updateGeodesicsDistance();
+      system.geodesicDistance.raw() = system.computeGeodesicDistance();
       if (system.parameters.protein.ifPrescribe)
         system.prescribeGeodesicProteinDensityDistribution();
       system.updateConfigurations();
@@ -162,7 +161,8 @@ void ConjugateGradient::status() {
   auto physicalForce = system.forces.mechanicalForce.raw();
 
   // compute summerized forces
-  system.computePhysicalForcing(timeStep);
+  system.computeConservativeForcing();
+  system.addNonconservativeForcing(timeStep);
 
   // compute the area contraint error
   areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
@@ -184,7 +184,6 @@ void ConjugateGradient::status() {
     if (ifPrintToConsole)
       std::cout << "\nReached time." << std::endl;
     EXIT = true;
-    SUCCESS = false;
   }
 
   // compute the free energy of the system
@@ -210,7 +209,7 @@ void ConjugateGradient::march() {
              ? system.forces.chemicalPotential.raw().squaredNorm()
              : 0);
     system.velocity = system.forces.mechanicalForceVec;
-    system.proteinVelocity =
+    system.proteinRateOfChange =
         system.parameters.proteinMobility * system.forces.chemicalPotential;
     countCG = 1;
   } else {
@@ -223,12 +222,18 @@ void ConjugateGradient::march() {
              : 0);
     system.velocity *= currentNormSquared / pastNormSquared;
     system.velocity += system.forces.mechanicalForceVec;
-    system.proteinVelocity *= currentNormSquared / pastNormSquared;
-    system.proteinVelocity +=
+    system.proteinRateOfChange *= currentNormSquared / pastNormSquared;
+    system.proteinRateOfChange +=
         system.parameters.proteinMobility * system.forces.chemicalPotential;
     pastNormSquared = currentNormSquared;
     countCG++;
   }
+  system.mechErrorNorm = (toMatrix(system.velocity).array() *
+                          toMatrix(system.forces.mechanicalForceVec).array())
+                             .sum();
+  system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
+                          system.forces.chemicalPotential.raw().array())
+                             .sum();
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (ifAdaptiveStep) {
@@ -238,12 +243,12 @@ void ConjugateGradient::march() {
   // time stepping on vertex position
   if (isBacktrack) {
     timeStep = backtrack(toMatrix(system.velocity),
-                         system.proteinVelocity.raw(), rho, c1);
+                         system.proteinRateOfChange.raw(), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
   }
   system.vpg->inputVertexPositions += system.velocity * timeStep;
-  system.proteinDensity += system.proteinVelocity * timeStep;
+  system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 
   // recompute cached values

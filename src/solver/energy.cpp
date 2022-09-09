@@ -20,7 +20,7 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void System::computeBendingEnergy() {
+void System::computeSpontaneousCurvatureEnergy() {
 
   // no particular reason, just experiment
   // E.BE = 0;
@@ -38,7 +38,7 @@ void System::computeBendingEnergy() {
       abs(vpg->vertexMeanCurvatures.raw().array() /
               vpg->vertexDualAreas.raw().array() -
           H0.raw().array());
-  energy.bendingEnergy =
+  energy.spontaneousCurvatureEnergy =
       (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
        H_difference.array().square())
           .sum();
@@ -48,19 +48,24 @@ void System::computeBendingEnergy() {
   // K).sum();
 }
 
-void System::computeDeviatoricEnergy() {
-  energy.deviatoricEnergy =
-      (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
-                               vpg->vertexDualAreas.raw().array() -
-                           vpg->vertexGaussianCurvatures.raw().array()))
+void System::computeDeviatoricCurvatureEnergy() {
+  energy.deviatoricCurvatureEnergy =
+      (Kd.raw().array() * vpg->vertexGaussianCurvatures.raw().array().square())
           .sum();
-  // energy.deviatoricEnergy =
-  //     (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
-  //                          vpg->vertexDualAreas.raw().array()))
-  //         .sum();
-  // energy.deviatoricEnergy =
-  //     (Kd.raw().array() *
-  //     (-vpg->vertexGaussianCurvatures.raw().array())).sum();
+  // (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
+  //                          vpg->vertexDualAreas.raw().array() -
+  //                      vpg->vertexGaussianCurvatures.raw().array()))
+  //     .sum();
+}
+
+void System::computeAreaDifferenceEnergy() {
+  double K =
+      0.25 * parameters.bending.alpha * parameters.bending.Kb * constants::PI;
+  energy.areaDifferenceEnergy =
+      K / parameters.bending.D / parameters.bending.D / surfaceArea *
+      pow(2 * parameters.bending.D * vpg->vertexMeanCurvatures.raw().sum() -
+              parameters.bending.dA0,
+          2);
 }
 
 void System::computeSurfaceEnergy() {
@@ -240,8 +245,9 @@ void System::computeDirichletEnergy() {
 
 double System::computePotentialEnergy() {
   // fundamental internal potential energy
-  energy.bendingEnergy = 0;
-  energy.deviatoricEnergy = 0;
+  energy.spontaneousCurvatureEnergy = 0;
+  energy.deviatoricCurvatureEnergy = 0;
+  energy.areaDifferenceEnergy = 0;
   energy.surfaceEnergy = 0;
   energy.pressureEnergy = 0;
   energy.adsorptionEnergy = 0;
@@ -254,10 +260,12 @@ double System::computePotentialEnergy() {
   energy.faceSpringEnergy = 0;
   energy.lcrSpringEnergy = 0;
 
-  computeBendingEnergy();
-  computeDeviatoricEnergy();
-  
+  computeSpontaneousCurvatureEnergy();
+  computeDeviatoricCurvatureEnergy();
+
   // optional internal potential energy
+  if (parameters.bending.alpha != 0)
+    computeAreaDifferenceEnergy();
   if (parameters.tension.Ksg != 0)
     computeSurfaceEnergy();
   if (parameters.osmotic.Kv != 0)
@@ -293,7 +301,8 @@ double System::computePotentialEnergy() {
 
   // summerize internal potential energy
   energy.potentialEnergy =
-      energy.bendingEnergy + energy.deviatoricEnergy + energy.surfaceEnergy +
+      energy.spontaneousCurvatureEnergy + energy.deviatoricCurvatureEnergy +
+      energy.areaDifferenceEnergy + energy.surfaceEnergy +
       energy.pressureEnergy + energy.adsorptionEnergy + energy.dirichletEnergy +
       energy.aggregationEnergy + energy.entropyEnergy +
       energy.selfAvoidancePenalty + energy.proteinInteriorPenalty +
@@ -344,8 +353,8 @@ double System::computeTotalEnergy() {
   return energy.totalEnergy;
 }
 
-void System::computeGradient(gcs::VertexData<double> &quantities,
-                             gcs::FaceData<gc::Vector3> &gradient) {
+void System::computeFaceTangentialDerivative(
+    gcs::VertexData<double> &quantities, gcs::FaceData<gc::Vector3> &gradient) {
   if ((quantities.raw().array() == quantities.raw()[0]).all()) {
     gradient.fill({0, 0, 0});
   } else {
@@ -358,6 +367,20 @@ void System::computeGradient(gcs::VertexData<double> &quantities,
       }
       gradient[f] = gradientVec / 2 / vpg->faceAreas[f];
     }
+  }
+}
+
+double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                       gcs::Halfedge &he) const {
+  if (he.edge().isBoundary()) {
+    return 1;
+  } else {
+    gcs::Edge lj = he.next().edge();
+    gcs::Edge ki = he.twin().next().edge();
+    gcs::Edge il = he.next().next().edge();
+    gcs::Edge jk = he.twin().next().next().edge();
+    return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
+           vpg.edgeLengths[lj];
   }
 }
 

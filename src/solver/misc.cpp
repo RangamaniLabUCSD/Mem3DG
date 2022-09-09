@@ -20,31 +20,28 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-void System::testForceComputation(const double timeStep) {
-  computeTotalEnergy();
-  computePhysicalForcing();
-  const Energy previousE{energy};
-  const EigenVectorX3dr previousR = toMatrix(vpg->inputVertexPositions);
-  const EigenVectorX1d previousPhi = proteinDensity.raw();
+// void System::testConservativeForcing(const double timeStep) {
+//   // initialize variables needed for testing
+//   computeTotalEnergy();
+//   computeConservativeForcing();
+//   const Energy previousE{energy};
+//   const EigenVectorX3dr previousR = toMatrix(vpg->inputVertexPositions);
+//   const EigenVectorX1d previousPhi = proteinDensity.raw();
 
-  vpg->inputVertexPositions += forces.mechanicalForceVec * timeStep;
-  proteinDensity += parameters.proteinMobility * forces.chemicalPotential /
-                    vpg->vertexDualAreas * timeStep;
+//   // testing
+//   testConservativeForcing(timeStep, previousR, previousPhi, previousE);
 
-  updateConfigurations();
-  computeTotalEnergy();
-  testForceComputation(timeStep, previousR, previousPhi, previousE);
+//   // recover the unperturbed system
+//   toMatrix(vpg->inputVertexPositions) = previousR;
+//   proteinDensity.raw() = previousPhi;
+//   updateConfigurations();
+//   computeTotalEnergy();
+//   computeConservativeForcing();
+// }
 
-  toMatrix(vpg->inputVertexPositions) = previousR;
-  proteinDensity.raw() = previousPhi;
-  updateConfigurations();
-  computeTotalEnergy();
-  computePhysicalForcing();
-}
-
-void System::updateGeodesicsDistance() {
+EigenVectorX1d System::computeGeodesicDistance() {
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  geodesicDistance = heatSolver.computeDistance(center);
+  return heatSolver.computeDistance(center).raw();
 }
 
 void System::prescribeGeodesicProteinDensityDistribution() {
@@ -93,649 +90,362 @@ void System::prescribeGeodesicMasks() {
   }
 };
 
-void System::testForceComputation(const double timeStep,
-                                  const EigenVectorX3dr previousPosition,
-                                  const EigenVectorX1d previousProteinDensity,
-                                  const Energy previousEnergy) {
-
-  // cache the energy when applied the total force
-  // proteinDensity.raw() = previousProteinDensity;
-  // toMatrix(vpg->inputVertexPositions) =
-  //     previousPosition +
-  //     timeStep * forces.maskForce(
-  //                 toMatrix(forces.osmoticForceVec) +
-  //                 toMatrix(forces.capillaryForceVec) +
-  //                 toMatrix(forces.bendingForceVec) +
-  //                 toMatrix(forces.lineCapillaryForceVec) +
-  //                 toMatrix(forces.adsorptionForceVec) +
-  //                 toMatrix(forces.aggregationForceVec) +
-  //                 toMatrix(forces.externalForceVec) +
-  //                 toMatrix(forces.selfAvoidanceForceVec));
-  // // * toMatrix(forces.mechanicalForceVec);
-  // updateConfigurations();
+void System::backtraceEnergyGrowth(const double timeStep,
+                                   const Energy previousEnergy) {
   if (parameters.external.isActivated)
     computeExternalWork(time, timeStep);
   computeTotalEnergy();
-  const Energy totalForceEnergy{energy};
-
-  // ==========================================================
-  // ================    Potential Energy    ==================
-  // ==========================================================
+  std::cout << "<<<<<" << std::endl;
+  mem3dg_runtime_message("backtracing the component that leads to the energy "
+                         "growth (<--'s highlight growing components)");
+  std::cout << "\nUsing time step " << timeStep << ":" << std::endl;
   std::cout << "\n";
-  if (totalForceEnergy.potentialEnergy > previousEnergy.potentialEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, potE has increased "
-            << totalForceEnergy.potentialEnergy - previousEnergy.potentialEnergy
-            << " from " << previousEnergy.potentialEnergy << " to "
-            << totalForceEnergy.potentialEnergy << std::endl;
+  auto checkGrowth = [](const double &previousEnergy,
+                        const double &currentEnergy, std::string key) {
+    if (currentEnergy != previousEnergy) {
+      std::string marker = "";
+      if (currentEnergy > previousEnergy || !std::isfinite(currentEnergy))
+        marker = " <--";
+      std::cout << key << " increased "
+                << currentEnergy - previousEnergy
+                // << " from " << previousEnergy << " to " << currentEnergy
+                << marker << std::endl;
+    }
+  };
+  checkGrowth(previousEnergy.potentialEnergy, energy.potentialEnergy,
+              "potentialEnergy");
+  checkGrowth(previousEnergy.spontaneousCurvatureEnergy,
+              energy.spontaneousCurvatureEnergy, "spontaneousCurvatureEnergy");
+  checkGrowth(previousEnergy.areaDifferenceEnergy, energy.areaDifferenceEnergy,
+              "areaDifferenceEnergy");
+  checkGrowth(previousEnergy.surfaceEnergy, energy.surfaceEnergy,
+              "surfaceEnergy");
+  checkGrowth(previousEnergy.pressureEnergy, energy.pressureEnergy,
+              "pressureEnergy");
+  checkGrowth(previousEnergy.adsorptionEnergy, energy.adsorptionEnergy,
+              "adsorptionEnergy");
+  checkGrowth(previousEnergy.aggregationEnergy, energy.aggregationEnergy,
+              "aggregationEnergy");
+  checkGrowth(previousEnergy.entropyEnergy, energy.entropyEnergy,
+              "entropyEnergy");
+  checkGrowth(previousEnergy.dirichletEnergy, energy.dirichletEnergy,
+              "dirichletEnergy");
+  checkGrowth(previousEnergy.externalWork, energy.externalWork, "externalWork");
+  checkGrowth(previousEnergy.proteinInteriorPenalty,
+              energy.proteinInteriorPenalty, "proteinInteriorPenalty");
+  checkGrowth(previousEnergy.selfAvoidancePenalty, energy.selfAvoidancePenalty,
+              "selfAvoidancePenalty");
+  checkGrowth(previousEnergy.edgeSpringEnergy, energy.edgeSpringEnergy,
+              "edgeSpringEnergy");
+  checkGrowth(previousEnergy.faceSpringEnergy, energy.faceSpringEnergy,
+              "faceSpringEnergy");
+  checkGrowth(previousEnergy.lcrSpringEnergy, energy.lcrSpringEnergy,
+              "lcrSpringEnergy");
+  std::cout << ">>>>>" << std::endl;
+};
 
-  // ==========================================================
-  // ================        Bending         ==================
-  // ==========================================================
+bool System::testConservativeForcing(const double timeStep) {
+  std::cout << "<<<<<" << std::endl;
+  mem3dg_runtime_message("numerically testing componentwise forcing--energy "
+                         "relation (<--'s highlight possible inconsistency)");
+  std::cout << "\nUsing time step " << timeStep << ":" << std::endl;
   std::cout << "\n";
-  if (totalForceEnergy.bendingEnergy > previousEnergy.bendingEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, BE has increased "
-            << totalForceEnergy.bendingEnergy - previousEnergy.bendingEnergy
-            << " from " << previousEnergy.bendingEnergy << " to "
-            << totalForceEnergy.bendingEnergy << std::endl;
-
-  // =======================================
-  // =======      Mechanical        ========
-  // =======================================
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.bendingForceVec));
   updateConfigurations();
-
-  // test if bending energy increases
   computeTotalEnergy();
-  if (energy.bendingEnergy > previousEnergy.bendingEnergy)
-    std::cout << "*";
-  std::cout << "With only bending force, BE has increased "
-            << energy.bendingEnergy - previousEnergy.bendingEnergy << " from "
-            << previousEnergy.bendingEnergy << " to " << energy.bendingEnergy
-            << ", expected dBE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.bendingForceVec))
-                               .squaredNorm()
-            << std::endl;
+  computeConservativeForcing();
+  const Energy previousEnergy{energy};
+  const EigenVectorX3dr previousPosition = toMatrix(vpg->inputVertexPositions);
+  const EigenVectorX1d previousProteinDensity = proteinDensity.raw();
 
-  // =======================================
-  // =======       Chemical         ========
-  // =======================================
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
-  proteinDensity.raw() = previousProteinDensity +
-                         timeStep * parameters.proteinMobility *
-                             forces.maskProtein(forces.bendingPotential.raw());
-  updateConfigurations();
+  bool SUCCESS = true;
 
-  // test if bending energy increases
-  computeTotalEnergy();
-  if (energy.bendingEnergy > previousEnergy.bendingEnergy)
-    std::cout << "*";
-  std::cout
-      << "With only bending potential, BE has increased "
-      << energy.bendingEnergy - previousEnergy.bendingEnergy << " from "
-      << previousEnergy.bendingEnergy << " to " << energy.bendingEnergy
-      << ", expected dBE: "
-      << -timeStep * parameters.proteinMobility *
-             forces.maskProtein(forces.bendingPotential.raw()).squaredNorm()
-      << std::endl;
+  auto summerize = [](double actualDelta1, double expectedDelta1,
+                      double actualDelta2, double expectedDelta2,
+                      double stepFold, std::string key, double currentEnergy) {
+    double expectRate = 2;
+    std::array<std::size_t, 2> alignment{35, 60};
+    std::array<std::size_t, 2> space;
+    key = key + std::string(": ");
+    space[0] = alignment[0] - key.length();
+
+    std::ostringstream half1;
+    half1 << "decrease " << actualDelta1 << ", ";
+    space[1] = alignment[1] - half1.str().length() - alignment[0];
+
+    std::string marker = " <-----\n";
+
+    std::cout << key;
+    for (std::size_t i = 0; i < space[0]; i++) // for console readibility
+      std::cout << " ";
+    double difference_h = abs(expectedDelta1 - actualDelta1);
+    if (actualDelta1 != 0) {
+      std::cout << half1.str();
+      for (std::size_t i = 0; i < space[1]; i++) // for console readibility
+        std::cout << " ";
+      std::cout << "expect " << expectedDelta1;
+      if ((actualDelta1 < 0) || !std::isfinite(currentEnergy) ||
+          (difference_h / abs(actualDelta1)) > 0.01) { // criteria 1: closeness
+        std::cout << marker << std::endl;
+        return false;
+      } else {
+        std::cout << "" << std::endl;
+      }
+    } else {
+      std::cout << "inactivated" << marker << std::endl;
+      return false;
+    }
+
+    // test using x * timeStep for convergence
+    space[0] = alignment[0];
+    double difference_xh = abs(expectedDelta2 - actualDelta2);
+    if (difference_h < 1e-15 && difference_xh < 1e-15) { // probably exact
+      for (std::size_t i = 0; i < space[0]; i++) // for console readibility
+        std::cout << " ";
+      std::cout << "exact\n" << std::endl;
+      return true;
+    }
+    for (std::size_t i = 0; i < space[0]; i++) // for console readibility
+      std::cout << " ";
+    std::ostringstream half2;
+    half2 << "converge with "
+          << pow(difference_xh / difference_h, 1 / expectRate) << ", ";
+    space[1] = alignment[1] - half2.str().length() - alignment[0];
+    std::cout << half2.str();
+    for (std::size_t i = 0; i < space[1]; i++) // for console readibility
+      std::cout << " ";
+    std::cout << "expect " << expectRate;
+    if (abs(difference_xh / difference_h - pow(stepFold, expectRate)) >
+        0.03) { // criteria 2: convergence rate
+      std::cout << marker << std::endl;
+      return false;
+    } else {
+      std::cout << "" << std::endl;
+    }
+
+    std::cout << "" << std::endl;
+    return true;
+  };
+
+  // lambda function to test mechanical forces
+  auto testMechanical = [previousProteinDensity, previousPosition, timeStep,
+                         this, summerize](
+                            gcs::VertexData<gc::Vector3> &forceVec,
+                            const double &previousEnergy,
+                            const double &currentEnergy, std::string forceKey,
+                            std::string energyKey) {
+    double stepFold = 2;
+    std::string key = forceKey; // + std::string("--") + energyKey;
+
+    // lambda function to compute energy delta
+    auto computeDelta = [&](double dt) {
+      proteinDensity.raw() = previousProteinDensity;
+      toMatrix(vpg->inputVertexPositions) =
+          previousPosition + dt * forces.maskForce(toMatrix(forceVec));
+      updateConfigurations();
+      computeTotalEnergy();
+      double actualDelta =
+          -currentEnergy +
+          previousEnergy; // note that currentEnergy is passed by referenced,
+                          // which is modified by the previous line
+      double expectedDelta =
+          dt * forces.maskForce(toMatrix(forceVec)).squaredNorm();
+      return std::array<double, 2>{actualDelta, expectedDelta};
+    };
+    double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
+    std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
+    std::tie(actualDelta2, expectedDelta2) = computeDelta(stepFold * timeStep);
+    return summerize(actualDelta1, expectedDelta1, actualDelta2, expectedDelta2,
+                     stepFold, key, currentEnergy);
+  };
+
+  auto testChemical = [previousProteinDensity, previousPosition, timeStep, this,
+                       summerize](gcs::VertexData<double> &potential,
+                                  const double &previousEnergy,
+                                  const double &currentEnergy,
+                                  std::string potentialKey,
+                                  std::string energyKey) {
+    double stepFold = 2;
+    std::string key = potentialKey; // + std::string("--") + energyKey;
+
+    // lambda function to compute energy delta
+    auto computeDelta = [&](double dt) {
+      toMatrix(vpg->inputVertexPositions) = previousPosition;
+      proteinDensity.raw() =
+          previousProteinDensity +
+          dt * parameters.proteinMobility * forces.maskProtein(potential.raw());
+      updateConfigurations();
+      computeTotalEnergy();
+      double actualDelta = -currentEnergy + previousEnergy;
+      double expectedDelta = dt * parameters.proteinMobility *
+                             forces.maskProtein(potential.raw()).squaredNorm();
+      return std::array<double, 2>{actualDelta, expectedDelta};
+    };
+    double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
+    std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
+    std::tie(actualDelta2, expectedDelta2) = computeDelta(stepFold * timeStep);
+    return summerize(actualDelta1, expectedDelta1, actualDelta2, expectedDelta2,
+                     stepFold, key, currentEnergy);
+  };
 
   // ==========================================================
-  // ================      Deviatoric        ==================
+  // ================  Spontaneous curvature ==================
   // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.deviatoricEnergy > previousEnergy.deviatoricEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, DevE has increased "
-            << totalForceEnergy.deviatoricEnergy -
-                   previousEnergy.deviatoricEnergy
-            << " from " << previousEnergy.deviatoricEnergy << " to "
-            << totalForceEnergy.deviatoricEnergy << std::endl;
-
-  // =======================================
-  // =======      Mechanical        ========
-  // =======================================
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.deviatoricForceVec));
-  updateConfigurations();
-
-  // test if deviatoric energy increases
-  computeTotalEnergy();
-  if (energy.deviatoricEnergy > previousEnergy.deviatoricEnergy)
-    std::cout << "*";
-  std::cout << "With only deviatoric force, DevE has increased "
-            << energy.deviatoricEnergy - previousEnergy.deviatoricEnergy
-            << " from " << previousEnergy.deviatoricEnergy << " to "
-            << energy.deviatoricEnergy << ", expected dDevE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.deviatoricForceVec))
-                               .squaredNorm()
-            << std::endl;
-
-  // =======================================
-  // =======       Chemical         ========
-  // =======================================
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
-  proteinDensity.raw() =
-      previousProteinDensity +
-      timeStep * parameters.proteinMobility *
-          forces.maskProtein(forces.deviatoricPotential.raw());
-  updateConfigurations();
-
-  // test if deviatoric energy increases
-  computeTotalEnergy();
-  if (energy.deviatoricEnergy > previousEnergy.deviatoricEnergy)
-    std::cout << "*";
-  std::cout
-      << "With only deviatoric potential, DevE has increased "
-      << energy.deviatoricEnergy - previousEnergy.deviatoricEnergy << " from "
-      << previousEnergy.deviatoricEnergy << " to " << energy.deviatoricEnergy
-      << ", expected dDevE: "
-      << -timeStep * parameters.proteinMobility *
-             forces.maskProtein(forces.deviatoricPotential.raw()).squaredNorm()
-      << std::endl;
-
+  SUCCESS =
+      testMechanical(forces.spontaneousCurvatureForceVec,
+                     previousEnergy.spontaneousCurvatureEnergy,
+                     energy.spontaneousCurvatureEnergy,
+                     "spontaneousCurvatureForceVec",
+                     "spontaneousCurvatureEnergy") &&
+      SUCCESS; // leaving && SUCESS to the last to ensure running all the tests
+  SUCCESS = testChemical(forces.spontaneousCurvaturePotential,
+                         previousEnergy.spontaneousCurvatureEnergy,
+                         energy.spontaneousCurvatureEnergy,
+                         "spontaneousCurvaturePotential",
+                         "spontaneousCurvatureEnergy") &&
+            SUCCESS;
+  // ==========================================================
+  // ================    Area Difference     ==================
+  // ==========================================================
+  SUCCESS = testMechanical(forces.areaDifferenceForceVec,
+                           previousEnergy.areaDifferenceEnergy,
+                           energy.areaDifferenceEnergy,
+                           "areaDifferenceForceVec", "areaDifferenceEnergy") &&
+            SUCCESS;
+  // ==========================================================
+  // ================ Deviatoric curvature   ==================
+  // ==========================================================
+  SUCCESS = testMechanical(forces.deviatoricCurvatureForceVec,
+                           previousEnergy.deviatoricCurvatureEnergy,
+                           energy.deviatoricCurvatureEnergy,
+                           "deviatoricCurvatureForceVec",
+                           "deviatoricCurvatureEnergy") &&
+            SUCCESS;
+  SUCCESS = testChemical(forces.deviatoricCurvaturePotential,
+                         previousEnergy.deviatoricCurvatureEnergy,
+                         energy.deviatoricCurvatureEnergy,
+                         "deviatoricCurvaturePotential",
+                         "deviatoricCurvatureEnergy") &&
+            SUCCESS;
   // ==========================================================
   // ================      Capillary         ==================
   // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.surfaceEnergy > previousEnergy.surfaceEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, sE has increased "
-            << totalForceEnergy.surfaceEnergy - previousEnergy.surfaceEnergy
-            << " from " << previousEnergy.surfaceEnergy << " to "
-            << totalForceEnergy.surfaceEnergy << std::endl;
-
-  // =======================================
-  // =======      Mechanical        ========
-  // =======================================
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.capillaryForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.surfaceEnergy > previousEnergy.surfaceEnergy)
-    std::cout << "*";
-  std::cout << "With only capillary force, sE has increased "
-            << energy.surfaceEnergy - previousEnergy.surfaceEnergy << " from "
-            << previousEnergy.surfaceEnergy << " to " << energy.surfaceEnergy
-            << ", expected dsE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.capillaryForceVec))
-                               .squaredNorm()
-            << std::endl;
-
+  SUCCESS = testMechanical(forces.capillaryForceVec,
+                           previousEnergy.surfaceEnergy, energy.surfaceEnergy,
+                           "capillaryForceVec", "surfaceEnergy") &&
+            SUCCESS;
   // ==========================================================
   // ================      Osmotic           ==================
   // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.pressureEnergy > previousEnergy.pressureEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, pE has increased "
-            << totalForceEnergy.pressureEnergy - previousEnergy.pressureEnergy
-            << " from " << previousEnergy.pressureEnergy << " to "
-            << totalForceEnergy.pressureEnergy << std::endl;
-
-  // =======================================
-  // =======      Mechanical        ========
-  // =======================================
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.osmoticForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.pressureEnergy > previousEnergy.pressureEnergy)
-    std::cout << "*";
-  std::cout << "With only osmotic force, pE has increased "
-            << energy.pressureEnergy - previousEnergy.pressureEnergy << " from "
-            << previousEnergy.pressureEnergy << " to " << energy.pressureEnergy
-            << ", expected dpE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.osmoticForceVec))
-                               .squaredNorm()
-            << std::endl;
-
+  SUCCESS = testMechanical(forces.osmoticForceVec,
+                           previousEnergy.pressureEnergy, energy.pressureEnergy,
+                           "osmoticForceVec", "pressureEnergy") &&
+            SUCCESS;
   // ==========================================================
   // ================      Adsorption        ==================
   // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.adsorptionEnergy > previousEnergy.adsorptionEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, aE has increased "
-            << totalForceEnergy.adsorptionEnergy -
-                   previousEnergy.adsorptionEnergy
-            << " from " << previousEnergy.adsorptionEnergy << " to "
-            << totalForceEnergy.adsorptionEnergy << std::endl;
-
-  // =======================================
-  // =======      Mechanical        ========
-  // =======================================
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.adsorptionForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.adsorptionEnergy > previousEnergy.adsorptionEnergy)
-    std::cout << "*";
-  std::cout << "With only adsorption force, aE has increased "
-            << energy.adsorptionEnergy - previousEnergy.adsorptionEnergy
-            << " from " << previousEnergy.adsorptionEnergy << " to "
-            << energy.adsorptionEnergy << ", expected daE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.adsorptionForceVec))
-                               .squaredNorm()
-            << std::endl;
-
-  // =======================================
-  // =======       Chemical         ========
-  // =======================================
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
-  proteinDensity.raw() =
-      previousProteinDensity +
-      timeStep * parameters.proteinMobility *
-          forces.maskProtein(forces.adsorptionPotential.raw());
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.adsorptionEnergy > previousEnergy.adsorptionEnergy)
-    std::cout << "*";
-  std::cout
-      << "With only adsorption potential, aE has increased "
-      << energy.adsorptionEnergy - previousEnergy.adsorptionEnergy << " from "
-      << previousEnergy.adsorptionEnergy << " to " << energy.adsorptionEnergy
-      << ", expected daE: "
-      << -timeStep * parameters.proteinMobility *
-             forces.maskProtein(forces.adsorptionPotential.raw()).squaredNorm()
-      << std::endl;
-
+  SUCCESS =
+      testMechanical(forces.adsorptionForceVec, previousEnergy.adsorptionEnergy,
+                     energy.adsorptionEnergy, "adsorptionForceVec",
+                     "adsorptionEnergy") &&
+      SUCCESS;
+  SUCCESS =
+      testChemical(forces.adsorptionPotential, previousEnergy.adsorptionEnergy,
+                   energy.adsorptionEnergy, "adsorptionPotential",
+                   "adsorptionEnergy") &&
+      SUCCESS;
   // ==========================================================
-  // ================      Entropy       ==================
+  // ================      Entropy           ==================
   // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.entropyEnergy > previousEnergy.entropyEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, entropyE has increased "
-            << totalForceEnergy.entropyEnergy - previousEnergy.entropyEnergy
-            << " from " << previousEnergy.entropyEnergy << " to "
-            << totalForceEnergy.entropyEnergy << std::endl;
+  SUCCESS =
 
-  // test single-force-energy computation
-  // perturb the configuration
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.entropyForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.entropyEnergy > previousEnergy.entropyEnergy)
-    std::cout << "*";
-  std::cout << "With only entropy force, entropyE has increased "
-            << energy.entropyEnergy - previousEnergy.entropyEnergy << " from "
-            << previousEnergy.entropyEnergy << " to " << energy.entropyEnergy
-            << ", expected dentropyE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.entropyForceVec))
-                               .squaredNorm()
-            << std::endl;
+      testMechanical(forces.entropyForceVec, previousEnergy.entropyEnergy,
+                     energy.entropyEnergy, "entropyForceVec",
+                     "entropyEnergy") &&
+      SUCCESS;
+  SUCCESS =
 
-  // test single-force-energy computation
-  // perturb the configuration
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
-  proteinDensity.raw() = previousProteinDensity +
-                         timeStep * parameters.proteinMobility *
-                             forces.maskProtein(forces.entropyPotential.raw());
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.entropyEnergy > previousEnergy.entropyEnergy)
-    std::cout << "*";
-  std::cout
-      << "With only entropy potential, entropyE has increased "
-      << energy.entropyEnergy - previousEnergy.entropyEnergy << " from "
-      << previousEnergy.entropyEnergy << " to " << energy.entropyEnergy
-      << ", expected dentropyE: "
-      << -timeStep * parameters.proteinMobility *
-             forces.maskProtein(forces.entropyPotential.raw()).squaredNorm()
-      << std::endl;
-
+      testChemical(forces.entropyPotential, previousEnergy.entropyEnergy,
+                   energy.entropyEnergy, "entropyPotential", "entropyEnergy") &&
+      SUCCESS;
   // ==========================================================
   // ================      Aggregation       ==================
   // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.aggregationEnergy > previousEnergy.aggregationEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, aggE has increased "
-            << totalForceEnergy.aggregationEnergy -
-                   previousEnergy.aggregationEnergy
-            << " from " << previousEnergy.aggregationEnergy << " to "
-            << totalForceEnergy.aggregationEnergy << std::endl;
+  SUCCESS =
 
-  // test single-force-energy computation
-  // perturb the configuration
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.aggregationForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.aggregationEnergy > previousEnergy.aggregationEnergy)
-    std::cout << "*";
-  std::cout << "With only aggregation force, aggE has increased "
-            << energy.aggregationEnergy - previousEnergy.aggregationEnergy
-            << " from " << previousEnergy.aggregationEnergy << " to "
-            << energy.aggregationEnergy << ", expected daggE: "
-            << -timeStep *
-                   forces.maskForce(toMatrix(forces.aggregationForceVec))
-                       .squaredNorm()
-            << std::endl;
+      testMechanical(forces.aggregationForceVec,
+                     previousEnergy.aggregationEnergy, energy.aggregationEnergy,
+                     "aggregationForceVec", "aggregationEnergy") &&
+      SUCCESS;
+  SUCCESS =
 
-  // test single-force-energy computation
-  // perturb the configuration
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
-  proteinDensity.raw() =
-      previousProteinDensity +
-      timeStep * parameters.proteinMobility *
-          forces.maskProtein(forces.aggregationPotential.raw());
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.aggregationEnergy > previousEnergy.aggregationEnergy)
-    std::cout << "*";
-  std::cout
-      << "With only aggregation potential, aggE has increased "
-      << energy.aggregationEnergy - previousEnergy.aggregationEnergy << " from "
-      << previousEnergy.aggregationEnergy << " to " << energy.aggregationEnergy
-      << ", expected daggE: "
-      << -timeStep * parameters.proteinMobility *
-             forces.maskProtein(forces.aggregationPotential.raw()).squaredNorm()
-      << std::endl;
-
+      testChemical(forces.aggregationPotential,
+                   previousEnergy.aggregationEnergy, energy.aggregationEnergy,
+                   "aggregationPotential", "aggregationEnergy") &&
+      SUCCESS;
   // ==========================================================
   // ================      Dirichlet         ==================
   // ==========================================================
-  std::cout << "\n";
-  if (energy.dirichletEnergy > previousEnergy.dirichletEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, dE has increased "
-            << energy.dirichletEnergy - previousEnergy.dirichletEnergy
-            << " from " << previousEnergy.dirichletEnergy << " to "
-            << energy.dirichletEnergy << std::endl;
+  SUCCESS =
 
-  // test single-force-energy computation
-  // perturb the configuration
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.lineCapillaryForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.dirichletEnergy > previousEnergy.dirichletEnergy)
-    std::cout << "*";
-  std::cout << "With only line tension force, dE has increased "
-            << energy.dirichletEnergy - previousEnergy.dirichletEnergy
-            << " from " << previousEnergy.dirichletEnergy << " to "
-            << energy.dirichletEnergy << ", expected ddE: "
-            << -timeStep *
-                   forces.maskForce(toMatrix(forces.lineCapillaryForceVec))
-                       .squaredNorm()
-            << std::endl;
-
-  // test single-force-energy computation
-  // perturb the configuration
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
-  proteinDensity.raw() =
-      previousProteinDensity +
-      timeStep * parameters.proteinMobility *
-          forces.maskProtein(forces.dirichletPotential.raw());
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.dirichletEnergy > previousEnergy.dirichletEnergy)
-    std::cout << "*";
-  std::cout
-      << "With only Dirichlet potential, dE has increased "
-      << energy.dirichletEnergy - previousEnergy.dirichletEnergy << " from "
-      << previousEnergy.dirichletEnergy << " to " << energy.dirichletEnergy
-      << ", expected ddE: "
-      << -timeStep * parameters.proteinMobility *
-             forces.maskProtein(forces.dirichletPotential.raw()).squaredNorm()
-      << std::endl;
-
+      testMechanical(forces.lineCapillaryForceVec,
+                     previousEnergy.dirichletEnergy, energy.dirichletEnergy,
+                     "lineCapillaryForceVec", "dirichletEnergy") &&
+      SUCCESS;
+  SUCCESS = testChemical(forces.dirichletPotential,
+                         previousEnergy.dirichletEnergy, energy.dirichletEnergy,
+                         "dirichletPotential", "dirichletEnergy") &&
+            SUCCESS;
   // ==========================================================
   // ================   Self-avoidance       ==================
   // ==========================================================
-  std::cout << "\n";
-  if (energy.selfAvoidancePenalty > previousEnergy.selfAvoidancePenalty)
-    std::cout << "*";
-  std::cout << "With F_tol, selfE has increased "
-            << energy.selfAvoidancePenalty - previousEnergy.selfAvoidancePenalty
-            << " from " << previousEnergy.selfAvoidancePenalty << " to "
-            << energy.selfAvoidancePenalty << std::endl;
-
-  // test single-force-energy computation
-  // perturb the configuration
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.selfAvoidanceForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.selfAvoidancePenalty > previousEnergy.selfAvoidancePenalty)
-    std::cout << "*";
-  std::cout << "With only self avoidance penalty force, selfE has increased "
-            << energy.selfAvoidancePenalty - previousEnergy.selfAvoidancePenalty
-            << " from " << previousEnergy.selfAvoidancePenalty << " to "
-            << energy.selfAvoidancePenalty << ", expected dselfE: "
-            << -timeStep *
-                   forces.maskForce(toMatrix(forces.selfAvoidanceForceVec))
-                       .squaredNorm()
-            << std::endl;
-
+  SUCCESS = testMechanical(forces.selfAvoidanceForceVec,
+                           previousEnergy.selfAvoidancePenalty,
+                           energy.selfAvoidancePenalty, "selfAvoidanceForceVec",
+                           "selfAvoidancePenalty") &&
+            SUCCESS;
   // ==========================================================
   // ================        Edge spring     ==================
   // ==========================================================
-  std::cout << "\n";
-  if (energy.edgeSpringEnergy > previousEnergy.edgeSpringEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, edgeE has increased "
-            << energy.edgeSpringEnergy - previousEnergy.edgeSpringEnergy
-            << " from " << previousEnergy.edgeSpringEnergy << " to "
-            << energy.edgeSpringEnergy << std::endl;
-
-  // test single-force-energy computation
-  // perturb the configuration
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.edgeSpringForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.edgeSpringEnergy > previousEnergy.edgeSpringEnergy)
-    std::cout << "*";
-  std::cout << "With only edge spring force, edgeE has increased "
-            << energy.edgeSpringEnergy - previousEnergy.edgeSpringEnergy
-            << " from " << previousEnergy.edgeSpringEnergy << " to "
-            << energy.edgeSpringEnergy << ", expected dedgeE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.edgeSpringForceVec))
-                               .squaredNorm()
-            << std::endl;
-
+  SUCCESS =
+      testMechanical(forces.edgeSpringForceVec, previousEnergy.edgeSpringEnergy,
+                     energy.edgeSpringEnergy, "edgeSpringForceVec",
+                     "edgeSpringEnergy") &&
+      SUCCESS;
   // ==========================================================
-  // ================        Edge spring     ==================
+  // ================        Face spring     ==================
   // ==========================================================
-  std::cout << "\n";
-  if (energy.faceSpringEnergy > previousEnergy.faceSpringEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, faceE has increased "
-            << energy.faceSpringEnergy - previousEnergy.faceSpringEnergy
-            << " from " << previousEnergy.faceSpringEnergy << " to "
-            << energy.faceSpringEnergy << std::endl;
-
-  // test single-force-energy computation
-  // perturb the configuration
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.faceSpringForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.faceSpringEnergy > previousEnergy.faceSpringEnergy)
-    std::cout << "*";
-  std::cout << "With only face spring force, faceE has increased "
-            << energy.faceSpringEnergy - previousEnergy.faceSpringEnergy
-            << " from " << previousEnergy.faceSpringEnergy << " to "
-            << energy.faceSpringEnergy << ", expected dfaceE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.faceSpringForceVec))
-                               .squaredNorm()
-            << std::endl;
-
+  SUCCESS =
+      testMechanical(forces.faceSpringForceVec, previousEnergy.faceSpringEnergy,
+                     energy.faceSpringEnergy, "faceSpringForceVec",
+                     "faceSpringEnergy") &&
+      SUCCESS;
   // ==========================================================
   // ================        LCR spring      ==================
   // ==========================================================
-  std::cout << "\n";
-  if (energy.lcrSpringEnergy > previousEnergy.lcrSpringEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, lcrE has increased "
-            << energy.lcrSpringEnergy - previousEnergy.lcrSpringEnergy
-            << " from " << previousEnergy.lcrSpringEnergy << " to "
-            << energy.lcrSpringEnergy << std::endl;
-
-  // test single-force-energy computation
-  // perturb the configuration
-  proteinDensity.raw() = previousProteinDensity;
-  toMatrix(vpg->inputVertexPositions) =
-      previousPosition +
-      timeStep * forces.maskForce(toMatrix(forces.lcrSpringForceVec));
-  updateConfigurations();
-  computeTotalEnergy();
-  if (energy.lcrSpringEnergy > previousEnergy.lcrSpringEnergy)
-    std::cout << "*";
-  std::cout << "With only lcr spring force, lcrE has increased "
-            << energy.lcrSpringEnergy - previousEnergy.lcrSpringEnergy
-            << " from " << previousEnergy.lcrSpringEnergy << " to "
-            << energy.lcrSpringEnergy << ", expected dlcrE: "
-            << -timeStep * forces.maskForce(toMatrix(forces.lcrSpringForceVec))
-                               .squaredNorm()
-            << std::endl;
-
+  SUCCESS =
+      testMechanical(forces.lcrSpringForceVec, previousEnergy.lcrSpringEnergy,
+                     energy.lcrSpringEnergy, "lcrSpringForceVec",
+                     "lcrSpringEnergy") &&
+      SUCCESS;
   // ==========================================================
   // ================     Interior Penalty   ==================
   // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.proteinInteriorPenalty >
-      previousEnergy.proteinInteriorPenalty)
-    std::cout << "*";
-  std::cout << "With F_tol, inPE has increased "
-            << totalForceEnergy.proteinInteriorPenalty -
-                   previousEnergy.proteinInteriorPenalty
-            << " from " << previousEnergy.proteinInteriorPenalty << " to "
-            << totalForceEnergy.proteinInteriorPenalty << std::endl;
+  SUCCESS =
+      testChemical(forces.interiorPenaltyPotential,
+                   previousEnergy.proteinInteriorPenalty,
+                   energy.proteinInteriorPenalty, "interiorPenaltyPotential",
+                   "proteinInteriorPenalty") &&
+      SUCCESS;
 
-  // test single-force-energy computation
-  // perturb the configuration
+  // recover the configuration 
   toMatrix(vpg->inputVertexPositions) = previousPosition;
-  proteinDensity.raw() =
-      previousProteinDensity +
-      timeStep * parameters.proteinMobility *
-          forces.maskProtein(forces.interiorPenaltyPotential.raw());
+  proteinDensity.raw() = previousProteinDensity;
   updateConfigurations();
   computeTotalEnergy();
-  if (energy.proteinInteriorPenalty > previousEnergy.proteinInteriorPenalty)
-    std::cout << "*";
-  std::cout
-      << "With only protein interior penalty potential, inPE has increased "
-      << energy.proteinInteriorPenalty - previousEnergy.proteinInteriorPenalty
-      << " from " << previousEnergy.proteinInteriorPenalty << " to "
-      << energy.proteinInteriorPenalty << ", expected dinPE: "
-      << -timeStep * parameters.proteinMobility *
-             forces.maskProtein(forces.interiorPenaltyPotential.raw())
-                 .squaredNorm()
-      << std::endl;
+  computeConservativeForcing();
 
-  // ==========================================================
-  // ================     External Force     ==================
-  // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.externalWork < previousEnergy.externalWork)
-    std::cout << "*";
-  std::cout << "F_tol is doing negative work against external force field by "
-            << previousEnergy.externalWork - totalForceEnergy.externalWork
-            << std::endl;
-
-  // ==========================================================
-  // ================     Kinetic Energy     ==================
-  // ==========================================================
-  std::cout << "\n";
-  if (totalForceEnergy.kineticEnergy > previousEnergy.kineticEnergy)
-    std::cout << "*";
-  std::cout << "With F_tol, kE has increased "
-            << totalForceEnergy.kineticEnergy - previousEnergy.kineticEnergy
-            << " from " << previousEnergy.kineticEnergy << " to "
-            << totalForceEnergy.kineticEnergy << std::endl;
-}
-
-void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
-
-  if (isJustGeometry) {
-    gcs::writeSurfaceMesh(*mesh, *vpg, PathToSave);
-  } else {
-    gcs::RichSurfaceMeshData richData(*mesh);
-    richData.addMeshConnectivity();
-    richData.addGeometry(*vpg);
-
-    // write protein distribution
-    richData.addVertexProperty("proteinDensity", proteinDensity);
-    richData.addVertexProperty("velocity", forces.ontoNormal(velocity));
-
-    // write bool
-    gcs::VertexData<double> msk(*mesh);
-    msk.fromVector(toMatrix(forces.forceMask).rowwise().sum());
-    richData.addVertexProperty("forceMask", msk);
-    richData.addVertexProperty("proteinMask", forces.proteinMask);
-    gcs::VertexData<int> tkr(*mesh);
-    tkr.fromVector(centerTracker.raw().cast<int>());
-    richData.addVertexProperty("center", tkr);
-    // gcs::VertexData<int> mutMkr(*mesh);
-    // mutMkr.fromVector(mutationMarker.raw().cast<int>());
-    // richData.addVertexProperty("smoothing_mask", mutMkr);
-
-    // write geometry
-    gcs::VertexData<double> meanCurv(*mesh);
-    meanCurv.fromVector(vpg->vertexMeanCurvatures.raw().array() /
-                        vpg->vertexDualAreas.raw().array());
-    richData.addVertexProperty("meanCurvature", meanCurv);
-    gcs::VertexData<double> gaussCurv(*mesh);
-    gaussCurv.fromVector(vpg->vertexGaussianCurvatures.raw().array() /
-                         vpg->vertexDualAreas.raw().array());
-    richData.addVertexProperty("gaussianCurvature", gaussCurv);
-    richData.addVertexProperty("spontaneousCurvature", H0);
-    richData.addVertexProperty("dualArea", vpg->vertexDualAreas);
-
-    // write pressures
-    richData.addVertexProperty("bendingForce", forces.bendingForce);
-    richData.addVertexProperty("deviatoricForce", forces.deviatoricForce);
-    richData.addVertexProperty("capillaryForce", forces.capillaryForce);
-    richData.addVertexProperty("lineCapillaryForce", forces.lineCapillaryForce);
-    richData.addVertexProperty("osmoticForce", forces.osmoticForce);
-    richData.addVertexProperty("adsorptionForce", forces.adsorptionForce);
-    richData.addVertexProperty("aggregationForce", forces.aggregationForce);
-    richData.addVertexProperty("externalForce", forces.externalForce);
-    richData.addVertexProperty("selfAvoidanceForce", forces.selfAvoidanceForce);
-    richData.addVertexProperty("mechanicalForce", forces.mechanicalForce);
-
-    // write chemical potential
-    richData.addVertexProperty("dirichletPotential",
-                               forces.dirichletPotential);
-    richData.addVertexProperty("bendingPotential", forces.bendingPotential);
-    richData.addVertexProperty("deviatoricPotential",
-                               forces.deviatoricPotential);
-    richData.addVertexProperty("adsorptionPotential",
-                               forces.adsorptionPotential);
-    richData.addVertexProperty("aggregationPotential",
-                               forces.aggregationPotential);
-    richData.addVertexProperty("chemicalPotential", forces.chemicalPotential);
-
-    richData.write(PathToSave);
-  }
+  std::cout << ">>>>>" << std::endl;
+  return SUCCESS;
 }
 
 void System::check_pcg() {
@@ -778,11 +488,15 @@ bool System::checkFiniteness() {
       if (!std::isfinite(toMatrix(forces.aggregationForceVec).norm())) {
         mem3dg_runtime_message("Aggregation force is not finite!");
       }
-      if (!std::isfinite(toMatrix(forces.bendingForceVec).norm())) {
-        mem3dg_runtime_message("Bending force is not finite!");
+      if (!std::isfinite(
+              toMatrix(forces.spontaneousCurvatureForceVec).norm())) {
+        mem3dg_runtime_message("Spontaneous curvature force is not finite!");
       }
-      if (!std::isfinite(toMatrix(forces.deviatoricForceVec).norm())) {
-        mem3dg_runtime_message("Deviatoric force is not finite!");
+      if (!std::isfinite(toMatrix(forces.deviatoricCurvatureForceVec).norm())) {
+        mem3dg_runtime_message("Deviatoric curvature force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.areaDifferenceForceVec).norm())) {
+        mem3dg_runtime_message("Area difference force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.osmoticForceVec).norm())) {
         mem3dg_runtime_message("Osmotic force is not finite!");
@@ -808,16 +522,17 @@ bool System::checkFiniteness() {
   if (!std::isfinite(chemErrorNorm)) {
     finite = false;
 
-    if (!std::isfinite(proteinVelocity.raw().norm())) {
+    if (!std::isfinite(proteinRateOfChange.raw().norm())) {
       mem3dg_runtime_message("Protein velocity is not finite!");
     }
 
     if (!std::isfinite(forces.chemicalPotential.raw().norm())) {
-      if (!std::isfinite(forces.bendingPotential.raw().norm())) {
-        mem3dg_runtime_message("Bending Potential is not finite!");
+      if (!std::isfinite(forces.spontaneousCurvaturePotential.raw().norm())) {
+        mem3dg_runtime_message(
+            "Spontaneous curvature Potential is not finite!");
       }
-      if (!std::isfinite(forces.deviatoricPotential.raw().norm())) {
-        mem3dg_runtime_message("Deviatoric Potential is not finite!");
+      if (!std::isfinite(forces.deviatoricCurvaturePotential.raw().norm())) {
+        mem3dg_runtime_message("Deviatoric curvature Potential is not finite!");
       }
       if (!std::isfinite(forces.interiorPenaltyPotential.raw().norm())) {
         mem3dg_runtime_message(
@@ -847,11 +562,14 @@ bool System::checkFiniteness() {
       mem3dg_runtime_message("External work is not finite!");
     }
     if (!std::isfinite(energy.potentialEnergy)) {
-      if (!std::isfinite(energy.bendingEnergy)) {
-        mem3dg_runtime_message("Bending energy is not finite!");
+      if (!std::isfinite(energy.spontaneousCurvatureEnergy)) {
+        mem3dg_runtime_message("Spontaneous curvature energy is not finite!");
       }
-      if (!std::isfinite(energy.deviatoricEnergy)) {
-        mem3dg_runtime_message("Deviatoric energy is not finite!");
+      if (!std::isfinite(energy.deviatoricCurvatureEnergy)) {
+        mem3dg_runtime_message("Deviatoric curvature energy is not finite!");
+      }
+      if (!std::isfinite(energy.areaDifferenceEnergy)) {
+        mem3dg_runtime_message("Area difference energy is not finite!");
       }
       if (!std::isfinite(energy.surfaceEnergy)) {
         mem3dg_runtime_message("Surface energy is not finite!");
@@ -907,12 +625,7 @@ double System::inferTargetSurfaceArea() {
   return targetArea;
 }
 
-void System::findVertexCenter(gcs::VertexPositionGeometry &vpg,
-                              gcs::VertexData<double> &geodesicDistance,
-                              double range) {
-  if (parameters.point.isFloatVertex)
-    mem3dg_runtime_error("parameters.point.isFloatVertex is activated!");
-
+void System::findVertexCenter(double range) {
   if (parameters.point.pt.rows() == 1) {
     // Assign surface point as the indexed vertex
     center =
@@ -921,8 +634,8 @@ void System::findVertexCenter(gcs::VertexPositionGeometry &vpg,
   } else if (parameters.point.pt.rows() == 2 ||
              parameters.point.pt.rows() == 3) {
     // Find the cloest vertex to the point in the x-y plane or in the space
-    center = gc::SurfacePoint(closestVertexToPt(*mesh, vpg, parameters.point.pt,
-                                                geodesicDistance, range));
+    center = gc::SurfacePoint(closestVertexToPt(
+        *mesh, *vpg, parameters.point.pt, geodesicDistance, range));
   } else {
     mem3dg_runtime_error("parameters.point.pt type not supported!");
   }
@@ -938,30 +651,25 @@ void System::findVertexCenter(gcs::VertexPositionGeometry &vpg,
   }
 }
 
-void System::findFloatCenter(gcs::VertexPositionGeometry &vpg,
-                             gcs::VertexData<double> &geodesicDistance,
-                             double range) {
-  if (!parameters.point.isFloatVertex)
-    mem3dg_runtime_error("parameters.point.isFloatVertex is not activated!");
-
+void System::findFloatCenter(double range) {
   if (parameters.point.pt.rows() == 1) {
     throw std::logic_error(
         "To have Floating vertex, one must specify vertex by coordinate!");
   } else if (parameters.point.pt.rows() == 2) {
     // Find the cloest vertex to the point in the x-y plane
     gcs::Vertex closestVertex = closestVertexToPt(
-        *mesh, vpg, parameters.point.pt, geodesicDistance, range);
+        *mesh, *vpg, parameters.point.pt, geodesicDistance, range);
     double shortestDistance = 1e18;
     // loop over every faces around the vertex
     for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
       if (he.isInterior()) {
         // specify vertex coordinates and the target coordinate on the face
-        gc::Vector2 v1{vpg.inputVertexPositions[he.vertex()].x,
-                       vpg.inputVertexPositions[he.vertex()].y};
-        gc::Vector2 v2{vpg.inputVertexPositions[he.next().vertex()].x,
-                       vpg.inputVertexPositions[he.next().vertex()].y};
-        gc::Vector2 v3{vpg.inputVertexPositions[he.next().next().vertex()].x,
-                       vpg.inputVertexPositions[he.next().next().vertex()].y};
+        gc::Vector2 v1{vpg->inputVertexPositions[he.vertex()].x,
+                       vpg->inputVertexPositions[he.vertex()].y};
+        gc::Vector2 v2{vpg->inputVertexPositions[he.next().vertex()].x,
+                       vpg->inputVertexPositions[he.next().vertex()].y};
+        gc::Vector2 v3{vpg->inputVertexPositions[he.next().next().vertex()].x,
+                       vpg->inputVertexPositions[he.next().next().vertex()].y};
         gc::Vector2 v{parameters.point.pt[0], parameters.point.pt[1]};
         // find the inverse barycentric mapping based on the cartesian
         // vertex coordinates
@@ -982,8 +690,8 @@ void System::findFloatCenter(gcs::VertexPositionGeometry &vpg,
           double distance =
               (gc::Vector2{parameters.point.pt[0], parameters.point.pt[1]} -
                gc::Vector2{
-                   someSurfacePoint.interpolate(vpg.inputVertexPositions).x,
-                   someSurfacePoint.interpolate(vpg.inputVertexPositions).y})
+                   someSurfacePoint.interpolate(vpg->inputVertexPositions).x,
+                   someSurfacePoint.interpolate(vpg->inputVertexPositions).y})
                   .norm();
           if (distance < shortestDistance) {
             center = someSurfacePoint;
@@ -997,9 +705,9 @@ void System::findFloatCenter(gcs::VertexPositionGeometry &vpg,
     gc::Vector3 embeddedPoint{parameters.point.pt[0], parameters.point.pt[1],
                               parameters.point.pt[2]};
     gcs::Vertex closestVertex = closestVertexToPt(
-        *mesh, vpg, parameters.point.pt, geodesicDistance, range);
+        *mesh, *vpg, parameters.point.pt, geodesicDistance, range);
     gc::Vector3 vertexToPoint =
-        embeddedPoint - vpg.inputVertexPositions[closestVertex];
+        embeddedPoint - vpg->inputVertexPositions[closestVertex];
     // initialize the surface point as the closest vertex
     // center = gc::SurfacePoint(closestVertex);
     // double shortestDistance = vertexToPoint.norm();
@@ -1008,38 +716,38 @@ void System::findFloatCenter(gcs::VertexPositionGeometry &vpg,
     for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
       if (he.isInterior()) {
         // project the embedded point onto the face
-        auto faceNormal = vpg.faceNormal(he.face());
+        auto faceNormal = vpg->faceNormal(he.face());
         gc::Vector3 projectedEmbeddedPoint =
             embeddedPoint - gc::dot(vertexToPoint, faceNormal) * faceNormal;
         // determine the choice of coordinates used for inverse
         // barycentric mapping based on orientation of the face
         gc::Vector2 v1, v2, v3, v;
         if (abs(faceNormal.z) > std::sqrt(3) / 3) {
-          v1 = gc::Vector2{vpg.inputVertexPositions[he.vertex()].x,
-                           vpg.inputVertexPositions[he.vertex()].y};
-          v2 = gc::Vector2{vpg.inputVertexPositions[he.next().vertex()].x,
-                           vpg.inputVertexPositions[he.next().vertex()].y};
+          v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].x,
+                           vpg->inputVertexPositions[he.vertex()].y};
+          v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].x,
+                           vpg->inputVertexPositions[he.next().vertex()].y};
           v3 = gc::Vector2{
-              vpg.inputVertexPositions[he.next().next().vertex()].x,
-              vpg.inputVertexPositions[he.next().next().vertex()].y};
+              vpg->inputVertexPositions[he.next().next().vertex()].x,
+              vpg->inputVertexPositions[he.next().next().vertex()].y};
           v = gc::Vector2{projectedEmbeddedPoint.x, projectedEmbeddedPoint.y};
         } else if (abs(faceNormal.x) > std::sqrt(3) / 3) {
-          v1 = gc::Vector2{vpg.inputVertexPositions[he.vertex()].y,
-                           vpg.inputVertexPositions[he.vertex()].z};
-          v2 = gc::Vector2{vpg.inputVertexPositions[he.next().vertex()].y,
-                           vpg.inputVertexPositions[he.next().vertex()].z};
+          v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].y,
+                           vpg->inputVertexPositions[he.vertex()].z};
+          v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].y,
+                           vpg->inputVertexPositions[he.next().vertex()].z};
           v3 = gc::Vector2{
-              vpg.inputVertexPositions[he.next().next().vertex()].y,
-              vpg.inputVertexPositions[he.next().next().vertex()].z};
+              vpg->inputVertexPositions[he.next().next().vertex()].y,
+              vpg->inputVertexPositions[he.next().next().vertex()].z};
           v = gc::Vector2{projectedEmbeddedPoint.y, projectedEmbeddedPoint.z};
         } else {
-          v1 = gc::Vector2{vpg.inputVertexPositions[he.vertex()].z,
-                           vpg.inputVertexPositions[he.vertex()].x};
-          v2 = gc::Vector2{vpg.inputVertexPositions[he.next().vertex()].z,
-                           vpg.inputVertexPositions[he.next().vertex()].x};
+          v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].z,
+                           vpg->inputVertexPositions[he.vertex()].x};
+          v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].z,
+                           vpg->inputVertexPositions[he.next().vertex()].x};
           v3 = gc::Vector2{
-              vpg.inputVertexPositions[he.next().next().vertex()].z,
-              vpg.inputVertexPositions[he.next().next().vertex()].x};
+              vpg->inputVertexPositions[he.next().next().vertex()].z,
+              vpg->inputVertexPositions[he.next().next().vertex()].x};
           v = gc::Vector2{projectedEmbeddedPoint.z, projectedEmbeddedPoint.x};
         }
         // find the inverse barycentric mapping based on the cartesian
@@ -1053,7 +761,7 @@ void System::findFloatCenter(gcs::VertexPositionGeometry &vpg,
             he.face(), correspondBarycentricCoordinates(baryCoords_, he));
         // compute optimum distance and set surface point
         double distance = (embeddedPoint - someSurfacePoint.interpolate(
-                                               vpg.inputVertexPositions))
+                                               vpg->inputVertexPositions))
                               .norm();
         if (distance < shortestDistance) {
           center = someSurfacePoint;
