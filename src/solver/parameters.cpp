@@ -133,6 +133,8 @@ void Parameters::Protein::checkParameters(size_t nVertex) {
                          "0<phi_in<1, 0<phi_out<1], to disable, put [-1]");
     ifPrescribe = false;
   }
+
+  ifPrescribe = (form != NULL);
 }
 
 void Parameters::External::checkParameters() { isActivated = (form != NULL); }

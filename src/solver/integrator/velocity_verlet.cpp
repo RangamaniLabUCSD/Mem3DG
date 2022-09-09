@@ -94,7 +94,7 @@ bool VelocityVerlet::integrate() {
                     system.center.nearestVertex().halfedge().edge()));
       system.geodesicDistance.raw() = system.computeGeodesicDistance();
       if (system.parameters.protein.ifPrescribe)
-        system.prescribeGeodesicProteinDensityDistribution();
+        system.prescribeProteinDensityDistribution();
       system.updateConfigurations();
     }
 
