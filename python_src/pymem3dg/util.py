@@ -17,21 +17,6 @@ import pymem3dg as dg
 import numpy as np
 import numpy.typing as npt
 
-
-def getGeodesicDistance(
-    face: npt.NDArray[np.int64], vertex: npt.NDArray[np.float64], point: list
-):
-    system = dg.System(face, vertex)
-    system.parameters.point.pt = point
-    if system.parameters.point.isFloatVertex:
-        system.findFloatCenter()
-    else:
-        system.findVertexCenter()
-    distance = system.computeGeodesicDistance()
-    return distance
-
-
-
 def rowwiseNormalize(matrix: npt.NDArray[np.int64]):
     """Rowwise normalize the matrix
 

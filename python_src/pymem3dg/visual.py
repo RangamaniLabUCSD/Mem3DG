@@ -955,13 +955,13 @@ def animate(
             if geodesicDistance:
                 psmesh.add_distance_quantity(
                     "geodesicDistance",
-                    dg_util.getGeodesicDistance(
-                        face=face, vertex=vertex, point=parameters.point.pt
-                    ),
+                    system.computeGeodesicDistance(),
                 )
-            if edgeLength: 
-                psmesh.add_scalar_quantity("edgeLength", system.getEdgeLengths(), defined_on='edges')
-            if vertexDualArea: 
+            if edgeLength:
+                psmesh.add_scalar_quantity(
+                    "edgeLength", system.getEdgeLengths(), defined_on="edges"
+                )
+            if vertexDualArea:
                 psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
 
         def computeProteinRateOfChange(potential: npt.NDArray[np.float64]):

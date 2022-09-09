@@ -49,6 +49,8 @@ void System::prescribeProteinDensityDistribution() {
     proteinDensity.raw() = parameters.protein.form(
         time, vpg->vertexMeanCurvatures.raw(), geodesicDistance.raw());
   }
+
+  // // in-place implementation, needed to be migrated to python
   // std::array<double, 2> r_heter{
   //     parameters.protein.geodesicProteinDensityDistribution[0],
   //     parameters.protein.geodesicProteinDensityDistribution[1]};

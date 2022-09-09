@@ -33,8 +33,6 @@ int main() {
   p.bending.Kb = 8.22e-5;
   p.bending.Kbc = 8.22e-4;
   p.bending.H0c = 40;
-  p.protein.geodesicProteinDensityDistribution.resize(2);
-  p.protein.geodesicProteinDensityDistribution << 0.15, 0.15;
   p.tension.Ksg = 0.05;
   p.tension.A_res = 0;
   p.osmotic.isPreferredVolume = true;
