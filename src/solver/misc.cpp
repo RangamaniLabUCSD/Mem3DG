@@ -44,30 +44,34 @@ EigenVectorX1d System::computeGeodesicDistance() {
   return heatSolver.computeDistance(center).raw();
 }
 
-void System::prescribeGeodesicProteinDensityDistribution() {
-  std::array<double, 2> r_heter{
-      parameters.protein.geodesicProteinDensityDistribution[0],
-      parameters.protein.geodesicProteinDensityDistribution[1]};
-  vpg->requireVertexTangentBasis();
-  if (parameters.protein.profile == "gaussian") {
-    gaussianDistribution(proteinDensity.raw(), geodesicDistance.raw(),
-                         vpg->inputVertexPositions -
-                             vpg->inputVertexPositions[center.nearestVertex()],
-                         vpg->vertexTangentBasis[center.nearestVertex()],
-                         r_heter);
-  } else if (parameters.protein.profile == "tanh") {
-    tanhDistribution(proteinDensity.raw(), geodesicDistance.raw(),
-                     vpg->inputVertexPositions -
-                         vpg->inputVertexPositions[center.nearestVertex()],
-                     vpg->vertexTangentBasis[center.nearestVertex()],
-                     parameters.protein.tanhSharpness, r_heter);
+void System::prescribeProteinDensityDistribution() {
+  if (parameters.protein.ifPrescribe) {
+    proteinDensity.raw() = parameters.protein.form(
+        time, vpg->vertexMeanCurvatures.raw(), geodesicDistance.raw());
   }
-  vpg->unrequireVertexTangentBasis();
-  proteinDensity.raw() *=
-      parameters.protein.geodesicProteinDensityDistribution[2] -
-      parameters.protein.geodesicProteinDensityDistribution[3];
-  proteinDensity.raw().array() +=
-      parameters.protein.geodesicProteinDensityDistribution[3];
+  // std::array<double, 2> r_heter{
+  //     parameters.protein.geodesicProteinDensityDistribution[0],
+  //     parameters.protein.geodesicProteinDensityDistribution[1]};
+  // vpg->requireVertexTangentBasis();
+  // if (parameters.protein.profile == "gaussian") {
+  //   gaussianDistribution(proteinDensity.raw(), geodesicDistance.raw(),
+  //                        vpg->inputVertexPositions -
+  //                            vpg->inputVertexPositions[center.nearestVertex()],
+  //                        vpg->vertexTangentBasis[center.nearestVertex()],
+  //                        r_heter);
+  // } else if (parameters.protein.profile == "tanh") {
+  //   tanhDistribution(proteinDensity.raw(), geodesicDistance.raw(),
+  //                    vpg->inputVertexPositions -
+  //                        vpg->inputVertexPositions[center.nearestVertex()],
+  //                    vpg->vertexTangentBasis[center.nearestVertex()],
+  //                    parameters.protein.tanhSharpness, r_heter);
+  // }
+  // vpg->unrequireVertexTangentBasis();
+  // proteinDensity.raw() *=
+  //     parameters.protein.geodesicProteinDensityDistribution[2] -
+  //     parameters.protein.geodesicProteinDensityDistribution[3];
+  // proteinDensity.raw().array() +=
+  //     parameters.protein.geodesicProteinDensityDistribution[3];
 }
 
 void System::prescribeGeodesicMasks() {
@@ -437,7 +441,7 @@ bool System::testConservativeForcing(const double timeStep) {
                    "proteinInteriorPenalty") &&
       SUCCESS;
 
-  // recover the configuration 
+  // recover the configuration
   toMatrix(vpg->inputVertexPositions) = previousPosition;
   proteinDensity.raw() = previousProteinDensity;
   updateConfigurations();

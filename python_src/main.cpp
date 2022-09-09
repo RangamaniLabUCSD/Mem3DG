@@ -1193,6 +1193,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
+   * @brief Method: prescribe protein density
+   */
+  system.def("prescribeProteinDensityDistribution",
+             &System::prescribeProteinDensityDistribution,
+             R"delim(
+            prescribe protein density distribution based on parameters.protein.form.
+      )delim");
+
+  /**
    * @brief Method: computeGeodesics
    */
   system.def("computeGeodesicDistance", &System::computeGeodesicDistance,
@@ -1295,7 +1304,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   //           test conservative force computation by validating energy decrease
   //           (forward mode)
   //       )delim");
-  system.def("testConservativeForcing", &System::testConservativeForcing, py::arg("timeStep"),
+  system.def("testConservativeForcing", &System::testConservativeForcing,
+             py::arg("timeStep"),
              R"delim(
           test conservative force computation by validating energy decrease
       )delim");

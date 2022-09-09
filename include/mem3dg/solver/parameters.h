@@ -58,9 +58,9 @@ struct Parameters {
   struct Bending {
     /// membrane thickness
     double D = 0;
-    /// unity modulus 
+    /// unity modulus
     double alpha = 0;
-    /// preferred area difference 
+    /// preferred area difference
     double dA0 = 0;
 
     /// Deviatoric modulus
@@ -225,6 +225,9 @@ struct Parameters {
     double tanhSharpness = 20;
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 1e-6;
+    /// precription of protein density
+    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+        form = NULL;
 
     Protein() {
       geodesicProteinDensityDistribution.resize(1);

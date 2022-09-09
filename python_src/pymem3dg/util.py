@@ -31,6 +31,7 @@ def getGeodesicDistance(
     return distance
 
 
+
 def rowwiseNormalize(matrix: npt.NDArray[np.int64]):
     """Rowwise normalize the matrix
 
