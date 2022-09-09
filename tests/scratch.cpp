@@ -47,9 +47,6 @@ int main() {
   p.point.pt << 0, 0;
   p.point.isFloatVertex = false;
 
-  p.protein.profile = "none";
-  p.protein.geodesicProteinDensityDistribution.resize(1);
-  p.protein.geodesicProteinDensityDistribution << -1;
   p.protein.proteinInteriorPenalty = 0;
 
   p.boundary.shapeBoundaryCondition = "fixed";

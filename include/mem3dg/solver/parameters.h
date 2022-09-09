@@ -217,22 +217,11 @@ struct Parameters {
 
   struct Protein {
     bool ifPrescribe = false;
-    /// profile type: Gaussian or tanh
-    std::string profile = "none";
-    /// (initial) protein density
-    EigenVectorX1d geodesicProteinDensityDistribution;
-    /// sharpness of tanh transition
-    double tanhSharpness = 20;
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 1e-6;
     /// precription of protein density
     std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
         form = NULL;
-
-    Protein() {
-      geodesicProteinDensityDistribution.resize(1);
-      geodesicProteinDensityDistribution << -1;
-    }
     /**
      * @brief check parameter conflicts
      */

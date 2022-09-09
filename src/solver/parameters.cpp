@@ -108,32 +108,6 @@ void Parameters::Point::checkParameters() {
 }
 
 void Parameters::Protein::checkParameters(size_t nVertex) {
-  if (geodesicProteinDensityDistribution.rows() == 4 &&
-      (geodesicProteinDensityDistribution[2] >= 0 &&
-       geodesicProteinDensityDistribution[2] <= 1) &&
-      (geodesicProteinDensityDistribution[3] >= 0 &&
-       geodesicProteinDensityDistribution[3] <= 1) &&
-      (geodesicProteinDensityDistribution[0] > 0 &&
-       geodesicProteinDensityDistribution[1] > 0)) {
-    if (profile != "gaussian" && profile != "tanh")
-      mem3dg_runtime_error(
-          "Please choose the profile type, 'gaussian' or 'tanh'!");
-    if (geodesicProteinDensityDistribution[2] ==
-        geodesicProteinDensityDistribution[3])
-      mem3dg_runtime_error(
-          "Please input constant protein distribution in System()!");
-    ifPrescribe = true;
-  } else if (geodesicProteinDensityDistribution.rows() == 1 &&
-             geodesicProteinDensityDistribution[0] == -1) {
-    ifPrescribe = false;
-    if (profile != "none")
-      mem3dg_runtime_error("Please disable the profile type as 'none'!");
-  } else {
-    mem3dg_runtime_error("Length = 4, geodesic disk, [r1>0, r2>0, "
-                         "0<phi_in<1, 0<phi_out<1], to disable, put [-1]");
-    ifPrescribe = false;
-  }
-
   ifPrescribe = (form != NULL);
 }
 

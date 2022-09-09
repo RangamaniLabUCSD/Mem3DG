@@ -975,8 +975,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the signed F-E edge adjacency matrix, equivalent of d1 operator
       )delim");
   system.def(
-      "getEdgeLengths",
-      [](System &s) { return s.vpg->edgeLengths.raw(); },
+      "getEdgeLengths", [](System &s) { return s.vpg->edgeLengths.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get edge lengths 
@@ -1513,7 +1512,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                        EigenVectorX1d)>
              &externalForceFunction) { external.form = externalForceFunction; },
       R"delim(
-          get the vertex position matrix
+          functional to set the external force prescription 
+        args: 
+            vertexPositions
+            vertexDualAreas
+            time,
+            geodesicDistance 
+        return: 
+            externalForce
       )delim");
 
   py::class_<Parameters::DPD> dpd(pymem3dg, "DPD",
@@ -1572,22 +1578,26 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                           R"delim(
         The protein distribution parameters
     )delim");
-  protein.def_readwrite("profile", &Parameters::Protein::profile, R"delim(
-          get the profile type: 'gaussian' or 'tanh'
-      )delim");
-  protein.def_readwrite(
-      "geodesicProteinDensityDistribution",
-      &Parameters::Protein::geodesicProteinDensityDistribution, R"delim(
-          get (initial) protein density
-      )delim");
-  protein.def_readwrite("tanhSharpness", &Parameters::Protein::tanhSharpness,
-                        R"delim(
-          get protein density sharpness of tanh transition
-      )delim");
   protein.def_readwrite("proteinInteriorPenalty",
                         &Parameters::Protein::proteinInteriorPenalty,
                         R"delim(
           get interior point parameter for protein density
+      )delim");
+  protein.def(
+      "setForm",
+      [](Parameters::Protein &protein,
+         std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+             &proteinDensityDistributionFunction) {
+        protein.form = proteinDensityDistributionFunction;
+      },
+      R"delim(
+          functional to set the protein density distribution prescription 
+        args: 
+            time (float)
+            vertexMeanCurvatures (list)
+            geodesicDistance (list)
+        return: 
+            proteinDensity (list)
       )delim");
 
   py::class_<Parameters::Spring> spring(pymem3dg, "spring",
@@ -1611,25 +1621,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The parameters
     )delim");
   parameters.def(py::init<>());
-  //   parameters.def(
-  //       py::init<double, double, double, EigenVectorX1d, double, double,
-  //       double,
-  //                double, double, double, double, double, double, double,
-  //                double, double, double, double, EigenVectorX1d, double,
-  //                double, double, double, double, double, double, double,
-  //                std::string>(),
-  //       py::arg("Kb") = 0, py::arg("Kbc") = 0, py::arg("H0c") = 0,
-  //       py::arg("protein0") = Eigen::MatrixXd::Constant(1, 1, 1),
-  //       py::arg("Ksg") = 0, py::arg("A_res") = 0, py::arg("Kst") = 0,
-  //       py::arg("Ksl") = 0, py::arg("Kse") = 0, py::arg("Kv") = 0,
-  //       py::arg("V_re") = 0, py::arg("eta") = 0, py::arg("epsilon") = 0,
-  //       py::arg("Bc") = 0, py::arg("gamma") = 0, py::arg("Vt") = -1,
-  //       py::arg("cam") = 0, py::arg("temp") = 0,
-  //       py::arg("pt") = Eigen::MatrixXd::Constant(1, 1, 1), py::arg("Kf") =
-  //       0, py::arg("conc") = -1, py::arg("height") = 0, py::arg("radius") =
-  //       0, py::arg("lambdaSG") = 0, py::arg("lambdaV") = 0,
-  //       py::arg("proteinInteriorPenalty") = 1e-7, py::arg("sharpness") =
-  //       20, py::arg("relation") = "linear");
   parameters.def_readwrite("bending", &Parameters::bending,
                            R"delim(
           bending parameters

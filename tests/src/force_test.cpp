@@ -54,10 +54,22 @@ protected:
     p.point.isFloatVertex = false;
     p.point.pt.resize(3, 1);
     p.point.pt << 0, 0, 1;
-    p.protein.geodesicProteinDensityDistribution.resize(4, 1);
-    p.protein.profile = "tanh";
-    p.protein.geodesicProteinDensityDistribution << 1, 1, 0.7, 0.2;
-    p.protein.tanhSharpness = 3;
+
+    auto geodesicProteinDensity = [](double time, EigenVectorX1d meanCurvature,
+                                     EigenVectorX1d geodesicDistance) {
+      EigenVectorX1d proteinDensity;
+      proteinDensity.resize(geodesicDistance.rows(), 1);
+      for (std::size_t i = 0; i < geodesicDistance.rows(); i++) {
+        if (geodesicDistance[i] != 0) {
+          proteinDensity[i] = tanhDistribution(geodesicDistance[i], 3, 1);
+        }
+      }
+      // tanhDistribution(proteinDensity, geodesicDistance, 10, 1);
+      proteinDensity.array() *= 0.5;
+      proteinDensity.array() += 0.2;
+      return proteinDensity;
+    };
+    p.protein.form = geodesicProteinDensity;
 
     p.bending.alpha = 1;
     p.bending.dA0 = 4;
