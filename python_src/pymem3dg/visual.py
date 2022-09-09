@@ -818,6 +818,8 @@ def animate(
     geodesicDistance=True,
     centerTracker: bool = True,
     meanCurvature: bool = True,
+    edgeLength: bool = True,
+    vertexDualArea: bool = True,
     gaussianCurvature: bool = True,
     mechanicalForce: bool = True,
     spontaneousCurvatureForce: bool = True,
@@ -846,6 +848,8 @@ def animate(
         geodesicDistance (bool, optional): optional data to visualize. Defaults to True
         centerTracker (bool, optional): optional data to visualize. Defaults to True
         meanCurvature (bool, optional): optional data to visualize. Defaults to True
+        edgeLength (bool, optional): optional data to visualize. Defaults to True
+        vertexDualArea (bool, optional): optional data to visualize. Defaults to True
         gaussianCurvature (bool, optional): optional data to visualize. Defaults to True
         mechanicalForce (bool, optional): optional data to visualize. Defaults to True
         spontaneousCurvatureForce (bool, optional): optional data to visualize. Defaults to True
@@ -955,6 +959,10 @@ def animate(
                         face=face, vertex=vertex, point=parameters.point.pt
                     ),
                 )
+            if edgeLength: 
+                psmesh.add_scalar_quantity("edgeLength", system.getEdgeLengths(), defined_on='edges')
+            if vertexDualArea: 
+                psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
 
         def computeProteinRateOfChange(potential: npt.NDArray[np.float64]):
             d0T = system.getVertexAdjacencyMatrix().T

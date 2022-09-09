@@ -975,6 +975,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the signed F-E edge adjacency matrix, equivalent of d1 operator
       )delim");
   system.def(
+      "getEdgeLengths",
+      [](System &s) { return s.vpg->edgeLengths.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get edge lengths 
+      )delim");
+  system.def(
       "getVertexDualAreas",
       [](System &s) { return s.vpg->vertexDualAreas.raw(); },
       py::return_value_policy::copy,
