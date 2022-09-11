@@ -1082,8 +1082,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the pointwise spontaneous curvature
       )delim");
   system.def(
-      "getCenterTracker",
-      [](System &s) { return s.centerTracker.raw().cast<double>(); },
+      "getCenter",
+      [](System &s) {
+        for (std::size_t i = 0; i < s.mesh->nVertices(); ++i) {
+          if (s.center[i])
+            return i;
+        }
+        mem3dg_runtime_error("can not find center!")
+      },
       py::return_value_policy::copy,
       R"delim(
           get vertex data to track center, which may or may not be a single vertex
@@ -1218,31 +1224,35 @@ PYBIND11_MODULE(_core, pymem3dg) {
           return: NDarray[double]
       )delim");
 
-  /**
-   * @brief Method: find float center
-   */
-  system.def("findFloatCenter", &System::findFloatCenter,
-             py::arg("range") = std::numeric_limits<double>::max(),
-             R"delim(
-          find the float center based on Parameter.point.pt using Euclidean distance and cached the floating surface point ("Center") in System object 
-          Args:
-            range (double, optional): range of geodesic distance (if cached in System) to search for the floating center
-          return: 
-            None
-      )delim");
+  //   /**
+  //    * @brief Method: find float center
+  //    */
+  //   system.def("findFloatCenter", &System::findFloatCenter,
+  //              py::arg("range") = std::numeric_limits<double>::max(),
+  //              R"delim(
+  //           find the float center based on Parameter.point.pt using Euclidean
+  //           distance and cached the floating surface point ("Center") in
+  //           System object Args:
+  //             range (double, optional): range of geodesic distance (if cached
+  //             in System) to search for the floating center
+  //           return:
+  //             None
+  //       )delim");
 
-  /**
-   * @brief Method: find vertex center
-   */
-  system.def("findVertexCenter", &System::findVertexCenter,
-             py::arg("range") = std::numeric_limits<double>::max(),
-             R"delim(
-          find the vertex center based on Parameter.point.pt using Euclidean distance and cached the vertex ("Center") in System object 
-          Args:
-            range (double, optional): range of geodesic distance (if cached in System) to search for the floating center
-          return: 
-            None
-      )delim");
+  //   /**
+  //    * @brief Method: find vertex center
+  //    */
+  //   system.def("findVertexCenter", &System::findVertexCenter,
+  //              py::arg("range") = std::numeric_limits<double>::max(),
+  //              R"delim(
+  //           find the vertex center based on Parameter.point.pt using
+  //           Euclidean distance and cached the vertex ("Center") in System
+  //           object Args:
+  //             range (double, optional): range of geodesic distance (if cached
+  //             in System) to search for the floating center
+  //           return:
+  //             None
+  //       )delim");
 
   /**
    * @brief Method: updateVertexPosition
@@ -1565,14 +1575,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                       R"delim(
         The Point energy parameters
     )delim");
-  point.def_readwrite("pt", &Parameters::Point::pt,
-                      R"delim(
-          get the point
-      )delim");
-  point.def_readwrite("isFloatVertex", &Parameters::Point::isFloatVertex,
-                      R"delim(
-          whether use floating vertex option
-      )delim");
+  //   point.def_readwrite("pt", &Parameters::Point::pt,
+  //                       R"delim(
+  //           get the point
+  //       )delim");
+  //   point.def_readwrite("isFloatVertex", &Parameters::Point::isFloatVertex,
+  //                       R"delim(
+  //           whether use floating vertex option
+  //       )delim");
 
   py::class_<Parameters::Protein> protein(pymem3dg, "Protein",
                                           R"delim(

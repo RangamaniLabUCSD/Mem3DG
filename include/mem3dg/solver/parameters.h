@@ -204,15 +204,7 @@ struct Parameters {
   };
 
   struct Point {
-    /// The point
-    EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
-    /// Whether floating "the" vertex
-    bool isFloatVertex = false;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
+    std::size_t index = 0;
   };
 
   struct Protein {

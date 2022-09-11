@@ -162,9 +162,8 @@ public:
   gcs::VertexData<bool> mutationMarker;
   /// if has boundary
   bool isOpenMesh;
-  /// "the vertex"
-  gcs::SurfacePoint center;
-  gcs::VertexData<bool> centerTracker;
+  /// defined center of the mesh
+  gcs::VertexData<bool> center;
   /// projected time of collision
   double projectedCollideTime;
 
@@ -400,7 +399,7 @@ public:
 
     isSmooth = true;
     mutationMarker = gc::VertexData<bool>(*mesh, false);
-    centerTracker = gc::VertexData<bool>(*mesh, false);
+    center = gc::VertexData<bool>(*mesh, false);
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -888,7 +887,7 @@ public:
    * @brief Find "the" vertex
    */
   void findFloatCenter(double range = std::numeric_limits<double>::max());
-  void findVertexCenter(double range = std::numeric_limits<double>::max());
+  // void findVertexCenter(double range = std::numeric_limits<double>::max());
 
   /**
    * @brief update cache of geodesicDistance

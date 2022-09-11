@@ -47,13 +47,19 @@ protected:
   double h = 0.1;
 
   ForceTest() {
+    // Create mesh and geometry objects
+    std::tie(topologyMatrix, vertexMatrix) =
+        getCylinderMatrix(1, 10, 10, 5, 0.3);
+    std::tie(topologyMatrix, refVertexMatrix) = getCylinderMatrix(1, 10, 10);
+    proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
+    velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
 
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;
     p.variation.geodesicMask = -1;
-    p.point.isFloatVertex = false;
-    p.point.pt.resize(3, 1);
-    p.point.pt << 0, 0, 1;
+
+    p.point.index = mem3dg::getVertexClosestToEmbeddedCoordinate(
+        vertexMatrix, std::array<double, 3>{0, 0, 1});
 
     auto geodesicProteinDensity = [](double time, EigenVectorX1d meanCurvature,
                                      EigenVectorX1d geodesicDistance) {
@@ -117,12 +123,6 @@ protected:
     p.spring.Kse = 1e-3;
     p.spring.Ksl = 1e-3;
 
-    // Create mesh and geometry objects
-    std::tie(topologyMatrix, vertexMatrix) =
-        getCylinderMatrix(1, 10, 10, 5, 0.3);
-    std::tie(topologyMatrix, refVertexMatrix) = getCylinderMatrix(1, 10, 10);
-    proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
-    velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
   }
 };
 

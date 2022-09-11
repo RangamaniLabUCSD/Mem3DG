@@ -102,20 +102,12 @@ bool Euler::integrate() {
       system.updateConfigurations();
       system.refVpg = system.vpg->copy();
       system.updateReferenceConfigurations();
-      if (system.parameters.point.isFloatVertex)
-        system.findFloatCenter(
-            3 * system.vpg->edgeLength(
-                    system.center.nearestVertex().halfedge().edge()));
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics >
         (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
-      if (system.parameters.point.isFloatVertex)
-        system.findFloatCenter(
-            3 * system.vpg->edgeLength(
-                    system.center.nearestVertex().halfedge().edge()));
       system.geodesicDistance.raw() = system.computeGeodesicDistance();
       if (system.parameters.protein.ifPrescribe)
         system.prescribeProteinDensityDistribution();

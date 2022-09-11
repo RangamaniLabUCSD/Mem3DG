@@ -80,33 +80,6 @@ void Parameters::Osmotic::checkParameters() {
   }
 }
 
-void Parameters::Point::checkParameters() {
-  if (pt.rows() > 3) {
-    mem3dg_runtime_error(
-        "Length of p.pt cannnot exceed 3! Instruction: (Length=1) => (vertex "
-        "index); (Length=2) => ([x,y] coordinate); (Length=3) => ([x,y,z] "
-        "coordinate)");
-  }
-  // if (pt.rows() == 2) {
-  //   std::cout << "\nWARNING: specifying x-y coordinate on closed surface may
-  //   "
-  //                "lead to ambiguity! Please check by visualizing it first!\n"
-  //             << std::endl;
-  // }
-  if (isFloatVertex) {
-    if (pt.rows() == 1) {
-      mem3dg_runtime_error(
-          "To have Floating vertex, one must specify vertex by coordinate!");
-    }
-    // if (P.pt.rows() == 3) {
-    //   std::cout << "\nWARNING: float vertex using 3D position may lead to
-    //   jump "
-    //                "in geodesic sense!\n"
-    //             << std::endl;
-    // }
-  }
-}
-
 void Parameters::Protein::checkParameters(size_t nVertex) {
   ifPrescribe = (form != NULL);
 }
@@ -134,7 +107,7 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   tension.checkParameters();
   osmotic.checkParameters();
   variation.checkParameters();
-  point.checkParameters();
+  // point.checkParameters();
   external.checkParameters();
   protein.checkParameters(nVertex);
 

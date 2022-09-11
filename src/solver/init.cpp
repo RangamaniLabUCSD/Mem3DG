@@ -51,11 +51,6 @@ void System::checkConfiguration() {
     mem3dg_runtime_error(
         "Do not support closed mesh with nonzero number of genus!")
   }
-  if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
-    mem3dg_runtime_message(
-        "specifying x-y coordinate on closed surface may "
-        "lead to ambiguity! Please check by visualizing it first!");
-  }
   if (parameters.selfAvoidance.mu != 0) {
     for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
       gc::Vertex vi{mesh->vertex(i)};
@@ -99,11 +94,8 @@ void System::initializeConstants(bool ifMute) {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
-  if (parameters.point.isFloatVertex) {
-    findFloatCenter();
-  } else {
-    findVertexCenter();
-  }
+  center[parameters.point.index] = true;
+
   geodesicDistance.raw() = computeGeodesicDistance();
   prescribeGeodesicMasks();
 

@@ -39,7 +39,7 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("forceMask", msk);
     richData.addVertexProperty("proteinMask", forces.proteinMask);
     gcs::VertexData<double> tkr(*mesh);
-    tkr.fromVector(centerTracker.raw().cast<double>());
+    tkr.fromVector(center.raw().cast<double>());
     richData.addVertexProperty("center", tkr);
     // gcs::VertexData<int> mutMkr(*mesh);
     // mutMkr.fromVector(mutationMarker.raw().cast<int>());
