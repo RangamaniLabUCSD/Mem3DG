@@ -43,10 +43,9 @@ int main() {
   p.proteinMobility = 0;
   p.temperature = 0;
 
-  p.point.pt.resize(2);
-  p.point.pt << 0, 0;
-  p.point.isFloatVertex = false;
-
+  p.point.index = mem3dg::getVertexClosestToEmbeddedCoordinate(
+      vpg, std::array<double, 3>{0, 0, 0},
+      std::array<bool, 3>{true, true, false});
   p.protein.proteinInteriorPenalty = 0;
 
   p.boundary.shapeBoundaryCondition = "fixed";
@@ -88,8 +87,8 @@ int main() {
   p.dpd.gamma = 0;
 
   p.spring.Kse = 0.01;
-//   p.spring.Ksl = 0.01;
-//   p.spring.Kst = 0.01;
+  //   p.spring.Ksl = 0.01;
+  //   p.spring.Kst = 0.01;
 
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
   EigenVectorX1d phi = Eigen::MatrixXd::Constant(vpg.rows(), 1, 1);
@@ -97,7 +96,7 @@ int main() {
 
   mem3dg::solver::System system(mesh, vpg, refVpg, phi, vel, p, 0);
   system.initialize();
-//   system.testConservativeForcing(0.001);
+  //   system.testConservativeForcing(0.001);
 
   system.meshProcessor.meshMutator.isShiftVertex = true;
   system.meshProcessor.meshMutator.flipNonDelaunay = true;

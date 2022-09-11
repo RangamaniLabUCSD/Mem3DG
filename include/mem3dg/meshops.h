@@ -535,61 +535,52 @@ removeRotation(const Eigen::Ref<const EigenVectorX3dr> &position,
 }
 
 /**
- * @brief find the closest point index to a given point
+ * @brief Find the index of the vertex closest to a embedded coordinate in
+ * Euclidean distance.
  *
- * @param mesh mesh
- * @param vpg geometry
- * @param position position of the target space point
- * @param geodesicDistance geodesic distance from a particular point in order
- * to specify range of search
- * @param range range of search
+ * @param vertexMatrix vertex position matrix of the mesh (N x 3)
+ * @param embeddedCoordinate the target embedded coordinate expressed in 3D
+ * cartesian coordinate
+ * @param accountedCoordinate array to identify the accounted coordinate. For
+ * example, it finds closest vertex in the x-y plane when set to be {true, true,
+ * false}. Defaults to {true, true, true}
+ * @param filter Limit the scope of search to a subset of vertices, Defaults to all true by overloading
  */
-DLL_PUBLIC inline gcs::Vertex
-closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-                  const Eigen::Ref<const EigenVectorX1d> &position,
-                  gcs::VertexData<double> &geodesicDistance,
-                  double range = 1e10) {
-  gcs::Vertex theVertex;
-  double shorestDistance = 1e18;
-  bool isIntialized = !geodesicDistance.raw().isZero(0);
-  // if (!isIntialized) {
-  //   std::cout << "\nWARNING: closestVertexToPt: geodesicDistance not "
-  //                "initialized, searching for all "
-  //                "vertices!"
-  //             << std::endl;
-  // }
-  for (gcs::Vertex v : mesh.vertices()) {
-    if (geodesicDistance[v] > range) {
+DLL_PUBLIC inline std::size_t getVertexClosestToEmbeddedCoordinate(
+    const EigenVectorX3dr &vertexMatrix,
+    const std::array<double, 3> &embeddedCoordinate,
+    const Eigen::Matrix<bool, Eigen::Dynamic, 1> filter,
+    const std::array<bool, 3> &accountedCoordinate = std::array<bool, 3>{
+        true, true, true}) {
+  if (filter.rows() != vertexMatrix.rows())
+    mem3dg_runtime_error(
+        "number of rows of filter does not match with the vertexMatrix!");
+  std::size_t closestVertex;
+  double shortestDistanceSq = std::numeric_limits<double>::max();
+  for (std::size_t v = 0; v < vertexMatrix.rows(); ++v) {
+    if (!filter[v])
       continue;
+    double distanceSq = 0.0;
+    for (std::size_t i = 0; i < accountedCoordinate.size(); ++i) {
+      if (accountedCoordinate[i])
+        distanceSq += pow(vertexMatrix.row(v)[i] - embeddedCoordinate[i], 2);
     }
-    if (geodesicDistance[v] < 0 && isIntialized) {
-      std::cout << "\nWARNING: closestVertexToPt: geodesicDistance of this "
-                   "vertex is "
-                << geodesicDistance[v]
-                << " which is less than 0, may be "
-                   "uninitialized/updated!"
-                << std::endl;
-    }
-    double distance;
-    if (position.rows() == 2) {
-      distance = (gc::Vector2{vpg.inputVertexPositions[v].x,
-                              vpg.inputVertexPositions[v].y} -
-                  gc::Vector2{position[0], position[1]})
-                     .norm();
-    } else if (position.rows() == 3) {
-      distance = (vpg.inputVertexPositions[v] -
-                  gc::Vector3{position[0], position[1], position[2]})
-                     .norm();
-    } else {
-      mem3dg_runtime_error(
-          "closestVertexToPt: does not support non-2d/3d position vector!");
-    }
-    if (distance < shorestDistance) {
-      shorestDistance = distance;
-      theVertex = v;
+    if (distanceSq < shortestDistanceSq) {
+      shortestDistanceSq = distanceSq;
+      closestVertex = v;
     }
   }
-  return theVertex;
+  return closestVertex;
+}
+
+DLL_PUBLIC inline std::size_t getVertexClosestToEmbeddedCoordinate(
+    const EigenVectorX3dr &vertexMatrix,
+    const std::array<double, 3> &embeddedCoordinate,
+    const std::array<bool, 3> &accountedCoordinate = std::array<bool, 3>{
+        true, true, true}) {
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> filter;
+  filter.setConstant(vertexMatrix.rows(), true);
+  return getVertexClosestToEmbeddedCoordinate(vertexMatrix, embeddedCoordinate, filter, accountedCoordinate);
 }
 
 /**

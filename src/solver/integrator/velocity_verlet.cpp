@@ -88,10 +88,6 @@ bool VelocityVerlet::integrate() {
     if (system.time - lastUpdateGeodesics >
         (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
-      if (system.parameters.point.isFloatVertex)
-        system.findFloatCenter(
-            3 * system.vpg->edgeLength(
-                    system.center.nearestVertex().halfedge().edge()));
       system.geodesicDistance.raw() = system.computeGeodesicDistance();
       if (system.parameters.protein.ifPrescribe)
         system.prescribeProteinDensityDistribution();

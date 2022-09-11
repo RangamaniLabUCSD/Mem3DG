@@ -17,17 +17,27 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 using EigenVectorX1d = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+template <typename T>
+using EigenVectorX1_T = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 using EigenVectorX1i = Eigen::Matrix<int, Eigen::Dynamic, 1>;
 using EigenVectorX3dr =
     Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenVectorX3u = Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
+using EigenVectorX3sr =
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenVectorX3s = Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>;
 
 int main() {
   // pybind11::scoped_interpreter guard{};
   std::string inputMesh = "C://Users//Kieran//Dev//2020-Mem3DG-Applications//"
                           "examples//patch_bud//input-"
                           "file//patch.ply";
+
+  EigenVectorX3sr mesh;
+  EigenVectorX3dr vpg;
+  std::tie(mesh, vpg) = mem3dg::readMesh(inputMesh);
 
   mem3dg::solver::Parameters p;
   p.bending.Kb = 8.22e-5;
@@ -39,10 +49,11 @@ int main() {
   p.osmotic.Kv = 0;
   p.adsorption.epsilon = 15e-5;
   p.proteinMobility = 40;
-  p.point.pt.resize(3);
-  p.point.pt << 0, 0, 0;
+
+  p.point.index = mem3dg::getVertexClosestToEmbeddedCoordinate(
+      vpg, std::array<double, 3>{0, 0, 0},
+      std::array<bool, 3>{true, true, false});
   p.variation.isProteinVariation = false;
-  p.point.isFloatVertex = false;
 
   mem3dg::solver::System f(inputMesh, p);
   f.initialize();
