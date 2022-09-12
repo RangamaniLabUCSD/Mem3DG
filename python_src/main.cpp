@@ -1088,7 +1088,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
           if (s.center[i])
             return i;
         }
-        mem3dg_runtime_error("can not find center!")
+        mem3dg_runtime_error("can not find center!");
+        return std::size_t{0};
       },
       py::return_value_policy::copy,
       R"delim(
@@ -1575,14 +1576,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                       R"delim(
         The Point energy parameters
     )delim");
-  //   point.def_readwrite("pt", &Parameters::Point::pt,
-  //                       R"delim(
-  //           get the point
-  //       )delim");
-  //   point.def_readwrite("isFloatVertex", &Parameters::Point::isFloatVertex,
-  //                       R"delim(
-  //           whether use floating vertex option
-  //       )delim");
+  point.def_readwrite("index", &Parameters::Point::index,
+                      R"delim(
+         index of the defined center
+        )delim");
 
   py::class_<Parameters::Protein> protein(pymem3dg, "Protein",
                                           R"delim(
@@ -1813,12 +1810,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
                py::arg("radius"), py::arg("subdivision") = 0);
 
   pymem3dg.def(
-      "subdivide",
+      "linearSubdivide",
       py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                         Eigen::Matrix<double, Eigen::Dynamic, 3> &,
-                        std::size_t>(&subdivide),
-      "subdivide the mesh", py::arg("face"), py::arg("vertex"),
-      py::arg("nSub"));
+                        std::size_t>(&linearSubdivide),
+      py::arg("face"), py::arg("vertex"), py::arg("nSub"), R"delim(
+          subdivide the mesh with linear interpolation
+      )delim");
 
   pymem3dg.def(
       "loopSubdivide",
@@ -1826,27 +1824,52 @@ PYBIND11_MODULE(_core, pymem3dg) {
                         Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                         std::size_t>(&loopSubdivide),
       "subdivide the mesh in Loop scheme", py::arg("face"), py::arg("vertex"),
-      py::arg("nSub"));
+      py::arg("nSub"), R"delim(
+          subdivide the mesh in loop scheme 
+      )delim");
 
-  pymem3dg.def("readMesh", &readMesh,
-               "read vertex and face matrix from .ply file",
-               py::arg("plyName"));
-
-  pymem3dg.def("readData", py::overload_cast<std::string &>(&readData),
-               "read data in the format of matrix from .ply file",
-               py::arg("plyName"));
-  pymem3dg.def("readData",
-               py::overload_cast<std::string &, std::string &>(&readData),
-               "read data in the format of matrix from .ply file",
-               py::arg("plyName"), py::arg("elementName"));
+  pymem3dg.def("getFaceAndVertexMatrix", &getFaceAndVertexMatrix,
+               py::arg("plyName"), R"delim(
+          read face topology matrix and vertex position from .ply file 
+      )delim");
   pymem3dg.def(
-      "readData",
-      py::overload_cast<std::string &, std::string &, std::string &>(&readData),
-      "read data in the format of matrix from .ply file", py::arg("plyName"),
-      py::arg("elementName"), py::arg("propertyName"));
-
-  pymem3dg.def("processSoup", &processSoup, "process polygon soup",
-               py::arg("meshName"));
+      "getRichDataElementName", &getRichDataElementName, py::arg("plyName"),
+      R"delim(retrive all richData element name from .ply file. Namely the list of the places where data live in, such as vertex, edge or face. 
+      )delim");
+  pymem3dg.def(
+      "getRichDataPropertyName", &getRichDataPropertyName, py::arg("plyName"),
+      py::arg("elementName"),
+      R"delim(retrive all richData property name from .ply file. Namely the list of the data where data on the particular element, such as vertex, edge or face. 
+      )delim");
+  pymem3dg.def("getRichData", &getRichData, py::arg("plyName"),
+               py::arg("elementName"), py::arg("propertyName"),
+               R"delim(read richData from .ply file
+      )delim");
+  pymem3dg.def(
+      "processSoup", &processSoup, py::arg("meshName"),
+      R"delim( process soup data in .ply and return face and vertex matrices.
+      )delim");
+  pymem3dg.def(
+      "getFaceSurfacePointClosestToEmbeddedCoordinate",
+      py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
+                        const std::array<double, 3> &,
+                        const Eigen::Matrix<bool, Eigen::Dynamic, 1> &,
+                        const std::array<bool, 3> &>(
+          &getFaceSurfacePointClosestToEmbeddedCoordinate),
+      py::arg("faceMatrix"), py::arg("vertexMatrix"),
+      py::arg("embeddedCoordinate"), py::arg("filter"),
+      py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
+      R"delim(find the face surface point closest to a embedded coordinate)delim");
+  pymem3dg.def(
+      "getFaceSurfacePointClosestToEmbeddedCoordinate",
+      py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
+                        const std::array<double, 3> &,
+                        const std::array<bool, 3> &>(
+          &getFaceSurfacePointClosestToEmbeddedCoordinate),
+      py::arg("faceMatrix"), py::arg("vertexMatrix"),
+      py::arg("embeddedCoordinate"),
+      py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
+      R"delim(find the face surface point closest to a embedded coordinate)delim");
 
 #pragma endregion mesh_io
 };

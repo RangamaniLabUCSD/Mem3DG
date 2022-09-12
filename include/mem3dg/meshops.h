@@ -19,6 +19,7 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/halfedge_factories.h"
+#include "geometrycentral/surface/surface_point.h"
 #include "geometrycentral/surface/tufted_laplacian.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "geometrycentral/utilities/vector3.h"
@@ -345,8 +346,8 @@ DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
  * @return
  */
 DLL_PUBLIC inline gc::Vector3
-correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
-                                 gcs::Halfedge &firstHalfedge) {
+correspondBarycentricCoordinates(const gc::Vector3 baryCoords_,
+                                 const gcs::Halfedge &firstHalfedge) {
   std::size_t vertexInd = 0;
   gc::Vector3 baryCoords;
   for (gcs::Vertex v : firstHalfedge.face().adjacentVertices()) {
@@ -532,55 +533,6 @@ removeRotation(const Eigen::Ref<const EigenVectorX3dr> &position,
     sum += position.row(i).cross(force.row(i));
   }
   force = force.rowwise() - (sum / force.rows());
-}
-
-/**
- * @brief Find the index of the vertex closest to a embedded coordinate in
- * Euclidean distance.
- *
- * @param vertexMatrix vertex position matrix of the mesh (N x 3)
- * @param embeddedCoordinate the target embedded coordinate expressed in 3D
- * cartesian coordinate
- * @param accountedCoordinate array to identify the accounted coordinate. For
- * example, it finds closest vertex in the x-y plane when set to be {true, true,
- * false}. Defaults to {true, true, true}
- * @param filter Limit the scope of search to a subset of vertices, Defaults to all true by overloading
- */
-DLL_PUBLIC inline std::size_t getVertexClosestToEmbeddedCoordinate(
-    const EigenVectorX3dr &vertexMatrix,
-    const std::array<double, 3> &embeddedCoordinate,
-    const Eigen::Matrix<bool, Eigen::Dynamic, 1> filter,
-    const std::array<bool, 3> &accountedCoordinate = std::array<bool, 3>{
-        true, true, true}) {
-  if (filter.rows() != vertexMatrix.rows())
-    mem3dg_runtime_error(
-        "number of rows of filter does not match with the vertexMatrix!");
-  std::size_t closestVertex;
-  double shortestDistanceSq = std::numeric_limits<double>::max();
-  for (std::size_t v = 0; v < vertexMatrix.rows(); ++v) {
-    if (!filter[v])
-      continue;
-    double distanceSq = 0.0;
-    for (std::size_t i = 0; i < accountedCoordinate.size(); ++i) {
-      if (accountedCoordinate[i])
-        distanceSq += pow(vertexMatrix.row(v)[i] - embeddedCoordinate[i], 2);
-    }
-    if (distanceSq < shortestDistanceSq) {
-      shortestDistanceSq = distanceSq;
-      closestVertex = v;
-    }
-  }
-  return closestVertex;
-}
-
-DLL_PUBLIC inline std::size_t getVertexClosestToEmbeddedCoordinate(
-    const EigenVectorX3dr &vertexMatrix,
-    const std::array<double, 3> &embeddedCoordinate,
-    const std::array<bool, 3> &accountedCoordinate = std::array<bool, 3>{
-        true, true, true}) {
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> filter;
-  filter.setConstant(vertexMatrix.rows(), true);
-  return getVertexClosestToEmbeddedCoordinate(vertexMatrix, embeddedCoordinate, filter, accountedCoordinate);
 }
 
 /**

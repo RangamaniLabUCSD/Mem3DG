@@ -37,7 +37,7 @@ int main() {
 
   EigenVectorX3sr mesh;
   EigenVectorX3dr vpg;
-  std::tie(mesh, vpg) = mem3dg::readMesh(inputMesh);
+  std::tie(mesh, vpg) = mem3dg::getFaceAndVertexMatrix(inputMesh);
 
   mem3dg::solver::Parameters p;
   p.bending.Kb = 8.22e-5;

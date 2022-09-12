@@ -16,8 +16,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "mem3dg/constants.h"
-#include "mem3dg/mesh_io.h"
+#include "mem3dg/mem3dg"
 #include <geometrycentral/surface/halfedge_factories.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/meshio.h>
@@ -66,7 +65,7 @@ loopSubdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
   return std::tie(newFaces, newCoords);
 }
 
-void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
+void linearSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
                std::unique_ptr<gcs::VertexPositionGeometry> &vpg,
                std::size_t nSub) {
   for (std::size_t iter = 0; iter < nSub; ++iter) {
@@ -116,7 +115,7 @@ void subdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
 
 std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
            Eigen::Matrix<double, Eigen::Dynamic, 3>>
-subdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
+linearSubdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
           Eigen::Matrix<double, Eigen::Dynamic, 3> &coords, std::size_t nSub) {
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> newCoords;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> newFaces;
@@ -124,7 +123,7 @@ subdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
   std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   std::tie(ptrMesh, ptrVpg) =
       gcs::makeManifoldSurfaceMeshAndGeometry(coords, faces);
-  subdivide(ptrMesh, ptrVpg, nSub);
+  linearSubdivide(ptrMesh, ptrVpg, nSub);
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> meshMatrix;
   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
   meshMatrix = ptrMesh->getFaceVertexMatrix<std::size_t>();
@@ -319,7 +318,7 @@ hexagon(double R, int nSub) {
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       soup.polygons, soup.vertexCoordinates);
-  subdivide(mesh, vpg, nSub);
+  linearSubdivide(mesh, vpg, nSub);
 
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
@@ -422,7 +421,7 @@ getDiamondMatrix(double dihedral) {
 
 std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
            Eigen::Matrix<double, Eigen::Dynamic, 3>>
-readMesh(std::string &plyName) {
+getFaceAndVertexMatrix(std::string &plyName) {
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> meshMatrix;
   Eigen::Matrix<double, Eigen::Dynamic, 3> vertexMatrix;
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
@@ -435,7 +434,7 @@ readMesh(std::string &plyName) {
   return std::tie(meshMatrix, vertexMatrix);
 }
 
-Eigen::Matrix<double, Eigen::Dynamic, 1> readData(std::string &plyName,
+Eigen::Matrix<double, Eigen::Dynamic, 1> getRichData(std::string &plyName,
                                                   std::string &elementName,
                                                   std::string &propertyName) {
   // Declare pointers to mesh, geometry and richdata objects
@@ -449,8 +448,8 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> readData(std::string &plyName,
                                     .getProperty<double>(propertyName);
   if (rawData.size() != ptrRichData->plyData.getElement(elementName).count) {
     mem3dg_runtime_error("Property " + propertyName +
-                             " does not have size equal to number of " +
-                             elementName);
+                         " does not have size equal to number of " +
+                         elementName);
   }
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> property;
@@ -463,7 +462,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> readData(std::string &plyName,
   return property;
 }
 
-std::vector<std::string> readData(std::string &plyName,
+std::vector<std::string> getRichDataPropertyName(std::string &plyName,
                                   std::string &elementName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
@@ -473,7 +472,7 @@ std::vector<std::string> readData(std::string &plyName,
   return ptrRichData->plyData.getElement(elementName).getPropertyNames();
 }
 
-std::vector<std::string> readData(std::string &plyName) {
+std::vector<std::string> getRichDataElementName(std::string &plyName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -499,4 +498,181 @@ processSoup(std::string &plyName) {
   vertexMatrix = gc::EigenMap<double, 3>(ptrVpg->inputVertexPositions);
   return std::tie(meshMatrix, vertexMatrix);
 }
+
+std::size_t getVertexClosestToEmbeddedCoordinate(
+    const EigenVectorX3dr &vertexMatrix,
+    const std::array<double, 3> &embeddedCoordinate,
+    const Eigen::Matrix<bool, Eigen::Dynamic, 1> &filter,
+    const std::array<bool, 3> &accountedCoordinate) {
+  if (filter.rows() != vertexMatrix.rows())
+    mem3dg_runtime_error(
+        "number of rows of filter does not match with the vertexMatrix!");
+
+  std::size_t dimension = 0;
+  dimension = std::accumulate(accountedCoordinate.begin(),
+                              accountedCoordinate.end(), dimension);
+  if (dimension < 1)
+    mem3dg_runtime_error(
+        "number of accounted coordinate can not be less than 1!");
+  std::size_t closestVertex;
+  double shortestDistanceSq = std::numeric_limits<double>::max();
+  for (std::size_t v = 0; v < vertexMatrix.rows(); ++v) {
+    if (!filter[v])
+      continue;
+    double distanceSq = 0.0;
+    for (std::size_t i = 0; i < accountedCoordinate.size(); ++i) {
+      if (accountedCoordinate[i])
+        distanceSq += pow(vertexMatrix.row(v)[i] - embeddedCoordinate[i], 2);
+    }
+    if (distanceSq < shortestDistanceSq) {
+      shortestDistanceSq = distanceSq;
+      closestVertex = v;
+    }
+  }
+  return closestVertex;
+}
+
+std::size_t getVertexClosestToEmbeddedCoordinate(
+    const EigenVectorX3dr &vertexMatrix,
+    const std::array<double, 3> &embeddedCoordinate,
+    const std::array<bool, 3> &accountedCoordinate) {
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> filter;
+  filter.setConstant(vertexMatrix.rows(), true);
+  return getVertexClosestToEmbeddedCoordinate(vertexMatrix, embeddedCoordinate,
+                                              filter, accountedCoordinate);
+}
+
+std::tuple<std::size_t, std::array<double, 3>>
+getFaceSurfacePointClosestToEmbeddedCoordinate(
+    gcs::VertexPositionGeometry &vpg,
+    const std::array<double, 3> &embeddedCoordinate_,
+    const Eigen::Matrix<bool, Eigen::Dynamic, 1> &filter,
+    const std::array<bool, 3> &accountedCoordinate) {
+  std::size_t dimension = 0;
+  dimension = std::accumulate(accountedCoordinate.begin(),
+                              accountedCoordinate.end(), dimension);
+  if (dimension < 1)
+    mem3dg_runtime_error(
+        "number of accounted coordinate can not be less than 1!");
+
+  // initialize embedded point and the closest vertex
+  gc::Vector3 embeddedCoordinate{embeddedCoordinate_[0], embeddedCoordinate_[1],
+                                 embeddedCoordinate_[2]};
+  gcs::Vertex closestVertex =
+      vpg.mesh.vertex(getVertexClosestToEmbeddedCoordinate(
+          toMatrix(vpg.vertexPositions), embeddedCoordinate_, filter,
+          accountedCoordinate));
+  std::size_t face;
+  std::array<double, 3> coord;
+
+  if (dimension == 1) {
+    face = closestVertex.halfedge().face().getIndex();
+    gc::Vector3 corner = correspondBarycentricCoordinates(
+        gc::Vector3{1, 0, 0}, closestVertex.halfedge());
+    coord = {corner.x, corner.y, corner.z};
+    return std::tie(face, coord);
+  }
+
+  gc::Vector3 projectionNormal{0, 0, 0};
+  std::array<std::size_t, 2> directedPlane;
+  if (dimension == 2) {
+    for (std::size_t i = 0; i < accountedCoordinate.size(); ++i) {
+      if (!accountedCoordinate[i]) {
+        projectionNormal[i] = 1;
+        directedPlane = {i % 3, (i + 1) % 3};
+      }
+    }
+  }
+
+  double shortestDistance = std::numeric_limits<double>::max();
+  // loop through faces at the neighborhood
+  for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
+    if (!he.isInterior())
+      continue;
+
+    if (dimension == 3) {
+      projectionNormal = vpg.faceNormal(he.face());
+      directedPlane = {0, 1};
+      double max = abs(projectionNormal.z);
+      for (std::size_t i = 1; i < 3; ++i) {
+        if (abs(projectionNormal[i]) > max) {
+          max = abs(projectionNormal[i]);
+          directedPlane = {i, (i + 1) % 3};
+        }
+      }
+    }
+
+    // project the embedded point
+    gc::Vector3 projectedEmbeddedCoordinate =
+        embeddedCoordinate -
+        gc::dot(embeddedCoordinate - vpg.vertexPositions[closestVertex],
+                projectionNormal) *
+            projectionNormal;
+
+    // determine the best behaving choice to do inverse barycentric map
+    gc::Vector2
+        faceVertexOnDirectedPlane1 =
+            gc::Vector2{vpg.vertexPositions[he.vertex()][directedPlane[0]],
+                        vpg.vertexPositions[he.vertex()][directedPlane[1]]},
+        faceVertexOnDirectedPlane2 =
+            gc::Vector2{
+                vpg.vertexPositions[he.next().vertex()][directedPlane[0]],
+                vpg.vertexPositions[he.next().vertex()][directedPlane[1]]},
+        faceVertexOnDirectedPlane3 =
+            gc::Vector2{vpg.vertexPositions[he.next().next().vertex()]
+                                           [directedPlane[0]],
+                        vpg.vertexPositions[he.next().next().vertex()]
+                                           [directedPlane[1]]},
+        projectedEmbeddedCoordinateOnDirectedPlane =
+            gc::Vector2{projectedEmbeddedCoordinate[directedPlane[0]],
+                        projectedEmbeddedCoordinate[directedPlane[1]]};
+    gc::Vector3 candidateCoord = cartesianToBarycentric(
+        faceVertexOnDirectedPlane1, faceVertexOnDirectedPlane2,
+        faceVertexOnDirectedPlane3, projectedEmbeddedCoordinateOnDirectedPlane);
+
+    // find the closest surface point
+    candidateCoord = gc::componentwiseMax(candidateCoord, gc::Vector3{0, 0, 0});
+    candidateCoord /= gc::sum(candidateCoord);
+    candidateCoord = correspondBarycentricCoordinates(candidateCoord, he);
+    gcs::SurfacePoint candidate(he.face(), candidateCoord);
+    double distance =
+        (embeddedCoordinate - candidate.interpolate(vpg.vertexPositions))
+            .norm();
+    if (distance < shortestDistance) {
+      face = he.face().getIndex();
+      coord = {
+          candidateCoord.x, candidateCoord.y,
+          candidateCoord.z}; // note that this is barycentric, not cartesian
+      shortestDistance = distance;
+    }
+  }
+  return std::tie(face, coord);
+}
+
+DLL_PUBLIC std::tuple<std::size_t, std::array<double, 3>>
+getFaceSurfacePointClosestToEmbeddedCoordinate(
+    const EigenVectorX3sr &faceMatrix, const EigenVectorX3dr &vertexMatrix,
+    const std::array<double, 3> &embeddedCoordinate,
+    const Eigen::Matrix<bool, Eigen::Dynamic, 1> &filter,
+    const std::array<bool, 3> &accountedCoordinate) {
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::tie(mesh, vpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(vertexMatrix, faceMatrix);
+
+  return getFaceSurfacePointClosestToEmbeddedCoordinate(
+      *vpg, embeddedCoordinate, filter, accountedCoordinate);
+}
+DLL_PUBLIC std::tuple<std::size_t, std::array<double, 3>>
+getFaceSurfacePointClosestToEmbeddedCoordinate(
+    const EigenVectorX3sr &faceMatrix, const EigenVectorX3dr &vertexMatrix,
+    const std::array<double, 3> &embeddedCoordinate,
+    const std::array<bool, 3> &accountedCoordinate) {
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> filter;
+  filter.setConstant(vertexMatrix.rows(), true);
+  return getFaceSurfacePointClosestToEmbeddedCoordinate(
+      faceMatrix, vertexMatrix, embeddedCoordinate, filter,
+      accountedCoordinate);
+}
+
 } // namespace mem3dg
