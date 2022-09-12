@@ -12,6 +12,7 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
 
+from typing_extensions import assert_type
 from numpy import polyfit
 import pytest
 import pymem3dg as dg
@@ -19,6 +20,9 @@ import polyscope
 import pymem3dg.util as dg_util
 import pymem3dg.visual as dg_vis
 import matplotlib.pyplot as plt
+from functools import partial
+import pymem3dg.broilerplate as dg_broil
+import numpy as np
 
 
 class TestLoadCheck(object):
@@ -48,12 +52,11 @@ class TestExampleIntegration(object):
         "velocity": velocity,
     }
 
-    def test_shape_and_protein_variation(self):
-        def point(vertexPositions, vertexDualAreas, time, geodesicDistances):
-            direction = dg_util.rowwiseNormalize(vertexPositions)
-            magnitude = 0.005 * dg_util.gaussianDistribution(geodesicDistances, 0, 0.02)
-            return dg_util.rowwiseScaling(magnitude, direction)
+    polyscope.init()
+    dg_vis.polyscopeStyle()
 
+    def test_shape_and_protein_variation(self):
+        """test simulation with both shape and protein variation"""
         p = dg.Parameters()
         p.variation.isProteinVariation = True
         p.variation.isShapeVariation = True
@@ -66,8 +69,10 @@ class TestExampleIntegration(object):
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
         p.spring.Kst = 1
-        p.point.pt = [0, 0, 10]
-        p.external.setForm(point)
+        p.point.index = 0
+        p.external.setForm(
+            partial(dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02)
+        )
         arguments = self.initialConditions
         arguments["parameters"] = p
         g = dg.System(**arguments)
@@ -92,11 +97,11 @@ class TestExampleIntegration(object):
         return p
 
     def test_shape_variation(self):
-        def point(vertexPositions, vertexDualAreas, time, geodesicDistances):
-            direction = dg_util.rowwiseNormalize(vertexPositions)
-            magnitude = 0.005 * dg_util.gaussianDistribution(geodesicDistances, 0, 0.02)
-            return dg_util.rowwiseScaling(magnitude, direction)
+        """test simulation with only shape variation
 
+        Returns:
+            pymem3dg.Parameters: parameter used in integration
+        """
         p = dg.Parameters()
         p.variation.isShapeVariation = True
         p.variation.isProteinVariation = False
@@ -107,8 +112,10 @@ class TestExampleIntegration(object):
         p.osmotic.isConstantOsmoticPressure = True
         p.osmotic.Kv = 0.01
         p.spring.Kst = 1
-        p.point.pt = [0, 0, 10]
-        p.external.setForm(point)
+        p.point.index = 0
+        p.external.setForm(
+            partial(dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02)
+        )
         arguments = self.initialConditions
         arguments["parameters"] = p
         g = dg.System(**arguments)
@@ -128,6 +135,11 @@ class TestExampleIntegration(object):
         return p
 
     def test_protein_variation(self):
+        """test simulation with only protein variation
+
+        Returns:
+            pymem3dg.Parameters: parameter used in integration
+        """
         p = dg.Parameters()
         p.variation.isShapeVariation = False
         p.variation.isProteinVariation = True
@@ -155,11 +167,14 @@ class TestExampleIntegration(object):
         return p
 
     def test_nc_visual(self):
+        """test runs for the convenience function used for visualizing .nc trajectory file"""
         p = self.test_shape_and_protein_variation()
         dg_vis.animate(
             trajNc=self.trajFile,
             parameters=p,
-            frames=[0, 4, 5]
+            showBasics=True,
+            showForce=True,
+            showPotential=True,
         )
         _, ax = plt.subplots(4)
         dg_vis.plotProteinDensity(ax[0], self.trajFile, p)
@@ -215,6 +230,7 @@ class TestExampleIntegration(object):
         # plt.show()
 
     def test_ply_visual(self):
+        """test runs for the visualization of .ply file"""
         self.test_shape_and_protein_variation()
         dg_vis.visualizePly(
             self.plyFile,
@@ -244,4 +260,57 @@ class TestExampleIntegration(object):
             "aggregationPotential",
             "chemicalPotential",
         )
+        # polyscope.show()
+
+    def test_mesh_generation(self):
+        """test mesh generation functions 
+        """
+        face, vertex = dg.getTetrahedron()
+        face, vertex = dg.getDiamond(dihedral=np.pi / 3)
+        face, vertex = dg.getHexagon(radius=1, subdivision=3)
+        face, vertex = dg.getCylinder(
+            radius=1, radialSubdivision=10, axialSubdivision=10
+        )
+        face, vertex = dg.getIcosphere(radius=1, subdivision=3)
+        face_, vertex_ = dg.linearSubdivide(face=face, vertex=vertex, nSub=2)
+        face_, vertex_ = dg.loopSubdivide(face=face, vertex=vertex, nSub=3)
+
+    def test_mesh_reading(self):
+        """test mesh reading function 
+        """
+        self.test_shape_and_protein_variation()  # generate .ply file for testing
+        face, vertex = dg.getFaceAndVertexMatrix(self.plyFile)
+        face, vertex = dg.processSoup(self.plyFile)
+        elements = dg.getRichDataElementName(self.plyFile)
+        properties = dg.getRichDataPropertyName(self.plyFile, "vertex")
+        H = dg.getRichData(self.plyFile, "vertex", "meanCurvature")
+
+    def test_mesh_marking(self):
+        """test mesh marking functions
+        """
+        face, vertex = dg.getIcosphere(radius=1, subdivision=3)
+        faceData = np.zeros(np.shape(face)[0])
+        polyscope.remove_all_structures()
+        ps_mesh = polyscope.register_surface_mesh("my mesh", vertex, face)
+        dg_vis.setPolyscopePermutations(psmesh=ps_mesh, vertex=vertex, face=face)
+
+        def test_locations(embedded_point, accountedCoordinate):
+            centerFace, centerBary = dg.getFaceSurfacePointClosestToEmbeddedCoordinate(
+                faceMatrix=face,
+                vertexMatrix=vertex,
+                embeddedCoordinate=embedded_point,
+                accountedCoordinate=accountedCoordinate,
+            )
+            ps_point = polyscope.register_point_cloud(
+                f"cloud{embedded_point}", np.array([embedded_point]), radius=0.1
+            )
+            faceData[centerFace] = 1
+            ps_mesh.add_scalar_quantity(
+                "center", faceData, defined_on="faces", enabled=True
+            )
+
+        test_locations([2, 2, 2], [True, True, True])
+        test_locations([2, 2, -2], [True, True, True])
+        test_locations([0, 0, -2], [True, True, True])
+        test_locations([-1, -4, -2], [True, True, True])
         # polyscope.show()

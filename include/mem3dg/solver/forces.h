@@ -49,7 +49,7 @@ namespace mem3dg {
 
 namespace solver {
 
-DLL_PUBLIC struct Forces {
+struct Forces {
   /// Cached mesh of interest
   gcs::ManifoldSurfaceMesh &mesh;
   /// Embedding and other geometric details
@@ -160,8 +160,8 @@ DLL_PUBLIC struct Forces {
   gcs::VertexData<double> proteinMask;
 
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
-      : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0), conservativeForce(mesh, 0),
-        mechanicalForceVec(mesh, {0, 0, 0}),
+      : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
+        conservativeForce(mesh, 0), mechanicalForceVec(mesh, {0, 0, 0}),
         conservativeForceVec(mesh, {0, 0, 0}),
         spontaneousCurvatureForceVec(mesh, {0, 0, 0}),
         areaDifferenceForceVec(mesh, {0, 0, 0}),
@@ -186,11 +186,12 @@ DLL_PUBLIC struct Forces {
         springForceVec(mesh, {0, 0, 0}), edgeSpringForceVec(mesh, {0, 0, 0}),
         faceSpringForceVec(mesh, {0, 0, 0}), lcrSpringForceVec(mesh, {0, 0, 0}),
         stochasticForceVec(mesh, {0, 0, 0}), dampingForceVec(mesh, {0, 0, 0}),
-        interiorPenaltyPotential(mesh, 0), spontaneousCurvaturePotential(mesh, 0),
+        interiorPenaltyPotential(mesh, 0),
+        spontaneousCurvaturePotential(mesh, 0),
         deviatoricCurvaturePotential(mesh, 0), adsorptionPotential(mesh, 0),
         aggregationPotential(mesh, 0), entropyPotential(mesh, 0),
-        dirichletPotential(mesh, 0), chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
-        proteinMask(mesh, 1) {}
+        dirichletPotential(mesh, 0), chemicalPotential(mesh, 0),
+        forceMask(mesh, {1.0, 1.0, 1.0}), proteinMask(mesh, 1) {}
 
   ~Forces() {}
 

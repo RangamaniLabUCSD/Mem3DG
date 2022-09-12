@@ -51,7 +51,6 @@ def matplotlibStyle(s=6, m=8, l=10):
     plt.rc("figure", titlesize=l)  # fontsize of the figure title
     plt.rc("pdf", fonttype=42)
 
-
 def polyscopeStyle(setLengthScale=False):
     """Helper to set polyscope style
 
@@ -61,7 +60,7 @@ def polyscopeStyle(setLengthScale=False):
     ps.set_transparency_mode("pretty")
     ps.set_up_dir("z_up")
     ps.set_ground_plane_mode("none")
-    ps.set_autocenter_structures(True)
+    ps.set_autocenter_structures(False)
     ps.set_autoscale_structures(False)
     ps.set_view_projection_mode("orthographic")
     ps.set_give_focus_on_show(True)
@@ -150,14 +149,14 @@ def visualizePly(plyFile: str, *vertexData: str):
         plyFile (str): .ply file
         vertexData (str): variable number of arbitrary keyword arguments to add visualizing mesh data
     """
-    face, vertex = dg.readMesh(plyFile)
+    face, vertex = dg.getFaceAndVertexMatrix(plyFile)
     # print(dg.readData(ply))
     # print(dg.readData(ply, 'vertex'))
     ps.init()
     polyscopeStyle()
     ps_mesh = ps.register_surface_mesh("mesh", vertex, face, smooth_shade=True)
     for name in vertexData:
-        data = dg.readData(plyFile, "vertex", name)
+        data = dg.getRichData(plyFile, "vertex", name)
         ps_mesh.add_scalar_quantity(name, data, enabled=True)
 
 
@@ -789,14 +788,16 @@ def interlaceImages(fileList, videoName):
     # clip.write_videofile("video.mp4", fps=24)
     clip.write_gif(videoName + ".gif")
 
-
-def setPolyscopePermutations(psmesh, polyscopePermutations):
+def setPolyscopePermutations(psmesh, face, vertex):
     """set polyscope permutation convention
 
     Args:
         psmesh (polysocpe.SurfaceMesh): polyscope SurfaceMesh instance
-        polyscopePermutations (np.ndarray): polyscope permutation convention
+        face (np.ndarray): face topology matrix
+        vertex (np.ndarray): vertex position matrix
     """
+    system = dg.System(face, vertex)
+    polyscopePermutations = system.getPolyscopePermutations()
     psmesh.set_all_permutations(
         vertex_perm=np.array(polyscopePermutations[0][0]),
         vertex_perm_size=polyscopePermutations[0][1],
@@ -815,8 +816,11 @@ def animate(
     trajNc: str,
     parameters: dg.Parameters = None,
     frames: list = None,
+    showBasics = False, 
+    showForce = False, 
+    showPotential = False,
     geodesicDistance=True,
-    centerTracker: bool = True,
+    center: bool = True,
     meanCurvature: bool = True,
     edgeLength: bool = True,
     vertexDualArea: bool = True,
@@ -846,7 +850,7 @@ def animate(
         trajNc (str): netcdf trajectory file name
         parameters (pymem3dg.Parameters, optional): pymem3dg Parameters instance
         geodesicDistance (bool, optional): optional data to visualize. Defaults to True
-        centerTracker (bool, optional): optional data to visualize. Defaults to True
+        center (bool, optional): optional data to visualize. Defaults to True
         meanCurvature (bool, optional): optional data to visualize. Defaults to True
         edgeLength (bool, optional): optional data to visualize. Defaults to True
         vertexDualArea (bool, optional): optional data to visualize. Defaults to True
@@ -883,9 +887,6 @@ def animate(
     isFluxForm = False
     isPointwiseValue = False
     isForceVec = False
-    showForce = False
-    showPotential = False
-    showBasics = False
     recordingDir = ""
 
     ps.init()
@@ -917,7 +918,7 @@ def animate(
             system = dg.System(trajNc, frame)
             system.initialize(nMutation=0, ifMute=True)
         polyscopePermutations = system.getPolyscopePermutations()
-        setPolyscopePermutations(psmesh, polyscopePermutations)
+        setPolyscopePermutations(psmesh, face, vertex)
 
         # Add Quantities
         vertexDualAreas = system.getVertexDualAreas()
@@ -940,8 +941,10 @@ def animate(
                     enabled=True,
                     cmap="viridis",
                 )
-            if centerTracker:
-                psmesh.add_scalar_quantity("centerTracker", system.getCenterTracker())
+            if center:
+                center_ = np.zeros(np.shape(vertex)[0])
+                center_[system.getCenter()] = 1
+                psmesh.add_scalar_quantity("center", center_)
             if meanCurvature:
                 meanCurvature_ = system.getVertexMeanCurvatures()
                 if isPointwiseValue:

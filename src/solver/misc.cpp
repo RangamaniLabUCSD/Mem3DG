@@ -20,33 +20,17 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-// void System::testConservativeForcing(const double timeStep) {
-//   // initialize variables needed for testing
-//   computeTotalEnergy();
-//   computeConservativeForcing();
-//   const Energy previousE{energy};
-//   const EigenVectorX3dr previousR = toMatrix(vpg->inputVertexPositions);
-//   const EigenVectorX1d previousPhi = proteinDensity.raw();
-
-//   // testing
-//   testConservativeForcing(timeStep, previousR, previousPhi, previousE);
-
-//   // recover the unperturbed system
-//   toMatrix(vpg->inputVertexPositions) = previousR;
-//   proteinDensity.raw() = previousPhi;
-//   updateConfigurations();
-//   computeTotalEnergy();
-//   computeConservativeForcing();
-// }
-
 EigenVectorX1d System::computeGeodesicDistance() {
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   gc::Vertex centerVertex;
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {              
     if (center[i])
       return heatSolver.computeDistance(mesh->vertex(i)).raw();
   }
-  mem3dg_runtime_error("can not find center!")
+  mem3dg_runtime_error("can not find center!");
+  EigenVectorX1d foo; // dummy return 
+  foo.setConstant(1, 0);
+  return foo;
 }
 
 void System::prescribeProteinDensityDistribution() {
@@ -635,173 +619,6 @@ double System::inferTargetSurfaceArea() {
   }
   return targetArea;
 }
-
-// void System::findVertexCenter(double range) {
-//   if (parameters.point.pt.size() == 1) {
-//     // Assign surface point as the indexed vertex
-//     center =
-//         gc::SurfacePoint(mesh->vertex((std::size_t)parameters.point.pt[0]));
-
-//   } else if (parameters.point.pt.size() == 2 ||
-//              parameters.point.pt.size() == 3) {
-//     // Find the cloest vertex to the point in the x-y plane or in the space
-//     center =
-//     gc::SurfacePoint(mesh->vertex(getVertexClosestToEmbeddedCoordinate(
-//         *mesh, parameters.point.pt, geodesicDistance.raw(), range)));
-//   } else {
-//     mem3dg_runtime_error("parameters.point.pt type not supported!");
-//   }
-
-//   center.fill(false);
-//   center[center.vertex] = true;
-//   int num = center.raw().cast<int>().sum();
-//   if (num == 0) {
-//     mem3dg_runtime_error("Surface point is not updated!");
-//   } else if (num > 1) {
-//     mem3dg_runtime_error("there is no "
-//                          "unique/existing center!");
-//   }
-// }
-
-// void System::findFloatCenter(double range) {
-//   if (parameters.point.pt.size() == 1) {
-//     throw std::logic_error(
-//         "To have Floating vertex, one must specify vertex by coordinate!");
-//   } else if (parameters.point.pt.size() == 2) {
-//     // Find the cloest vertex to the point in the x-y plane
-//     gcs::Vertex closestVertex =
-//         mesh->vertex(getVertexClosestToEmbeddedCoordinate(
-//             *mesh, parameters.point.pt, geodesicDistance.raw(), range));
-//     double shortestDistance = 1e18;
-//     // loop over every faces around the vertex
-//     for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
-//       if (he.isInterior()) {
-//         // specify vertex coordinates and the target coordinate on the face
-//         gc::Vector2 v1{vpg->inputVertexPositions[he.vertex()].x,
-//                        vpg->inputVertexPositions[he.vertex()].y};
-//         gc::Vector2 v2{vpg->inputVertexPositions[he.next().vertex()].x,
-//                        vpg->inputVertexPositions[he.next().vertex()].y};
-//         gc::Vector2
-//         v3{vpg->inputVertexPositions[he.next().next().vertex()].x,
-//                        vpg->inputVertexPositions[he.next().next().vertex()].y};
-//         gc::Vector2 v{parameters.point.pt[0], parameters.point.pt[1]};
-//         // find the inverse barycentric mapping based on the cartesian
-//         // vertex coordinates
-//         gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
-
-//         if (baryCoords_.x > 0 && baryCoords_.y > 0 &&
-//             baryCoords_.z > 0) { // A. set the surface point when the point
-//                                  // lays within the triangle
-//           center = gcs::SurfacePoint(
-//               he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-//           break;
-//         } else { // B. avoid the floating point comparision, find the best
-//                  // by looping over the whole fan
-//           baryCoords_ = gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0,
-//           0}); baryCoords_ /= gc::sum(baryCoords_); gcs::SurfacePoint
-//           someSurfacePoint(
-//               he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-//           double distance =
-//               (gc::Vector2{parameters.point.pt[0], parameters.point.pt[1]} -
-//                gc::Vector2{
-//                    someSurfacePoint.interpolate(vpg->inputVertexPositions).x,
-//                    someSurfacePoint.interpolate(vpg->inputVertexPositions).y})
-//                   .norm();
-//           if (distance < shortestDistance) {
-//             center = someSurfacePoint;
-//             shortestDistance = distance;
-//           }
-//         }
-//       }
-//     }
-//   } else if (parameters.point.pt.size() == 3) {
-//     // initialize embedded point and the closest vertex
-//     gc::Vector3 embeddedPoint{parameters.point.pt[0], parameters.point.pt[1],
-//                               parameters.point.pt[2]};
-//     gcs::Vertex closestVertex =
-//         mesh->vertex(getVertexClosestToEmbeddedCoordinate(
-//             *mesh, parameters.point.pt, geodesicDistance.raw(), range));
-//     gc::Vector3 vertexToPoint =
-//         embeddedPoint - vpg->inputVertexPositions[closestVertex];
-//     // initialize the surface point as the closest vertex
-//     // center = gc::SurfacePoint(closestVertex);
-//     // double shortestDistance = vertexToPoint.norm();
-//     double shortestDistance = 1e18;
-//     // loop over every faces around the vertex
-//     for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
-//       if (he.isInterior()) {
-//         // project the embedded point onto the face
-//         auto faceNormal = vpg->faceNormal(he.face());
-//         gc::Vector3 projectedEmbeddedPoint =
-//             embeddedPoint - gc::dot(vertexToPoint, faceNormal) * faceNormal;
-//         // determine the choice of coordinates used for inverse
-//         // barycentric mapping based on orientation of the face
-//         gc::Vector2 v1, v2, v3, v;
-//         if (abs(faceNormal.z) > std::sqrt(3) / 3) {
-//           v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].x,
-//                            vpg->inputVertexPositions[he.vertex()].y};
-//           v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].x,
-//                            vpg->inputVertexPositions[he.next().vertex()].y};
-//           v3 = gc::Vector2{
-//               vpg->inputVertexPositions[he.next().next().vertex()].x,
-//               vpg->inputVertexPositions[he.next().next().vertex()].y};
-//           v = gc::Vector2{projectedEmbeddedPoint.x,
-//           projectedEmbeddedPoint.y};
-//         } else if (abs(faceNormal.x) > std::sqrt(3) / 3) {
-//           v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].y,
-//                            vpg->inputVertexPositions[he.vertex()].z};
-//           v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].y,
-//                            vpg->inputVertexPositions[he.next().vertex()].z};
-//           v3 = gc::Vector2{
-//               vpg->inputVertexPositions[he.next().next().vertex()].y,
-//               vpg->inputVertexPositions[he.next().next().vertex()].z};
-//           v = gc::Vector2{projectedEmbeddedPoint.y,
-//           projectedEmbeddedPoint.z};
-//         } else {
-//           v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].z,
-//                            vpg->inputVertexPositions[he.vertex()].x};
-//           v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].z,
-//                            vpg->inputVertexPositions[he.next().vertex()].x};
-//           v3 = gc::Vector2{
-//               vpg->inputVertexPositions[he.next().next().vertex()].z,
-//               vpg->inputVertexPositions[he.next().next().vertex()].x};
-//           v = gc::Vector2{projectedEmbeddedPoint.z,
-//           projectedEmbeddedPoint.x};
-//         }
-//         // find the inverse barycentric mapping based on the cartesian
-//         // vertex coordinates
-//         gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
-//         // since might not find the perfect reflecting face, best we could
-//         // do within each triangle
-//         baryCoords_ = gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0,
-//         0}); baryCoords_ /= gc::sum(baryCoords_); gcs::SurfacePoint
-//         someSurfacePoint(
-//             he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-//         // compute optimum distance and set surface point
-//         double distance = (embeddedPoint - someSurfacePoint.interpolate(
-//                                                vpg->inputVertexPositions))
-//                               .norm();
-//         if (distance < shortestDistance) {
-//           center = someSurfacePoint;
-//           shortestDistance = distance;
-//         }
-//       }
-//     }
-//   }
-
-//   // mark three vertex on the face
-//   center.fill(false);
-//   center[center.face.halfedge().vertex()] = true;
-//   center[center.face.halfedge().next().vertex()] = true;
-//   center[center.face.halfedge().next().next().vertex()] = true;
-//   int num = center.raw().cast<int>().sum();
-//   if (num == 0) {
-//     mem3dg_runtime_error("Surface point is not updated!");
-//   } else if (num > 3) {
-//     mem3dg_runtime_error("there is no "
-//                          "unique/existing center!");
-//   }
-// }
 
 } // namespace solver
 } // namespace mem3dg

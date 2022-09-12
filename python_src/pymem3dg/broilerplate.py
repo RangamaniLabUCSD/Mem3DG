@@ -37,3 +37,29 @@ def prescribeGeodesicPoteinDensityDistribution(
     geodesicDistance: npt.NDArray[np.float64],
 ):
     return dg_util.tanhDistribution(x=geodesicDistance, sharpness=10, center=1)
+
+
+def prescribeGaussianPointForce(
+    vertexPositions: npt.NDArray[np.float64],
+    vertexDualAreas: list,
+    time: float,
+    geodesicDistances: list,
+    Kf: float, 
+    std: float, 
+):
+    """generate external on a single vertex following a Gaussian distribution of geodesic distance
+
+    Args:
+        vertexPositions (npt.NDArray[np.float64]): vertex position matrix of the mesh
+        vertexDualAreas (list): vertex dual area. Unused 
+        time (float): time of the simulation. Unused 
+        geodesicDistances (list): geodesic distance centered at the vertex
+        Kf (float): force magnitude coefficient
+        std (float): standard deviation of the Gaussian distribution
+
+    Returns:
+        (npt.NDArray[np.float64]): vertex force matrix
+    """
+    direction = dg_util.rowwiseNormalize(vertexPositions)
+    magnitude = Kf * dg_util.gaussianDistribution(geodesicDistances, 0, std)
+    return dg_util.rowwiseScaling(magnitude, direction)
