@@ -34,7 +34,7 @@ jobs:
         id: pyexe
         run: |
           python3 --version
-          python3 -m pip install pytest
+          python3 -m pip install pytest typing-extensions
           py_exe_path=$(which python3)
           echo ::set-output name=path::$py_exe_path
 
@@ -70,7 +70,7 @@ jobs:
         id: pyexe
         run: |
           python3 --version
-          python3 -m pip install pytest
+          python3 -m pip install pytest typing-extensions
           py_exe_path=$(which python3)
           echo ::set-output name=path::$py_exe_path
       
@@ -105,7 +105,7 @@ jobs:
         id: pyexe
         run: |
           python --version
-          python -m pip install pytest
+          python -m pip install pytest typing-extensions
           py_exe_path=$(which python)
           echo ::set-output name=path::$py_exe_path
 
