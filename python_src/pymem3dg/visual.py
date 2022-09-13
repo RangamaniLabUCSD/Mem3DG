@@ -16,7 +16,7 @@ import nntplib
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-# import seaborn as sns
+import seaborn as sns
 
 import netCDF4 as nc
 

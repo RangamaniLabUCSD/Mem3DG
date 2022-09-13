@@ -11,6 +11,7 @@
 #     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
+from typing_extensions import assert_type
 import pytest
 import pymem3dg as dg
 import polyscope
@@ -61,8 +62,7 @@ class TestExampleIntegration(object):
         p.bending.H0c = 10
         p.tension.isConstantSurfaceTension = True
         p.tension.Ksg = 0.5
-        p.osmotic.isConstantOsmoticPressure = True
-        p.osmotic.Kv = 0.01
+        p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
         p.spring.Kst = 1
@@ -106,8 +106,7 @@ class TestExampleIntegration(object):
         p.bending.H0c = 10
         p.tension.isConstantSurfaceTension = True
         p.tension.Ksg = 0.5
-        p.osmotic.isConstantOsmoticPressure = True
-        p.osmotic.Kv = 0.01
+        p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         p.spring.Kst = 1
         p.point.index = 0
         p.external.setForm(
@@ -310,14 +309,15 @@ class TestExampleIntegration(object):
         # polyscope.show()
 
     def test_parameter_loading(self):
-        """test broiler plate example form functions used in parameter loading
-        """
+        """test broiler plate example form functions used in parameter loading"""
         face, vertex = dg.getIcosphere(radius=1, subdivision=3)
         p = dg.Parameters()
         p.point.index = 0
         system = dg.System(face, vertex, p)
         system.initialize()
         system.computeGeodesicDistance()
+
+        # protein
         system.parameters.protein.setForm(
             partial(
                 dg_broil.prescribeGeodesicPoteinDensityDistribution,
@@ -326,6 +326,8 @@ class TestExampleIntegration(object):
             )
         )
         system.prescribeProteinDensityDistribution()
+
+        # external force
         system.parameters.external.setForm(
             partial(dg_broil.prescribeGaussianPointForce, Kf=0.01, std=1)
         )
@@ -334,3 +336,8 @@ class TestExampleIntegration(object):
             partial(dg_broil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10)
         )
         system.prescribeExternalForce()
+        
+        # osmotic pressure 
+        system.parameters.external.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
+        system.initialize()
+        assert(system.getForces().getOsmoticPressure() == 0.01)

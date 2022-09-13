@@ -329,10 +329,10 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << "t: " << system.time << ", "
         << "n: " << frame << ", "
         << "isSmooth: " << system.isSmooth << "\n"
-        << "A, At: " << system.surfaceArea << ", "
-        << system.parameters.tension.At << ", "
-        << "V, Vt: " << system.volume << ", " << system.parameters.osmotic.Vt
-        << ", "
+        << "A, tension: " << system.surfaceArea << ", "
+        << system.forces.surfaceTension << ", "
+        << "V, pressure: " << system.volume << ", "
+        << system.forces.osmoticPressure << ", "
         << "h: " << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff()
         << "\n"
         << "E_total: " << system.energy.totalEnergy << "\n"
