@@ -748,6 +748,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
                             R"delim(
           minimum edge length 
       )delim");
+  meshmutator.def_readwrite("maximumEdgeLength",
+                            &MeshProcessor::MeshMutator::maximumEdgeLength,
+                            R"delim(
+          maximum edge length 
+      )delim");
 
   /**
    * @brief collapsing criterion
@@ -1137,7 +1142,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
               prescribe the External Force
           )delim");
 
-
   /**
    * @brief Method: Energy computation
    */
@@ -1495,6 +1499,22 @@ PYBIND11_MODULE(_core, pymem3dg) {
                       R"delim(
          index of the defined center
         )delim");
+  point.def(
+      "setForm",
+      [](Parameters::Point &point,
+         std::function<EigenVectorX1d(EigenVectorX3sr, EigenVectorX3dr,
+                                      EigenVectorX1d)> &centerFunction) {
+        point.form = centerFunction;
+      },
+      R"delim(
+          functional to set the center of the mesh 
+        args: 
+            faceMatrix (npt.NDarray[int64])
+            vertexMatrix (npt.NDarray[float64])
+            geodesicDistance (list)
+        return: 
+            center (bool list)
+      )delim");
 
   py::class_<Parameters::Protein> protein(pymem3dg, "Protein",
                                           R"delim(

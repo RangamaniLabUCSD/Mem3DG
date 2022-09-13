@@ -62,6 +62,10 @@ void MeshProcessor::MeshMutator::summarizeStatus() {
 
 bool MeshProcessor::MeshMutator::ifCollapse(
     const gc::Edge e, const gcs::VertexPositionGeometry &vpg) {
+  if (vpg.edgeLength(e) >= maximumEdgeLength) {
+    return false;
+  }
+
   gcs::Halfedge he = e.halfedge();
   bool isBoundary = e.isBoundary();
   if (!he.isInterior()) {
