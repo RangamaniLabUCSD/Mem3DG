@@ -18,6 +18,7 @@ import numpy.typing as npt
 import pymem3dg.util as dg_util
 import copy
 
+
 def setDefaultMeshProcessor(system: dg.System, lengthScale: float):
     """a commonly used mesh processor
 
@@ -40,6 +41,29 @@ def setDefaultMeshProcessor(system: dg.System, lengthScale: float):
     system.meshProcessor.meshMutator.targetFaceArea = 0.0003 * lengthScale**2
     system.meshProcessor.meshMutator.isSmoothenMesh = True
 
+
+def constantOsmoticPressureModel(volume, pressure):
+    return pressure, -pressure * volume
+
+
+def preferredVolumeOsmoticPressureModel(volume, strength, target_volume):
+    volume_difference = volume - target_volume
+    pressure = -(strength * volume_difference / target_volume / target_volume)
+    return pressure, -pressure * volume_difference / 2
+
+
+def ambientSolutionOsmoticPressureModel(
+    volume, enclosed_solute, ambient_concentration, temperature
+):
+    kBoltzmann = 1.380649e-8 # Boltzmann constant (nanonewton * micrometer / Kelvin)
+    i = 1.0 # van't Hoff index
+    N = 6.02214076e5 # Avogadro constant (/atto-mol)
+    R = kBoltzmann * N # ideal gas constant (nanonewton * micrometer / Kelvin / atto-mol)
+    pressure = i * R * temperature * (enclosed_solute / volume - ambient_concentration)
+    
+    ratio = ambient_concentration * volume / enclosed_solute;
+    energy = i * R * temperature * enclosed_solute * (ratio - np.log(ratio) - 1);
+    return pressure, energy
 
 def prescribeGeodesicPoteinDensityDistribution(
     time: float,

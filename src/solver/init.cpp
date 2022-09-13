@@ -169,18 +169,20 @@ void System::updateConfigurations() {
   volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
 
   // update global osmotic pressure
-  if (parameters.osmotic.isPreferredVolume) {
-    forces.osmoticPressure =
-        -(parameters.osmotic.Kv * (volume - parameters.osmotic.Vt) /
-              parameters.osmotic.Vt / parameters.osmotic.Vt +
-          parameters.osmotic.lambdaV);
-  } else if (parameters.osmotic.isConstantOsmoticPressure) {
-    forces.osmoticPressure = parameters.osmotic.Kv;
-  } else {
-    forces.osmoticPressure =
-        mem3dg::constants::i * mem3dg::constants::R * parameters.temperature *
-        (parameters.osmotic.n / volume - parameters.osmotic.cam);
-  }
+  // if (parameters.osmotic.isPreferredVolume) {
+  //   forces.osmoticPressure =
+  //       -(parameters.osmotic.Kv * (volume - parameters.osmotic.Vt) /
+  //             parameters.osmotic.Vt / parameters.osmotic.Vt +
+  //         parameters.osmotic.lambdaV);
+  // } else if (parameters.osmotic.isConstantOsmoticPressure) {
+  //   forces.osmoticPressure = parameters.osmotic.Kv;
+  // } else {
+  //   forces.osmoticPressure =
+  //       mem3dg::constants::i * mem3dg::constants::R * parameters.temperature *
+  //       (parameters.osmotic.n / volume - parameters.osmotic.cam);
+  // }
+  std::tie(forces.osmoticPressure, energy.pressureEnergy) =
+      parameters.osmotic.form(volume);
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
