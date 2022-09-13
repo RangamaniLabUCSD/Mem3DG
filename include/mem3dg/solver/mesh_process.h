@@ -85,6 +85,8 @@ struct MeshProcessor {
     bool splitSkinnyDelaunay = false;
     /// min edge length
     double minimumEdgeLength = 0.001;
+    /// max edge length
+    double maximumEdgeLength = 0.01;
 
     /// collapse skinny triangles
     bool collapseSkinny = false;

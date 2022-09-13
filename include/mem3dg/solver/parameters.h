@@ -197,15 +197,20 @@ struct Parameters {
   };
 
   struct Point {
+    /// index of initial guess
     std::size_t index = 0;
+    /// prescription of center finding
+    std::function<EigenVectorX1d(EigenVectorX3sr, EigenVectorX3dr,
+                                 EigenVectorX1d)>
+        form = NULL;
   };
 
   struct Protein {
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 1e-6;
     /// precription of protein density
-    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
-        form = NULL;
+    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)> form =
+        NULL;
   };
 
   struct Spring {
