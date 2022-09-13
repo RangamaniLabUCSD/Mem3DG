@@ -1403,6 +1403,18 @@ PYBIND11_MODULE(_core, pymem3dg) {
                         R"delim(
           get augmented Lagrangian parameter for volume
       )delim");
+  osmotic.def(
+      "setForm",
+      [](Parameters::Osmotic &osmotic,
+         std::function<std::tuple<double, double>(double)> &
+             pressureVolumeFunction) { osmotic.form = pressureVolumeFunction; },
+      R"delim(
+          functional to set the pressure volume relation
+        args: 
+            enclosed volume of the mesh
+        return: 
+            osmotic pressure of the system
+      )delim");
 
   py::class_<Parameters::Adsorption> adsorption(pymem3dg, "Adsorption",
                                                 R"delim(

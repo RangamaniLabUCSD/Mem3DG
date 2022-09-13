@@ -69,14 +69,12 @@ int main() {
 
   p.aggregation.chi = 0;
 
-  p.osmotic.isPreferredVolume = false;
-  p.osmotic.isConstantOsmoticPressure = true;
-  p.osmotic.Kv = 0.01;
-  p.osmotic.V_res = 0;
-  p.osmotic.n = 1;
-  p.osmotic.Vt = -1;
-  p.osmotic.cam = -1;
-  p.osmotic.lambdaV = 0;
+  auto constantOmosticPressureModel = [](double volume) {
+    double osmoticPressure = 1e-2;
+    double pressureEnergy = -osmoticPressure * volume;
+    return std::tie(osmoticPressure, pressureEnergy);
+  };
+  p.osmotic.form = constantOmosticPressureModel;
 
   p.dirichlet.eta = 0;
 

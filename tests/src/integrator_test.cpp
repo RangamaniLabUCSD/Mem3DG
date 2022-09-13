@@ -32,9 +32,20 @@ public:
     p.bending.Kbc = 8.22e-5;
     p.tension.Ksg = 0.1;
     p.tension.At = 4.0 * mem3dg::constants::PI;
-    p.osmotic.isPreferredVolume = true;
-    p.osmotic.Kv = 0.01;
-    p.osmotic.Vt = 4.0 / 3.0 * mem3dg::constants::PI * 0.7;
+
+    auto preferredVolumeOsmoticPressureModel = [](double volume) {
+      double isPreferredVolume = true;
+      double Kv = 0.01;
+      double Vt = 4.0 / 3.0 * mem3dg::constants::PI * 0.7;
+      double osmoticPressure = -(Kv * (volume - Vt) / Vt / Vt);
+
+      double V_difference = volume - Vt;
+      double pressureEnergy = -osmoticPressure * V_difference / 2;
+
+      return std::tie(osmoticPressure, pressureEnergy);
+    };
+
+    p.osmotic.form = preferredVolumeOsmoticPressureModel;
   }
   void SetUp() override {}
   void TearDown() override {}

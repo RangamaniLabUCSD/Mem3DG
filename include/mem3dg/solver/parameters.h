@@ -118,6 +118,8 @@ struct Parameters {
     double n = 1;
     /// augmented Lagrangian parameter for volume
     double lambdaV = 0;
+    /// P(V) function form
+    std::function<std::tuple<double, double>(double)> form = NULL;
 
     /**
      * @brief check parameter conflicts

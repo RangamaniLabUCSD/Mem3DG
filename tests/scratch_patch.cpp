@@ -46,7 +46,6 @@ int main() {
   p.tension.Ksg = 0.05;
   p.tension.A_res = 0;
   p.osmotic.isPreferredVolume = true;
-  p.osmotic.Kv = 0;
   p.adsorption.epsilon = 15e-5;
   p.proteinMobility = 40;
 

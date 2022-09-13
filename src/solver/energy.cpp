@@ -110,18 +110,20 @@ void System::computeLcrSpringEnergy() {
 
 void System::computePressureEnergy() {
   // Note: area weighted normal is exact volume variation
-  if (parameters.osmotic.isPreferredVolume) {
-    double V_difference = volume - parameters.osmotic.Vt;
-    energy.pressureEnergy = -forces.osmoticPressure * V_difference / 2 +
-                            parameters.osmotic.lambdaV * V_difference / 2;
-  } else if (parameters.osmotic.isConstantOsmoticPressure) {
-    energy.pressureEnergy = -forces.osmoticPressure * volume;
-  } else {
-    double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
-    energy.pressureEnergy = mem3dg::constants::i * mem3dg::constants::R *
-                            parameters.temperature * parameters.osmotic.n *
-                            (ratio - log(ratio) - 1);
-  }
+  // if (parameters.osmotic.isPreferredVolume) {
+  //   double V_difference = volume - parameters.osmotic.Vt;
+  //   energy.pressureEnergy = -forces.osmoticPressure * V_difference / 2 +
+  //                           parameters.osmotic.lambdaV * V_difference / 2;
+  // } else if (parameters.osmotic.isConstantOsmoticPressure) {
+  //   energy.pressureEnergy = -forces.osmoticPressure * volume;
+  // } else {
+  //   double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
+  //   energy.pressureEnergy = mem3dg::constants::i * mem3dg::constants::R *
+  //                           parameters.temperature * parameters.osmotic.n *
+  //                           (ratio - log(ratio) - 1);
+  // }
+  std::tie(forces.osmoticPressure, energy.pressureEnergy) =
+      parameters.osmotic.form(volume);
 }
 
 // void System::computeAdsorptionEnergy() {
@@ -268,7 +270,7 @@ double System::computePotentialEnergy() {
     computeAreaDifferenceEnergy();
   if (parameters.tension.Ksg != 0)
     computeSurfaceEnergy();
-  if (parameters.osmotic.Kv != 0)
+  if (parameters.osmotic.form != NULL)
     computePressureEnergy();
   if (parameters.adsorption.epsilon != 0) {
     computeAdsorptionEnergy();
