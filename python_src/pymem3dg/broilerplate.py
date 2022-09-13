@@ -42,28 +42,37 @@ def setDefaultMeshProcessor(system: dg.System, lengthScale: float):
     system.meshProcessor.meshMutator.isSmoothenMesh = True
 
 
-def constantOsmoticPressureModel(volume, pressure):
-    return pressure, -pressure * volume
+def constantOsmoticPressureModel(volume: float, pressure: float):
+    energy = -pressure * volume
+    return (pressure, energy)
 
 
-def preferredVolumeOsmoticPressureModel(volume, strength, target_volume):
+def preferredVolumeOsmoticPressureModel(
+    volume: float, strength: float, target_volume: float
+):
     volume_difference = volume - target_volume
     pressure = -(strength * volume_difference / target_volume / target_volume)
-    return pressure, -pressure * volume_difference / 2
+    return (pressure, -pressure * volume_difference / 2)
 
 
 def ambientSolutionOsmoticPressureModel(
-    volume, enclosed_solute, ambient_concentration, temperature
+    volume: float,
+    enclosed_solute: float,
+    ambient_concentration: float,
+    temperature: float,
 ):
-    kBoltzmann = 1.380649e-8 # Boltzmann constant (nanonewton * micrometer / Kelvin)
-    i = 1.0 # van't Hoff index
-    N = 6.02214076e5 # Avogadro constant (/atto-mol)
-    R = kBoltzmann * N # ideal gas constant (nanonewton * micrometer / Kelvin / atto-mol)
+    kBoltzmann = 1.380649e-8  # Boltzmann constant (nanonewton * micrometer / Kelvin)
+    i = 1.0  # van't Hoff index
+    N = 6.02214076e5  # Avogadro constant (/atto-mol)
+    R = (
+        kBoltzmann * N
+    )  # ideal gas constant (nanonewton * micrometer / Kelvin / atto-mol)
     pressure = i * R * temperature * (enclosed_solute / volume - ambient_concentration)
-    
-    ratio = ambient_concentration * volume / enclosed_solute;
-    energy = i * R * temperature * enclosed_solute * (ratio - np.log(ratio) - 1);
-    return pressure, energy
+
+    ratio = ambient_concentration * volume / enclosed_solute
+    energy = i * R * temperature * enclosed_solute * (ratio - np.log(ratio) - 1)
+    return (pressure, energy)
+
 
 def prescribeGeodesicPoteinDensityDistribution(
     time: float,

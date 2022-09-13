@@ -102,29 +102,24 @@ struct Parameters {
   };
 
   struct Osmotic {
+    /// volume reservoir
+    double V_res = 0;
+    /// P(V) function form
+    std::function<std::tuple<double, double>(double)> form = NULL;
+
+    // The rest is to be removed
     /// Whether adopt preferred volume parametrization
     bool isPreferredVolume = false;
-    /// Whether adopt constant osmotic pressure
-    bool isConstantOsmoticPressure = false;
     /// pressure-volume modulus
     double Kv = 0;
     /// preferred volume
     double Vt = -1;
     /// Ambient Pressure
     double cam = -1;
-    /// volume reservoir
-    double V_res = 0;
     /// Enclosed solute (atto-mol)
     double n = 1;
     /// augmented Lagrangian parameter for volume
     double lambdaV = 0;
-    /// P(V) function form
-    std::function<std::tuple<double, double>(double)> form = NULL;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
   };
 
   struct Adsorption {

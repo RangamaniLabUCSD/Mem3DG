@@ -47,39 +47,6 @@ void Parameters::Bending::checkParameters() {
   }
 }
 
-void Parameters::Osmotic::checkParameters() {
-  if (isPreferredVolume && !isConstantOsmoticPressure) {
-    if (cam != -1) {
-      mem3dg_runtime_error("ambient concentration cam has to be -1 for "
-                           "preferred volume parametrized simulation!");
-    }
-  } else if (!isPreferredVolume && !isConstantOsmoticPressure) {
-    if (n == 0) {
-      mem3dg_runtime_error("enclosed solute quantity n can not be 0 for "
-                           "ambient pressure parametrized simulation!")
-    }
-    if (Vt != -1 && !isConstantOsmoticPressure) {
-      mem3dg_runtime_error("preferred volume Vt has to be -1 for "
-                           "ambient pressure parametrized simulation!");
-    }
-    if (Kv != 0 && !isConstantOsmoticPressure) {
-      mem3dg_runtime_error(
-          "Kv has to be 0 for ambient pressure parametrized simulation!");
-    }
-
-  } else if (!isPreferredVolume && isConstantOsmoticPressure) {
-    if (Vt != -1 || V_res != 0 || cam != -1) {
-      mem3dg_runtime_error(
-          "Vt and cam have to be set to -1 and V_res to be 0 to "
-          "enable constant omostic pressure! Note Kv is the "
-          "pressure directly!");
-    }
-  } else {
-    mem3dg_runtime_error("preferred volume and constant osmotic pressure "
-                         "cannot be simultaneously turned on!");
-  }
-}
-
 void Parameters::Boundary::checkParameters() {
   if (shapeBoundaryCondition != "roller" && shapeBoundaryCondition != "pin" &&
       shapeBoundaryCondition != "fixed" && shapeBoundaryCondition != "none") {
@@ -99,28 +66,26 @@ void Parameters::Variation::checkParameters() {
 void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   bending.checkParameters();
   tension.checkParameters();
-  osmotic.checkParameters();
   variation.checkParameters();
 
   // variation
   if (!variation.isShapeVariation) {
     if (tension.Ksg != 0) {
-      mem3dg_runtime_error("Stretching modulus Ksg has to be zero for non "
-                           "shape variation simulation!");
+      mem3dg_runtime_message("Ksg is not zero for non "
+                             "shape variation simulation!");
     }
-    if (osmotic.Kv != 0) {
-      mem3dg_runtime_error("Pressure-volume modulus Kv has to be zero for non "
-                           "shape variation simulation!");
+    if (osmotic.form != NULL) {
+      mem3dg_runtime_message("osmotic.form is not NULL!");
     }
     if (boundary.shapeBoundaryCondition != "none") {
-      mem3dg_runtime_error("Shape boundary condition has to be none for non "
-                           "shape variation simulation");
+      mem3dg_runtime_message("shape boundary condition is not none for non "
+                             "shape variation simulation");
     }
   }
 
   if (variation.isProteinVariation != (proteinMobility > 0)) {
-    mem3dg_runtime_error("proteinMobility value has to be consistent with the "
-                         "protein variation option!");
+    mem3dg_runtime_message("proteinMobility value is not consistent with the "
+                           "protein variation option!");
   }
 
   if (variation.isProteinConservation) {
@@ -149,12 +114,12 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
           "Closed mesh can not have area and volume reservior!");
     }
     if (boundary.shapeBoundaryCondition != "none") {
-      mem3dg_runtime_error(
+      mem3dg_runtime_message(
           "Shape boundary condition type should be disable (= \"none\") "
           "for closed boundary mesh!");
     }
     if (boundary.proteinBoundaryCondition != "none") {
-      mem3dg_runtime_error(
+      mem3dg_runtime_message(
           "Protein boundary condition type should be disable (= \"none\") "
           "for closed boundary mesh!");
     }
