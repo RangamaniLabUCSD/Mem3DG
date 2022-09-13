@@ -109,7 +109,7 @@ bool Euler::integrate() {
         (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
       system.geodesicDistance.raw() = system.computeGeodesicDistance();
-      if (system.parameters.protein.ifPrescribe)
+      if (system.parameters.protein.form != NULL)
         system.prescribeProteinDensityDistribution();
       system.updateConfigurations();
     }
@@ -174,7 +174,7 @@ void Euler::status() {
   }
 
   // compute the free energy of the system
-  if (system.parameters.external.isActivated)
+  if (system.parameters.external.form != NULL)
     system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 

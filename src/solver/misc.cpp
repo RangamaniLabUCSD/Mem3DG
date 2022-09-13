@@ -23,21 +23,24 @@ namespace gcs = ::geometrycentral::surface;
 EigenVectorX1d System::computeGeodesicDistance() {
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   gc::Vertex centerVertex;
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {              
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     if (center[i])
       return heatSolver.computeDistance(mesh->vertex(i)).raw();
   }
   mem3dg_runtime_error("can not find center!");
-  EigenVectorX1d foo; // dummy return 
+  EigenVectorX1d foo; // dummy return
   foo.setConstant(1, 0);
   return foo;
 }
 
-void System::prescribeProteinDensityDistribution() {
-  if (parameters.protein.ifPrescribe) {
+EigenVectorX1d System::prescribeProteinDensityDistribution() {
+  if (parameters.protein.form != NULL) {
     proteinDensity.raw() = parameters.protein.form(
         time, vpg->vertexMeanCurvatures.raw(), geodesicDistance.raw());
+  } else {
+    mem3dg_runtime_message("Parameter protein form is NULL!")
   }
+  return proteinDensity.raw();
 
   // // in-place implementation, needed to be migrated to python
   // std::array<double, 2> r_heter{
@@ -87,7 +90,7 @@ void System::prescribeGeodesicMasks() {
 
 void System::backtraceEnergyGrowth(const double timeStep,
                                    const Energy previousEnergy) {
-  if (parameters.external.isActivated)
+  if (parameters.external.form != NULL)
     computeExternalWork(time, timeStep);
   computeTotalEnergy();
   std::cout << "<<<<<" << std::endl;

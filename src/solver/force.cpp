@@ -280,7 +280,7 @@ void System::computeGeometricForces(size_t i) {
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-  if (parameters.external.isActivated) {
+  if (parameters.external.form != NULL) {
     toMatrix(forces.externalForceVec) =
         forces.maskForce(parameters.external.form(
             toMatrix(vpg->inputVertexPositions), vpg->vertexDualAreas.raw(),
@@ -571,7 +571,7 @@ void System::addNonconservativeForcing(double timeStep) {
   forces.stochasticForceVec.fill({0, 0, 0});
   if (parameters.variation.isShapeVariation) {
     // compute (potentially) time dependent forces
-    if (parameters.external.isActivated) {
+    if (parameters.external.form != NULL) {
       prescribeExternalForce();
       forces.mechanicalForceVec += forces.externalForceVec;
     }

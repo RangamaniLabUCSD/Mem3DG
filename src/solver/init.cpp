@@ -72,7 +72,7 @@ void System::checkConfiguration() {
   }
 
   if (((proteinDensity - proteinDensity[0]).raw().norm() == 0) &&
-      (!parameters.protein.ifPrescribe)) { // homogeneous distribution
+      (parameters.protein.form == NULL)) { // homogeneous distribution
     if (parameters.variation.isProteinVariation) {
       if (proteinDensity[0] < 0 || proteinDensity[0] > 1)
         mem3dg_runtime_error("{0<=phi<=1}");

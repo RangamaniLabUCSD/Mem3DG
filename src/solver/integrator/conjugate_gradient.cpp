@@ -81,7 +81,7 @@ bool ConjugateGradient::integrate() {
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
       system.geodesicDistance.raw() = system.computeGeodesicDistance();
-      if (system.parameters.protein.ifPrescribe)
+      if (system.parameters.protein.form != NULL)
         system.prescribeProteinDensityDistribution();
       system.updateConfigurations();
     }
@@ -143,7 +143,7 @@ void ConjugateGradient::checkParameters() {
   if (restartPeriod < 1) {
     mem3dg_runtime_error("restartNum > 0!");
   }
-  if (system.parameters.external.isActivated) {
+  if (system.parameters.external.form != NULL) {
     mem3dg_runtime_error(
         "External force can not be applied using energy optimization")
   }

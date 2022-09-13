@@ -16,27 +16,53 @@ import pymem3dg as dg
 import numpy as np
 import numpy.typing as npt
 import pymem3dg.util as dg_util
+import copy
 
+def setDefaultMeshProcessor(system: dg.System, lengthScale: float):
+    """a commonly used mesh processor
 
-def getGeodesicDistance(
-    face: npt.NDArray[np.int64], vertex: npt.NDArray[np.float64], point: list
-):
-    system = dg.System(face, vertex)
-    system.parameters.point.pt = point
-    if system.parameters.point.isFloatVertex:
-        system.findFloatCenter()
-    else:
-        system.findVertexCenter()
-    distance = system.computeGeodesicDistance()
-    return distance
+    Args:
+        system (dg.System): system handle
+        lengthScale (float): lengthScale of the system
+    """
+    system.meshProcessor.meshMutator.isShiftVertex = True
+    system.meshProcessor.meshMutator.flipNonDelaunay = True
+    system.meshProcessor.meshMutator.splitLarge = True
+    system.meshProcessor.meshMutator.splitFat = True
+    system.meshProcessor.meshMutator.splitSkinnyDelaunay = True
+    system.meshProcessor.meshMutator.splitCurved = True
+    system.meshProcessor.meshMutator.minimumEdgeLength = 0.02 * lengthScale
+    system.meshProcessor.meshMutator.maximumEdgeLength = 0.2 * lengthScale
+    system.meshProcessor.meshMutator.curvTol = 0.1 / lengthScale
+    system.meshProcessor.meshMutator.collapseSkinny = True
+    system.meshProcessor.meshMutator.collapseFlat = True
+    system.meshProcessor.meshMutator.collapseSmall = True
+    system.meshProcessor.meshMutator.targetFaceArea = 0.0003 * lengthScale**2
+    system.meshProcessor.meshMutator.isSmoothenMesh = True
 
 
 def prescribeGeodesicPoteinDensityDistribution(
     time: float,
     vertexMeanCuravtures: npt.NDArray[np.float64],
     geodesicDistance: npt.NDArray[np.float64],
+    sharpness: float,
+    radius: float,
 ):
-    return dg_util.tanhDistribution(x=geodesicDistance, sharpness=10, center=1)
+    """form function that prescribe geodesic protein density profile on mesh
+
+    Args:
+        time (float): time of the system
+        vertexMeanCuravtures (npt.NDArray[np.float64]): vertex mean curvature
+        geodesicDistance (npt.NDArray[np.float64]): vertex geodesic curvature
+        sharpness (float): sharpness of transition used in tanh function
+        radius (float): center of transition of the tanh function
+
+    Returns:
+        _type_: _description_
+    """
+    return dg_util.tanhDistribution(
+        x=geodesicDistance, sharpness=sharpness, center=radius
+    )
 
 
 def prescribeGaussianPointForce(
@@ -44,15 +70,15 @@ def prescribeGaussianPointForce(
     vertexDualAreas: list,
     time: float,
     geodesicDistances: list,
-    Kf: float, 
-    std: float, 
+    Kf: float,
+    std: float,
 ):
-    """generate external on a single vertex following a Gaussian distribution of geodesic distance
+    """form function that generate external force on a single vertex following a Gaussian distribution of geodesic distance
 
     Args:
         vertexPositions (npt.NDArray[np.float64]): vertex position matrix of the mesh
-        vertexDualAreas (list): vertex dual area. Unused 
-        time (float): time of the simulation. Unused 
+        vertexDualAreas (list): vertex dual area. Unused
+        time (float): time of the simulation. Unused
         geodesicDistances (list): geodesic distance centered at the vertex
         Kf (float): force magnitude coefficient
         std (float): standard deviation of the Gaussian distribution
@@ -62,4 +88,37 @@ def prescribeGaussianPointForce(
     """
     direction = dg_util.rowwiseNormalize(vertexPositions)
     magnitude = Kf * dg_util.gaussianDistribution(geodesicDistances, 0, std)
+    return dg_util.rowwiseScaling(magnitude, direction)
+
+
+def prescribePeriodicForceOnCylinder(
+    vertexPositions: npt.NDArray[np.float64],
+    vertexDualAreas: list,
+    time: float,
+    geodesicDistance: list,
+    Kf: float,
+    freq: float,
+):
+    """prescribe a periodic external force profile on a tubular structure
+
+    Args:
+        vertexPositions (npt.NDArray[np.float64]): vertex position matrix of the mesh
+        vertexDualAreas (list): vertex dual area. Unused
+        time (float): time of the simulation. Unused
+        geodesicDistance (list): geodesic distance centered at the vertex
+        Kf (float): force magnitude coefficient. Kf = 1 means that the average force = 1, with high = 2 and low = 0
+        freq (float): normalized wavenumber of the periodicity. There are #freq cycles along the entire height of the structure
+
+    Returns:
+        npt.NDArray[np.float64]: vertex force
+    """
+    height = np.max(vertexPositions[:, 2]) - np.min(vertexPositions[:, 2])
+
+    # radial unit vector
+    direction = copy.deepcopy(vertexPositions)
+    direction[:, 2] = 0
+    direction = dg_util.rowwiseNormalize(direction)
+
+    magnitude = Kf * (1 + np.sin(freq * 2 * np.pi / height * vertexPositions[:, 2]))
+
     return dg_util.rowwiseScaling(magnitude, direction)
