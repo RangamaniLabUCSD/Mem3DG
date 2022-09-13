@@ -263,8 +263,7 @@ class TestExampleIntegration(object):
         # polyscope.show()
 
     def test_mesh_generation(self):
-        """test mesh generation functions 
-        """
+        """test mesh generation functions"""
         face, vertex = dg.getTetrahedron()
         face, vertex = dg.getDiamond(dihedral=np.pi / 3)
         face, vertex = dg.getHexagon(radius=1, subdivision=3)
@@ -276,8 +275,7 @@ class TestExampleIntegration(object):
         face_, vertex_ = dg.loopSubdivide(face=face, vertex=vertex, nSub=3)
 
     def test_mesh_reading(self):
-        """test mesh reading function 
-        """
+        """test mesh reading function"""
         self.test_shape_and_protein_variation()  # generate .ply file for testing
         face, vertex = dg.getFaceAndVertexMatrix(self.plyFile)
         face, vertex = dg.processSoup(self.plyFile)
@@ -286,8 +284,7 @@ class TestExampleIntegration(object):
         H = dg.getRichData(self.plyFile, "vertex", "meanCurvature")
 
     def test_mesh_marking(self):
-        """test mesh marking functions
-        """
+        """test mesh marking functions"""
         face, vertex = dg.getIcosphere(radius=1, subdivision=3)
         faceData = np.zeros(np.shape(face)[0])
         polyscope.remove_all_structures()
@@ -314,3 +311,29 @@ class TestExampleIntegration(object):
         test_locations([0, 0, -2], [True, True, True])
         test_locations([-1, -4, -2], [True, True, True])
         # polyscope.show()
+
+    def test_parameter_loading(self):
+        """test broiler plate example form functions used in parameter loading
+        """
+        face, vertex = dg.getIcosphere(radius=1, subdivision=3)
+        p = dg.Parameters()
+        p.point.index = 0
+        system = dg.System(face, vertex, p)
+        system.initialize()
+        system.computeGeodesicDistance()
+        system.parameters.protein.setForm(
+            partial(
+                dg_broil.prescribeGeodesicPoteinDensityDistribution,
+                sharpness=20,
+                radius=0.1,
+            )
+        )
+        system.prescribeProteinDensityDistribution()
+        system.parameters.external.setForm(
+            partial(dg_broil.prescribeGaussianPointForce, Kf=0.01, std=1)
+        )
+        system.prescribeExternalForce()
+        system.parameters.external.setForm(
+            partial(dg_broil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10)
+        )
+        system.prescribeExternalForce()

@@ -80,12 +80,6 @@ void Parameters::Osmotic::checkParameters() {
   }
 }
 
-void Parameters::Protein::checkParameters(size_t nVertex) {
-  ifPrescribe = (form != NULL);
-}
-
-void Parameters::External::checkParameters() { isActivated = (form != NULL); }
-
 void Parameters::Boundary::checkParameters() {
   if (shapeBoundaryCondition != "roller" && shapeBoundaryCondition != "pin" &&
       shapeBoundaryCondition != "fixed" && shapeBoundaryCondition != "none") {
@@ -107,9 +101,6 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   tension.checkParameters();
   osmotic.checkParameters();
   variation.checkParameters();
-  // point.checkParameters();
-  external.checkParameters();
-  protein.checkParameters(nVertex);
 
   // variation
   if (!variation.isShapeVariation) {

@@ -157,17 +157,10 @@ struct Parameters {
   };
 
   struct External {
-    /// Magnitude of external force
-    bool isActivated = false;
     /// form of external force
     std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
                                   EigenVectorX1d)>
         form = NULL;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
   };
 
   struct DPD {
@@ -208,16 +201,11 @@ struct Parameters {
   };
 
   struct Protein {
-    bool ifPrescribe = false;
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 1e-6;
     /// precription of protein density
     std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
         form = NULL;
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters(size_t nVertex);
   };
 
   struct Spring {

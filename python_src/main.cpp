@@ -1082,15 +1082,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the pointwise spontaneous curvature
       )delim");
   system.def(
-      "getCenter",
-      [](System &s) {
-        for (std::size_t i = 0; i < s.mesh->nVertices(); ++i) {
-          if (s.center[i])
-            return i;
-        }
-        mem3dg_runtime_error("can not find center!");
-        return std::size_t{0};
-      },
+      "getCenter", [](System &s) { return s.center.raw(); },
       py::return_value_policy::copy,
       R"delim(
           get vertex data to track center, which may or may not be a single vertex
@@ -1139,41 +1131,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
              R"delim(
             Compute and append all non-conservative forces, update mechanicalForce(Vec) and mechErrorNorm
         )delim");
-  //   system.def("computeBendingForce", &System::computeBendingForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the spontaneous curvature force
-  //       )delim");
-  //   system.def("computeChemicalPotential", &System::computeChemicalPotential,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the chemical potential
-  //       )delim");
-  //   system.def("computeCapillaryForce", &System::computeCapillaryForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the capillary force
-  //       )delim");
-  //   system.def("computeOsmoticForce", &System::computeOsmoticForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the osmotic force
-  //       )delim");
-  //   system.def("computeLineCapillaryForce",
-  //   &System::computeLineCapillaryForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the LineTensionForce
-  //       )delim");
-  //   system.def("prescribeExternalForce", &System::prescribeExternalForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //             prescribe the External Force
-  //         )delim");
-  //   system.def("computeDPDForces", &System::computeDPDForces, py::arg("dt"),
-  //              R"delim(
-  //             compute the DPDForces
-  //         )delim");
+  system.def("prescribeExternalForce", &System::prescribeExternalForce,
+             py::return_value_policy::copy,
+             R"delim(
+              prescribe the External Force
+          )delim");
+
 
   /**
    * @brief Method: Energy computation
@@ -1225,36 +1188,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
           return: NDarray[double]
       )delim");
 
-  //   /**
-  //    * @brief Method: find float center
-  //    */
-  //   system.def("findFloatCenter", &System::findFloatCenter,
-  //              py::arg("range") = std::numeric_limits<double>::max(),
-  //              R"delim(
-  //           find the float center based on Parameter.point.pt using Euclidean
-  //           distance and cached the floating surface point ("Center") in
-  //           System object Args:
-  //             range (double, optional): range of geodesic distance (if cached
-  //             in System) to search for the floating center
-  //           return:
-  //             None
-  //       )delim");
-
-  //   /**
-  //    * @brief Method: find vertex center
-  //    */
-  //   system.def("findVertexCenter", &System::findVertexCenter,
-  //              py::arg("range") = std::numeric_limits<double>::max(),
-  //              R"delim(
-  //           find the vertex center based on Parameter.point.pt using
-  //           Euclidean distance and cached the vertex ("Center") in System
-  //           object Args:
-  //             range (double, optional): range of geodesic distance (if cached
-  //             in System) to search for the floating center
-  //           return:
-  //             None
-  //       )delim");
-
   /**
    * @brief Method: updateVertexPosition
    */
@@ -1303,24 +1236,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: test force computation
    */
-  //   system.def("testConservativeForcing",
-  //              py::overload_cast<const double, const EigenVectorX3dr,
-  //                                const EigenVectorX1d, const Energy>(
-  //                  &System::testConservativeForcing),
-  //              py::arg("timeStep"), py::arg("previousPosition"),
-  //              py::arg("previousProteinDensity"), py::arg("previousEnergy"),
-  //              R"delim(
-  //           test conservative force computation by validating energy decrease
-  //           (reverse mode)
-  //       )delim");
-  //   system.def("testConservativeForcing",
-  //              py::overload_cast<const
-  //              double>(&System::testConservativeForcing),
-  //              py::arg("timeStep"),
-  //              R"delim(
-  //           test conservative force computation by validating energy decrease
-  //           (forward mode)
-  //       )delim");
   system.def("testConservativeForcing", &System::testConservativeForcing,
              py::arg("timeStep"),
              R"delim(

@@ -898,7 +898,7 @@ public:
    * @brief update cache of proteinDensity based on geodesicDistance and
    * parameters on profile type
    */
-  void prescribeProteinDensityDistribution();
+  EigenVectorX1d prescribeProteinDensityDistribution();
 
   /**
    * @brief prescribe mask based on geodesic disk
