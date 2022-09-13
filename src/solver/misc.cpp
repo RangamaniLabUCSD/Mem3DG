@@ -247,7 +247,7 @@ bool System::testConservativeForcing(const double timeStep) {
                           // which is modified by the previous line
       double expectedDelta =
           dt * forces.maskForce(toMatrix(forceVec)).squaredNorm();
-      return std::array<double, 2>{actualDelta, expectedDelta};
+      return std::tuple<double, double>(actualDelta, expectedDelta);
     };
     double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
     std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
@@ -276,7 +276,7 @@ bool System::testConservativeForcing(const double timeStep) {
       double actualDelta = -currentEnergy + previousEnergy;
       double expectedDelta = dt * parameters.proteinMobility *
                              forces.maskProtein(potential.raw()).squaredNorm();
-      return std::array<double, 2>{actualDelta, expectedDelta};
+      return std::tuple<double, double>(actualDelta, expectedDelta);
     };
     double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
     std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
