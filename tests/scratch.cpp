@@ -72,7 +72,7 @@ int main() {
   auto constantOmosticPressureModel = [](double volume) {
     double osmoticPressure = 1e-2;
     double pressureEnergy = -osmoticPressure * volume;
-    return std::tie(osmoticPressure, pressureEnergy);
+    return std::make_tuple(osmoticPressure, pressureEnergy);
   };
   p.osmotic.form = constantOmosticPressureModel;
 
