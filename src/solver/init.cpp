@@ -178,11 +178,12 @@ void System::updateConfigurations() {
   //   forces.osmoticPressure = parameters.osmotic.Kv;
   // } else {
   //   forces.osmoticPressure =
-  //       mem3dg::constants::i * mem3dg::constants::R * parameters.temperature *
-  //       (parameters.osmotic.n / volume - parameters.osmotic.cam);
+  //       mem3dg::constants::i * mem3dg::constants::R * parameters.temperature
+  //       * (parameters.osmotic.n / volume - parameters.osmotic.cam);
   // }
-  std::tie(forces.osmoticPressure, energy.pressureEnergy) =
-      parameters.osmotic.form(volume);
+  if (parameters.osmotic.form != NULL)
+    std::tie(forces.osmoticPressure, energy.pressureEnergy) =
+        parameters.osmotic.form(volume);
 
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;

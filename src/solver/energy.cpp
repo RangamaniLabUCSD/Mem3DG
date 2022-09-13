@@ -122,8 +122,9 @@ void System::computePressureEnergy() {
   //                           parameters.temperature * parameters.osmotic.n *
   //                           (ratio - log(ratio) - 1);
   // }
-  std::tie(forces.osmoticPressure, energy.pressureEnergy) =
-      parameters.osmotic.form(volume);
+  if (parameters.osmotic.form != NULL)
+    std::tie(forces.osmoticPressure, energy.pressureEnergy) =
+        parameters.osmotic.form(volume);
 }
 
 // void System::computeAdsorptionEnergy() {

@@ -42,7 +42,7 @@ public:
       double V_difference = volume - Vt;
       double pressureEnergy = -osmoticPressure * V_difference / 2;
 
-      return std::tie(osmoticPressure, pressureEnergy);
+      return std::make_tuple(osmoticPressure, pressureEnergy);
     };
 
     p.osmotic.form = preferredVolumeOsmoticPressureModel;
