@@ -13,7 +13,6 @@
 #
 
 from typing_extensions import assert_type
-from numpy import polyfit
 import pytest
 import pymem3dg as dg
 import polyscope
