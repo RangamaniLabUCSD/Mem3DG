@@ -206,7 +206,7 @@ jobs:
         submodules: recursive
 
     - name: Update python libs
-      run: python -m pip install scikit-build pytest
+      run: python -m pip install scikit-build pytest typing-extensions
 
     - name: Configures source dist
       run: python setup.py sdist
