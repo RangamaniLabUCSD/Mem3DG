@@ -11,8 +11,6 @@
 #     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
-
-from typing_extensions import assert_type
 import pytest
 import pymem3dg as dg
 import polyscope
@@ -51,7 +49,7 @@ class TestExampleIntegration(object):
         "velocity": velocity,
     }
 
-    polyscope.init()
+    # polyscope.init()
     dg_vis.polyscopeStyle()
 
     def test_shape_and_protein_variation(self):

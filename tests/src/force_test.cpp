@@ -66,9 +66,7 @@ protected:
       EigenVectorX1d proteinDensity;
       proteinDensity.resize(geodesicDistance.rows(), 1);
       for (std::size_t i = 0; i < geodesicDistance.rows(); i++) {
-        if (geodesicDistance[i] != 0) {
-          proteinDensity[i] = tanhDistribution(geodesicDistance[i], 3, 1);
-        }
+        proteinDensity[i] = tanhDistribution(geodesicDistance[i], 3, 1);
       }
       // tanhDistribution(proteinDensity, geodesicDistance, 10, 1);
       proteinDensity.array() *= 0.5;
@@ -122,7 +120,6 @@ protected:
     p.spring.Kst = 1e-3;
     p.spring.Kse = 1e-3;
     p.spring.Ksl = 1e-3;
-
   }
 };
 
@@ -136,6 +133,7 @@ TEST_F(ForceTest, ConservativeForcesTest) {
   mem3dg::solver::System f(topologyMatrix, vertexMatrix, refVertexMatrix,
                            proteinDensity, velocity, p, 0);
   f.initialize(0, true);
+  f.computeGeodesicDistance();
   f.prescribeProteinDensityDistribution();
   f.updateConfigurations();
   // First time calculation of force
@@ -169,6 +167,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   mem3dg::solver::System f(topologyMatrix, vertexMatrix, refVertexMatrix,
                            proteinDensity, velocity, p, 0);
   f.initialize(0, true);
+  f.computeGeodesicDistance();
   f.prescribeProteinDensityDistribution();
   f.updateConfigurations();
   EXPECT_TRUE(f.testConservativeForcing(h));

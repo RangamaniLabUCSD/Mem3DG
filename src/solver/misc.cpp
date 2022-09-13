@@ -24,8 +24,10 @@ EigenVectorX1d System::computeGeodesicDistance() {
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   gc::Vertex centerVertex;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    if (center[i])
-      return heatSolver.computeDistance(mesh->vertex(i)).raw();
+    if (center[i]) {
+      geodesicDistance = heatSolver.computeDistance(mesh->vertex(i));
+      return geodesicDistance.raw();
+    }
   }
   mem3dg_runtime_error("can not find center!");
   EigenVectorX1d foo; // dummy return
