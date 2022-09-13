@@ -34,7 +34,7 @@ jobs:
         id: pyexe
         run: |
           python3 --version
-          python3 -m pip install pytest typing-extensions
+          python3 -m pip install pytest typing-extensions numpy polyscope matplotlib functools scipy netCDF4
           py_exe_path=$(which python3)
           echo ::set-output name=path::$py_exe_path
 
@@ -70,7 +70,7 @@ jobs:
         id: pyexe
         run: |
           python3 --version
-          python3 -m pip install pytest typing-extensions
+          python3 -m pip install pytest typing-extensions numpy polyscope matplotlib functools scipy netCDF4
           py_exe_path=$(which python3)
           echo ::set-output name=path::$py_exe_path
       
@@ -105,7 +105,7 @@ jobs:
         id: pyexe
         run: |
           python --version
-          python -m pip install pytest typing-extensions
+          python -m pip install pytest typing-extensions numpy polyscope matplotlib functools scipy netCDF4
           py_exe_path=$(which python)
           echo ::set-output name=path::$py_exe_path
 
@@ -206,7 +206,7 @@ jobs:
         submodules: recursive
 
     - name: Update python libs
-      run: python -m pip install scikit-build pytest typing-extensions
+      run: python -m pip install scikit-build pytest typing-extensions numpy polyscope matplotlib functools scipy netCDF4
 
     - name: Configures source dist
       run: python setup.py sdist
