@@ -70,12 +70,15 @@ void System::computeAreaDifferenceEnergy() {
 
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
-  double A_difference = surfaceArea - parameters.tension.At;
-  energy.surfaceEnergy =
-      parameters.tension.isConstantSurfaceTension
-          ? forces.surfaceTension * surfaceArea
-          : forces.surfaceTension * A_difference / 2 +
-                parameters.tension.lambdaSG * A_difference / 2;
+  // double A_difference = surfaceArea - parameters.tension.At;
+  // energy.surfaceEnergy =
+  //     parameters.tension.isConstantSurfaceTension
+  //         ? forces.surfaceTension * surfaceArea
+  //         : forces.surfaceTension * A_difference / 2 +
+  //               parameters.tension.lambdaSG * A_difference / 2;
+  if (parameters.tension.form != NULL)
+    std::tie(forces.surfaceTension, energy.surfaceEnergy) =
+        parameters.tension.form(surfaceArea);
 }
 
 void System::computeEdgeSpringEnergy() {
@@ -269,7 +272,7 @@ double System::computePotentialEnergy() {
   // optional internal potential energy
   if (parameters.bending.alpha != 0)
     computeAreaDifferenceEnergy();
-  if (parameters.tension.Ksg != 0)
+  if (parameters.tension.form != NULL)
     computeSurfaceEnergy();
   if (parameters.osmotic.form != NULL)
     computePressureEnergy();

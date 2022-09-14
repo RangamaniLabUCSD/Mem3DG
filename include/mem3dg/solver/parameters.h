@@ -84,27 +84,26 @@ struct Parameters {
   };
 
   struct Tension {
+    /// Area reservior
+    double A_res = 0;
+    /// tension(area) function form
+    std::function<std::tuple<double, double>(double)> form = NULL;
+
+    // to-be-removed 
     /// Whether adopt constant surface tension
     bool isConstantSurfaceTension = false;
     /// Global stretching modulus
     double Ksg = 0;
-    /// Area reservior
-    double A_res = 0;
     /// preferred  total face area
     double At = -1;
     /// augmented Lagrangian parameter for area
     double lambdaSG = 0;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
   };
 
   struct Osmotic {
     /// volume reservoir
     double V_res = 0;
-    /// P(V) function form
+    /// pressure(volume) function form
     std::function<std::tuple<double, double>(double)> form = NULL;
 
     // The rest is to be removed

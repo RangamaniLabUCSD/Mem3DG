@@ -1344,27 +1344,39 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The surface tension parameters
     )delim");
   tension.def(py::init<>());
-  tension.def_readwrite("isConstantSurfaceTension",
-                        &Parameters::Tension::isConstantSurfaceTension,
-                        R"delim(
-          get the option of whether adopt constant surface tension 
-      )delim");
-  tension.def_readwrite("Ksg", &Parameters::Tension::Ksg,
-                        R"delim(
-          get Global stretching modulus 
-      )delim");
   tension.def_readwrite("A_res", &Parameters::Tension::A_res,
                         R"delim(
           get area reservoir
       )delim");
-  tension.def_readwrite("At", &Parameters::Tension::At,
-                        R"delim(
-          get preferred surface area
+  tension.def(
+      "setForm",
+      [](Parameters::Tension &tension,
+         std::function<std::tuple<double, double>(double)>
+             &tensionAreaFunction) { tension.form = tensionAreaFunction; },
+      R"delim(
+          functional to set the tension area relation
+        args: 
+            total surface area of the mesh
+        return: 
+            tuple of surface tension of the system and surface energy
       )delim");
-  tension.def_readwrite("lambdaSG", &Parameters::Tension::lambdaSG,
-                        R"delim(
-          get augmented Lagrangian parameter for area
-      )delim");
+  //   tension.def_readwrite("isConstantSurfaceTension",
+  //                         &Parameters::Tension::isConstantSurfaceTension,
+  //                         R"delim(
+  //           get the option of whether adopt constant surface tension
+  //       )delim");
+  //   tension.def_readwrite("Ksg", &Parameters::Tension::Ksg,
+  //                         R"delim(
+  //           get Global stretching modulus
+  //       )delim");
+  //   tension.def_readwrite("At", &Parameters::Tension::At,
+  //                         R"delim(
+  //           get preferred surface area
+  //       )delim");
+  //   tension.def_readwrite("lambdaSG", &Parameters::Tension::lambdaSG,
+  //                         R"delim(
+  //           get augmented Lagrangian parameter for area
+  //       )delim");
 
   py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(
         The osmotic pressure parameters
@@ -1383,7 +1395,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
         args: 
             enclosed volume of the mesh
         return: 
-            osmotic pressure of the system
+            tuple of osmotic pressure of the system and pressure energy
       )delim");
   //   osmotic.def_readwrite("Kv", &Parameters::Osmotic::Kv,
   //                         R"delim(

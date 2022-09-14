@@ -43,7 +43,12 @@ int main() {
   p.bending.Kb = 8.22e-5;
   p.bending.Kbc = 8.22e-4;
   p.bending.H0c = 40;
-  p.tension.Ksg = 0.05;
+  auto constantSurfaceTensionModel = [](double area) {
+    double tension = 0.05;
+    double energy = tension * area;
+    return std::make_tuple(tension, energy);
+  };
+  p.tension.form = constantSurfaceTensionModel;
   p.tension.A_res = 0;
   p.adsorption.epsilon = 15e-5;
   p.proteinMobility = 40;

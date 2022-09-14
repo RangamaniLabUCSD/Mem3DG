@@ -336,8 +336,19 @@ class TestExampleIntegration(object):
             partial(dg_broil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10)
         )
         system.prescribeExternalForce()
-        
-        # osmotic pressure 
-        system.parameters.external.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
+
+        # osmotic pressure
+        system.parameters.osmotic.setForm(
+            partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
+        )
         system.initialize()
-        assert(system.getForces().getOsmoticPressure() == 0.01)
+        assert system.getForces().getOsmoticPressure() == 0.01
+        assert system.getEnergy().pressureEnergy == -0.01 * system.volume
+        
+        # surface tension
+        system.parameters.tension.setForm(
+            partial(dg_broil.constantSurfaceTensionModel, tension=0.01)
+        )
+        system.initialize()
+        assert system.getForces().getSurfaceTension() == 0.01
+        assert system.getEnergy().surfaceEnergy == 0.01 * system.surfaceArea

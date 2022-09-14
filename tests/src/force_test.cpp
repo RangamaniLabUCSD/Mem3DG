@@ -84,10 +84,13 @@ protected:
     p.bending.Kbc = 0;
     p.bending.H0c = -1;
 
-    p.tension.isConstantSurfaceTension = true;
-    p.tension.Ksg = 1e-2;
     p.tension.A_res = 0;
-    p.tension.lambdaSG = 0;
+    auto constantSurfaceTensionModel = [](double area) {
+      double tension = 1e-2;
+      double energy = tension * area;
+      return std::make_tuple(tension, energy);
+    };
+    p.tension.form = constantSurfaceTensionModel;
 
     p.adsorption.epsilon = -1e-2;
 

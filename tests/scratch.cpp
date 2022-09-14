@@ -59,11 +59,16 @@ int main() {
   p.bending.Kbc = 2 * 8.22e-5;
   p.bending.H0c = -60;
 
-  p.tension.isConstantSurfaceTension = false;
-  p.tension.Ksg = 1;
+  auto preferredAreaSurfaceTensionModel = [](double area) {
+    double Ksg = 1;
+    double At = 3.40904;
+    double A_difference = area - At;
+    double tension = Ksg * A_difference / At;
+    double energy = tension * A_difference / 2;
+    return std::make_tuple(tension, energy);
+  };
   p.tension.A_res = 0;
-  p.tension.At = 3.40904;
-  p.tension.lambdaSG = 0;
+  p.tension.form = preferredAreaSurfaceTensionModel;
 
   p.adsorption.epsilon = 0;
 
