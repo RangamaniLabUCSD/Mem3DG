@@ -21,25 +21,6 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 
-void Parameters::Tension::checkParameters() {
-  if (isConstantSurfaceTension) {
-    if (A_res != 0) {
-      mem3dg_runtime_error(
-          "A_res has to be set to 0 to "
-          "enable constant surface! Note Ksg is the surface tension directly!");
-    }
-  }
-  if (!(At > 0)) {
-    if (Ksg > 0 && !isConstantSurfaceTension) {
-      if (At == -1) {
-        mem3dg_runtime_error("Target area At has to be specified!");
-      } else {
-        mem3dg_runtime_error("Target area At has to be greater than zero!");
-      }
-    }
-  }
-};
-
 void Parameters::Bending::checkParameters() {
   if (alpha != 0) {
     if (D == 0)
@@ -65,14 +46,12 @@ void Parameters::Variation::checkParameters() {
 
 void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   bending.checkParameters();
-  tension.checkParameters();
   variation.checkParameters();
 
   // variation
   if (!variation.isShapeVariation) {
-    if (tension.Ksg != 0) {
-      mem3dg_runtime_message("Ksg is not zero for non "
-                             "shape variation simulation!");
+    if (tension.form != NULL) {
+      mem3dg_runtime_message("tension.form is not NULL!");
     }
     if (osmotic.form != NULL) {
       mem3dg_runtime_message("osmotic.form is not NULL!");

@@ -42,16 +42,66 @@ def setDefaultMeshProcessor(system: dg.System, lengthScale: float):
     system.meshProcessor.meshMutator.isSmoothenMesh = True
 
 
+def constantSurfaceTensionModel(area: float, tension: float):
+    """constant surface tension model
+
+    Args:
+        area (float): total surface area of the mesh. Unused 
+        tension (float): value of surface tension
+
+    Returns:
+        tuple: surface tension and surface energy
+    """
+    energy = tension * area
+    return (tension, energy)
+
+
+def preferredAreaSurfaceTensionModel(area: float, modulus: float, preferredArea: float):
+    """harmonic potential type model with a preferred area
+
+    Args:
+        area (float): total surface area
+        modulus (float): stretching modulus
+        preferredArea (float): value of preferred area
+
+    Returns:
+        tuple: surface tension and surface energy
+    """
+    area_difference = area - preferredArea
+    tension = modulus * area_difference / preferredArea
+    energy = tension * area_difference / 2
+    return (tension, energy)
+
+
 def constantOsmoticPressureModel(volume: float, pressure: float):
+    """constant osmotic pressure model
+
+    Args:
+        volume (float): enclosed volume of the mesh. Unused 
+        pressure (float): value of osmotic pressure
+
+    Returns:
+        tuple: osmotic pressure and pressure energy (negative of work)
+    """
     energy = -pressure * volume
     return (pressure, energy)
 
 
 def preferredVolumeOsmoticPressureModel(
-    volume: float, strength: float, target_volume: float
+    volume: float, strength: float, preferredVolume: float
 ):
-    volume_difference = volume - target_volume
-    pressure = -(strength * volume_difference / target_volume / target_volume)
+    """harmonic potential type model with a preferred volume
+
+    Args:
+        volume (float): enclosed volume
+        strength (float): osmotic stregth coefficient 
+        preferredVolume (float): value of preferred volume
+
+    Returns:
+        tuple: osmotic pressure and pressure energy
+    """
+    volume_difference = volume - preferredVolume
+    pressure = -(strength * volume_difference / preferredVolume / preferredVolume)
     return (pressure, -pressure * volume_difference / 2)
 
 

@@ -111,13 +111,13 @@ void System::initializeConstants(bool ifMute) {
   if (!ifMute) {
     std::cout << "area_init = " << surfaceArea << std::endl;
     std::cout << "vol_init = " << volume << std::endl;
-    std::cout << "Characteristic volume wrt to At = "
-              << (isOpenMesh
-                      ? parameters.osmotic.V_res
-                      : std::pow(parameters.tension.At / constants::PI / 4,
-                                 1.5) *
-                            (4 * constants::PI / 3))
-              << std::endl;
+    // std::cout << "Characteristic volume wrt to At = "
+    //           << (isOpenMesh
+    //                   ? parameters.osmotic.V_res
+    //                   : std::pow(parameters.tension.At / constants::PI / 4,
+    //                              1.5) *
+    //                         (4 * constants::PI / 3))
+    //           << std::endl;
   }
 }
 
@@ -188,13 +188,16 @@ void System::updateConfigurations() {
   // initialize/update total surface area
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
 
+  if (parameters.tension.form != NULL)
+    std::tie(forces.surfaceTension, energy.surfaceEnergy) =
+        parameters.tension.form(surfaceArea);
   // update global surface tension
-  forces.surfaceTension = parameters.tension.isConstantSurfaceTension
-                              ? parameters.tension.Ksg
-                              : parameters.tension.Ksg *
-                                        (surfaceArea - parameters.tension.At) /
-                                        parameters.tension.At +
-                                    parameters.tension.lambdaSG;
+  // forces.surfaceTension = parameters.tension.isConstantSurfaceTension
+  //                             ? parameters.tension.Ksg
+  //                             : parameters.tension.Ksg *
+  //                                       (surfaceArea - parameters.tension.At)
+  //                                       / parameters.tension.At +
+  //                                   parameters.tension.lambdaSG;
 }
 } // namespace solver
 } // namespace mem3dg

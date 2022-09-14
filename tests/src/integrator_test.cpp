@@ -30,8 +30,17 @@ public:
 
     /// physical parameters
     p.bending.Kbc = 8.22e-5;
-    p.tension.Ksg = 0.1;
-    p.tension.At = 4.0 * mem3dg::constants::PI;
+
+    auto preferredAreaSurfaceTensionModel = [](double area) {
+      double Ksg = 0.1;
+      double At = 4.0 * mem3dg::constants::PI;
+      double A_difference = area - At;
+      double tension = Ksg * A_difference / At;
+      double energy = tension * A_difference / 2;
+      return std::make_tuple(tension, energy);
+    };
+    p.tension.A_res = 0;
+    p.tension.form = preferredAreaSurfaceTensionModel;
 
     auto preferredVolumeOsmoticPressureModel = [](double volume) {
       double isPreferredVolume = true;
