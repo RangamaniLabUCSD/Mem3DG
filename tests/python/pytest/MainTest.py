@@ -60,8 +60,7 @@ class TestExampleIntegration(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.isConstantSurfaceTension = True
-        p.tension.Ksg = 0.5
+        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension = 0.5))
         p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
@@ -104,8 +103,7 @@ class TestExampleIntegration(object):
         p.variation.isProteinVariation = False
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.isConstantSurfaceTension = True
-        p.tension.Ksg = 0.5
+        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension = 0.5))
         p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         p.spring.Kst = 1
         p.point.index = 0
@@ -165,9 +163,17 @@ class TestExampleIntegration(object):
     def test_nc_visual(self):
         """test runs for the convenience function used for visualizing .nc trajectory file"""
         p = self.test_shape_and_protein_variation()
+        # with parameters
         dg_vis.animate(
             trajNc=self.trajFile,
             parameters=p,
+            showBasics=True,
+            showForce=True,
+            showPotential=True,
+        )
+        # without parameters
+        dg_vis.animate(
+            trajNc=self.trajFile,
             showBasics=True,
             showForce=True,
             showPotential=True,
@@ -344,7 +350,7 @@ class TestExampleIntegration(object):
         system.initialize()
         assert system.getForces().getOsmoticPressure() == 0.01
         assert system.getEnergy().pressureEnergy == -0.01 * system.volume
-        
+
         # surface tension
         system.parameters.tension.setForm(
             partial(dg_broil.constantSurfaceTensionModel, tension=0.01)
