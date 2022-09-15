@@ -88,16 +88,6 @@ struct Parameters {
     double A_res = 0;
     /// tension(area) function form
     std::function<std::tuple<double, double>(double)> form = NULL;
-
-    // to-be-removed 
-    /// Whether adopt constant surface tension
-    bool isConstantSurfaceTension = false;
-    /// Global stretching modulus
-    double Ksg = 0;
-    /// preferred  total face area
-    double At = -1;
-    /// augmented Lagrangian parameter for area
-    double lambdaSG = 0;
   };
 
   struct Osmotic {
@@ -105,20 +95,6 @@ struct Parameters {
     double V_res = 0;
     /// pressure(volume) function form
     std::function<std::tuple<double, double>(double)> form = NULL;
-
-    // The rest is to be removed
-    /// Whether adopt preferred volume parametrization
-    bool isPreferredVolume = false;
-    /// pressure-volume modulus
-    double Kv = 0;
-    /// preferred volume
-    double Vt = -1;
-    /// Ambient Pressure
-    double cam = -1;
-    /// Enclosed solute (atto-mol)
-    double n = 1;
-    /// augmented Lagrangian parameter for volume
-    double lambdaV = 0;
   };
 
   struct Adsorption {
