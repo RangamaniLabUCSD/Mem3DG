@@ -1360,23 +1360,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
         return: 
             tuple of surface tension of the system and surface energy
       )delim");
-  //   tension.def_readwrite("isConstantSurfaceTension",
-  //                         &Parameters::Tension::isConstantSurfaceTension,
-  //                         R"delim(
-  //           get the option of whether adopt constant surface tension
-  //       )delim");
-  //   tension.def_readwrite("Ksg", &Parameters::Tension::Ksg,
-  //                         R"delim(
-  //           get Global stretching modulus
-  //       )delim");
-  //   tension.def_readwrite("At", &Parameters::Tension::At,
-  //                         R"delim(
-  //           get preferred surface area
-  //       )delim");
-  //   tension.def_readwrite("lambdaSG", &Parameters::Tension::lambdaSG,
-  //                         R"delim(
-  //           get augmented Lagrangian parameter for area
-  //       )delim");
 
   py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(
         The osmotic pressure parameters
@@ -1397,37 +1380,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
         return: 
             tuple of osmotic pressure of the system and pressure energy
       )delim");
-  //   osmotic.def_readwrite("Kv", &Parameters::Osmotic::Kv,
-  //                         R"delim(
-  //           get Volume regularization
-  //       )delim");
-  //   osmotic.def_readwrite("Vt", &Parameters::Osmotic::Vt,
-  //                         R"delim(
-  //           get the preferred volume
-  //       )delim");
-  //   osmotic.def_readwrite("cam", &Parameters::Osmotic::cam,
-  //                         R"delim(
-  //           get the ambient concentration
-  //       )delim");
-  //   osmotic.def_readwrite("n", &Parameters::Osmotic::n,
-  //                         R"delim(
-  //           get the enclosed solute amount
-  //       )delim");
-  //   osmotic.def_readwrite("isPreferredVolume",
-  //                         &Parameters::Osmotic::isPreferredVolume,
-  //                         R"delim(
-  //           get the option of whether adopt the preferred volume
-  //           parametrization
-  //       )delim");
-  //   osmotic.def_readwrite("isConstantOsmoticPressure",
-  //                         &Parameters::Osmotic::isConstantOsmoticPressure,
-  //                         R"delim(
-  //           get the option of whether adopt constant osmotic pressure
-  //       )delim");
-  //   osmotic.def_readwrite("lambdaV", &Parameters::Osmotic::lambdaV,
-  //                         R"delim(
-  //           get augmented Lagrangian parameter for volume
-  //       )delim");
 
   py::class_<Parameters::Adsorption> adsorption(pymem3dg, "Adsorption",
                                                 R"delim(

@@ -22,22 +22,24 @@ namespace solver {
 namespace integrator {
 /**
  * @brief Conjugate Gradient propagator
- * @param system_ System object to be integrated 
- * @param characteristicTimeStep_ time step, or the initial time step for backtracking algorithm 
- * @param totalTime_ total simulation time 
- * @param savePeriod_ period of saving output data (in the unit of characteristicTimeStep_) 
- * @param tolerance_ tolerance of force L2 norm for termination 
- * @param outputDirectory_ path to the output directory  
+ * @param system_ System object to be integrated
+ * @param characteristicTimeStep_ time step, or the initial time step for
+ * backtracking algorithm
+ * @param totalTime_ total simulation time
+ * @param savePeriod_ period of saving output data (in the unit of
+ * characteristicTimeStep_)
+ * @param tolerance_ tolerance of force L2 norm for termination
+ * @param outputDirectory_ path to the output directory
  * @param frame_ frame index, if nonzero, enable continuation mode
  */
 class DLL_PUBLIC ConjugateGradient : public Integrator {
 private:
   double currentNormSquared;
   double pastNormSquared;
-  /// Normalized area difference to reference mesh
-  double areaDifference;
-  /// Normalized volume/osmotic pressure difference
-  double volumeDifference;
+  // /// Normalized area difference to reference mesh
+  // double areaDifference;
+  // /// Normalized volume/osmotic pressure difference
+  // double volumeDifference;
 
   std::size_t countCG = 0;
 
@@ -53,9 +55,9 @@ public:
                     std::string outputDirectory_, std::size_t frame_)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
                    tolerance_, outputDirectory_, frame_) {
-    // Initialize geometry constraints
-    areaDifference = std::numeric_limits<double>::infinity();
-    volumeDifference = std::numeric_limits<double>::infinity();
+    // // Initialize geometry constraints
+    // areaDifference = std::numeric_limits<double>::infinity();
+    // volumeDifference = std::numeric_limits<double>::infinity();
 
     // check the validity of parameter
     checkParameters();
@@ -92,32 +94,34 @@ public:
   }
 
   /**
-   * @brief Thresholding when adopting reduced volume parametrization
-   * @param EXIT, reference to the exit flag
-   * @param isAugmentedLagrangian, whether using augmented lagrangian method
-   * @param dArea, normalized area difference
-   * @param dVolume, normalized volume difference
-   * @param ctol, exit criterion for constraint
-   * @param increment, increment coefficient of penalty when using incremental
-   * penalty method
+   * @brief Enforce the area and volume constraint by adding additional forces
+   * using augmented Lagrangian method.
+   * @param lambdaSG augmented lagrangian coefficient for area constraint
+   * @param lambdaV augmented lagrangian coefficient for volume constraint
+   * @param dArea normalized areal strain = A / At - 1
+   * @param dVolume normalized volumetric strain = V / Vt - 1
+   * @param ctol, constraint tolerance
    * @return
    */
-  void reducedVolumeThreshold(bool &EXIT, const bool isAugmentedLagrangian,
-                              const double dArea, const double dVolume,
-                              const double ctol, double increment);
+  void enforceAugmentedLagrangianConstraints(double &lambdaSG, double &lambdaV,
+                                             const double dArea,
+                                             const double dVolume,
+                                             const double ctol);
+
   /**
-   * @brief Thresholding when adopting ambient pressure constraint
-   * @param EXIT, reference to the exit flag
-   * @param isAugmentedLagrangian, whether using augmented lagrangian method
-   * @param dArea, normalized area difference
-   * @param ctol, exit criterion for constraint
-   * @param increment, increment coefficient of penalty when using incremental
-   * penalty method
+   * @brief Enforce the area and volume constraint by adding additional forces
+   * using incremental penalty method
+   * @param Ksg variable stretching modulus for area constraint
+   * @param lambdaV variable osmotic strength for volume constraint
+   * @param dArea normalized areal strain = A / At - 1
+   * @param dVolume normalized volumetric strain = V / Vt - 1
+   * @param increment, increment coefficient
    * @return
    */
-  void pressureConstraintThreshold(bool &EXIT, const bool isAugmentedLagrangian,
-                                   const double dArea, const double ctol,
-                                   double increment);
+  void enforceIncrementalPenaltyConstraints(double &Ksg, double &Kv,
+                                            const double dArea,
+                                            const double dVolume,
+                                            double increment = 1.3);
 };
 } // namespace integrator
 } // namespace solver
