@@ -51,6 +51,7 @@ def matplotlibStyle(s=6, m=8, l=10):
     plt.rc("figure", titlesize=l)  # fontsize of the figure title
     plt.rc("pdf", fonttype=42)
 
+
 def polyscopeStyle(setLengthScale=False):
     """Helper to set polyscope style
 
@@ -788,6 +789,7 @@ def interlaceImages(fileList, videoName):
     # clip.write_videofile("video.mp4", fps=24)
     clip.write_gif(videoName + ".gif")
 
+
 def setPolyscopePermutations(psmesh, face, vertex):
     """set polyscope permutation convention
 
@@ -816,9 +818,9 @@ def animate(
     trajNc: str,
     parameters: dg.Parameters = None,
     frames: list = None,
-    showBasics = False, 
-    showForce = False, 
-    showPotential = False,
+    showBasics=False,
+    showForce=False,
+    showPotential=False,
     geodesicDistance=True,
     center: bool = True,
     meanCurvature: bool = True,
@@ -848,7 +850,7 @@ def animate(
 
     Args:
         trajNc (str): netcdf trajectory file name
-        parameters (pymem3dg.Parameters, optional): pymem3dg Parameters instance
+        parameters (pymem3dg.Parameters, optional): pymem3dg Parameters instance. Visualizing will be limited.
         geodesicDistance (bool, optional): optional data to visualize. Defaults to True
         center (bool, optional): optional data to visualize. Defaults to True
         meanCurvature (bool, optional): optional data to visualize. Defaults to True
@@ -917,7 +919,6 @@ def animate(
         else:
             system = dg.System(trajNc, frame)
             system.initialize(nMutation=0, ifMute=True)
-        polyscopePermutations = system.getPolyscopePermutations()
         setPolyscopePermutations(psmesh, face, vertex)
 
         # Add Quantities
@@ -941,7 +942,7 @@ def animate(
                     enabled=True,
                     cmap="viridis",
                 )
-            if center:
+            if center and hasParameters:
                 psmesh.add_scalar_quantity("center", system.getCenter())
             if meanCurvature:
                 meanCurvature_ = system.getVertexMeanCurvatures()
@@ -953,7 +954,7 @@ def animate(
                 if isPointwiseValue:
                     gaussianCurvature_ = gaussianCurvature_ / vertexDualAreas
                 psmesh.add_scalar_quantity("gaussianCurvature", gaussianCurvature_)
-            if geodesicDistance:
+            if geodesicDistance and hasParameters:
                 psmesh.add_distance_quantity(
                     "geodesicDistance",
                     system.computeGeodesicDistance(),
@@ -1024,80 +1025,73 @@ def animate(
                             vminmax=(-absMax, absMax),
                         )
 
-        if hasParameters:
-            if showForce:
-                if mechanicalForce:
-                    addForce(
-                        system.getForces().getMechanicalForceVec(), "mechanicalForce"
-                    )
-                if spontaneousCurvatureForce:
-                    addForce(
-                        system.getForces().getSpontaneousCurvatureForceVec(),
-                        "spontaneousCurvatureForce",
-                    )
-                if deviatoricCurvatureForce:
-                    addForce(
-                        system.getForces().getDeviatoricCurvatureForceVec(),
-                        "deviatoricCurvatureForce",
-                    )
-                if externalForce:
-                    addForce(system.getForces().getExternalForceVec(), "externalForce")
-                if capillaryForce:
-                    addForce(
-                        system.getForces().getCapillaryForceVec(), "capillaryForce"
-                    )
-                if lineCapillaryForce:
-                    addForce(
-                        system.getForces().getLineCapillaryForceVec(),
-                        "lineCapillaryForce",
-                    )
-                if osmoticForce:
-                    addForce(system.getForces().getOsmoticForceVec(), "osmoticForce")
-                if adsorptionForce:
-                    addForce(
-                        system.getForces().getAdsorptionForceVec(), "adsorptionForce"
-                    )
-                if aggregationForce:
-                    addForce(
-                        system.getForces().getAggregationForceVec(), "aggregationForce"
-                    )
-                if entropyForce:
-                    addForce(system.getForces().getEntropyForceVec(), "entropyForce")
-                if springForce:
-                    addForce(system.getForces().getSpringForceVec(), "springForce")
-            if showPotential:
-                if chemicalPotential:
-                    addPotential(
-                        system.getForces().getChemicalPotential(), "chemicalPotential"
-                    )
-                if spontaneousCurvaturePotential:
-                    addPotential(
-                        system.getForces().getSpontaneousCurvaturePotential(),
-                        "spontaneousCurvaturePotential",
-                    )
-                if deviatoricCurvaturePotential:
-                    addPotential(
-                        system.getForces().getDeviatoricCurvaturePotential(),
-                        "deviatoricCurvaturePotential",
-                    )
-                if aggregationPotential:
-                    addPotential(
-                        system.getForces().getAggregationPotential(),
-                        "aggregationPotential",
-                    )
-                if dirichletPotential:
-                    addPotential(
-                        system.getForces().getDirichletPotential(), "dirichletPotential"
-                    )
-                if adsorptionPotential:
-                    addPotential(
-                        system.getForces().getAdsorptionPotential(),
-                        "adsorptionPotential",
-                    )
-                if entropyPotential:
-                    addPotential(
-                        system.getForces().getEntropyPotential(), "entropyPotential"
-                    )
+        if showForce and hasParameters:
+            if mechanicalForce:
+                addForce(system.getForces().getMechanicalForceVec(), "mechanicalForce")
+            if spontaneousCurvatureForce:
+                addForce(
+                    system.getForces().getSpontaneousCurvatureForceVec(),
+                    "spontaneousCurvatureForce",
+                )
+            if deviatoricCurvatureForce:
+                addForce(
+                    system.getForces().getDeviatoricCurvatureForceVec(),
+                    "deviatoricCurvatureForce",
+                )
+            if externalForce:
+                addForce(system.getForces().getExternalForceVec(), "externalForce")
+            if capillaryForce:
+                addForce(system.getForces().getCapillaryForceVec(), "capillaryForce")
+            if lineCapillaryForce:
+                addForce(
+                    system.getForces().getLineCapillaryForceVec(),
+                    "lineCapillaryForce",
+                )
+            if osmoticForce:
+                addForce(system.getForces().getOsmoticForceVec(), "osmoticForce")
+            if adsorptionForce:
+                addForce(system.getForces().getAdsorptionForceVec(), "adsorptionForce")
+            if aggregationForce:
+                addForce(
+                    system.getForces().getAggregationForceVec(), "aggregationForce"
+                )
+            if entropyForce:
+                addForce(system.getForces().getEntropyForceVec(), "entropyForce")
+            if springForce:
+                addForce(system.getForces().getSpringForceVec(), "springForce")
+        if showPotential and hasParameters:
+            if chemicalPotential:
+                addPotential(
+                    system.getForces().getChemicalPotential(), "chemicalPotential"
+                )
+            if spontaneousCurvaturePotential:
+                addPotential(
+                    system.getForces().getSpontaneousCurvaturePotential(),
+                    "spontaneousCurvaturePotential",
+                )
+            if deviatoricCurvaturePotential:
+                addPotential(
+                    system.getForces().getDeviatoricCurvaturePotential(),
+                    "deviatoricCurvaturePotential",
+                )
+            if aggregationPotential:
+                addPotential(
+                    system.getForces().getAggregationPotential(),
+                    "aggregationPotential",
+                )
+            if dirichletPotential:
+                addPotential(
+                    system.getForces().getDirichletPotential(), "dirichletPotential"
+                )
+            if adsorptionPotential:
+                addPotential(
+                    system.getForces().getAdsorptionPotential(),
+                    "adsorptionPotential",
+                )
+            if entropyPotential:
+                addPotential(
+                    system.getForces().getEntropyPotential(), "entropyPotential"
+                )
 
     def callback():
         psim.PushItemWidth(100)
@@ -1134,20 +1128,21 @@ def animate(
         changed[3], isPointwiseValue = psim.Checkbox(
             "Pointwise (vs. integrated)", isPointwiseValue
         )
-        if parameters.variation.isShapeVariation:
-            changed[6], showForce = psim.Checkbox("Mechanical forces", showForce)
-            psim.SameLine()
-            changed[4], isForceVec = psim.Checkbox(
-                "Vector (vs. projected scalar)", isForceVec
-            )
-        if parameters.variation.isProteinVariation:
-            changed[7], showPotential = psim.Checkbox(
-                "Chemical potentials", showPotential
-            )
-            psim.SameLine()
-            if parameters.variation.isProteinConservation:
-                changed[8], isFluxForm = psim.Checkbox(
-                    "Flux form (vs. potential)", isFluxForm
+        if hasParameters:
+            if parameters.variation.isShapeVariation:
+                changed[6], showForce = psim.Checkbox("Mechanical forces", showForce)
+                psim.SameLine()
+                changed[4], isForceVec = psim.Checkbox(
+                    "Vector (vs. projected scalar)", isForceVec
+                )
+            if parameters.variation.isProteinVariation:
+                changed[7], showPotential = psim.Checkbox(
+                    "Chemical potentials", showPotential
+                )
+                psim.SameLine()
+                if parameters.variation.isProteinConservation:
+                    changed[8], isFluxForm = psim.Checkbox(
+                        "Flux form (vs. potential)", isFluxForm
                 )
         anyChanged = np.any(changed)
         if (prevFrameInd != currFrameInd) or anyChanged:
