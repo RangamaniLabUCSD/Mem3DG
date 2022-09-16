@@ -87,6 +87,8 @@ static const std::string MEANCURVE_VAR = "meancurvature";
 static const std::string GAUSSCURVE_VAR = "gausscurvature";
 /// Name of the protein density data
 static const std::string PHI_VAR = "proteindensity";
+/// Name of the notable vertex data
+static const std::string VERTEX_VAR = "notablevertex";
 /// Name of the spontaneous curvature data
 static const std::string SPONCURVE_VAR = "sponcurvature";
 /// Name of the external pressure data
@@ -148,6 +150,8 @@ static const std::string H_H0_VAR = "curvaturediff";
 static const std::string UINT_ARR = "uint_array";
 /// Name of double array vlen type
 static const std::string DOUBLE_ARR = "double_array";
+/// Name of bool array vlen type
+static const std::string BOOL_ARR = "bool_array";
 
 #endif
 } // namespace solver

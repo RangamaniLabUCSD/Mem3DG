@@ -91,6 +91,7 @@ public:
     meancurve_var = fd->getVar(MEANCURVE_VAR);
     gausscurve_var = fd->getVar(GAUSSCURVE_VAR);
     phi_var = fd->getVar(PHI_VAR);
+    vertex_var = fd->getVar(VERTEX_VAR);
     sponcurve_var = fd->getVar(SPONCURVE_VAR);
     chempotential_var = fd->getVar(CHEMPOTENTIAL_VAR);
     physforce_var = fd->getVar(PHYSFORCE_VAR);
@@ -176,9 +177,11 @@ public:
                          {frame_dim, nvertices_dim, spatial_dim});
     vel_var.putAtt(UNITS, LEN_UNITS + TIME_UNITS + "^(-1)");
 
-    phi_var = fd->addVar(PHI_VAR, netCDF::ncDouble,
-                                {frame_dim, nvertices_dim});
+    phi_var = fd->addVar(PHI_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
     phi_var.putAtt(UNITS, LEN_UNITS + "^(-2)");
+
+    vertex_var =
+        fd->addVar(VERTEX_VAR, netCDF::ncByte, {frame_dim, nvertices_dim});
 
     meancurve_var =
         fd->addVar(MEANCURVE_VAR, netCDF::ncDouble, {frame_dim, nvertices_dim});
@@ -414,6 +417,13 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getProteinDensity(const std::size_t idx) const;
 
+  void
+  writeNotableVertex(const std::size_t idx,
+                      const Eigen::Matrix<bool, Eigen::Dynamic, 1> &data);
+
+  Eigen::Matrix<bool, Eigen::Dynamic, 1>
+  getNotableVertex(const std::size_t idx) const;
+
   void writeMeanCurvature(const std::size_t idx,
                           const Eigen::Matrix<double, Eigen::Dynamic, 1> &data);
 
@@ -608,6 +618,7 @@ private:
   nc::NcVar angle_var;
   nc::NcVar vel_var;
   nc::NcVar phi_var;
+  nc::NcVar vertex_var;
   nc::NcVar meancurve_var;
   nc::NcVar gausscurve_var;
   nc::NcVar sponcurve_var;

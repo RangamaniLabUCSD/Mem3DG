@@ -94,7 +94,7 @@ void System::initializeConstants(bool ifMute) {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
-  center[parameters.point.index] = true;
+  notableVertex[parameters.point.index] = true;
 
   geodesicDistance.raw() = computeGeodesicDistance();
   prescribeGeodesicMasks();

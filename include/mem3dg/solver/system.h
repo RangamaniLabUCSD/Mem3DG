@@ -162,8 +162,8 @@ public:
   gcs::VertexData<bool> mutationMarker;
   /// if has boundary
   bool isOpenMesh;
-  /// defined center of the mesh
-  gcs::VertexData<bool> center;
+  /// defined notable vertex of the mesh
+  gcs::VertexData<bool> notableVertex;
   /// projected time of collision
   double projectedCollideTime;
 
@@ -399,7 +399,7 @@ public:
 
     isSmooth = true;
     mutationMarker = gc::VertexData<bool>(*mesh, false);
-    center = gc::VertexData<bool>(*mesh, false);
+    notableVertex = gc::VertexData<bool>(*mesh, false);
 
     // GC computed properties
     vpg->requireFaceNormals();
