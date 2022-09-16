@@ -1,0 +1,172 @@
+// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2020:
+//     Laboratory for Computational Cellular Mechanobiology
+//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
+//     Christopher T. Lee (ctlee@ucsd.edu)
+//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
+//     Padmini Rangamani (prangamani@eng.ucsd.edu)
+//
+
+#include "mem3dg/solver/geometry.h"
+
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
+
+namespace mem3dg {
+namespace solver {
+
+void Geometry::saveGeometry(std::string PathToSave) {
+  gcs::writeSurfaceMesh(*mesh, *vpg, PathToSave);
+}
+
+#ifdef MEM3DG_WITH_NETCDF
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+Geometry::readTrajFile(std::string trajFile, int startingFrame) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+
+  MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
+  fd.getNcFrame(startingFrame);
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      fd.getCoords(startingFrame), fd.getTopology(startingFrame));
+
+  return std::make_tuple(std::move(mesh), std::move(vpg));
+}
+#endif
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+Geometry::readMeshFile(std::string inputMesh) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg));
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
+                       EigenVectorX3dr &vertexPositionMatrix) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      vertexPositionMatrix, faceVertexMatrix);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg));
+}
+
+double Geometry::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+                                         gcs::Halfedge &he) const {
+  if (he.edge().isBoundary()) {
+    return 1;
+  } else {
+    gcs::Edge lj = he.next().edge();
+    gcs::Edge ki = he.twin().next().edge();
+    gcs::Edge il = he.next().next().edge();
+    gcs::Edge jk = he.twin().next().next().edge();
+    return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
+           vpg.edgeLengths[lj];
+  }
+}
+
+void Geometry::computeFaceTangentialDerivative(
+    gcs::VertexData<double> &quantities, gcs::FaceData<gc::Vector3> &gradient) {
+  if ((quantities.raw().array() == quantities.raw()[0]).all()) {
+    gradient.fill({0, 0, 0});
+  } else {
+    for (gcs::Face f : mesh->faces()) {
+      gc::Vector3 normal = vpg->faceNormals[f];
+      gc::Vector3 gradientVec{0, 0, 0};
+      for (gcs::Halfedge he : f.adjacentHalfedges()) {
+        gradientVec += quantities[he.next().tipVertex()] *
+                       gc::cross(normal, vecFromHalfedge(he, *vpg));
+      }
+      gradient[f] = gradientVec / 2 / vpg->faceAreas[f];
+    }
+  }
+}
+
+EigenVectorX1d Geometry::computeGeodesicDistance() {
+  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
+  gc::Vertex centerVertex;
+  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+    if (notableVertex[i]) {
+      geodesicDistance = heatSolver.computeDistance(mesh->vertex(i));
+      return geodesicDistance.raw();
+    }
+  }
+  mem3dg_runtime_error("can not find center!");
+  EigenVectorX1d foo; // dummy return
+  foo.setConstant(1, 0);
+  return foo;
+}
+
+double Geometry::inferTargetSurfaceArea() {
+  double targetArea;
+  if (isOpenMesh) {
+    targetArea = reservoirArea;
+    for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
+      targetArea += computePolygonArea(bl, vpg->inputVertexPositions);
+    }
+  } else {
+    targetArea = vpg->faceAreas.raw().sum();
+  }
+  return targetArea;
+}
+
+void Geometry::initialize(bool ifMute) {
+  isOpenMesh = mesh->hasBoundary();
+  if (!isOpenMesh && mesh->genus() != 0) {
+    mem3dg_runtime_error(
+        "Do not support closed mesh with nonzero number of genus!")
+  }
+
+  notableVertex[0] = true;
+
+  geodesicDistance.raw() = computeGeodesicDistance();
+
+  surfaceArea = vpg->faceAreas.raw().sum() + reservoirArea;
+  volume = getMeshVolume(*mesh, *vpg, true) + reservoirVolume;
+  if (!ifMute) {
+    std::cout << "area_init = " << surfaceArea << std::endl;
+    std::cout << "vol_init = " << volume << std::endl;
+    // std::cout << "Characteristic volume wrt to At = "
+    //           << (isOpenMesh
+    //                   ? reservoirVolume
+    //                   : std::pow(parameters.tension.At / constants::PI / 4,
+    //                              1.5) *
+    //                         (4 * constants::PI / 3))
+    //           << std::endl;
+  }
+}
+
+void Geometry::updateConfigurations() {
+  // refresh cached quantities after regularization
+  vpg->refreshQuantities();
+
+  /// volume and osmotic pressure
+  volume = getMeshVolume(*mesh, *vpg, true) + reservoirVolume;
+
+  // area and surface tension
+  surfaceArea = vpg->faceAreas.raw().sum() + reservoirVolume;
+}
+
+} // namespace solver
+} // namespace mem3dg

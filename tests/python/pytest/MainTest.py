@@ -240,7 +240,7 @@ class TestExampleIntegration(object):
             "forceMask",
             "proteinMask",
             "meanCurvature",
-            "center",
+            "notableVertex",
             "gaussianCurvature",
             "spontaneousCurvature",
             "dualArea",
