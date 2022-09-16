@@ -165,39 +165,17 @@ void System::updateConfigurations() {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }
 
-  /// initialize/update enclosed volume
+  /// volume and osmotic pressure
   volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
-
-  // update global osmotic pressure
-  // if (parameters.osmotic.isPreferredVolume) {
-  //   forces.osmoticPressure =
-  //       -(parameters.osmotic.Kv * (volume - parameters.osmotic.Vt) /
-  //             parameters.osmotic.Vt / parameters.osmotic.Vt +
-  //         parameters.osmotic.lambdaV);
-  // } else if (parameters.osmotic.isConstantOsmoticPressure) {
-  //   forces.osmoticPressure = parameters.osmotic.Kv;
-  // } else {
-  //   forces.osmoticPressure =
-  //       mem3dg::constants::i * mem3dg::constants::R * parameters.temperature
-  //       * (parameters.osmotic.n / volume - parameters.osmotic.cam);
-  // }
   if (parameters.osmotic.form != NULL)
     std::tie(forces.osmoticPressure, energy.pressureEnergy) =
         parameters.osmotic.form(volume);
 
-  // initialize/update total surface area
+  // area and surface tension
   surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
-
   if (parameters.tension.form != NULL)
     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
         parameters.tension.form(surfaceArea);
-  // update global surface tension
-  // forces.surfaceTension = parameters.tension.isConstantSurfaceTension
-  //                             ? parameters.tension.Ksg
-  //                             : parameters.tension.Ksg *
-  //                                       (surfaceArea - parameters.tension.At)
-  //                                       / parameters.tension.At +
-  //                                   parameters.tension.lambdaSG;
 }
 } // namespace solver
 } // namespace mem3dg
