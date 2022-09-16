@@ -943,7 +943,7 @@ def animate(
                     cmap="viridis",
                 )
             if center and hasParameters:
-                psmesh.add_scalar_quantity("center", system.getCenter())
+                psmesh.add_scalar_quantity("center", system.getNotableVertex())
             if meanCurvature:
                 meanCurvature_ = system.getVertexMeanCurvatures()
                 if isPointwiseValue:
