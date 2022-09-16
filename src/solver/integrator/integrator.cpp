@@ -435,6 +435,7 @@ void Integrator::saveMutableNetcdfData() {
   mutableTrajFile.writeRefCoords(frame, *system.refVpg);
   mutableTrajFile.writeTopology(frame, *system.mesh);
   mutableTrajFile.writeProteinDensity(frame, system.proteinDensity);
+  mutableTrajFile.writeNotableVertex(frame, system.notableVertex);
   mutableTrajFile.sync();
 }
 #endif

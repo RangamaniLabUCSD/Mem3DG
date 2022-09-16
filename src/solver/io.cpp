@@ -39,8 +39,8 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("forceMask", msk);
     richData.addVertexProperty("proteinMask", forces.proteinMask);
     gcs::VertexData<double> tkr(*mesh);
-    tkr.fromVector(center.raw().cast<double>());
-    richData.addVertexProperty("center", tkr);
+    tkr.fromVector(notableVertex.raw().cast<double>());
+    richData.addVertexProperty("notableVertex", tkr);
     // gcs::VertexData<int> mutMkr(*mesh);
     // mutMkr.fromVector(mutationMarker.raw().cast<int>());
     // richData.addVertexProperty("smoothing_mask", mutMkr);

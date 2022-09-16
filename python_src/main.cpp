@@ -1087,10 +1087,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the pointwise spontaneous curvature
       )delim");
   system.def(
-      "getCenter", [](System &s) { return s.center.raw(); },
+      "getNotableVertex", [](System &s) { return s.notableVertex.raw(); },
       py::return_value_policy::copy,
       R"delim(
-          get vertex data to track center, which may or may not be a single vertex
+          get vertex data to track the notable vertex, which may or may not be a single vertex
       )delim");
   system.def(
       "getVelocity",
@@ -1480,17 +1480,17 @@ PYBIND11_MODULE(_core, pymem3dg) {
       "setForm",
       [](Parameters::Point &point,
          std::function<EigenVectorX1d(EigenVectorX3sr, EigenVectorX3dr,
-                                      EigenVectorX1d)> &centerFunction) {
-        point.form = centerFunction;
+                                      EigenVectorX1d)> &notableVertexFunction) {
+        point.form = notableVertexFunction;
       },
       R"delim(
-          functional to set the center of the mesh 
+          functional to find the notable vertex of the mesh 
         args: 
             faceMatrix (npt.NDarray[int64])
             vertexMatrix (npt.NDarray[float64])
             geodesicDistance (list)
         return: 
-            center (bool list)
+            notable vertex (bool list)
       )delim");
 
   py::class_<Parameters::Protein> protein(pymem3dg, "Protein",

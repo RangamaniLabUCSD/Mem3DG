@@ -24,7 +24,7 @@ EigenVectorX1d System::computeGeodesicDistance() {
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   gc::Vertex centerVertex;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    if (center[i]) {
+    if (notableVertex[i]) {
       geodesicDistance = heatSolver.computeDistance(mesh->vertex(i));
       return geodesicDistance.raw();
     }
