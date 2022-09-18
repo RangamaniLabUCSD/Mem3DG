@@ -24,13 +24,13 @@ void System::initialize(std::size_t nMutation, bool ifMute) {
   checkConfiguration();
   initializeConstants(ifMute);
   meshProcessor.summarizeStatus();
+  updateConfigurations();
+  geometry.updateReferenceConfigurations();
   if (nMutation > 0) {
     if (!meshProcessor.isMeshMutate) {
       mem3dg_runtime_message(
           "request mesh mutation but mesh mutator is not activated!");
     } else {
-      updateConfigurations();
-      geometry.updateReferenceConfigurations();
       mutateMesh(nMutation);
       updateConfigurations();
       geometry.refVpg = geometry.vpg->copy();
