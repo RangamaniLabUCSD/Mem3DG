@@ -117,7 +117,7 @@ public:
   // =======================================
   Geometry(std::string trajFile, int startingFrame)
       : Geometry(readTrajFile(trajFile, startingFrame)) {
-    mem3dg_runtime_error("need to import vertex, A_res and V_res!");
+    mem3dg_runtime_message("need to import vertex, A_res and V_res!");
   };
 
   // =======================================
@@ -185,7 +185,7 @@ public:
     notableVertex[notableVertex_] = true;
     computeGeodesicDistance();
     volume = getMeshVolume(*mesh, *vpg, true) + reservoirVolume;
-    surfaceArea = vpg->faceAreas.raw().sum() + reservoirVolume;
+    surfaceArea = vpg->faceAreas.raw().sum() + reservoirArea;
     updateReferenceConfigurations();
     isOpenMesh = mesh->hasBoundary();
     if (!isOpenMesh && mesh->genus() != 0) {

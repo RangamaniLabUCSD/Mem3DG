@@ -11,8 +11,6 @@
 #     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
-from typing_extensions import assert_type
-import pytest
 import pymem3dg as dg
 import polyscope
 import pymem3dg.util as dg_util
@@ -40,18 +38,39 @@ class TestExampleIntegration(object):
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
     import numpy as np
 
+    geometry = dg.Geometry(face, vertex, vertex)
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
     initialConditions = {
-        "topologyMatrix": face,
-        "vertexMatrix": vertex,
-        "referenceVertexMatrix": vertex,
+        "geometry": geometry,
         "proteinDensity": proteinDensity,
         "velocity": velocity,
     }
 
     # polyscope.init()
     dg_vis.polyscopeStyle()
+
+    def test_geometry(self):
+        g1 = dg.Geometry(self.face, self.vertex, 10, 0, 0)
+        g2 = dg.Geometry(self.face, self.vertex, 0, 2, 4)
+        assert (g2.surfaceArea - g1.surfaceArea) == 2
+        assert (g2.volume - g1.volume) == 4
+        assert g1.getNotableVertex()[10]
+        assert g2.getNotableVertex()[0]
+
+    def test_system(self):
+        p = dg.Parameters()
+        p.variation.isShapeVariation = True
+        p.bending.Kbc = 0.1
+        p.bending.H0c = 10
+        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension=0.5))
+        p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
+        arguments = self.initialConditions
+        arguments["parameters"] = p
+        s = dg.System(**arguments)
+        assert (
+            s.getGeometry().getVertexMatrix() == self.geometry.getVertexMatrix()
+        ).all()
 
     def test_shape_and_protein_variation(self):
         """test simulation with both shape and protein variation"""
@@ -319,9 +338,10 @@ class TestExampleIntegration(object):
         face, vertex = dg.getIcosphere(radius=1, subdivision=3)
         p = dg.Parameters()
         p.point.index = 0
-        system = dg.System(face, vertex, p)
+        geometry = dg.Geometry(face, vertex, 0, 0, 0)
+        geometry.computeGeodesicDistance()
+        system = dg.System(geometry, p)
         system.initialize()
-        system.computeGeodesicDistance()
 
         # protein
         system.parameters.protein.setForm(
@@ -349,7 +369,7 @@ class TestExampleIntegration(object):
         )
         system.initialize()
         assert system.getForces().getOsmoticPressure() == 0.01
-        assert system.getEnergy().pressureEnergy == -0.01 * system.volume
+        assert system.getEnergy().pressureEnergy == -0.01 * system.getGeometry().volume
 
         # surface tension
         system.parameters.tension.setForm(
@@ -357,4 +377,6 @@ class TestExampleIntegration(object):
         )
         system.initialize()
         assert system.getForces().getSurfaceTension() == 0.01
-        assert system.getEnergy().surfaceEnergy == 0.01 * system.surfaceArea
+        assert (
+            system.getEnergy().surfaceEnergy == 0.01 * system.getGeometry().surfaceArea
+        )
