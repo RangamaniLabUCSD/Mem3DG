@@ -24,45 +24,40 @@ void System::initialize(std::size_t nMutation, bool ifMute) {
   checkConfiguration();
   initializeConstants(ifMute);
   meshProcessor.summarizeStatus();
-  if (!meshProcessor.isMeshMutate && nMutation != 0) {
-    mem3dg_runtime_message("mesh mutator not activated!");
-  } else {
-    updateConfigurations();
-    updateReferenceConfigurations();
-    mutateMesh(nMutation);
-  }
-  if (nMutation != 0) {
-    updateConfigurations();
-    refVpg = vpg->copy();
-    updateReferenceConfigurations();
+  if (nMutation > 0) {
+    if (!meshProcessor.isMeshMutate) {
+      mem3dg_runtime_message(
+          "request mesh mutation but mesh mutator is not activated!");
+    } else {
+      updateConfigurations();
+      geometry.updateReferenceConfigurations();
+      mutateMesh(nMutation);
+      updateConfigurations();
+      geometry.refVpg = geometry.vpg->copy();
+      geometry.updateReferenceConfigurations();
+    }
   }
 }
 
 void System::checkConfiguration() {
-
-  isOpenMesh = mesh->hasBoundary();
-  parameters.checkParameters(isOpenMesh, mesh->nVertices());
+  parameters.checkParameters(geometry.isOpenMesh, geometry.mesh->nVertices());
   meshProcessor.summarizeStatus();
   if (meshProcessor.isMeshMutate && !parameters.variation.isShapeVariation) {
     mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
                          "variation simulation");
   }
-  if (!isOpenMesh && mesh->genus() != 0) {
-    mem3dg_runtime_error(
-        "Do not support closed mesh with nonzero number of genus!")
-  }
   if (parameters.selfAvoidance.mu != 0) {
-    for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-      gc::Vertex vi{mesh->vertex(i)};
-      gc::VertexData<bool> neighborList(*mesh, false);
+    for (std::size_t i = 0; i < geometry.mesh->nVertices(); ++i) {
+      gc::Vertex vi{geometry.mesh->vertex(i)};
+      gc::VertexData<bool> neighborList(*geometry.mesh, false);
       meshProcessor.meshMutator.markVertices(neighborList, vi,
                                              parameters.selfAvoidance.n);
-      for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+      for (std::size_t j = i + 1; j < geometry.mesh->nVertices(); ++j) {
         if (neighborList[j])
           continue;
-        gc::Vertex vj{mesh->vertex(j)};
-        gc::Vector3 r =
-            vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+        gc::Vertex vj{geometry.mesh->vertex(j)};
+        gc::Vector3 r = geometry.vpg->inputVertexPositions[vj] -
+                        geometry.vpg->inputVertexPositions[vi];
         double distance = gc::norm(r);
         if (distance < parameters.selfAvoidance.d)
           mem3dg_runtime_error(
@@ -94,50 +89,23 @@ void System::initializeConstants(bool ifMute) {
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
 
-  notableVertex[parameters.point.index] = true;
-
-  geodesicDistance.raw() = computeGeodesicDistance();
   prescribeGeodesicMasks();
 
-  if (mesh->hasBoundary()) {
-    boundaryForceMask(*mesh, forces.forceMask,
+  if (geometry.mesh->hasBoundary()) {
+    boundaryForceMask(*geometry.mesh, forces.forceMask,
                       parameters.boundary.shapeBoundaryCondition);
-    boundaryProteinMask(*mesh, forces.proteinMask,
+    boundaryProteinMask(*geometry.mesh, forces.proteinMask,
                         parameters.boundary.proteinBoundaryCondition);
-  }
-
-  surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
-  volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
-  if (!ifMute) {
-    std::cout << "area_init = " << surfaceArea << std::endl;
-    std::cout << "vol_init = " << volume << std::endl;
-    // std::cout << "Characteristic volume wrt to At = "
-    //           << (isOpenMesh
-    //                   ? parameters.osmotic.V_res
-    //                   : std::pow(parameters.tension.At / constants::PI / 4,
-    //                              1.5) *
-    //                         (4 * constants::PI / 3))
-    //           << std::endl;
-  }
-}
-
-void System::updateReferenceConfigurations() {
-  refVpg->requireEdgeLengths();
-  refVpg->requireFaceAreas();
-  for (std::size_t i = 0; i < mesh->nHalfedges(); ++i) {
-    gcs::Halfedge he{mesh->halfedge(i)};
-    refLcrs[he] = computeLengthCrossRatio(*refVpg, he);
   }
 }
 
 void System::updateConfigurations() {
-
-  // refresh cached quantities after regularization
-  vpg->refreshQuantities();
+  geometry.updateConfigurations();
 
   // compute face gradient of protein density
   if (parameters.dirichlet.eta != 0) {
-    computeFaceTangentialDerivative(proteinDensity, proteinDensityGradient);
+    geometry.computeFaceTangentialDerivative(proteinDensity,
+                                             proteinDensityGradient);
   }
 
   // Update protein density dependent quantities
@@ -165,17 +133,15 @@ void System::updateConfigurations() {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }
 
-  /// volume and osmotic pressure
-  volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
+  /// surface tension and osmotic pressure
   if (parameters.osmotic.form != NULL)
     std::tie(forces.osmoticPressure, energy.pressureEnergy) =
-        parameters.osmotic.form(volume);
+        parameters.osmotic.form(geometry.volume);
 
   // area and surface tension
-  surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
   if (parameters.tension.form != NULL)
     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
-        parameters.tension.form(surfaceArea);
+        parameters.tension.form(geometry.surfaceArea);
 }
 } // namespace solver
 } // namespace mem3dg

@@ -21,6 +21,7 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 
+#include "mem3dg/solver/geometry.h"
 #include "mem3dg/solver/integrator/conjugate_gradient.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/system.h"
@@ -800,6 +801,223 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 #pragma endregion mesh_mutator
 
+#pragma region geometry
+  py::class_<Geometry> geometry(pymem3dg, "Geometry",
+                                R"delim(
+        The system
+    )delim");
+
+  geometry.def(py::init<std::string, std::string>(), py::arg("inputMesh"),
+               py::arg("referenceMesh"),
+               R"delim(
+        System constructor with .ply files. 
+      )delim");
+  geometry.def(py::init<std::string>(), py::arg("inputMesh"),
+               R"delim(
+        System constructor with .ply files. 
+      )delim");
+  geometry.def(
+      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &>(),
+      py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+      py::arg("vertexMatrix"),
+      R"delim(
+        System constructor with Matrices 
+      )delim");
+  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &>(),
+               py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+               R"delim(
+        System constructor with Matrices 
+      )delim");
+  geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
+               py::arg("startingFrame"),
+               R"delim(
+        System constructor with NetCDF trajectory file
+      )delim");
+  geometry.def_readonly("surfaceArea", &Geometry::surfaceArea,
+                        R"delim(
+          get the surface area of the mesh
+      )delim");
+  geometry.def_readonly("volume", &Geometry::volume,
+                        R"delim(
+          get the enclosed volume of the mesh
+      )delim");
+  geometry.def(
+      "getNotableVertex", [](Geometry &s) { return s.notableVertex.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get vertex data to track the notable vertex, which may or may not be a single vertex
+      )delim");
+
+  geometry.def(
+      "getLumpedMassMatrix",
+      [](Geometry &s) { return s.vpg->vertexLumpedMassMatrix; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the lumped mass matrix of the mesh
+      )delim");
+  geometry.def(
+      "getCotanLaplacian", [](Geometry &s) { return s.vpg->cotanLaplacian; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the Cotan Laplacian matrix of the mesh
+      )delim");
+  geometry.def(
+      "getVertexNormals",
+      [](Geometry &s) { return toMatrix(s.vpg->vertexNormals); },
+      py::return_value_policy::copy,
+      R"delim(
+          get angle-weighted normal on vertices
+      )delim");
+  geometry.def(
+      "getInputVertexPositions",
+      [](Geometry &s) {
+        return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the vertex position matrix
+      )delim");
+  geometry.def(
+      "getFaceVertexMatrix",
+      [](Geometry &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the face vertex matrix
+      )delim");
+  geometry.def(
+      "getVertexAdjacencyMatrix", [](Geometry &s) { return s.vpg->d0; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the signed E-V vertex adjacency matrix, equivalent of d0 operator
+      )delim");
+  geometry.def(
+      "getEdgeAdjacencyMatrix", [](Geometry &s) { return s.vpg->d1; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the signed F-E edge adjacency matrix, equivalent of d1 operator
+      )delim");
+  geometry.def(
+      "getEdgeLengths", [](Geometry &s) { return s.vpg->edgeLengths.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get edge lengths 
+      )delim");
+  geometry.def(
+      "getVertexDualAreas",
+      [](Geometry &s) { return s.vpg->vertexDualAreas.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get vertex dual area
+      )delim");
+  geometry.def(
+      "getVertexMeanCurvatures",
+      [](Geometry &s) {
+        s.vpg->requireVertexMeanCurvatures();
+        return s.vpg->vertexMeanCurvatures.raw();
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated scalar mean curvature
+      )delim");
+  geometry.def(
+      "getVertexGaussianCurvatures",
+      [](Geometry &s) {
+        s.vpg->requireVertexGaussianCurvatures();
+        return s.vpg->vertexGaussianCurvatures.raw();
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated scalar Gaussian Curvature
+      )delim");
+  geometry.def(
+      "getVertexGaussianCurvatureVectors",
+      [](Geometry &s) {
+        auto vector = s.computeVertexGaussianCurvatureVectors();
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated vector Gaussian Curvature
+      )delim");
+  geometry.def(
+      "getVertexVolumeVariationVectors",
+      [](Geometry &s) {
+        auto vector = s.computeVertexVolumeVariationVectors();
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated vector volume variation (dual area)
+      )delim");
+  geometry.def(
+      "getVertexMeanCurvatureVectors",
+      [](Geometry &s) {
+        auto vector = s.computeVertexMeanCurvatureVectors();
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated vector Mean Curvature
+      )delim");
+
+  /**
+   * @brief    geometry setter
+   */
+  geometry.def(
+      "setInputVertexPositions",
+      [](Geometry &s, EigenVectorX3dr newGeo) {
+        gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
+      },
+      R"delim(
+          set the vertex position matrix
+      )delim");
+
+  /**
+   * @brief Method: I/O
+   */
+  geometry.def(
+      "getPolyscopePermutations",
+      [](Geometry &s) { return gcs::polyscopePermutations(*s.mesh); },
+      R"delim(
+          get polyscope permutation 
+      )delim");
+
+  geometry.def(
+      "getVertexSchlafliLaplacianMeanCurvatureVectors",
+      [](Geometry &s, EigenVectorX1d spontaneousCurvature) {
+        gcs::VertexData<double> H0(*s.mesh);
+        H0.fromVector(spontaneousCurvature);
+        auto vector = s.computeVertexSchlafliLaplacianMeanCurvatureVectors(H0);
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the vertex Schlafli based Laplacian of mean curvature Vectors
+      )delim");
+
+  /**
+   * @brief Method: computeGeodesics
+   */
+  geometry.def("computeGeodesicDistance", &Geometry::computeGeodesicDistance,
+               R"delim(
+          
+          compute the geodesic distance centered around Center cached in System
+
+          return: NDarray[double]
+      )delim");
+
+  /**
+   * @brief Method: I/O
+   */
+  geometry.def(
+      "getPolyscopeEdgeOrientations",
+      [](Geometry &s) { return gcs::polyscopeEdgeOrientations(*s.mesh).raw(); },
+      R"delim(
+          get polyscope edge orientation 
+      )delim");
+
+#pragma enregion geometry
+
 #pragma region system
   // ==========================================================
   // =============          System              ===============
@@ -810,79 +1028,35 @@ PYBIND11_MODULE(_core, pymem3dg) {
     )delim");
 
   /**
-   * @brief Constructors by .ply file
-   */
-  system.def(py::init<std::string, std::string, EigenVectorX1d &,
-                      EigenVectorX3dr &, Parameters &, double>(),
-             py::arg("inputMesh"), py::arg("referenceMesh"),
-             py::arg("proteinDensity"), py::arg("velocity"),
-             py::arg("parameters"), py::arg("time") = 0,
-             R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &,
-                      Parameters &, double>(),
-             py::arg("inputMesh"), py::arg("proteinDensity"),
-             py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
-             R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(py::init<std::string, Parameters &, double>(),
-             py::arg("inputMesh"), py::arg("parameters"), py::arg("time") = 0,
-
-             R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(
-      py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &, double>(),
-      py::arg("inputMesh"), py::arg("proteinDensity"), py::arg("velocity"),
-      py::arg("time") = 0,
-      R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(py::init<std::string, double>(), py::arg("inputMesh"),
-             py::arg("time") = 0,
-             R"delim(
-        System constructor with .ply files. 
-      )delim");
-
-  /**
    * @brief Constructors by matrices
    */
-  system.def(
-      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
-               EigenVectorX1d &, EigenVectorX3dr &, Parameters &, double>(),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-      py::arg("referenceVertexMatrix"), py::arg("proteinDensity"),
-      py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
-      R"delim(
+  system.def(py::init<Geometry &, EigenVectorX1d &, EigenVectorX3dr &,
+                      Parameters &, double>(),
+             py::arg("geometry"), py::arg("proteinDensity"),
+             py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
+             R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
-                      EigenVectorX3dr &, Parameters &, double>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("proteinDensity"), py::arg("velocity"),
+  system.def(py::init<Geometry &, EigenVectorX1d &, EigenVectorX3dr &,
+                      Parameters &, double>(),
+             py::arg("geometry"), py::arg("proteinDensity"),
+             py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
+             R"delim(
+        System constructor with Matrices 
+      )delim");
+  system.def(py::init<Geometry &, Parameters &, double>(), py::arg("geometry"),
              py::arg("parameters"), py::arg("time") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
   system.def(
-      py::init<EigenVectorX3sr &, EigenVectorX3dr &, Parameters &, double>(),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("parameters"),
+      py::init<Geometry &, EigenVectorX1d &, EigenVectorX3dr &, double>(),
+      py::arg("geometry"), py::arg("proteinDensity"), py::arg("velocity"),
       py::arg("time") = 0,
       R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
-                      EigenVectorX3dr &, double>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("proteinDensity"), py::arg("velocity"),
-             py::arg("time") = 0,
-             R"delim(
-        System constructor with Matrices 
-      )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, double>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+  system.def(py::init<Geometry &, double>(), py::arg("geometry"),
              py::arg("time") = 0,
              R"delim(
         System constructor with Matrices 
@@ -904,6 +1078,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 #endif
 
+  system.def(
+      "getGeometry", [](System &s) -> Geometry & { return s.geometry; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the pointwise spontaneous curvature
+      )delim");
+
   /**
    * @brief Initializing arguments
    */
@@ -918,151 +1099,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
   system.def_readwrite("time", &System::time,
                        R"delim(
           get the time
-      )delim");
-
-  /**
-   * @brief    Geometric properties (Geometry central) getter
-   */
-  system.def_readonly("surfaceArea", &System::surfaceArea,
-                      R"delim(
-          get the surface area of the mesh
-      )delim");
-  system.def_readonly("volume", &System::volume,
-                      R"delim(
-          get the enclosed volume of the mesh
-      )delim");
-  system.def(
-      "getLumpedMassMatrix",
-      [](System &s) { return s.vpg->vertexLumpedMassMatrix; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the lumped mass matrix of the mesh
-      )delim");
-  system.def(
-      "getCotanLaplacian", [](System &s) { return s.vpg->cotanLaplacian; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the Cotan Laplacian matrix of the mesh
-      )delim");
-  system.def(
-      "getVertexNormals",
-      [](System &s) { return toMatrix(s.vpg->vertexNormals); },
-      py::return_value_policy::copy,
-      R"delim(
-          get angle-weighted normal on vertices
-      )delim");
-  system.def(
-      "getInputVertexPositions",
-      [](System &s) {
-        return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the vertex position matrix
-      )delim");
-  system.def(
-      "getFaceVertexMatrix",
-      [](System &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get the face vertex matrix
-      )delim");
-  system.def(
-      "getVertexAdjacencyMatrix", [](System &s) { return s.vpg->d0; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the signed E-V vertex adjacency matrix, equivalent of d0 operator
-      )delim");
-  system.def(
-      "getEdgeAdjacencyMatrix", [](System &s) { return s.vpg->d1; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the signed F-E edge adjacency matrix, equivalent of d1 operator
-      )delim");
-  system.def(
-      "getEdgeLengths", [](System &s) { return s.vpg->edgeLengths.raw(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get edge lengths 
-      )delim");
-  system.def(
-      "getVertexDualAreas",
-      [](System &s) { return s.vpg->vertexDualAreas.raw(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get vertex dual area
-      )delim");
-  system.def(
-      "getVertexMeanCurvatures",
-      [](System &s) {
-        s.vpg->requireVertexMeanCurvatures();
-        return s.vpg->vertexMeanCurvatures.raw();
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated scalar mean curvature
-      )delim");
-  system.def(
-      "getVertexGaussianCurvatures",
-      [](System &s) {
-        s.vpg->requireVertexGaussianCurvatures();
-        return s.vpg->vertexGaussianCurvatures.raw();
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated scalar Gaussian Curvature
-      )delim");
-  system.def(
-      "getVertexGaussianCurvatureVectors",
-      [](System &s) {
-        auto vector = s.computeVertexGaussianCurvatureVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated vector Gaussian Curvature
-      )delim");
-  system.def(
-      "getVertexVolumeVariationVectors",
-      [](System &s) {
-        auto vector = s.computeVertexVolumeVariationVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated vector volume variation (dual area)
-      )delim");
-  system.def(
-      "getVertexMeanCurvatureVectors",
-      [](System &s) {
-        auto vector = s.computeVertexMeanCurvatureVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated vector Mean Curvature
-      )delim");
-  system.def(
-      "getVertexSchlafliLaplacianMeanCurvatureVectors",
-      [](System &s) {
-        auto vector = s.computeVertexSchlafliLaplacianMeanCurvatureVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the vertex Schlafli based Laplacian of mean curvature Vectors
-      )delim");
-
-  /**
-   * @brief    geometry setter
-   */
-  system.def(
-      "setInputVertexPositions",
-      [](System &s, EigenVectorX3dr newGeo) {
-        gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
-      },
-      R"delim(
-          set the vertex position matrix
       )delim");
 
   /**
@@ -1085,12 +1121,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::return_value_policy::copy,
       R"delim(
           get the pointwise spontaneous curvature
-      )delim");
-  system.def(
-      "getNotableVertex", [](System &s) { return s.notableVertex.raw(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get vertex data to track the notable vertex, which may or may not be a single vertex
       )delim");
   system.def(
       "getVelocity",
@@ -1182,17 +1212,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
-   * @brief Method: computeGeodesics
-   */
-  system.def("computeGeodesicDistance", &System::computeGeodesicDistance,
-             R"delim(
-          
-          compute the geodesic distance centered around Center cached in System
-
-          return: NDarray[double]
-      )delim");
-
-  /**
    * @brief Method: updateVertexPosition
    */
   system.def("updateConfigurations", &System::updateConfigurations,
@@ -1207,26 +1226,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
              py::arg("isJustGeometry") = false,
              R"delim(
           save snapshot data to directory
-      )delim");
-
-  /**
-   * @brief Method: I/O
-   */
-  system.def(
-      "getPolyscopePermutations",
-      [](System &s) { return gcs::polyscopePermutations(*s.mesh); },
-      R"delim(
-          get polyscope permutation 
-      )delim");
-
-  /**
-   * @brief Method: I/O
-   */
-  system.def(
-      "getPolyscopeEdgeOrientations",
-      [](System &s) { return gcs::polyscopeEdgeOrientations(*s.mesh).raw(); },
-      R"delim(
-          get polyscope edge orientation 
       )delim");
 
   /**

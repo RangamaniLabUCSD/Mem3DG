@@ -69,8 +69,10 @@ public:
 };
 
 TEST_F(IntegratorTest, EulerIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, 0);
+  mem3dg::solver::Geometry geometry(mesh, vpg);
+  mem3dg::solver::System f(geometry, p, 0);
   f.initialize(0, true);
+  // f.testConservativeForcing(0.1);
   mem3dg::solver::integrator::Euler integrator{f,   dt,        T, tSave,
                                                eps, outputDir, 0};
   integrator.trajFileName = "traj.nc";
@@ -78,7 +80,8 @@ TEST_F(IntegratorTest, EulerIntegratorTest) {
 }
 
 TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
-  mem3dg::solver::System f(mesh, vpg, p, 0);
+  mem3dg::solver::Geometry geometry(mesh, vpg);
+  mem3dg::solver::System f(geometry, p, 0);
   f.initialize(0, true);
   mem3dg::solver::integrator::ConjugateGradient integrator{
       f, dt, T, tSave, eps, outputDir, 0};
@@ -88,7 +91,8 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
 
 TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
   p.damping = 0.1 / dt;
-  mem3dg::solver::System f(mesh, vpg, p, 0);
+  mem3dg::solver::Geometry geometry(mesh, vpg);
+  mem3dg::solver::System f(geometry, p, 0);
   f.initialize(0, true);
   mem3dg::solver::integrator::VelocityVerlet integrator{
       f, dt, 1, tSave, eps, outputDir, 0};

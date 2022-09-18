@@ -131,10 +131,11 @@ protected:
  */
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, refVertexMatrix,
-                           proteinDensity, velocity, p, 0);
+  mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
+                                    refVertexMatrix, p.point.index, p.tension.A_res, p.osmotic.V_res);
+  mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
   f.initialize(0, true);
-  f.computeGeodesicDistance();
+  f.geometry.computeGeodesicDistance();
   f.prescribeProteinDensityDistribution();
   f.updateConfigurations();
   // First time calculation of force
@@ -165,10 +166,11 @@ TEST_F(ForceTest, ConservativeForcesTest) {
 TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, refVertexMatrix,
-                           proteinDensity, velocity, p, 0);
+  mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
+                                    refVertexMatrix, p.point.index, p.tension.A_res, p.osmotic.V_res);
+  mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
   f.initialize(0, true);
-  f.computeGeodesicDistance();
+  f.geometry.computeGeodesicDistance();
   f.prescribeProteinDensityDistribution();
   f.updateConfigurations();
   EXPECT_TRUE(f.testConservativeForcing(h));

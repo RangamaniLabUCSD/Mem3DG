@@ -100,15 +100,16 @@ bool Euler::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.updateConfigurations();
-      system.refVpg = system.vpg->copy();
-      system.updateReferenceConfigurations();
+      system.geometry.refVpg = system.geometry.vpg->copy();
+      system.geometry.updateReferenceConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics >
         (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
-      system.geodesicDistance.raw() = system.computeGeodesicDistance();
+      system.geometry.geodesicDistance.raw() =
+          system.geometry.computeGeodesicDistance();
       if (system.parameters.protein.form != NULL)
         system.prescribeProteinDensityDistribution();
       system.updateConfigurations();
@@ -196,13 +197,14 @@ void Euler::march() {
   if (system.parameters.variation.isProteinVariation) {
     if (system.parameters.variation.isProteinConservation) {
       system.proteinRateOfChange.raw() =
-          system.parameters.proteinMobility * system.vpg->hodge0Inverse *
-          system.vpg->d0.transpose() *
+          system.parameters.proteinMobility *
+          system.geometry.vpg->hodge0Inverse *
+          system.geometry.vpg->d0.transpose() *
           system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
     } else {
       system.proteinRateOfChange = system.parameters.proteinMobility *
                                    system.forces.chemicalPotential /
-                                   system.vpg->vertexDualAreas;
+                                   system.geometry.vpg->vertexDualAreas;
     }
     system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
                             system.forces.chemicalPotential.raw().array())
@@ -227,7 +229,7 @@ void Euler::march() {
   } else {
     timeStep = characteristicTimeStep;
   }
-  system.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 
