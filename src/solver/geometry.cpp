@@ -57,6 +57,25 @@ Geometry::readMeshFile(std::string inputMesh) {
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+Geometry::readMeshFile(std::string inputMesh, std::string referenceMesh) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> refMesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::tie(refMesh, refVpg) = gcs::readManifoldSurfaceMesh(referenceMesh);
+  refVpg = refVpg->reinterpretTo(*mesh);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
 Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
                        EigenVectorX3dr &vertexPositionMatrix) {
@@ -70,6 +89,27 @@ Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
       vertexPositionMatrix, faceVertexMatrix);
 
   return std::make_tuple(std::move(mesh), std::move(vpg));
+}
+
+std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           std::unique_ptr<gcs::VertexPositionGeometry>>
+Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
+                       EigenVectorX3dr &vertexPositionMatrix,
+                       EigenVectorX3dr &refVertexPositionMatrix) {
+
+  // Declare pointers to mesh / geometry objects
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+
+  // Load input mesh and geometry
+  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+      vertexPositionMatrix, faceVertexMatrix);
+  refVpg = std::make_unique<gcs::VertexPositionGeometry>(
+      *mesh, refVertexPositionMatrix);
+
+  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
 }
 
 double Geometry::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
@@ -131,29 +171,12 @@ double Geometry::inferTargetSurfaceArea() {
   return targetArea;
 }
 
-void Geometry::initialize(bool ifMute) {
-  isOpenMesh = mesh->hasBoundary();
-  if (!isOpenMesh && mesh->genus() != 0) {
-    mem3dg_runtime_error(
-        "Do not support closed mesh with nonzero number of genus!")
-  }
-
-  notableVertex[0] = true;
-
-  geodesicDistance.raw() = computeGeodesicDistance();
-
-  surfaceArea = vpg->faceAreas.raw().sum() + reservoirArea;
-  volume = getMeshVolume(*mesh, *vpg, true) + reservoirVolume;
-  if (!ifMute) {
-    std::cout << "area_init = " << surfaceArea << std::endl;
-    std::cout << "vol_init = " << volume << std::endl;
-    // std::cout << "Characteristic volume wrt to At = "
-    //           << (isOpenMesh
-    //                   ? reservoirVolume
-    //                   : std::pow(parameters.tension.At / constants::PI / 4,
-    //                              1.5) *
-    //                         (4 * constants::PI / 3))
-    //           << std::endl;
+void Geometry::updateReferenceConfigurations() {
+  refVpg->requireEdgeLengths();
+  refVpg->requireFaceAreas();
+  for (std::size_t i = 0; i < mesh->nHalfedges(); ++i) {
+    gcs::Halfedge he{mesh->halfedge(i)};
+    refLcrs[he] = computeLengthCrossRatio(*refVpg, he);
   }
 }
 

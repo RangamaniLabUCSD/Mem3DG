@@ -39,6 +39,7 @@
 #include "mem3dg/macros.h"
 #include "mem3dg/mesh_io.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/solver/geometry.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/type_utilities.h"
 
@@ -158,6 +159,8 @@ struct Forces {
   gcs::VertexData<gc::Vector3> forceMask;
   /// protein mask
   gcs::VertexData<double> proteinMask;
+
+  Forces(Geometry &geometry_) : Forces(*geometry_.mesh, *geometry_.vpg){};
 
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
       : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),

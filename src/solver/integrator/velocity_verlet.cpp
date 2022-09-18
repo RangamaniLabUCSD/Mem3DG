@@ -80,15 +80,16 @@ bool VelocityVerlet::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.updateConfigurations();
-      system.refVpg = system.vpg->copy();
-      system.updateReferenceConfigurations();
+      system.geometry.refVpg = system.geometry.vpg->copy();
+      system.geometry.updateReferenceConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics >
         (updateGeodesicsPeriod * timeStep)) {
       lastUpdateGeodesics = system.time;
-      system.geodesicDistance.raw() = system.computeGeodesicDistance();
+      system.geometry.geodesicDistance.raw() =
+          system.geometry.computeGeodesicDistance();
       if (system.parameters.protein.form != NULL)
         system.prescribeProteinDensityDistribution();
       system.updateConfigurations();
@@ -187,13 +188,14 @@ void VelocityVerlet::march() {
   if (system.parameters.variation.isProteinVariation) {
     if (system.parameters.variation.isProteinConservation) {
       system.proteinRateOfChange.raw() =
-          system.parameters.proteinMobility * system.vpg->hodge0Inverse *
-          system.vpg->d0.transpose() *
+          system.parameters.proteinMobility *
+          system.geometry.vpg->hodge0Inverse *
+          system.geometry.vpg->d0.transpose() *
           system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
     } else {
       system.proteinRateOfChange = system.parameters.proteinMobility *
                                    system.forces.chemicalPotential /
-                                   system.vpg->vertexDualAreas;
+                                   system.geometry.vpg->vertexDualAreas;
     }
     system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
                             system.forces.chemicalPotential.raw().array())
@@ -225,7 +227,7 @@ void VelocityVerlet::march() {
   double hdt = 0.5 * timeStep, hdt2 = hdt * timeStep;
 
   // stepping on vertex position
-  system.vpg->inputVertexPositions +=
+  system.geometry.vpg->inputVertexPositions +=
       system.velocity * timeStep +
       hdt2 *
           pastMechanicalForceVec; // x_{i+1} = x_i + dt_i * v_i + 0.5 * (dt_i)^2

@@ -97,7 +97,8 @@ int main() {
   EigenVectorX1d phi = Eigen::MatrixXd::Constant(vpg.rows(), 1, 1);
   EigenVectorX3dr vel = Eigen::MatrixXd::Constant(vpg.rows(), 3, 0);
 
-  mem3dg::solver::System system(mesh, vpg, refVpg, phi, vel, p, 0);
+  mem3dg::solver::Geometry geometry(mesh, vpg, refVpg);
+  mem3dg::solver::System system(geometry, phi, vel, p, 0);
   system.initialize();
   //   system.testConservativeForcing(0.001);
 

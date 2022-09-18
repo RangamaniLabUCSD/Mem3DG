@@ -20,25 +20,11 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-EigenVectorX1d System::computeGeodesicDistance() {
-  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  gc::Vertex centerVertex;
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    if (notableVertex[i]) {
-      geodesicDistance = heatSolver.computeDistance(mesh->vertex(i));
-      return geodesicDistance.raw();
-    }
-  }
-  mem3dg_runtime_error("can not find center!");
-  EigenVectorX1d foo; // dummy return
-  foo.setConstant(1, 0);
-  return foo;
-}
-
 EigenVectorX1d System::prescribeProteinDensityDistribution() {
   if (parameters.protein.form != NULL) {
-    proteinDensity.raw() = parameters.protein.form(
-        time, vpg->vertexMeanCurvatures.raw(), geodesicDistance.raw());
+    proteinDensity.raw() =
+        parameters.protein.form(time, geometry.vpg->vertexMeanCurvatures.raw(),
+                                geometry.geodesicDistance.raw());
   } else {
     mem3dg_runtime_message("Parameter protein form is NULL!")
   }
@@ -48,21 +34,22 @@ EigenVectorX1d System::prescribeProteinDensityDistribution() {
   // std::array<double, 2> r_heter{
   //     parameters.protein.geodesicProteinDensityDistribution[0],
   //     parameters.protein.geodesicProteinDensityDistribution[1]};
-  // vpg->requireVertexTangentBasis();
+  // geometry.vpg->requireVertexTangentBasis();
   // if (parameters.protein.profile == "gaussian") {
-  //   gaussianDistribution(proteinDensity.raw(), geodesicDistance.raw(),
-  //                        vpg->inputVertexPositions -
-  //                            vpg->inputVertexPositions[center.nearestVertex()],
-  //                        vpg->vertexTangentBasis[center.nearestVertex()],
+  //   gaussianDistribution(proteinDensity.raw(),
+  //   geometry.geodesicDistance.raw(),
+  //                        geometry.vpg->inputVertexPositions -
+  //                            geometry.vpg->inputVertexPositions[center.nearestVertex()],
+  //                        geometry.vpg->vertexTangentBasis[center.nearestVertex()],
   //                        r_heter);
   // } else if (parameters.protein.profile == "tanh") {
-  //   tanhDistribution(proteinDensity.raw(), geodesicDistance.raw(),
-  //                    vpg->inputVertexPositions -
-  //                        vpg->inputVertexPositions[center.nearestVertex()],
-  //                    vpg->vertexTangentBasis[center.nearestVertex()],
+  //   tanhDistribution(proteinDensity.raw(), geometry.geodesicDistance.raw(),
+  //                    geometry.vpg->inputVertexPositions -
+  //                        geometry.vpg->inputVertexPositions[center.nearestVertex()],
+  //                    geometry.vpg->vertexTangentBasis[center.nearestVertex()],
   //                    parameters.protein.tanhSharpness, r_heter);
   // }
-  // vpg->unrequireVertexTangentBasis();
+  // geometry.vpg->unrequireVertexTangentBasis();
   // proteinDensity.raw() *=
   //     parameters.protein.geodesicProteinDensityDistribution[2] -
   //     parameters.protein.geodesicProteinDensityDistribution[3];
@@ -73,19 +60,23 @@ EigenVectorX1d System::prescribeProteinDensityDistribution() {
 void System::prescribeGeodesicMasks() {
   // Initialize the constant mask based on distance from the point specified
   if (parameters.variation.geodesicMask != -1) {
-    if (parameters.variation.geodesicMask > geodesicDistance.raw().maxCoeff() ||
-        parameters.variation.geodesicMask < geodesicDistance.raw().minCoeff()) {
+    if (parameters.variation.geodesicMask >
+            geometry.geodesicDistance.raw().maxCoeff() ||
+        parameters.variation.geodesicMask <
+            geometry.geodesicDistance.raw().minCoeff()) {
       mem3dg_runtime_error("either all vertices or none is "
                            "initializeConstantsin integration disk, "
                            "set radius = -1 to disable!");
     }
-    for (gcs::Vertex v : mesh->vertices()) {
+    for (gcs::Vertex v : geometry.mesh->vertices()) {
       forces.forceMask[v] =
-          (geodesicDistance[v] < parameters.variation.geodesicMask)
+          (geometry.geodesicDistance[v] < parameters.variation.geodesicMask)
               ? gc::Vector3{1, 1, 1}
               : gc::Vector3{0, 0, 0};
       forces.proteinMask[v] =
-          (geodesicDistance[v] < parameters.variation.geodesicMask) ? 1 : 0;
+          (geometry.geodesicDistance[v] < parameters.variation.geodesicMask)
+              ? 1
+              : 0;
     }
   }
 };
@@ -154,7 +145,8 @@ bool System::testConservativeForcing(const double timeStep) {
   computeTotalEnergy();
   computeConservativeForcing();
   const Energy previousEnergy{energy};
-  const EigenVectorX3dr previousPosition = toMatrix(vpg->inputVertexPositions);
+  const EigenVectorX3dr previousPosition =
+      toMatrix(geometry.vpg->inputVertexPositions);
   const EigenVectorX1d previousProteinDensity = proteinDensity.raw();
 
   bool SUCCESS = true;
@@ -239,7 +231,7 @@ bool System::testConservativeForcing(const double timeStep) {
     // lambda function to compute energy delta
     auto computeDelta = [&](double dt) {
       proteinDensity.raw() = previousProteinDensity;
-      toMatrix(vpg->inputVertexPositions) =
+      toMatrix(geometry.vpg->inputVertexPositions) =
           previousPosition + dt * forces.maskForce(toMatrix(forceVec));
       updateConfigurations();
       computeTotalEnergy();
@@ -269,7 +261,7 @@ bool System::testConservativeForcing(const double timeStep) {
 
     // lambda function to compute energy delta
     auto computeDelta = [&](double dt) {
-      toMatrix(vpg->inputVertexPositions) = previousPosition;
+      toMatrix(geometry.vpg->inputVertexPositions) = previousPosition;
       proteinDensity.raw() =
           previousProteinDensity +
           dt * parameters.proteinMobility * forces.maskProtein(potential.raw());
@@ -438,7 +430,7 @@ bool System::testConservativeForcing(const double timeStep) {
       SUCCESS;
 
   // recover the configuration
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
+  toMatrix(geometry.vpg->inputVertexPositions) = previousPosition;
   proteinDensity.raw() = previousProteinDensity;
   updateConfigurations();
   computeTotalEnergy();
@@ -610,19 +602,6 @@ bool System::checkFiniteness() {
   }
 
   return finite;
-}
-
-double System::inferTargetSurfaceArea() {
-  double targetArea;
-  if (isOpenMesh) {
-    targetArea = parameters.tension.A_res;
-    for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-      targetArea += computePolygonArea(bl, vpg->inputVertexPositions);
-    }
-  } else {
-    targetArea = vpg->faceAreas.raw().sum();
-  }
-  return targetArea;
 }
 
 } // namespace solver

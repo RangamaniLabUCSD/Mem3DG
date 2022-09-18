@@ -48,6 +48,7 @@
 #include "mem3dg/type_utilities.h"
 
 #include "mem3dg/solver/forces.h"
+#include "mem3dg/solver/geometry.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/parameters.h"
 #ifdef MEM3DG_WITH_NETCDF
@@ -114,15 +115,9 @@ public:
   Parameters parameters;
   /// Mesh processor
   MeshProcessor meshProcessor;
+  /// Geometry
+  Geometry &geometry;
 
-  /// Cached mesh of interest
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  /// Embedding and other geometric details
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  /// Embedding and other geometric details of reference mesh
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-  /// reference length cross ratio
-  gcs::HalfedgeData<double> refLcrs;
   /// Energy
   Energy energy;
   /// Time
@@ -135,10 +130,6 @@ public:
   double mechErrorNorm;
   /// chemical error norm
   double chemErrorNorm;
-  /// surface area
-  double surfaceArea;
-  /// Volume
-  double volume;
   /// Cached protein surface density
   gcs::VertexData<double> proteinDensity;
   /// Spontaneous curvature gradient of the mesh
@@ -153,75 +144,12 @@ public:
   gcs::VertexData<double> Kb;
   /// deviatoric rigidity of the membrane
   gcs::VertexData<double> Kd;
-
-  /// Cached geodesic distance
-  gcs::VertexData<double> geodesicDistance;
   /// is Smooth
   bool isSmooth;
   /// if being mutated
   gcs::VertexData<bool> mutationMarker;
-  /// if has boundary
-  bool isOpenMesh;
-  /// defined notable vertex of the mesh
-  gcs::VertexData<bool> notableVertex;
   /// projected time of collision
   double projectedCollideTime;
-
-  // ==========================================================
-  // =============        Constructors           ==============
-  // ==========================================================
-
-  // =======================================
-  // =======       Matrices         ========
-  // =======================================
-  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         EigenVectorX3dr &referenceVertexMatrx, EigenVectorX1d &proteinDensity_,
-         EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0)
-      : System(readMatrices(topologyMatrix, vertexMatrix, referenceVertexMatrx),
-               proteinDensity_, velocity_, p, time_){};
-
-  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0)
-      : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
-               velocity_, p, time_){};
-
-  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         Parameters &p, double time_ = 0)
-      : System(readMatrices(topologyMatrix, vertexMatrix), p, time_){};
-
-  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_ = 0)
-      : System(readMatrices(topologyMatrix, vertexMatrix), proteinDensity_,
-               velocity_, time_){};
-
-  System(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-         double time_ = 0)
-      : System(readMatrices(topologyMatrix, vertexMatrix), time_){};
-
-  // =======================================
-  // =======       Mesh Files       ========
-  // =======================================
-  System(std::string inputMesh, std::string referenceMesh,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0)
-      : System(readMeshFile(inputMesh, referenceMesh), proteinDensity_,
-               velocity_, p, time_){};
-
-  System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
-         EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0)
-      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, p, time_){};
-
-  System(std::string inputMesh, Parameters &p, double time_ = 0)
-      : System(readMeshFile(inputMesh), p, time_){};
-
-  System(std::string inputMesh, EigenVectorX1d &proteinDensity_,
-         EigenVectorX3dr &velocity_, double time_ = 0)
-      : System(readMeshFile(inputMesh), proteinDensity_, velocity_, time_){};
-
-  System(std::string inputMesh, double time_ = 0)
-      : System(readMeshFile(inputMesh), time_){};
 
   // =======================================
   // =======       NetCDF Files     ========
@@ -238,188 +166,108 @@ public:
   // =======================================
   // =======       Tuple            ========
   // =======================================
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
-                    EigenVectorX1d, EigenVectorX3dr, double>
+  /**
+   * @brief Construct System
+   * @param initialConditionTuple <geometry of the system, vertex protein
+   * density, velocity of the vertex, time of the system>
+   * @param p Parameters of the system
+   * @return system instance
+   *
+   */
+  System(std::tuple<Geometry &, EigenVectorX1d, EigenVectorX3dr, double>
              initialConditionsTuple,
          Parameters &p)
-      : System(std::move(std::get<0>(initialConditionsTuple)),
-               std::move(std::get<1>(initialConditionsTuple)),
-               std::move(std::get<2>(initialConditionsTuple)),
-               std::get<3>(initialConditionsTuple),
-               std::get<4>(initialConditionsTuple), p,
-               std::get<5>(initialConditionsTuple)){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
-                    EigenVectorX1d, EigenVectorX3dr, double>
-             initialConditionsTuple,
-         Parameters &p)
-      : System(std::move(std::get<0>(initialConditionsTuple)),
-               std::move(std::get<1>(initialConditionsTuple)),
-               std::get<2>(initialConditionsTuple),
-               std::get<3>(initialConditionsTuple), p,
-               std::get<4>(initialConditionsTuple)){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
-                    EigenVectorX1d, EigenVectorX3dr, double>
+      : System(std::get<0>(initialConditionsTuple),
+               std::get<1>(initialConditionsTuple),
+               std::get<2>(initialConditionsTuple), p,
+               std::get<3>(initialConditionsTuple)){};
+  /**
+   * @brief Construct System
+   * @param initialConditionTuple <geometry of the system, vertex protein
+   * density, velocity of the vertex, time of the system>
+   * @return system instance
+   *
+   */
+  System(std::tuple<Geometry &, EigenVectorX1d, EigenVectorX3dr, double>
              initialConditionsTuple)
-      : System(std::move(std::get<0>(initialConditionsTuple)),
-               std::move(std::get<1>(initialConditionsTuple)),
-               std::move(std::get<2>(initialConditionsTuple)),
-               std::get<3>(initialConditionsTuple),
-               std::get<4>(initialConditionsTuple),
-               std::get<5>(initialConditionsTuple)){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
-                    EigenVectorX1d, EigenVectorX3dr, double>
-             initialConditionsTuple)
-      : System(std::move(std::get<0>(initialConditionsTuple)),
-               std::move(std::get<1>(initialConditionsTuple)),
+      : System(std::get<0>(initialConditionsTuple),
+               std::get<1>(initialConditionsTuple),
                std::get<2>(initialConditionsTuple),
-               std::get<3>(initialConditionsTuple),
-               std::get<4>(initialConditionsTuple)){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>>
-             meshVpgTuple,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0)
-      : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)),
-               std::move(std::get<2>(meshVpgTuple)), proteinDensity_, velocity_,
-               p, time_){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>>
-             meshVpgTuple,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0)
-      : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
-               p, time_){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>>
-             meshVpgTuple,
-         Parameters &p, double time_ = 0)
-      : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), p, time_){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>>
-             meshVpgTuple,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_ = 0)
-      : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), proteinDensity_, velocity_,
-               time_){};
-
-  System(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                    std::unique_ptr<gcs::VertexPositionGeometry>>
-             meshVpgTuple,
-         double time_ = 0)
-      : System(std::move(std::get<0>(meshVpgTuple)),
-               std::move(std::get<1>(meshVpgTuple)), time_){};
+               std::get<3>(initialConditionsTuple)){};
 
   // =======================================
   // =======    Geometry Central    ========
   // =======================================
-  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefvpg_,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), std::move(ptrrefvpg_),
-               proteinDensity_, velocity_, time_) {
+
+  /**
+   * @brief Construct System
+   * @param geometry_ geometry of the system
+   * @param proteinDensity_ vertex protein density
+   * @param velocity_ velocity of the vertex
+   * @param p parameters struct of the system
+   * @param time_ time of the system
+   * @return system instance
+   *
+   */
+  System(Geometry &geometry_, EigenVectorX1d &proteinDensity_,
+         EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0)
+      : System(geometry_, proteinDensity_, velocity_, time_) {
     parameters = p;
   }
 
-  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrrefvpg_,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_ = 0)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), proteinDensity_,
-               velocity_, time_) {
-    refVpg = std::move(ptrrefvpg_);
-  }
-
-  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         Parameters &p, double time_ = 0)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), proteinDensity_,
-               velocity_, time_) {
-    parameters = p;
-  }
-
-  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-         EigenVectorX1d &proteinDensity_, EigenVectorX3dr &velocity_,
-         double time_ = 0)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_) {
+  /**
+   * @brief Construct System
+   * @param geometry_ geometry of the system
+   * @param proteinDensity_ vertex protein density
+   * @param velocity_ velocity of the vertex
+   * @param time_ time of the system
+   * @return system instance
+   *
+   */
+  System(Geometry &geometry_, EigenVectorX1d &proteinDensity_,
+         EigenVectorX3dr &velocity_, double time_ = 0)
+      : System(geometry_, time_) {
     proteinDensity.raw() = proteinDensity_;
     toMatrix(velocity) = velocity_;
   }
 
-  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, Parameters &p,
-         double time_ = 0)
-      : System(std::move(ptrmesh_), std::move(ptrvpg_), time_) {
+  /**
+   * @brief Construct System
+   * @param geometry_ geometry of the system
+   * @param p parameters struct of the system
+   * @param time_ time of the system
+   * @return system instance
+   *
+   */
+  System(Geometry &geometry_, Parameters &p, double time_ = 0)
+      : System(geometry_, time_) {
     parameters = p;
   }
 
-  System(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-         std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_, double time_ = 0)
-      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)), forces(*mesh, *vpg),
-        time(time_) {
-    refLcrs = gcs::HalfedgeData<double>(*mesh);
-    refVpg = vpg->copy();
-
+  /**
+   * @brief Construct System
+   * @param geometry_ geometry of the system
+   * @param time_ time of the system
+   * @return system instance
+   *
+   */
+  System(Geometry &geometry_, double time_ = 0)
+      : geometry(geometry_), forces(geometry), time(time_) {
     energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-
-    proteinDensity = gc::VertexData<double>(*mesh, 1);
-    proteinDensityGradient = gcs::FaceData<gc::Vector3>(*mesh, {0, 0, 0});
-    velocity = gcs::VertexData<gc::Vector3>(*mesh, {0, 0, 0});
-    proteinRateOfChange = gcs::VertexData<double>(*mesh, 0);
-    H0 = gcs::VertexData<double>(*mesh);
-    Kb = gcs::VertexData<double>(*mesh);
-    Kd = gcs::VertexData<double>(*mesh);
+    proteinDensity = gc::VertexData<double>(*geometry.mesh, 1);
+    proteinDensityGradient =
+        gcs::FaceData<gc::Vector3>(*geometry.mesh, {0, 0, 0});
+    velocity = gcs::VertexData<gc::Vector3>(*geometry.mesh, {0, 0, 0});
+    proteinRateOfChange = gcs::VertexData<double>(*geometry.mesh, 0);
+    H0 = gcs::VertexData<double>(*geometry.mesh);
+    Kb = gcs::VertexData<double>(*geometry.mesh);
+    Kd = gcs::VertexData<double>(*geometry.mesh);
 
     chemErrorNorm = 0;
     mechErrorNorm = 0;
 
-    geodesicDistance = gcs::VertexData<double>(*mesh, 0);
-
     isSmooth = true;
-    mutationMarker = gc::VertexData<bool>(*mesh, false);
-    notableVertex = gc::VertexData<bool>(*mesh, false);
-
-    // GC computed properties
-    vpg->requireFaceNormals();
-    vpg->requireVertexLumpedMassMatrix();
-    vpg->requireCotanLaplacian();
-    vpg->requireFaceAreas();
-    vpg->requireVertexIndices();
-    vpg->requireVertexGaussianCurvatures();
-    vpg->requireVertexMeanCurvatures();
-    vpg->requireFaceIndices();
-    vpg->requireEdgeLengths();
-    vpg->requireVertexNormals();
-    vpg->requireVertexDualAreas();
-    vpg->requireCornerAngles();
-    vpg->requireCornerScaledAngles();
-    vpg->requireDECOperators();
-    vpg->requireEdgeDihedralAngles();
-    vpg->requireHalfedgeCotanWeights();
-    vpg->requireEdgeCotanWeights();
-    // vpg->requireVertexTangentBasis();
+    mutationMarker = gc::VertexData<bool>(*geometry.mesh, false);
   }
 
 public:
@@ -430,59 +278,11 @@ public:
    * is another pointer to the HalfEdgeMesh and VertexPositionGeometry
    * elsewhere, calculation of dependent quantities should be respected.
    */
-  ~System() {
-    vpg->unrequireFaceNormals();
-    vpg->unrequireVertexLumpedMassMatrix();
-    vpg->unrequireCotanLaplacian();
-    vpg->unrequireFaceAreas();
-    vpg->unrequireVertexIndices();
-    vpg->unrequireVertexGaussianCurvatures();
-    vpg->unrequireVertexMeanCurvatures();
-    vpg->unrequireFaceIndices();
-    vpg->unrequireEdgeLengths();
-    vpg->unrequireVertexNormals();
-    vpg->unrequireVertexDualAreas();
-    vpg->unrequireCornerAngles();
-    vpg->unrequireCornerScaledAngles();
-    vpg->unrequireDECOperators();
-    vpg->unrequireEdgeDihedralAngles();
-    vpg->unrequireHalfedgeCotanWeights();
-    vpg->unrequireEdgeCotanWeights();
-  }
+  ~System() {}
 
   // ==========================================================
   // ================          io.cpp        ==================
   // ==========================================================
-
-  /**
-   * @brief Construct a tuple of unique_ptrs from topology matrix and vertex
-   * position matrix
-   *
-   */
-  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMatrices(EigenVectorX3sr &faceVertexMatrix,
-               EigenVectorX3dr &vertexPositionMatrix);
-
-  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMatrices(EigenVectorX3sr &faceVertexMatrix,
-               EigenVectorX3dr &vertexPositionMatrix,
-               EigenVectorX3dr &refVertexPositionMatrix);
-
-  /**
-   * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
-   *
-   */
-  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshFile(std::string inputMesh);
-
-  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshFile(std::string inputMesh, std::string refMesh);
 
   /**
    * @brief Map the continuation variables
@@ -501,10 +301,7 @@ public:
    * @brief Construct a tuple of unique_ptrs from netcdf path
    *
    */
-  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
-             std::unique_ptr<gcs::VertexPositionGeometry>, EigenVectorX1d,
-             EigenVectorX3dr, double>
+  std::tuple<Geometry &, EigenVectorX1d &, EigenVectorX3dr &, double &>
   readTrajFile(std::string trajFile, int startingFrame);
 #endif
 
@@ -535,88 +332,6 @@ public:
    * Careful: 1. when using eigenMap: memory address may change after update!!
    */
   void updateConfigurations();
-
-  /**
-   * @brief Update the reference edge length, face area, and length cross ratio
-   */
-  void updateReferenceConfigurations();
-
-  // ==========================================================
-  // ================  variation_vector.cpp  ==================
-  // ==========================================================
-  /**
-   * @brief template code for populate verttexwise using halfedge vector
-   * computation
-   */
-  static gcs::VertexData<gc::Vector3> halfedgeVectorToVertexVector(
-      gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-      std::function<gc::Vector3(gcs::VertexPositionGeometry &, gc::Halfedge &)>
-          computeHalfedgeVariationalVector);
-
-  /**
-   * @brief Compute vertex volume variation vector
-   */
-  gcs::VertexData<gc::Vector3> computeVertexVolumeVariationVectors();
-
-  /**
-   * @brief Compute halfedge volume variation vector
-   */
-  static gc::Vector3
-  computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
-                                       gc::Halfedge &he);
-
-  /**
-   * @brief Compute vertex mean curvature vector using cotan
-   */
-  gcs::VertexData<gc::Vector3> computeVertexMeanCurvatureVectors();
-
-  /**
-   * @brief Compute halfedge mean curvature vector using cotan
-   */
-  static gc::Vector3
-  computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
-                                     gc::Halfedge &he);
-
-  /**
-   * @brief Compute vertex Gaussian curvature vector
-   */
-  gcs::VertexData<gc::Vector3> computeVertexGaussianCurvatureVectors();
-
-  /**
-   * @brief Compute halfedge Gaussian curvature vector
-   */
-  static gc::Vector3
-  computeHalfedgeGaussianCurvatureVector(gcs::VertexPositionGeometry &vpg,
-                                         gc::Halfedge &he);
-
-  /**
-   * @brief Compute vertex Schlafli-based Laplacian of mean curvature vector
-   */
-  gcs::VertexData<gc::Vector3>
-  computeVertexSchlafliLaplacianMeanCurvatureVectors();
-
-  /**
-   * @brief Compute halfedge Schlafli vector
-   */
-  static std::tuple<gc::Vector3, gc::Vector3>
-  computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
-                                gc::Halfedge &he);
-
-  /**
-   * @brief Helper functions to compute shape variation of corner angles
-   */
-  gc::Vector3 computeCornerAngleVariation(gcs::Corner c, gcs::Vertex v);
-
-  /**
-   * @brief Helper functions to compute shape variation of dihedral angles
-   */
-  gc::Vector3 computeDihedralAngleVariation(gcs::Halfedge he, gcs::Vertex v);
-
-  /**
-   * @brief Compute halfedge |\int grad phi|^2 variation vector
-   */
-  gc::Vector3 computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
-      const gcs::VertexData<double> &quantities, const gcs::Halfedge &he);
 
   // ==========================================================
   // ================        Force.cpp       ==================
@@ -790,18 +505,6 @@ public:
   double computeIntegratedPower(double dt);
   double computeIntegratedPower(double dt, EigenVectorX3dr &&velocity);
 
-  /**
-   * @brief Get tangential derivative of quantities on face
-   */
-  void computeFaceTangentialDerivative(gcs::VertexData<double> &quantities,
-                                       gcs::FaceData<gc::Vector3> &gradient);
-
-  /**
-   * @brief helper function to compute LCR
-   */
-  double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                 gcs::Halfedge &he) const;
-
   // ==========================================================
   // =============        regularization.cpp    ===============
   // ==========================================================
@@ -867,11 +570,6 @@ public:
                              const Energy previousEnergy);
 
   /**
-   * @brief infer the target surface area of the system
-   */
-  double inferTargetSurfaceArea();
-
-  /**
    * @brief Check finiteness of forcing and energy
    * @return whether the system is finite
    */
@@ -882,17 +580,6 @@ public:
    *
    */
   void check_pcg();
-
-  /**
-   * @brief Find "the" vertex
-   */
-  void findFloatCenter(double range = std::numeric_limits<double>::max());
-  // void findVertexCenter(double range = std::numeric_limits<double>::max());
-
-  /**
-   * @brief update cache of geodesicDistance
-   */
-  EigenVectorX1d computeGeodesicDistance();
 
   /**
    * @brief update cache of proteinDensity based on geodesicDistance and

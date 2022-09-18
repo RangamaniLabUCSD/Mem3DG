@@ -57,15 +57,16 @@ int main() {
       vpg, std::array<double, 3>{0, 0, 0},
       std::array<bool, 3>{true, true, false});
   p.variation.isProteinVariation = false;
-
-  mem3dg::solver::System f(inputMesh, p);
-  f.initialize();
+  mem3dg::solver::Geometry geometry(inputMesh);
+  mem3dg::solver::System system(geometry, p);
+  system.initialize();
 
   double T = 3, h = 1e-5, eps = 0.002, closeZone = 1000, increment = 0,
          tSave = 1e-1, tMollify = 100, errorJumpLim = 600;
   std::string outputDir = "C://Users//Kieran//Desktop//";
 
-  mem3dg::solver::integrator::Euler integrator(f, h, T, tSave, eps, outputDir);
+  mem3dg::solver::integrator::Euler integrator(system, h, T, tSave, eps,
+                                               outputDir);
   integrator.ifAdaptiveStep = true;
   integrator.trajFileName = "traj.nc";
   integrator.isBacktrack = true;

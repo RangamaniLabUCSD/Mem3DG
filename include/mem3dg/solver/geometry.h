@@ -47,12 +47,8 @@
 #include "mem3dg/meshops.h"
 #include "mem3dg/type_utilities.h"
 
-#include "mem3dg/solver/forces.h"
-#include "mem3dg/solver/mesh_process.h"
-#include "mem3dg/solver/parameters.h"
 #ifdef MEM3DG_WITH_NETCDF
 #include "mem3dg/solver/mutable_trajfile.h"
-#include "mem3dg/solver/trajfile.h"
 #endif
 
 namespace gc = ::geometrycentral;
@@ -68,14 +64,18 @@ public:
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   /// Embedding and other geometric details
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  /// Embedding and other geometric details of reference mesh
+  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+  /// reference length cross ratio
+  gcs::HalfedgeData<double> refLcrs;
   /// surface area
   double surfaceArea;
   /// Volume
   double volume;
   /// reservoir area
-  double reservoirArea;
+  double reservoirArea = 0;
   /// reservoir volume
-  double reservoirVolume;
+  double reservoirVolume = 0;
 
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistance;
@@ -84,43 +84,76 @@ public:
   /// defined notable vertex of the mesh
   gcs::VertexData<bool> notableVertex;
 
-  // ==========================================================
-  // =============        Constructors           ==============
-  // ==========================================================
-
   // =======================================
   // =======       Matrices         ========
   // =======================================
-  Geometry(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix)
-      : Geometry(readMatrices(topologyMatrix, vertexMatrix)){};
+  Geometry(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+           EigenVectorX3dr &refVertexMatrix, std::size_t notableVertex_ = 0,
+           double A_res = 0, double V_res = 0)
+      : Geometry(readMatrices(topologyMatrix, vertexMatrix, refVertexMatrix),
+                 notableVertex_, A_res, V_res){};
+
+  Geometry(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
+           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+      : Geometry(readMatrices(topologyMatrix, vertexMatrix), notableVertex_,
+                 A_res, V_res){};
 
   // =======================================
   // =======       Mesh Files       ========
   // =======================================
+  Geometry(std::string inputMesh, std::string refMesh)
+      : Geometry(readMeshFile(inputMesh, refMesh)){};
   Geometry(std::string inputMesh) : Geometry(readMeshFile(inputMesh)){};
 
   // =======================================
   // =======       NetCDF Files     ========
   // =======================================
+  Geometry(std::string trajFile, int startingFrame)
+      : Geometry(readTrajFile(trajFile, startingFrame)){
+        mem3dg_runtime_error("need to import vertex, A_res and V_res!");
+      };
 
   // =======================================
   // =======       Tuple            ========
   // =======================================
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                      std::unique_ptr<gcs::VertexPositionGeometry>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
-               meshVpgTuple)
+               meshVpgTuple,
+           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
       : Geometry(std::move(std::get<0>(meshVpgTuple)),
-                 std::move(std::get<1>(meshVpgTuple))){};
+                 std::move(std::get<1>(meshVpgTuple)),
+                 std::move(std::get<2>(meshVpgTuple)), notableVertex_, A_res,
+                 V_res){};
+  Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                      std::unique_ptr<gcs::VertexPositionGeometry>>
+               meshVpgTuple,
+           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+      : Geometry(std::move(std::get<0>(meshVpgTuple)),
+                 std::move(std::get<1>(meshVpgTuple)), notableVertex_, A_res,
+                 V_res){};
 
   // =======================================
   // =======    Geometry Central    ========
   // =======================================
 
   Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-           std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_)
-      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)) {
-    geodesicDistance = gcs::VertexData<double>(*mesh, 0);
-    notableVertex = gc::VertexData<bool>(*mesh, false);
+           std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
+           std::unique_ptr<gcs::VertexPositionGeometry> refptrvpg_,
+           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+      : Geometry(std::move(ptrmesh_), std::move(ptrvpg_), notableVertex_, A_res,
+                 V_res) {
+    refVpg = std::move(refptrvpg_);
+    updateReferenceConfigurations();
+  }
+  Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
+           std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
+           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+      : mesh(std::move(ptrmesh_)),
+        vpg(std::move(ptrvpg_)), geodesicDistance{*mesh, 0},
+        notableVertex{*mesh, false}, refLcrs{*mesh, 0}, reservoirArea{A_res},
+        reservoirVolume{V_res} {
+    refVpg = vpg->copy();
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -141,6 +174,17 @@ public:
     vpg->requireHalfedgeCotanWeights();
     vpg->requireEdgeCotanWeights();
     // vpg->requireVertexTangentBasis();
+
+    notableVertex[notableVertex_] = true;
+    computeGeodesicDistance();
+    volume = getMeshVolume(*mesh, *vpg, true) + reservoirVolume;
+    surfaceArea = vpg->faceAreas.raw().sum() + reservoirVolume;
+    updateReferenceConfigurations();
+    isOpenMesh = mesh->hasBoundary();
+    if (!isOpenMesh && mesh->genus() != 0) {
+      mem3dg_runtime_error(
+          "Do not support closed mesh with nonzero number of genus!")
+    }
   }
 
 public:
@@ -184,7 +228,12 @@ public:
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readMatrices(EigenVectorX3sr &faceVertexMatrix,
                EigenVectorX3dr &vertexPositionMatrix);
-
+  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+             std::unique_ptr<gcs::VertexPositionGeometry>,
+             std::unique_ptr<gcs::VertexPositionGeometry>>
+  readMatrices(EigenVectorX3sr &faceVertexMatrix,
+               EigenVectorX3dr &vertexPositionMatrix,
+               EigenVectorX3dr &refVertexPositionMatrix);
   /**
    * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
    *
@@ -192,6 +241,11 @@ public:
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readMeshFile(std::string inputMesh);
+
+  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+             std::unique_ptr<gcs::VertexPositionGeometry>,
+             std::unique_ptr<gcs::VertexPositionGeometry>>
+  readMeshFile(std::string inputMesh, std::string referenceMesh);
 
   /**
    * @brief Save RichData to .ply file
@@ -214,17 +268,13 @@ public:
   // ==========================================================
 
   /**
-   * @brief Initialize system
-   *
-   */
-  void initialize(bool ifMute = false);
-
-  /**
    * @brief Update the vertex position and recompute cached values
    * (all quantities that characterizes the current energy state)
    * Careful: 1. when using eigenMap: memory address may change after update!!
    */
   void updateConfigurations();
+
+  void updateReferenceConfigurations();
 
   // ==========================================================
   // ================  variation_vector.cpp  ==================

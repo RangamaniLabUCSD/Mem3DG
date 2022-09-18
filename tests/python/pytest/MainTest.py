@@ -60,7 +60,7 @@ class TestExampleIntegration(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension = 0.5))
+        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension=0.5))
         p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
@@ -103,7 +103,7 @@ class TestExampleIntegration(object):
         p.variation.isProteinVariation = False
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension = 0.5))
+        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension=0.5))
         p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         p.spring.Kst = 1
         p.point.index = 0

@@ -73,14 +73,15 @@ bool ConjugateGradient::integrate() {
       lastProcessMesh = system.time;
       system.mutateMesh();
       system.updateConfigurations();
-      system.refVpg = system.vpg->copy();
-      system.updateReferenceConfigurations();
+      system.geometry.refVpg = system.geometry.vpg->copy();
+      system.geometry.updateReferenceConfigurations();
     }
 
     // update geodesics every tUpdateGeodesics period
     if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
       lastUpdateGeodesics = system.time;
-      system.geodesicDistance.raw() = system.computeGeodesicDistance();
+      system.geometry.geodesicDistance.raw() =
+          system.geometry.computeGeodesicDistance();
       if (system.parameters.protein.form != NULL)
         system.prescribeProteinDensityDistribution();
       system.updateConfigurations();
@@ -241,7 +242,7 @@ void ConjugateGradient::march() {
   } else {
     timeStep = characteristicTimeStep;
   }
-  system.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 
@@ -249,11 +250,9 @@ void ConjugateGradient::march() {
   system.updateConfigurations();
 }
 
-void ConjugateGradient::enforceAugmentedLagrangianConstraints(double &lambdaSG,
-                                                             double &lambdaV,
-                                                             const double dA,
-                                                             const double dV,
-                                                             const double tol) {
+void ConjugateGradient::enforceAugmentedLagrangianConstraints(
+    double &lambdaSG, double &lambdaV, const double dA, const double dV,
+    const double tol) {
   if (ifPrintToConsole)
     std::cout << "\n["
               << "lambdaSG"
@@ -264,22 +263,24 @@ void ConjugateGradient::enforceAugmentedLagrangianConstraints(double &lambdaSG,
   if (dA > tol) {
     double tension, energy;
     std::tie(tension, energy) =
-        system.parameters.tension.form(system.surfaceArea);
+        system.parameters.tension.form(system.geometry.surfaceArea);
     lambdaSG += tension;
   }
   if (dV > tol) {
     double pressure, energy;
-    std::tie(pressure, energy) = system.parameters.osmotic.form(system.volume);
+    std::tie(pressure, energy) =
+        system.parameters.osmotic.form(system.geometry.volume);
     lambdaV += pressure;
   }
   if (ifPrintToConsole)
     std::cout << " -> [" << lambdaSG << ", " << lambdaV << "]" << std::endl;
 }
 
-void ConjugateGradient::enforceIncrementalPenaltyConstraints(double &Ksg, double &Kv,
-                                                 const double dA,
-                                                 const double dV,
-                                                 double increment) {
+void ConjugateGradient::enforceIncrementalPenaltyConstraints(double &Ksg,
+                                                             double &Kv,
+                                                             const double dA,
+                                                             const double dV,
+                                                             double increment) {
   if (ifPrintToConsole)
     std::cout << "\n[Ksg, Kv] = [" << Ksg << ", " << Kv << "]";
   // update coefficient
