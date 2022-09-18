@@ -798,8 +798,8 @@ def setPolyscopePermutations(psmesh, face, vertex):
         face (np.ndarray): face topology matrix
         vertex (np.ndarray): vertex position matrix
     """
-    system = dg.System(face, vertex)
-    polyscopePermutations = system.getPolyscopePermutations()
+    geometry = dg.Geometry(face, vertex)
+    polyscopePermutations = geometry.getPolyscopePermutations()
     psmesh.set_all_permutations(
         vertex_perm=np.array(polyscopePermutations[0][0]),
         vertex_perm_size=polyscopePermutations[0][1],

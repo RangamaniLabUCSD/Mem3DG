@@ -842,6 +842,13 @@ PYBIND11_MODULE(_core, pymem3dg) {
                R"delim(
         System constructor with NetCDF trajectory file
       )delim");
+#ifdef MEM3DG_WITH_NETCDF
+  geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
+             py::arg("startingFrame"),
+             R"delim(
+        System constructor with NetCDF trajectory file
+      )delim");
+#endif
   geometry.def_readonly("surfaceArea", &Geometry::surfaceArea,
                         R"delim(
           get the surface area of the mesh
@@ -1089,7 +1096,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
   system.def(
       "getGeometry", [](System &s) -> Geometry & { return s.geometry; },
-      py::return_value_policy::copy,
+      py::return_value_policy::automatic_reference,
       R"delim(
           get the pointwise spontaneous curvature
       )delim");
