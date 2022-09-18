@@ -807,24 +807,33 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The system
     )delim");
 
-  geometry.def(py::init<std::string, std::string>(), py::arg("inputMesh"),
-               py::arg("referenceMesh"),
-               R"delim(
-        System constructor with .ply files. 
-      )delim");
-  geometry.def(py::init<std::string>(), py::arg("inputMesh"),
-               R"delim(
-        System constructor with .ply files. 
-      )delim");
   geometry.def(
-      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &>(),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-      py::arg("vertexMatrix"),
+      py::init<std::string, std::string, std::size_t, double, double>(),
+      py::arg("inputMesh"), py::arg("referenceMesh"),
+      py::arg("notableVertex") = 0, py::arg("reservoirArea") = 0,
+      py::arg("reservoirVolume") = 0,
       R"delim(
+        System constructor with .ply files. 
+      )delim");
+  geometry.def(py::init<std::string, std::size_t, double, double>(),
+               py::arg("inputMesh"), py::arg("notableVertex") = 0,
+               py::arg("reservoirArea") = 0, py::arg("reservoirVolume") = 0,
+               R"delim(
+        System constructor with .ply files. 
+      )delim");
+  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
+                        std::size_t, double, double>(),
+               py::arg("faceMatrix"), py::arg("vertexMatrix"),
+               py::arg("vertexMatrix"), py::arg("notableVertex") = 0,
+               py::arg("reservoirArea") = 0, py::arg("reservoirVolume") = 0,
+               R"delim(
         System constructor with Matrices 
       )delim");
-  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &>(),
-               py::arg("topologyMatrix"), py::arg("vertexMatrix"),
+  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, std::size_t,
+                        double, double>(),
+               py::arg("faceMatrix"), py::arg("vertexMatrix"),
+               py::arg("notableVertex") = 0, py::arg("reservoirArea") = 0,
+               py::arg("reservoirVolume") = 0,
                R"delim(
         System constructor with Matrices 
       )delim");
@@ -869,20 +878,20 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get angle-weighted normal on vertices
       )delim");
   geometry.def(
-      "getInputVertexPositions",
+      "getVertexMatrix",
       [](Geometry &s) {
         return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
       },
       py::return_value_policy::copy,
       R"delim(
-          get the vertex position matrix
+          get the vertex matrix
       )delim");
   geometry.def(
-      "getFaceVertexMatrix",
+      "getFaceMatrix",
       [](Geometry &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
       py::return_value_policy::copy,
       R"delim(
-          get the face vertex matrix
+          get the face matrix
       )delim");
   geometry.def(
       "getVertexAdjacencyMatrix", [](Geometry &s) { return s.vpg->d0; },
@@ -969,7 +978,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
         gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
       },
       R"delim(
-          set the vertex position matrix
+          set the vertex matrix
       )delim");
 
   /**
@@ -1698,27 +1707,25 @@ PYBIND11_MODULE(_core, pymem3dg) {
   // ==========================================================
   // =============      mesh generation    ===============
   // ==========================================================
-  pymem3dg.def(
-      "getCylinder", &getCylinderMatrix,
-      "get topology and vertex position matrix of a non-capped cylinder",
-      py::arg("radius"), py::arg("radialSubdivision"),
-      py::arg("axialSubdivision"), py::arg("frequency") = 1,
-      py::arg("amplitude") = 0);
+  pymem3dg.def("getCylinder", &getCylinderMatrix,
+               "get face and vertex matrix of a non-capped cylinder",
+               py::arg("radius"), py::arg("radialSubdivision"),
+               py::arg("axialSubdivision"), py::arg("frequency") = 1,
+               py::arg("amplitude") = 0);
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
-               "get topology and vertex position matrix of icosphere",
-               py::arg("radius"), py::arg("subdivision") = 0);
+               "get face and vertex matrix of icosphere", py::arg("radius"),
+               py::arg("subdivision") = 0);
 
   pymem3dg.def("getTetrahedron", &getTetrahedronMatrix,
-               "get topology and vertex position matrix of tetrahedron");
+               "get face and vertex matrix of tetrahedron");
 
   pymem3dg.def("getDiamond", &getDiamondMatrix,
-               "get topology and vertex position matrix of diamond",
-               py::arg("dihedral"));
+               "get face and vertex matrix of diamond", py::arg("dihedral"));
 
   pymem3dg.def("getHexagon", &getHexagonMatrix,
-               "get topology and vertex position matrix of Hexagon",
-               py::arg("radius"), py::arg("subdivision") = 0);
+               "get face and vertex matrix of Hexagon", py::arg("radius"),
+               py::arg("subdivision") = 0);
 
   pymem3dg.def(
       "linearSubdivide",
@@ -1741,7 +1748,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
   pymem3dg.def("getFaceAndVertexMatrix", &getFaceAndVertexMatrix,
                py::arg("plyName"), R"delim(
-          read face topology matrix and vertex position from .ply file 
+          read face matrix and vertex matrix from .ply file 
       )delim");
   pymem3dg.def(
       "getRichDataElementName", &getRichDataElementName, py::arg("plyName"),

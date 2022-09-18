@@ -89,29 +89,36 @@ public:
   // =======================================
   Geometry(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
            EigenVectorX3dr &refVertexMatrix, std::size_t notableVertex_ = 0,
-           double A_res = 0, double V_res = 0)
+           double reservoirArea = 0, double reservoirVolume = 0)
       : Geometry(readMatrices(topologyMatrix, vertexMatrix, refVertexMatrix),
-                 notableVertex_, A_res, V_res){};
+                 notableVertex_, reservoirArea, reservoirVolume){};
 
   Geometry(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+           std::size_t notableVertex_ = 0, double reservoirArea = 0,
+           double reservoirVolume = 0)
       : Geometry(readMatrices(topologyMatrix, vertexMatrix), notableVertex_,
-                 A_res, V_res){};
+                 reservoirArea, reservoirVolume){};
 
   // =======================================
   // =======       Mesh Files       ========
   // =======================================
-  Geometry(std::string inputMesh, std::string refMesh)
-      : Geometry(readMeshFile(inputMesh, refMesh)){};
-  Geometry(std::string inputMesh) : Geometry(readMeshFile(inputMesh)){};
+  Geometry(std::string inputMesh, std::string refMesh,
+           std::size_t notableVertex_ = 0, double reservoirArea = 0,
+           double reservoirVolume = 0)
+      : Geometry(readMeshFile(inputMesh, refMesh), notableVertex_,
+                 reservoirArea, reservoirVolume){};
+  Geometry(std::string inputMesh, std::size_t notableVertex_ = 0,
+           double reservoirArea = 0, double reservoirVolume = 0)
+      : Geometry(readMeshFile(inputMesh), notableVertex_, reservoirArea,
+                 reservoirVolume){};
 
   // =======================================
   // =======       NetCDF Files     ========
   // =======================================
   Geometry(std::string trajFile, int startingFrame)
-      : Geometry(readTrajFile(trajFile, startingFrame)){
-        mem3dg_runtime_error("need to import vertex, A_res and V_res!");
-      };
+      : Geometry(readTrajFile(trajFile, startingFrame)) {
+    mem3dg_runtime_error("need to import vertex, A_res and V_res!");
+  };
 
   // =======================================
   // =======       Tuple            ========
