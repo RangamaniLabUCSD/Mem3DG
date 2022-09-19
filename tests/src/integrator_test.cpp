@@ -63,6 +63,7 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> vpg;
 
   mem3dg::solver::Parameters p;
+  std::string trajName = "traj.nc";
 
   const double dt = 0.5, T = 50, eps = 0, tSave = 10;
   const std::string outputDir = "/tmp";
@@ -72,10 +73,10 @@ TEST_F(IntegratorTest, EulerIntegratorTest) {
   mem3dg::solver::Geometry geometry(mesh, vpg);
   mem3dg::solver::System f(geometry, p, 0);
   f.initialize(0, true);
-  // f.testConservativeForcing(0.1);
   mem3dg::solver::integrator::Euler integrator{f,   dt,        T, tSave,
                                                eps, outputDir, 0};
-  integrator.trajFileName = "traj.nc";
+  integrator.trajFileName = trajName;
+  integrator.ifOutputTrajFile = true;
   integrator.integrate();
 }
 
@@ -85,7 +86,7 @@ TEST_F(IntegratorTest, ConjugateGradientIntegratorTest) {
   f.initialize(0, true);
   mem3dg::solver::integrator::ConjugateGradient integrator{
       f, dt, T, tSave, eps, outputDir, 0};
-  integrator.trajFileName = "traj.nc";
+  integrator.trajFileName = trajName;
   integrator.integrate();
 }
 
@@ -96,6 +97,35 @@ TEST_F(IntegratorTest, VelocityVerletIntegratorTest) {
   f.initialize(0, true);
   mem3dg::solver::integrator::VelocityVerlet integrator{
       f, dt, 1, tSave, eps, outputDir, 0};
-  integrator.trajFileName = "traj.nc";
+  integrator.trajFileName = trajName;
+  integrator.integrate();
+}
+
+TEST_F(IntegratorTest, ContinuationEulerIntegratorTest) {
+  mem3dg::solver::Geometry g(outputDir + "/" + trajName, 2);
+  mem3dg::solver::System f(g, outputDir + "/" + trajName, 2, p);
+  f.initialize(0, true);
+  mem3dg::solver::integrator::Euler integrator{f,   dt,        T * 2, tSave,
+                                               eps, outputDir, 0};
+  integrator.trajFileName = trajName;
+  integrator.integrate();
+}
+TEST_F(IntegratorTest, ContinuationConjugateGradientIntegratorTest) {
+  mem3dg::solver::Geometry g(outputDir + "/" + trajName, 2);
+  mem3dg::solver::System f(g, outputDir + "/" + trajName, 2, p);
+  f.initialize(0, true);
+  mem3dg::solver::integrator::ConjugateGradient integrator{
+      f, dt, T * 2, tSave, eps, outputDir, 0};
+  integrator.trajFileName = trajName;
+  integrator.integrate();
+}
+TEST_F(IntegratorTest, ContinuationVelocityVerletIntegratorTest) {
+  p.damping = 0.1 / dt;
+  mem3dg::solver::Geometry g(outputDir + "/" + trajName, 2);
+  mem3dg::solver::System f(g, outputDir + "/" + trajName, 2, p);
+  f.initialize(0, true);
+  mem3dg::solver::integrator::VelocityVerlet integrator{
+      f, dt, T, tSave, eps, outputDir, 0};
+  integrator.trajFileName = trajName;
   integrator.integrate();
 }

@@ -115,31 +115,35 @@ public:
   // =======================================
   // =======       NetCDF Files     ========
   // =======================================
-  Geometry(std::string trajFile, int startingFrame)
-      : Geometry(readTrajFile(trajFile, startingFrame)) {
-    mem3dg_runtime_message("need to import vertex, A_res and V_res!");
-  };
+  Geometry(std::string trajFile, int startingFrame, double A_res = 0,
+           double V_res = 0)
+      : Geometry(readTrajFile(trajFile, startingFrame), A_res, V_res){};
 
+private:
   // =======================================
   // =======       Tuple            ========
   // =======================================
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
-               meshVpgTuple,
+               tuple,
            std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
-      : Geometry(std::move(std::get<0>(meshVpgTuple)),
-                 std::move(std::get<1>(meshVpgTuple)),
-                 std::move(std::get<2>(meshVpgTuple)), notableVertex_, A_res,
-                 V_res){};
+      : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
+                 std::move(std::get<2>(tuple)), notableVertex_, A_res, V_res){};
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
-               meshVpgTuple,
+               tuple,
            std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
-      : Geometry(std::move(std::get<0>(meshVpgTuple)),
-                 std::move(std::get<1>(meshVpgTuple)), notableVertex_, A_res,
-                 V_res){};
+      : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
+                 notableVertex_, A_res, V_res){};
+  Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+                      std::unique_ptr<gcs::VertexPositionGeometry>, std::size_t>
+               tuple,
+           double A_res = 0, double V_res = 0)
+      : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
+                 std::get<2>(tuple), A_res, V_res){};
 
+public:
   // =======================================
   // =======    Geometry Central    ========
   // =======================================
@@ -266,7 +270,7 @@ public:
    *
    */
   std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
+             std::unique_ptr<gcs::VertexPositionGeometry>, std::size_t>
   readTrajFile(std::string trajFile, int startingFrame);
 #endif
 

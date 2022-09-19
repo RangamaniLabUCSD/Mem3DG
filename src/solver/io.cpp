@@ -117,9 +117,12 @@ void System::mapContinuationVariables(std::string plyFile) {
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-std::tuple<Geometry &, EigenVectorX1d &, EigenVectorX3dr &, double &>
+// std::tuple<Geometry &&, EigenVectorX1d &, EigenVectorX3dr &, double>
+std::tuple<EigenVectorX1d, EigenVectorX3dr, double>
 System::readTrajFile(std::string trajFile, int startingFrame) {
-  Geometry geometry_here(trajFile, startingFrame);
+  // Geometry geometry_here(trajFile, startingFrame);
+  // std::unique_ptr<Geometry> geometry_here =
+  //     std::make_unique<Geometry>(trajFile, startingFrame);
   MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
   // Map continuation variables
   double time = fd.getTime(startingFrame);
@@ -127,10 +130,11 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   EigenVectorX1d initialProteinDensity = fd.getProteinDensity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 
-  return std::tie(geometry_here, initialProteinDensity, initialVelocity, time);
+  return std::make_tuple(initialProteinDensity, initialVelocity, time);
+  // return std::forward_as_tuple(Geometry(trajFile, startingFrame),
+  // fd.getProteinDensity(startingFrame),  fd.getVelocity(startingFrame), time);
 }
 #endif
-
 
 } // namespace solver
 } // namespace mem3dg

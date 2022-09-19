@@ -26,7 +26,7 @@ void Geometry::saveGeometry(std::string PathToSave) {
 
 #ifdef MEM3DG_WITH_NETCDF
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
+           std::unique_ptr<gcs::VertexPositionGeometry>, std::size_t>
 Geometry::readTrajFile(std::string trajFile, int startingFrame) {
 
   // Declare pointers to mesh / geometry objects
@@ -37,8 +37,14 @@ Geometry::readTrajFile(std::string trajFile, int startingFrame) {
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology(startingFrame));
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex =
+      fd.getNotableVertex(startingFrame);
+  std::size_t vertexIndex;
+  for (vertexIndex = 0; vertexIndex < notableVertex.rows(); ++vertexIndex) {
+    if (notableVertex[vertexIndex])
+      break;
+  }
+  return std::make_tuple(std::move(mesh), std::move(vpg), vertexIndex);
 }
 #endif
 

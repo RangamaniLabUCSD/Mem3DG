@@ -117,12 +117,10 @@ public:
   MeshProcessor meshProcessor;
   /// Geometry
   Geometry &geometry;
-
   /// Energy
   Energy energy;
   /// Time
   double time;
-
   /// Forces of the system
   Forces forces;
 
@@ -155,46 +153,73 @@ public:
   // =======       NetCDF Files     ========
   // =======================================
 #ifdef MEM3DG_WITH_NETCDF
-  System(std::string trajFile, int startingFrame, Parameters &p)
-      : System(readTrajFile(trajFile, startingFrame), p){};
-
-  System(std::string trajFile, int startingFrame)
-      : System(readTrajFile(trajFile, startingFrame)){};
-
+  System(Geometry &geometry_, std::string trajFile, int startingFrame,
+         Parameters &p)
+      : System(geometry_, readTrajFile(trajFile, startingFrame), p){};
+  // System(std::string trajFile, int startingFrame, Parameters &p)
+  //     : System(readTrajFile(trajFile, startingFrame), p){};
 #endif
 
+private:
   // =======================================
   // =======       Tuple            ========
   // =======================================
-  /**
-   * @brief Construct System
-   * @param initialConditionTuple <geometry of the system, vertex protein
-   * density, velocity of the vertex, time of the system>
-   * @param p Parameters of the system
-   * @return system instance
-   *
-   */
-  System(std::tuple<Geometry &, EigenVectorX1d, EigenVectorX3dr, double>
-             initialConditionsTuple,
-         Parameters &p)
-      : System(std::get<0>(initialConditionsTuple),
-               std::get<1>(initialConditionsTuple),
-               std::get<2>(initialConditionsTuple), p,
-               std::get<3>(initialConditionsTuple)){};
-  /**
-   * @brief Construct System
-   * @param initialConditionTuple <geometry of the system, vertex protein
-   * density, velocity of the vertex, time of the system>
-   * @return system instance
-   *
-   */
-  System(std::tuple<Geometry &, EigenVectorX1d, EigenVectorX3dr, double>
-             initialConditionsTuple)
-      : System(std::get<0>(initialConditionsTuple),
-               std::get<1>(initialConditionsTuple),
-               std::get<2>(initialConditionsTuple),
-               std::get<3>(initialConditionsTuple)){};
+  //   /**
+  //    * @brief Construct System
+  //    * @param initialConditionTuple <geometry of the system, vertex protein
+  //    * density, velocity of the vertex, time of the system>
+  //    * @param p Parameters of the system
+  //    * @return system instance
+  //    *
+  //    */
+  //   System(std::tuple<Geometry &&, EigenVectorX1d &, EigenVectorX3dr &,
+  //   double>
+  //              initialConditionsTuple,
+  //          Parameters &p)
+  //       : System(std::get<0>(initialConditionsTuple),
+  //                std::get<1>(initialConditionsTuple),
+  //                std::get<2>(initialConditionsTuple), p,
+  //                std::get<3>(initialConditionsTuple)){};
+  //   /**
+  //    * @brief Construct System
+  //    * @param initialConditionTuple <geometry of the system, vertex protein
+  //    * density, velocity of the vertex, time of the system>
+  //    * @return system instance
+  //    *
+  //    */
+  //   System(std::tuple<Geometry &&, EigenVectorX1d &&, EigenVectorX3dr &&,
+  //   double>
+  //              initialConditionsTuple)
+  //       : System(std::get<0>(initialConditionsTuple),
+  //                std::get<1>(initialConditionsTuple),
+  //                std::get<2>(initialConditionsTuple),
+  //                std::get<3>(initialConditionsTuple)){};
 
+  // // below is temperary
+  //   System(std::tuple<std::unique_ptr<Geometry>, EigenVectorX1d,
+  //   EigenVectorX3dr,
+  //                     double>
+  //              initialConditionsTuple,
+  //          Parameters &p)
+  //       : System(*std::move(std::get<0>(initialConditionsTuple)),
+  //                std::get<1>(initialConditionsTuple),
+  //                std::get<2>(initialConditionsTuple), p,
+  //                std::get<3>(initialConditionsTuple)){};
+
+  //   System(std::unique_ptr<Geometry> geometryptr, EigenVectorX1d
+  //   &proteinDensity_,
+  //          EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0)
+  //       : System(*std::move(geometryptr).get(), proteinDensity_, velocity_,
+  //       p,
+  //                time_) {}
+
+  System(Geometry &geometry_,
+         std::tuple<EigenVectorX1d, EigenVectorX3dr, double> tuple,
+         Parameters &p)
+      : System(geometry_, std::get<0>(tuple), std::get<1>(tuple), p,
+               std::get<2>(tuple)) {}
+
+public:
   // =======================================
   // =======    Geometry Central    ========
   // =======================================
@@ -301,7 +326,9 @@ public:
    * @brief Construct a tuple of unique_ptrs from netcdf path
    *
    */
-  std::tuple<Geometry &, EigenVectorX1d &, EigenVectorX3dr &, double &>
+  // std::tuple<Geometry &&, EigenVectorX1d &, EigenVectorX3dr &, double>
+  // readTrajFile(std::string trajFile, int startingFrame);
+  std::tuple<EigenVectorX1d, EigenVectorX3dr, double>
   readTrajFile(std::string trajFile, int startingFrame);
 #endif
 

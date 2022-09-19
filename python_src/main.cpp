@@ -802,32 +802,38 @@ PYBIND11_MODULE(_core, pymem3dg) {
 #pragma endregion mesh_mutator
 
 #pragma region geometry
+  // ==========================================================
+  // =============          Geometry            ===============
+  // ==========================================================
   py::class_<Geometry> geometry(pymem3dg, "Geometry",
                                 R"delim(
-        The system
+        Geometry class 
     )delim");
 
+  /**
+   * @brief Constructors
+   */
   geometry.def(
       py::init<std::string, std::string, std::size_t, double, double>(),
       py::arg("inputMesh"), py::arg("referenceMesh"),
       py::arg("notableVertex") = 0, py::arg("reservoirArea") = 0,
       py::arg("reservoirVolume") = 0,
       R"delim(
-        System constructor with .ply files. 
+        Geometry constructor with .ply files. 
       )delim");
   geometry.def(py::init<std::string, std::size_t, double, double>(),
                py::arg("inputMesh"), py::arg("notableVertex") = 0,
                py::arg("reservoirArea") = 0, py::arg("reservoirVolume") = 0,
                R"delim(
-        System constructor with .ply files. 
+        Geometry constructor with .ply files. 
       )delim");
   geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
                         std::size_t, double, double>(),
                py::arg("faceMatrix"), py::arg("vertexMatrix"),
-               py::arg("vertexMatrix"), py::arg("notableVertex") = 0,
+               py::arg("referenceVertexMatrix"), py::arg("notableVertex") = 0,
                py::arg("reservoirArea") = 0, py::arg("reservoirVolume") = 0,
                R"delim(
-        System constructor with Matrices 
+        Geometry constructor with Matrices 
       )delim");
   geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, std::size_t,
                         double, double>(),
@@ -835,26 +841,28 @@ PYBIND11_MODULE(_core, pymem3dg) {
                py::arg("notableVertex") = 0, py::arg("reservoirArea") = 0,
                py::arg("reservoirVolume") = 0,
                R"delim(
-        System constructor with Matrices 
-      )delim");
-  geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
-               py::arg("startingFrame"),
-               R"delim(
-        System constructor with NetCDF trajectory file
+        Geometry constructor with Matrices 
       )delim");
 #ifdef MEM3DG_WITH_NETCDF
   geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
-             py::arg("startingFrame"),
-             R"delim(
-        System constructor with NetCDF trajectory file
+               py::arg("startingFrame"),
+               R"delim(
+        Geometry constructor with NetCDF trajectory file
       )delim");
 #endif
-  geometry.def_readonly("surfaceArea", &Geometry::surfaceArea,
-                        R"delim(
+  /**
+   * @brief Getters
+   */
+  geometry.def(
+      "getSurfaceArea", [](Geometry &s) { return s.surfaceArea; },
+      py::return_value_policy::copy,
+      R"delim(
           get the surface area of the mesh
       )delim");
-  geometry.def_readonly("volume", &Geometry::volume,
-                        R"delim(
+  geometry.def(
+      "getVolume", [](Geometry &s) { return s.volume; },
+      py::return_value_policy::copy,
+      R"delim(
           get the enclosed volume of the mesh
       )delim");
   geometry.def(
@@ -863,7 +871,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       R"delim(
           get vertex data to track the notable vertex, which may or may not be a single vertex
       )delim");
-
   geometry.def(
       "getLumpedMassMatrix",
       [](Geometry &s) { return s.vpg->vertexLumpedMassMatrix; },
@@ -975,6 +982,30 @@ PYBIND11_MODULE(_core, pymem3dg) {
       R"delim(
           get the integrated vector Mean Curvature
       )delim");
+  geometry.def(
+      "getVertexSchlafliLaplacianMeanCurvatureVectors",
+      [](Geometry &s, EigenVectorX1d spontaneousCurvature) {
+        gcs::VertexData<double> H0(*s.mesh);
+        H0.fromVector(spontaneousCurvature);
+        auto vector = s.computeVertexSchlafliLaplacianMeanCurvatureVectors(H0);
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the vertex Schlafli based Laplacian of mean curvature Vectors
+      )delim");
+  geometry.def(
+      "getPolyscopePermutations",
+      [](Geometry &s) { return gcs::polyscopePermutations(*s.mesh); },
+      R"delim(
+          get polyscope permutation 
+      )delim");
+  geometry.def(
+      "getPolyscopeEdgeOrientations",
+      [](Geometry &s) { return gcs::polyscopeEdgeOrientations(*s.mesh).raw(); },
+      R"delim(
+          get polyscope edge orientation 
+      )delim");
 
   /**
    * @brief    geometry setter
@@ -989,30 +1020,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
-   * @brief Method: I/O
-   */
-  geometry.def(
-      "getPolyscopePermutations",
-      [](Geometry &s) { return gcs::polyscopePermutations(*s.mesh); },
-      R"delim(
-          get polyscope permutation 
-      )delim");
-
-  geometry.def(
-      "getVertexSchlafliLaplacianMeanCurvatureVectors",
-      [](Geometry &s, EigenVectorX1d spontaneousCurvature) {
-        gcs::VertexData<double> H0(*s.mesh);
-        H0.fromVector(spontaneousCurvature);
-        auto vector = s.computeVertexSchlafliLaplacianMeanCurvatureVectors(H0);
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the vertex Schlafli based Laplacian of mean curvature Vectors
-      )delim");
-
-  /**
-   * @brief Method: computeGeodesics
+   * @brief Methods
    */
   geometry.def("computeGeodesicDistance", &Geometry::computeGeodesicDistance,
                R"delim(
@@ -1020,16 +1028,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
           compute the geodesic distance centered around Center cached in System
 
           return: NDarray[double]
-      )delim");
-
-  /**
-   * @brief Method: I/O
-   */
-  geometry.def(
-      "getPolyscopeEdgeOrientations",
-      [](Geometry &s) { return gcs::polyscopeEdgeOrientations(*s.mesh).raw(); },
-      R"delim(
-          get polyscope edge orientation 
       )delim");
 
 #pragma enregion geometry
@@ -1044,15 +1042,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
     )delim");
 
   /**
-   * @brief Constructors by matrices
+   * @brief Constructors
    */
-  system.def(py::init<Geometry &, EigenVectorX1d &, EigenVectorX3dr &,
-                      Parameters &, double>(),
-             py::arg("geometry"), py::arg("proteinDensity"),
-             py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
-             R"delim(
-        System constructor with Matrices 
-      )delim");
   system.def(py::init<Geometry &, EigenVectorX1d &, EigenVectorX3dr &,
                       Parameters &, double>(),
              py::arg("geometry"), py::arg("proteinDensity"),
@@ -1065,44 +1056,17 @@ PYBIND11_MODULE(_core, pymem3dg) {
              R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(
-      py::init<Geometry &, EigenVectorX1d &, EigenVectorX3dr &, double>(),
-      py::arg("geometry"), py::arg("proteinDensity"), py::arg("velocity"),
-      py::arg("time") = 0,
-      R"delim(
-        System constructor with Matrices 
-      )delim");
-  system.def(py::init<Geometry &, double>(), py::arg("geometry"),
-             py::arg("time") = 0,
-             R"delim(
-        System constructor with Matrices 
-      )delim");
-
-  /**
-   * @brief Constructors by NetCDF trajectory file
-   */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int, Parameters &>(), py::arg("trajFile"),
-             py::arg("startingFrame"), py::arg("parameters"),
-             R"delim(
-        System constructor with NetCDF trajectory file
-      )delim");
-  system.def(py::init<std::string, int>(), py::arg("trajFile"),
-             py::arg("startingFrame"),
+  system.def(py::init<Geometry &, std::string, int, Parameters &>(),
+             py::arg("geometry"), py::arg("trajFile"), py::arg("startingFrame"),
+             py::arg("parameters"),
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
 #endif
 
-  system.def(
-      "getGeometry", [](System &s) -> Geometry & { return s.geometry; },
-      py::return_value_policy::automatic_reference,
-      R"delim(
-          get the pointwise spontaneous curvature
-      )delim");
-
   /**
-   * @brief Initializing arguments
+   * @brief Read/write attribute
    */
   system.def_readwrite("parameters", &System::parameters,
                        R"delim(
@@ -1116,10 +1080,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
                        R"delim(
           get the time
       )delim");
-
   /**
-   * @brief Membrane dynamics properties (Mem3DG)
+   * @brief Getters
    */
+  system.def(
+      "getGeometry", [](System &s) -> Geometry & { return s.geometry; },
+      py::return_value_policy::automatic_reference,
+      R"delim(
+          get the pointwise spontaneous curvature
+      )delim");
   system.def(
       "getForces", [](System &s) { return s.forces; },
       py::return_value_policy::copy,
@@ -1202,12 +1171,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       R"delim(
             Intermediate function to integrate the power
         )delim");
-  //   system.def("computeL1Norm", &System::computeL1Norm,
-  //              R"delim(
-  //                    compute error norm
-  //             Args:
-  //                   force (:py:class:`list`): mesh vertex force
-  //         )delim");
 
   /**
    * @brief Method: initialize System
