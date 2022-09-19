@@ -84,15 +84,11 @@ struct Parameters {
   };
 
   struct Tension {
-    /// Area reservior
-    double A_res = 0;
     /// tension(area) function form
     std::function<std::tuple<double, double>(double)> form = NULL;
   };
 
   struct Osmotic {
-    /// volume reservoir
-    double V_res = 0;
     /// pressure(volume) function form
     std::function<std::tuple<double, double>(double)> form = NULL;
   };
@@ -169,8 +165,6 @@ struct Parameters {
   };
 
   struct Point {
-    /// index of initial guess
-    std::size_t index = 0;
     /// prescription of center finding
     std::function<EigenVectorX1d(EigenVectorX3sr, EigenVectorX3dr,
                                  EigenVectorX1d)>

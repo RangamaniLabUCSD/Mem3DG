@@ -185,7 +185,7 @@ public:
 
 public:
   /**
-   * @brief Destroy the System
+   * @brief Destroy the Geometry
    *
    * Explicitly unrequire values required by the constructor. In case, there
    * is another pointer to the HalfEdgeMesh and VertexPositionGeometry

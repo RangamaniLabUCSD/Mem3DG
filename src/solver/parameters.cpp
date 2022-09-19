@@ -88,10 +88,6 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
                              "has not been specified for open boundary mesh!");
     }
   } else {
-    if (tension.A_res != 0 || osmotic.V_res != 0) {
-      mem3dg_runtime_error(
-          "Closed mesh can not have area and volume reservior!");
-    }
     if (boundary.shapeBoundaryCondition != "none") {
       mem3dg_runtime_message(
           "Shape boundary condition type should be disable (= \"none\") "

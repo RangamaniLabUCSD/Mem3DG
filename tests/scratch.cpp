@@ -37,15 +37,15 @@ int main() {
   mem3dg::solver::Parameters p;
   std::tie(mesh, vpg) = mem3dg::getCylinderMatrix(1, 16, 60, 7.5, 0);
   refVpg = vpg;
+  std::size_t notableVertex = mem3dg::getVertexClosestToEmbeddedCoordinate(
+      vpg, std::array<double, 3>{0, 0, 0},
+      std::array<bool, 3>{true, true, false});
   // std::string inputMesh = "/home/cuzhu/Mem3DG/tests/frame9.ply";
 
   /// physical parameters
   p.proteinMobility = 0;
   p.temperature = 0;
 
-  p.point.index = mem3dg::getVertexClosestToEmbeddedCoordinate(
-      vpg, std::array<double, 3>{0, 0, 0},
-      std::array<bool, 3>{true, true, false});
   p.protein.proteinInteriorPenalty = 0;
 
   p.boundary.shapeBoundaryCondition = "fixed";
@@ -67,7 +67,6 @@ int main() {
     double energy = tension * A_difference / 2;
     return std::make_tuple(tension, energy);
   };
-  p.tension.A_res = 0;
   p.tension.form = preferredAreaSurfaceTensionModel;
 
   p.adsorption.epsilon = 0;
@@ -97,7 +96,7 @@ int main() {
   EigenVectorX1d phi = Eigen::MatrixXd::Constant(vpg.rows(), 1, 1);
   EigenVectorX3dr vel = Eigen::MatrixXd::Constant(vpg.rows(), 3, 0);
 
-  mem3dg::solver::Geometry geometry(mesh, vpg, refVpg);
+  mem3dg::solver::Geometry geometry(mesh, vpg, refVpg, notableVertex);
   mem3dg::solver::System system(geometry, phi, vel, p, 0);
   system.initialize();
   //   system.testConservativeForcing(0.001);

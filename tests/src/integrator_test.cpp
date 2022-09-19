@@ -39,7 +39,6 @@ public:
       double energy = tension * A_difference / 2;
       return std::make_tuple(tension, energy);
     };
-    p.tension.A_res = 0;
     p.tension.form = preferredAreaSurfaceTensionModel;
 
     auto preferredVolumeOsmoticPressureModel = [](double volume) {

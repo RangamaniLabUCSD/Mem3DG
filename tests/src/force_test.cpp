@@ -44,6 +44,7 @@ protected:
   EigenVectorX1d proteinDensity;
   EigenVectorX3dr velocity;
   Parameters p;
+  std::size_t notableVertex;
   double h = 0.1;
 
   ForceTest() {
@@ -53,13 +54,12 @@ protected:
     std::tie(topologyMatrix, refVertexMatrix) = getCylinderMatrix(1, 10, 10);
     proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
     velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
+    notableVertex = mem3dg::getVertexClosestToEmbeddedCoordinate(
+        vertexMatrix, std::array<double, 3>{0, 0, 1});
 
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;
     p.variation.geodesicMask = -1;
-
-    p.point.index = mem3dg::getVertexClosestToEmbeddedCoordinate(
-        vertexMatrix, std::array<double, 3>{0, 0, 1});
 
     auto geodesicProteinDensity = [](double time, EigenVectorX1d meanCurvature,
                                      EigenVectorX1d geodesicDistance) {
@@ -84,7 +84,6 @@ protected:
     p.bending.Kbc = 0;
     p.bending.H0c = -1;
 
-    p.tension.A_res = 0;
     auto constantSurfaceTensionModel = [](double area) {
       double tension = 1e-2;
       double energy = tension * area;
@@ -132,7 +131,7 @@ protected:
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
-                                    refVertexMatrix, p.point.index);
+                                    refVertexMatrix, notableVertex);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
   f.initialize(0, true);
   f.geometry.computeGeodesicDistance();
@@ -167,7 +166,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
-                                    refVertexMatrix, p.point.index);
+                                    refVertexMatrix, notableVertex);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
   f.initialize(0, true);
   f.geometry.computeGeodesicDistance();
