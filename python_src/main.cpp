@@ -813,36 +813,32 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors
    */
-  geometry.def(
-      py::init<std::string, std::string, std::size_t, double, double>(),
-      py::arg("inputMesh"), py::arg("referenceMesh"),
-      py::arg("notableVertex") = 0, py::arg("reservoirArea") = 0,
-      py::arg("reservoirVolume") = 0,
-      R"delim(
-        Geometry constructor with .ply files. 
-      )delim");
-  geometry.def(py::init<std::string, std::size_t, double, double>(),
-               py::arg("inputMesh"), py::arg("notableVertex") = 0,
-               py::arg("reservoirArea") = 0, py::arg("reservoirVolume") = 0,
+  geometry.def(py::init<std::string, std::string, std::size_t>(),
+               py::arg("inputMesh"), py::arg("referenceMesh"),
+               py::arg("notableVertex") = 0,
                R"delim(
         Geometry constructor with .ply files. 
       )delim");
+//   geometry.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
+//                py::arg("notableVertex") = 0,
+
+//                R"delim(
+//         Geometry constructor with .ply files. 
+//       )delim");
   geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
-                        std::size_t, double, double>(),
+                        std::size_t>(),
                py::arg("faceMatrix"), py::arg("vertexMatrix"),
                py::arg("referenceVertexMatrix"), py::arg("notableVertex") = 0,
-               py::arg("reservoirArea") = 0, py::arg("reservoirVolume") = 0,
+
                R"delim(
         Geometry constructor with Matrices 
       )delim");
-  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, std::size_t,
-                        double, double>(),
-               py::arg("faceMatrix"), py::arg("vertexMatrix"),
-               py::arg("notableVertex") = 0, py::arg("reservoirArea") = 0,
-               py::arg("reservoirVolume") = 0,
-               R"delim(
-        Geometry constructor with Matrices 
-      )delim");
+//   geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, std::size_t>(),
+//                py::arg("faceMatrix"), py::arg("vertexMatrix"),
+//                py::arg("notableVertex") = 0,
+//                R"delim(
+//         Geometry constructor with Matrices 
+//       )delim");
 #ifdef MEM3DG_WITH_NETCDF
   geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
                py::arg("startingFrame"),

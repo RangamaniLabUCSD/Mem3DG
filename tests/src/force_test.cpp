@@ -132,7 +132,7 @@ protected:
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
-                                    refVertexMatrix, p.point.index, p.tension.A_res, p.osmotic.V_res);
+                                    refVertexMatrix, p.point.index);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
   f.initialize(0, true);
   f.geometry.computeGeodesicDistance();
@@ -167,7 +167,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
-                                    refVertexMatrix, p.point.index, p.tension.A_res, p.osmotic.V_res);
+                                    refVertexMatrix, p.point.index);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
   f.initialize(0, true);
   f.geometry.computeGeodesicDistance();

@@ -72,10 +72,6 @@ public:
   double surfaceArea;
   /// Volume
   double volume;
-  /// reservoir area
-  double reservoirArea = 0;
-  /// reservoir volume
-  double reservoirVolume = 0;
 
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistance;
@@ -88,36 +84,28 @@ public:
   // =======       Matrices         ========
   // =======================================
   Geometry(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-           EigenVectorX3dr &refVertexMatrix, std::size_t notableVertex_ = 0,
-           double reservoirArea = 0, double reservoirVolume = 0)
+           EigenVectorX3dr &refVertexMatrix, std::size_t notableVertex_ = 0)
       : Geometry(readMatrices(topologyMatrix, vertexMatrix, refVertexMatrix),
-                 notableVertex_, reservoirArea, reservoirVolume){};
+                 notableVertex_){};
 
   Geometry(EigenVectorX3sr &topologyMatrix, EigenVectorX3dr &vertexMatrix,
-           std::size_t notableVertex_ = 0, double reservoirArea = 0,
-           double reservoirVolume = 0)
-      : Geometry(readMatrices(topologyMatrix, vertexMatrix), notableVertex_,
-                 reservoirArea, reservoirVolume){};
+           std::size_t notableVertex_ = 0)
+      : Geometry(readMatrices(topologyMatrix, vertexMatrix), notableVertex_){};
 
   // =======================================
   // =======       Mesh Files       ========
   // =======================================
   Geometry(std::string inputMesh, std::string refMesh,
-           std::size_t notableVertex_ = 0, double reservoirArea = 0,
-           double reservoirVolume = 0)
-      : Geometry(readMeshFile(inputMesh, refMesh), notableVertex_,
-                 reservoirArea, reservoirVolume){};
-  Geometry(std::string inputMesh, std::size_t notableVertex_ = 0,
-           double reservoirArea = 0, double reservoirVolume = 0)
-      : Geometry(readMeshFile(inputMesh), notableVertex_, reservoirArea,
-                 reservoirVolume){};
+           std::size_t notableVertex_ = 0)
+      : Geometry(readMeshFile(inputMesh, refMesh), notableVertex_){};
+  Geometry(std::string inputMesh, std::size_t notableVertex_ = 0)
+      : Geometry(readMeshFile(inputMesh), notableVertex_){};
 
   // =======================================
   // =======       NetCDF Files     ========
   // =======================================
-  Geometry(std::string trajFile, int startingFrame, double A_res = 0,
-           double V_res = 0)
-      : Geometry(readTrajFile(trajFile, startingFrame), A_res, V_res){};
+  Geometry(std::string trajFile, int startingFrame)
+      : Geometry(readTrajFile(trajFile, startingFrame)){};
 
 private:
   // =======================================
@@ -127,21 +115,20 @@ private:
                       std::unique_ptr<gcs::VertexPositionGeometry>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
                tuple,
-           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+           std::size_t notableVertex_ = 0)
       : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
-                 std::move(std::get<2>(tuple)), notableVertex_, A_res, V_res){};
+                 std::move(std::get<2>(tuple)), notableVertex_){};
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
                tuple,
-           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+           std::size_t notableVertex_ = 0)
       : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
-                 notableVertex_, A_res, V_res){};
+                 notableVertex_){};
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>, std::size_t>
-               tuple,
-           double A_res = 0, double V_res = 0)
+               tuple)
       : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
-                 std::get<2>(tuple), A_res, V_res){};
+                 std::get<2>(tuple)){};
 
 public:
   // =======================================
@@ -151,19 +138,17 @@ public:
   Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
            std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
            std::unique_ptr<gcs::VertexPositionGeometry> refptrvpg_,
-           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
-      : Geometry(std::move(ptrmesh_), std::move(ptrvpg_), notableVertex_, A_res,
-                 V_res) {
+           std::size_t notableVertex_ = 0)
+      : Geometry(std::move(ptrmesh_), std::move(ptrvpg_), notableVertex_) {
     refVpg = std::move(refptrvpg_);
     updateReferenceConfigurations();
   }
   Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
            std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-           std::size_t notableVertex_ = 0, double A_res = 0, double V_res = 0)
+           std::size_t notableVertex_ = 0)
       : mesh(std::move(ptrmesh_)),
         vpg(std::move(ptrvpg_)), geodesicDistance{*mesh, 0},
-        notableVertex{*mesh, false}, refLcrs{*mesh, 0}, reservoirArea{A_res},
-        reservoirVolume{V_res} {
+        notableVertex{*mesh, false}, refLcrs{*mesh, 0} {
     refVpg = vpg->copy();
 
     // GC computed properties
@@ -188,8 +173,8 @@ public:
 
     notableVertex[notableVertex_] = true;
     computeGeodesicDistance();
-    volume = getMeshVolume(*mesh, *vpg, true) + reservoirVolume;
-    surfaceArea = vpg->faceAreas.raw().sum() + reservoirArea;
+    volume = getMeshVolume(*mesh, *vpg, true);
+    surfaceArea = vpg->faceAreas.raw().sum();
     updateReferenceConfigurations();
     isOpenMesh = mesh->hasBoundary();
     if (!isOpenMesh && mesh->genus() != 0) {
@@ -368,11 +353,6 @@ public:
   // ==========================================================
   // =============          misc.cpp            ===============
   // ==========================================================
-  /**
-   * @brief infer the target surface area of the system
-   */
-  double inferTargetSurfaceArea();
-
   /**
    * @brief update cache of geodesicDistance
    */

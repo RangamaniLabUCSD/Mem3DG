@@ -164,19 +164,6 @@ EigenVectorX1d Geometry::computeGeodesicDistance() {
   return foo;
 }
 
-double Geometry::inferTargetSurfaceArea() {
-  double targetArea;
-  if (isOpenMesh) {
-    targetArea = reservoirArea;
-    for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-      targetArea += computePolygonArea(bl, vpg->inputVertexPositions);
-    }
-  } else {
-    targetArea = vpg->faceAreas.raw().sum();
-  }
-  return targetArea;
-}
-
 void Geometry::updateReferenceConfigurations() {
   refVpg->requireEdgeLengths();
   refVpg->requireFaceAreas();
@@ -191,10 +178,10 @@ void Geometry::updateConfigurations() {
   vpg->refreshQuantities();
 
   /// volume and osmotic pressure
-  volume = getMeshVolume(*mesh, *vpg, true) + reservoirVolume;
+  volume = getMeshVolume(*mesh, *vpg, true);
 
   // area and surface tension
-  surfaceArea = vpg->faceAreas.raw().sum() + reservoirVolume;
+  surfaceArea = vpg->faceAreas.raw().sum();
 }
 
 } // namespace solver

@@ -51,10 +51,8 @@ class TestExampleIntegration(object):
     dg_vis.polyscopeStyle()
 
     def test_geometry(self):
-        g1 = dg.Geometry(self.face, self.vertex, 10, 0, 0)
-        g2 = dg.Geometry(self.face, self.vertex, 0, 2, 4)
-        assert (g2.getSurfaceArea() - g1.getSurfaceArea()) == 2
-        assert (g2.getVolume() - g1.getVolume()) == 4
+        g1 = dg.Geometry(self.face, self.vertex, self.vertex,  10)
+        g2 = dg.Geometry(self.face, self.vertex, self.vertex, 0)
         assert g1.getNotableVertex()[10]
         assert g2.getNotableVertex()[0]
         self.test_shape_and_protein_variation()
@@ -346,7 +344,7 @@ class TestExampleIntegration(object):
         face, vertex = dg.getIcosphere(radius=1, subdivision=3)
         p = dg.Parameters()
         p.point.index = 0
-        geometry = dg.Geometry(face, vertex, 0, 0, 0)
+        geometry = dg.Geometry(face, vertex, vertex, 0)
         geometry.computeGeodesicDistance()
         system = dg.System(geometry, p)
         system.initialize()
