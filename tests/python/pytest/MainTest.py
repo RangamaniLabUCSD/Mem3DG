@@ -53,11 +53,14 @@ class TestExampleIntegration(object):
     def test_geometry(self):
         g1 = dg.Geometry(self.face, self.vertex, 10, 0, 0)
         g2 = dg.Geometry(self.face, self.vertex, 0, 2, 4)
-        assert (g2.surfaceArea - g1.surfaceArea) == 2
-        assert (g2.volume - g1.volume) == 4
+        assert (g2.getSurfaceArea() - g1.getSurfaceArea()) == 2
+        assert (g2.getVolume() - g1.getVolume()) == 4
         assert g1.getNotableVertex()[10]
         assert g2.getNotableVertex()[0]
-
+        self.test_shape_and_protein_variation()
+        g3 = dg.Geometry(self.trajFile, 0)
+        assert(g3.getSurfaceArea() == g1.getSurfaceArea())
+        
     def test_system(self):
         p = dg.Parameters()
         p.variation.isShapeVariation = True
@@ -67,10 +70,15 @@ class TestExampleIntegration(object):
         p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         arguments = self.initialConditions
         arguments["parameters"] = p
-        s = dg.System(**arguments)
+        s1 = dg.System(**arguments)
         assert (
-            s.getGeometry().getVertexMatrix() == self.geometry.getVertexMatrix()
+            s1.getGeometry().getVertexMatrix() == self.geometry.getVertexMatrix()
         ).all()
+        self.test_shape_and_protein_variation()
+        g = dg.Geometry(self.trajFile, 0)
+        s2 = dg.System(g, self.trajFile, 0, p)
+        assert(s2.getGeometry().getVertexMatrix() == self.geometry.getVertexMatrix()).all()
+    
 
     def test_shape_and_protein_variation(self):
         """test simulation with both shape and protein variation"""
@@ -198,7 +206,7 @@ class TestExampleIntegration(object):
             showPotential=True,
         )
         _, ax = plt.subplots(4)
-        dg_vis.plotProteinDensity(ax[0], self.trajFile, p)
+        dg_vis.plotProteinDensity(ax[0], self.trajFile)
         dg_vis.plotEnergy(
             ax=ax[1],
             trajFile=self.trajFile,
@@ -369,7 +377,7 @@ class TestExampleIntegration(object):
         )
         system.initialize()
         assert system.getForces().getOsmoticPressure() == 0.01
-        assert system.getEnergy().pressureEnergy == -0.01 * system.getGeometry().volume
+        assert system.getEnergy().pressureEnergy == -0.01 * system.getGeometry().getVolume()
 
         # surface tension
         system.parameters.tension.setForm(
@@ -378,5 +386,5 @@ class TestExampleIntegration(object):
         system.initialize()
         assert system.getForces().getSurfaceTension() == 0.01
         assert (
-            system.getEnergy().surfaceEnergy == 0.01 * system.getGeometry().surfaceArea
+            system.getEnergy().surfaceEnergy == 0.01 * system.getGeometry().getSurfaceArea()
         )

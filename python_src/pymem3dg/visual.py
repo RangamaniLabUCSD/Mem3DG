@@ -161,7 +161,7 @@ def visualizePly(plyFile: str, *vertexData: str):
         ps_mesh.add_scalar_quantity(name, data, enabled=True)
 
 
-def plotProteinDensity(ax, trajFile, parameters, frames=None):
+def plotProteinDensity(ax, trajFile, frames=None):
     """plot protein density
     Args:
         ax (matplotlib.axes.Axes): matplotlib Axes object
@@ -191,9 +191,8 @@ def plotProteinDensity(ax, trajFile, parameters, frames=None):
             )
             proteinDensity_time = np.append(proteinDensity_time, time_now)
             time[plotFrame] = ds.groups["Trajectory"].variables["time"][ncFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
-        area_weight_now = system.getVertexDualAreas()
+        geometry = dg.Geometry(trajFile, ncFrame)
+        area_weight_now = geometry.getVertexDualAreas()
         area_weight = np.append(area_weight, area_weight_now)
         totalProtein[plotFrame] = np.sum(area_weight_now * proteinDensity_now)
 
@@ -279,7 +278,8 @@ def plotChemicalPotentials(
 
     for plotFrame in range(frameNum):
         ncFrame = frames[plotFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
+        geometry = dg.Geometry(trajFile, ncFrame)
+        system = dg.System(geometry, trajFile, ncFrame, parameters)
         system.initialize(nMutation=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
@@ -437,7 +437,8 @@ def plotMechanicalForces(
 
     for plotFrame in range(frameNum):
         ncFrame = frames[plotFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
+        geometry = dg.Geometry(trajFile, ncFrame)
+        system = dg.System(geometry, trajFile, ncFrame, parameters)
         system.initialize(nMutation=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
@@ -650,7 +651,8 @@ def plotEnergy(
 
     for plotFrame in range(frameNum):
         ncFrame = frames[plotFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
+        geometry = dg.Geometry(trajFile, ncFrame)
+        system = dg.System(geometry, trajFile, ncFrame, parameters)
         system.initialize(nMutation=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeTotalEnergy()
@@ -901,29 +903,28 @@ def animate(
     def show(trajNc):
         nonlocal currFrameInd, time, isPointwiseValue, isForceVec, isFluxForm, showPotential, showForce, showBasics
         frame = frames[currFrameInd]
-
         time = dg_read.readMeshDataByNc(trajNc, frame, "Trajectory", "time", 1)
-        face, vertex = dg_read.readMeshByNc(trajNc, frame)
-        velocity = dg_read.readMeshDataByNc(
-            trajNc, frame, "Trajectory", "velocities", 3
-        )
-        psmesh = ps.register_surface_mesh(
-            "mesh", vertex, face, transparency=transparency, smooth_shade=True
-        )
-
+        geometry = dg.Geometry(trajNc, frame)
         if hasParameters:
-            system = dg.System(trajNc, frame, parameters)
+            system = dg.System(geometry, trajNc, frame, parameters)
             system.initialize(nMutation=0, ifMute=True)
             system.computeConservativeForcing()
             system.addNonconservativeForcing()
-        else:
-            system = dg.System(trajNc, frame)
-            system.initialize(nMutation=0, ifMute=True)
+        vertex = geometry.getVertexMatrix()
+        face = geometry.getFaceMatrix()
+        psmesh = ps.register_surface_mesh(
+            "mesh", vertex, face, transparency=transparency, smooth_shade=True
+        )
         setPolyscopePermutations(psmesh, face, vertex)
 
         # Add Quantities
-        vertexDualAreas = system.getVertexDualAreas()
-        proteinDensity = system.getProteinDensity()
+        vertexDualAreas = geometry.getVertexDualAreas()
+        proteinDensity = dg_read.readMeshDataByNc(
+            trajNc, frame, "Trajectory", "proteindensity", 1
+        )
+        velocity = dg_read.readMeshDataByNc(
+            trajNc, frame, "Trajectory", "velocities", 3
+        )
         if showBasics:
             psmesh.add_vector_quantity("velocity", velocity)
             if isPointwiseValue:
@@ -942,32 +943,32 @@ def animate(
                     enabled=True,
                     cmap="viridis",
                 )
-            if center and hasParameters:
-                psmesh.add_scalar_quantity("center", system.getNotableVertex())
+            if center:
+                psmesh.add_scalar_quantity("center", geometry.getNotableVertex())
             if meanCurvature:
-                meanCurvature_ = system.getVertexMeanCurvatures()
+                meanCurvature_ = geometry.getVertexMeanCurvatures()
                 if isPointwiseValue:
                     meanCurvature_ = meanCurvature_ / vertexDualAreas
                 psmesh.add_scalar_quantity("meanCurvature", meanCurvature_)
             if gaussianCurvature:
-                gaussianCurvature_ = system.getVertexGaussianCurvatures()
+                gaussianCurvature_ = geometry.getVertexGaussianCurvatures()
                 if isPointwiseValue:
                     gaussianCurvature_ = gaussianCurvature_ / vertexDualAreas
                 psmesh.add_scalar_quantity("gaussianCurvature", gaussianCurvature_)
-            if geodesicDistance and hasParameters:
+            if geodesicDistance:
                 psmesh.add_distance_quantity(
                     "geodesicDistance",
-                    system.computeGeodesicDistance(),
+                    geometry.computeGeodesicDistance(),
                 )
             if edgeLength:
                 psmesh.add_scalar_quantity(
-                    "edgeLength", system.getEdgeLengths(), defined_on="edges"
+                    "edgeLength", geometry.getEdgeLengths(), defined_on="edges"
                 )
             if vertexDualArea:
                 psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
 
         def computeProteinRateOfChange(potential: npt.NDArray[np.float64]):
-            d0T = system.getVertexAdjacencyMatrix().T
+            d0T = system.getGeometry().getVertexAdjacencyMatrix().T
             flux = system.computeInPlaneFluxForm(potential)
             rateOfChange = parameters.proteinMobility * d0T @ flux
             if not np.all(rateOfChange == 0):
@@ -983,7 +984,7 @@ def animate(
                     psmesh.add_vector_quantity(key, force)
                 else:
                     projectedForce = dg_util.rowwiseDotProduct(
-                        force, system.getVertexNormals()
+                        force, system.getGeometry().getVertexNormals()
                     )
                     absMax = np.max(abs(projectedForce))
                     psmesh.add_scalar_quantity(
@@ -1000,7 +1001,7 @@ def animate(
                     psmesh.add_one_form_vector_quantity(
                         key,
                         inPlaneFluxForm,
-                        system.getPolyscopeEdgeOrientations(),
+                        system.getGeometry().getPolyscopeEdgeOrientations(),
                     )
             else:
                 if parameters.variation.isProteinConservation:
@@ -1143,7 +1144,7 @@ def animate(
                 if parameters.variation.isProteinConservation:
                     changed[8], isFluxForm = psim.Checkbox(
                         "Flux form (vs. potential)", isFluxForm
-                )
+                    )
         anyChanged = np.any(changed)
         if (prevFrameInd != currFrameInd) or anyChanged:
             show(trajNc)
