@@ -49,15 +49,14 @@ int main() {
     return std::make_tuple(tension, energy);
   };
   p.tension.form = constantSurfaceTensionModel;
-  p.tension.A_res = 0;
   p.adsorption.epsilon = 15e-5;
   p.proteinMobility = 40;
 
-  p.point.index = mem3dg::getVertexClosestToEmbeddedCoordinate(
+  std::size_t notableVertex = mem3dg::getVertexClosestToEmbeddedCoordinate(
       vpg, std::array<double, 3>{0, 0, 0},
       std::array<bool, 3>{true, true, false});
   p.variation.isProteinVariation = false;
-  mem3dg::solver::Geometry geometry(inputMesh);
+  mem3dg::solver::Geometry geometry(inputMesh, notableVertex);
   mem3dg::solver::System system(geometry, p);
   system.initialize();
 

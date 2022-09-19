@@ -1318,10 +1318,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The surface tension parameters
     )delim");
   tension.def(py::init<>());
-  tension.def_readwrite("A_res", &Parameters::Tension::A_res,
-                        R"delim(
-          get area reservoir
-      )delim");
   tension.def(
       "setForm",
       [](Parameters::Tension &tension,
@@ -1338,10 +1334,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
   py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(
         The osmotic pressure parameters
     )delim");
-  osmotic.def_readwrite("V_res", &Parameters::Osmotic::V_res,
-                        R"delim(
-          get volume reservoir
-      )delim");
   osmotic.def(
       "setForm",
       [](Parameters::Osmotic &osmotic,
@@ -1446,10 +1438,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                       R"delim(
         The Point energy parameters
     )delim");
-  point.def_readwrite("index", &Parameters::Point::index,
-                      R"delim(
-         index of the defined center
-        )delim");
   point.def(
       "setForm",
       [](Parameters::Point &point,
