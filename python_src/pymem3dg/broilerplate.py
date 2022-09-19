@@ -56,7 +56,7 @@ def constantSurfaceTensionModel(area: float, tension: float):
     return (tension, energy)
 
 
-def preferredAreaSurfaceTensionModel(area: float, modulus: float, preferredArea: float):
+def preferredAreaSurfaceTensionModel(area: float, modulus: float, preferredArea: float, reservoirArea: float = 0):
     """harmonic potential type model with a preferred area
 
     Args:
@@ -67,7 +67,7 @@ def preferredAreaSurfaceTensionModel(area: float, modulus: float, preferredArea:
     Returns:
         tuple: surface tension and surface energy
     """
-    area_difference = area - preferredArea
+    area_difference = (area + reservoirArea) - preferredArea
     tension = modulus * area_difference / preferredArea
     energy = tension * area_difference / 2
     return (tension, energy)
@@ -88,7 +88,7 @@ def constantOsmoticPressureModel(volume: float, pressure: float):
 
 
 def preferredVolumeOsmoticPressureModel(
-    volume: float, strength: float, preferredVolume: float
+    volume: float, strength: float, preferredVolume: float, reservoirVolume: float = 0
 ):
     """harmonic potential type model with a preferred volume
 
@@ -100,7 +100,7 @@ def preferredVolumeOsmoticPressureModel(
     Returns:
         tuple: osmotic pressure and pressure energy
     """
-    volume_difference = volume - preferredVolume
+    volume_difference = (volume + reservoirVolume) - preferredVolume
     pressure = -(strength * volume_difference / preferredVolume / preferredVolume)
     return (pressure, -pressure * volume_difference / 2)
 
