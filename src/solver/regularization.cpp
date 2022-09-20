@@ -631,7 +631,7 @@ void System::globalUpdateAfterMutation() {
   }
 
   // Update mask when topology changes (likely not necessary, just for safety)
-  if (geometry.isOpenMesh) {
+  if (geometry.mesh->hasBoundary()) {
     forces.forceMask.fill({1, 1, 1});
     boundaryForceMask(*geometry.mesh, forces.forceMask,
                       parameters.boundary.shapeBoundaryCondition);

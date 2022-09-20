@@ -13,6 +13,7 @@
 //
 
 #include "mem3dg/solver/geometry.h"
+#include <geometrycentral/surface/surface_centers.h>
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -162,6 +163,22 @@ EigenVectorX1d Geometry::computeGeodesicDistance() {
   EigenVectorX1d foo; // dummy return
   foo.setConstant(1, 0);
   return foo;
+}
+
+gc::Vertex Geometry::findOpenMeshCenter() {
+  std::vector<gcs::Vertex> boundaryLoop;
+  gc::Vertex theVertex;
+  for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
+    for (gcs::Vertex v : bl.adjacentVertices()) {
+      boundaryLoop.push_back(v);
+    }
+    // break;
+  }
+  theVertex = gcs::findCenter(*mesh, *vpg, boundaryLoop, 2).nearestVertex();
+  notableVertex[theVertex] = true;
+  // if (notableVertex.raw().cast<int>().sum() != 1)
+  //   mem3dg_runtime_error("the number of found open mesh center is not 1");
+  return theVertex;
 }
 
 void Geometry::updateReferenceConfigurations() {

@@ -37,10 +37,14 @@ void System::initialize(std::size_t nMutation, bool ifMute) {
       geometry.updateReferenceConfigurations();
     }
   }
+  computeConservativeForcing();
+  computeTotalEnergy();
+  mechErrorNorm = toMatrix(forces.mechanicalForceVec).norm();
+  chemErrorNorm = forces.chemicalPotential.raw().norm();
 }
 
 void System::checkConfiguration() {
-  parameters.checkParameters(geometry.isOpenMesh, geometry.mesh->nVertices());
+  parameters.checkParameters(geometry.mesh->hasBoundary(), geometry.mesh->nVertices());
   meshProcessor.summarizeStatus();
   if (meshProcessor.isMeshMutate && !parameters.variation.isShapeVariation) {
     mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
