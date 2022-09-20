@@ -75,8 +75,6 @@ public:
 
   /// Cached geodesic distance
   gcs::VertexData<double> geodesicDistance;
-  /// if has boundary
-  bool isOpenMesh;
   /// defined notable vertex of the mesh
   gcs::VertexData<bool> notableVertex;
 
@@ -171,13 +169,16 @@ public:
     vpg->requireEdgeCotanWeights();
     // vpg->requireVertexTangentBasis();
 
-    notableVertex[notableVertex_] = true;
+    if (mesh->hasBoundary()) {
+      findOpenMeshCenter();
+    } else {
+      notableVertex[notableVertex_] = true;
+    }
     computeGeodesicDistance();
     volume = getMeshVolume(*mesh, *vpg, true);
     surfaceArea = vpg->faceAreas.raw().sum();
     updateReferenceConfigurations();
-    isOpenMesh = mesh->hasBoundary();
-    if (!isOpenMesh && mesh->genus() != 0) {
+    if (!mesh->hasBoundary() && mesh->genus() != 0) {
       mem3dg_runtime_error(
           "Do not support closed mesh with nonzero number of genus!")
     }
@@ -357,6 +358,11 @@ public:
    * @brief update cache of geodesicDistance
    */
   EigenVectorX1d computeGeodesicDistance();
+
+  /**
+   * @brief find the center of an open mesh and cache it in notableVertex
+   */
+  gc::Vertex findOpenMeshCenter();
 
   /**
    * @brief Get tangential derivative of quantities on face

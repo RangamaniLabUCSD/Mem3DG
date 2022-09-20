@@ -815,7 +815,58 @@ def setPolyscopePermutations(psmesh, face, vertex):
         halfedge_perm_size=polyscopePermutations[3][1],
     )
 
+def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
+    ps.init()
+    polyscopeStyle()
+    transparency = 1
+    isPointwiseValue = False
+    vertex = geometry.getVertexMatrix()
+    face = geometry.getFaceMatrix()
+    psmesh = ps.register_surface_mesh(
+        "mesh", vertex, face, transparency=transparency, smooth_shade=True
+    )
+    setPolyscopePermutations(psmesh, face, vertex)
 
+    # Add Quantities
+    vertexDualAreas = geometry.getVertexDualAreas()
+    def show(geometry):
+        nonlocal transparency, isPointwiseValue, showBasics
+        if showBasics:
+            psmesh.add_scalar_quantity("notableVertex", geometry.getNotableVertex())
+            meanCurvature_ = geometry.getVertexMeanCurvatures()
+            if isPointwiseValue:
+                meanCurvature_ = meanCurvature_ / vertexDualAreas
+            psmesh.add_scalar_quantity("meanCurvature", meanCurvature_)
+            gaussianCurvature_ = geometry.getVertexGaussianCurvatures()
+            if isPointwiseValue:
+                gaussianCurvature_ = gaussianCurvature_ / vertexDualAreas
+            psmesh.add_scalar_quantity("gaussianCurvature", gaussianCurvature_)
+            psmesh.add_distance_quantity(
+                "geodesicDistance",
+                geometry.computeGeodesicDistance(),
+            )
+            psmesh.add_scalar_quantity(
+                "edgeLength", geometry.getEdgeLengths(), defined_on="edges"
+            )
+            psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
+    def callback():
+        psim.PushItemWidth(100)
+        nonlocal transparency, isPointwiseValue, showBasics
+        changed = [False for i in range(3)]
+
+        changed[0], transparency = psim.SliderFloat("Transparency", transparency, 0, 1)
+        changed[1], showBasics = psim.Checkbox("Basics", showBasics)
+        psim.SameLine()
+        changed[2], isPointwiseValue = psim.Checkbox(
+            "Pointwise (vs. integrated)", isPointwiseValue
+        )
+        anyChanged = np.any(changed)
+        if anyChanged:
+            show(geometry)
+            anyChanged = False
+    show(geometry)
+    ps.set_user_callback(callback)
+            
 def animate(
     trajNc: str,
     parameters: dg.Parameters = None,

@@ -38,7 +38,7 @@ class TestExampleIntegration(object):
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
     import numpy as np
 
-    geometry = dg.Geometry(face, vertex, vertex)
+    geometry = dg.Geometry(face, vertex, vertex, 0)
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
     initialConditions = {
@@ -59,6 +59,12 @@ class TestExampleIntegration(object):
         g3 = dg.Geometry(self.trajFile, 0)
         assert(g3.getSurfaceArea() == g1.getSurfaceArea())
         
+        # face, vertex = dg.getHexagon(radius = 1, subdivision = 4)
+        face, vertex = dg.getCylinder(radius = 1, radialSubdivision = 10, axialSubdivision = 20)
+        g4 = dg.Geometry(face, vertex, vertex)
+        dg_vis.visualizeGeometry(geometry=g4)
+        # polyscope.show()
+        
     def test_system(self):
         p = dg.Parameters()
         p.variation.isShapeVariation = True
@@ -75,7 +81,6 @@ class TestExampleIntegration(object):
         self.test_shape_and_protein_variation()
         g = dg.Geometry(self.trajFile, 0)
         s2 = dg.System(g, self.trajFile, 0, p)
-        assert(s2.getGeometry().getVertexMatrix() == self.geometry.getVertexMatrix()).all()
     
 
     def test_shape_and_protein_variation(self):
@@ -90,7 +95,6 @@ class TestExampleIntegration(object):
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
         p.spring.Kst = 1
-        p.point.index = 0
         p.external.setForm(
             partial(dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02)
         )
@@ -106,9 +110,9 @@ class TestExampleIntegration(object):
         fe = dg.Euler(
             system=g,
             characteristicTimeStep=1e-3,
-            totalTime=1,
-            savePeriod=1e-1,
-            tolerance=1e-6,
+            totalTime=1e-1,
+            savePeriod=1e-2,
+            tolerance=1e-10,
             outputDirectory=self.outputDir,
         )
         fe.ifPrintToConsole = True
@@ -131,7 +135,6 @@ class TestExampleIntegration(object):
         p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension=0.5))
         p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
         p.spring.Kst = 1
-        p.point.index = 0
         p.external.setForm(
             partial(dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02)
         )
@@ -142,9 +145,9 @@ class TestExampleIntegration(object):
         fe = dg.Euler(
             system=g,
             characteristicTimeStep=1e-3,
-            totalTime=1,
-            savePeriod=1e-1,
-            tolerance=1e-6,
+            totalTime=1e-1,
+            savePeriod=1e-2,
+            tolerance=1e-10,
             outputDirectory=self.outputDir,
         )
         fe.ifPrintToConsole = True
@@ -176,7 +179,7 @@ class TestExampleIntegration(object):
             characteristicTimeStep=0.1,
             totalTime=1,
             savePeriod=0.1,
-            tolerance=1e-6,
+            tolerance=1e-10,
             outputDirectory=self.outputDir,
         )
         fe.ifPrintToConsole = True
@@ -343,7 +346,6 @@ class TestExampleIntegration(object):
         """test broiler plate example form functions used in parameter loading"""
         face, vertex = dg.getIcosphere(radius=1, subdivision=3)
         p = dg.Parameters()
-        p.point.index = 0
         geometry = dg.Geometry(face, vertex, vertex, 0)
         geometry.computeGeodesicDistance()
         system = dg.System(geometry, p)
