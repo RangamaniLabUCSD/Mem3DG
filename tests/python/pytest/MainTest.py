@@ -62,7 +62,7 @@ class TestExampleIntegration(object):
         # test netcdf file based initialization
         self.test_shape_and_protein_variation()
         g3 = dg.Geometry(self.trajFile, 0)
-        assert (g3.getSurfaceArea() == g2.getSurfaceArea())
+        assert g3.getSurfaceArea() == g2.getSurfaceArea()
         # assert (g1.getSurfaceArea() == self.geometry.getSurfaceArea())  # this will return false because self.geometry is modified by integration
 
     def test_system(self):
@@ -70,8 +70,8 @@ class TestExampleIntegration(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension=0.5))
-        p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
+        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
         arguments = self.initialConditions
         arguments["parameters"] = p
         s1 = dg.System(**arguments)
@@ -89,13 +89,13 @@ class TestExampleIntegration(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension=0.5))
-        p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
+        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
         p.spring.Kst = 1
-        p.external.setForm(
-            partial(dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02)
+        p.external.form = partial(
+            dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
         )
         arguments = self.initialConditions
         arguments["parameters"] = p
@@ -131,11 +131,11 @@ class TestExampleIntegration(object):
         p.variation.isProteinVariation = False
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.setForm(partial(dg_broil.constantSurfaceTensionModel, tension=0.5))
-        p.osmotic.setForm(partial(dg_broil.constantOsmoticPressureModel, pressure=0.01))
+        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
         p.spring.Kst = 1
-        p.external.setForm(
-            partial(dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02)
+        p.external.form = partial(
+            dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
         )
         arguments = self.initialConditions
         arguments["parameters"] = p
@@ -290,8 +290,7 @@ class TestExampleIntegration(object):
             "chemicalPotential",
         )
         # polyscope.show()
-        
-        
+
     def test_geometry_visual(self):
         dg_vis.visualizeGeometry(self.geometry)
         # polyscope.show()
@@ -344,12 +343,12 @@ class TestExampleIntegration(object):
         test_locations([2, 2, -2], [True, True, True])
         test_locations([0, 0, -2], [True, True, True])
         test_locations([-1, -4, -2], [True, True, True])
-        
+
         # test center prescription on open boundary mesh
-        face, vertex = dg.getHexagon(radius = 1, subdivision = 4)
+        face, vertex = dg.getHexagon(radius=1, subdivision=4)
         vertex = vertex + np.ones(np.shape(vertex))
         notableVertex = dg.getVertexFurthestFromBoundary(face, vertex)
-        assert(np.linalg.norm(vertex[notableVertex]) == sqrt(3))
+        assert np.linalg.norm(vertex[notableVertex]) == sqrt(3)
 
     def test_parameter_loading(self):
         """test broiler plate example form functions used in parameter loading"""
@@ -361,28 +360,26 @@ class TestExampleIntegration(object):
         system.initialize()
 
         # protein
-        system.parameters.protein.setForm(
-            partial(
-                dg_broil.prescribeGeodesicPoteinDensityDistribution,
-                sharpness=20,
-                radius=0.1,
-            )
+        system.parameters.protein.form = partial(
+            dg_broil.prescribeGeodesicPoteinDensityDistribution,
+            sharpness=20,
+            radius=0.1,
         )
         system.prescribeProteinDensityDistribution()
 
         # external force
-        system.parameters.external.setForm(
-            partial(dg_broil.prescribeGaussianPointForce, Kf=0.01, std=1)
+        system.parameters.external.form = partial(
+            dg_broil.prescribeGaussianPointForce, Kf=0.01, std=1, tau=100
         )
         system.prescribeExternalForce()
-        system.parameters.external.setForm(
-            partial(dg_broil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10)
+        system.parameters.external.form = partial(
+            dg_broil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10
         )
         system.prescribeExternalForce()
 
         # osmotic pressure
-        system.parameters.osmotic.setForm(
-            partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
+        system.parameters.osmotic.form = partial(
+            dg_broil.constantOsmoticPressureModel, pressure=0.01
         )
         system.initialize()
         assert system.getForces().getOsmoticPressure() == 0.01
@@ -392,8 +389,8 @@ class TestExampleIntegration(object):
         )
 
         # surface tension
-        system.parameters.tension.setForm(
-            partial(dg_broil.constantSurfaceTensionModel, tension=0.01)
+        system.parameters.tension.form = partial(
+            dg_broil.constantSurfaceTensionModel, tension=0.01
         )
         system.initialize()
         assert system.getForces().getSurfaceTension() == 0.01
@@ -401,3 +398,6 @@ class TestExampleIntegration(object):
             system.getEnergy().surfaceEnergy
             == 0.01 * system.getGeometry().getSurfaceArea()
         )
+        
+        # test read 
+        assert(system.parameters.osmotic.form(2) == (0.01, -0.01 * 2))

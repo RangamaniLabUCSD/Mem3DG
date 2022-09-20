@@ -1318,12 +1318,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The surface tension parameters
     )delim");
   tension.def(py::init<>());
-  tension.def(
-      "setForm",
-      [](Parameters::Tension &tension,
-         std::function<std::tuple<double, double>(double)>
-             &tensionAreaFunction) { tension.form = tensionAreaFunction; },
-      R"delim(
+  tension.def_readwrite("form", &Parameters::Tension::form,
+                        R"delim(
           functional to set the tension area relation
         args: 
             total surface area of the mesh
@@ -1334,12 +1330,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(
         The osmotic pressure parameters
     )delim");
-  osmotic.def(
-      "setForm",
-      [](Parameters::Osmotic &osmotic,
-         std::function<std::tuple<double, double>(double)> &
-             pressureVolumeFunction) { osmotic.form = pressureVolumeFunction; },
-      R"delim(
+  osmotic.def_readwrite("form", &Parameters::Osmotic::form,
+                        R"delim(
           functional to set the pressure volume relation
         args: 
             enclosed volume of the mesh
@@ -1378,13 +1370,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                             R"delim(
         The external force parameters
     )delim");
-  external.def(
-      "setForm",
-      [](Parameters::External &external,
-         std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
-                                       EigenVectorX1d)>
-             &externalForceFunction) { external.form = externalForceFunction; },
-      R"delim(
+  external.def_readwrite("form", &Parameters::External::form,
+                         R"delim(
           functional to set the external force prescription 
         args: 
             vertexPositions
@@ -1438,13 +1425,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                       R"delim(
         The Point energy parameters
     )delim");
-  point.def(
-      "setForm",
-      [](Parameters::Point &point,
-         std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
-             EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
-             &notableVertexFunction) { point.form = notableVertexFunction; },
-      R"delim(
+  point.def_readwrite("form", &Parameters::Point::form,
+                      R"delim(
           functional to find the notable vertex of the mesh 
         args: 
             faceMatrix (npt.NDarray[int64])
@@ -1463,14 +1445,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                         R"delim(
           get interior point parameter for protein density
       )delim");
-  protein.def(
-      "setForm",
-      [](Parameters::Protein &protein,
-         std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
-             &proteinDensityDistributionFunction) {
-        protein.form = proteinDensityDistributionFunction;
-      },
-      R"delim(
+  protein.def_readwrite("form", &Parameters::Protein::form,
+                        R"delim(
           functional to set the protein density distribution prescription 
         args: 
             time (float)
