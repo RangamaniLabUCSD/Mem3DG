@@ -11,6 +11,7 @@
 #     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
+from cmath import sqrt
 import pymem3dg as dg
 import polyscope
 import pymem3dg.util as dg_util
@@ -51,20 +52,19 @@ class TestExampleIntegration(object):
     dg_vis.polyscopeStyle()
 
     def test_geometry(self):
-        g1 = dg.Geometry(self.face, self.vertex, self.vertex,  10)
+
+        # test matrix based initialization
+        g1 = dg.Geometry(self.face, self.vertex, self.vertex, 10)
         g2 = dg.Geometry(self.face, self.vertex, self.vertex, 0)
+        # test the notable vertex argument
         assert g1.getNotableVertex()[10]
         assert g2.getNotableVertex()[0]
+        # test netcdf file based initialization
         self.test_shape_and_protein_variation()
         g3 = dg.Geometry(self.trajFile, 0)
-        assert(g3.getSurfaceArea() == g1.getSurfaceArea())
-        
-        # face, vertex = dg.getHexagon(radius = 1, subdivision = 4)
-        face, vertex = dg.getCylinder(radius = 1, radialSubdivision = 10, axialSubdivision = 20)
-        g4 = dg.Geometry(face, vertex, vertex)
-        dg_vis.visualizeGeometry(geometry=g4)
-        # polyscope.show()
-        
+        assert (g3.getSurfaceArea() == g2.getSurfaceArea())
+        # assert (g1.getSurfaceArea() == self.geometry.getSurfaceArea())  # this will return false because self.geometry is modified by integration
+
     def test_system(self):
         p = dg.Parameters()
         p.variation.isShapeVariation = True
@@ -81,7 +81,6 @@ class TestExampleIntegration(object):
         self.test_shape_and_protein_variation()
         g = dg.Geometry(self.trajFile, 0)
         s2 = dg.System(g, self.trajFile, 0, p)
-    
 
     def test_shape_and_protein_variation(self):
         """test simulation with both shape and protein variation"""
@@ -291,6 +290,11 @@ class TestExampleIntegration(object):
             "chemicalPotential",
         )
         # polyscope.show()
+        
+        
+    def test_geometry_visual(self):
+        dg_vis.visualizeGeometry(self.geometry)
+        # polyscope.show()
 
     def test_mesh_generation(self):
         """test mesh generation functions"""
@@ -340,7 +344,12 @@ class TestExampleIntegration(object):
         test_locations([2, 2, -2], [True, True, True])
         test_locations([0, 0, -2], [True, True, True])
         test_locations([-1, -4, -2], [True, True, True])
-        # polyscope.show()
+        
+        # test center prescription on open boundary mesh
+        face, vertex = dg.getHexagon(radius = 1, subdivision = 4)
+        vertex = vertex + np.ones(np.shape(vertex))
+        notableVertex = dg.getVertexFurthestFromBoundary(face, vertex)
+        assert(np.linalg.norm(vertex[notableVertex]) == sqrt(3))
 
     def test_parameter_loading(self):
         """test broiler plate example form functions used in parameter loading"""
@@ -377,7 +386,10 @@ class TestExampleIntegration(object):
         )
         system.initialize()
         assert system.getForces().getOsmoticPressure() == 0.01
-        assert system.getEnergy().pressureEnergy == -0.01 * system.getGeometry().getVolume()
+        assert (
+            system.getEnergy().pressureEnergy
+            == -0.01 * system.getGeometry().getVolume()
+        )
 
         # surface tension
         system.parameters.tension.setForm(
@@ -386,5 +398,6 @@ class TestExampleIntegration(object):
         system.initialize()
         assert system.getForces().getSurfaceTension() == 0.01
         assert (
-            system.getEnergy().surfaceEnergy == 0.01 * system.getGeometry().getSurfaceArea()
+            system.getEnergy().surfaceEnergy
+            == 0.01 * system.getGeometry().getSurfaceArea()
         )

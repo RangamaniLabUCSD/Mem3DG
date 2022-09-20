@@ -22,6 +22,7 @@
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/simple_polygon_mesh.h>
+#include <geometrycentral/surface/surface_centers.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/surface_mesh_factories.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
@@ -66,8 +67,8 @@ loopSubdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
 }
 
 void linearSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
-               std::unique_ptr<gcs::VertexPositionGeometry> &vpg,
-               std::size_t nSub) {
+                     std::unique_ptr<gcs::VertexPositionGeometry> &vpg,
+                     std::size_t nSub) {
   for (std::size_t iter = 0; iter < nSub; ++iter) {
     gcs::VertexData<bool> isOrigVert(*mesh, true);
     gcs::EdgeData<bool> isOrigEdge(*mesh, true);
@@ -116,7 +117,8 @@ void linearSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
 std::tuple<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>,
            Eigen::Matrix<double, Eigen::Dynamic, 3>>
 linearSubdivide(Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &faces,
-          Eigen::Matrix<double, Eigen::Dynamic, 3> &coords, std::size_t nSub) {
+                Eigen::Matrix<double, Eigen::Dynamic, 3> &coords,
+                std::size_t nSub) {
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> newCoords;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> newFaces;
   std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
@@ -434,9 +436,9 @@ getFaceAndVertexMatrix(std::string &plyName) {
   return std::tie(meshMatrix, vertexMatrix);
 }
 
-Eigen::Matrix<double, Eigen::Dynamic, 1> getRichData(std::string &plyName,
-                                                  std::string &elementName,
-                                                  std::string &propertyName) {
+Eigen::Matrix<double, Eigen::Dynamic, 1>
+getRichData(std::string &plyName, std::string &elementName,
+            std::string &propertyName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -463,7 +465,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> getRichData(std::string &plyName,
 }
 
 std::vector<std::string> getRichDataPropertyName(std::string &plyName,
-                                  std::string &elementName) {
+                                                 std::string &elementName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
@@ -673,6 +675,30 @@ getFaceSurfacePointClosestToEmbeddedCoordinate(
   return getFaceSurfacePointClosestToEmbeddedCoordinate(
       faceMatrix, vertexMatrix, embeddedCoordinate, filter,
       accountedCoordinate);
+}
+
+DLL_PUBLIC std::size_t
+getVertexFurthestFromBoundary(gc::ManifoldSurfaceMesh &mesh,
+                              gc::VertexPositionGeometry &vpg) {
+  std::vector<gcs::Vertex> boundaryLoop;
+  for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
+    for (gcs::Vertex v : bl.adjacentVertices()) {
+      boundaryLoop.push_back(v);
+    }
+  }
+  // if (notableVertex.raw().cast<int>().sum() != 1)
+  //   mem3dg_runtime_error("the number of found open mesh center is not 1");
+  return gcs::findCenter(mesh, vpg, boundaryLoop, 2).nearestVertex().getIndex();
+}
+
+DLL_PUBLIC std::size_t
+getVertexFurthestFromBoundary(const EigenVectorX3sr &faceMatrix,
+                              const EigenVectorX3dr &vertexMatrix) {
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::tie(mesh, vpg) =
+      gcs::makeManifoldSurfaceMeshAndGeometry(vertexMatrix, faceMatrix);
+  return getVertexFurthestFromBoundary(*mesh, *vpg);
 }
 
 } // namespace mem3dg
