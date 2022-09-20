@@ -815,6 +815,7 @@ def setPolyscopePermutations(psmesh, face, vertex):
         halfedge_perm_size=polyscopePermutations[3][1],
     )
 
+
 def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
     ps.init()
     polyscopeStyle()
@@ -829,6 +830,7 @@ def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
 
     # Add Quantities
     vertexDualAreas = geometry.getVertexDualAreas()
+
     def show(geometry):
         nonlocal transparency, isPointwiseValue, showBasics
         if showBasics:
@@ -836,11 +838,23 @@ def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
             meanCurvature_ = geometry.getVertexMeanCurvatures()
             if isPointwiseValue:
                 meanCurvature_ = meanCurvature_ / vertexDualAreas
-            psmesh.add_scalar_quantity("meanCurvature", meanCurvature_)
+            absMax = np.max(abs(meanCurvature_))
+            psmesh.add_scalar_quantity(
+                "meanCurvature",
+                meanCurvature_,
+                cmap="coolwarm",
+                vminmax=(-absMax, absMax),
+            )
             gaussianCurvature_ = geometry.getVertexGaussianCurvatures()
             if isPointwiseValue:
                 gaussianCurvature_ = gaussianCurvature_ / vertexDualAreas
-            psmesh.add_scalar_quantity("gaussianCurvature", gaussianCurvature_)
+            absMax = np.max(abs(gaussianCurvature_))
+            psmesh.add_scalar_quantity(
+                "gaussianCurvature",
+                gaussianCurvature_,
+                cmap="coolwarm",
+                vminmax=(-absMax, absMax),
+            )
             psmesh.add_distance_quantity(
                 "geodesicDistance",
                 geometry.computeGeodesicDistance(),
@@ -849,6 +863,7 @@ def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
                 "edgeLength", geometry.getEdgeLengths(), defined_on="edges"
             )
             psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
+
     def callback():
         psim.PushItemWidth(100)
         nonlocal transparency, isPointwiseValue, showBasics
@@ -864,9 +879,11 @@ def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
         if anyChanged:
             show(geometry)
             anyChanged = False
+
     show(geometry)
     ps.set_user_callback(callback)
-            
+
+
 def animate(
     trajNc: str,
     parameters: dg.Parameters = None,
@@ -875,7 +892,7 @@ def animate(
     showForce=False,
     showPotential=False,
     geodesicDistance=True,
-    center: bool = True,
+    notableVertex: bool = True,
     meanCurvature: bool = True,
     edgeLength: bool = True,
     vertexDualArea: bool = True,
@@ -905,7 +922,7 @@ def animate(
         trajNc (str): netcdf trajectory file name
         parameters (pymem3dg.Parameters, optional): pymem3dg Parameters instance. Visualizing will be limited.
         geodesicDistance (bool, optional): optional data to visualize. Defaults to True
-        center (bool, optional): optional data to visualize. Defaults to True
+        notableVertex (bool, optional): optional data to visualize. Defaults to True
         meanCurvature (bool, optional): optional data to visualize. Defaults to True
         edgeLength (bool, optional): optional data to visualize. Defaults to True
         vertexDualArea (bool, optional): optional data to visualize. Defaults to True
@@ -994,18 +1011,30 @@ def animate(
                     enabled=True,
                     cmap="viridis",
                 )
-            if center:
-                psmesh.add_scalar_quantity("center", geometry.getNotableVertex())
+            if notableVertex:
+                psmesh.add_scalar_quantity("notableVertex", geometry.getNotableVertex())
             if meanCurvature:
                 meanCurvature_ = geometry.getVertexMeanCurvatures()
                 if isPointwiseValue:
                     meanCurvature_ = meanCurvature_ / vertexDualAreas
-                psmesh.add_scalar_quantity("meanCurvature", meanCurvature_)
+                absMax = np.max(abs(meanCurvature_))
+                psmesh.add_scalar_quantity(
+                    "meanCurvature",
+                    meanCurvature_,
+                    cmap="coolwarm",
+                    vminmax=(-absMax, absMax),
+                )
             if gaussianCurvature:
                 gaussianCurvature_ = geometry.getVertexGaussianCurvatures()
                 if isPointwiseValue:
                     gaussianCurvature_ = gaussianCurvature_ / vertexDualAreas
-                psmesh.add_scalar_quantity("gaussianCurvature", gaussianCurvature_)
+                absMax = np.max(abs(gaussianCurvature_))
+                psmesh.add_scalar_quantity(
+                    "gaussianCurvature",
+                    gaussianCurvature_,
+                    cmap="coolwarm",
+                    vminmax=(-absMax, absMax),
+                )
             if geodesicDistance:
                 psmesh.add_distance_quantity(
                     "geodesicDistance",
@@ -1037,12 +1066,13 @@ def animate(
                     projectedForce = dg_util.rowwiseDotProduct(
                         force, system.getGeometry().getVertexNormals()
                     )
-                    absMax = np.max(abs(projectedForce))
+                    # limit = np.max(abs(projectedForce))
+                    limit = np.max(abs(np.percentile(projectedForce, [1, 99])))
                     psmesh.add_scalar_quantity(
                         key,
                         projectedForce,
                         cmap="coolwarm",
-                        vminmax=(-absMax, absMax),
+                        vminmax=(-limit, limit),
                     )
 
         def addPotential(potential: npt.NDArray[np.float64], key: str):
@@ -1057,24 +1087,26 @@ def animate(
             else:
                 if parameters.variation.isProteinConservation:
                     rateOfChange = computeProteinRateOfChange(potential)
-                    absMax = np.max(abs(rateOfChange))
+                    # limit = np.max(abs(rateOfChange))
+                    limit = np.max(abs(np.percentile(rateOfChange, [1, 99])))
                     if not np.all(rateOfChange == 0):
                         psmesh.add_scalar_quantity(
                             key,
                             rateOfChange,
                             cmap="coolwarm",
-                            vminmax=(-absMax, absMax),
+                            vminmax=(-limit, limit),
                         )
                 else:
                     if not np.all(potential == 0):
                         if not isPointwiseValue:
                             potential = vertexDualAreas * potential
-                        absMax = np.max(abs(potential))
+                        # limit = np.max(abs(potential))
+                        limit = np.max(abs(np.percentile(potential, [1, 99])))
                         psmesh.add_scalar_quantity(
                             key,
                             potential,
                             cmap="coolwarm",
-                            vminmax=(-absMax, absMax),
+                            vminmax=(-limit, limit),
                         )
 
         if showForce and hasParameters:
