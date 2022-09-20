@@ -57,6 +57,18 @@ EigenVectorX1d System::prescribeProteinDensityDistribution() {
   //     parameters.protein.geodesicProteinDensityDistribution[3];
 }
 
+Eigen::Matrix<bool, Eigen::Dynamic, 1> System::prescribeNotableVertex() {
+  if (parameters.point.form != NULL) {
+    geometry.notableVertex.raw() =
+        parameters.point.form(geometry.mesh->getFaceVertexMatrix<std::size_t>(),
+                              toMatrix(geometry.vpg->vertexPositions),
+                              geometry.geodesicDistance.raw());
+  } else {
+    mem3dg_runtime_message("Parameter point form is NULL!");
+  }
+  return geometry.notableVertex.raw();
+}
+
 void System::prescribeGeodesicMasks() {
   // Initialize the constant mask based on distance from the point specified
   if (parameters.variation.geodesicMask != -1) {
