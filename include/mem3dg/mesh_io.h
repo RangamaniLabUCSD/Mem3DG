@@ -300,4 +300,19 @@ DLL_PUBLIC std::size_t getVertexClosestToEmbeddedCoordinate(
     const std::array<bool, 3> &accountedCoordinate = std::array<bool, 3>{
         true, true, true});
 
+/**
+ * @brief Find the index of the vertex furthest away from the boudaries
+ *
+ * @param mesh surface mesh
+ * @param vpg vertex position geometry
+ *
+ * @return vertex index
+ */
+DLL_PUBLIC std::size_t
+getVertexFurthestFromBoundary(gc::ManifoldSurfaceMesh &mesh,
+                              gc::VertexPositionGeometry &vpg);
+DLL_PUBLIC std::size_t
+getVertexFurthestFromBoundary(const EigenVectorX3sr &faceMatrix,
+                              const EigenVectorX3dr &vertexMatrix);
+
 } // namespace mem3dg

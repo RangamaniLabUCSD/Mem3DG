@@ -1742,6 +1742,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::arg("embeddedCoordinate"),
       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
       R"delim(find the face surface point closest to a embedded coordinate)delim");
+  pymem3dg.def(
+      "getVertexFurthestFromBoundary",
+      py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &>(
+          &getVertexFurthestFromBoundary),
+      py::arg("faceMatrix"), py::arg("vertexMatrix"),
+      R"delim(find the vertex furthest away from the boundaries)delim");
 
 #pragma endregion mesh_io
 };

@@ -169,11 +169,7 @@ public:
     vpg->requireEdgeCotanWeights();
     // vpg->requireVertexTangentBasis();
 
-    if (mesh->hasBoundary()) {
-      findOpenMeshCenter();
-    } else {
-      notableVertex[notableVertex_] = true;
-    }
+    notableVertex[notableVertex_] = true;
     computeGeodesicDistance();
     volume = getMeshVolume(*mesh, *vpg, true);
     surfaceArea = vpg->faceAreas.raw().sum();
@@ -358,11 +354,6 @@ public:
    * @brief update cache of geodesicDistance
    */
   EigenVectorX1d computeGeodesicDistance();
-
-  /**
-   * @brief find the center of an open mesh and cache it in notableVertex
-   */
-  gc::Vertex findOpenMeshCenter();
 
   /**
    * @brief Get tangential derivative of quantities on face
