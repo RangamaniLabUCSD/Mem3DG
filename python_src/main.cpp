@@ -819,12 +819,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
                R"delim(
         Geometry constructor with .ply files. 
       )delim");
-//   geometry.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
-//                py::arg("notableVertex") = 0,
+  //   geometry.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
+  //                py::arg("notableVertex") = 0,
 
-//                R"delim(
-//         Geometry constructor with .ply files. 
-//       )delim");
+  //                R"delim(
+  //         Geometry constructor with .ply files.
+  //       )delim");
   geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
                         std::size_t>(),
                py::arg("faceMatrix"), py::arg("vertexMatrix"),
@@ -837,7 +837,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
 //                py::arg("faceMatrix"), py::arg("vertexMatrix"),
 //                py::arg("notableVertex") = 0,
 //                R"delim(
-//         Geometry constructor with Matrices 
+//         Geometry constructor with Matrices
 //       )delim");
 #ifdef MEM3DG_WITH_NETCDF
   geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
@@ -1441,10 +1441,9 @@ PYBIND11_MODULE(_core, pymem3dg) {
   point.def(
       "setForm",
       [](Parameters::Point &point,
-         std::function<EigenVectorX1d(EigenVectorX3sr, EigenVectorX3dr,
-                                      EigenVectorX1d)> &notableVertexFunction) {
-        point.form = notableVertexFunction;
-      },
+         std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
+             EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
+             &notableVertexFunction) { point.form = notableVertexFunction; },
       R"delim(
           functional to find the notable vertex of the mesh 
         args: 

@@ -618,6 +618,11 @@ public:
    * @brief prescribe mask based on geodesic disk
    */
   void prescribeGeodesicMasks();
+
+  /**
+   * @brief prescribe notable vertex based on parameter.point.form
+   */
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> prescribeNotableVertex();
 };
 } // namespace solver
 } // namespace mem3dg

@@ -111,6 +111,17 @@ def ambientSolutionOsmoticPressureModel(
     ambient_concentration: float,
     temperature: float,
 ):
+    """osmotic pressure model with an ambient solution concentration
+
+    Args:
+        volume (float): enclosed volume
+        enclosed_solute (float): amount of solute enclosed by the mesh
+        ambient_concentration (float): ambient concentration
+        temperature (float): temperature of the system
+
+    Returns:
+        tuple: osmotic pressure and pressure energy
+    """
     kBoltzmann = 1.380649e-8  # Boltzmann constant (nanonewton * micrometer / Kelvin)
     i = 1.0  # van't Hoff index
     N = 6.02214076e5  # Avogadro constant (/atto-mol)
@@ -155,6 +166,7 @@ def prescribeGaussianPointForce(
     geodesicDistances: list,
     Kf: float,
     std: float,
+    tau: float
 ):
     """form function that generate external force on a single vertex following a Gaussian distribution of geodesic distance
 
@@ -165,12 +177,13 @@ def prescribeGaussianPointForce(
         geodesicDistances (list): geodesic distance centered at the vertex
         Kf (float): force magnitude coefficient
         std (float): standard deviation of the Gaussian distribution
+        tau (float): time scale of decay in the form of exp(-time/tau)
 
     Returns:
         (npt.NDArray[np.float64]): vertex force matrix
     """
     direction = dg_util.rowwiseNormalize(vertexPositions)
-    magnitude = Kf * dg_util.gaussianDistribution(geodesicDistances, 0, std)
+    magnitude = Kf * np.exp(-time / tau) * dg_util.gaussianDistribution(geodesicDistances, 0, std)
     return dg_util.rowwiseScaling(magnitude, direction)
 
 

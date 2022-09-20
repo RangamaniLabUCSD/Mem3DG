@@ -166,8 +166,8 @@ struct Parameters {
 
   struct Point {
     /// prescription of center finding
-    std::function<EigenVectorX1d(EigenVectorX3sr, EigenVectorX3dr,
-                                 EigenVectorX1d)>
+    std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
+        EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
         form = NULL;
   };
 
