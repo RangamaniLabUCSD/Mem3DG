@@ -335,7 +335,7 @@ public:
    * @brief Helper functions to compute shape variation of corner angles
    */
   gc::Vector3 computeCornerAngleVariation(gcs::Corner c, gcs::Vertex v);
-
+  gc::Vector3 computeCornerAngleVariation(gcs::Halfedge he, gcs::Vertex v);
   /**
    * @brief Helper functions to compute shape variation of dihedral angles
    */
