@@ -97,7 +97,7 @@ bool VelocityVerlet::integrate() {
 
     // step forward
     if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
-      system.time += 1e-10 * characteristicTimeStep;
+      system.time += 1e-5 * characteristicTimeStep;
     } else {
       march();
     }
