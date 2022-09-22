@@ -55,11 +55,11 @@ void System::computeDeviatoricCurvatureEnergy() {
       (Kd.raw().array() *
        geometry.vpg->vertexGaussianCurvatures.raw().array().square())
           .sum();
-  // (Kd.raw().array() *
-  // (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
-  //                          geometry.vpg->vertexDualAreas.raw().array() -
-  //                      geometry.vpg->vertexGaussianCurvatures.raw().array()))
-  //     .sum();
+      // (Kd.raw().array() *
+      //  (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
+      //       geometry.vpg->vertexDualAreas.raw().array() -
+      //   geometry.vpg->vertexGaussianCurvatures.raw().array()))
+      //     .sum();
 }
 
 void System::computeAreaDifferenceEnergy() {
