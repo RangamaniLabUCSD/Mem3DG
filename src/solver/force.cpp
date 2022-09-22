@@ -121,11 +121,11 @@ void System::computeGeometricForces(size_t i) {
             : gc::Vector3{0.0, 0.0, 0.0};
     gc::Vector3 gaussVarVec1 =
         boundaryVertex ? gc::Vector3{0.0, 0.0, 0.0}
-                       : geometry.computeCornerAngleVariation(he, he.vertex());
+                       : -geometry.computeCornerAngleVariation(he, he.vertex());
     gc::Vector3 gaussVarVec2 =
         boundaryNeighborVertex
             ? gc::Vector3{0.0, 0.0, 0.0}
-            : geometry.computeCornerAngleVariation(he.next(), he.vertex()) +
+            : -geometry.computeCornerAngleVariation(he.next(), he.vertex()) -
                   geometry.computeCornerAngleVariation(he.twin(), he.vertex());
 
     // Assemble to forces
@@ -146,36 +146,14 @@ void System::computeGeometricForces(size_t i) {
     if (forces.surfaceTension != 0) // surface capillary force
       capillaryForceVec -= forces.surfaceTension * areaGrad;
     if (Kdi != 0 || Kdj != 0) { // deviatoric curvature force
-      deviatoricCurvatureForceVec_gauss +=
+      deviatoricCurvatureForceVec_gauss -=
           2 * Kdi * KGi * gaussVarVec1 + 2 * Kdj * KGj * gaussVarVec2;
       // deviatoricCurvatureForceVec_mean -=
       //     (Kdi * Hi + Kdj * Hj) * gaussVec +
       //     (Kdi * (-Hi * Hi) / 3 + Kdj * (-Hj * Hj) * 2 / 3) * areaGrad +
       //     (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2);
-      // if (boundaryVertex) {
-      //   if (!boundaryEdge)
-      //     deviatoricCurvatureForceVec_gauss -=
-      //         Kdj *
-      //             computeCornerAngleVariation(he.next().corner(),
-      //             he.vertex()) +
-      //         Kdj *
-      //             computeCornerAngleVariation(he.twin().corner(),
-      //             he.vertex());
-      // } else {
-      //   if (boundaryNeighborVertex) {
-      //     deviatoricCurvatureForceVec_gauss -=
-      //         Kdi * computeCornerAngleVariation(he.corner(), he.vertex());
-      //   } else {
-      //     deviatoricCurvatureForceVec_gauss -=
-      //         Kdi * computeCornerAngleVariation(he.corner(), he.vertex()) +
-      //         Kdj *
-      //             computeCornerAngleVariation(he.next().corner(),
-      //             he.vertex()) +
-      //         Kdj *
-      //             computeCornerAngleVariation(he.twin().corner(),
-      //             he.vertex());
-      //   }
-      // }
+      // deviatoricCurvatureForceVec_gauss +=
+      //     Kdi * gaussVarVec1 + Kdj * gaussVarVec2;
     }
     if (parameters.adsorption.epsilon != 0) // adsorption force
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
