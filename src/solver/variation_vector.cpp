@@ -41,6 +41,15 @@ gc::Vector3 Geometry::computeCornerAngleVariation(gcs::Corner c,
   }
 }
 
+gc::Vector3 Geometry::computeCornerAngleVariation(gcs::Halfedge he,
+                                                  gcs::Vertex v) {
+  if (he.isInterior()) {
+    return computeCornerAngleVariation(he.corner(), v);
+  } else {
+    return gc::Vector3{0, 0, 0};
+  }
+}
+
 gc::Vector3 Geometry::computeDihedralAngleVariation(gcs::Halfedge he,
                                                     gcs::Vertex v) {
   double l = vpg->edgeLengths[he.edge()];
