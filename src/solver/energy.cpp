@@ -53,13 +53,14 @@ void System::computeSpontaneousCurvatureEnergy() {
 void System::computeDeviatoricCurvatureEnergy() {
   energy.deviatoricCurvatureEnergy =
       (Kd.raw().array() *
-       geometry.vpg->vertexGaussianCurvatures.raw().array().square())
+       geometry.vpg->vertexGaussianCurvatures.raw().array().square() /
+       geometry.vpg->vertexDualAreas.raw().array())
           .sum();
-      // (Kd.raw().array() *
-      //  (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
-      //       geometry.vpg->vertexDualAreas.raw().array() -
-      //   geometry.vpg->vertexGaussianCurvatures.raw().array()))
-      //     .sum();
+  // (Kd.raw().array() *
+  //  (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
+  //       geometry.vpg->vertexDualAreas.raw().array() -
+  //   geometry.vpg->vertexGaussianCurvatures.raw().array()))
+  //     .sum();
 }
 
 void System::computeAreaDifferenceEnergy() {
