@@ -58,9 +58,9 @@ void System::computeGeometricForces(size_t i) {
   gc::Vector3 adsorptionForceVec{0, 0, 0};
   gc::Vector3 aggregationForceVec{0, 0, 0};
   gc::Vector3 entropyForceVec{0, 0, 0};
-  double Hi =
-      geometry.vpg->vertexMeanCurvatures[i] / geometry.vpg->vertexDualAreas[i];
-  double KGi = geometry.vpg->vertexGaussianCurvatures[i];
+  double Ai = geometry.vpg->vertexDualAreas[i];
+  double Hi = geometry.vpg->vertexMeanCurvatures[i] / Ai;
+  double KGi = geometry.vpg->vertexGaussianCurvatures[i] / Ai;
   double H0i = H0[i];
   double Kbi = Kb[i];
   double Kdi = Kd[i];
@@ -79,9 +79,9 @@ void System::computeGeometricForces(size_t i) {
 
     gc::Vector3 dphi_ijk{he.isInterior() ? proteinDensityGradient[fID]
                                          : gc::Vector3{0, 0, 0}};
-    double Hj = geometry.vpg->vertexMeanCurvatures[i_vj] /
-                geometry.vpg->vertexDualAreas[i_vj];
-    double KGj = geometry.vpg->vertexGaussianCurvatures[i_vj];
+    double Aj = geometry.vpg->vertexDualAreas[i_vj];
+    double Hj = geometry.vpg->vertexMeanCurvatures[i_vj] / Aj;
+    double KGj = geometry.vpg->vertexGaussianCurvatures[i_vj] / Aj;
     double H0j = H0[i_vj];
     double Kbj = Kb[i_vj];
     double Kdj = Kd[i_vj];
@@ -147,7 +147,8 @@ void System::computeGeometricForces(size_t i) {
       capillaryForceVec -= forces.surfaceTension * areaGrad;
     if (Kdi != 0 || Kdj != 0) { // deviatoric curvature force
       deviatoricCurvatureForceVec_gauss -=
-          2 * Kdi * KGi * gaussVarVec1 + 2 * Kdj * KGj * gaussVarVec2;
+          2 * Kdi * KGi * gaussVarVec1 + 2 * Kdj * KGj * gaussVarVec2 -
+          (Kdi * KGi * KGi / 3 + Kdj * KGj * KGj * 2 / 3) * areaGrad;
       // deviatoricCurvatureForceVec_mean -=
       //     (Kdi * Hi + Kdj * Hj) * gaussVec +
       //     (Kdi * (-Hi * Hi) / 3 + Kdj * (-Hj * Hj) * 2 / 3) * areaGrad +
@@ -342,7 +343,8 @@ void System::computeChemicalPotentials() {
   if (parameters.bending.Kd != 0 || parameters.bending.Kdc != 0) {
     forces.deviatoricCurvaturePotential.raw() =
         -dKddphi.raw().array() *
-        geometry.vpg->vertexGaussianCurvatures.raw().array().square();
+        geometry.vpg->vertexGaussianCurvatures.raw().array().square() /
+        geometry.vpg->vertexDualAreas.raw().array();
     // (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
     //      geometry.vpg->vertexDualAreas.raw().array() -
     //  geometry.vpg->vertexGaussianCurvatures.raw().array());
