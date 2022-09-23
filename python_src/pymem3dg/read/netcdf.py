@@ -13,11 +13,11 @@
 #
 
 import netCDF4 as nc
-import pymem3dg as dg
 import numpy as np
+import numpy.typing as npt
 
 
-def sizeOf(trajnc: str):
+def sizeOf(trajnc: str) -> int:
     """Get the number of frame of the netcdf trajectory file
     Args:
         trajNc (str): netcdf trajectory file
@@ -29,26 +29,9 @@ def sizeOf(trajnc: str):
         return ds.groups["Trajectory"].dimensions["frame"].size
 
 
-def constructSystemByMatrix(trajnc: str, frame: int, parameters: dg.Parameters):
-    """Construct pymem3dg System by reading mesh topology and coordinate from netcdf trajectory
-    Args:
-        trajNc (str): netcdf trajectory file
-        frame: frame of the mesh
-        parameters: pymem3dg Parameters struct
-
-    Returns:
-        int: pymem3dg System object
-    """
-    with nc.Dataset(trajnc) as ds:
-        time = np.array(ds.groups["Trajectory"].variables["time"][frame])
-        coordinates = np.array(ds.groups["Trajectory"].variables["coordinates"][frame])
-        topology = np.array(ds.groups["Trajectory"].variables["topology"][frame])
-        coordinates = np.reshape(coordinates, (-1, 3))
-        topology = np.reshape(topology, (-1, 3))
-        return dg.System(topology, coordinates, parameters)
-
-
-def getNetcdfFaceAndVertexMatrix(trajNc: str, frame: int):
+def getFaceAndVertexMatrix(
+    trajNc: str, frame: int
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]:
     """Read topology and coordinate of the mesh from netcdf trajectory
 
     Args:
@@ -56,8 +39,7 @@ def getNetcdfFaceAndVertexMatrix(trajNc: str, frame: int):
         frame (int): frame of the mesh
 
     Returns:
-        ndarray: 2D array of topology matrix
-        ndarray: 2D array of vertex coordinate matrix
+        tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]: 2D array of topology matrix and vertex coordinate matrix
     """
     with nc.Dataset(trajNc) as ds:
         coordinates = np.array(ds.groups["Trajectory"].variables["coordinates"][frame])
@@ -68,7 +50,9 @@ def getNetcdfFaceAndVertexMatrix(trajNc: str, frame: int):
     return topology, coordinates
 
 
-def getNetcdfMeshData(trajNc: str, frame: int, group: str, variable: str, num_col: int):
+def getData(
+    trajNc: str, frame: int, group: str, variable: str, num_col: int
+) -> npt.NDArray[np.float64]:
     """Read mesh data from netcdf trajectory, example: proteinDensity = readMeshDataByPly(meshList[i], "Trajectory", "proteindensity")
 
     Args:
@@ -79,26 +63,10 @@ def getNetcdfMeshData(trajNc: str, frame: int, group: str, variable: str, num_co
         num_col (int): number of columns for reshaping purpose
 
     Returns:
-        ndarray: mesh data in matrix form
+        npt.NDArray[np.float64]: mesh data
     """
     with nc.Dataset(trajNc) as ds:
         data = np.array(ds.groups[group].variables[variable][frame])
         # -1 to dynamically allocate size
         data = np.reshape(data, (-1, num_col))
     return np.squeeze(data)
-
-def zeroPadding(frame: int, length: int = 6, padding: str = "0"):
-    """pad frame index with dummy string in the font
-
-    Args:
-        frame (int): frame number
-        length (int, optional): number of total string length. Defaults to 6.
-        padding (str, optional): padding string. Defaults to "0".
-
-    Returns:
-        str: padded string
-    """
-    out = str(frame)
-    while len(out) < length:
-        out = padding + out
-    return out

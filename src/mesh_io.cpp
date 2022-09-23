@@ -437,7 +437,7 @@ getFaceAndVertexMatrix(std::string &plyName) {
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1>
-getRichData(std::string &plyName, std::string &elementName,
+getData(std::string &plyName, std::string &elementName,
             std::string &propertyName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
@@ -464,7 +464,7 @@ getRichData(std::string &plyName, std::string &elementName,
   return property;
 }
 
-std::vector<std::string> getRichDataPropertyName(std::string &plyName,
+std::vector<std::string> getDataPropertyName(std::string &plyName,
                                                  std::string &elementName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
@@ -474,7 +474,7 @@ std::vector<std::string> getRichDataPropertyName(std::string &plyName,
   return ptrRichData->plyData.getElement(elementName).getPropertyNames();
 }
 
-std::vector<std::string> getRichDataElementName(std::string &plyName) {
+std::vector<std::string> getDataElementName(std::string &plyName) {
   // Declare pointers to mesh, geometry and richdata objects
   std::unique_ptr<gcs::SurfaceMesh> ptrMesh;
   std::unique_ptr<gcs::RichSurfaceMeshData> ptrRichData;
