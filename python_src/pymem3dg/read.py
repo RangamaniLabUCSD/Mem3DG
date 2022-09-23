@@ -48,7 +48,7 @@ def constructSystemByMatrix(trajnc: str, frame: int, parameters: dg.Parameters):
         return dg.System(topology, coordinates, parameters)
 
 
-def readMeshByNc(trajNc: str, frame: int):
+def getNetcdfFaceAndVertexMatrix(trajNc: str, frame: int):
     """Read topology and coordinate of the mesh from netcdf trajectory
 
     Args:
@@ -68,7 +68,7 @@ def readMeshByNc(trajNc: str, frame: int):
     return topology, coordinates
 
 
-def readMeshDataByNc(trajNc: str, frame: int, group: str, variable: str, num_col: int):
+def getNetcdfMeshData(trajNc: str, frame: int, group: str, variable: str, num_col: int):
     """Read mesh data from netcdf trajectory, example: proteinDensity = readMeshDataByPly(meshList[i], "Trajectory", "proteindensity")
 
     Args:
@@ -86,36 +86,6 @@ def readMeshDataByNc(trajNc: str, frame: int, group: str, variable: str, num_col
         # -1 to dynamically allocate size
         data = np.reshape(data, (-1, num_col))
     return np.squeeze(data)
-
-
-def readMeshByPly(ply: str):
-    """Read topology and coordinate matrix from .ply file
-
-    Args:
-        ply (str): .ply file name
-
-    Returns:
-        ndarray: 2D array of topology matrix
-        ndarray: 2D array of coordinate matrix
-    """
-    face, vertex = dg.readMesh(ply)
-    return face, vertex
-
-
-def readMeshDataByPly(ply: str, dataType: str, dataName: str):
-    """Read mesh data from .ply file, example: proteinDensity = readMeshDataByPly(meshList[i], "vertex", "protein_density")
-
-    Args:
-        ply (str): .ply file name
-        dataType (str): data type of the mesh data
-        dataName (str): name of the mesh data
-
-    Returns:
-        ndarray: mesh data
-    """
-    data = dg.readData(ply, dataType, dataName)
-    return data
-
 
 def zeroPadding(frame: int, length: int = 6, padding: str = "0"):
     """pad frame index with dummy string in the font

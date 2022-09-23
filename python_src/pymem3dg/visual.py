@@ -953,7 +953,7 @@ def animate(
     maxFrameInd = np.size(frames) - 1
     prevFrameInd = 0
     currFrameInd = 0
-    time = dg_read.readMeshDataByNc(
+    time = dg_read.getNetcdfMeshData(
         trajNc, frames[currFrameInd], "Trajectory", "time", 1
     )
     isFluxForm = False
@@ -971,7 +971,7 @@ def animate(
     def show(trajNc):
         nonlocal currFrameInd, time, isPointwiseValue, isForceVec, isFluxForm, showPotential, showForce, showBasics
         frame = frames[currFrameInd]
-        time = dg_read.readMeshDataByNc(trajNc, frame, "Trajectory", "time", 1)
+        time = dg_read.getNetcdfMeshData(trajNc, frame, "Trajectory", "time", 1)
         geometry = dg.Geometry(trajNc, frame)
         if hasParameters:
             system = dg.System(geometry, trajNc, frame, parameters)
@@ -987,10 +987,10 @@ def animate(
 
         # Add Quantities
         vertexDualAreas = geometry.getVertexDualAreas()
-        proteinDensity = dg_read.readMeshDataByNc(
+        proteinDensity = dg_read.getNetcdfMeshData(
             trajNc, frame, "Trajectory", "proteindensity", 1
         )
-        velocity = dg_read.readMeshDataByNc(
+        velocity = dg_read.getNetcdfMeshData(
             trajNc, frame, "Trajectory", "velocities", 3
         )
         if showBasics:
