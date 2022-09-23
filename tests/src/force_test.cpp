@@ -44,7 +44,7 @@ protected:
   EigenVectorX1d proteinDensity;
   EigenVectorX3dr velocity;
   Parameters p;
-  std::size_t notableVertex;
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex;
   double h = 0.1;
 
   ForceTest() {
@@ -54,8 +54,12 @@ protected:
     std::tie(topologyMatrix, refVertexMatrix) = getCylinderMatrix(1, 10, 10);
     proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
     velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
-    notableVertex = mem3dg::getVertexClosestToEmbeddedCoordinate(
-        vertexMatrix, std::array<double, 3>{0, 0, 1});
+    std::size_t notableVertex_index =
+        mem3dg::getVertexClosestToEmbeddedCoordinate(
+            vertexMatrix, std::array<double, 3>{0, 0, 1});
+    notableVertex =
+        Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(vertexMatrix.rows(), false);
+    notableVertex[notableVertex_index] = true;
 
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;

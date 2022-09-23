@@ -813,32 +813,34 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Constructors
    */
-  geometry.def(py::init<std::string, std::string, std::size_t>(),
+  geometry.def(py::init<std::string, std::string,
+                        Eigen::Matrix<bool, Eigen::Dynamic, 1> &>(),
                py::arg("inputMesh"), py::arg("referenceMesh"),
-               py::arg("notableVertex") = 0,
+               py::arg("notableVertex"),
                R"delim(
         Geometry constructor with .ply files. 
       )delim");
-  //   geometry.def(py::init<std::string, std::size_t>(), py::arg("inputMesh"),
-  //                py::arg("notableVertex") = 0,
-
-  //                R"delim(
-  //         Geometry constructor with .ply files.
-  //       )delim");
+  geometry.def(py::init<std::string, std::string>(), py::arg("inputMesh"),
+               py::arg("referenceMesh"),
+               R"delim(
+          Geometry constructor with .ply files.
+        )delim");
   geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
-                        std::size_t>(),
+                        Eigen::Matrix<bool, Eigen::Dynamic, 1> &>(),
                py::arg("faceMatrix"), py::arg("vertexMatrix"),
-               py::arg("referenceVertexMatrix"), py::arg("notableVertex") = 0,
+               py::arg("referenceVertexMatrix"), py::arg("notableVertex"),
 
                R"delim(
         Geometry constructor with Matrices 
       )delim");
-//   geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, std::size_t>(),
-//                py::arg("faceMatrix"), py::arg("vertexMatrix"),
-//                py::arg("notableVertex") = 0,
-//                R"delim(
-//         Geometry constructor with Matrices
-//       )delim");
+  geometry.def(
+      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &>(),
+      py::arg("faceMatrix"), py::arg("vertexMatrix"),
+      py::arg("referenceVertexMatrix"),
+
+      R"delim(
+        Geometry constructor with Matrices 
+      )delim");
 #ifdef MEM3DG_WITH_NETCDF
   geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
                py::arg("startingFrame"),
@@ -1707,16 +1709,17 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::arg("embeddedCoordinate"), py::arg("filter"),
       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
       R"delim(find the face surface point closest to a embedded coordinate)delim");
-//   pymem3dg.def(
-//       "getFaceSurfacePointClosestToEmbeddedCoordinate",
-//       py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
-//                         const std::array<double, 3> &,
-//                         const std::array<bool, 3> &>(
-//           &getFaceSurfacePointClosestToEmbeddedCoordinate),
-//       py::arg("faceMatrix"), py::arg("vertexMatrix"),
-//       py::arg("embeddedCoordinate"),
-//       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
-//       R"delim(find the face surface point closest to a embedded coordinate)delim");
+  //   pymem3dg.def(
+  //       "getFaceSurfacePointClosestToEmbeddedCoordinate",
+  //       py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
+  //                         const std::array<double, 3> &,
+  //                         const std::array<bool, 3> &>(
+  //           &getFaceSurfacePointClosestToEmbeddedCoordinate),
+  //       py::arg("faceMatrix"), py::arg("vertexMatrix"),
+  //       py::arg("embeddedCoordinate"),
+  //       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true,
+  //       true}, R"delim(find the face surface point closest to a embedded
+  //       coordinate)delim");
   pymem3dg.def(
       "getVertexClosestToEmbeddedCoordinate",
       py::overload_cast<const EigenVectorX3dr &, const std::array<double, 3> &,
@@ -1726,14 +1729,16 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::arg("vertexMatrix"), py::arg("embeddedCoordinate"), py::arg("filter"),
       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
       R"delim(find the index of vertex closest to a embedded coordinate)delim");
-//   pymem3dg.def(
-//       "getVertexClosestToEmbeddedCoordinate",
-//       py::overload_cast<const EigenVectorX3dr &, const std::array<double, 3> &,
-//                         const std::array<bool, 3> &>(
-//           &getVertexClosestToEmbeddedCoordinate),
-//       py::arg("vertexMatrix"), py::arg("embeddedCoordinate"),
-//       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
-//       R"delim(find the index of vertex closest to a embedded coordinate)delim");
+  //   pymem3dg.def(
+  //       "getVertexClosestToEmbeddedCoordinate",
+  //       py::overload_cast<const EigenVectorX3dr &, const std::array<double,
+  //       3> &,
+  //                         const std::array<bool, 3> &>(
+  //           &getVertexClosestToEmbeddedCoordinate),
+  //       py::arg("vertexMatrix"), py::arg("embeddedCoordinate"),
+  //       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true,
+  //       true}, R"delim(find the index of vertex closest to a embedded
+  //       coordinate)delim");
   pymem3dg.def(
       "getVertexFurthestFromBoundary",
       py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &>(

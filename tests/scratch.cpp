@@ -37,9 +37,10 @@ int main() {
   mem3dg::solver::Parameters p;
   std::tie(mesh, vpg) = mem3dg::getCylinderMatrix(1, 16, 60, 7.5, 0);
   refVpg = vpg;
-  std::size_t notableVertex = mem3dg::getVertexClosestToEmbeddedCoordinate(
-      vpg, std::array<double, 3>{0, 0, 0},
-      std::array<bool, 3>{true, true, false});
+  std::size_t notableVertex_index =
+      mem3dg::getVertexClosestToEmbeddedCoordinate(
+          vpg, std::array<double, 3>{0, 0, 0},
+          std::array<bool, 3>{true, true, false});
   // std::string inputMesh = "/home/cuzhu/Mem3DG/tests/frame9.ply";
 
   /// physical parameters
@@ -95,7 +96,9 @@ int main() {
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
   EigenVectorX1d phi = Eigen::MatrixXd::Constant(vpg.rows(), 1, 1);
   EigenVectorX3dr vel = Eigen::MatrixXd::Constant(vpg.rows(), 3, 0);
-
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex =
+      Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(vpg.rows(), false);
+  notableVertex[notableVertex_index] = true;
   mem3dg::solver::Geometry geometry(mesh, vpg, refVpg, notableVertex);
   mem3dg::solver::System system(geometry, phi, vel, p, 0);
   system.initialize();

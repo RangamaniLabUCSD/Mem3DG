@@ -36,7 +36,7 @@ class TestLoadCheck(object):
 class TestInitialization(object):
     face, vertex = dg_meshop.getIcosphere(1, 3)
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
-    geometry = dg.Geometry(face, vertex, vertex, 0)
+    geometry = dg.Geometry(face, vertex, vertex)
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
     initialConditions = {
@@ -44,13 +44,16 @@ class TestInitialization(object):
         "proteinDensity": proteinDensity,
         "velocity": velocity,
     }
+    notableVertex = [False] * np.shape(vertex)[0]
+    notableVertex[10] = True
+    notableVertex[50] = True
 
     def test_geometry(self):
         # test matrix based initialization
-        g1 = dg.Geometry(self.face, self.vertex, self.vertex, 10)
-        g2 = dg.Geometry(self.face, self.vertex, self.vertex, 0)
+        g1 = dg.Geometry(self.face, self.vertex, self.vertex, self.notableVertex)
+        g2 = dg.Geometry(self.face, self.vertex, self.vertex)
         # test the notable vertex argument
-        assert g1.getNotableVertex()[10]
+        assert (g1.getNotableVertex() == self.notableVertex).all()
         assert g2.getNotableVertex()[0]
 
     def test_system(self):
@@ -75,7 +78,7 @@ class TestInitialization(object):
         """test broiler plate example form functions used in parameter loading"""
         face, vertex = dg_meshop.getIcosphere(radius=1, subdivision=3)
         p = dg.Parameters()
-        geometry = dg.Geometry(face, vertex, vertex, 0)
+        geometry = dg.Geometry(face, vertex, vertex, self.notableVertex)
         geometry.computeGeodesicDistance()
         system = dg.System(geometry, p)
         system.initialize()
@@ -84,9 +87,13 @@ class TestInitialization(object):
         system.parameters.protein.form = partial(
             dg_broil.prescribeGeodesicPoteinDensityDistribution,
             sharpness=20,
-            radius=0.1,
+            radius=0.5,
         )
         system.prescribeProteinDensityDistribution()
+        polyscope.init()
+        psmesh = dg_vis.visualizeGeometry(geometry)
+        psmesh.add_scalar_quantity("proteindensity", system.getProteinDensity(), cmap = "coolwarm")
+        polyscope.show()
 
         # external force
         system.parameters.external.form = partial(
@@ -253,7 +260,7 @@ class TestContinuation(object):
         face, vertex = dg_nc.getFaceAndVertexMatrix(
             trajNc=self.trajectory.trajFile, frame=frame
         )
-        g2 = dg.Geometry(face, vertex, vertex, 0)
+        g2 = dg.Geometry(face, vertex, vertex)
         g3 = dg.Geometry(self.trajectory.trajFile, frame)
         assert g3.getSurfaceArea() == g2.getSurfaceArea()
         g = dg.Geometry(self.trajectory.trajFile, 0)

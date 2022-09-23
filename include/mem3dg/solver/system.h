@@ -153,6 +153,14 @@ public:
   // =======       NetCDF Files     ========
   // =======================================
 #ifdef MEM3DG_WITH_NETCDF
+  /**
+   * @brief Construct System
+   * @param geometry_ geometry of the system
+   * @param trajFile NetCDF trajectory file
+   * @param p Parameters of the system
+   * @return system instance
+   *
+   */
   System(Geometry &geometry_, std::string trajFile, int startingFrame,
          Parameters &p)
       : System(geometry_, readTrajFile(trajFile, startingFrame), p){};
@@ -213,6 +221,15 @@ private:
   //       p,
   //                time_) {}
 
+  /**
+   * @brief Construct System
+   * @param geometry_ geometry of the system
+   * @param tuple <vertex protein density, velocity of the vertex, time of the
+   * system>
+   * @param p Parameters of the system
+   * @return system instance
+   *
+   */
   System(Geometry &geometry_,
          std::tuple<EigenVectorX1d, EigenVectorX3dr, double> tuple,
          Parameters &p)
