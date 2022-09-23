@@ -52,9 +52,13 @@ int main() {
   p.adsorption.epsilon = 15e-5;
   p.proteinMobility = 40;
 
-  std::size_t notableVertex = mem3dg::getVertexClosestToEmbeddedCoordinate(
-      vpg, std::array<double, 3>{0, 0, 0},
-      std::array<bool, 3>{true, true, false});
+  std::size_t notableVertex_index =
+      mem3dg::getVertexClosestToEmbeddedCoordinate(
+          vpg, std::array<double, 3>{0, 0, 0},
+          std::array<bool, 3>{true, true, false});
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex =
+      Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(vpg.rows(), false);
+  notableVertex[notableVertex_index] = true;
   p.variation.isProteinVariation = false;
   mem3dg::solver::Geometry geometry(inputMesh, notableVertex);
   mem3dg::solver::System system(geometry, p);

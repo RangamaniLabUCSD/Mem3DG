@@ -144,7 +144,7 @@ def overlayColorbar():
         fig.savefig(figureName, transparent=True, dpi=1500)
 
 
-def visualizePly(plyFile: str, *vertexData: str):
+def visualizePly(plyFile: str, *vertexData: str) -> ps.SurfaceMesh:
     """Visualize .ply file using polyscope
 
     Args:
@@ -158,6 +158,7 @@ def visualizePly(plyFile: str, *vertexData: str):
     for name in vertexData:
         data = dg_mesh.getData(plyFile, "vertex", name)
         ps_mesh.add_scalar_quantity(name, data, enabled=True)
+    return ps_mesh
 
 
 def plotProteinDensity(ax, trajFile, frames=None):
@@ -815,7 +816,18 @@ def setPolyscopePermutations(psmesh, face, vertex):
     )
 
 
-def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
+def visualizeGeometry(
+    geometry: dg.Geometry, showBasics: bool = False
+) -> ps.SurfaceMesh:
+    """visualize pymem3dg.Geometry 
+
+    Args:
+        geometry (dg.Geometry): pymem3dg.Geometry instance
+        showBasics (bool, optional): whether show basics. Defaults to False.
+
+    Returns:
+        ps.SurfaceMesh: handle to the polyscope mesh 
+    """
     ps.init()
     polyscopeStyle()
     transparency = 1
@@ -881,6 +893,7 @@ def visualizeGeometry(geometry: dg.Geometry, showBasics: bool = False):
 
     show(geometry)
     ps.set_user_callback(callback)
+    return psmesh
 
 
 def animate(
@@ -952,9 +965,7 @@ def animate(
     maxFrameInd = np.size(frames) - 1
     prevFrameInd = 0
     currFrameInd = 0
-    time = dg_nc.getData(
-        trajNc, frames[currFrameInd], "Trajectory", "time", 1
-    )
+    time = dg_nc.getData(trajNc, frames[currFrameInd], "Trajectory", "time", 1)
     isFluxForm = False
     isPointwiseValue = False
     isForceVec = False
@@ -986,12 +997,8 @@ def animate(
 
         # Add Quantities
         vertexDualAreas = geometry.getVertexDualAreas()
-        proteinDensity = dg_nc.getData(
-            trajNc, frame, "Trajectory", "proteindensity", 1
-        )
-        velocity = dg_nc.getData(
-            trajNc, frame, "Trajectory", "velocities", 3
-        )
+        proteinDensity = dg_nc.getData(trajNc, frame, "Trajectory", "proteindensity", 1)
+        velocity = dg_nc.getData(trajNc, frame, "Trajectory", "velocities", 3)
         if showBasics:
             psmesh.add_vector_quantity("velocity", velocity)
             if isPointwiseValue:

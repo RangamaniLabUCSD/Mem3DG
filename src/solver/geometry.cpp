@@ -26,7 +26,8 @@ void Geometry::saveGeometry(std::string PathToSave) {
 
 #ifdef MEM3DG_WITH_NETCDF
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>, std::size_t>
+           std::unique_ptr<gcs::VertexPositionGeometry>,
+           Eigen::Matrix<bool, Eigen::Dynamic, 1>>
 Geometry::readTrajFile(std::string trajFile, int startingFrame) {
 
   // Declare pointers to mesh / geometry objects
@@ -37,14 +38,14 @@ Geometry::readTrajFile(std::string trajFile, int startingFrame) {
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology(startingFrame));
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex =
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex_here =
       fd.getNotableVertex(startingFrame);
-  std::size_t vertexIndex;
-  for (vertexIndex = 0; vertexIndex < notableVertex.rows(); ++vertexIndex) {
-    if (notableVertex[vertexIndex])
-      break;
-  }
-  return std::make_tuple(std::move(mesh), std::move(vpg), vertexIndex);
+  // std::size_t vertexIndex;
+  // for (vertexIndex = 0; vertexIndex < notableVertex.rows(); ++vertexIndex) {
+  //   if (notableVertex[vertexIndex])
+  //     break;
+  // }
+  return std::make_tuple(std::move(mesh), std::move(vpg), notableVertex_here);
 }
 #endif
 
@@ -150,18 +151,19 @@ void Geometry::computeFaceTangentialDerivative(
 }
 
 EigenVectorX1d Geometry::computeGeodesicDistance() {
+  // 1) notable vertex is all false, return zero vector
+  assert(notableVertex.raw().cast<std::size_t>().sum() != 0);
+  geodesicDistance.fill(std::numeric_limits<double>::max());
+
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  gc::Vertex centerVertex;
+  // gc::Vertex centerVertex;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     if (notableVertex[i]) {
-      geodesicDistance = heatSolver.computeDistance(mesh->vertex(i));
-      return geodesicDistance.raw();
+      geodesicDistance.raw() = geodesicDistance.raw().cwiseMin(
+          heatSolver.computeDistance(mesh->vertex(i)).raw());
     }
   }
-  mem3dg_runtime_error("can not find center!");
-  EigenVectorX1d foo; // dummy return
-  foo.setConstant(1, 0);
-  return foo;
+  return geodesicDistance.raw();
 }
 
 void Geometry::updateReferenceConfigurations() {
