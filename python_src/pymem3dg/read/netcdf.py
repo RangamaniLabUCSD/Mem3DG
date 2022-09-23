@@ -15,6 +15,7 @@
 import netCDF4 as nc
 import numpy as np
 import numpy.typing as npt
+import xarray as xr
 
 
 def sizeOf(trajnc: str) -> int:
@@ -28,6 +29,12 @@ def sizeOf(trajnc: str) -> int:
     with nc.Dataset(trajnc) as ds:
         return ds.groups["Trajectory"].dimensions["frame"].size
 
+
+def cropNetcdf(trajnc: str) -> None: 
+    ds_disk = xr.open_dataset(trajnc, group = "Trajectory")
+    ds_disk = ds_disk.isel(frame=slice(10,12))
+    ds_disk["notablevertex"]
+    ds_disk.drop("notablevertex")
 
 def getFaceAndVertexMatrix(
     trajNc: str, frame: int
@@ -48,7 +55,6 @@ def getFaceAndVertexMatrix(
         coordinates = np.reshape(coordinates, (-1, 3))
         topology = np.reshape(topology, (-1, 3))
     return topology, coordinates
-
 
 def getData(
     trajNc: str, frame: int, group: str, variable: str, num_col: int
