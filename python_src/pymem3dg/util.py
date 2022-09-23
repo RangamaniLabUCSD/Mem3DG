@@ -17,6 +17,7 @@ import pymem3dg as dg
 import numpy as np
 import numpy.typing as npt
 
+
 def rowwiseNormalize(matrix: npt.NDArray[np.int64]):
     """Rowwise normalize the matrix
 
@@ -42,7 +43,7 @@ def rowwiseNorm(matrix: npt.NDArray[np.int64]):
     if np.shape(matrix)[0] == np.size(matrix):
         return np.abs(matrix)
     else:
-        return np.sum(matrix ** 2, axis=1) ** (0.5)
+        return np.sum(matrix**2, axis=1) ** (0.5)
 
 
 def rowwiseScaling(scaling: npt.NDArray[np.int64], matrix: npt.NDArray[np.int64]):
@@ -91,14 +92,14 @@ def gaussianDistribution(x: npt.NDArray[np.int64], mean: float, sd: float):
 
 
 def tanhDistribution(x: npt.NDArray[np.int64], sharpness: float, center: float = 0):
-    """ unit tanh distribution y(x) that is y=1 at x=-inf and y=0 at x=+inf
+    """unit tanh distribution y(x) that is y=1 at x=-inf and y=0 at x=+inf
     Args:
         x (array): distribution argument
-        sharpness (float): sharpness of transition 
+        sharpness (float): sharpness of transition
         center (float): location of transition between 1 and 0. Defaults to 0
 
-    Returns: 
-        array: unit tanh distribution 
+    Returns:
+        array: unit tanh distribution
     """
     return 0.5 * (1.0 + np.tanh(sharpness * (center - x)))
 
@@ -127,7 +128,7 @@ def sphericalHarmonicsPerturbation(
     z = coordinate[:, 2]
     unit_vector = rowwiseNormalize(coordinate) - origin
     theta = np.arctan2(y, x) + np.pi
-    r = (x ** 2 + y ** 2) ** 0.5
+    r = (x**2 + y**2) ** 0.5
     phi = np.arctan(z / (r + 1e-4 * np.max(r))) + np.pi / 2
     harmonics = sph_harm(m, n, theta, phi)
     coordinate = coordinate + amplitude * rowwiseScaling(harmonics.real, unit_vector)
@@ -179,3 +180,20 @@ def femtoJToKBT(energy: float, temperature: float):
     # temperature = 310
     kBT = 1.38e-23 * temperature * 1e15  # 1e-15 J
     return energy / kBT
+
+
+def zeroPadding(frame: int, length: int = 6, padding: str = "0"):
+    """pad frame index with dummy string in the font
+
+    Args:
+        frame (int): frame number
+        length (int, optional): number of total string length. Defaults to 6.
+        padding (str, optional): padding string. Defaults to "0".
+
+    Returns:
+        str: padded string
+    """
+    out = str(frame)
+    while len(out) < length:
+        out = padding + out
+    return out

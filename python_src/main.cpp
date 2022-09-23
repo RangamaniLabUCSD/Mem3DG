@@ -1680,16 +1680,16 @@ PYBIND11_MODULE(_core, pymem3dg) {
           read face matrix and vertex matrix from .ply file 
       )delim");
   pymem3dg.def(
-      "getRichDataElementName", &getRichDataElementName, py::arg("plyName"),
+      "getDataElementName", &getDataElementName, py::arg("plyName"),
       R"delim(retrive all richData element name from .ply file. Namely the list of the places where data live in, such as vertex, edge or face. 
       )delim");
   pymem3dg.def(
-      "getRichDataPropertyName", &getRichDataPropertyName, py::arg("plyName"),
+      "getDataPropertyName", &getDataPropertyName, py::arg("plyName"),
       py::arg("elementName"),
       R"delim(retrive all richData property name from .ply file. Namely the list of the data where data on the particular element, such as vertex, edge or face. 
       )delim");
-  pymem3dg.def("getRichData", &getRichData, py::arg("plyName"),
-               py::arg("elementName"), py::arg("propertyName"),
+  pymem3dg.def("getData", &getData, py::arg("plyName"), py::arg("elementName"),
+               py::arg("propertyName"),
                R"delim(read richData from .ply file
       )delim");
   pymem3dg.def(
@@ -1707,16 +1707,33 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::arg("embeddedCoordinate"), py::arg("filter"),
       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
       R"delim(find the face surface point closest to a embedded coordinate)delim");
+//   pymem3dg.def(
+//       "getFaceSurfacePointClosestToEmbeddedCoordinate",
+//       py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
+//                         const std::array<double, 3> &,
+//                         const std::array<bool, 3> &>(
+//           &getFaceSurfacePointClosestToEmbeddedCoordinate),
+//       py::arg("faceMatrix"), py::arg("vertexMatrix"),
+//       py::arg("embeddedCoordinate"),
+//       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
+//       R"delim(find the face surface point closest to a embedded coordinate)delim");
   pymem3dg.def(
-      "getFaceSurfacePointClosestToEmbeddedCoordinate",
-      py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
-                        const std::array<double, 3> &,
+      "getVertexClosestToEmbeddedCoordinate",
+      py::overload_cast<const EigenVectorX3dr &, const std::array<double, 3> &,
+                        const Eigen::Matrix<bool, Eigen::Dynamic, 1> &,
                         const std::array<bool, 3> &>(
-          &getFaceSurfacePointClosestToEmbeddedCoordinate),
-      py::arg("faceMatrix"), py::arg("vertexMatrix"),
-      py::arg("embeddedCoordinate"),
+          &getVertexClosestToEmbeddedCoordinate),
+      py::arg("vertexMatrix"), py::arg("embeddedCoordinate"), py::arg("filter"),
       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
-      R"delim(find the face surface point closest to a embedded coordinate)delim");
+      R"delim(find the index of vertex closest to a embedded coordinate)delim");
+//   pymem3dg.def(
+//       "getVertexClosestToEmbeddedCoordinate",
+//       py::overload_cast<const EigenVectorX3dr &, const std::array<double, 3> &,
+//                         const std::array<bool, 3> &>(
+//           &getVertexClosestToEmbeddedCoordinate),
+//       py::arg("vertexMatrix"), py::arg("embeddedCoordinate"),
+//       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
+//       R"delim(find the index of vertex closest to a embedded coordinate)delim");
   pymem3dg.def(
       "getVertexFurthestFromBoundary",
       py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &>(

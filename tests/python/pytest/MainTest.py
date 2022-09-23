@@ -12,10 +12,12 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
 import pymem3dg as dg
-import pymem3dg.read
-import pymem3dg.util
-import pymem3dg.visual
-import pymem3dg.broilerplate
+import pymem3dg.read.netcdf as dg_nc
+import pymem3dg.read.meshop as dg_meshop
+import pymem3dg.read.mesh as dg_mesh
+import pymem3dg.util as dg_util
+import pymem3dg.visual as dg_vis
+import pymem3dg.broilerplate as dg_broil
 
 from cmath import sqrt
 import polyscope
@@ -32,8 +34,8 @@ class TestLoadCheck(object):
 
 
 class TestInitialization(object):
-    face, vertex = dg.getIcosphere(1, 3)
-    vertex = dg.util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
+    face, vertex = dg_meshop.getIcosphere(1, 3)
+    vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
     geometry = dg.Geometry(face, vertex, vertex, 0)
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
@@ -57,10 +59,10 @@ class TestInitialization(object):
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
         p.tension.form = partial(
-            dg.broilerplate.constantSurfaceTensionModel, tension=0.5
+            dg_broil.constantSurfaceTensionModel, tension=0.5
         )
         p.osmotic.form = partial(
-            dg.broilerplate.constantOsmoticPressureModel, pressure=0.01
+            dg_broil.constantOsmoticPressureModel, pressure=0.01
         )
         arguments = self.initialConditions
         arguments["parameters"] = p
@@ -71,7 +73,7 @@ class TestInitialization(object):
 
     def test_parameter_loading(self):
         """test broiler plate example form functions used in parameter loading"""
-        face, vertex = dg.getIcosphere(radius=1, subdivision=3)
+        face, vertex = dg_meshop.getIcosphere(radius=1, subdivision=3)
         p = dg.Parameters()
         geometry = dg.Geometry(face, vertex, vertex, 0)
         geometry.computeGeodesicDistance()
@@ -80,7 +82,7 @@ class TestInitialization(object):
 
         # protein
         system.parameters.protein.form = partial(
-            dg.broilerplate.prescribeGeodesicPoteinDensityDistribution,
+            dg_broil.prescribeGeodesicPoteinDensityDistribution,
             sharpness=20,
             radius=0.1,
         )
@@ -88,17 +90,17 @@ class TestInitialization(object):
 
         # external force
         system.parameters.external.form = partial(
-            dg.broilerplate.prescribeGaussianPointForce, Kf=0.01, std=1, tau=100
+            dg_broil.prescribeGaussianPointForce, Kf=0.01, std=1, tau=100
         )
         system.prescribeExternalForce()
         system.parameters.external.form = partial(
-            dg.broilerplate.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10
+            dg_broil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10
         )
         system.prescribeExternalForce()
 
         # osmotic pressure
         system.parameters.osmotic.form = partial(
-            dg.broilerplate.constantOsmoticPressureModel, pressure=0.01
+            dg_broil.constantOsmoticPressureModel, pressure=0.01
         )
         system.initialize()
         assert system.getForces().getOsmoticPressure() == 0.01
@@ -109,7 +111,7 @@ class TestInitialization(object):
 
         # surface tension
         system.parameters.tension.form = partial(
-            dg.broilerplate.constantSurfaceTensionModel, tension=0.01
+            dg_broil.constantSurfaceTensionModel, tension=0.01
         )
         system.initialize()
         assert system.getForces().getSurfaceTension() == 0.01
@@ -136,16 +138,16 @@ class TestExampleIntegration(object):
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
         p.tension.form = partial(
-            dg.broilerplate.constantSurfaceTensionModel, tension=0.5
+            dg_broil.constantSurfaceTensionModel, tension=0.5
         )
         p.osmotic.form = partial(
-            dg.broilerplate.constantOsmoticPressureModel, pressure=0.01
+            dg_broil.constantOsmoticPressureModel, pressure=0.01
         )
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
         p.spring.Kst = 1
         p.external.form = partial(
-            dg.broilerplate.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
+            dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
         )
         arguments = self.initialization.initialConditions
         arguments["parameters"] = p
@@ -182,14 +184,14 @@ class TestExampleIntegration(object):
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
         p.tension.form = partial(
-            dg.broilerplate.constantSurfaceTensionModel, tension=0.5
+            dg_broil.constantSurfaceTensionModel, tension=0.5
         )
         p.osmotic.form = partial(
-            dg.broilerplate.constantOsmoticPressureModel, pressure=0.01
+            dg_broil.constantOsmoticPressureModel, pressure=0.01
         )
         p.spring.Kst = 1
         p.external.form = partial(
-            dg.broilerplate.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
+            dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
         )
         arguments = self.initialization.initialConditions
         arguments["parameters"] = p
@@ -248,7 +250,7 @@ class TestContinuation(object):
 
     def test_initialization(self):
         frame = 2
-        face, vertex = dg.read.getNetcdfFaceAndVertexMatrix(
+        face, vertex = dg_nc.getFaceAndVertexMatrix(
             trajNc=self.trajectory.trajFile, frame=frame
         )
         g2 = dg.Geometry(face, vertex, vertex, 0)
@@ -261,54 +263,64 @@ class TestContinuation(object):
 class TestMeshIO(object):
     def test_mesh_generation(self):
         """test mesh generation functions"""
-        face, vertex = dg.getTetrahedron()
-        face, vertex = dg.getDiamond(dihedral=np.pi / 3)
-        face, vertex = dg.getHexagon(radius=1, subdivision=3)
-        face, vertex = dg.getCylinder(
+        face, vertex = dg_meshop.getTetrahedron()
+        face, vertex = dg_meshop.getDiamond(dihedral=np.pi / 3)
+        face, vertex = dg_meshop.getHexagon(radius=1, subdivision=3)
+        face, vertex = dg_meshop.getCylinder(
             radius=1, radialSubdivision=10, axialSubdivision=10
         )
-        face, vertex = dg.getIcosphere(radius=1, subdivision=3)
-        face_, vertex_ = dg.linearSubdivide(face=face, vertex=vertex, nSub=2)
-        face_, vertex_ = dg.loopSubdivide(face=face, vertex=vertex, nSub=3)
+        face, vertex = dg_meshop.getIcosphere(radius=1, subdivision=3)
+        face_, vertex_ = dg_meshop.linearSubdivide(face=face, vertex=vertex, nSub=2)
+        face_, vertex_ = dg_meshop.loopSubdivide(face=face, vertex=vertex, nSub=3)
 
     def test_mesh_reading(self):
         """test mesh reading function"""
         g = TestExampleIntegration()
         g.test_shape_and_protein_variation()  # files for testing
 
-        face, vertex = dg.getFaceAndVertexMatrix(g.plyFile)
-        face, vertex = dg.processSoup(g.plyFile)
-        elements = dg.getRichDataElementName(g.plyFile)
-        properties = dg.getRichDataPropertyName(g.plyFile, "vertex")
-        H = dg.getRichData(g.plyFile, "vertex", "meanCurvature")
+        face, vertex = dg_mesh.getFaceAndVertexMatrix(g.plyFile)
+        face, vertex = dg_mesh.processSoup(g.plyFile)
+        elements = dg_mesh.getDataElementName(g.plyFile)
+        properties = dg_mesh.getDataPropertyName(g.plyFile, "vertex")
+        H = dg_mesh.getData(g.plyFile, "vertex", "meanCurvature")
 
-        face, vertex = dg.read.getNetcdfFaceAndVertexMatrix(trajNc=g.trajFile, frame=3)
-        vel = dg.read.getNetcdfMeshData(
+        face, vertex = dg_nc.getFaceAndVertexMatrix(trajNc=g.trajFile, frame=3)
+        vel = dg_nc.getData(
             trajNc=g.trajFile,
             frame=3,
             group="Trajectory",
             variable="velocities",
             num_col=3,
         )
-        phi = dg.read.getNetcdfMeshData(
+        phi = dg_nc.getData(
             trajNc=g.trajFile,
             frame=3,
             group="Trajectory",
             variable="proteindensity",
             num_col=1,
         )
+        
+        # dg_nc.crop(trajnc=g.trajFile, limit=(0, 20))
 
     def test_mesh_marking_1(self):
         """test mesh marking functions"""
-        face, vertex = dg.getIcosphere(radius=1, subdivision=3)
+        face, vertex = dg_meshop.getIcosphere(radius=1, subdivision=3)
         faceData = np.zeros(np.shape(face)[0])
         # polyscope.init()
         # polyscope.remove_all_structures()
         # ps_mesh = polyscope.register_surface_mesh("my mesh", vertex, face)
-        # dg.visual.setPolyscopePermutations(psmesh=ps_mesh, vertex=vertex, face=face)
+        # dg_vis.setPolyscopePermutations(psmesh=ps_mesh, vertex=vertex, face=face)
         def test_locations(embedded_point, accountedCoordinate):
-            centerFace, centerBary = dg.getFaceSurfacePointClosestToEmbeddedCoordinate(
+            (
+                centerFace,
+                centerBary,
+            ) = dg_meshop.getFaceSurfacePointClosestToEmbeddedCoordinate(
                 faceMatrix=face,
+                vertexMatrix=vertex,
+                embeddedCoordinate=embedded_point,
+                accountedCoordinate=accountedCoordinate,
+            )
+            center = dg_meshop.getVertexClosestToEmbeddedCoordinate(
                 vertexMatrix=vertex,
                 embeddedCoordinate=embedded_point,
                 accountedCoordinate=accountedCoordinate,
@@ -320,7 +332,7 @@ class TestMeshIO(object):
             # ps_mesh.add_scalar_quantity(
             #     "center", faceData, defined_on="faces", enabled=True
             # )
-            return centerFace
+            return centerFace, center
 
         test_locations([2, 2, 2], [True, True, True])
         test_locations([2, 2, -2], [True, True, True])
@@ -329,15 +341,15 @@ class TestMeshIO(object):
 
     def test_mesh_marking_2(self):
         # test center prescription on open boundary mesh
-        face, vertex = dg.getHexagon(radius=1, subdivision=4)
+        face, vertex = dg_meshop.getHexagon(radius=1, subdivision=4)
         vertex = vertex + np.ones(np.shape(vertex))
-        notableVertex = dg.getVertexFurthestFromBoundary(face, vertex)
+        notableVertex = dg_meshop.getVertexFurthestFromBoundary(face, vertex)
         assert np.linalg.norm(vertex[notableVertex]) == sqrt(3)
 
 
 class TestVisualization(object):
     # polyscope.init()
-    dg.visual.polyscopeStyle()
+    dg_vis.polyscopeStyle()
     initialization = TestInitialization()
     trajectory = TestExampleIntegration()
     parameters = trajectory.test_shape_and_protein_variation()
@@ -345,7 +357,7 @@ class TestVisualization(object):
     def test_nc_visual(self):
         """test runs for the convenience function used for visualizing .nc trajectory file"""
         # with parameters
-        dg.visual.animate(
+        dg_vis.animate(
             trajNc=self.trajectory.trajFile,
             parameters=self.parameters,
             showBasics=True,
@@ -353,15 +365,15 @@ class TestVisualization(object):
             showPotential=True,
         )
         # without parameters
-        dg.visual.animate(
+        dg_vis.animate(
             trajNc=self.trajectory.trajFile,
             showBasics=True,
             showForce=True,
             showPotential=True,
         )
         _, ax = plt.subplots(4)
-        dg.visual.plotProteinDensity(ax[0], self.trajectory.trajFile)
-        dg.visual.plotEnergy(
+        dg_vis.plotProteinDensity(ax[0], self.trajectory.trajFile)
+        dg_vis.plotEnergy(
             ax=ax[1],
             trajFile=self.trajectory.trajFile,
             parameters=self.parameters,
@@ -382,7 +394,7 @@ class TestVisualization(object):
             lcrSpringEnergy=True,
             dirichletEnergy=True,
         )
-        dg.visual.plotChemicalPotentials(
+        dg_vis.plotChemicalPotentials(
             ax[2],
             self.trajectory.trajFile,
             self.parameters,
@@ -394,7 +406,7 @@ class TestVisualization(object):
             dirichletPotential=True,
             adsorptionPotential=True,
         )
-        dg.visual.plotMechanicalForces(
+        dg_vis.plotMechanicalForces(
             ax[3],
             self.trajectory.trajFile,
             self.parameters,
@@ -414,7 +426,7 @@ class TestVisualization(object):
 
     def test_ply_visual(self):
         """test runs for the visualization of .ply file"""
-        dg.visual.visualizePly(
+        dg_vis.visualizePly(
             self.trajectory.plyFile,
             "proteinDensity",
             "forceMask",
@@ -445,5 +457,5 @@ class TestVisualization(object):
         # polyscope.show()
 
     def test_geometry_visual(self):
-        dg.visual.visualizeGeometry(self.initialization.geometry)
+        dg_vis.visualizeGeometry(self.initialization.geometry)
         # polyscope.show()

@@ -52,7 +52,7 @@ getFaceAndVertexMatrix(std::string &plyName);
  * @return list of all element names
  */
 DLL_PUBLIC std::vector<std::string>
-getRichDataElementName(std::string &plyName);
+getDataElementName(std::string &plyName);
 
 /**
  * @brief
@@ -62,7 +62,7 @@ getRichDataElementName(std::string &plyName);
  * @return
  */
 DLL_PUBLIC std::vector<std::string>
-getRichDataPropertyName(std::string &plyName, std::string &elementName);
+getDataPropertyName(std::string &plyName, std::string &elementName);
 /**
  * @brief
  *
@@ -72,7 +72,7 @@ getRichDataPropertyName(std::string &plyName, std::string &elementName);
  * @return
  */
 DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
-getRichData(std::string &plyName, std::string &elementName,
+getData(std::string &plyName, std::string &elementName,
             std::string &vertexProperties);
 
 /**

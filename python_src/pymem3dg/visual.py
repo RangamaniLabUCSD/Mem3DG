@@ -21,7 +21,8 @@ import seaborn as sns
 import netCDF4 as nc
 
 import pymem3dg as dg
-import pymem3dg.read as dg_read
+import pymem3dg.read.netcdf as dg_nc
+import pymem3dg.read.mesh as dg_mesh
 import pymem3dg.util as dg_util
 
 import polyscope as ps
@@ -151,13 +152,11 @@ def visualizePly(plyFile: str, *vertexData: str):
         vertexData (str): variable number of arbitrary keyword arguments to add visualizing mesh data
     """
     face, vertex = dg.getFaceAndVertexMatrix(plyFile)
-    # print(dg.readData(ply))
-    # print(dg.readData(ply, 'vertex'))
     ps.init()
     polyscopeStyle()
     ps_mesh = ps.register_surface_mesh("mesh", vertex, face, smooth_shade=True)
     for name in vertexData:
-        data = dg.getRichData(plyFile, "vertex", name)
+        data = dg_mesh.getData(plyFile, "vertex", name)
         ps_mesh.add_scalar_quantity(name, data, enabled=True)
 
 
@@ -170,7 +169,7 @@ def plotProteinDensity(ax, trajFile, frames=None):
         frames (list, optional): list of frames to plot. Defaults to all frames in trajectory file
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     proteinDensity = np.array([])
     proteinDensity_time = np.array([])
@@ -264,7 +263,7 @@ def plotChemicalPotentials(
         entropyPotential (bool, optional): option to visualize components, default to False
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
 
@@ -420,7 +419,7 @@ def plotMechanicalForces(
         lineCapillaryForce (bool, optional): option to visualize components. Default to False
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
 
@@ -629,7 +628,7 @@ def plotEnergy(
         dirichletEnergy (bool, optional): option to visualize components. Defaults to False
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
 
@@ -948,12 +947,12 @@ def animate(
     """
     hasParameters = parameters is not None
     if frames == None:
-        frames = range(dg_read.sizeOf(trajNc))
+        frames = range(dg_nc.sizeOf(trajNc))
 
     maxFrameInd = np.size(frames) - 1
     prevFrameInd = 0
     currFrameInd = 0
-    time = dg_read.getNetcdfMeshData(
+    time = dg_nc.getData(
         trajNc, frames[currFrameInd], "Trajectory", "time", 1
     )
     isFluxForm = False
@@ -971,7 +970,7 @@ def animate(
     def show(trajNc):
         nonlocal currFrameInd, time, isPointwiseValue, isForceVec, isFluxForm, showPotential, showForce, showBasics
         frame = frames[currFrameInd]
-        time = dg_read.getNetcdfMeshData(trajNc, frame, "Trajectory", "time", 1)
+        time = dg_nc.getData(trajNc, frame, "Trajectory", "time", 1)
         geometry = dg.Geometry(trajNc, frame)
         if hasParameters:
             system = dg.System(geometry, trajNc, frame, parameters)
@@ -987,10 +986,10 @@ def animate(
 
         # Add Quantities
         vertexDualAreas = geometry.getVertexDualAreas()
-        proteinDensity = dg_read.getNetcdfMeshData(
+        proteinDensity = dg_nc.getData(
             trajNc, frame, "Trajectory", "proteindensity", 1
         )
-        velocity = dg_read.getNetcdfMeshData(
+        velocity = dg_nc.getData(
             trajNc, frame, "Trajectory", "velocities", 3
         )
         if showBasics:
