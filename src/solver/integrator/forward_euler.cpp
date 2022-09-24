@@ -110,7 +110,7 @@ bool Euler::integrate() {
       lastUpdateGeodesics = system.time;
       system.geometry.geodesicDistance.raw() =
           system.geometry.computeGeodesicDistance();
-      if (system.parameters.protein.form != NULL)
+      if (system.parameters.protein.prescribeProteinDensityDistribution != NULL)
         system.prescribeProteinDensityDistribution();
       system.updateConfigurations();
     }

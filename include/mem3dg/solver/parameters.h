@@ -168,15 +168,15 @@ struct Parameters {
     /// prescription of center finding
     std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
         EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
-        form = NULL;
+        prescribeNotableVertex = NULL;
   };
 
   struct Protein {
     /// interior point parameter for protein density
-    double proteinInteriorPenalty = 1e-6;
+    double proteinInteriorPenalty = 0; // 1e-6
     /// precription of protein density
-    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)> form =
-        NULL;
+    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+        prescribeProteinDensityDistribution = NULL;
   };
 
   struct Spring {

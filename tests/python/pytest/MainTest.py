@@ -61,12 +61,8 @@ class TestInitialization(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.form = partial(
-            dg_broil.constantSurfaceTensionModel, tension=0.5
-        )
-        p.osmotic.form = partial(
-            dg_broil.constantOsmoticPressureModel, pressure=0.01
-        )
+        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
         arguments = self.initialConditions
         arguments["parameters"] = p
         s1 = dg.System(**arguments)
@@ -84,16 +80,18 @@ class TestInitialization(object):
         system.initialize()
 
         # protein
-        system.parameters.protein.form = partial(
+        system.parameters.protein.prescribeProteinDensityDistribution = partial(
             dg_broil.prescribeGeodesicPoteinDensityDistribution,
             sharpness=20,
             radius=0.5,
         )
         system.prescribeProteinDensityDistribution()
-        polyscope.init()
-        psmesh = dg_vis.visualizeGeometry(geometry)
-        psmesh.add_scalar_quantity("proteindensity", system.getProteinDensity(), cmap = "coolwarm")
-        polyscope.show()
+
+        ## uncomment the snippet to visualize
+        # polyscope.init()
+        # psmesh = dg_vis.visualizeGeometry(geometry)
+        # psmesh.add_scalar_quantity("proteindensity", system.getProteinDensity(), cmap = "coolwarm")
+        # polyscope.show()
 
         # external force
         system.parameters.external.form = partial(
@@ -144,12 +142,8 @@ class TestExampleIntegration(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.form = partial(
-            dg_broil.constantSurfaceTensionModel, tension=0.5
-        )
-        p.osmotic.form = partial(
-            dg_broil.constantOsmoticPressureModel, pressure=0.01
-        )
+        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
         p.spring.Kst = 1
@@ -190,12 +184,8 @@ class TestExampleIntegration(object):
         p.variation.isProteinVariation = False
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.form = partial(
-            dg_broil.constantSurfaceTensionModel, tension=0.5
-        )
-        p.osmotic.form = partial(
-            dg_broil.constantOsmoticPressureModel, pressure=0.01
-        )
+        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
         p.spring.Kst = 1
         p.external.form = partial(
             dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
@@ -306,7 +296,7 @@ class TestMeshIO(object):
             variable="proteindensity",
             num_col=1,
         )
-        
+
         # dg_nc.crop(trajnc=g.trajFile, limit=(0, 20))
 
     def test_mesh_marking_1(self):

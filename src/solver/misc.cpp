@@ -21,10 +21,11 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 EigenVectorX1d System::prescribeProteinDensityDistribution() {
-  if (parameters.protein.form != NULL) {
+  if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
     proteinDensity.raw() =
-        parameters.protein.form(time, geometry.vpg->vertexMeanCurvatures.raw(),
-                                geometry.geodesicDistance.raw());
+        parameters.protein.prescribeProteinDensityDistribution(
+            time, geometry.vpg->vertexMeanCurvatures.raw(),
+            geometry.geodesicDistance.raw());
   } else {
     mem3dg_runtime_message("Parameter protein form is NULL!")
   }
@@ -58,13 +59,13 @@ EigenVectorX1d System::prescribeProteinDensityDistribution() {
 }
 
 Eigen::Matrix<bool, Eigen::Dynamic, 1> System::prescribeNotableVertex() {
-  if (parameters.point.form != NULL) {
-    geometry.notableVertex.raw() =
-        parameters.point.form(geometry.mesh->getFaceVertexMatrix<std::size_t>(),
-                              toMatrix(geometry.vpg->vertexPositions),
-                              geometry.geodesicDistance.raw());
+  if (parameters.point.prescribeNotableVertex != NULL) {
+    geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
+        geometry.mesh->getFaceVertexMatrix<std::size_t>(),
+        toMatrix(geometry.vpg->vertexPositions),
+        geometry.geodesicDistance.raw());
   } else {
-    mem3dg_runtime_message("Parameter point form is NULL!");
+    mem3dg_runtime_message("Parameter.point.prescribeNotableVertex is NULL!");
   }
   return geometry.notableVertex.raw();
 }

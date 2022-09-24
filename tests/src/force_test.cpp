@@ -77,7 +77,8 @@ protected:
       proteinDensity.array() += 0.2;
       return proteinDensity;
     };
-    p.protein.form = geodesicProteinDensity;
+    p.protein.prescribeProteinDensityDistribution = geodesicProteinDensity;
+    p.protein.proteinInteriorPenalty = 1e-6;
 
     p.bending.alpha = 1;
     p.bending.dA0 = 4;

@@ -44,7 +44,8 @@ void System::initialize(std::size_t nMutation, bool ifMute) {
 }
 
 void System::checkConfiguration() {
-  parameters.checkParameters(geometry.mesh->hasBoundary(), geometry.mesh->nVertices());
+  parameters.checkParameters(geometry.mesh->hasBoundary(),
+                             geometry.mesh->nVertices());
   meshProcessor.summarizeStatus();
   if (meshProcessor.isMeshMutate && !parameters.variation.isShapeVariation) {
     mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
@@ -71,7 +72,8 @@ void System::checkConfiguration() {
   }
 
   if (((proteinDensity - proteinDensity[0]).raw().norm() == 0) &&
-      (parameters.protein.form == NULL)) { // homogeneous distribution
+      (parameters.protein.prescribeProteinDensityDistribution ==
+       NULL)) { // homogeneous distribution
     if (parameters.variation.isProteinVariation) {
       if (proteinDensity[0] < 0 || proteinDensity[0] > 1)
         mem3dg_runtime_error("{0<=phi<=1}");

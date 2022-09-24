@@ -1427,7 +1427,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                       R"delim(
         The Point energy parameters
     )delim");
-  point.def_readwrite("form", &Parameters::Point::form,
+  point.def_readwrite("prescribeNotableVertex",
+                      &Parameters::Point::prescribeNotableVertex,
                       R"delim(
           functional to find the notable vertex of the mesh 
         args: 
@@ -1447,8 +1448,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
                         R"delim(
           get interior point parameter for protein density
       )delim");
-  protein.def_readwrite("form", &Parameters::Protein::form,
-                        R"delim(
+  protein.def_readwrite(
+      "prescribeProteinDensityDistribution",
+      &Parameters::Protein::prescribeProteinDensityDistribution,
+      R"delim(
           functional to set the protein density distribution prescription 
         args: 
             time (float)
