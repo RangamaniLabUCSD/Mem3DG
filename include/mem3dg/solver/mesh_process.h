@@ -51,6 +51,9 @@ namespace solver {
 struct MeshProcessor {
 
   struct MeshMutator {
+    /// period of mesh mutation
+    std::size_t mutateMeshPeriod = std::numeric_limits<std::size_t>::max();
+
     /// Whether edge flip
     bool isFlipEdge = false;
     /// Whether split edge

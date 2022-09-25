@@ -104,6 +104,7 @@ int main() {
   system.initialize();
   //   system.testConservativeForcing(0.001);
 
+  system.meshProcessor.meshMutator.mutateMeshPeriod = 1;
   system.meshProcessor.meshMutator.isShiftVertex = true;
   system.meshProcessor.meshMutator.flipNonDelaunay = true;
   // system.meshProcessor.meshMutator.splitLarge = true;
@@ -121,7 +122,6 @@ int main() {
   integrator.ifPrintToConsole = true;
   integrator.ifOutputMeshFile = false;
   integrator.ifOutputTrajFile = false;
-  integrator.processMeshPeriod = 0.1;
   integrator.isBacktrack = true;
   integrator.ifAdaptiveStep = true;
   integrator.integrate();

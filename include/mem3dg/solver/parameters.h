@@ -169,6 +169,12 @@ struct Parameters {
     std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
         EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
         prescribeNotableVertex = NULL;
+    /// period of updating geodesic distance from notableVertex calculation
+    std::size_t updateGeodesicsPeriod = std::numeric_limits<std::size_t>::max();
+    /// period of updating notable vertex based functional
+    /// prescribeNotableVertex
+    std::size_t updateNotableVertexPeriod =
+        std::numeric_limits<std::size_t>::max();
   };
 
   struct Protein {
@@ -177,6 +183,9 @@ struct Parameters {
     /// precription of protein density
     std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
         prescribeProteinDensityDistribution = NULL;
+    /// period of updating protein density distribution
+    std::size_t updateProteinDensityDistributionPeriod =
+        std::numeric_limits<std::size_t>::max();
   };
 
   struct Spring {

@@ -20,6 +20,58 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+bool System::updatePrescription(std::map<std::string, double> &lastUpdateTime,
+                                double timeStep) {
+  bool updated = false;
+
+  if (time - lastUpdateTime["mutateMesh"] >
+      (meshProcessor.meshMutator.mutateMeshPeriod * timeStep)) {
+    mutateMesh();
+    updateConfigurations();
+    geometry.refVpg = geometry.vpg->copy();
+    geometry.updateReferenceConfigurations();
+    lastUpdateTime["mutateMesh"] = time;
+    updated = true;
+  }
+
+  if (time - lastUpdateTime["notableVertex"] >
+      (parameters.point.updateNotableVertexPeriod * timeStep)) {
+    if (parameters.point.prescribeNotableVertex != NULL) {
+      geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
+          geometry.mesh->getFaceVertexMatrix<std::size_t>(),
+          toMatrix(geometry.vpg->vertexPositions),
+          geometry.geodesicDistance.raw());
+      lastUpdateTime["notableVertex"] = time;
+      updated = true;
+    } else {
+      mem3dg_runtime_message("Parameter.point.prescribeNotableVertex is NULL!");
+    }
+  }
+
+  if (time - lastUpdateTime["geodesics"] >
+      (parameters.point.updateGeodesicsPeriod * timeStep)) {
+    geometry.computeGeodesicDistance();
+    lastUpdateTime["geodesics"] = time;
+    updated = true;
+  }
+
+  if (time - lastUpdateTime["protein"] >
+      (parameters.protein.updateProteinDensityDistributionPeriod * timeStep)) {
+    if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
+      proteinDensity.raw() =
+          parameters.protein.prescribeProteinDensityDistribution(
+              time, geometry.vpg->vertexMeanCurvatures.raw(),
+              geometry.geodesicDistance.raw());
+      lastUpdateTime["protein"] = time;
+      updated = true;
+    } else {
+      mem3dg_runtime_message("Parameter protein form is NULL!")
+    }
+  }
+
+  return updated;
+}
+
 EigenVectorX1d System::prescribeProteinDensityDistribution() {
   if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
     proteinDensity.raw() =
@@ -295,13 +347,13 @@ bool System::testConservativeForcing(const double timeStep) {
   // ==========================================================
   // ================  Spontaneous curvature ==================
   // ==========================================================
-  SUCCESS =
-      testMechanical(forces.spontaneousCurvatureForceVec,
-                     previousEnergy.spontaneousCurvatureEnergy,
-                     energy.spontaneousCurvatureEnergy,
-                     "spontaneousCurvatureForceVec",
-                     "spontaneousCurvatureEnergy") &&
-      SUCCESS; // leaving && SUCESS to the last to ensure running all the tests
+  SUCCESS = testMechanical(forces.spontaneousCurvatureForceVec,
+                           previousEnergy.spontaneousCurvatureEnergy,
+                           energy.spontaneousCurvatureEnergy,
+                           "spontaneousCurvatureForceVec",
+                           "spontaneousCurvatureEnergy") &&
+            SUCCESS; // leaving && SUCESS to the last to ensure running all
+                     // the tests
   SUCCESS = testChemical(forces.spontaneousCurvaturePotential,
                          previousEnergy.spontaneousCurvatureEnergy,
                          energy.spontaneousCurvatureEnergy,

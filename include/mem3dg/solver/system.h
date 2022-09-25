@@ -640,6 +640,13 @@ public:
    * @brief prescribe notable vertex based on parameter.point.form
    */
   Eigen::Matrix<bool, Eigen::Dynamic, 1> prescribeNotableVertex();
+
+  /**
+   * @brief update various prescription of based on scalar and functional
+   * parameters
+   */
+  bool updatePrescription(std::map<std::string, double> &lastUpdateTime,
+                          double timeStep);
 };
 } // namespace solver
 } // namespace mem3dg

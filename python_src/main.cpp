@@ -120,16 +120,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                &VelocityVerlet::ifPrintToConsole, R"delim(
           if print to console
       )delim");
-  velocityverlet.def_readwrite("updateGeodesicsPeriod",
-                               &VelocityVerlet::updateGeodesicsPeriod,
-                               R"delim(
-          period of update geodesics
-      )delim");
-  velocityverlet.def_readwrite("processMeshPeriod",
-                               &VelocityVerlet::processMeshPeriod,
-                               R"delim(
-          period of processing mesh
-      )delim");
   velocityverlet.def_readwrite("trajFileName", &VelocityVerlet::trajFileName,
                                R"delim(
           name of the trajectory file 
@@ -232,14 +222,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
   euler.def_readwrite("ifPrintToConsole", &Euler::ifPrintToConsole, R"delim(
           if print to console
-      )delim");
-  euler.def_readwrite("updateGeodesicsPeriod", &Euler::updateGeodesicsPeriod,
-                      R"delim(
-          period of update geodesics
-      )delim");
-  euler.def_readwrite("processMeshPeriod", &Euler::processMeshPeriod,
-                      R"delim(
-          period of processing mesh
       )delim");
   euler.def_readwrite("trajFileName", &Euler::trajFileName,
                       R"delim(
@@ -362,16 +344,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
   conjugategradient.def_readwrite("ifPrintToConsole",
                                   &ConjugateGradient::ifPrintToConsole, R"delim(
           if print to console
-      )delim");
-  conjugategradient.def_readwrite("updateGeodesicsPeriod",
-                                  &ConjugateGradient::updateGeodesicsPeriod,
-                                  R"delim(
-          period of update geodesics
-      )delim");
-  conjugategradient.def_readwrite("processMeshPeriod",
-                                  &ConjugateGradient::processMeshPeriod,
-                                  R"delim(
-          period of processing mesh
       )delim");
   conjugategradient.def_readwrite("trajFileName",
                                   &ConjugateGradient::trajFileName,
@@ -658,6 +630,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
   meshmutator.def(py::init<>(),
                   R"delim(
        meshmutator constructor
+      )delim");
+  meshmutator.def_readwrite("mutateMeshPeriod",
+                            &MeshProcessor::MeshMutator::mutateMeshPeriod,
+                            R"delim(
+          period of mesh mutation. measured in # of integration iteration
       )delim");
   meshmutator.def_readonly("isFlipEdge",
                            &MeshProcessor::MeshMutator::isFlipEdge,
@@ -1438,11 +1415,25 @@ PYBIND11_MODULE(_core, pymem3dg) {
         return: 
             notable vertex (bool list)
       )delim");
+  point.def_readwrite("updateGeodesicsPeriod",
+                      &Parameters::Point::updateGeodesicsPeriod, R"delim(
+            the period factor of updating geodesics distance around notable vertices. Measured in the unit of # of iterations. 
+    )delim");
+  point.def_readwrite("updateNotableVertexPeriod",
+                      &Parameters::Point::updateNotableVertexPeriod, R"delim(
+            the period factor of updating the vertex data of notable vertices. Measured in the unit of # of iterations. 
+    )delim");
 
   py::class_<Parameters::Protein> protein(pymem3dg, "Protein",
                                           R"delim(
         The protein distribution parameters
     )delim");
+  protein.def_readwrite(
+      "updateProteinDensityDistributionPeriod",
+      &Parameters::Protein::updateProteinDensityDistributionPeriod,
+      R"delim(
+          period of updating protein density distribution. measured in # of iterations
+      )delim");
   protein.def_readwrite("proteinInteriorPenalty",
                         &Parameters::Protein::proteinInteriorPenalty,
                         R"delim(
@@ -1463,7 +1454,7 @@ PYBIND11_MODULE(_core, pymem3dg) {
 
   py::class_<Parameters::Spring> spring(pymem3dg, "spring",
                                         R"delim(
-        The mesh mutator settings 
+        mesh spring forces parameters
     )delim");
   spring.def_readwrite("Kst", &Parameters::Spring::Kst,
                        R"delim(

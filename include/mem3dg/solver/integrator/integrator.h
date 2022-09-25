@@ -90,10 +90,6 @@ public:
   double c1 = 0.001;
 
   // defaulted parameters (read/write)
-  /// period of saving output data
-  double updateGeodesicsPeriod = std::numeric_limits<double>::max();
-  /// period of saving output data
-  double processMeshPeriod = std::numeric_limits<double>::max();
   /// if just save geometry .ply file
   bool ifJustGeometryPly = false;
   /// if output netcdf traj file

@@ -43,9 +43,12 @@ bool VelocityVerlet::integrate() {
 
   signal(SIGINT, signalHandler);
 
-  double initialTime = system.time, lastUpdateGeodesics = system.time,
-         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+  double initialTime = system.time, lastComputeAvoidingForce = system.time,
          lastSave = system.time;
+  std::map<std::string, double> lastUpdateTime{{"geodesic", system.time},
+                                               {"mutateMesh", system.time},
+                                               {"protein", system.time},
+                                               {"notableVertex", system.time}};
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
@@ -75,29 +78,9 @@ bool VelocityVerlet::integrate() {
       break;
     }
 
-    // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
-      lastProcessMesh = system.time;
-      system.mutateMesh();
-      system.updateConfigurations();
-      system.geometry.refVpg = system.geometry.vpg->copy();
-      system.geometry.updateReferenceConfigurations();
-    }
-
-    // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics >
-        (updateGeodesicsPeriod * timeStep)) {
-      lastUpdateGeodesics = system.time;
-      system.geometry.geodesicDistance.raw() =
-          system.geometry.computeGeodesicDistance();
-      if (system.parameters.protein.prescribeProteinDensityDistribution != NULL)
-        system.prescribeProteinDensityDistribution();
-      system.updateConfigurations();
-    }
-
     // step forward
-    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
-      system.time += 1e-5 * characteristicTimeStep;
+    if (system.updatePrescription(lastUpdateTime, timeStep)) {
+      system.time += 1e-5 * timeStep;
     } else {
       march();
     }
