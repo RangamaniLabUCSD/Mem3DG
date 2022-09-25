@@ -57,8 +57,8 @@ protected:
     std::size_t notableVertex_index =
         mem3dg::getVertexClosestToEmbeddedCoordinate(
             vertexMatrix, std::array<double, 3>{0, 0, 1});
-    notableVertex =
-        Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(vertexMatrix.rows(), false);
+    notableVertex = Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(
+        vertexMatrix.rows(), false);
     notableVertex[notableVertex_index] = true;
 
     p.variation.isShapeVariation = true;
@@ -138,9 +138,7 @@ TEST_F(ForceTest, ConservativeForcesTest) {
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
                                     refVertexMatrix, notableVertex);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
-  f.initialize(0, true);
-  f.geometry.computeGeodesicDistance();
-  f.prescribeProteinDensityDistribution();
+  f.initialize(false, true);
   f.updateConfigurations();
   // First time calculation of force
   f.computeConservativeForcing();
@@ -173,9 +171,7 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
                                     refVertexMatrix, notableVertex);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
-  f.initialize(0, true);
-  f.geometry.computeGeodesicDistance();
-  f.prescribeProteinDensityDistribution();
+  f.initialize(false, true);
   f.updateConfigurations();
   EXPECT_TRUE(f.testConservativeForcing(h));
 };

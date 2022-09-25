@@ -20,129 +20,24 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-bool System::updatePrescription(std::map<std::string, double> &lastUpdateTime,
-                                double timeStep) {
-  bool updated = false;
-
-  if (time - lastUpdateTime["mutateMesh"] >
-      (meshProcessor.meshMutator.mutateMeshPeriod * timeStep)) {
-    mutateMesh();
-    updateConfigurations();
-    geometry.refVpg = geometry.vpg->copy();
-    geometry.updateReferenceConfigurations();
-    lastUpdateTime["mutateMesh"] = time;
-    updated = true;
-  }
-
-  if (time - lastUpdateTime["notableVertex"] >
-      (parameters.point.updateNotableVertexPeriod * timeStep)) {
-    if (parameters.point.prescribeNotableVertex != NULL) {
-      geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
-          geometry.mesh->getFaceVertexMatrix<std::size_t>(),
-          toMatrix(geometry.vpg->vertexPositions),
-          geometry.geodesicDistance.raw());
-      lastUpdateTime["notableVertex"] = time;
-      updated = true;
-    } else {
-      mem3dg_runtime_message("Parameter.point.prescribeNotableVertex is NULL!");
-    }
-  }
-
-  if (time - lastUpdateTime["geodesics"] >
-      (parameters.point.updateGeodesicsPeriod * timeStep)) {
-    geometry.computeGeodesicDistance();
-    lastUpdateTime["geodesics"] = time;
-    updated = true;
-  }
-
-  if (time - lastUpdateTime["protein"] >
-      (parameters.protein.updateProteinDensityDistributionPeriod * timeStep)) {
-    if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
-      proteinDensity.raw() =
-          parameters.protein.prescribeProteinDensityDistribution(
-              time, geometry.vpg->vertexMeanCurvatures.raw(),
-              geometry.geodesicDistance.raw());
-      lastUpdateTime["protein"] = time;
-      updated = true;
-    } else {
-      mem3dg_runtime_message("Parameter protein form is NULL!")
-    }
-  }
-
-  return updated;
-}
-
-EigenVectorX1d System::prescribeProteinDensityDistribution() {
-  if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
-    proteinDensity.raw() =
-        parameters.protein.prescribeProteinDensityDistribution(
-            time, geometry.vpg->vertexMeanCurvatures.raw(),
-            geometry.geodesicDistance.raw());
-  } else {
-    mem3dg_runtime_message("Parameter protein form is NULL!")
-  }
-  return proteinDensity.raw();
-
-  // // in-place implementation, needed to be migrated to python
-  // std::array<double, 2> r_heter{
-  //     parameters.protein.geodesicProteinDensityDistribution[0],
-  //     parameters.protein.geodesicProteinDensityDistribution[1]};
-  // geometry.vpg->requireVertexTangentBasis();
-  // if (parameters.protein.profile == "gaussian") {
-  //   gaussianDistribution(proteinDensity.raw(),
-  //   geometry.geodesicDistance.raw(),
-  //                        geometry.vpg->inputVertexPositions -
-  //                            geometry.vpg->inputVertexPositions[center.nearestVertex()],
-  //                        geometry.vpg->vertexTangentBasis[center.nearestVertex()],
-  //                        r_heter);
-  // } else if (parameters.protein.profile == "tanh") {
-  //   tanhDistribution(proteinDensity.raw(), geometry.geodesicDistance.raw(),
-  //                    geometry.vpg->inputVertexPositions -
-  //                        geometry.vpg->inputVertexPositions[center.nearestVertex()],
-  //                    geometry.vpg->vertexTangentBasis[center.nearestVertex()],
-  //                    parameters.protein.tanhSharpness, r_heter);
-  // }
-  // geometry.vpg->unrequireVertexTangentBasis();
-  // proteinDensity.raw() *=
-  //     parameters.protein.geodesicProteinDensityDistribution[2] -
-  //     parameters.protein.geodesicProteinDensityDistribution[3];
-  // proteinDensity.raw().array() +=
-  //     parameters.protein.geodesicProteinDensityDistribution[3];
-}
-
-Eigen::Matrix<bool, Eigen::Dynamic, 1> System::prescribeNotableVertex() {
-  if (parameters.point.prescribeNotableVertex != NULL) {
-    geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
-        geometry.mesh->getFaceVertexMatrix<std::size_t>(),
-        toMatrix(geometry.vpg->vertexPositions),
-        geometry.geodesicDistance.raw());
-  } else {
-    mem3dg_runtime_message("Parameter.point.prescribeNotableVertex is NULL!");
-  }
-  return geometry.notableVertex.raw();
-}
-
 void System::prescribeGeodesicMasks() {
   // Initialize the constant mask based on distance from the point specified
-  if (parameters.variation.geodesicMask != -1) {
-    if (parameters.variation.geodesicMask >
-            geometry.geodesicDistance.raw().maxCoeff() ||
-        parameters.variation.geodesicMask <
-            geometry.geodesicDistance.raw().minCoeff()) {
-      mem3dg_runtime_error("either all vertices or none is "
-                           "initializeConstantsin integration disk, "
-                           "set radius = -1 to disable!");
-    }
-    for (gcs::Vertex v : geometry.mesh->vertices()) {
-      forces.forceMask[v] =
-          (geometry.geodesicDistance[v] < parameters.variation.geodesicMask)
-              ? gc::Vector3{1, 1, 1}
-              : gc::Vector3{0, 0, 0};
-      forces.proteinMask[v] =
-          (geometry.geodesicDistance[v] < parameters.variation.geodesicMask)
-              ? 1
-              : 0;
-    }
+  if (parameters.variation.geodesicMask >
+          geometry.geodesicDistance.raw().maxCoeff() ||
+      parameters.variation.geodesicMask <
+          geometry.geodesicDistance.raw().minCoeff()) {
+    mem3dg_runtime_error("either all vertices or none is "
+                         "initializeConstantsin integration disk, "
+                         "set radius = -1 to disable!");
+  }
+  for (gcs::Vertex v : geometry.mesh->vertices()) {
+    forces.forceMask[v] =
+        (geometry.geodesicDistance[v] < parameters.variation.geodesicMask)
+            ? gc::Vector3{1, 1, 1}
+            : gc::Vector3{0, 0, 0};
+    forces.proteinMask[v] =
+        (geometry.geodesicDistance[v] < parameters.variation.geodesicMask) ? 1
+                                                                           : 0;
   }
 };
 

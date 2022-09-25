@@ -20,22 +20,22 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 
-void System::initialize(std::size_t nMutation, bool ifMute) {
+void System::initialize(bool ifMutateMesh, bool ifMute) {
   checkConfiguration();
-  initializeConstants(ifMute);
+  pcg_extras::seed_seq_from<std::random_device> seed_source;
+  rng = pcg32(seed_source);
   meshProcessor.summarizeStatus();
   updateConfigurations();
   geometry.updateReferenceConfigurations();
-  if (nMutation > 0) {
-    if (!meshProcessor.isMeshMutate) {
-      mem3dg_runtime_message(
-          "request mesh mutation but mesh mutator is not activated!");
-    } else {
-      mutateMesh(nMutation);
-      updateConfigurations();
-      geometry.refVpg = geometry.vpg->copy();
-      geometry.updateReferenceConfigurations();
-    }
+  bool ifUpdateNotableVertex = true, ifUpdateGeodesics = true,
+       ifUpdateProteinDensityDistribution = true, ifUpdateMask = true;
+  updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
+                     ifUpdateProteinDensityDistribution, ifUpdateMask);
+  if (geometry.mesh->hasBoundary()) {
+    boundaryForceMask(*geometry.mesh, forces.forceMask,
+                      parameters.boundary.shapeBoundaryCondition);
+    boundaryProteinMask(*geometry.mesh, forces.proteinMask,
+                        parameters.boundary.proteinBoundaryCondition);
   }
   computeConservativeForcing();
   computeTotalEnergy();
@@ -91,20 +91,6 @@ void System::checkConfiguration() {
   }
 }
 
-void System::initializeConstants(bool ifMute) {
-  pcg_extras::seed_seq_from<std::random_device> seed_source;
-  rng = pcg32(seed_source);
-
-  prescribeGeodesicMasks();
-
-  if (geometry.mesh->hasBoundary()) {
-    boundaryForceMask(*geometry.mesh, forces.forceMask,
-                      parameters.boundary.shapeBoundaryCondition);
-    boundaryProteinMask(*geometry.mesh, forces.proteinMask,
-                        parameters.boundary.proteinBoundaryCondition);
-  }
-}
-
 void System::updateConfigurations() {
   geometry.updateConfigurations();
 
@@ -149,5 +135,130 @@ void System::updateConfigurations() {
     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
         parameters.tension.form(geometry.surfaceArea);
 }
+
+bool System::updatePrescription(std::map<std::string, double> &lastUpdateTime,
+                                double timeStep) {
+  bool ifMutateMesh = (time - lastUpdateTime["mutateMesh"] >
+                       (meshProcessor.meshMutator.mutateMeshPeriod * timeStep)),
+       ifUpdateNotableVertex =
+           (time - lastUpdateTime["notableVertex"] >
+            (parameters.point.updateNotableVertexPeriod * timeStep)),
+       ifUpdateGeodesics =
+           (time - lastUpdateTime["geodesics"] >
+            (parameters.point.updateGeodesicsPeriod * timeStep)),
+       ifUpdateProteinDensityDistribution =
+           (time - lastUpdateTime["protein"] >
+            (parameters.protein.updateProteinDensityDistributionPeriod *
+             timeStep)),
+       ifUpdateMask = (time - lastUpdateTime["mask"] >
+                       (parameters.variation.updateMaskPeriod * timeStep));
+
+  bool updated =
+      updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
+                         ifUpdateProteinDensityDistribution, ifUpdateMask);
+  if (ifMutateMesh)
+    lastUpdateTime["mutateMesh"] = time;
+  if (ifUpdateNotableVertex)
+    lastUpdateTime["notableVertex"] = time;
+  if (ifUpdateGeodesics)
+    lastUpdateTime["geodesics"] = time;
+  if (ifUpdateProteinDensityDistribution)
+    lastUpdateTime["protein"] = time;
+  if (ifUpdateMask)
+    lastUpdateTime["mask"] = time;
+
+  return updated;
+}
+
+bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
+                                bool &ifUpdateGeodesics,
+                                bool &ifUpdateProteinDensityDistribution,
+                                bool &ifUpdateMask) {
+
+  if (ifMutateMesh) {
+    if (meshProcessor.isMeshMutate) {
+      mutateMesh();
+      updateConfigurations();
+      geometry.refVpg = geometry.vpg->copy();
+      geometry.updateReferenceConfigurations();
+    } else {
+      ifMutateMesh = false;
+      // mem3dg_runtime_message("Meshmutator is not activated!");
+    }
+  }
+
+  if (ifUpdateNotableVertex) {
+    if (parameters.point.prescribeNotableVertex != NULL) {
+      geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
+          geometry.mesh->getFaceVertexMatrix<std::size_t>(),
+          toMatrix(geometry.vpg->vertexPositions),
+          geometry.geodesicDistance.raw());
+    } else {
+      ifUpdateNotableVertex = false;
+      // mem3dg_runtime_message("Parameter.point.prescribeNotableVertex is
+      // NULL!");
+    }
+  }
+
+  if (ifUpdateGeodesics) {
+    geometry.computeGeodesicDistance();
+  }
+
+  if (ifUpdateProteinDensityDistribution) {
+    if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
+      // // in-place implementation, needed to be migrated to python
+      // std::array<double, 2> r_heter{
+      //     parameters.protein.geodesicProteinDensityDistribution[0],
+      //     parameters.protein.geodesicProteinDensityDistribution[1]};
+      // geometry.vpg->requireVertexTangentBasis();
+      // if (parameters.protein.profile == "gaussian") {
+      //   gaussianDistribution(proteinDensity.raw(),
+      //   geometry.geodesicDistance.raw(),
+      //                        geometry.vpg->inputVertexPositions -
+      //                            geometry.vpg->inputVertexPositions[center.nearestVertex()],
+      //                        geometry.vpg->vertexTangentBasis[center.nearestVertex()],
+      //                        r_heter);
+      // } else if (parameters.protein.profile == "tanh") {
+      //   tanhDistribution(proteinDensity.raw(),
+      //   geometry.geodesicDistance.raw(),
+      //                    geometry.vpg->inputVertexPositions -
+      //                        geometry.vpg->inputVertexPositions[center.nearestVertex()],
+      //                    geometry.vpg->vertexTangentBasis[center.nearestVertex()],
+      //                    parameters.protein.tanhSharpness, r_heter);
+      // }
+      // geometry.vpg->unrequireVertexTangentBasis();
+      // proteinDensity.raw() *=
+      //     parameters.protein.geodesicProteinDensityDistribution[2] -
+      //     parameters.protein.geodesicProteinDensityDistribution[3];
+      // proteinDensity.raw().array() +=
+      //     parameters.protein.geodesicProteinDensityDistribution[3];
+
+      proteinDensity.raw() =
+          parameters.protein.prescribeProteinDensityDistribution(
+              time, geometry.vpg->vertexMeanCurvatures.raw(),
+              geometry.geodesicDistance.raw());
+    } else {
+      ifUpdateProteinDensityDistribution = false;
+      // mem3dg_runtime_message("Parameter protein form is NULL!")
+    }
+  }
+
+  if (ifUpdateMask) {
+    if (parameters.variation.geodesicMask != -1) {
+      prescribeGeodesicMasks();
+    } else {
+      ifUpdateMask = false;
+      // mem3dg_runtime_message("geodesicMask not activated!")
+    }
+  }
+
+  // std::cout << ifMutateMesh << " " << ifUpdateNotableVertex << " "
+  //           << ifUpdateGeodesics << " " << ifUpdateProteinDensityDistribution
+  //           << " " << ifUpdateMask << std::endl;
+
+  return ifMutateMesh || ifUpdateNotableVertex || ifUpdateGeodesics ||
+         ifUpdateProteinDensityDistribution || ifUpdateMask;
+}
+
 } // namespace solver
 } // namespace mem3dg

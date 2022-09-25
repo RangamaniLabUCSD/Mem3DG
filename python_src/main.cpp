@@ -1150,19 +1150,10 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: initialize System
    */
-  system.def("initialize", &System::initialize, py::arg("nMutation") = 0,
+  system.def("initialize", &System::initialize, py::arg("ifMutateMesh") = false,
              py::arg("ifMute") = false,
              R"delim(
           initialize the system
-      )delim");
-
-  /**
-   * @brief Method: prescribe protein density
-   */
-  system.def("prescribeProteinDensityDistribution",
-             &System::prescribeProteinDensityDistribution,
-             R"delim(
-            prescribe protein density distribution based on parameters.protein.form.
       )delim");
 
   /**
@@ -1250,6 +1241,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
   variation.def_readwrite("geodesicMask", &Parameters::Variation::geodesicMask,
                           R"delim(
           get domain of shape variation
+      )delim");
+  variation.def_readwrite("updateMaskPeriod",
+                          &Parameters::Variation::updateMaskPeriod,
+                          R"delim(
+          period of updating mask. measured in the unit of # of iterations
       )delim");
 
   py::class_<Parameters::Bending> bending(pymem3dg, "Bending", R"delim(

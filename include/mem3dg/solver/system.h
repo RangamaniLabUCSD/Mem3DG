@@ -362,7 +362,7 @@ public:
    * @brief Initialize system
    *
    */
-  void initialize(std::size_t nMutation = 0, bool ifMute = false);
+  void initialize(bool ifMutateMesh = false, bool ifMute = false);
 
   /**
    * @brief Initialize all constant values (on refVpg) needed for computation
@@ -376,6 +376,17 @@ public:
    * Careful: 1. when using eigenMap: memory address may change after update!!
    */
   void updateConfigurations();
+
+  /**
+   * @brief update various prescription of based on scalar and functional
+   * parameters
+   */
+  bool updatePrescription(std::map<std::string, double> &lastUpdateTime,
+                          double timeStep);
+  bool updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
+                          bool &ifUpdateGeodesics,
+                          bool &ifUpdateProteinDensityDistribution,
+                          bool &ifUpdateMask);
 
   // ==========================================================
   // ================        Force.cpp       ==================
@@ -626,27 +637,9 @@ public:
   void check_pcg();
 
   /**
-   * @brief update cache of proteinDensity based on geodesicDistance and
-   * parameters on profile type
-   */
-  EigenVectorX1d prescribeProteinDensityDistribution();
-
-  /**
    * @brief prescribe mask based on geodesic disk
    */
   void prescribeGeodesicMasks();
-
-  /**
-   * @brief prescribe notable vertex based on parameter.point.form
-   */
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> prescribeNotableVertex();
-
-  /**
-   * @brief update various prescription of based on scalar and functional
-   * parameters
-   */
-  bool updatePrescription(std::map<std::string, double> &lastUpdateTime,
-                          double timeStep);
 };
 } // namespace solver
 } // namespace mem3dg

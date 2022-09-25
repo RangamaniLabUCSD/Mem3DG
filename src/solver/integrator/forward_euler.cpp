@@ -43,10 +43,11 @@ bool Euler::integrate() {
 
   double initialTime = system.time, lastComputeAvoidingForce = system.time,
          lastSave = system.time;
-  std::map<std::string, double> lastUpdateTime{{"geodesic", system.time},
+  std::map<std::string, double> lastUpdateTime{{"geodesics", system.time},
                                                {"mutateMesh", system.time},
                                                {"protein", system.time},
-                                               {"notableVertex", system.time}};
+                                               {"notableVertex", system.time},
+                                               {"mask", system.time}};
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF

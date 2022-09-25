@@ -75,7 +75,6 @@ class TestInitialization(object):
         face, vertex = dg_meshop.getIcosphere(radius=1, subdivision=3)
         p = dg.Parameters()
         geometry = dg.Geometry(face, vertex, vertex, self.notableVertex)
-        geometry.computeGeodesicDistance()
         system = dg.System(geometry, p)
         system.initialize()
 
@@ -85,7 +84,7 @@ class TestInitialization(object):
             sharpness=20,
             radius=0.5,
         )
-        system.prescribeProteinDensityDistribution()
+        system.initialize()
 
         ## uncomment the snippet to visualize
         # polyscope.init()
@@ -153,7 +152,7 @@ class TestExampleIntegration(object):
         arguments = self.initialization.initialConditions
         arguments["parameters"] = p
         g = dg.System(**arguments)
-        g.initialize(nMutation=0, ifMute=False)
+        g.initialize(ifMutateMesh=False, ifMute=False)
         g.computeTotalEnergy()
         g.computeConservativeForcing()
         g.addNonconservativeForcing()
@@ -193,7 +192,7 @@ class TestExampleIntegration(object):
         arguments = self.initialization.initialConditions
         arguments["parameters"] = p
         g = dg.System(**arguments)
-        g.initialize(nMutation=0, ifMute=False)
+        g.initialize(ifMutateMesh=False, ifMute=False)
         fe = dg.Euler(
             system=g,
             characteristicTimeStep=1e-3,
@@ -225,7 +224,7 @@ class TestExampleIntegration(object):
         arguments = self.initialization.initialConditions
         arguments["parameters"] = p
         g = dg.System(**arguments)
-        g.initialize(nMutation=0, ifMute=False)
+        g.initialize(ifMutateMesh=False, ifMute=False)
         fe = dg.Euler(
             system=g,
             characteristicTimeStep=0.1,

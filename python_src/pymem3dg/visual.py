@@ -280,7 +280,7 @@ def plotChemicalPotentials(
         ncFrame = frames[plotFrame]
         geometry = dg.Geometry(trajFile, ncFrame)
         system = dg.System(geometry, trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
+        system.initialize(ifMutateMesh=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
         system.addNonconservativeForcing()
@@ -439,7 +439,7 @@ def plotMechanicalForces(
         ncFrame = frames[plotFrame]
         geometry = dg.Geometry(trajFile, ncFrame)
         system = dg.System(geometry, trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
+        system.initialize(ifMutateMesh=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
         system.addNonconservativeForcing()
@@ -653,7 +653,7 @@ def plotEnergy(
         ncFrame = frames[plotFrame]
         geometry = dg.Geometry(trajFile, ncFrame)
         system = dg.System(geometry, trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
+        system.initialize(ifMutateMesh=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeTotalEnergy()
         energy = system.getEnergy()
@@ -985,7 +985,7 @@ def animate(
         geometry = dg.Geometry(trajNc, frame)
         if hasParameters:
             system = dg.System(geometry, trajNc, frame, parameters)
-            system.initialize(nMutation=0, ifMute=True)
+            system.initialize(ifMutateMesh=0, ifMute=True)
             system.computeConservativeForcing()
             system.addNonconservativeForcing()
         vertex = geometry.getVertexMatrix()

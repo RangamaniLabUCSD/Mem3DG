@@ -157,6 +157,8 @@ struct Parameters {
     bool isShapeVariation = true;
     /// domain of shape variation
     double geodesicMask = -1;
+    /// period of updating mask
+    std::size_t updateMaskPeriod = std::numeric_limits<std::size_t>::max();
 
     /**
      * @brief check parameter conflicts
