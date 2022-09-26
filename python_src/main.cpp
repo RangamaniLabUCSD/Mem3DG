@@ -835,6 +835,12 @@ PYBIND11_MODULE(_core, pymem3dg) {
           get the surface area of the mesh
       )delim");
   geometry.def(
+      "getGeodesicDistance", [](Geometry &s) { return s.geodesicDistance.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the geodesic distance from notable vertices of the mesh
+      )delim");
+  geometry.def(
       "getVolume", [](Geometry &s) { return s.volume; },
       py::return_value_policy::copy,
       R"delim(

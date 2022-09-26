@@ -640,8 +640,8 @@ void System::globalUpdateAfterMutation() {
                         parameters.boundary.proteinBoundaryCondition);
   }
 
-  if (geometry.notableVertex.raw().cast<int>().sum() != 1)
-    mem3dg_runtime_error("there are more than one true in center!");
+  // if (geometry.notableVertex.raw().cast<int>().sum() != 1)
+  //   mem3dg_runtime_error("there are more than one true in center!");
 }
 
 } // namespace solver
