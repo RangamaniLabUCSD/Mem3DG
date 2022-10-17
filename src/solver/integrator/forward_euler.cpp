@@ -171,12 +171,47 @@ void Euler::status() {
   }
 }
 
+// std::tuple<EigenVectorX3dr, EigenVectorX1d>
+// Euler::flowMap(EigenVectorX3dr &position, EigenVectorX1d &protein, double h) {
+//   toMatrix(system.geometry.vpg->inputVertexPositions) = position;
+//   system.proteinDensity.raw() = protein;
+
+//   system.updateConfigurations();
+//   system.computeConservativeForcing();
+//   system.addNonconservativeForcing(h);
+
+//   system.velocity = system.forces.mechanicalForceVec;
+
+//   if (system.parameters.variation.isProteinVariation) {
+//     if (system.parameters.variation.isProteinConservation) {
+//       system.proteinRateOfChange.raw() =
+//           system.parameters.proteinMobility *
+//           system.geometry.vpg->hodge0Inverse *
+//           system.geometry.vpg->d0.transpose() *
+//           system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
+//     } else {
+//       system.proteinRateOfChange = system.parameters.proteinMobility *
+//                                    system.forces.chemicalPotential /
+//                                    system.geometry.vpg->vertexDualAreas;
+//     }
+//   }
+
+//   return std::make_tuple(
+//       toMatrix(system.geometry.vpg->inputVertexPositions) +
+//           toMatrix(system.velocity) * h,
+//       (system.proteinDensity + system.proteinRateOfChange * h).raw());
+// }
+
 void Euler::march() {
   // compute velocity, which are independent of time
+
+  // fixPointIteration(flowMap, characteristicTimeStep, 0.01);
+
   system.velocity = system.forces.mechanicalForceVec;
   system.mechErrorNorm = (toMatrix(system.velocity).array() *
                           toMatrix(system.forces.mechanicalForceVec).array())
                              .sum();
+
   if (system.parameters.variation.isProteinVariation) {
     if (system.parameters.variation.isProteinConservation) {
       system.proteinRateOfChange.raw() =

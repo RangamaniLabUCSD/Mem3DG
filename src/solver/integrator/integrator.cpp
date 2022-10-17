@@ -53,6 +53,34 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
   return dt;
 }
 
+// std::tuple<EigenVectorX3dr, EigenVectorX1d> Integrator::fixPointIteration(
+//     std::function<std::tuple<EigenVectorX3dr, EigenVectorX1d>(
+//         EigenVectorX3dr &, EigenVectorX1d &, double)>
+//         flowMap,
+//     const double h, const double tolereance) {
+//   EigenVectorX3dr position = toMatrix(system.geometry.vpg->vertexPositions);
+//   EigenVectorX1d protein = system.proteinDensity.raw();
+//   EigenVectorX3dr posRHS;
+//   EigenVectorX1d proRHS;
+//   std::tie<EigenVectorX3dr, EigenVectorX1d>(posRHS, proRHS) =
+//       flowMap(position, protein, h);
+//   double posTol = (posRHS - position).norm();
+//   double proTol = (proRHS - protein).norm();
+//   const double initPosTol = posTol, initProTol = proTol;
+//   {
+//     position = posRHS;
+//     protein = proRHS;
+//     std::tie<EigenVectorX3dr, EigenVectorX1d>(posRHS, proRHS) =
+//         flowMap(position, protein, h);
+//     posTol = (posRHS - position).norm();
+//     proTol = (proRHS - protein).norm();
+//   }
+//   while (posTol > tolerance * initPosTol || proTol > tolerance * initProTol)
+//     ;
+
+//   return std::make_tuple(position, protein);
+// }
+
 double Integrator::backtrack(
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
     Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
@@ -96,7 +124,8 @@ double Integrator::backtrack(
 
   // zeroth iteration
   if (system.parameters.variation.isShapeVariation) {
-    toMatrix(system.geometry.vpg->inputVertexPositions) += alpha * positionDirection;
+    toMatrix(system.geometry.vpg->inputVertexPositions) +=
+        alpha * positionDirection;
   }
   if (system.parameters.variation.isProteinVariation) {
     system.proteinDensity.raw() += alpha * chemicalDirection;
@@ -266,7 +295,8 @@ double Integrator::mechanicalBacktrack(
   std::size_t count = 0;
 
   // zeroth iteration
-  toMatrix(system.geometry.vpg->inputVertexPositions) += alpha * positionDirection;
+  toMatrix(system.geometry.vpg->inputVertexPositions) +=
+      alpha * positionDirection;
   system.time += alpha;
   system.updateConfigurations();
   system.computePotentialEnergy();
@@ -333,7 +363,8 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << system.forces.surfaceTension << ", "
         << "V, pressure: " << system.geometry.volume << ", "
         << system.forces.osmoticPressure << ", "
-        << "h: " << toMatrix(system.geometry.vpg->inputVertexPositions).col(2).maxCoeff()
+        << "h: "
+        << toMatrix(system.geometry.vpg->inputVertexPositions).col(2).maxCoeff()
         << "\n"
         << "E_total: " << system.energy.totalEnergy << "\n"
         << "E_kin: " << system.energy.kineticEnergy << "\n"
@@ -365,13 +396,16 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << system.proteinDensity.raw().maxCoeff() << "]"
         << "\n"
         << "sum_phi: "
-        << (system.proteinDensity * system.geometry.vpg->vertexDualAreas).raw().sum()
+        << (system.proteinDensity * system.geometry.vpg->vertexDualAreas)
+               .raw()
+               .sum()
         << std::endl;
 
     // report the backtracking if verbose
     if (timeStep != characteristicTimeStep && ifPrintToConsole) {
       std::cout << "timeStep: " << characteristicTimeStep << " -> " << timeStep
                 << std::endl;
+      system.testConservativeForcing(characteristicTimeStep);
     }
 
     if (EXIT)

@@ -239,6 +239,18 @@ public:
    * @return characteristic time step
    */
   double getAdaptiveCharacteristicTimeStep();
+
+  // /**
+  //  * @brief fix point iteration implicit solve
+  //  * @param FlowMap functional of position and protein flow map
+  //  * @param h time step 
+  //  * @param tolearance convergence tolerance relative to timestep
+  //  */
+  // std::tuple<EigenVectorX3dr, EigenVectorX1d>
+  // fixPointIteration(std::function<std::tuple<EigenVectorX3dr, EigenVectorX1d>(
+  //                       EigenVectorX3dr &, EigenVectorX1d &, double)>
+  //                       flowMap,
+  //                   const double h, const double tolereance);
 };
 } // namespace integrator
 } // namespace solver
