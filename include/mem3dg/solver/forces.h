@@ -49,7 +49,7 @@ namespace mem3dg {
 
 namespace solver {
 
-DLL_PUBLIC struct Forces {
+struct Forces {
   /// Cached mesh of interest
   gcs::ManifoldSurfaceMesh &mesh;
   /// Embedding and other geometric details
