@@ -1125,21 +1125,22 @@ def animate(
         changed[3], isPointwiseValue = psim.Checkbox(
             "Pointwise (vs. integrated)", isPointwiseValue
         )
-        if parameters.variation.isShapeVariation:
-            changed[6], showForce = psim.Checkbox("Mechanical forces", showForce)
-            psim.SameLine()
-            changed[4], isForceVec = psim.Checkbox(
-                "Vector (vs. projected scalar)", isForceVec
-            )
-        if parameters.variation.isProteinVariation:
-            changed[7], showPotential = psim.Checkbox(
-                "Chemical potentials", showPotential
-            )
-            psim.SameLine()
-            if parameters.variation.isProteinConservation:
-                changed[8], isFluxForm = psim.Checkbox(
-                    "Flux form (vs. potential)", isFluxForm
+        if parameters:
+            if parameters.variation.isShapeVariation:
+                changed[6], showForce = psim.Checkbox("Mechanical forces", showForce)
+                psim.SameLine()
+                changed[4], isForceVec = psim.Checkbox(
+                    "Vector (vs. projected scalar)", isForceVec
                 )
+            if parameters.variation.isProteinVariation:
+                changed[7], showPotential = psim.Checkbox(
+                    "Chemical potentials", showPotential
+                )
+                psim.SameLine()
+                if parameters.variation.isProteinConservation:
+                    changed[8], isFluxForm = psim.Checkbox(
+                        "Flux form (vs. potential)", isFluxForm
+                    )
         anyChanged = np.any(changed)
         if (prevFrameInd != currFrameInd) or anyChanged:
             show(trajNc)
