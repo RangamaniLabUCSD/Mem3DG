@@ -37,7 +37,7 @@ if(M3DG_GET_OWN_EIGEN)
   endif()
   add_library (eigen INTERFACE)
   add_library (Eigen3::Eigen ALIAS eigen)
-  target_include_directories(eigen INTERFACE
+  target_include_directories(eigen SYSTEM INTERFACE
       $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
       $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
       )

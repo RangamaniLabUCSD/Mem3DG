@@ -21,6 +21,7 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
   SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-src" 
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
+  SYSTEM
 )
 # Prevent overriding the parent project's compiler/linker settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
