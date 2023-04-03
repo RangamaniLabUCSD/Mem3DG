@@ -75,7 +75,7 @@ jobs:
           echo ::set-output name=path::$py_exe_path
       
       - name: Resolve dependencies
-        run: brew install netcdf eigen pybind11
+        run: brew install netcdf eigen pybind11 netcdf-cxx
 
       - name: Build and test
         run: |
