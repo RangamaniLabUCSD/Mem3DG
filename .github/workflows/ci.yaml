@@ -52,7 +52,7 @@ jobs:
       - name: Build and test
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.python-path }} ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.python-path }} --log-level=DEBUG ..
           cmake --build . --config Release -j 4
           ctest -C Release -V -j 4
 
@@ -91,7 +91,7 @@ jobs:
       - name: Build and test
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.python-path }} ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.python-path }} --log-level=DEBUG ..
           cmake --build . --config Release -j 4
           ctest -C Release -V -j 4
 
