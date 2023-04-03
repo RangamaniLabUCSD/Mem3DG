@@ -75,7 +75,7 @@ jobs:
           echo ::set-output name=path::$py_exe_path
       
       - name: Resolve dependencies
-        run: brew install netcdf eigen pybind11 netcdf-cxx
+        run: brew install netcdf@4.9.2 eigen pybind11 netcdf-cxx
 
       - name: Build and test
         run: |
@@ -108,12 +108,12 @@ jobs:
           python -m pip install pytest
           py_exe_path=$(which python)
           echo ::set-output name=path::$py_exe_path
-
+``
       - name: Restore from cache and install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
-        uses: lukka/run-vcpkg@v6
+        uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: 5568f110b509a9fd90711978a7cb76bae75bb092
+          vcpkgGitCommitId: 5c9f906558f9bb12ee9811d6edc98ec9255c6cda5
           setupOnly: true
       
       - name: Download libraries
