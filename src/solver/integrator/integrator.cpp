@@ -29,7 +29,7 @@ namespace solver {
 namespace integrator {
 
 double Integrator::getAdaptiveCharacteristicTimeStep() {
-  double currentMinimumSize = system.vpg->edgeLengths.raw().minCoeff();
+  double currentMinimumSize = system.geometry.vpg->edgeLengths.raw().minCoeff();
   double currentMaximumForce =
       system.parameters.variation.isShapeVariation
           ? system.forces.mechanicalForce.raw().cwiseAbs().maxCoeff()
@@ -52,6 +52,34 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
   }
   return dt;
 }
+
+// std::tuple<EigenVectorX3dr, EigenVectorX1d> Integrator::fixPointIteration(
+//     std::function<std::tuple<EigenVectorX3dr, EigenVectorX1d>(
+//         EigenVectorX3dr &, EigenVectorX1d &, double)>
+//         flowMap,
+//     const double h, const double tolereance) {
+//   EigenVectorX3dr position = toMatrix(system.geometry.vpg->vertexPositions);
+//   EigenVectorX1d protein = system.proteinDensity.raw();
+//   EigenVectorX3dr posRHS;
+//   EigenVectorX1d proRHS;
+//   std::tie<EigenVectorX3dr, EigenVectorX1d>(posRHS, proRHS) =
+//       flowMap(position, protein, h);
+//   double posTol = (posRHS - position).norm();
+//   double proTol = (proRHS - protein).norm();
+//   const double initPosTol = posTol, initProTol = proTol;
+//   {
+//     position = posRHS;
+//     protein = proRHS;
+//     std::tie<EigenVectorX3dr, EigenVectorX1d>(posRHS, proRHS) =
+//         flowMap(position, protein, h);
+//     posTol = (posRHS - position).norm();
+//     proTol = (proRHS - protein).norm();
+//   }
+//   while (posTol > tolerance * initPosTol || proTol > tolerance * initProTol)
+//     ;
+
+//   return std::make_tuple(position, protein);
+// }
 
 double Integrator::backtrack(
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
@@ -84,9 +112,9 @@ double Integrator::backtrack(
   }
 
   // calculate initial energy as reference level
-  gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
-  initial_pos = system.vpg->inputVertexPositions;
-  gc::VertexData<double> initial_protein(*system.mesh,
+  gc::VertexData<gc::Vector3> initial_pos(*system.geometry.mesh);
+  initial_pos = system.geometry.vpg->inputVertexPositions;
+  gc::VertexData<double> initial_protein(*system.geometry.mesh,
                                          system.proteinDensity.raw());
   const double init_time = system.time;
 
@@ -96,7 +124,8 @@ double Integrator::backtrack(
 
   // zeroth iteration
   if (system.parameters.variation.isShapeVariation) {
-    toMatrix(system.vpg->inputVertexPositions) += alpha * positionDirection;
+    toMatrix(system.geometry.vpg->inputVertexPositions) +=
+        alpha * positionDirection;
   }
   if (system.parameters.variation.isProteinVariation) {
     system.proteinDensity.raw() += alpha * chemicalDirection;
@@ -123,7 +152,7 @@ double Integrator::backtrack(
       // recover the initial configuration
       system.time = init_time;
       system.proteinDensity = initial_protein;
-      system.vpg->inputVertexPositions = initial_pos;
+      system.geometry.vpg->inputVertexPositions = initial_pos;
       system.testConservativeForcing(alpha);
       system.testConservativeForcing(characteristicTimeStep);
       EXIT = true;
@@ -134,7 +163,7 @@ double Integrator::backtrack(
     // backtracking time step
     alpha *= rho;
     if (system.parameters.variation.isShapeVariation) {
-      toMatrix(system.vpg->inputVertexPositions) =
+      toMatrix(system.geometry.vpg->inputVertexPositions) =
           toMatrix(initial_pos) + alpha * positionDirection;
     }
     if (system.parameters.variation.isProteinVariation) {
@@ -152,7 +181,7 @@ double Integrator::backtrack(
   // recover the initial configuration
   system.time = init_time;
   system.proteinDensity = initial_protein;
-  system.vpg->inputVertexPositions = initial_pos;
+  system.geometry.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations();
   system.computePotentialEnergy();
   return alpha;
@@ -174,9 +203,9 @@ double Integrator::chemicalBacktrack(
                            "uphill direction!");
   }
   // calculate initial energy as reference level
-  gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
-  initial_pos = system.vpg->inputVertexPositions;
-  gc::VertexData<double> initial_protein(*system.mesh,
+  gc::VertexData<gc::Vector3> initial_pos(*system.geometry.mesh);
+  initial_pos = system.geometry.vpg->inputVertexPositions;
+  gc::VertexData<double> initial_protein(*system.geometry.mesh,
                                          system.proteinDensity.raw());
   const double init_time = system.time;
 
@@ -207,7 +236,7 @@ double Integrator::chemicalBacktrack(
       // recover the initial configuration
       system.time = init_time;
       system.proteinDensity = initial_protein;
-      system.vpg->inputVertexPositions = initial_pos;
+      system.geometry.vpg->inputVertexPositions = initial_pos;
       system.testConservativeForcing(alpha);
       system.testConservativeForcing(characteristicTimeStep);
       EXIT = true;
@@ -230,7 +259,7 @@ double Integrator::chemicalBacktrack(
   // recover the initial configuration
   system.time = init_time;
   system.proteinDensity = initial_protein;
-  system.vpg->inputVertexPositions = initial_pos;
+  system.geometry.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations();
   system.computePotentialEnergy();
   return alpha;
@@ -255,9 +284,9 @@ double Integrator::mechanicalBacktrack(
                            "uphill direction!");
 
   // calculate initial energy as reference level
-  gc::VertexData<gc::Vector3> initial_pos(*system.mesh);
-  initial_pos = system.vpg->inputVertexPositions;
-  gc::VertexData<double> initial_protein(*system.mesh,
+  gc::VertexData<gc::Vector3> initial_pos(*system.geometry.mesh);
+  initial_pos = system.geometry.vpg->inputVertexPositions;
+  gc::VertexData<double> initial_protein(*system.geometry.mesh,
                                          system.proteinDensity.raw());
   const double init_time = system.time;
 
@@ -266,7 +295,8 @@ double Integrator::mechanicalBacktrack(
   std::size_t count = 0;
 
   // zeroth iteration
-  toMatrix(system.vpg->inputVertexPositions) += alpha * positionDirection;
+  toMatrix(system.geometry.vpg->inputVertexPositions) +=
+      alpha * positionDirection;
   system.time += alpha;
   system.updateConfigurations();
   system.computePotentialEnergy();
@@ -290,7 +320,7 @@ double Integrator::mechanicalBacktrack(
       // recover the initial configuration
       system.time = init_time;
       system.proteinDensity = initial_protein;
-      system.vpg->inputVertexPositions = initial_pos;
+      system.geometry.vpg->inputVertexPositions = initial_pos;
       system.testConservativeForcing(alpha);
       system.testConservativeForcing(characteristicTimeStep);
       EXIT = true;
@@ -300,7 +330,7 @@ double Integrator::mechanicalBacktrack(
 
     // backtracking time step
     alpha *= rho;
-    toMatrix(system.vpg->inputVertexPositions) =
+    toMatrix(system.geometry.vpg->inputVertexPositions) =
         toMatrix(initial_pos) + alpha * positionDirection;
 
     system.time = init_time + alpha;
@@ -314,7 +344,7 @@ double Integrator::mechanicalBacktrack(
   // recover the initial configuration
   system.time = init_time;
   system.proteinDensity = initial_protein;
-  system.vpg->inputVertexPositions = initial_pos;
+  system.geometry.vpg->inputVertexPositions = initial_pos;
   system.updateConfigurations();
   system.computePotentialEnergy();
   return alpha;
@@ -329,11 +359,12 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << "t: " << system.time << ", "
         << "n: " << frame << ", "
         << "isSmooth: " << system.isSmooth << "\n"
-        << "A, At: " << system.surfaceArea << ", "
-        << system.parameters.tension.At << ", "
-        << "V, Vt: " << system.volume << ", " << system.parameters.osmotic.Vt
-        << ", "
-        << "h: " << toMatrix(system.vpg->inputVertexPositions).col(2).maxCoeff()
+        << "A, tension: " << system.geometry.surfaceArea << ", "
+        << system.forces.surfaceTension << ", "
+        << "V, pressure: " << system.geometry.volume << ", "
+        << system.forces.osmoticPressure << ", "
+        << "h: "
+        << toMatrix(system.geometry.vpg->inputVertexPositions).col(2).maxCoeff()
         << "\n"
         << "E_total: " << system.energy.totalEnergy << "\n"
         << "E_kin: " << system.energy.kineticEnergy << "\n"
@@ -342,22 +373,22 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << "|e|Mech: " << system.mechErrorNorm << "\n"
         << "|e|Chem: " << system.chemErrorNorm << "\n"
         << "H: ["
-        << (system.vpg->vertexMeanCurvatures.raw().array() /
-            system.vpg->vertexDualAreas.raw().array())
+        << (system.geometry.vpg->vertexMeanCurvatures.raw().array() /
+            system.geometry.vpg->vertexDualAreas.raw().array())
                .minCoeff()
         << ","
-        << (system.vpg->vertexMeanCurvatures.raw().array() /
-            system.vpg->vertexDualAreas.raw().array())
+        << (system.geometry.vpg->vertexMeanCurvatures.raw().array() /
+            system.geometry.vpg->vertexDualAreas.raw().array())
                .maxCoeff()
         << "]"
         << "\n"
         << "K: ["
-        << (system.vpg->vertexGaussianCurvatures.raw().array() /
-            system.vpg->vertexDualAreas.raw().array())
+        << (system.geometry.vpg->vertexGaussianCurvatures.raw().array() /
+            system.geometry.vpg->vertexDualAreas.raw().array())
                .minCoeff()
         << ","
-        << (system.vpg->vertexGaussianCurvatures.raw().array() /
-            system.vpg->vertexDualAreas.raw().array())
+        << (system.geometry.vpg->vertexGaussianCurvatures.raw().array() /
+            system.geometry.vpg->vertexDualAreas.raw().array())
                .maxCoeff()
         << "]"
         << "\n"
@@ -365,13 +396,16 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << system.proteinDensity.raw().maxCoeff() << "]"
         << "\n"
         << "sum_phi: "
-        << (system.proteinDensity * system.vpg->vertexDualAreas).raw().sum()
+        << (system.proteinDensity * system.geometry.vpg->vertexDualAreas)
+               .raw()
+               .sum()
         << std::endl;
 
     // report the backtracking if verbose
     if (timeStep != characteristicTimeStep && ifPrintToConsole) {
       std::cout << "timeStep: " << characteristicTimeStep << " -> " << timeStep
                 << std::endl;
+      system.testConservativeForcing(characteristicTimeStep);
     }
 
     if (EXIT)
@@ -434,14 +468,15 @@ void Integrator::saveMutableNetcdfData() {
 
   // write dynamic properties
   mutableTrajFile.writeVelocity(frame, system.velocity);
-  if (system.parameters.external.isActivated)
+  if (system.parameters.external.form != NULL)
     mutableTrajFile.writeExternalForce(frame, system.forces.externalForceVec);
 
   // write static properties
-  mutableTrajFile.writeCoords(frame, *system.vpg);
-  mutableTrajFile.writeRefCoords(frame, *system.refVpg);
-  mutableTrajFile.writeTopology(frame, *system.mesh);
+  mutableTrajFile.writeCoords(frame, *system.geometry.vpg);
+  mutableTrajFile.writeRefCoords(frame, *system.geometry.refVpg);
+  mutableTrajFile.writeTopology(frame, *system.geometry.mesh);
   mutableTrajFile.writeProteinDensity(frame, system.proteinDensity);
+  mutableTrajFile.writeNotableVertex(frame, system.geometry.notableVertex);
   mutableTrajFile.sync();
 }
 #endif

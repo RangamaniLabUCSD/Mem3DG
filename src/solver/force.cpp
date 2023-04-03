@@ -21,12 +21,12 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void System::computeGeometricForces() {
-  assert(mesh->isCompressed());
-  // if(!mesh->isCompressed()){
+  assert(geometry.mesh->isCompressed());
+  // if(!geometry.mesh->isCompressed()){
   //   mem3dg_runtime_error("Mesh must be compressed to compute forces!");
   // }
 
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
+  for (std::size_t i = 0; i < geometry.mesh->nVertices(); ++i) {
     computeGeometricForces(i);
   }
 
@@ -43,7 +43,7 @@ void System::computeGeometricForces(gcs::Vertex &v) {
 }
 
 void System::computeGeometricForces(size_t i) {
-  gc::Vertex v{mesh->vertex(i)};
+  gc::Vertex v{geometry.mesh->vertex(i)};
   gc::Vector3 spontaneousCurvatureForceVec{0, 0, 0};
   gc::Vector3 spontaneousCurvatureForceVec_areaGrad{0, 0, 0};
   gc::Vector3 spontaneousCurvatureForceVec_gaussVec{0, 0, 0};
@@ -58,15 +58,16 @@ void System::computeGeometricForces(size_t i) {
   gc::Vector3 adsorptionForceVec{0, 0, 0};
   gc::Vector3 aggregationForceVec{0, 0, 0};
   gc::Vector3 entropyForceVec{0, 0, 0};
-  double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
-  double KGi = vpg->vertexGaussianCurvatures[i];
+  double Ai = geometry.vpg->vertexDualAreas[i];
+  double Hi = geometry.vpg->vertexMeanCurvatures[i] / Ai;
+  double KGi = geometry.vpg->vertexGaussianCurvatures[i] / Ai;
   double H0i = H0[i];
   double Kbi = Kb[i];
   double Kdi = Kd[i];
   double proteinDensityi = proteinDensity[i];
   double areaDifferenceK =
       0.25 * parameters.bending.alpha * parameters.bending.Kb * constants::PI;
-  double totalMeanCurvature = vpg->vertexMeanCurvatures.raw().sum();
+  double totalMeanCurvature = geometry.vpg->vertexMeanCurvatures.raw().sum();
 
   bool boundaryVertex = v.isBoundary();
 
@@ -78,8 +79,9 @@ void System::computeGeometricForces(size_t i) {
 
     gc::Vector3 dphi_ijk{he.isInterior() ? proteinDensityGradient[fID]
                                          : gc::Vector3{0, 0, 0}};
-    double Hj = vpg->vertexMeanCurvatures[i_vj] / vpg->vertexDualAreas[i_vj];
-    double KGj = vpg->vertexGaussianCurvatures[i_vj];
+    double Aj = geometry.vpg->vertexDualAreas[i_vj];
+    double Hj = geometry.vpg->vertexMeanCurvatures[i_vj] / Aj;
+    double KGj = geometry.vpg->vertexGaussianCurvatures[i_vj] / Aj;
     double H0j = H0[i_vj];
     double Kbj = Kb[i_vj];
     double Kdj = Kd[i_vj];
@@ -89,29 +91,42 @@ void System::computeGeometricForces(size_t i) {
     bool boundaryNeighborVertex = he.next().vertex().isBoundary();
 
     // compute fundamental variational vectors
-    gc::Vector3 areaGrad = 2 * computeHalfedgeMeanCurvatureVector(*vpg, he);
-    gc::Vector3 gaussVec = computeHalfedgeGaussianCurvatureVector(*vpg, he);
-    gc::Vector3 schlafliVec1 = vpg->edgeLengths[he.edge()] *
-                               computeDihedralAngleVariation(he, he.vertex());
+    gc::Vector3 areaGrad =
+        2 * geometry.computeHalfedgeMeanCurvatureVector(*geometry.vpg, he);
+    gc::Vector3 gaussVec =
+        geometry.computeHalfedgeGaussianCurvatureVector(*geometry.vpg, he);
+    gc::Vector3 schlafliVec1 =
+        geometry.vpg->edgeLengths[he.edge()] *
+        geometry.computeDihedralAngleVariation(he, he.vertex());
     gc::Vector3 schlafliVec2 =
-        vpg->edgeLengths[he.twin().edge()] *
-            computeDihedralAngleVariation(he.twin(), he.vertex()) +
-        vpg->edgeLengths[he.next().edge()] *
-            computeDihedralAngleVariation(he.next(), he.vertex()) +
-        vpg->edgeLengths[he.twin().next().next().edge()] *
-            computeDihedralAngleVariation(he.twin().next().next(), he.vertex());
+        geometry.vpg->edgeLengths[he.twin().edge()] *
+            geometry.computeDihedralAngleVariation(he.twin(), he.vertex()) +
+        geometry.vpg->edgeLengths[he.next().edge()] *
+            geometry.computeDihedralAngleVariation(he.next(), he.vertex()) +
+        geometry.vpg->edgeLengths[he.twin().next().next().edge()] *
+            geometry.computeDihedralAngleVariation(he.twin().next().next(),
+                                                   he.vertex());
     gc::Vector3 totalMeanCurvatureGrad =
         gaussVec + 0.5 * schlafliVec1 + 0.5 * schlafliVec2;
     gc::Vector3 oneSidedAreaGrad =
-        interiorHalfedge ? 0.5 * gc::cross(vpg->faceNormals[fID],
-                                           vecFromHalfedge(he.next(), *vpg))
-                         : gc::Vector3{0.0, 0.0, 0.0};
+        interiorHalfedge
+            ? 0.5 * gc::cross(geometry.vpg->faceNormals[fID],
+                              vecFromHalfedge(he.next(), *geometry.vpg))
+            : gc::Vector3{0.0, 0.0, 0.0};
     gc::Vector3 dirichletVec =
         interiorHalfedge
-            ? computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
+            ? geometry.computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
                   proteinDensity, he) /
-                  vpg->faceAreas[fID]
+                  geometry.vpg->faceAreas[fID]
             : gc::Vector3{0.0, 0.0, 0.0};
+    gc::Vector3 gaussVarVec1 =
+        boundaryVertex ? gc::Vector3{0.0, 0.0, 0.0}
+                       : -geometry.computeCornerAngleVariation(he, he.vertex());
+    gc::Vector3 gaussVarVec2 =
+        boundaryNeighborVertex
+            ? gc::Vector3{0.0, 0.0, 0.0}
+            : -geometry.computeCornerAngleVariation(he.next(), he.vertex()) -
+                  geometry.computeCornerAngleVariation(he.twin(), he.vertex());
 
     // Assemble to forces
     if (Kbi != 0 || Kbj != 0) { // spontaneous curvature force
@@ -125,61 +140,21 @@ void System::computeGeometricForces(size_t i) {
           (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
     }
     if (forces.osmoticPressure != 0) // omostic force
-      osmoticForceVec += forces.osmoticPressure *
-                         computeHalfedgeVolumeVariationVector(*vpg, he);
+      osmoticForceVec +=
+          forces.osmoticPressure *
+          geometry.computeHalfedgeVolumeVariationVector(*geometry.vpg, he);
     if (forces.surfaceTension != 0) // surface capillary force
       capillaryForceVec -= forces.surfaceTension * areaGrad;
     if (Kdi != 0 || Kdj != 0) { // deviatoric curvature force
-      if (boundaryVertex) {
-        if (!boundaryEdge)
-          deviatoricCurvatureForceVec_gauss +=
-              2 * Kdj * KGj *
-                  computeCornerAngleVariation(he.next().corner(), he.vertex()) +
-              2 * Kdj * KGj *
-                  computeCornerAngleVariation(he.twin().corner(), he.vertex());
-      } else {
-        if (boundaryNeighborVertex) {
-          deviatoricCurvatureForceVec_gauss +=
-              2 * Kdi * KGi *
-              computeCornerAngleVariation(he.corner(), he.vertex());
-        } else {
-          deviatoricCurvatureForceVec_gauss +=
-              2 * Kdi * KGi *
-                  computeCornerAngleVariation(he.corner(), he.vertex()) +
-              2 * Kdj * KGj *
-                  computeCornerAngleVariation(he.next().corner(), he.vertex()) +
-              2 * Kdj * KGj *
-                  computeCornerAngleVariation(he.twin().corner(), he.vertex());
-        }
-      }
+      deviatoricCurvatureForceVec_gauss -=
+          2 * Kdi * KGi * gaussVarVec1 + 2 * Kdj * KGj * gaussVarVec2 -
+          (Kdi * KGi * KGi / 3 + Kdj * KGj * KGj * 2 / 3) * areaGrad;
       // deviatoricCurvatureForceVec_mean -=
       //     (Kdi * Hi + Kdj * Hj) * gaussVec +
       //     (Kdi * (-Hi * Hi) / 3 + Kdj * (-Hj * Hj) * 2 / 3) * areaGrad +
       //     (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2);
-      // if (boundaryVertex) {
-      //   if (!boundaryEdge)
-      //     deviatoricCurvatureForceVec_gauss -=
-      //         Kdj *
-      //             computeCornerAngleVariation(he.next().corner(),
-      //             he.vertex()) +
-      //         Kdj *
-      //             computeCornerAngleVariation(he.twin().corner(),
-      //             he.vertex());
-      // } else {
-      //   if (boundaryNeighborVertex) {
-      //     deviatoricCurvatureForceVec_gauss -=
-      //         Kdi * computeCornerAngleVariation(he.corner(), he.vertex());
-      //   } else {
-      //     deviatoricCurvatureForceVec_gauss -=
-      //         Kdi * computeCornerAngleVariation(he.corner(), he.vertex()) +
-      //         Kdj *
-      //             computeCornerAngleVariation(he.next().corner(),
-      //             he.vertex()) +
-      //         Kdj *
-      //             computeCornerAngleVariation(he.twin().corner(),
-      //             he.vertex());
-      //   }
-      // }
+      // deviatoricCurvatureForceVec_gauss +=
+      //     Kdi * gaussVarVec1 + Kdj * gaussVarVec2;
     }
     if (parameters.adsorption.epsilon != 0) // adsorption force
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
@@ -204,16 +179,17 @@ void System::computeGeometricForces(size_t i) {
     if (parameters.bending.alpha != 0) // area difference force
       areaDifferenceForceVec -=
           4 * areaDifferenceK *
-              (2 * totalMeanCurvature * totalMeanCurvatureGrad * surfaceArea -
+              (2 * totalMeanCurvature * totalMeanCurvatureGrad *
+                   geometry.surfaceArea -
                totalMeanCurvature * totalMeanCurvature * areaGrad) /
-              surfaceArea / surfaceArea -
+              geometry.surfaceArea / geometry.surfaceArea -
           4 * parameters.bending.dA0 * areaDifferenceK / parameters.bending.D *
-              (totalMeanCurvatureGrad * surfaceArea -
+              (totalMeanCurvatureGrad * geometry.surfaceArea -
                totalMeanCurvature * areaGrad) /
-              surfaceArea / surfaceArea -
+              geometry.surfaceArea / geometry.surfaceArea -
           parameters.bending.dA0 * parameters.bending.dA0 * areaDifferenceK /
-              parameters.bending.D / parameters.bending.D / surfaceArea /
-              surfaceArea * areaGrad;
+              parameters.bending.D / parameters.bending.D /
+              geometry.surfaceArea / geometry.surfaceArea * areaGrad;
   }
 
   spontaneousCurvatureForceVec = spontaneousCurvatureForceVec_areaGrad +
@@ -280,11 +256,11 @@ void System::computeGeometricForces(size_t i) {
 }
 
 EigenVectorX3dr System::prescribeExternalForce() {
-  if (parameters.external.isActivated) {
-    toMatrix(forces.externalForceVec) =
-        forces.maskForce(parameters.external.form(
-            toMatrix(vpg->inputVertexPositions), vpg->vertexDualAreas.raw(),
-            time, geodesicDistance.raw()));
+  if (parameters.external.form != NULL) {
+    toMatrix(forces.externalForceVec) = forces.maskForce(
+        parameters.external.form(toMatrix(geometry.vpg->inputVertexPositions),
+                                 geometry.vpg->vertexDualAreas.raw(), time,
+                                 geometry.geodesicDistance.raw()));
     forces.externalForce = forces.ontoNormal(forces.externalForceVec);
   }
   return toMatrix(forces.externalForceVec);
@@ -295,22 +271,24 @@ void System::computeSelfAvoidanceForce() {
   const double d0 = parameters.selfAvoidance.d;
   const double mu = parameters.selfAvoidance.mu;
   const double n = parameters.selfAvoidance.n;
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    gc::Vertex vi{mesh->vertex(i)};
-    gc::VertexData<bool> neighborList(*mesh, false);
+  for (std::size_t i = 0; i < geometry.mesh->nVertices(); ++i) {
+    gc::Vertex vi{geometry.mesh->vertex(i)};
+    gc::VertexData<bool> neighborList(*geometry.mesh, false);
     meshProcessor.meshMutator.markVertices(neighborList, vi, n);
-    for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+    for (std::size_t j = i + 1; j < geometry.mesh->nVertices(); ++j) {
       if (neighborList[j])
         continue;
-      gc::Vertex vj{mesh->vertex(j)};
-      // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
-      //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      gc::Vertex vj{geometry.mesh->vertex(j)};
+      // double penalty = mu * geometry.vpg->vertexDualAreas[vi] *
+      // proteinDensity[vi] *
+      //                  geometry.vpg->vertexDualAreas[vj] *
+      //                  proteinDensity[vj];
       double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
       // double penalty = mu;
-      // double penalty = mu * vpg->vertexDualAreas[vi] *
-      // vpg->vertexDualAreas[vj];;
-      gc::Vector3 r =
-          vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+      // double penalty = mu * geometry.vpg->vertexDualAreas[vi] *
+      // geometry.vpg->vertexDualAreas[vj];;
+      gc::Vector3 r = geometry.vpg->inputVertexPositions[vj] -
+                      geometry.vpg->inputVertexPositions[vi];
       double distance = gc::norm(r) - d0;
       gc::Vector3 grad = r.normalize();
       // forces.selfAvoidanceForceVec[i] -=
@@ -327,11 +305,11 @@ void System::computeSelfAvoidanceForce() {
 }
 
 void System::computeChemicalPotentials() {
-  gcs::VertexData<double> dH0dphi(*mesh, 0);
-  gcs::VertexData<double> dKbdphi(*mesh, 0);
-  gcs::VertexData<double> dKddphi(*mesh, 0);
-  auto meanCurvDiff = (vpg->vertexMeanCurvatures.raw().array() /
-                       vpg->vertexDualAreas.raw().array()) -
+  gcs::VertexData<double> dH0dphi(*geometry.mesh, 0);
+  gcs::VertexData<double> dKbdphi(*geometry.mesh, 0);
+  gcs::VertexData<double> dKddphi(*geometry.mesh, 0);
+  auto meanCurvDiff = (geometry.vpg->vertexMeanCurvatures.raw().array() /
+                       geometry.vpg->vertexDualAreas.raw().array()) -
                       H0.raw().array();
 
   if (parameters.bending.relation == "linear") {
@@ -357,7 +335,7 @@ void System::computeChemicalPotentials() {
 
   if (parameters.bending.Kb != 0 || parameters.bending.Kbc != 0) {
     forces.spontaneousCurvaturePotential.raw() = forces.maskProtein(
-        -vpg->vertexDualAreas.raw().array() *
+        -geometry.vpg->vertexDualAreas.raw().array() *
         (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
          2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
   }
@@ -365,36 +343,39 @@ void System::computeChemicalPotentials() {
   if (parameters.bending.Kd != 0 || parameters.bending.Kdc != 0) {
     forces.deviatoricCurvaturePotential.raw() =
         -dKddphi.raw().array() *
-        vpg->vertexGaussianCurvatures.raw().array().square();
-    // (vpg->vertexMeanCurvatures.raw().array().square() /
-    //      vpg->vertexDualAreas.raw().array() -
-    //  vpg->vertexGaussianCurvatures.raw().array());
+        geometry.vpg->vertexGaussianCurvatures.raw().array().square() /
+        geometry.vpg->vertexDualAreas.raw().array();
+    // (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
+    //      geometry.vpg->vertexDualAreas.raw().array() -
+    //  geometry.vpg->vertexGaussianCurvatures.raw().array());
   }
 
   if (parameters.adsorption.epsilon != 0)
-    forces.adsorptionPotential.raw() = forces.maskProtein(
-        -parameters.adsorption.epsilon * vpg->vertexDualAreas.raw().array());
+    forces.adsorptionPotential.raw() =
+        forces.maskProtein(-parameters.adsorption.epsilon *
+                           geometry.vpg->vertexDualAreas.raw().array());
 
   if (parameters.aggregation.chi != 0)
     forces.aggregationPotential.raw() = forces.maskProtein(
         -32 * parameters.aggregation.chi * (proteinDensity.raw().array() - 1) *
         (2 * proteinDensity.raw().array() - 1) * proteinDensity.raw().array() *
-        vpg->vertexDualAreas.raw().array());
+        geometry.vpg->vertexDualAreas.raw().array());
 
   if (parameters.entropy.xi != 0) {
     forces.entropyPotential.raw() =
         forces.maskProtein(-parameters.entropy.xi *
                            (proteinDensity.raw().array().log() -
                             (1 - proteinDensity.raw().array()).log()) *
-                           vpg->vertexDualAreas.raw().array());
+                           geometry.vpg->vertexDualAreas.raw().array());
     // forces.entropyPotential.raw() = forces.maskProtein(
     //     -parameters.entropy.xi * proteinDensity.raw().array().log() *
-    //     vpg->vertexDualAreas.raw().array());
+    //     geometry.vpg->vertexDualAreas.raw().array());
   }
 
   if (parameters.dirichlet.eta != 0)
-    forces.dirichletPotential.raw() = forces.maskProtein(
-        -parameters.dirichlet.eta * vpg->cotanLaplacian * proteinDensity.raw());
+    forces.dirichletPotential.raw() =
+        forces.maskProtein(-parameters.dirichlet.eta *
+                           geometry.vpg->cotanLaplacian * proteinDensity.raw());
 
   if (parameters.protein.proteinInteriorPenalty != 0)
     forces.interiorPenaltyPotential.raw() =
@@ -411,15 +392,15 @@ void System::computeChemicalPotentials() {
 
 EigenVectorX1d
 System::computeInPlaneFluxForm(EigenVectorX1d &chemicalPotential) {
-  gcs::EdgeData<double> edgeProteinDensity(*mesh, 0);
-  for (std::size_t i = 0; i < mesh->nEdges(); ++i) {
-    gc::Edge e{mesh->edge(i)};
+  gcs::EdgeData<double> edgeProteinDensity(*geometry.mesh, 0);
+  for (std::size_t i = 0; i < geometry.mesh->nEdges(); ++i) {
+    gc::Edge e{geometry.mesh->edge(i)};
     gc::Halfedge he = e.halfedge();
     edgeProteinDensity[i] = 0.5 * (proteinDensity[he.tailVertex()] +
                                    proteinDensity[he.tipVertex()]);
   }
-  return vpg->hodge1 * edgeProteinDensity.raw().asDiagonal() * vpg->d0 *
-         vpg->hodge0Inverse * chemicalPotential;
+  return geometry.vpg->hodge1 * edgeProteinDensity.raw().asDiagonal() *
+         geometry.vpg->d0 * geometry.vpg->hodge0Inverse * chemicalPotential;
 }
 
 void System::computeDPDForces(double dt) {
@@ -431,17 +412,18 @@ void System::computeDPDForces(double dt) {
                       parameters.temperature / dt);
   std::normal_distribution<double> normal_dist(0, sigma);
 
-  for (gcs::Edge e : mesh->edges()) {
+  for (gcs::Edge e : geometry.mesh->edges()) {
     gcs::Halfedge he = e.halfedge();
     gcs::Vertex v1 = he.vertex();
     gcs::Vertex v2 = he.next().vertex();
 
     gc::Vector3 dVel12 = velocity[v1] - velocity[v2];
-    gc::Vector3 direction =
-        (vpg->inputVertexPositions[v1] - vpg->inputVertexPositions[v2])
-            .normalize();
+    gc::Vector3 direction = (geometry.vpg->inputVertexPositions[v1] -
+                             geometry.vpg->inputVertexPositions[v2])
+                                .normalize();
     // gc::Vector3 direction =
-    //     (vpg->vertexNormals[v1] + vpg->vertexNormals[v2]).normalize();
+    //     (geometry.vpg->vertexNormals[v1] +
+    //     geometry.vpg->vertexNormals[v2]).normalize();
 
     gc::Vector3 df =
         parameters.dpd.gamma * (gc::dot(dVel12, direction) * direction);
@@ -476,8 +458,8 @@ gc::VertexData<gc::Vector3> System::computeDampingForce() {
 }
 
 void System::computeSpringForces() {
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    gc::Vertex v{mesh->vertex(i)};
+  for (std::size_t i = 0; i < geometry.mesh->nVertices(); ++i) {
+    gc::Vertex v{geometry.mesh->vertex(i)};
     gc::Vector3 edgeSpringForceVec{0, 0, 0};
     gc::Vector3 lcrSpringForceVec{0, 0, 0};
     gc::Vector3 faceSpringForceVec{0, 0, 0};
@@ -494,15 +476,17 @@ void System::computeSpringForces() {
           gcs::Halfedge ik = ij.twin().next();
           gcs::Halfedge kj = ik.next();
 
-          double lcr = computeLengthCrossRatio(*vpg, ij);
-          double lcr0 = refLcrs[ij];
-          gc::Vector3 grad_li = vecFromHalfedge(li, *vpg).normalize();
-          gc::Vector3 grad_ik = vecFromHalfedge(ik.twin(), *vpg).normalize();
-          gc::Vector3 lcrGrad = vpg->edgeLengths[kj.edge()] /
-                                vpg->edgeLengths[jl.edge()] *
-                                (grad_li * vpg->edgeLengths[ik.edge()] -
-                                 grad_ik * vpg->edgeLengths[li.edge()]) /
-                                pow(vpg->edgeLengths[ik.edge()], 2);
+          double lcr = geometry.computeLengthCrossRatio(*geometry.vpg, ij);
+          double lcr0 = geometry.refLcrs[ij];
+          gc::Vector3 grad_li = vecFromHalfedge(li, *geometry.vpg).normalize();
+          gc::Vector3 grad_ik =
+              vecFromHalfedge(ik.twin(), *geometry.vpg).normalize();
+          gc::Vector3 lcrGrad =
+              geometry.vpg->edgeLengths[kj.edge()] /
+              geometry.vpg->edgeLengths[jl.edge()] *
+              (grad_li * geometry.vpg->edgeLengths[ik.edge()] -
+               grad_ik * geometry.vpg->edgeLengths[li.edge()]) /
+              pow(geometry.vpg->edgeLengths[ik.edge()], 2);
           lcrSpringForceVec -=
               parameters.spring.Kst * lcrGrad * (lcr - lcr0) / lcr0 / lcr0;
         }
@@ -513,15 +497,17 @@ void System::computeSpringForces() {
           gcs::Halfedge ik = ij.twin().next();
           gcs::Halfedge kj = ik.next();
 
-          double lcr = computeLengthCrossRatio(*vpg, ij);
-          double lcr0 = refLcrs[ij];
-          gc::Vector3 grad_li = vecFromHalfedge(li.twin(), *vpg).normalize();
-          gc::Vector3 grad_jl = vecFromHalfedge(jl, *vpg).normalize();
-          gc::Vector3 lcrGrad = vpg->edgeLengths[kj.edge()] /
-                                vpg->edgeLengths[ik.edge()] *
-                                (grad_li * vpg->edgeLengths[jl.edge()] -
-                                 grad_jl * vpg->edgeLengths[li.edge()]) /
-                                pow(vpg->edgeLengths[jl.edge()], 2);
+          double lcr = geometry.computeLengthCrossRatio(*geometry.vpg, ij);
+          double lcr0 = geometry.refLcrs[ij];
+          gc::Vector3 grad_li =
+              vecFromHalfedge(li.twin(), *geometry.vpg).normalize();
+          gc::Vector3 grad_jl = vecFromHalfedge(jl, *geometry.vpg).normalize();
+          gc::Vector3 lcrGrad =
+              geometry.vpg->edgeLengths[kj.edge()] /
+              geometry.vpg->edgeLengths[ik.edge()] *
+              (grad_li * geometry.vpg->edgeLengths[jl.edge()] -
+               grad_jl * geometry.vpg->edgeLengths[li.edge()]) /
+              pow(geometry.vpg->edgeLengths[jl.edge()], 2);
           lcrSpringForceVec -=
               parameters.spring.Kst * lcrGrad * (lcr - lcr0) / lcr0 / lcr0;
         }
@@ -530,20 +516,22 @@ void System::computeSpringForces() {
       // Local area regularization
       if (parameters.spring.Ksl != 0 && he.isInterior()) {
         gcs::Halfedge base_he = he.next();
-        gc::Vector3 base_vec = vecFromHalfedge(base_he, *vpg);
+        gc::Vector3 base_vec = vecFromHalfedge(base_he, *geometry.vpg);
         gc::Vector3 localAreaGradient =
-            0.5 * gc::cross(vpg->faceNormal(he.face()), base_vec);
-        double a0 = refVpg->faceAreas[base_he.face()];
+            0.5 * gc::cross(geometry.vpg->faceNormal(he.face()), base_vec);
+        double a0 = geometry.refVpg->faceAreas[base_he.face()];
         faceSpringForceVec -= parameters.spring.Ksl * localAreaGradient *
-                              (vpg->faceAreas[base_he.face()] - a0) / a0 / a0;
+                              (geometry.vpg->faceAreas[base_he.face()] - a0) /
+                              a0 / a0;
       }
 
       // local edge regularization
       if (parameters.spring.Kse != 0) {
-        double l0 = refVpg->edgeLengths[e];
-        gc::Vector3 edgeGradient = -vecFromHalfedge(he, *vpg).normalize();
+        double l0 = geometry.refVpg->edgeLengths[e];
+        gc::Vector3 edgeGradient =
+            -vecFromHalfedge(he, *geometry.vpg).normalize();
         edgeSpringForceVec -= parameters.spring.Kse * edgeGradient *
-                              (vpg->edgeLengths[e] - l0) / l0 / l0;
+                              (geometry.vpg->edgeLengths[e] - l0) / l0 / l0;
       }
     }
 
@@ -571,7 +559,7 @@ void System::addNonconservativeForcing(double timeStep) {
   forces.stochasticForceVec.fill({0, 0, 0});
   if (parameters.variation.isShapeVariation) {
     // compute (potentially) time dependent forces
-    if (parameters.external.isActivated) {
+    if (parameters.external.form != NULL) {
       prescribeExternalForce();
       forces.mechanicalForceVec += forces.externalForceVec;
     }

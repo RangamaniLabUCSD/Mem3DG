@@ -90,10 +90,6 @@ public:
   double c1 = 0.001;
 
   // defaulted parameters (read/write)
-  /// period of saving output data
-  double updateGeodesicsPeriod = std::numeric_limits<double>::max();
-  /// period of saving output data
-  double processMeshPeriod = std::numeric_limits<double>::max();
   /// if just save geometry .ply file
   bool ifJustGeometryPly = false;
   /// if output netcdf traj file
@@ -139,8 +135,9 @@ public:
     ifDisableIntegrate = true;
     ifPrintToConsole = true;
     // Initialize the timestep-meshsize ratio
-    dt_size2_ratio = characteristicTimeStep /
-                     std::pow(system.vpg->edgeLengths.raw().minCoeff(), 2);
+    dt_size2_ratio =
+        characteristicTimeStep /
+        std::pow(system.geometry.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
     system.computeConservativeForcing();
@@ -242,6 +239,18 @@ public:
    * @return characteristic time step
    */
   double getAdaptiveCharacteristicTimeStep();
+
+  // /**
+  //  * @brief fix point iteration implicit solve
+  //  * @param FlowMap functional of position and protein flow map
+  //  * @param h time step 
+  //  * @param tolearance convergence tolerance relative to timestep
+  //  */
+  // std::tuple<EigenVectorX3dr, EigenVectorX1d>
+  // fixPointIteration(std::function<std::tuple<EigenVectorX3dr, EigenVectorX1d>(
+  //                       EigenVectorX3dr &, EigenVectorX1d &, double)>
+  //                       flowMap,
+  //                   const double h, const double tolereance);
 };
 } // namespace integrator
 } // namespace solver

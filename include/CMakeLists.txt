@@ -22,6 +22,7 @@ set(DDG_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/mesh_io.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/system.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/geometry.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/parameters.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/forces.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/mem3dg/solver/mesh_process.h"

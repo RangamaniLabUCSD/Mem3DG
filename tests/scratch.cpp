@@ -37,19 +37,16 @@ int main() {
   mem3dg::solver::Parameters p;
   std::tie(mesh, vpg) = mem3dg::getCylinderMatrix(1, 16, 60, 7.5, 0);
   refVpg = vpg;
+  std::size_t notableVertex_index =
+      mem3dg::getVertexClosestToEmbeddedCoordinate(
+          vpg, std::array<double, 3>{0, 0, 0},
+          std::array<bool, 3>{true, true, false});
   // std::string inputMesh = "/home/cuzhu/Mem3DG/tests/frame9.ply";
 
   /// physical parameters
   p.proteinMobility = 0;
   p.temperature = 0;
 
-  p.point.pt.resize(2);
-  p.point.pt << 0, 0;
-  p.point.isFloatVertex = false;
-
-  p.protein.profile = "none";
-  p.protein.geodesicProteinDensityDistribution.resize(1);
-  p.protein.geodesicProteinDensityDistribution << -1;
   p.protein.proteinInteriorPenalty = 0;
 
   p.boundary.shapeBoundaryCondition = "fixed";
@@ -63,24 +60,26 @@ int main() {
   p.bending.Kbc = 2 * 8.22e-5;
   p.bending.H0c = -60;
 
-  p.tension.isConstantSurfaceTension = false;
-  p.tension.Ksg = 1;
-  p.tension.A_res = 0;
-  p.tension.At = 3.40904;
-  p.tension.lambdaSG = 0;
+  auto preferredAreaSurfaceTensionModel = [](double area) {
+    double Ksg = 1;
+    double At = 3.40904;
+    double A_difference = area - At;
+    double tension = Ksg * A_difference / At;
+    double energy = tension * A_difference / 2;
+    return std::make_tuple(tension, energy);
+  };
+  p.tension.form = preferredAreaSurfaceTensionModel;
 
   p.adsorption.epsilon = 0;
 
   p.aggregation.chi = 0;
 
-  p.osmotic.isPreferredVolume = false;
-  p.osmotic.isConstantOsmoticPressure = true;
-  p.osmotic.Kv = 0.01;
-  p.osmotic.V_res = 0;
-  p.osmotic.n = 1;
-  p.osmotic.Vt = -1;
-  p.osmotic.cam = -1;
-  p.osmotic.lambdaV = 0;
+  auto constantOmosticPressureModel = [](double volume) {
+    double osmoticPressure = 1e-2;
+    double pressureEnergy = -osmoticPressure * volume;
+    return std::make_tuple(osmoticPressure, pressureEnergy);
+  };
+  p.osmotic.form = constantOmosticPressureModel;
 
   p.dirichlet.eta = 0;
 
@@ -91,17 +90,21 @@ int main() {
   p.dpd.gamma = 0;
 
   p.spring.Kse = 0.01;
-//   p.spring.Ksl = 0.01;
-//   p.spring.Kst = 0.01;
+  //   p.spring.Ksl = 0.01;
+  //   p.spring.Kst = 0.01;
 
   // mem3dg::solver::System system(mesh, vpg, p, mP, 0);
   EigenVectorX1d phi = Eigen::MatrixXd::Constant(vpg.rows(), 1, 1);
   EigenVectorX3dr vel = Eigen::MatrixXd::Constant(vpg.rows(), 3, 0);
-
-  mem3dg::solver::System system(mesh, vpg, refVpg, phi, vel, p, 0);
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex =
+      Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(vpg.rows(), false);
+  notableVertex[notableVertex_index] = true;
+  mem3dg::solver::Geometry geometry(mesh, vpg, refVpg, notableVertex);
+  mem3dg::solver::System system(geometry, phi, vel, p, 0);
   system.initialize();
-//   system.testConservativeForcing(0.001);
+  //   system.testConservativeForcing(0.001);
 
+  system.meshProcessor.meshMutator.mutateMeshPeriod = 1;
   system.meshProcessor.meshMutator.isShiftVertex = true;
   system.meshProcessor.meshMutator.flipNonDelaunay = true;
   // system.meshProcessor.meshMutator.splitLarge = true;
@@ -119,7 +122,6 @@ int main() {
   integrator.ifPrintToConsole = true;
   integrator.ifOutputMeshFile = false;
   integrator.ifOutputTrajFile = false;
-  integrator.processMeshPeriod = 0.1;
   integrator.isBacktrack = true;
   integrator.ifAdaptiveStep = true;
   integrator.integrate();

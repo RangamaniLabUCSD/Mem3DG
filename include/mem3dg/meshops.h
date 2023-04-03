@@ -19,6 +19,7 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/halfedge_factories.h"
+#include "geometrycentral/surface/surface_point.h"
 #include "geometrycentral/surface/tufted_laplacian.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "geometrycentral/utilities/vector3.h"
@@ -345,8 +346,8 @@ DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
  * @return
  */
 DLL_PUBLIC inline gc::Vector3
-correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
-                                 gcs::Halfedge &firstHalfedge) {
+correspondBarycentricCoordinates(const gc::Vector3 baryCoords_,
+                                 const gcs::Halfedge &firstHalfedge) {
   std::size_t vertexInd = 0;
   gc::Vector3 baryCoords;
   for (gcs::Vertex v : firstHalfedge.face().adjacentVertices()) {
@@ -532,64 +533,6 @@ removeRotation(const Eigen::Ref<const EigenVectorX3dr> &position,
     sum += position.row(i).cross(force.row(i));
   }
   force = force.rowwise() - (sum / force.rows());
-}
-
-/**
- * @brief find the closest point index to a given point
- *
- * @param mesh mesh
- * @param vpg geometry
- * @param position position of the target space point
- * @param geodesicDistance geodesic distance from a particular point in order
- * to specify range of search
- * @param range range of search
- */
-DLL_PUBLIC inline gcs::Vertex
-closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-                  const Eigen::Ref<const EigenVectorX1d> &position,
-                  gcs::VertexData<double> &geodesicDistance,
-                  double range = 1e10) {
-  gcs::Vertex theVertex;
-  double shorestDistance = 1e18;
-  bool isIntialized = !geodesicDistance.raw().isZero(0);
-  // if (!isIntialized) {
-  //   std::cout << "\nWARNING: closestVertexToPt: geodesicDistance not "
-  //                "initialized, searching for all "
-  //                "vertices!"
-  //             << std::endl;
-  // }
-  for (gcs::Vertex v : mesh.vertices()) {
-    if (geodesicDistance[v] > range) {
-      continue;
-    }
-    if (geodesicDistance[v] < 0 && isIntialized) {
-      std::cout << "\nWARNING: closestVertexToPt: geodesicDistance of this "
-                   "vertex is "
-                << geodesicDistance[v]
-                << " which is less than 0, may be "
-                   "uninitialized/updated!"
-                << std::endl;
-    }
-    double distance;
-    if (position.rows() == 2) {
-      distance = (gc::Vector2{vpg.inputVertexPositions[v].x,
-                              vpg.inputVertexPositions[v].y} -
-                  gc::Vector2{position[0], position[1]})
-                     .norm();
-    } else if (position.rows() == 3) {
-      distance = (vpg.inputVertexPositions[v] -
-                  gc::Vector3{position[0], position[1], position[2]})
-                     .norm();
-    } else {
-      mem3dg_runtime_error(
-          "closestVertexToPt: does not support non-2d/3d position vector!");
-    }
-    if (distance < shorestDistance) {
-      shorestDistance = distance;
-      theVertex = v;
-    }
-  }
-  return theVertex;
 }
 
 /**

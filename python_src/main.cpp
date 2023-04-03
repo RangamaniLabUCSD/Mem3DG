@@ -21,6 +21,7 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 
+#include "mem3dg/solver/geometry.h"
 #include "mem3dg/solver/integrator/conjugate_gradient.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/system.h"
@@ -118,16 +119,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
   velocityverlet.def_readwrite("ifPrintToConsole",
                                &VelocityVerlet::ifPrintToConsole, R"delim(
           if print to console
-      )delim");
-  velocityverlet.def_readwrite("updateGeodesicsPeriod",
-                               &VelocityVerlet::updateGeodesicsPeriod,
-                               R"delim(
-          period of update geodesics
-      )delim");
-  velocityverlet.def_readwrite("processMeshPeriod",
-                               &VelocityVerlet::processMeshPeriod,
-                               R"delim(
-          period of processing mesh
       )delim");
   velocityverlet.def_readwrite("trajFileName", &VelocityVerlet::trajFileName,
                                R"delim(
@@ -231,14 +222,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
   euler.def_readwrite("ifPrintToConsole", &Euler::ifPrintToConsole, R"delim(
           if print to console
-      )delim");
-  euler.def_readwrite("updateGeodesicsPeriod", &Euler::updateGeodesicsPeriod,
-                      R"delim(
-          period of update geodesics
-      )delim");
-  euler.def_readwrite("processMeshPeriod", &Euler::processMeshPeriod,
-                      R"delim(
-          period of processing mesh
       )delim");
   euler.def_readwrite("trajFileName", &Euler::trajFileName,
                       R"delim(
@@ -361,16 +344,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
   conjugategradient.def_readwrite("ifPrintToConsole",
                                   &ConjugateGradient::ifPrintToConsole, R"delim(
           if print to console
-      )delim");
-  conjugategradient.def_readwrite("updateGeodesicsPeriod",
-                                  &ConjugateGradient::updateGeodesicsPeriod,
-                                  R"delim(
-          period of update geodesics
-      )delim");
-  conjugategradient.def_readwrite("processMeshPeriod",
-                                  &ConjugateGradient::processMeshPeriod,
-                                  R"delim(
-          period of processing mesh
       )delim");
   conjugategradient.def_readwrite("trajFileName",
                                   &ConjugateGradient::trajFileName,
@@ -658,6 +631,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
                   R"delim(
        meshmutator constructor
       )delim");
+  meshmutator.def_readwrite("mutateMeshPeriod",
+                            &MeshProcessor::MeshMutator::mutateMeshPeriod,
+                            R"delim(
+          period of mesh mutation. measured in # of integration iteration
+      )delim");
   meshmutator.def_readonly("isFlipEdge",
                            &MeshProcessor::MeshMutator::isFlipEdge,
                            R"delim(
@@ -748,6 +726,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
                             R"delim(
           minimum edge length 
       )delim");
+  meshmutator.def_readwrite("maximumEdgeLength",
+                            &MeshProcessor::MeshMutator::maximumEdgeLength,
+                            R"delim(
+          maximum edge length 
+      )delim");
 
   /**
    * @brief collapsing criterion
@@ -795,6 +778,241 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 #pragma endregion mesh_mutator
 
+#pragma region geometry
+  // ==========================================================
+  // =============          Geometry            ===============
+  // ==========================================================
+  py::class_<Geometry> geometry(pymem3dg, "Geometry",
+                                R"delim(
+        Geometry class 
+    )delim");
+
+  /**
+   * @brief Constructors
+   */
+  geometry.def(py::init<std::string, std::string,
+                        Eigen::Matrix<bool, Eigen::Dynamic, 1> &>(),
+               py::arg("inputMesh"), py::arg("referenceMesh"),
+               py::arg("notableVertex"),
+               R"delim(
+        Geometry constructor with .ply files. 
+      )delim");
+  geometry.def(py::init<std::string, std::string>(), py::arg("inputMesh"),
+               py::arg("referenceMesh"),
+               R"delim(
+          Geometry constructor with .ply files.
+        )delim");
+  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
+                        Eigen::Matrix<bool, Eigen::Dynamic, 1> &>(),
+               py::arg("faceMatrix"), py::arg("vertexMatrix"),
+               py::arg("referenceVertexMatrix"), py::arg("notableVertex"),
+
+               R"delim(
+        Geometry constructor with Matrices 
+      )delim");
+  geometry.def(
+      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &>(),
+      py::arg("faceMatrix"), py::arg("vertexMatrix"),
+      py::arg("referenceVertexMatrix"),
+
+      R"delim(
+        Geometry constructor with Matrices 
+      )delim");
+#ifdef MEM3DG_WITH_NETCDF
+  geometry.def(py::init<std::string, int>(), py::arg("trajFile"),
+               py::arg("startingFrame"),
+               R"delim(
+        Geometry constructor with NetCDF trajectory file
+      )delim");
+#endif
+  /**
+   * @brief Getters
+   */
+  geometry.def(
+      "getSurfaceArea", [](Geometry &s) { return s.surfaceArea; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the surface area of the mesh
+      )delim");
+  geometry.def(
+      "getGeodesicDistance", [](Geometry &s) { return s.geodesicDistance.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the geodesic distance from notable vertices of the mesh
+      )delim");
+  geometry.def(
+      "getVolume", [](Geometry &s) { return s.volume; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the enclosed volume of the mesh
+      )delim");
+  geometry.def(
+      "getNotableVertex", [](Geometry &s) { return s.notableVertex.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get vertex data to track the notable vertex, which may or may not be a single vertex
+      )delim");
+  geometry.def(
+      "getLumpedMassMatrix",
+      [](Geometry &s) { return s.vpg->vertexLumpedMassMatrix; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the lumped mass matrix of the mesh
+      )delim");
+  geometry.def(
+      "getCotanLaplacian", [](Geometry &s) { return s.vpg->cotanLaplacian; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the Cotan Laplacian matrix of the mesh
+      )delim");
+  geometry.def(
+      "getVertexNormals",
+      [](Geometry &s) { return toMatrix(s.vpg->vertexNormals); },
+      py::return_value_policy::copy,
+      R"delim(
+          get angle-weighted normal on vertices
+      )delim");
+  geometry.def(
+      "getVertexMatrix",
+      [](Geometry &s) {
+        return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the vertex matrix
+      )delim");
+  geometry.def(
+      "getFaceMatrix",
+      [](Geometry &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the face matrix
+      )delim");
+  geometry.def(
+      "getVertexAdjacencyMatrix", [](Geometry &s) { return s.vpg->d0; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the signed E-V vertex adjacency matrix, equivalent of d0 operator
+      )delim");
+  geometry.def(
+      "getEdgeAdjacencyMatrix", [](Geometry &s) { return s.vpg->d1; },
+      py::return_value_policy::copy,
+      R"delim(
+          get the signed F-E edge adjacency matrix, equivalent of d1 operator
+      )delim");
+  geometry.def(
+      "getEdgeLengths", [](Geometry &s) { return s.vpg->edgeLengths.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get edge lengths 
+      )delim");
+  geometry.def(
+      "getVertexDualAreas",
+      [](Geometry &s) { return s.vpg->vertexDualAreas.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get vertex dual area
+      )delim");
+  geometry.def(
+      "getVertexMeanCurvatures",
+      [](Geometry &s) {
+        s.vpg->requireVertexMeanCurvatures();
+        return s.vpg->vertexMeanCurvatures.raw();
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated scalar mean curvature
+      )delim");
+  geometry.def(
+      "getVertexGaussianCurvatures",
+      [](Geometry &s) {
+        s.vpg->requireVertexGaussianCurvatures();
+        return s.vpg->vertexGaussianCurvatures.raw();
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated scalar Gaussian Curvature
+      )delim");
+  geometry.def(
+      "getVertexGaussianCurvatureVectors",
+      [](Geometry &s) {
+        auto vector = s.computeVertexGaussianCurvatureVectors();
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated vector Gaussian Curvature
+      )delim");
+  geometry.def(
+      "getVertexVolumeVariationVectors",
+      [](Geometry &s) {
+        auto vector = s.computeVertexVolumeVariationVectors();
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated vector volume variation (dual area)
+      )delim");
+  geometry.def(
+      "getVertexMeanCurvatureVectors",
+      [](Geometry &s) {
+        auto vector = s.computeVertexMeanCurvatureVectors();
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the integrated vector Mean Curvature
+      )delim");
+  geometry.def(
+      "getVertexSchlafliLaplacianMeanCurvatureVectors",
+      [](Geometry &s, EigenVectorX1d spontaneousCurvature) {
+        gcs::VertexData<double> H0(*s.mesh);
+        H0.fromVector(spontaneousCurvature);
+        auto vector = s.computeVertexSchlafliLaplacianMeanCurvatureVectors(H0);
+        return toMatrix(vector);
+      },
+      py::return_value_policy::copy,
+      R"delim(
+          get the vertex Schlafli based Laplacian of mean curvature Vectors
+      )delim");
+  geometry.def(
+      "getPolyscopePermutations",
+      [](Geometry &s) { return gcs::polyscopePermutations(*s.mesh); },
+      R"delim(
+          get polyscope permutation 
+      )delim");
+  geometry.def(
+      "getPolyscopeEdgeOrientations",
+      [](Geometry &s) { return gcs::polyscopeEdgeOrientations(*s.mesh).raw(); },
+      R"delim(
+          get polyscope edge orientation 
+      )delim");
+
+  /**
+   * @brief    geometry setter
+   */
+  geometry.def(
+      "setInputVertexPositions",
+      [](Geometry &s, EigenVectorX3dr newGeo) {
+        gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
+      },
+      R"delim(
+          set the vertex matrix
+      )delim");
+
+  /**
+   * @brief Methods
+   */
+  geometry.def("computeGeodesicDistance", &Geometry::computeGeodesicDistance,
+               R"delim(
+          
+          compute the geodesic distance centered around Center cached in System
+
+          return: NDarray[double]
+      )delim");
+
+#pragma enregion geometry
+
 #pragma region system
   // ==========================================================
   // =============          System              ===============
@@ -805,102 +1023,31 @@ PYBIND11_MODULE(_core, pymem3dg) {
     )delim");
 
   /**
-   * @brief Constructors by .ply file
+   * @brief Constructors
    */
-  system.def(py::init<std::string, std::string, EigenVectorX1d &,
-                      EigenVectorX3dr &, Parameters &, double>(),
-             py::arg("inputMesh"), py::arg("referenceMesh"),
-             py::arg("proteinDensity"), py::arg("velocity"),
-             py::arg("parameters"), py::arg("time") = 0,
-             R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &,
+  system.def(py::init<Geometry &, EigenVectorX1d &, EigenVectorX3dr &,
                       Parameters &, double>(),
-             py::arg("inputMesh"), py::arg("proteinDensity"),
+             py::arg("geometry"), py::arg("proteinDensity"),
              py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
              R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(py::init<std::string, Parameters &, double>(),
-             py::arg("inputMesh"), py::arg("parameters"), py::arg("time") = 0,
-
-             R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(
-      py::init<std::string, EigenVectorX1d &, EigenVectorX3dr &, double>(),
-      py::arg("inputMesh"), py::arg("proteinDensity"), py::arg("velocity"),
-      py::arg("time") = 0,
-      R"delim(
-        System constructor with .ply files. 
-      )delim");
-  system.def(py::init<std::string, double>(), py::arg("inputMesh"),
-             py::arg("time") = 0,
-             R"delim(
-        System constructor with .ply files. 
-      )delim");
-
-  /**
-   * @brief Constructors by matrices
-   */
-  system.def(
-      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
-               EigenVectorX1d &, EigenVectorX3dr &, Parameters &, double>(),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-      py::arg("referenceVertexMatrix"), py::arg("proteinDensity"),
-      py::arg("velocity"), py::arg("parameters"), py::arg("time") = 0,
-      R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
-                      EigenVectorX3dr &, Parameters &, double>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("proteinDensity"), py::arg("velocity"),
+  system.def(py::init<Geometry &, Parameters &, double>(), py::arg("geometry"),
              py::arg("parameters"), py::arg("time") = 0,
              R"delim(
         System constructor with Matrices 
       )delim");
-  system.def(
-      py::init<EigenVectorX3sr &, EigenVectorX3dr &, Parameters &, double>(),
-      py::arg("topologyMatrix"), py::arg("vertexMatrix"), py::arg("parameters"),
-      py::arg("time") = 0,
-      R"delim(
-        System constructor with Matrices 
-      )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX1d &,
-                      EigenVectorX3dr &, double>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("proteinDensity"), py::arg("velocity"),
-             py::arg("time") = 0,
-             R"delim(
-        System constructor with Matrices 
-      )delim");
-  system.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, double>(),
-             py::arg("topologyMatrix"), py::arg("vertexMatrix"),
-             py::arg("time") = 0,
-             R"delim(
-        System constructor with Matrices 
-      )delim");
-
-  /**
-   * @brief Constructors by NetCDF trajectory file
-   */
 #ifdef MEM3DG_WITH_NETCDF
-  system.def(py::init<std::string, int, Parameters &>(), py::arg("trajFile"),
-             py::arg("startingFrame"), py::arg("parameters"),
-             R"delim(
-        System constructor with NetCDF trajectory file
-      )delim");
-  system.def(py::init<std::string, int>(), py::arg("trajFile"),
-             py::arg("startingFrame"),
+  system.def(py::init<Geometry &, std::string, int, Parameters &>(),
+             py::arg("geometry"), py::arg("trajFile"), py::arg("startingFrame"),
+             py::arg("parameters"),
              R"delim(
         System constructor with NetCDF trajectory file
       )delim");
 #endif
 
   /**
-   * @brief Initializing arguments
+   * @brief Read/write attribute
    */
   system.def_readwrite("parameters", &System::parameters,
                        R"delim(
@@ -914,149 +1061,15 @@ PYBIND11_MODULE(_core, pymem3dg) {
                        R"delim(
           get the time
       )delim");
-
   /**
-   * @brief    Geometric properties (Geometry central) getter
-   */
-  system.def_readonly("surfaceArea", &System::surfaceArea,
-                      R"delim(
-          get the surface area of the mesh
-      )delim");
-  system.def_readonly("volume", &System::volume,
-                      R"delim(
-          get the enclosed volume of the mesh
-      )delim");
-  system.def(
-      "getLumpedMassMatrix",
-      [](System &s) { return s.vpg->vertexLumpedMassMatrix; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the lumped mass matrix of the mesh
-      )delim");
-  system.def(
-      "getCotanLaplacian", [](System &s) { return s.vpg->cotanLaplacian; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the Cotan Laplacian matrix of the mesh
-      )delim");
-  system.def(
-      "getVertexNormals",
-      [](System &s) { return toMatrix(s.vpg->vertexNormals); },
-      py::return_value_policy::copy,
-      R"delim(
-          get angle-weighted normal on vertices
-      )delim");
-  system.def(
-      "getInputVertexPositions",
-      [](System &s) {
-        return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the vertex position matrix
-      )delim");
-  system.def(
-      "getFaceVertexMatrix",
-      [](System &s) { return s.mesh->getFaceVertexMatrix<std::size_t>(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get the face vertex matrix
-      )delim");
-  system.def(
-      "getVertexAdjacencyMatrix", [](System &s) { return s.vpg->d0; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the signed E-V vertex adjacency matrix, equivalent of d0 operator
-      )delim");
-  system.def(
-      "getEdgeAdjacencyMatrix", [](System &s) { return s.vpg->d1; },
-      py::return_value_policy::copy,
-      R"delim(
-          get the signed F-E edge adjacency matrix, equivalent of d1 operator
-      )delim");
-  system.def(
-      "getVertexDualAreas",
-      [](System &s) { return s.vpg->vertexDualAreas.raw(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get vertex dual area
-      )delim");
-  system.def(
-      "getVertexMeanCurvatures",
-      [](System &s) {
-        s.vpg->requireVertexMeanCurvatures();
-        return s.vpg->vertexMeanCurvatures.raw();
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated scalar mean curvature
-      )delim");
-  system.def(
-      "getVertexGaussianCurvatures",
-      [](System &s) {
-        s.vpg->requireVertexGaussianCurvatures();
-        return s.vpg->vertexGaussianCurvatures.raw();
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated scalar Gaussian Curvature
-      )delim");
-  system.def(
-      "getVertexGaussianCurvatureVectors",
-      [](System &s) {
-        auto vector = s.computeVertexGaussianCurvatureVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated vector Gaussian Curvature
-      )delim");
-  system.def(
-      "getVertexVolumeVariationVectors",
-      [](System &s) {
-        auto vector = s.computeVertexVolumeVariationVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated vector volume variation (dual area)
-      )delim");
-  system.def(
-      "getVertexMeanCurvatureVectors",
-      [](System &s) {
-        auto vector = s.computeVertexMeanCurvatureVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the integrated vector Mean Curvature
-      )delim");
-  system.def(
-      "getVertexSchlafliLaplacianMeanCurvatureVectors",
-      [](System &s) {
-        auto vector = s.computeVertexSchlafliLaplacianMeanCurvatureVectors();
-        return toMatrix(vector);
-      },
-      py::return_value_policy::copy,
-      R"delim(
-          get the vertex Schlafli based Laplacian of mean curvature Vectors
-      )delim");
-
-  /**
-   * @brief    geometry setter
+   * @brief Getters
    */
   system.def(
-      "setInputVertexPositions",
-      [](System &s, EigenVectorX3dr newGeo) {
-        gc::EigenMap<double, 3>(s.vpg->inputVertexPositions) = newGeo;
-      },
+      "getGeometry", [](System &s) -> Geometry & { return s.geometry; },
+      py::return_value_policy::automatic_reference,
       R"delim(
-          set the vertex position matrix
+          get the pointwise spontaneous curvature
       )delim");
-
-  /**
-   * @brief Membrane dynamics properties (Mem3DG)
-   */
   system.def(
       "getForces", [](System &s) { return s.forces; },
       py::return_value_policy::copy,
@@ -1074,13 +1087,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       py::return_value_policy::copy,
       R"delim(
           get the pointwise spontaneous curvature
-      )delim");
-  system.def(
-      "getCenterTracker",
-      [](System &s) { return s.centerTracker.raw().cast<double>(); },
-      py::return_value_policy::copy,
-      R"delim(
-          get vertex data to track center, which may or may not be a single vertex
       )delim");
   system.def(
       "getVelocity",
@@ -1126,41 +1132,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
              R"delim(
             Compute and append all non-conservative forces, update mechanicalForce(Vec) and mechErrorNorm
         )delim");
-  //   system.def("computeBendingForce", &System::computeBendingForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the spontaneous curvature force
-  //       )delim");
-  //   system.def("computeChemicalPotential", &System::computeChemicalPotential,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the chemical potential
-  //       )delim");
-  //   system.def("computeCapillaryForce", &System::computeCapillaryForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the capillary force
-  //       )delim");
-  //   system.def("computeOsmoticForce", &System::computeOsmoticForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the osmotic force
-  //       )delim");
-  //   system.def("computeLineCapillaryForce",
-  //   &System::computeLineCapillaryForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //           compute the LineTensionForce
-  //       )delim");
-  //   system.def("prescribeExternalForce", &System::prescribeExternalForce,
-  //              py::return_value_policy::copy,
-  //              R"delim(
-  //             prescribe the External Force
-  //         )delim");
-  //   system.def("computeDPDForces", &System::computeDPDForces, py::arg("dt"),
-  //              R"delim(
-  //             compute the DPDForces
-  //         )delim");
+  system.def("prescribeExternalForce", &System::prescribeExternalForce,
+             py::return_value_policy::copy,
+             R"delim(
+              prescribe the External Force
+          )delim");
 
   /**
    * @brief Method: Energy computation
@@ -1176,57 +1152,14 @@ PYBIND11_MODULE(_core, pymem3dg) {
       R"delim(
             Intermediate function to integrate the power
         )delim");
-  //   system.def("computeL1Norm", &System::computeL1Norm,
-  //              R"delim(
-  //                    compute error norm
-  //             Args:
-  //                   force (:py:class:`list`): mesh vertex force
-  //         )delim");
 
   /**
    * @brief Method: initialize System
    */
-  system.def("initialize", &System::initialize, py::arg("nMutation") = 0,
+  system.def("initialize", &System::initialize, py::arg("ifMutateMesh") = false,
              py::arg("ifMute") = false,
              R"delim(
           initialize the system
-      )delim");
-
-  /**
-   * @brief Method: computeGeodesics
-   */
-  system.def("computeGeodesicDistance", &System::computeGeodesicDistance,
-             R"delim(
-          
-          compute the geodesic distance centered around Center cached in System
-
-          return: NDarray[double]
-      )delim");
-
-  /**
-   * @brief Method: find float center
-   */
-  system.def("findFloatCenter", &System::findFloatCenter,
-             py::arg("range") = std::numeric_limits<double>::max(),
-             R"delim(
-          find the float center based on Parameter.point.pt using Euclidean distance and cached the floating surface point ("Center") in System object 
-          Args:
-            range (double, optional): range of geodesic distance (if cached in System) to search for the floating center
-          return: 
-            None
-      )delim");
-
-  /**
-   * @brief Method: find vertex center
-   */
-  system.def("findVertexCenter", &System::findVertexCenter,
-             py::arg("range") = std::numeric_limits<double>::max(),
-             R"delim(
-          find the vertex center based on Parameter.point.pt using Euclidean distance and cached the vertex ("Center") in System object 
-          Args:
-            range (double, optional): range of geodesic distance (if cached in System) to search for the floating center
-          return: 
-            None
       )delim");
 
   /**
@@ -1247,26 +1180,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
       )delim");
 
   /**
-   * @brief Method: I/O
-   */
-  system.def(
-      "getPolyscopePermutations",
-      [](System &s) { return gcs::polyscopePermutations(*s.mesh); },
-      R"delim(
-          get polyscope permutation 
-      )delim");
-
-  /**
-   * @brief Method: I/O
-   */
-  system.def(
-      "getPolyscopeEdgeOrientations",
-      [](System &s) { return gcs::polyscopeEdgeOrientations(*s.mesh).raw(); },
-      R"delim(
-          get polyscope edge orientation 
-      )delim");
-
-  /**
    * @brief Method: mutate the mesh
    */
   system.def("mutateMesh", &System::mutateMesh, py::arg("nMutation") = 1,
@@ -1277,25 +1190,8 @@ PYBIND11_MODULE(_core, pymem3dg) {
   /**
    * @brief Method: test force computation
    */
-  //   system.def("testConservativeForcing",
-  //              py::overload_cast<const double, const EigenVectorX3dr,
-  //                                const EigenVectorX1d, const Energy>(
-  //                  &System::testConservativeForcing),
-  //              py::arg("timeStep"), py::arg("previousPosition"),
-  //              py::arg("previousProteinDensity"), py::arg("previousEnergy"),
-  //              R"delim(
-  //           test conservative force computation by validating energy decrease
-  //           (reverse mode)
-  //       )delim");
-  //   system.def("testConservativeForcing",
-  //              py::overload_cast<const
-  //              double>(&System::testConservativeForcing),
-  //              py::arg("timeStep"),
-  //              R"delim(
-  //           test conservative force computation by validating energy decrease
-  //           (forward mode)
-  //       )delim");
-  system.def("testConservativeForcing", &System::testConservativeForcing, py::arg("timeStep"),
+  system.def("testConservativeForcing", &System::testConservativeForcing,
+             py::arg("timeStep"),
              R"delim(
           test conservative force computation by validating energy decrease
       )delim");
@@ -1352,6 +1248,11 @@ PYBIND11_MODULE(_core, pymem3dg) {
                           R"delim(
           get domain of shape variation
       )delim");
+  variation.def_readwrite("updateMaskPeriod",
+                          &Parameters::Variation::updateMaskPeriod,
+                          R"delim(
+          period of updating mask. measured in the unit of # of iterations
+      )delim");
 
   py::class_<Parameters::Bending> bending(pymem3dg, "Bending", R"delim(
         The bending parameters
@@ -1398,64 +1299,25 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The surface tension parameters
     )delim");
   tension.def(py::init<>());
-  tension.def_readwrite("isConstantSurfaceTension",
-                        &Parameters::Tension::isConstantSurfaceTension,
+  tension.def_readwrite("form", &Parameters::Tension::form,
                         R"delim(
-          get the option of whether adopt constant surface tension 
-      )delim");
-  tension.def_readwrite("Ksg", &Parameters::Tension::Ksg,
-                        R"delim(
-          get Global stretching modulus 
-      )delim");
-  tension.def_readwrite("A_res", &Parameters::Tension::A_res,
-                        R"delim(
-          get area reservoir
-      )delim");
-  tension.def_readwrite("At", &Parameters::Tension::At,
-                        R"delim(
-          get preferred surface area
-      )delim");
-  tension.def_readwrite("lambdaSG", &Parameters::Tension::lambdaSG,
-                        R"delim(
-          get augmented Lagrangian parameter for area
+          functional to set the tension area relation
+        args: 
+            total surface area of the mesh
+        return: 
+            tuple of surface tension of the system and surface energy
       )delim");
 
   py::class_<Parameters::Osmotic> osmotic(pymem3dg, "Osmotic", R"delim(
         The osmotic pressure parameters
     )delim");
-  osmotic.def_readwrite("Kv", &Parameters::Osmotic::Kv,
+  osmotic.def_readwrite("form", &Parameters::Osmotic::form,
                         R"delim(
-          get Volume regularization 
-      )delim");
-  osmotic.def_readwrite("V_res", &Parameters::Osmotic::V_res,
-                        R"delim(
-          get volume reservoir
-      )delim");
-  osmotic.def_readwrite("Vt", &Parameters::Osmotic::Vt,
-                        R"delim(
-          get the preferred volume
-      )delim");
-  osmotic.def_readwrite("cam", &Parameters::Osmotic::cam,
-                        R"delim(
-          get the ambient concentration 
-      )delim");
-  osmotic.def_readwrite("n", &Parameters::Osmotic::n,
-                        R"delim(
-          get the enclosed solute amount
-      )delim");
-  osmotic.def_readwrite("isPreferredVolume",
-                        &Parameters::Osmotic::isPreferredVolume,
-                        R"delim(
-          get the option of whether adopt the preferred volume parametrization  
-      )delim");
-  osmotic.def_readwrite("isConstantOsmoticPressure",
-                        &Parameters::Osmotic::isConstantOsmoticPressure,
-                        R"delim(
-          get the option of whether adopt constant osmotic pressure
-      )delim");
-  osmotic.def_readwrite("lambdaV", &Parameters::Osmotic::lambdaV,
-                        R"delim(
-          get augmented Lagrangian parameter for volume
+          functional to set the pressure volume relation
+        args: 
+            enclosed volume of the mesh
+        return: 
+            tuple of osmotic pressure of the system and pressure energy
       )delim");
 
   py::class_<Parameters::Adsorption> adsorption(pymem3dg, "Adsorption",
@@ -1489,14 +1351,16 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                             R"delim(
         The external force parameters
     )delim");
-  external.def(
-      "setForm",
-      [](Parameters::External &external,
-         std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
-                                       EigenVectorX1d)>
-             &externalForceFunction) { external.form = externalForceFunction; },
-      R"delim(
-          get the vertex position matrix
+  external.def_readwrite("form", &Parameters::External::form,
+                         R"delim(
+          functional to set the external force prescription 
+        args: 
+            vertexPositions
+            vertexDualAreas
+            time,
+            geodesicDistance 
+        return: 
+            externalForce
       )delim");
 
   py::class_<Parameters::DPD> dpd(pymem3dg, "DPD",
@@ -1542,40 +1406,57 @@ PYBIND11_MODULE(_core, pymem3dg) {
                                       R"delim(
         The Point energy parameters
     )delim");
-  point.def_readwrite("pt", &Parameters::Point::pt,
+  point.def_readwrite("prescribeNotableVertex",
+                      &Parameters::Point::prescribeNotableVertex,
                       R"delim(
-          get the point
+          functional to find the notable vertex of the mesh 
+        args: 
+            faceMatrix (npt.NDarray[int64])
+            vertexMatrix (npt.NDarray[float64])
+            geodesicDistance (list)
+        return: 
+            notable vertex (bool list)
       )delim");
-  point.def_readwrite("isFloatVertex", &Parameters::Point::isFloatVertex,
-                      R"delim(
-          whether use floating vertex option
-      )delim");
+  point.def_readwrite("updateGeodesicsPeriod",
+                      &Parameters::Point::updateGeodesicsPeriod, R"delim(
+            the period factor of updating geodesics distance around notable vertices. Measured in the unit of # of iterations. 
+    )delim");
+  point.def_readwrite("updateNotableVertexPeriod",
+                      &Parameters::Point::updateNotableVertexPeriod, R"delim(
+            the period factor of updating the vertex data of notable vertices. Measured in the unit of # of iterations. 
+    )delim");
 
   py::class_<Parameters::Protein> protein(pymem3dg, "Protein",
                                           R"delim(
         The protein distribution parameters
     )delim");
-  protein.def_readwrite("profile", &Parameters::Protein::profile, R"delim(
-          get the profile type: 'gaussian' or 'tanh'
-      )delim");
   protein.def_readwrite(
-      "geodesicProteinDensityDistribution",
-      &Parameters::Protein::geodesicProteinDensityDistribution, R"delim(
-          get (initial) protein density
-      )delim");
-  protein.def_readwrite("tanhSharpness", &Parameters::Protein::tanhSharpness,
-                        R"delim(
-          get protein density sharpness of tanh transition
+      "updateProteinDensityDistributionPeriod",
+      &Parameters::Protein::updateProteinDensityDistributionPeriod,
+      R"delim(
+          period of updating protein density distribution. measured in # of iterations
       )delim");
   protein.def_readwrite("proteinInteriorPenalty",
                         &Parameters::Protein::proteinInteriorPenalty,
                         R"delim(
           get interior point parameter for protein density
       )delim");
+  protein.def_readwrite(
+      "prescribeProteinDensityDistribution",
+      &Parameters::Protein::prescribeProteinDensityDistribution,
+      R"delim(
+          functional to set the protein density distribution prescription 
+        args: 
+            time (float)
+            vertexMeanCurvatures (list)
+            geodesicDistance (list)
+        return: 
+            proteinDensity (list)
+      )delim");
 
   py::class_<Parameters::Spring> spring(pymem3dg, "spring",
                                         R"delim(
-        The mesh mutator settings 
+        mesh spring forces parameters
     )delim");
   spring.def_readwrite("Kst", &Parameters::Spring::Kst,
                        R"delim(
@@ -1594,25 +1475,6 @@ PYBIND11_MODULE(_core, pymem3dg) {
         The parameters
     )delim");
   parameters.def(py::init<>());
-  //   parameters.def(
-  //       py::init<double, double, double, EigenVectorX1d, double, double,
-  //       double,
-  //                double, double, double, double, double, double, double,
-  //                double, double, double, double, EigenVectorX1d, double,
-  //                double, double, double, double, double, double, double,
-  //                std::string>(),
-  //       py::arg("Kb") = 0, py::arg("Kbc") = 0, py::arg("H0c") = 0,
-  //       py::arg("protein0") = Eigen::MatrixXd::Constant(1, 1, 1),
-  //       py::arg("Ksg") = 0, py::arg("A_res") = 0, py::arg("Kst") = 0,
-  //       py::arg("Ksl") = 0, py::arg("Kse") = 0, py::arg("Kv") = 0,
-  //       py::arg("V_re") = 0, py::arg("eta") = 0, py::arg("epsilon") = 0,
-  //       py::arg("Bc") = 0, py::arg("gamma") = 0, py::arg("Vt") = -1,
-  //       py::arg("cam") = 0, py::arg("temp") = 0,
-  //       py::arg("pt") = Eigen::MatrixXd::Constant(1, 1, 1), py::arg("Kf") =
-  //       0, py::arg("conc") = -1, py::arg("height") = 0, py::arg("radius") =
-  //       0, py::arg("lambdaSG") = 0, py::arg("lambdaV") = 0,
-  //       py::arg("proteinInteriorPenalty") = 1e-7, py::arg("sharpness") =
-  //       20, py::arg("relation") = "linear");
   parameters.def_readwrite("bending", &Parameters::bending,
                            R"delim(
           bending parameters
@@ -1772,35 +1634,34 @@ PYBIND11_MODULE(_core, pymem3dg) {
   // ==========================================================
   // =============      mesh generation    ===============
   // ==========================================================
-  pymem3dg.def(
-      "getCylinder", &getCylinderMatrix,
-      "get topology and vertex position matrix of a non-capped cylinder",
-      py::arg("radius"), py::arg("radialSubdivision"),
-      py::arg("axialSubdivision"), py::arg("frequency") = 1,
-      py::arg("amplitude") = 0);
+  pymem3dg.def("getCylinder", &getCylinderMatrix,
+               "get face and vertex matrix of a non-capped cylinder",
+               py::arg("radius"), py::arg("radialSubdivision"),
+               py::arg("axialSubdivision"), py::arg("frequency") = 1,
+               py::arg("amplitude") = 0);
 
   pymem3dg.def("getIcosphere", &getIcosphereMatrix,
-               "get topology and vertex position matrix of icosphere",
-               py::arg("radius"), py::arg("subdivision") = 0);
+               "get face and vertex matrix of icosphere", py::arg("radius"),
+               py::arg("subdivision") = 0);
 
   pymem3dg.def("getTetrahedron", &getTetrahedronMatrix,
-               "get topology and vertex position matrix of tetrahedron");
+               "get face and vertex matrix of tetrahedron");
 
   pymem3dg.def("getDiamond", &getDiamondMatrix,
-               "get topology and vertex position matrix of diamond",
-               py::arg("dihedral"));
+               "get face and vertex matrix of diamond", py::arg("dihedral"));
 
   pymem3dg.def("getHexagon", &getHexagonMatrix,
-               "get topology and vertex position matrix of Hexagon",
-               py::arg("radius"), py::arg("subdivision") = 0);
+               "get face and vertex matrix of Hexagon", py::arg("radius"),
+               py::arg("subdivision") = 0);
 
   pymem3dg.def(
-      "subdivide",
+      "linearSubdivide",
       py::overload_cast<Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &,
                         Eigen::Matrix<double, Eigen::Dynamic, 3> &,
-                        std::size_t>(&subdivide),
-      "subdivide the mesh", py::arg("face"), py::arg("vertex"),
-      py::arg("nSub"));
+                        std::size_t>(&linearSubdivide),
+      py::arg("face"), py::arg("vertex"), py::arg("nSub"), R"delim(
+          subdivide the mesh with linear interpolation
+      )delim");
 
   pymem3dg.def(
       "loopSubdivide",
@@ -1808,27 +1669,78 @@ PYBIND11_MODULE(_core, pymem3dg) {
                         Eigen::Matrix<double, Eigen::Dynamic, 3> &,
                         std::size_t>(&loopSubdivide),
       "subdivide the mesh in Loop scheme", py::arg("face"), py::arg("vertex"),
-      py::arg("nSub"));
+      py::arg("nSub"), R"delim(
+          subdivide the mesh in loop scheme 
+      )delim");
 
-  pymem3dg.def("readMesh", &readMesh,
-               "read vertex and face matrix from .ply file",
-               py::arg("plyName"));
-
-  pymem3dg.def("readData", py::overload_cast<std::string &>(&readData),
-               "read data in the format of matrix from .ply file",
-               py::arg("plyName"));
-  pymem3dg.def("readData",
-               py::overload_cast<std::string &, std::string &>(&readData),
-               "read data in the format of matrix from .ply file",
-               py::arg("plyName"), py::arg("elementName"));
+  pymem3dg.def("getFaceAndVertexMatrix", &getFaceAndVertexMatrix,
+               py::arg("plyName"), R"delim(
+          read face matrix and vertex matrix from .ply file 
+      )delim");
   pymem3dg.def(
-      "readData",
-      py::overload_cast<std::string &, std::string &, std::string &>(&readData),
-      "read data in the format of matrix from .ply file", py::arg("plyName"),
-      py::arg("elementName"), py::arg("propertyName"));
-
-  pymem3dg.def("processSoup", &processSoup, "process polygon soup",
-               py::arg("meshName"));
+      "getDataElementName", &getDataElementName, py::arg("plyName"),
+      R"delim(retrive all richData element name from .ply file. Namely the list of the places where data live in, such as vertex, edge or face. 
+      )delim");
+  pymem3dg.def(
+      "getDataPropertyName", &getDataPropertyName, py::arg("plyName"),
+      py::arg("elementName"),
+      R"delim(retrive all richData property name from .ply file. Namely the list of the data where data on the particular element, such as vertex, edge or face. 
+      )delim");
+  pymem3dg.def("getData", &getData, py::arg("plyName"), py::arg("elementName"),
+               py::arg("propertyName"),
+               R"delim(read richData from .ply file
+      )delim");
+  pymem3dg.def(
+      "processSoup", &processSoup, py::arg("meshName"),
+      R"delim( process soup data in .ply and return face and vertex matrices.
+      )delim");
+  pymem3dg.def(
+      "getFaceSurfacePointClosestToEmbeddedCoordinate",
+      py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
+                        const std::array<double, 3> &,
+                        const Eigen::Matrix<bool, Eigen::Dynamic, 1> &,
+                        const std::array<bool, 3> &>(
+          &getFaceSurfacePointClosestToEmbeddedCoordinate),
+      py::arg("faceMatrix"), py::arg("vertexMatrix"),
+      py::arg("embeddedCoordinate"), py::arg("filter"),
+      py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
+      R"delim(find the face surface point closest to a embedded coordinate)delim");
+  //   pymem3dg.def(
+  //       "getFaceSurfacePointClosestToEmbeddedCoordinate",
+  //       py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &,
+  //                         const std::array<double, 3> &,
+  //                         const std::array<bool, 3> &>(
+  //           &getFaceSurfacePointClosestToEmbeddedCoordinate),
+  //       py::arg("faceMatrix"), py::arg("vertexMatrix"),
+  //       py::arg("embeddedCoordinate"),
+  //       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true,
+  //       true}, R"delim(find the face surface point closest to a embedded
+  //       coordinate)delim");
+  pymem3dg.def(
+      "getVertexClosestToEmbeddedCoordinate",
+      py::overload_cast<const EigenVectorX3dr &, const std::array<double, 3> &,
+                        const Eigen::Matrix<bool, Eigen::Dynamic, 1> &,
+                        const std::array<bool, 3> &>(
+          &getVertexClosestToEmbeddedCoordinate),
+      py::arg("vertexMatrix"), py::arg("embeddedCoordinate"), py::arg("filter"),
+      py::arg("accountedCoordinate") = std::array<bool, 3>{true, true, true},
+      R"delim(find the index of vertex closest to a embedded coordinate)delim");
+  //   pymem3dg.def(
+  //       "getVertexClosestToEmbeddedCoordinate",
+  //       py::overload_cast<const EigenVectorX3dr &, const std::array<double,
+  //       3> &,
+  //                         const std::array<bool, 3> &>(
+  //           &getVertexClosestToEmbeddedCoordinate),
+  //       py::arg("vertexMatrix"), py::arg("embeddedCoordinate"),
+  //       py::arg("accountedCoordinate") = std::array<bool, 3>{true, true,
+  //       true}, R"delim(find the index of vertex closest to a embedded
+  //       coordinate)delim");
+  pymem3dg.def(
+      "getVertexFurthestFromBoundary",
+      py::overload_cast<const EigenVectorX3sr &, const EigenVectorX3dr &>(
+          &getVertexFurthestFromBoundary),
+      py::arg("faceMatrix"), py::arg("vertexMatrix"),
+      R"delim(find the vertex furthest away from the boundaries)delim");
 
 #pragma endregion mesh_io
 };

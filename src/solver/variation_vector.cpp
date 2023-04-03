@@ -12,7 +12,7 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
-#include "mem3dg/solver/system.h"
+#include "mem3dg/solver/geometry.h"
 
 namespace mem3dg {
 namespace solver {
@@ -20,7 +20,8 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-gc::Vector3 System::computeCornerAngleVariation(gcs::Corner c, gcs::Vertex v) {
+gc::Vector3 Geometry::computeCornerAngleVariation(gcs::Corner c,
+                                                  gcs::Vertex v) {
   gcs::Halfedge he = c.halfedge();
   gc::Vector3 n = vpg->faceNormals[c.face()];
   gc::Vector3 ej = vecFromHalfedge(he, *vpg);
@@ -40,7 +41,17 @@ gc::Vector3 System::computeCornerAngleVariation(gcs::Corner c, gcs::Vertex v) {
   }
 }
 
-gc::Vector3 System::computeDihedralAngleVariation(gcs::Halfedge he, gcs::Vertex v) {
+gc::Vector3 Geometry::computeCornerAngleVariation(gcs::Halfedge he,
+                                                  gcs::Vertex v) {
+  if (he.isInterior()) {
+    return computeCornerAngleVariation(he.corner(), v);
+  } else {
+    return gc::Vector3{0, 0, 0};
+  }
+}
+
+gc::Vector3 Geometry::computeDihedralAngleVariation(gcs::Halfedge he,
+                                                    gcs::Vertex v) {
   double l = vpg->edgeLengths[he.edge()];
   if (he.edge().isBoundary()) {
     return gc::Vector3{0, 0, 0};
@@ -68,8 +79,8 @@ gc::Vector3 System::computeDihedralAngleVariation(gcs::Halfedge he, gcs::Vertex 
 }
 
 std::tuple<gc::Vector3, gc::Vector3>
-System::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
-                                      gc::Halfedge &he) {
+Geometry::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
+                                        gc::Halfedge &he) {
   // this is a raw and less readable implementation than using
   // computeDihedralAngleVariation()
   std::size_t fID = he.face().getIndex();
@@ -119,9 +130,8 @@ System::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
   return std::make_tuple(schlafliVec1, schlafliVec2);
 }
 
-gc::Vector3
-System::computeHalfedgeGaussianCurvatureVector(gcs::VertexPositionGeometry &vpg,
-                                               gc::Halfedge &he) {
+gc::Vector3 Geometry::computeHalfedgeGaussianCurvatureVector(
+    gcs::VertexPositionGeometry &vpg, gc::Halfedge &he) {
   gc::Vector3 gaussVec{0, 0, 0};
   if (!he.edge().isBoundary()) {
     // gc::Vector3 eji{} = -vecFromHalfedge(he, *vpg);
@@ -132,8 +142,8 @@ System::computeHalfedgeGaussianCurvatureVector(gcs::VertexPositionGeometry &vpg,
 }
 
 gc::Vector3
-System::computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
-                                           gc::Halfedge &he) {
+Geometry::computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
+                                             gc::Halfedge &he) {
   std::size_t fID = he.face().getIndex();
   std::size_t fID_he_twin = he.twin().face().getIndex();
   bool interiorHalfedge = he.isInterior();
@@ -151,8 +161,8 @@ System::computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
 }
 
 gc::Vector3
-System::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
-                                             gc::Halfedge &he) {
+Geometry::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
+                                               gc::Halfedge &he) {
 
   // Note: the missing contribution from faces only contributes to z -
   // axis forces
@@ -168,17 +178,18 @@ System::computeHalfedgeVolumeVariationVector(gcs::VertexPositionGeometry &vpg,
 }
 
 gc::VertexData<gc::Vector3>
-System::computeVertexSchlafliLaplacianMeanCurvatureVectors() {
+Geometry::computeVertexSchlafliLaplacianMeanCurvatureVectors(
+    gcs::VertexData<double> &spontaneousCurvature) {
   mesh->compress();
   gc::VertexData<gc::Vector3> vector(*mesh, {0, 0, 0});
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
     gc::Vertex v{mesh->vertex(i)};
     double Hi = vpg->vertexMeanCurvatures[i] / vpg->vertexDualAreas[i];
-    double H0i = H0[i];
+    double H0i = spontaneousCurvature[i];
     for (gc::Halfedge he : v.outgoingHalfedges()) {
       std::size_t i_vj = he.tipVertex().getIndex();
       double Hj = vpg->vertexMeanCurvatures[i_vj] / vpg->vertexDualAreas[i_vj];
-      double H0j = H0[i_vj];
+      double H0j = spontaneousCurvature[i_vj];
       gc::Vector3 vec1;
       gc::Vector3 vec2;
       std::tie(vec1, vec2) = computeHalfedgeSchlafliVector(*vpg, he);
@@ -188,22 +199,22 @@ System::computeVertexSchlafliLaplacianMeanCurvatureVectors() {
   return vector;
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexGaussianCurvatureVectors() {
+gc::VertexData<gc::Vector3> Geometry::computeVertexGaussianCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeGaussianCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexMeanCurvatureVectors() {
+gc::VertexData<gc::Vector3> Geometry::computeVertexMeanCurvatureVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeMeanCurvatureVector);
 }
 
-gc::VertexData<gc::Vector3> System::computeVertexVolumeVariationVectors() {
+gc::VertexData<gc::Vector3> Geometry::computeVertexVolumeVariationVectors() {
   return halfedgeVectorToVertexVector(*mesh, *vpg,
                                       computeHalfedgeVolumeVariationVector);
 }
 
-gcs::VertexData<gc::Vector3> System::halfedgeVectorToVertexVector(
+gcs::VertexData<gc::Vector3> Geometry::halfedgeVectorToVertexVector(
     gcs::ManifoldSurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
     std::function<gc::Vector3(gcs::VertexPositionGeometry &vpg, gc::Halfedge &)>
         computeHalfedgeVariationalVector) {
@@ -219,7 +230,7 @@ gcs::VertexData<gc::Vector3> System::halfedgeVectorToVertexVector(
 }
 
 gc::Vector3
-System::computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
+Geometry::computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
     const gcs::VertexData<double> &quantities, const gcs::Halfedge &he) {
   if (!he.isInterior()) {
     throw std::runtime_error(
@@ -254,7 +265,8 @@ System::computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
         -computeCornerAngleVariation(he.next().corner(), he.vertex());
     gc::Vector3 grad_anglej =
         -computeCornerAngleVariation(he.next().next().corner(), he.vertex());
-    gc::Vector3 grad_anglei = -computeCornerAngleVariation(he.corner(), he.vertex());
+    gc::Vector3 grad_anglei =
+        -computeCornerAngleVariation(he.corner(), he.vertex());
     // gc::Vector3 grad_anglek = gc::cross(n, ej).normalize() / gc::norm(ej);
     // gc::Vector3 grad_anglej = gc::cross(n, ek).normalize() / gc::norm(ek);
     // gc::Vector3 grad_anglei = -(grad_anglek + grad_anglej);
@@ -278,9 +290,5 @@ System::computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
                 gc::norm(ej) * gc::norm(ek) * grad_cosanglei);
   }
 }
-
-
-
-
 } // namespace solver
 } // namespace mem3dg

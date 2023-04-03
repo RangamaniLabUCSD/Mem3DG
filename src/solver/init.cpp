@@ -20,54 +20,49 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 
-void System::initialize(std::size_t nMutation, bool ifMute) {
+void System::initialize(bool ifMutateMesh, bool ifMute) {
   checkConfiguration();
-  initializeConstants(ifMute);
+  pcg_extras::seed_seq_from<std::random_device> seed_source;
+  rng = pcg32(seed_source);
   meshProcessor.summarizeStatus();
-  if (!meshProcessor.isMeshMutate && nMutation != 0) {
-    mem3dg_runtime_message("mesh mutator not activated!");
-  } else {
-    updateConfigurations();
-    updateReferenceConfigurations();
-    mutateMesh(nMutation);
+  updateConfigurations();
+  geometry.updateReferenceConfigurations();
+  bool ifUpdateNotableVertex = true, ifUpdateGeodesics = true,
+       ifUpdateProteinDensityDistribution = true, ifUpdateMask = true;
+  updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
+                     ifUpdateProteinDensityDistribution, ifUpdateMask);
+  if (geometry.mesh->hasBoundary()) {
+    boundaryForceMask(*geometry.mesh, forces.forceMask,
+                      parameters.boundary.shapeBoundaryCondition);
+    boundaryProteinMask(*geometry.mesh, forces.proteinMask,
+                        parameters.boundary.proteinBoundaryCondition);
   }
-  if (nMutation != 0) {
-    updateConfigurations();
-    refVpg = vpg->copy();
-    updateReferenceConfigurations();
-  }
+  computeConservativeForcing();
+  computeTotalEnergy();
+  mechErrorNorm = toMatrix(forces.mechanicalForceVec).norm();
+  chemErrorNorm = forces.chemicalPotential.raw().norm();
 }
 
 void System::checkConfiguration() {
-
-  isOpenMesh = mesh->hasBoundary();
-  parameters.checkParameters(isOpenMesh, mesh->nVertices());
+  parameters.checkParameters(geometry.mesh->hasBoundary(),
+                             geometry.mesh->nVertices());
   meshProcessor.summarizeStatus();
   if (meshProcessor.isMeshMutate && !parameters.variation.isShapeVariation) {
     mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "
                          "variation simulation");
   }
-  if (!isOpenMesh && mesh->genus() != 0) {
-    mem3dg_runtime_error(
-        "Do not support closed mesh with nonzero number of genus!")
-  }
-  if (parameters.point.pt.rows() == 2 && !isOpenMesh) {
-    mem3dg_runtime_message(
-        "specifying x-y coordinate on closed surface may "
-        "lead to ambiguity! Please check by visualizing it first!");
-  }
   if (parameters.selfAvoidance.mu != 0) {
-    for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-      gc::Vertex vi{mesh->vertex(i)};
-      gc::VertexData<bool> neighborList(*mesh, false);
+    for (std::size_t i = 0; i < geometry.mesh->nVertices(); ++i) {
+      gc::Vertex vi{geometry.mesh->vertex(i)};
+      gc::VertexData<bool> neighborList(*geometry.mesh, false);
       meshProcessor.meshMutator.markVertices(neighborList, vi,
                                              parameters.selfAvoidance.n);
-      for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+      for (std::size_t j = i + 1; j < geometry.mesh->nVertices(); ++j) {
         if (neighborList[j])
           continue;
-        gc::Vertex vj{mesh->vertex(j)};
-        gc::Vector3 r =
-            vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+        gc::Vertex vj{geometry.mesh->vertex(j)};
+        gc::Vector3 r = geometry.vpg->inputVertexPositions[vj] -
+                        geometry.vpg->inputVertexPositions[vi];
         double distance = gc::norm(r);
         if (distance < parameters.selfAvoidance.d)
           mem3dg_runtime_error(
@@ -77,7 +72,8 @@ void System::checkConfiguration() {
   }
 
   if (((proteinDensity - proteinDensity[0]).raw().norm() == 0) &&
-      (!parameters.protein.ifPrescribe)) { // homogeneous distribution
+      (parameters.protein.prescribeProteinDensityDistribution ==
+       NULL)) { // homogeneous distribution
     if (parameters.variation.isProteinVariation) {
       if (proteinDensity[0] < 0 || proteinDensity[0] > 1)
         mem3dg_runtime_error("{0<=phi<=1}");
@@ -95,57 +91,13 @@ void System::checkConfiguration() {
   }
 }
 
-void System::initializeConstants(bool ifMute) {
-  pcg_extras::seed_seq_from<std::random_device> seed_source;
-  rng = pcg32(seed_source);
-
-  if (parameters.point.isFloatVertex) {
-    findFloatCenter();
-  } else {
-    findVertexCenter();
-  }
-  geodesicDistance.raw() = computeGeodesicDistance();
-  prescribeGeodesicMasks();
-
-  if (mesh->hasBoundary()) {
-    boundaryForceMask(*mesh, forces.forceMask,
-                      parameters.boundary.shapeBoundaryCondition);
-    boundaryProteinMask(*mesh, forces.proteinMask,
-                        parameters.boundary.proteinBoundaryCondition);
-  }
-
-  surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
-  volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
-  if (!ifMute) {
-    std::cout << "area_init = " << surfaceArea << std::endl;
-    std::cout << "vol_init = " << volume << std::endl;
-    std::cout << "Characteristic volume wrt to At = "
-              << (isOpenMesh
-                      ? parameters.osmotic.V_res
-                      : std::pow(parameters.tension.At / constants::PI / 4,
-                                 1.5) *
-                            (4 * constants::PI / 3))
-              << std::endl;
-  }
-}
-
-void System::updateReferenceConfigurations() {
-  refVpg->requireEdgeLengths();
-  refVpg->requireFaceAreas();
-  for (std::size_t i = 0; i < mesh->nHalfedges(); ++i) {
-    gcs::Halfedge he{mesh->halfedge(i)};
-    refLcrs[he] = computeLengthCrossRatio(*refVpg, he);
-  }
-}
-
 void System::updateConfigurations() {
-
-  // refresh cached quantities after regularization
-  vpg->refreshQuantities();
+  geometry.updateConfigurations();
 
   // compute face gradient of protein density
   if (parameters.dirichlet.eta != 0) {
-    computeFaceTangentialDerivative(proteinDensity, proteinDensityGradient);
+    geometry.computeFaceTangentialDerivative(proteinDensity,
+                                             proteinDensityGradient);
   }
 
   // Update protein density dependent quantities
@@ -173,33 +125,140 @@ void System::updateConfigurations() {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }
 
-  /// initialize/update enclosed volume
-  volume = getMeshVolume(*mesh, *vpg, true) + parameters.osmotic.V_res;
+  /// surface tension and osmotic pressure
+  if (parameters.osmotic.form != NULL)
+    std::tie(forces.osmoticPressure, energy.pressureEnergy) =
+        parameters.osmotic.form(geometry.volume);
 
-  // update global osmotic pressure
-  if (parameters.osmotic.isPreferredVolume) {
-    forces.osmoticPressure =
-        -(parameters.osmotic.Kv * (volume - parameters.osmotic.Vt) /
-              parameters.osmotic.Vt / parameters.osmotic.Vt +
-          parameters.osmotic.lambdaV);
-  } else if (parameters.osmotic.isConstantOsmoticPressure) {
-    forces.osmoticPressure = parameters.osmotic.Kv;
-  } else {
-    forces.osmoticPressure =
-        mem3dg::constants::i * mem3dg::constants::R * parameters.temperature *
-        (parameters.osmotic.n / volume - parameters.osmotic.cam);
+  // area and surface tension
+  if (parameters.tension.form != NULL)
+    std::tie(forces.surfaceTension, energy.surfaceEnergy) =
+        parameters.tension.form(geometry.surfaceArea);
+}
+
+bool System::updatePrescription(std::map<std::string, double> &lastUpdateTime,
+                                double timeStep) {
+  bool ifMutateMesh = (time - lastUpdateTime["mutateMesh"] >
+                       (meshProcessor.meshMutator.mutateMeshPeriod * timeStep)),
+       ifUpdateNotableVertex =
+           (time - lastUpdateTime["notableVertex"] >
+            (parameters.point.updateNotableVertexPeriod * timeStep)),
+       ifUpdateGeodesics =
+           (time - lastUpdateTime["geodesics"] >
+            (parameters.point.updateGeodesicsPeriod * timeStep)),
+       ifUpdateProteinDensityDistribution =
+           (time - lastUpdateTime["protein"] >
+            (parameters.protein.updateProteinDensityDistributionPeriod *
+             timeStep)),
+       ifUpdateMask = (time - lastUpdateTime["mask"] >
+                       (parameters.variation.updateMaskPeriod * timeStep));
+
+  bool updated =
+      updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
+                         ifUpdateProteinDensityDistribution, ifUpdateMask);
+  if (ifMutateMesh)
+    lastUpdateTime["mutateMesh"] = time;
+  if (ifUpdateNotableVertex)
+    lastUpdateTime["notableVertex"] = time;
+  if (ifUpdateGeodesics)
+    lastUpdateTime["geodesics"] = time;
+  if (ifUpdateProteinDensityDistribution)
+    lastUpdateTime["protein"] = time;
+  if (ifUpdateMask)
+    lastUpdateTime["mask"] = time;
+
+  return updated;
+}
+
+bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
+                                bool &ifUpdateGeodesics,
+                                bool &ifUpdateProteinDensityDistribution,
+                                bool &ifUpdateMask) {
+
+  if (ifMutateMesh) {
+    if (meshProcessor.isMeshMutate) {
+      mutateMesh();
+      updateConfigurations();
+      geometry.refVpg = geometry.vpg->copy();
+      geometry.updateReferenceConfigurations();
+    } else {
+      ifMutateMesh = false;
+      // mem3dg_runtime_message("Meshmutator is not activated!");
+    }
   }
 
-  // initialize/update total surface area
-  surfaceArea = vpg->faceAreas.raw().sum() + parameters.tension.A_res;
+  if (ifUpdateNotableVertex) {
+    if (parameters.point.prescribeNotableVertex != NULL) {
+      geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
+          geometry.mesh->getFaceVertexMatrix<std::size_t>(),
+          toMatrix(geometry.vpg->vertexPositions),
+          geometry.geodesicDistance.raw());
+    } else {
+      ifUpdateNotableVertex = false;
+      // mem3dg_runtime_message("Parameter.point.prescribeNotableVertex is
+      // NULL!");
+    }
+  }
 
-  // update global surface tension
-  forces.surfaceTension = parameters.tension.isConstantSurfaceTension
-                              ? parameters.tension.Ksg
-                              : parameters.tension.Ksg *
-                                        (surfaceArea - parameters.tension.At) /
-                                        parameters.tension.At +
-                                    parameters.tension.lambdaSG;
+  if (ifUpdateGeodesics) {
+    geometry.computeGeodesicDistance();
+  }
+
+  if (ifUpdateProteinDensityDistribution) {
+    if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
+      // // in-place implementation, needed to be migrated to python
+      // std::array<double, 2> r_heter{
+      //     parameters.protein.geodesicProteinDensityDistribution[0],
+      //     parameters.protein.geodesicProteinDensityDistribution[1]};
+      // geometry.vpg->requireVertexTangentBasis();
+      // if (parameters.protein.profile == "gaussian") {
+      //   gaussianDistribution(proteinDensity.raw(),
+      //   geometry.geodesicDistance.raw(),
+      //                        geometry.vpg->inputVertexPositions -
+      //                            geometry.vpg->inputVertexPositions[center.nearestVertex()],
+      //                        geometry.vpg->vertexTangentBasis[center.nearestVertex()],
+      //                        r_heter);
+      // } else if (parameters.protein.profile == "tanh") {
+      //   tanhDistribution(proteinDensity.raw(),
+      //   geometry.geodesicDistance.raw(),
+      //                    geometry.vpg->inputVertexPositions -
+      //                        geometry.vpg->inputVertexPositions[center.nearestVertex()],
+      //                    geometry.vpg->vertexTangentBasis[center.nearestVertex()],
+      //                    parameters.protein.tanhSharpness, r_heter);
+      // }
+      // geometry.vpg->unrequireVertexTangentBasis();
+      // proteinDensity.raw() *=
+      //     parameters.protein.geodesicProteinDensityDistribution[2] -
+      //     parameters.protein.geodesicProteinDensityDistribution[3];
+      // proteinDensity.raw().array() +=
+      //     parameters.protein.geodesicProteinDensityDistribution[3];
+
+      proteinDensity.raw() =
+          parameters.protein.prescribeProteinDensityDistribution(
+              time, geometry.vpg->vertexMeanCurvatures.raw(),
+              geometry.geodesicDistance.raw());
+    } else {
+      ifUpdateProteinDensityDistribution = false;
+      // mem3dg_runtime_message("Parameter protein form is NULL!")
+    }
+  }
+
+  if (ifUpdateMask) {
+    if (parameters.variation.geodesicMask != -1) {
+      prescribeGeodesicMasks();
+    } else {
+      ifUpdateMask = false;
+      // mem3dg_runtime_message("geodesicMask not activated!")
+    }
+  }
+
+  // std::cout << ifMutateMesh << " " << ifUpdateNotableVertex << " "
+  //           << ifUpdateGeodesics << " " << ifUpdateProteinDensityDistribution
+  //           << " " << ifUpdateMask << std::endl;
+
+  return ifMutateMesh || ifUpdateNotableVertex || ifUpdateGeodesics ||
+         ifUpdateProteinDensityDistribution || ifUpdateMask;
 }
+
 } // namespace solver
 } // namespace mem3dg

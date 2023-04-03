@@ -180,6 +180,7 @@ public:
     coord_var = traj_group.getVar(COORD_VAR);
     refcoord_var = traj_group.getVar(REFCOORD_VAR);
     phi_var = traj_group.getVar(PHI_VAR);
+    vertex_var = traj_group.getVar(VERTEX_VAR);
     vel_var = traj_group.getVar(VEL_VAR);
     extF_var = traj_group.getVar(EXTF_VAR);
   }
@@ -254,6 +255,7 @@ public:
     coord_var = nc::NcVar{};
     refcoord_var = nc::NcVar{};
     phi_var = nc::NcVar{};
+    vertex_var = nc::NcVar{};
     vel_var = nc::NcVar{};
     extF_var = nc::NcVar{};
     filename = "";
@@ -402,6 +404,28 @@ public:
    */
   EigenVectorX1d getProteinDensity(const std::size_t idx) {
     return getVar1d<double>(phi_var, idx);
+  }
+
+  /**
+   * @brief Write the notable vertex for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  notable vertex
+   */
+  void writeNotableVertex(const std::size_t idx,
+                          const gc::MeshData<gc::Vertex, bool> &data) {
+    writeVar(vertex_var, idx, data);
+  }
+
+  /**
+   * @brief Get the notable vertex of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return notable vertex
+   */
+  Eigen::Matrix<bool, Eigen::Dynamic, 1>
+  getNotableVertex(const std::size_t idx) {
+    return getVar1d<bool>(vertex_var, idx);
   }
 
   /**
@@ -695,6 +719,7 @@ private:
 
     uint_array_t = traj_group.addVlenType(UINT_ARR, nc::ncUint);
     double_array_t = traj_group.addVlenType(DOUBLE_ARR, nc::ncDouble);
+    bool_array_t = traj_group.addVlenType(BOOL_ARR, nc::ncByte);
 
     topo_var = traj_group.addVar(TOPO_VAR, uint_array_t, {frame_dim});
     topo_var.setCompression(true, true, compression_level);
@@ -702,6 +727,8 @@ private:
     coord_var.setCompression(true, true, compression_level);
     refcoord_var = traj_group.addVar(REFCOORD_VAR, double_array_t, {frame_dim});
     refcoord_var.setCompression(true, true, compression_level);
+    vertex_var = traj_group.addVar(VERTEX_VAR, bool_array_t, {frame_dim});
+    vertex_var.setCompression(true, true, compression_level);
     phi_var = traj_group.addVar(PHI_VAR, double_array_t, {frame_dim});
     phi_var.setCompression(true, true, compression_level);
     vel_var = traj_group.addVar(VEL_VAR, double_array_t, {frame_dim});
@@ -722,6 +749,7 @@ private:
   /// Variable length type for topology
   nc::NcVlenType uint_array_t;
   nc::NcVlenType double_array_t;
+  nc::NcVlenType bool_array_t;
 
   /// Variable for storing time
   nc::NcVar time_var;
@@ -734,6 +762,8 @@ private:
   nc::NcVar refcoord_var;
   /// Vlen variable for protein density
   nc::NcVar phi_var;
+  /// Vlen variable for notable vertex
+  nc::NcVar vertex_var;
   /// Vlen variable for velocities
   nc::NcVar vel_var;
   /// Vlen variable for external forces

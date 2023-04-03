@@ -43,9 +43,13 @@ bool VelocityVerlet::integrate() {
 
   signal(SIGINT, signalHandler);
 
-  double initialTime = system.time, lastUpdateGeodesics = system.time,
-         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+  double initialTime = system.time, lastComputeAvoidingForce = system.time,
          lastSave = system.time;
+  std::map<std::string, double> lastUpdateTime{{"geodesics", system.time},
+                                               {"mutateMesh", system.time},
+                                               {"protein", system.time},
+                                               {"notableVertex", system.time},
+                                               {"mask", system.time}};
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
@@ -75,32 +79,9 @@ bool VelocityVerlet::integrate() {
       break;
     }
 
-    // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
-      lastProcessMesh = system.time;
-      system.mutateMesh();
-      system.updateConfigurations();
-      system.refVpg = system.vpg->copy();
-      system.updateReferenceConfigurations();
-    }
-
-    // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics >
-        (updateGeodesicsPeriod * timeStep)) {
-      lastUpdateGeodesics = system.time;
-      if (system.parameters.point.isFloatVertex)
-        system.findFloatCenter(
-            3 * system.vpg->edgeLength(
-                    system.center.nearestVertex().halfedge().edge()));
-      system.geodesicDistance.raw() = system.computeGeodesicDistance();
-      if (system.parameters.protein.ifPrescribe)
-        system.prescribeGeodesicProteinDensityDistribution();
-      system.updateConfigurations();
-    }
-
     // step forward
-    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
-      system.time += 1e-10 * characteristicTimeStep;
+    if (system.updatePrescription(lastUpdateTime, timeStep)) {
+      system.time += 1e-5 * timeStep;
     } else {
       march();
     }
@@ -157,7 +138,7 @@ void VelocityVerlet::status() {
   }
 
   // compute the free energy of the system
-  if (system.parameters.external.isActivated)
+  if (system.parameters.external.form != NULL)
     system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 
@@ -191,13 +172,14 @@ void VelocityVerlet::march() {
   if (system.parameters.variation.isProteinVariation) {
     if (system.parameters.variation.isProteinConservation) {
       system.proteinRateOfChange.raw() =
-          system.parameters.proteinMobility * system.vpg->hodge0Inverse *
-          system.vpg->d0.transpose() *
+          system.parameters.proteinMobility *
+          system.geometry.vpg->hodge0Inverse *
+          system.geometry.vpg->d0.transpose() *
           system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
     } else {
       system.proteinRateOfChange = system.parameters.proteinMobility *
                                    system.forces.chemicalPotential /
-                                   system.vpg->vertexDualAreas;
+                                   system.geometry.vpg->vertexDualAreas;
     }
     system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
                             system.forces.chemicalPotential.raw().array())
@@ -229,7 +211,7 @@ void VelocityVerlet::march() {
   double hdt = 0.5 * timeStep, hdt2 = hdt * timeStep;
 
   // stepping on vertex position
-  system.vpg->inputVertexPositions +=
+  system.geometry.vpg->inputVertexPositions +=
       system.velocity * timeStep +
       hdt2 *
           pastMechanicalForceVec; // x_{i+1} = x_i + dt_i * v_i + 0.5 * (dt_i)^2

@@ -58,9 +58,9 @@ struct Parameters {
   struct Bending {
     /// membrane thickness
     double D = 0;
-    /// unity modulus 
+    /// unity modulus
     double alpha = 0;
-    /// preferred area difference 
+    /// preferred area difference
     double dA0 = 0;
 
     /// Deviatoric modulus
@@ -84,45 +84,13 @@ struct Parameters {
   };
 
   struct Tension {
-    /// Whether adopt constant surface tension
-    bool isConstantSurfaceTension = false;
-    /// Global stretching modulus
-    double Ksg = 0;
-    /// Area reservior
-    double A_res = 0;
-    /// preferred  total face area
-    double At = -1;
-    /// augmented Lagrangian parameter for area
-    double lambdaSG = 0;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
+    /// tension(area) function form
+    std::function<std::tuple<double, double>(double)> form = NULL;
   };
 
   struct Osmotic {
-    /// Whether adopt preferred volume parametrization
-    bool isPreferredVolume = false;
-    /// Whether adopt constant osmotic pressure
-    bool isConstantOsmoticPressure = false;
-    /// pressure-volume modulus
-    double Kv = 0;
-    /// preferred volume
-    double Vt = -1;
-    /// Ambient Pressure
-    double cam = -1;
-    /// volume reservoir
-    double V_res = 0;
-    /// Enclosed solute (atto-mol)
-    double n = 1;
-    /// augmented Lagrangian parameter for volume
-    double lambdaV = 0;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
+    /// pressure(volume) function form
+    std::function<std::tuple<double, double>(double)> form = NULL;
   };
 
   struct Adsorption {
@@ -157,17 +125,10 @@ struct Parameters {
   };
 
   struct External {
-    /// Magnitude of external force
-    bool isActivated = false;
     /// form of external force
     std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
                                   EigenVectorX1d)>
         form = NULL;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
   };
 
   struct DPD {
@@ -196,6 +157,8 @@ struct Parameters {
     bool isShapeVariation = true;
     /// domain of shape variation
     double geodesicMask = -1;
+    /// period of updating mask
+    std::size_t updateMaskPeriod = std::numeric_limits<std::size_t>::max();
 
     /**
      * @brief check parameter conflicts
@@ -204,36 +167,27 @@ struct Parameters {
   };
 
   struct Point {
-    /// The point
-    EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
-    /// Whether floating "the" vertex
-    bool isFloatVertex = false;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters();
+    /// prescription of center finding
+    std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
+        EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
+        prescribeNotableVertex = NULL;
+    /// period of updating geodesic distance from notableVertex calculation
+    std::size_t updateGeodesicsPeriod = std::numeric_limits<std::size_t>::max();
+    /// period of updating notable vertex based functional
+    /// prescribeNotableVertex
+    std::size_t updateNotableVertexPeriod =
+        std::numeric_limits<std::size_t>::max();
   };
 
   struct Protein {
-    bool ifPrescribe = false;
-    /// profile type: Gaussian or tanh
-    std::string profile = "none";
-    /// (initial) protein density
-    EigenVectorX1d geodesicProteinDensityDistribution;
-    /// sharpness of tanh transition
-    double tanhSharpness = 20;
     /// interior point parameter for protein density
-    double proteinInteriorPenalty = 1e-6;
-
-    Protein() {
-      geodesicProteinDensityDistribution.resize(1);
-      geodesicProteinDensityDistribution << -1;
-    }
-    /**
-     * @brief check parameter conflicts
-     */
-    DLL_PUBLIC void checkParameters(size_t nVertex);
+    double proteinInteriorPenalty = 0; // 1e-6
+    /// precription of protein density
+    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+        prescribeProteinDensityDistribution = NULL;
+    /// period of updating protein density distribution
+    std::size_t updateProteinDensityDistributionPeriod =
+        std::numeric_limits<std::size_t>::max();
   };
 
   struct Spring {

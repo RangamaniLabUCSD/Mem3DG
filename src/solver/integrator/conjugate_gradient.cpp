@@ -41,9 +41,13 @@ bool ConjugateGradient::integrate() {
     mem3dg_runtime_error("integrate() is disabled for current construction!");
   signal(SIGINT, signalHandler);
 
-  double initialTime = system.time, lastUpdateGeodesics = system.time,
-         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+  double initialTime = system.time, lastComputeAvoidingForce = system.time,
          lastSave = system.time;
+  std::map<std::string, double> lastUpdateTime{{"geodesics", system.time},
+                                               {"mutateMesh", system.time},
+                                               {"protein", system.time},
+                                               {"notableVertex", system.time},
+                                               {"mask", system.time}};
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
@@ -68,36 +72,14 @@ bool ConjugateGradient::integrate() {
       saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
 
-    // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > processMeshPeriod) {
-      lastProcessMesh = system.time;
-      system.mutateMesh();
-      system.updateConfigurations();
-      system.refVpg = system.vpg->copy();
-      system.updateReferenceConfigurations();
-    }
-
-    // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
-      lastUpdateGeodesics = system.time;
-      if (system.parameters.point.isFloatVertex)
-        system.findFloatCenter(
-            3 * system.vpg->edgeLength(
-                    system.center.nearestVertex().halfedge().edge()));
-      system.geodesicDistance.raw() = system.computeGeodesicDistance();
-      if (system.parameters.protein.ifPrescribe)
-        system.prescribeGeodesicProteinDensityDistribution();
-      system.updateConfigurations();
-    }
-
     // break loop if EXIT flag is on
     if (EXIT) {
       break;
     }
 
     // step forward
-    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
-      system.time += 1e-10 * characteristicTimeStep;
+    if (system.updatePrescription(lastUpdateTime, timeStep)) {
+      system.time += 1e-5 * timeStep;
       countCG = 0;
     } else {
       march();
@@ -147,7 +129,7 @@ void ConjugateGradient::checkParameters() {
   if (restartPeriod < 1) {
     mem3dg_runtime_error("restartNum > 0!");
   }
-  if (system.parameters.external.isActivated) {
+  if (system.parameters.external.form != NULL) {
     mem3dg_runtime_error(
         "External force can not be applied using energy optimization")
   }
@@ -164,19 +146,17 @@ void ConjugateGradient::status() {
   system.computeConservativeForcing();
   system.addNonconservativeForcing(timeStep);
 
-  // compute the area contraint error
-  areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
-  volumeDifference = (system.parameters.osmotic.isPreferredVolume)
-                         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
-                         : abs(system.parameters.osmotic.n / system.volume /
-                                   system.parameters.osmotic.cam -
-                               1.0);
-  if (system.parameters.osmotic.isPreferredVolume) {
-    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference,
-                           volumeDifference, constraintTolerance, 1.3);
-  } else {
-    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference,
-                                constraintTolerance, 1.3);
+  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
+    // areaDifference = abs(system.surfaceArea / system.parameters.tension.At -
+    // 1); volumeDifference =
+    //     (system.parameters.osmotic.isPreferredVolume)
+    //         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+    //         : abs(system.parameters.osmotic.n / system.volume /
+    //                   system.parameters.osmotic.cam -
+    //               1.0);
+    if (ifPrintToConsole)
+      std::cout << "\nError norm smaller than tolerance." << std::endl;
+    EXIT = true;
   }
 
   // exit if reached time
@@ -247,7 +227,7 @@ void ConjugateGradient::march() {
   } else {
     timeStep = characteristicTimeStep;
   }
-  system.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 
@@ -255,97 +235,46 @@ void ConjugateGradient::march() {
   system.updateConfigurations();
 }
 
-void ConjugateGradient::pressureConstraintThreshold(
-    bool &EXIT, const bool isAugmentedLagrangian, const double dArea,
-    const double ctol, double increment) {
-  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
-    if (isAugmentedLagrangian) { // augmented Lagrangian method
-      if (dArea < ctol) {
-        if (ifPrintToConsole) // exit if fulfilled all constraints
-          std::cout << "\nError norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        if (ifPrintToConsole)
-          std::cout << "\n[lambdaSG] = [" << system.parameters.tension.lambdaSG
-                    << ", "
-                    << "]";
-        system.parameters.tension.lambdaSG +=
-            system.parameters.tension.Ksg *
-            (system.surfaceArea - system.parameters.tension.At) /
-            system.parameters.tension.At;
-        if (ifPrintToConsole)
-          std::cout << " -> [" << system.parameters.tension.lambdaSG << "]"
-                    << std::endl;
-      }
-    } else {              // incremental harmonic penalty method
-      if (dArea < ctol) { // exit if fulfilled all constraints
-        if (ifPrintToConsole)
-          std::cout << "\nError norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        if (ifPrintToConsole)
-          std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
-        system.parameters.tension.Ksg *= increment;
-        if (ifPrintToConsole)
-          std::cout << " -> [" << system.parameters.tension.Ksg << "]"
-                    << std::endl;
-      }
-    }
+void ConjugateGradient::enforceAugmentedLagrangianConstraints(
+    double &lambdaSG, double &lambdaV, const double dA, const double dV,
+    const double tol) {
+  if (ifPrintToConsole)
+    std::cout << "\n["
+              << "lambdaSG"
+              << ", "
+              << "lambdaV"
+              << "] = [" << lambdaSG << ", " << lambdaV << "]";
+  // update coefficient
+  if (dA > tol) {
+    double tension, energy;
+    std::tie(tension, energy) =
+        system.parameters.tension.form(system.geometry.surfaceArea);
+    lambdaSG += tension;
   }
+  if (dV > tol) {
+    double pressure, energy;
+    std::tie(pressure, energy) =
+        system.parameters.osmotic.form(system.geometry.volume);
+    lambdaV += pressure;
+  }
+  if (ifPrintToConsole)
+    std::cout << " -> [" << lambdaSG << ", " << lambdaV << "]" << std::endl;
 }
 
-void ConjugateGradient::reducedVolumeThreshold(
-    bool &EXIT, const bool isAugmentedLagrangian, const double dArea,
-    const double dVolume, const double ctol, double increment) {
-  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
-    if (isAugmentedLagrangian) {            // augmented Lagrangian method
-      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        if (ifPrintToConsole)
-          std::cout << "\nError norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      } else { // iterate if not
-        if (ifPrintToConsole)
-          std::cout << "\n.tension[lambdaSG, lambdaV] = ["
-                    << system.parameters.tension.lambdaSG << ", "
-                    << system.parameters.osmotic.lambdaV << "]";
-        system.parameters.tension.lambdaSG +=
-            system.parameters.tension.Ksg *
-            (system.surfaceArea - system.parameters.tension.At) /
-            system.parameters.tension.At;
-        system.parameters.osmotic.lambdaV +=
-            system.parameters.osmotic.Kv *
-            (system.volume - system.parameters.osmotic.Vt) /
-            system.parameters.osmotic.Vt;
-        if (ifPrintToConsole)
-          std::cout << " -> [" << system.parameters.tension.lambdaSG << ", "
-                    << system.parameters.osmotic.lambdaV << "]" << std::endl;
-      }
-    } else { // incremental harmonic penalty method
-      if (dArea < ctol && dVolume < ctol) { // exit if fulfilled all constraints
-        if (ifPrintToConsole)
-          std::cout << "\nError norm smaller than tolerance." << std::endl;
-        EXIT = true;
-      }
-
-      // iterate if not
-      if (dArea > ctol) {
-        if (ifPrintToConsole)
-          std::cout << "\n[Ksg] = [" << system.parameters.tension.Ksg << "]";
-        system.parameters.tension.Ksg *= 1.3;
-        if (ifPrintToConsole)
-          std::cout << " -> [" << system.parameters.tension.Ksg << "]"
-                    << std::endl;
-      }
-      if (dVolume > ctol) {
-        if (ifPrintToConsole)
-          std::cout << "\n[Kv] = [" << system.parameters.osmotic.Kv << "]";
-        system.parameters.osmotic.Kv *= 1.3;
-        if (ifPrintToConsole)
-          std::cout << " -> [" << system.parameters.osmotic.Kv << "]"
-                    << std::endl;
-      }
-    }
-  }
+void ConjugateGradient::enforceIncrementalPenaltyConstraints(double &Ksg,
+                                                             double &Kv,
+                                                             const double dA,
+                                                             const double dV,
+                                                             double increment) {
+  if (ifPrintToConsole)
+    std::cout << "\n[Ksg, Kv] = [" << Ksg << ", " << Kv << "]";
+  // update coefficient
+  if (dA > constraintTolerance)
+    Ksg *= increment;
+  if (dV > constraintTolerance)
+    Kv *= increment;
+  if (ifPrintToConsole)
+    std::cout << " -> [" << Ksg << ", " << Kv << "]" << std::endl;
 }
 
 } // namespace integrator

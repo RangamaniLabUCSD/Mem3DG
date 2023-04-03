@@ -24,22 +24,24 @@ void System::computeSpontaneousCurvatureEnergy() {
 
   // no particular reason, just experiment
   // E.BE = 0;
-  // for (gcs::Vertex v : mesh->vertices()) {
+  // for (gcs::Vertex v : geometry.mesh->vertices()) {
   //   E.BE += Kb[v] *
-  //           (vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v) - H0[v]) *
-  //           (vpg->vertexMeanCurvature(v) / vpg->vertexDualArea(v) - H0[v]) *
-  //           vpg->vertexDualArea(v);
+  //           (geometry.vpg->vertexMeanCurvature(v) /
+  //           geometry.vpg->vertexDualArea(v) - H0[v]) *
+  //           (geometry.vpg->vertexMeanCurvature(v) /
+  //           geometry.vpg->vertexDualArea(v) - H0[v]) *
+  //           geometry.vpg->vertexDualArea(v);
   // }
 
   // Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference = H.raw() - H0.raw();
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference;
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> H_difference =
-      abs(vpg->vertexMeanCurvatures.raw().array() /
-              vpg->vertexDualAreas.raw().array() -
+      abs(geometry.vpg->vertexMeanCurvatures.raw().array() /
+              geometry.vpg->vertexDualAreas.raw().array() -
           H0.raw().array());
   energy.spontaneousCurvatureEnergy =
-      (Kb.raw().array() * vpg->vertexDualAreas.raw().array() *
+      (Kb.raw().array() * geometry.vpg->vertexDualAreas.raw().array() *
        H_difference.array().square())
           .sum();
 
@@ -50,11 +52,14 @@ void System::computeSpontaneousCurvatureEnergy() {
 
 void System::computeDeviatoricCurvatureEnergy() {
   energy.deviatoricCurvatureEnergy =
-      (Kd.raw().array() * vpg->vertexGaussianCurvatures.raw().array().square())
+      (Kd.raw().array() *
+       geometry.vpg->vertexGaussianCurvatures.raw().array().square() /
+       geometry.vpg->vertexDualAreas.raw().array())
           .sum();
-  // (Kd.raw().array() * (vpg->vertexMeanCurvatures.raw().array().square() /
-  //                          vpg->vertexDualAreas.raw().array() -
-  //                      vpg->vertexGaussianCurvatures.raw().array()))
+  // (Kd.raw().array() *
+  //  (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
+  //       geometry.vpg->vertexDualAreas.raw().array() -
+  //   geometry.vpg->vertexGaussianCurvatures.raw().array()))
   //     .sum();
 }
 
@@ -62,27 +67,32 @@ void System::computeAreaDifferenceEnergy() {
   double K =
       0.25 * parameters.bending.alpha * parameters.bending.Kb * constants::PI;
   energy.areaDifferenceEnergy =
-      K / parameters.bending.D / parameters.bending.D / surfaceArea *
-      pow(2 * parameters.bending.D * vpg->vertexMeanCurvatures.raw().sum() -
+      K / parameters.bending.D / parameters.bending.D / geometry.surfaceArea *
+      pow(2 * parameters.bending.D *
+                  geometry.vpg->vertexMeanCurvatures.raw().sum() -
               parameters.bending.dA0,
           2);
 }
 
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
-  double A_difference = surfaceArea - parameters.tension.At;
-  energy.surfaceEnergy =
-      parameters.tension.isConstantSurfaceTension
-          ? forces.surfaceTension * surfaceArea
-          : forces.surfaceTension * A_difference / 2 +
-                parameters.tension.lambdaSG * A_difference / 2;
+  // double A_difference = surfaceArea - parameters.tension.At;
+  // energy.surfaceEnergy =
+  //     parameters.tension.isConstantSurfaceTension
+  //         ? forces.surfaceTension * surfaceArea
+  //         : forces.surfaceTension * A_difference / 2 +
+  //               parameters.tension.lambdaSG * A_difference / 2;
+  if (parameters.tension.form != NULL)
+    std::tie(forces.surfaceTension, energy.surfaceEnergy) =
+        parameters.tension.form(geometry.surfaceArea);
 }
 
 void System::computeEdgeSpringEnergy() {
   energy.edgeSpringEnergy =
       0.5 * parameters.spring.Kse *
-      ((vpg->edgeLengths.raw() - refVpg->edgeLengths.raw()).array() /
-       refVpg->edgeLengths.raw().array())
+      ((geometry.vpg->edgeLengths.raw() - geometry.refVpg->edgeLengths.raw())
+           .array() /
+       geometry.refVpg->edgeLengths.raw().array())
           .square()
           .sum();
 }
@@ -90,19 +100,20 @@ void System::computeEdgeSpringEnergy() {
 void System::computeFaceSpringEnergy() {
   energy.faceSpringEnergy =
       0.5 * parameters.spring.Ksl *
-      ((vpg->faceAreas.raw() - refVpg->faceAreas.raw()).array() /
-       refVpg->faceAreas.raw().array())
+      ((geometry.vpg->faceAreas.raw() - geometry.refVpg->faceAreas.raw())
+           .array() /
+       geometry.refVpg->faceAreas.raw().array())
           .square()
           .sum();
 }
 
 void System::computeLcrSpringEnergy() {
   double E = 0;
-  for (std::size_t i = 0; i < mesh->nEdges(); ++i) {
-    gc::Edge e{mesh->edge(i)};
+  for (std::size_t i = 0; i < geometry.mesh->nEdges(); ++i) {
+    gc::Edge e{geometry.mesh->edge(i)};
     gc::Halfedge he = e.halfedge();
-    double lcr = computeLengthCrossRatio(*vpg, he);
-    E += pow((lcr - refLcrs[he]) / refLcrs[he], 2);
+    double lcr = geometry.computeLengthCrossRatio(*geometry.vpg, he);
+    E += pow((lcr - geometry.refLcrs[he]) / geometry.refLcrs[he], 2);
   }
   E *= 0.5 * parameters.spring.Kst;
   energy.lcrSpringEnergy = E;
@@ -110,18 +121,21 @@ void System::computeLcrSpringEnergy() {
 
 void System::computePressureEnergy() {
   // Note: area weighted normal is exact volume variation
-  if (parameters.osmotic.isPreferredVolume) {
-    double V_difference = volume - parameters.osmotic.Vt;
-    energy.pressureEnergy = -forces.osmoticPressure * V_difference / 2 +
-                            parameters.osmotic.lambdaV * V_difference / 2;
-  } else if (parameters.osmotic.isConstantOsmoticPressure) {
-    energy.pressureEnergy = -forces.osmoticPressure * volume;
-  } else {
-    double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
-    energy.pressureEnergy = mem3dg::constants::i * mem3dg::constants::R *
-                            parameters.temperature * parameters.osmotic.n *
-                            (ratio - log(ratio) - 1);
-  }
+  // if (parameters.osmotic.isPreferredVolume) {
+  //   double V_difference = volume - parameters.osmotic.Vt;
+  //   energy.pressureEnergy = -forces.osmoticPressure * V_difference / 2 +
+  //                           parameters.osmotic.lambdaV * V_difference / 2;
+  // } else if (parameters.osmotic.isConstantOsmoticPressure) {
+  //   energy.pressureEnergy = -forces.osmoticPressure * volume;
+  // } else {
+  //   double ratio = parameters.osmotic.cam * volume / parameters.osmotic.n;
+  //   energy.pressureEnergy = mem3dg::constants::i * mem3dg::constants::R *
+  //                           parameters.temperature * parameters.osmotic.n *
+  //                           (ratio - log(ratio) - 1);
+  // }
+  if (parameters.osmotic.form != NULL)
+    std::tie(forces.osmoticPressure, energy.pressureEnergy) =
+        parameters.osmotic.form(geometry.volume);
 }
 
 // void System::computeAdsorptionEnergy() {
@@ -136,20 +150,22 @@ void System::computePressureEnergy() {
 // }
 
 void System::computeAdsorptionEnergy() {
-  energy.adsorptionEnergy =
-      parameters.adsorption.epsilon *
-      (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array()).sum();
+  energy.adsorptionEnergy = parameters.adsorption.epsilon *
+                            (geometry.vpg->vertexDualAreas.raw().array() *
+                             proteinDensity.raw().array())
+                                .sum();
 }
 
 void System::computeAggregationEnergy() {
   energy.aggregationEnergy =
       parameters.aggregation.chi *
-      (vpg->vertexDualAreas.raw().array() *
+      (geometry.vpg->vertexDualAreas.raw().array() *
        ((2 * proteinDensity.raw().array() - 1).square() - 1).square())
           .sum();
   // energy.aggregationEnergy =
   //     parameters.aggregation.chi *
-  //     (vpg->vertexDualAreas.raw().array() * proteinDensity.raw().array() *
+  //     (geometry.vpg->vertexDualAreas.raw().array() *
+  //     proteinDensity.raw().array() *
   //      proteinDensity.raw().array())
   //         .sum();
 }
@@ -157,14 +173,14 @@ void System::computeAggregationEnergy() {
 void System::computeEntropyEnergy() {
   energy.entropyEnergy =
       parameters.entropy.xi *
-      (vpg->vertexDualAreas.raw().array() *
+      (geometry.vpg->vertexDualAreas.raw().array() *
        (proteinDensity.raw().array().log() * proteinDensity.raw().array() +
         (1 - proteinDensity.raw().array()).log() *
             (1 - proteinDensity.raw().array())))
           .sum();
   // energy.entropyEnergy =
   //     parameters.entropy.xi *
-  //     (vpg->vertexDualAreas.raw().array() *
+  //     (geometry.vpg->vertexDualAreas.raw().array() *
   //      (proteinDensity.raw().array().log() - 1) *
   //      proteinDensity.raw().array())
   //         .sum();
@@ -184,24 +200,26 @@ void System::computeSelfAvoidanceEnergy() {
   const double n = parameters.selfAvoidance.n;
   double e = 0.0;
   projectedCollideTime = std::numeric_limits<double>::max();
-  for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    gc::Vertex vi{mesh->vertex(i)};
-    gc::VertexData<bool> neighborList(*mesh, false);
+  for (std::size_t i = 0; i < geometry.mesh->nVertices(); ++i) {
+    gc::Vertex vi{geometry.mesh->vertex(i)};
+    gc::VertexData<bool> neighborList(*geometry.mesh, false);
     meshProcessor.meshMutator.markVertices(neighborList, vi, n);
-    for (std::size_t j = i + 1; j < mesh->nVertices(); ++j) {
+    for (std::size_t j = i + 1; j < geometry.mesh->nVertices(); ++j) {
       if (neighborList[j])
         continue;
-      gc::Vertex vj{mesh->vertex(j)};
+      gc::Vertex vj{geometry.mesh->vertex(j)};
 
-      // double penalty = mu * vpg->vertexDualAreas[vi] * proteinDensity[vi] *
-      //                  vpg->vertexDualAreas[vj] * proteinDensity[vj];
+      // double penalty = mu * geometry.vpg->vertexDualAreas[vi] *
+      // proteinDensity[vi] *
+      //                  geometry.vpg->vertexDualAreas[vj] *
+      //                  proteinDensity[vj];
       double penalty = mu * proteinDensity[vi] * proteinDensity[vj];
       // double penalty = mu;
-      // double penalty = mu * vpg->vertexDualAreas[vi] *
-      // vpg->vertexDualAreas[vj];
+      // double penalty = mu * geometry.vpg->vertexDualAreas[vi] *
+      // geometry.vpg->vertexDualAreas[vj];
 
-      gc::Vector3 r =
-          vpg->inputVertexPositions[vj] - vpg->inputVertexPositions[vi];
+      gc::Vector3 r = geometry.vpg->inputVertexPositions[vj] -
+                      geometry.vpg->inputVertexPositions[vi];
       double distance = gc::norm(r) - d0;
       double collideTime = distance / gc::dot(velocity[vi] - velocity[vj], r);
       if (collideTime < projectedCollideTime &&
@@ -222,23 +240,23 @@ void System::computeDirichletEnergy() {
                          "shouldn't be called!");
     // scale the dH0 such that it is integrated over the edge
     // this is under the case where the resolution is low, WIP
-    // auto dH0 = vpg->edgeLengths.raw().array() *  ((vpg->d0 *
-    // H0.raw()).cwiseAbs()).array(); auto dH0 = (vpg->d0 *
+    // auto dH0 = geometry.vpg->edgeLengths.raw().array() *  ((geometry.vpg->d0
+    // * H0.raw()).cwiseAbs()).array(); auto dH0 = (geometry.vpg->d0 *
     // H0.raw()).cwiseAbs();
-    // E.dE = (vpg->hodge1Inverse * F.lineTension.raw()).sum();
+    // E.dE = (geometry.vpg->hodge1Inverse * F.lineTension.raw()).sum();
   }
 
   // explicit dirichlet energy
   energy.dirichletEnergy = 0;
-  for (gcs::Face f : mesh->faces()) {
+  for (gcs::Face f : geometry.mesh->faces()) {
     energy.dirichletEnergy += 0.5 * parameters.dirichlet.eta *
                               proteinDensityGradient[f].norm2() *
-                              vpg->faceAreas[f];
+                              geometry.vpg->faceAreas[f];
   }
 
   // alternative dirichlet energy after integration by part
   // E.dE = 0.5 * P.eta * proteinDensity.raw().transpose() *
-  // vpg->cotanLaplacian
+  // geometry.vpg->cotanLaplacian
   // *
   //        proteinDensity.raw();
 }
@@ -266,9 +284,9 @@ double System::computePotentialEnergy() {
   // optional internal potential energy
   if (parameters.bending.alpha != 0)
     computeAreaDifferenceEnergy();
-  if (parameters.tension.Ksg != 0)
+  if (parameters.tension.form != NULL)
     computeSurfaceEnergy();
-  if (parameters.osmotic.Kv != 0)
+  if (parameters.osmotic.form != NULL)
     computePressureEnergy();
   if (parameters.adsorption.epsilon != 0) {
     computeAdsorptionEnergy();
@@ -333,7 +351,8 @@ double System::computeKineticEnergy() {
   energy.kineticEnergy =
       0.5 * Eigen::square(toMatrix(velocity).array()).matrix().sum();
   // energy.kineticEnergy =
-  //     0.5 * rowwiseScalarProduct(toMatrix(vpg->vertexDualAreas).array(),
+  //     0.5 *
+  //     rowwiseScalarProduct(toMatrix(geometry.vpg->vertexDualAreas).array(),
   //                                Eigen::square(toMatrix(velocity).array()))
   //               .sum();
   return energy.kineticEnergy;
@@ -345,43 +364,12 @@ double System::computeTotalEnergy() {
   if (time == energy.time) {
     energy.totalEnergy =
         energy.kineticEnergy + energy.potentialEnergy - energy.externalWork;
-  } else if (!parameters.external.isActivated) {
+  } else if (parameters.external.form == NULL) {
     energy.totalEnergy = energy.kineticEnergy + energy.potentialEnergy;
   } else {
     mem3dg_runtime_error("energy.externalWork not updated!")
   }
   return energy.totalEnergy;
-}
-
-void System::computeFaceTangentialDerivative(
-    gcs::VertexData<double> &quantities, gcs::FaceData<gc::Vector3> &gradient) {
-  if ((quantities.raw().array() == quantities.raw()[0]).all()) {
-    gradient.fill({0, 0, 0});
-  } else {
-    for (gcs::Face f : mesh->faces()) {
-      gc::Vector3 normal = vpg->faceNormals[f];
-      gc::Vector3 gradientVec{0, 0, 0};
-      for (gcs::Halfedge he : f.adjacentHalfedges()) {
-        gradientVec += quantities[he.next().tipVertex()] *
-                       gc::cross(normal, vecFromHalfedge(he, *vpg));
-      }
-      gradient[f] = gradientVec / 2 / vpg->faceAreas[f];
-    }
-  }
-}
-
-double System::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                       gcs::Halfedge &he) const {
-  if (he.edge().isBoundary()) {
-    return 1;
-  } else {
-    gcs::Edge lj = he.next().edge();
-    gcs::Edge ki = he.twin().next().edge();
-    gcs::Edge il = he.next().next().edge();
-    gcs::Edge jk = he.twin().next().next().edge();
-    return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-           vpg.edgeLengths[lj];
-  }
 }
 
 } // namespace solver

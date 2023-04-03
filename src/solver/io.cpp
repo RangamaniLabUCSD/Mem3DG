@@ -23,39 +23,39 @@ namespace solver {
 void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
 
   if (isJustGeometry) {
-    gcs::writeSurfaceMesh(*mesh, *vpg, PathToSave);
+    gcs::writeSurfaceMesh(*geometry.mesh, *geometry.vpg, PathToSave);
   } else {
-    gcs::RichSurfaceMeshData richData(*mesh);
+    gcs::RichSurfaceMeshData richData(*geometry.mesh);
     richData.addMeshConnectivity();
-    richData.addGeometry(*vpg);
+    richData.addGeometry(*geometry.vpg);
 
     // write protein distribution
     richData.addVertexProperty("proteinDensity", proteinDensity);
     richData.addVertexProperty("velocity", forces.ontoNormal(velocity));
 
     // write bool
-    gcs::VertexData<double> msk(*mesh);
+    gcs::VertexData<double> msk(*geometry.mesh);
     msk.fromVector(toMatrix(forces.forceMask).rowwise().sum());
     richData.addVertexProperty("forceMask", msk);
     richData.addVertexProperty("proteinMask", forces.proteinMask);
-    gcs::VertexData<double> tkr(*mesh);
-    tkr.fromVector(centerTracker.raw().cast<double>());
-    richData.addVertexProperty("center", tkr);
-    // gcs::VertexData<int> mutMkr(*mesh);
+    gcs::VertexData<double> tkr(*geometry.mesh);
+    tkr.fromVector(geometry.notableVertex.raw().cast<double>());
+    richData.addVertexProperty("notableVertex", tkr);
+    // gcs::VertexData<int> mutMkr(*geometry.mesh);
     // mutMkr.fromVector(mutationMarker.raw().cast<int>());
     // richData.addVertexProperty("smoothing_mask", mutMkr);
 
     // write geometry
-    gcs::VertexData<double> meanCurv(*mesh);
-    meanCurv.fromVector(vpg->vertexMeanCurvatures.raw().array() /
-                        vpg->vertexDualAreas.raw().array());
+    gcs::VertexData<double> meanCurv(*geometry.mesh);
+    meanCurv.fromVector(geometry.vpg->vertexMeanCurvatures.raw().array() /
+                        geometry.vpg->vertexDualAreas.raw().array());
     richData.addVertexProperty("meanCurvature", meanCurv);
-    gcs::VertexData<double> gaussCurv(*mesh);
-    gaussCurv.fromVector(vpg->vertexGaussianCurvatures.raw().array() /
-                         vpg->vertexDualAreas.raw().array());
+    gcs::VertexData<double> gaussCurv(*geometry.mesh);
+    gaussCurv.fromVector(geometry.vpg->vertexGaussianCurvatures.raw().array() /
+                         geometry.vpg->vertexDualAreas.raw().array());
     richData.addVertexProperty("gaussianCurvature", gaussCurv);
     richData.addVertexProperty("spontaneousCurvature", H0);
-    richData.addVertexProperty("dualArea", vpg->vertexDualAreas);
+    richData.addVertexProperty("dualArea", geometry.vpg->vertexDualAreas);
 
     // write pressures
     richData.addVertexProperty("spontaneousCurvatureForce",
@@ -98,8 +98,8 @@ void System::mapContinuationVariables(std::string plyFile) {
       gcs::RichSurfaceMeshData::readMeshAndData(plyFile);
 
   // Check consistent topology for continuation
-  if (mesh->nFaces() != ptrMesh_local->nFaces() ||
-      mesh->nVertices() != ptrMesh_local->nVertices()) {
+  if (geometry.mesh->nFaces() != ptrMesh_local->nFaces() ||
+      geometry.mesh->nVertices() != ptrMesh_local->nVertices()) {
     throw std::logic_error(
         "Topology for continuation parameters mapping is not consistent!");
   } else {
@@ -109,116 +109,32 @@ void System::mapContinuationVariables(std::string plyFile) {
     // frame = std::stod(sliceString(plyFile, "f", "_"));
     proteinDensity =
         ptrRichData_local->getVertexProperty<double>("protein_density")
-            .reinterpretTo(*mesh);
+            .reinterpretTo(*geometry.mesh);
     // vel_protein =
     //     ptrRichData_local->getVertexProperty<double>("protein_velocity")
-    //         .reinterpretTo(*mesh);
+    //         .reinterpretTo(*geometry.mesh);
   }
 }
 
 #ifdef MEM3DG_WITH_NETCDF
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>, EigenVectorX1d,
-           EigenVectorX3dr, double>
+// std::tuple<Geometry &&, EigenVectorX1d &, EigenVectorX3dr &, double>
+std::tuple<EigenVectorX1d, EigenVectorX3dr, double>
 System::readTrajFile(std::string trajFile, int startingFrame) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-  double initialTime;
-  EigenVectorX3dr initialVelocity;
-  EigenVectorX1d initialProteinDensity;
-
+  // Geometry geometry_here(trajFile, startingFrame);
+  // std::unique_ptr<Geometry> geometry_here =
+  //     std::make_unique<Geometry>(trajFile, startingFrame);
   MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
-  fd.getNcFrame(startingFrame);
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      fd.getCoords(startingFrame), fd.getTopology(startingFrame));
-  const EigenVectorX3dr refVertexPositions = fd.getRefCoords(startingFrame);
-  refVpg =
-      std::make_unique<gcs::VertexPositionGeometry>(*mesh, refVertexPositions);
-
   // Map continuation variables
-  initialTime = fd.getTime(startingFrame);
-  initialVelocity = fd.getVelocity(startingFrame);
-  initialProteinDensity = fd.getProteinDensity(startingFrame);
+  double time = fd.getTime(startingFrame);
+  EigenVectorX3dr initialVelocity = fd.getVelocity(startingFrame);
+  EigenVectorX1d initialProteinDensity = fd.getProteinDensity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg),
-                         initialProteinDensity, initialVelocity, initialTime);
+  return std::make_tuple(initialProteinDensity, initialVelocity, time);
+  // return std::forward_as_tuple(Geometry(trajFile, startingFrame),
+  // fd.getProteinDensity(startingFrame),  fd.getVelocity(startingFrame), time);
 }
 #endif
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshFile(std::string inputMesh) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMeshFile(std::string inputMesh, std::string referenceMesh) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> refMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  std::tie(refMesh, refVpg) = gcs::readManifoldSurfaceMesh(referenceMesh);
-  refVpg = refVpg->reinterpretTo(*mesh);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
-                     EigenVectorX3dr &vertexPositionMatrix) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      vertexPositionMatrix, faceVertexMatrix);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg));
-}
-
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-System::readMatrices(EigenVectorX3sr &faceVertexMatrix,
-                     EigenVectorX3dr &vertexPositionMatrix,
-                     EigenVectorX3dr &refVertexPositionMatrix) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
-
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      vertexPositionMatrix, faceVertexMatrix);
-  refVpg = std::make_unique<gcs::VertexPositionGeometry>(
-      *mesh, refVertexPositionMatrix);
-
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
-}
 
 } // namespace solver
 } // namespace mem3dg

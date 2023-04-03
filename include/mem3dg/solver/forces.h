@@ -39,6 +39,7 @@
 #include "mem3dg/macros.h"
 #include "mem3dg/mesh_io.h"
 #include "mem3dg/meshops.h"
+#include "mem3dg/solver/geometry.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/type_utilities.h"
 
@@ -159,9 +160,11 @@ struct Forces {
   /// protein mask
   gcs::VertexData<double> proteinMask;
 
+  Forces(Geometry &geometry_) : Forces(*geometry_.mesh, *geometry_.vpg){};
+
   Forces(gcs::ManifoldSurfaceMesh &mesh_, gcs::VertexPositionGeometry &vpg_)
-      : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0), conservativeForce(mesh, 0),
-        mechanicalForceVec(mesh, {0, 0, 0}),
+      : mesh(mesh_), vpg(vpg_), mechanicalForce(mesh, 0),
+        conservativeForce(mesh, 0), mechanicalForceVec(mesh, {0, 0, 0}),
         conservativeForceVec(mesh, {0, 0, 0}),
         spontaneousCurvatureForceVec(mesh, {0, 0, 0}),
         areaDifferenceForceVec(mesh, {0, 0, 0}),
@@ -186,11 +189,12 @@ struct Forces {
         springForceVec(mesh, {0, 0, 0}), edgeSpringForceVec(mesh, {0, 0, 0}),
         faceSpringForceVec(mesh, {0, 0, 0}), lcrSpringForceVec(mesh, {0, 0, 0}),
         stochasticForceVec(mesh, {0, 0, 0}), dampingForceVec(mesh, {0, 0, 0}),
-        interiorPenaltyPotential(mesh, 0), spontaneousCurvaturePotential(mesh, 0),
+        interiorPenaltyPotential(mesh, 0),
+        spontaneousCurvaturePotential(mesh, 0),
         deviatoricCurvaturePotential(mesh, 0), adsorptionPotential(mesh, 0),
         aggregationPotential(mesh, 0), entropyPotential(mesh, 0),
-        dirichletPotential(mesh, 0), chemicalPotential(mesh, 0), forceMask(mesh, {1.0, 1.0, 1.0}),
-        proteinMask(mesh, 1) {}
+        dirichletPotential(mesh, 0), chemicalPotential(mesh, 0),
+        forceMask(mesh, {1.0, 1.0, 1.0}), proteinMask(mesh, 1) {}
 
   ~Forces() {}
 

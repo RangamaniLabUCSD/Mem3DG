@@ -20,79 +20,30 @@ namespace solver {
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
-// void System::testConservativeForcing(const double timeStep) {
-//   // initialize variables needed for testing
-//   computeTotalEnergy();
-//   computeConservativeForcing();
-//   const Energy previousE{energy};
-//   const EigenVectorX3dr previousR = toMatrix(vpg->inputVertexPositions);
-//   const EigenVectorX1d previousPhi = proteinDensity.raw();
-
-//   // testing
-//   testConservativeForcing(timeStep, previousR, previousPhi, previousE);
-
-//   // recover the unperturbed system
-//   toMatrix(vpg->inputVertexPositions) = previousR;
-//   proteinDensity.raw() = previousPhi;
-//   updateConfigurations();
-//   computeTotalEnergy();
-//   computeConservativeForcing();
-// }
-
-EigenVectorX1d System::computeGeodesicDistance() {
-  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  return heatSolver.computeDistance(center).raw();
-}
-
-void System::prescribeGeodesicProteinDensityDistribution() {
-  std::array<double, 2> r_heter{
-      parameters.protein.geodesicProteinDensityDistribution[0],
-      parameters.protein.geodesicProteinDensityDistribution[1]};
-  vpg->requireVertexTangentBasis();
-  if (parameters.protein.profile == "gaussian") {
-    gaussianDistribution(proteinDensity.raw(), geodesicDistance.raw(),
-                         vpg->inputVertexPositions -
-                             vpg->inputVertexPositions[center.nearestVertex()],
-                         vpg->vertexTangentBasis[center.nearestVertex()],
-                         r_heter);
-  } else if (parameters.protein.profile == "tanh") {
-    tanhDistribution(proteinDensity.raw(), geodesicDistance.raw(),
-                     vpg->inputVertexPositions -
-                         vpg->inputVertexPositions[center.nearestVertex()],
-                     vpg->vertexTangentBasis[center.nearestVertex()],
-                     parameters.protein.tanhSharpness, r_heter);
-  }
-  vpg->unrequireVertexTangentBasis();
-  proteinDensity.raw() *=
-      parameters.protein.geodesicProteinDensityDistribution[2] -
-      parameters.protein.geodesicProteinDensityDistribution[3];
-  proteinDensity.raw().array() +=
-      parameters.protein.geodesicProteinDensityDistribution[3];
-}
-
 void System::prescribeGeodesicMasks() {
   // Initialize the constant mask based on distance from the point specified
-  if (parameters.variation.geodesicMask != -1) {
-    if (parameters.variation.geodesicMask > geodesicDistance.raw().maxCoeff() ||
-        parameters.variation.geodesicMask < geodesicDistance.raw().minCoeff()) {
-      mem3dg_runtime_error("either all vertices or none is "
-                           "initializeConstantsin integration disk, "
-                           "set radius = -1 to disable!");
-    }
-    for (gcs::Vertex v : mesh->vertices()) {
-      forces.forceMask[v] =
-          (geodesicDistance[v] < parameters.variation.geodesicMask)
-              ? gc::Vector3{1, 1, 1}
-              : gc::Vector3{0, 0, 0};
-      forces.proteinMask[v] =
-          (geodesicDistance[v] < parameters.variation.geodesicMask) ? 1 : 0;
-    }
+  if (parameters.variation.geodesicMask >
+          geometry.geodesicDistance.raw().maxCoeff() ||
+      parameters.variation.geodesicMask <
+          geometry.geodesicDistance.raw().minCoeff()) {
+    mem3dg_runtime_error("either all vertices or none is "
+                         "initializeConstantsin integration disk, "
+                         "set radius = -1 to disable!");
+  }
+  for (gcs::Vertex v : geometry.mesh->vertices()) {
+    forces.forceMask[v] =
+        (geometry.geodesicDistance[v] < parameters.variation.geodesicMask)
+            ? gc::Vector3{1, 1, 1}
+            : gc::Vector3{0, 0, 0};
+    forces.proteinMask[v] =
+        (geometry.geodesicDistance[v] < parameters.variation.geodesicMask) ? 1
+                                                                           : 0;
   }
 };
 
 void System::backtraceEnergyGrowth(const double timeStep,
                                    const Energy previousEnergy) {
-  if (parameters.external.isActivated)
+  if (parameters.external.form != NULL)
     computeExternalWork(time, timeStep);
   computeTotalEnergy();
   std::cout << "<<<<<" << std::endl;
@@ -154,7 +105,8 @@ bool System::testConservativeForcing(const double timeStep) {
   computeTotalEnergy();
   computeConservativeForcing();
   const Energy previousEnergy{energy};
-  const EigenVectorX3dr previousPosition = toMatrix(vpg->inputVertexPositions);
+  const EigenVectorX3dr previousPosition =
+      toMatrix(geometry.vpg->inputVertexPositions);
   const EigenVectorX1d previousProteinDensity = proteinDensity.raw();
 
   bool SUCCESS = true;
@@ -239,7 +191,7 @@ bool System::testConservativeForcing(const double timeStep) {
     // lambda function to compute energy delta
     auto computeDelta = [&](double dt) {
       proteinDensity.raw() = previousProteinDensity;
-      toMatrix(vpg->inputVertexPositions) =
+      toMatrix(geometry.vpg->inputVertexPositions) =
           previousPosition + dt * forces.maskForce(toMatrix(forceVec));
       updateConfigurations();
       computeTotalEnergy();
@@ -249,7 +201,7 @@ bool System::testConservativeForcing(const double timeStep) {
                           // which is modified by the previous line
       double expectedDelta =
           dt * forces.maskForce(toMatrix(forceVec)).squaredNorm();
-      return std::array<double, 2>{actualDelta, expectedDelta};
+      return std::tuple<double, double>(actualDelta, expectedDelta);
     };
     double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
     std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
@@ -269,7 +221,7 @@ bool System::testConservativeForcing(const double timeStep) {
 
     // lambda function to compute energy delta
     auto computeDelta = [&](double dt) {
-      toMatrix(vpg->inputVertexPositions) = previousPosition;
+      toMatrix(geometry.vpg->inputVertexPositions) = previousPosition;
       proteinDensity.raw() =
           previousProteinDensity +
           dt * parameters.proteinMobility * forces.maskProtein(potential.raw());
@@ -278,7 +230,7 @@ bool System::testConservativeForcing(const double timeStep) {
       double actualDelta = -currentEnergy + previousEnergy;
       double expectedDelta = dt * parameters.proteinMobility *
                              forces.maskProtein(potential.raw()).squaredNorm();
-      return std::array<double, 2>{actualDelta, expectedDelta};
+      return std::tuple<double, double>(actualDelta, expectedDelta);
     };
     double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
     std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
@@ -290,13 +242,13 @@ bool System::testConservativeForcing(const double timeStep) {
   // ==========================================================
   // ================  Spontaneous curvature ==================
   // ==========================================================
-  SUCCESS =
-      testMechanical(forces.spontaneousCurvatureForceVec,
-                     previousEnergy.spontaneousCurvatureEnergy,
-                     energy.spontaneousCurvatureEnergy,
-                     "spontaneousCurvatureForceVec",
-                     "spontaneousCurvatureEnergy") &&
-      SUCCESS; // leaving && SUCESS to the last to ensure running all the tests
+  SUCCESS = testMechanical(forces.spontaneousCurvatureForceVec,
+                           previousEnergy.spontaneousCurvatureEnergy,
+                           energy.spontaneousCurvatureEnergy,
+                           "spontaneousCurvatureForceVec",
+                           "spontaneousCurvatureEnergy") &&
+            SUCCESS; // leaving && SUCESS to the last to ensure running all
+                     // the tests
   SUCCESS = testChemical(forces.spontaneousCurvaturePotential,
                          previousEnergy.spontaneousCurvatureEnergy,
                          energy.spontaneousCurvatureEnergy,
@@ -437,8 +389,8 @@ bool System::testConservativeForcing(const double timeStep) {
                    "proteinInteriorPenalty") &&
       SUCCESS;
 
-  // recover the configuration 
-  toMatrix(vpg->inputVertexPositions) = previousPosition;
+  // recover the configuration
+  toMatrix(geometry.vpg->inputVertexPositions) = previousPosition;
   proteinDensity.raw() = previousProteinDensity;
   updateConfigurations();
   computeTotalEnergy();
@@ -610,183 +562,6 @@ bool System::checkFiniteness() {
   }
 
   return finite;
-}
-
-double System::inferTargetSurfaceArea() {
-  double targetArea;
-  if (isOpenMesh) {
-    targetArea = parameters.tension.A_res;
-    for (gcs::BoundaryLoop bl : mesh->boundaryLoops()) {
-      targetArea += computePolygonArea(bl, vpg->inputVertexPositions);
-    }
-  } else {
-    targetArea = vpg->faceAreas.raw().sum();
-  }
-  return targetArea;
-}
-
-void System::findVertexCenter(double range) {
-  if (parameters.point.pt.rows() == 1) {
-    // Assign surface point as the indexed vertex
-    center =
-        gc::SurfacePoint(mesh->vertex((std::size_t)parameters.point.pt[0]));
-
-  } else if (parameters.point.pt.rows() == 2 ||
-             parameters.point.pt.rows() == 3) {
-    // Find the closest vertex to the point in the x-y plane or in the space
-    center = gc::SurfacePoint(closestVertexToPt(
-        *mesh, *vpg, parameters.point.pt, geodesicDistance, range));
-  } else {
-    mem3dg_runtime_error("parameters.point.pt type not supported!");
-  }
-
-  centerTracker.fill(false);
-  centerTracker[center.vertex] = true;
-  // Check for only one true...
-  auto lv = centerTracker.raw().reshaped();
-  int num = std::count(lv.begin(), lv.end(), true);
-  if (num == 0) {
-    mem3dg_runtime_error("Surface point is not updated!");
-  } else if (num > 1) {
-    mem3dg_runtime_error("there is no "
-                         "unique/existing center!");
-  }
-}
-
-void System::findFloatCenter(double range) {
-  if (parameters.point.pt.rows() == 1) {
-    throw std::logic_error(
-        "To have Floating vertex, one must specify vertex by coordinate!");
-  } else if (parameters.point.pt.rows() == 2) {
-    // Find the cloest vertex to the point in the x-y plane
-    gcs::Vertex closestVertex = closestVertexToPt(
-        *mesh, *vpg, parameters.point.pt, geodesicDistance, range);
-    double shortestDistance = 1e18;
-    // loop over every faces around the vertex
-    for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
-      if (he.isInterior()) {
-        // specify vertex coordinates and the target coordinate on the face
-        gc::Vector2 v1{vpg->inputVertexPositions[he.vertex()].x,
-                       vpg->inputVertexPositions[he.vertex()].y};
-        gc::Vector2 v2{vpg->inputVertexPositions[he.next().vertex()].x,
-                       vpg->inputVertexPositions[he.next().vertex()].y};
-        gc::Vector2 v3{vpg->inputVertexPositions[he.next().next().vertex()].x,
-                       vpg->inputVertexPositions[he.next().next().vertex()].y};
-        gc::Vector2 v{parameters.point.pt[0], parameters.point.pt[1]};
-        // find the inverse barycentric mapping based on the cartesian
-        // vertex coordinates
-        gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
-
-        if (baryCoords_.x > 0 && baryCoords_.y > 0 &&
-            baryCoords_.z > 0) { // A. set the surface point when the point
-                                 // lays within the triangle
-          center = gcs::SurfacePoint(
-              he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-          break;
-        } else { // B. avoid the floating point comparision, find the best
-                 // by looping over the whole fan
-          baryCoords_ = gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
-          baryCoords_ /= gc::sum(baryCoords_);
-          gcs::SurfacePoint someSurfacePoint(
-              he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-          double distance =
-              (gc::Vector2{parameters.point.pt[0], parameters.point.pt[1]} -
-               gc::Vector2{
-                   someSurfacePoint.interpolate(vpg->inputVertexPositions).x,
-                   someSurfacePoint.interpolate(vpg->inputVertexPositions).y})
-                  .norm();
-          if (distance < shortestDistance) {
-            center = someSurfacePoint;
-            shortestDistance = distance;
-          }
-        }
-      }
-    }
-  } else if (parameters.point.pt.rows() == 3) {
-    // initialize embedded point and the closest vertex
-    gc::Vector3 embeddedPoint{parameters.point.pt[0], parameters.point.pt[1],
-                              parameters.point.pt[2]};
-    gcs::Vertex closestVertex = closestVertexToPt(
-        *mesh, *vpg, parameters.point.pt, geodesicDistance, range);
-    gc::Vector3 vertexToPoint =
-        embeddedPoint - vpg->inputVertexPositions[closestVertex];
-    // initialize the surface point as the closest vertex
-    // center = gc::SurfacePoint(closestVertex);
-    // double shortestDistance = vertexToPoint.norm();
-    double shortestDistance = 1e18;
-    // loop over every faces around the vertex
-    for (gcs::Halfedge he : closestVertex.outgoingHalfedges()) {
-      if (he.isInterior()) {
-        // project the embedded point onto the face
-        auto faceNormal = vpg->faceNormal(he.face());
-        gc::Vector3 projectedEmbeddedPoint =
-            embeddedPoint - gc::dot(vertexToPoint, faceNormal) * faceNormal;
-        // determine the choice of coordinates used for inverse
-        // barycentric mapping based on orientation of the face
-        gc::Vector2 v1, v2, v3, v;
-        if (abs(faceNormal.z) > std::sqrt(3) / 3) {
-          v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].x,
-                           vpg->inputVertexPositions[he.vertex()].y};
-          v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].x,
-                           vpg->inputVertexPositions[he.next().vertex()].y};
-          v3 = gc::Vector2{
-              vpg->inputVertexPositions[he.next().next().vertex()].x,
-              vpg->inputVertexPositions[he.next().next().vertex()].y};
-          v = gc::Vector2{projectedEmbeddedPoint.x, projectedEmbeddedPoint.y};
-        } else if (abs(faceNormal.x) > std::sqrt(3) / 3) {
-          v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].y,
-                           vpg->inputVertexPositions[he.vertex()].z};
-          v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].y,
-                           vpg->inputVertexPositions[he.next().vertex()].z};
-          v3 = gc::Vector2{
-              vpg->inputVertexPositions[he.next().next().vertex()].y,
-              vpg->inputVertexPositions[he.next().next().vertex()].z};
-          v = gc::Vector2{projectedEmbeddedPoint.y, projectedEmbeddedPoint.z};
-        } else {
-          v1 = gc::Vector2{vpg->inputVertexPositions[he.vertex()].z,
-                           vpg->inputVertexPositions[he.vertex()].x};
-          v2 = gc::Vector2{vpg->inputVertexPositions[he.next().vertex()].z,
-                           vpg->inputVertexPositions[he.next().vertex()].x};
-          v3 = gc::Vector2{
-              vpg->inputVertexPositions[he.next().next().vertex()].z,
-              vpg->inputVertexPositions[he.next().next().vertex()].x};
-          v = gc::Vector2{projectedEmbeddedPoint.z, projectedEmbeddedPoint.x};
-        }
-        // find the inverse barycentric mapping based on the cartesian
-        // vertex coordinates
-        gc::Vector3 baryCoords_ = cartesianToBarycentric(v1, v2, v3, v);
-        // since might not find the perfect reflecting face, best we could
-        // do within each triangle
-        baryCoords_ = gc::componentwiseMax(baryCoords_, gc::Vector3{0, 0, 0});
-        baryCoords_ /= gc::sum(baryCoords_);
-        gcs::SurfacePoint someSurfacePoint(
-            he.face(), correspondBarycentricCoordinates(baryCoords_, he));
-        // compute optimum distance and set surface point
-        double distance = (embeddedPoint - someSurfacePoint.interpolate(
-                                               vpg->inputVertexPositions))
-                              .norm();
-        if (distance < shortestDistance) {
-          center = someSurfacePoint;
-          shortestDistance = distance;
-        }
-      }
-    }
-  }
-
-  // mark three vertex on the face
-  centerTracker.fill(false);
-  centerTracker[center.face.halfedge().vertex()] = true;
-  centerTracker[center.face.halfedge().next().vertex()] = true;
-  centerTracker[center.face.halfedge().next().next().vertex()] = true;
-  
-  auto lv = centerTracker.raw().reshaped();
-  int num = std::count(lv.begin(), lv.end(), true);
-  if (num == 0) {
-    mem3dg_runtime_error("Surface point is not updated!");
-  } else if (num > 3) {
-    mem3dg_runtime_error("there is no "
-                         "unique/existing center!");
-  }
 }
 
 } // namespace solver

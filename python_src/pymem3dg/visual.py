@@ -20,7 +20,8 @@ import seaborn as sns
 import netCDF4 as nc
 
 import pymem3dg as dg
-import pymem3dg.read as dg_read
+import pymem3dg.read.netcdf as dg_nc
+import pymem3dg.read.mesh as dg_mesh
 import pymem3dg.util as dg_util
 
 import polyscope as ps
@@ -60,7 +61,7 @@ def polyscopeStyle(setLengthScale=False):
     ps.set_transparency_mode("pretty")
     ps.set_up_dir("z_up")
     ps.set_ground_plane_mode("none")
-    ps.set_autocenter_structures(True)
+    ps.set_autocenter_structures(False)
     ps.set_autoscale_structures(False)
     ps.set_view_projection_mode("orthographic")
     ps.set_give_focus_on_show(True)
@@ -142,25 +143,24 @@ def overlayColorbar():
         fig.savefig(figureName, transparent=True, dpi=1500)
 
 
-def visualizePly(plyFile: str, *vertexData: str):
+def visualizePly(plyFile: str, *vertexData: str) -> ps.SurfaceMesh:
     """Visualize .ply file using polyscope
 
     Args:
         plyFile (str): .ply file
         vertexData (str): variable number of arbitrary keyword arguments to add visualizing mesh data
     """
-    face, vertex = dg.readMesh(plyFile)
-    # print(dg.readData(ply))
-    # print(dg.readData(ply, 'vertex'))
+    face, vertex = dg.getFaceAndVertexMatrix(plyFile)
     ps.init()
     polyscopeStyle()
     ps_mesh = ps.register_surface_mesh("mesh", vertex, face, smooth_shade=True)
     for name in vertexData:
-        data = dg.readData(plyFile, "vertex", name)
+        data = dg_mesh.getData(plyFile, "vertex", name)
         ps_mesh.add_scalar_quantity(name, data, enabled=True)
+    return ps_mesh
 
 
-def plotProteinDensity(ax, trajFile, parameters, frames=None):
+def plotProteinDensity(ax, trajFile, frames=None):
     """plot protein density
     Args:
         ax (matplotlib.axes.Axes): matplotlib Axes object
@@ -169,7 +169,7 @@ def plotProteinDensity(ax, trajFile, parameters, frames=None):
         frames (list, optional): list of frames to plot. Defaults to all frames in trajectory file
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     proteinDensity = np.array([])
     proteinDensity_time = np.array([])
@@ -190,9 +190,8 @@ def plotProteinDensity(ax, trajFile, parameters, frames=None):
             )
             proteinDensity_time = np.append(proteinDensity_time, time_now)
             time[plotFrame] = ds.groups["Trajectory"].variables["time"][ncFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
-        area_weight_now = system.getVertexDualAreas()
+        geometry = dg.Geometry(trajFile, ncFrame)
+        area_weight_now = geometry.getVertexDualAreas()
         area_weight = np.append(area_weight, area_weight_now)
         totalProtein[plotFrame] = np.sum(area_weight_now * proteinDensity_now)
 
@@ -264,7 +263,7 @@ def plotChemicalPotentials(
         entropyPotential (bool, optional): option to visualize components, default to False
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
 
@@ -278,8 +277,9 @@ def plotChemicalPotentials(
 
     for plotFrame in range(frameNum):
         ncFrame = frames[plotFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
+        geometry = dg.Geometry(trajFile, ncFrame)
+        system = dg.System(geometry, trajFile, ncFrame, parameters)
+        system.initialize(ifMutateMesh=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
         system.addNonconservativeForcing()
@@ -419,7 +419,7 @@ def plotMechanicalForces(
         lineCapillaryForce (bool, optional): option to visualize components. Default to False
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
 
@@ -436,8 +436,9 @@ def plotMechanicalForces(
 
     for plotFrame in range(frameNum):
         ncFrame = frames[plotFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
+        geometry = dg.Geometry(trajFile, ncFrame)
+        system = dg.System(geometry, trajFile, ncFrame, parameters)
+        system.initialize(ifMutateMesh=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
         system.addNonconservativeForcing()
@@ -627,7 +628,7 @@ def plotEnergy(
         dirichletEnergy (bool, optional): option to visualize components. Defaults to False
     """
     if frames == None:
-        frames = range(dg_read.sizeOf(trajFile))
+        frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
 
@@ -649,8 +650,9 @@ def plotEnergy(
 
     for plotFrame in range(frameNum):
         ncFrame = frames[plotFrame]
-        system = dg.System(trajFile, ncFrame, parameters)
-        system.initialize(nMutation=0, ifMute=True)
+        geometry = dg.Geometry(trajFile, ncFrame)
+        system = dg.System(geometry, trajFile, ncFrame, parameters)
+        system.initialize(ifMutateMesh=0, ifMute=True)
         time[plotFrame] = system.time
         system.computeTotalEnergy()
         energy = system.getEnergy()
@@ -789,13 +791,16 @@ def interlaceImages(fileList, videoName):
     clip.write_gif(videoName + ".gif")
 
 
-def setPolyscopePermutations(psmesh, polyscopePermutations):
+def setPolyscopePermutations(psmesh, face, vertex):
     """set polyscope permutation convention
 
     Args:
         psmesh (polysocpe.SurfaceMesh): polyscope SurfaceMesh instance
-        polyscopePermutations (np.ndarray): polyscope permutation convention
+        face (np.ndarray): face topology matrix
+        vertex (np.ndarray): vertex position matrix
     """
+    geometry = dg.Geometry(face, vertex, vertex)
+    polyscopePermutations = geometry.getPolyscopePermutations()
     psmesh.set_all_permutations(
         vertex_perm=np.array(polyscopePermutations[0][0]),
         vertex_perm_size=polyscopePermutations[0][1],
@@ -810,13 +815,98 @@ def setPolyscopePermutations(psmesh, polyscopePermutations):
     )
 
 
+def visualizeGeometry(
+    geometry: dg.Geometry, showBasics: bool = False
+) -> ps.SurfaceMesh:
+    """visualize pymem3dg.Geometry 
+
+    Args:
+        geometry (dg.Geometry): pymem3dg.Geometry instance
+        showBasics (bool, optional): whether show basics. Defaults to False.
+
+    Returns:
+        ps.SurfaceMesh: handle to the polyscope mesh 
+    """
+    ps.init()
+    polyscopeStyle()
+    transparency = 1
+    isPointwiseValue = False
+    vertex = geometry.getVertexMatrix()
+    face = geometry.getFaceMatrix()
+    psmesh = ps.register_surface_mesh(
+        "mesh", vertex, face, transparency=transparency, smooth_shade=True
+    )
+    setPolyscopePermutations(psmesh, face, vertex)
+
+    # Add Quantities
+    vertexDualAreas = geometry.getVertexDualAreas()
+
+    def show(geometry):
+        nonlocal transparency, isPointwiseValue, showBasics
+        if showBasics:
+            psmesh.add_scalar_quantity("notableVertex", geometry.getNotableVertex())
+            meanCurvature_ = geometry.getVertexMeanCurvatures()
+            if isPointwiseValue:
+                meanCurvature_ = meanCurvature_ / vertexDualAreas
+            absMax = np.max(abs(meanCurvature_))
+            psmesh.add_scalar_quantity(
+                "meanCurvature",
+                meanCurvature_,
+                cmap="coolwarm",
+                vminmax=(-absMax, absMax),
+            )
+            gaussianCurvature_ = geometry.getVertexGaussianCurvatures()
+            if isPointwiseValue:
+                gaussianCurvature_ = gaussianCurvature_ / vertexDualAreas
+            absMax = np.max(abs(gaussianCurvature_))
+            psmesh.add_scalar_quantity(
+                "gaussianCurvature",
+                gaussianCurvature_,
+                cmap="coolwarm",
+                vminmax=(-absMax, absMax),
+            )
+            psmesh.add_distance_quantity(
+                "geodesicDistance",
+                geometry.computeGeodesicDistance(),
+            )
+            psmesh.add_scalar_quantity(
+                "edgeLength", geometry.getEdgeLengths(), defined_on="edges"
+            )
+            psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
+
+    def callback():
+        psim.PushItemWidth(100)
+        nonlocal transparency, isPointwiseValue, showBasics
+        changed = [False for i in range(3)]
+
+        changed[0], transparency = psim.SliderFloat("Transparency", transparency, 0, 1)
+        changed[1], showBasics = psim.Checkbox("Basics", showBasics)
+        psim.SameLine()
+        changed[2], isPointwiseValue = psim.Checkbox(
+            "Pointwise (vs. integrated)", isPointwiseValue
+        )
+        anyChanged = np.any(changed)
+        if anyChanged:
+            show(geometry)
+            anyChanged = False
+
+    show(geometry)
+    ps.set_user_callback(callback)
+    return psmesh
+
+
 def animate(
     trajNc: str,
     parameters: dg.Parameters = None,
     frames: list = None,
+    showBasics=False,
+    showForce=False,
+    showPotential=False,
     geodesicDistance=True,
-    centerTracker: bool = True,
+    notableVertex: bool = True,
     meanCurvature: bool = True,
+    edgeLength: bool = True,
+    vertexDualArea: bool = True,
     gaussianCurvature: bool = True,
     mechanicalForce: bool = True,
     spontaneousCurvatureForce: bool = True,
@@ -841,10 +931,12 @@ def animate(
 
     Args:
         trajNc (str): netcdf trajectory file name
-        parameters (pymem3dg.Parameters, optional): pymem3dg Parameters instance
+        parameters (pymem3dg.Parameters, optional): pymem3dg Parameters instance. Visualizing will be limited.
         geodesicDistance (bool, optional): optional data to visualize. Defaults to True
-        centerTracker (bool, optional): optional data to visualize. Defaults to True
+        notableVertex (bool, optional): optional data to visualize. Defaults to True
         meanCurvature (bool, optional): optional data to visualize. Defaults to True
+        edgeLength (bool, optional): optional data to visualize. Defaults to True
+        vertexDualArea (bool, optional): optional data to visualize. Defaults to True
         gaussianCurvature (bool, optional): optional data to visualize. Defaults to True
         mechanicalForce (bool, optional): optional data to visualize. Defaults to True
         spontaneousCurvatureForce (bool, optional): optional data to visualize. Defaults to True
@@ -867,20 +959,15 @@ def animate(
     """
     hasParameters = parameters is not None
     if frames == None:
-        frames = range(dg_read.sizeOf(trajNc))
+        frames = range(dg_nc.sizeOf(trajNc))
 
     maxFrameInd = np.size(frames) - 1
     prevFrameInd = 0
     currFrameInd = 0
-    time = dg_read.readMeshDataByNc(
-        trajNc, frames[currFrameInd], "Trajectory", "time", 1
-    )
+    time = dg_nc.getData(trajNc, frames[currFrameInd], "Trajectory", "time", 1)
     isFluxForm = False
     isPointwiseValue = False
     isForceVec = False
-    showForce = False
-    showPotential = False
-    showBasics = False
     recordingDir = ""
 
     ps.init()
@@ -893,30 +980,24 @@ def animate(
     def show(trajNc):
         nonlocal currFrameInd, time, isPointwiseValue, isForceVec, isFluxForm, showPotential, showForce, showBasics
         frame = frames[currFrameInd]
-
-        time = dg_read.readMeshDataByNc(trajNc, frame, "Trajectory", "time", 1)
-        face, vertex = dg_read.readMeshByNc(trajNc, frame)
-        velocity = dg_read.readMeshDataByNc(
-            trajNc, frame, "Trajectory", "velocities", 3
-        )
+        time = dg_nc.getData(trajNc, frame, "Trajectory", "time", 1)
+        geometry = dg.Geometry(trajNc, frame)
+        if hasParameters:
+            system = dg.System(geometry, trajNc, frame, parameters)
+            system.initialize(ifMutateMesh=0, ifMute=True)
+            system.computeConservativeForcing()
+            system.addNonconservativeForcing()
+        vertex = geometry.getVertexMatrix()
+        face = geometry.getFaceMatrix()
         psmesh = ps.register_surface_mesh(
             "mesh", vertex, face, transparency=transparency, smooth_shade=True
         )
-
-        if hasParameters:
-            system = dg.System(trajNc, frame, parameters)
-            system.initialize(nMutation=0, ifMute=True)
-            system.computeConservativeForcing()
-            system.addNonconservativeForcing()
-        else:
-            system = dg.System(trajNc, frame)
-            system.initialize(nMutation=0, ifMute=True)
-        polyscopePermutations = system.getPolyscopePermutations()
-        setPolyscopePermutations(psmesh, polyscopePermutations)
+        setPolyscopePermutations(psmesh, face, vertex)
 
         # Add Quantities
-        vertexDualAreas = system.getVertexDualAreas()
-        proteinDensity = system.getProteinDensity()
+        vertexDualAreas = geometry.getVertexDualAreas()
+        proteinDensity = dg_nc.getData(trajNc, frame, "Trajectory", "proteindensity", 1)
+        velocity = dg_nc.getData(trajNc, frame, "Trajectory", "velocities", 3)
         if showBasics:
             psmesh.add_vector_quantity("velocity", velocity)
             if isPointwiseValue:
@@ -935,28 +1016,44 @@ def animate(
                     enabled=True,
                     cmap="viridis",
                 )
-            if centerTracker:
-                psmesh.add_scalar_quantity("centerTracker", system.getCenterTracker())
+            if notableVertex:
+                psmesh.add_scalar_quantity("notableVertex", geometry.getNotableVertex())
             if meanCurvature:
-                meanCurvature_ = system.getVertexMeanCurvatures()
+                meanCurvature_ = geometry.getVertexMeanCurvatures()
                 if isPointwiseValue:
                     meanCurvature_ = meanCurvature_ / vertexDualAreas
-                psmesh.add_scalar_quantity("meanCurvature", meanCurvature_)
+                absMax = np.max(abs(meanCurvature_))
+                psmesh.add_scalar_quantity(
+                    "meanCurvature",
+                    meanCurvature_,
+                    cmap="coolwarm",
+                    vminmax=(-absMax, absMax),
+                )
             if gaussianCurvature:
-                gaussianCurvature_ = system.getVertexGaussianCurvatures()
+                gaussianCurvature_ = geometry.getVertexGaussianCurvatures()
                 if isPointwiseValue:
                     gaussianCurvature_ = gaussianCurvature_ / vertexDualAreas
-                psmesh.add_scalar_quantity("gaussianCurvature", gaussianCurvature_)
+                absMax = np.max(abs(gaussianCurvature_))
+                psmesh.add_scalar_quantity(
+                    "gaussianCurvature",
+                    gaussianCurvature_,
+                    cmap="coolwarm",
+                    vminmax=(-absMax, absMax),
+                )
             if geodesicDistance:
                 psmesh.add_distance_quantity(
                     "geodesicDistance",
-                    dg_util.getGeodesicDistance(
-                        face=face, vertex=vertex, point=parameters.point.pt
-                    ),
+                    geometry.computeGeodesicDistance(),
                 )
+            if edgeLength:
+                psmesh.add_scalar_quantity(
+                    "edgeLength", geometry.getEdgeLengths(), defined_on="edges"
+                )
+            if vertexDualArea:
+                psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
 
         def computeProteinRateOfChange(potential: npt.NDArray[np.float64]):
-            d0T = system.getVertexAdjacencyMatrix().T
+            d0T = system.getGeometry().getVertexAdjacencyMatrix().T
             flux = system.computeInPlaneFluxForm(potential)
             rateOfChange = parameters.proteinMobility * d0T @ flux
             if not np.all(rateOfChange == 0):
@@ -972,14 +1069,15 @@ def animate(
                     psmesh.add_vector_quantity(key, force)
                 else:
                     projectedForce = dg_util.rowwiseDotProduct(
-                        force, system.getVertexNormals()
+                        force, system.getGeometry().getVertexNormals()
                     )
-                    absMax = np.max(abs(projectedForce))
+                    # limit = np.max(abs(projectedForce))
+                    limit = np.max(abs(np.percentile(projectedForce, [1, 99])))
                     psmesh.add_scalar_quantity(
                         key,
                         projectedForce,
                         cmap="coolwarm",
-                        vminmax=(-absMax, absMax),
+                        vminmax=(-limit, limit),
                     )
 
         def addPotential(potential: npt.NDArray[np.float64], key: str):
@@ -989,105 +1087,100 @@ def animate(
                     psmesh.add_one_form_vector_quantity(
                         key,
                         inPlaneFluxForm,
-                        system.getPolyscopeEdgeOrientations(),
+                        system.getGeometry().getPolyscopeEdgeOrientations(),
                     )
             else:
                 if parameters.variation.isProteinConservation:
                     rateOfChange = computeProteinRateOfChange(potential)
-                    absMax = np.max(abs(rateOfChange))
+                    # limit = np.max(abs(rateOfChange))
+                    limit = np.max(abs(np.percentile(rateOfChange, [1, 99])))
                     if not np.all(rateOfChange == 0):
                         psmesh.add_scalar_quantity(
                             key,
                             rateOfChange,
                             cmap="coolwarm",
-                            vminmax=(-absMax, absMax),
+                            vminmax=(-limit, limit),
                         )
                 else:
                     if not np.all(potential == 0):
                         if not isPointwiseValue:
                             potential = vertexDualAreas * potential
-                        absMax = np.max(abs(potential))
+                        # limit = np.max(abs(potential))
+                        limit = np.max(abs(np.percentile(potential, [1, 99])))
                         psmesh.add_scalar_quantity(
                             key,
                             potential,
                             cmap="coolwarm",
-                            vminmax=(-absMax, absMax),
+                            vminmax=(-limit, limit),
                         )
 
-        if hasParameters:
-            if showForce:
-                if mechanicalForce:
-                    addForce(
-                        system.getForces().getMechanicalForceVec(), "mechanicalForce"
-                    )
-                if spontaneousCurvatureForce:
-                    addForce(
-                        system.getForces().getSpontaneousCurvatureForceVec(),
-                        "spontaneousCurvatureForce",
-                    )
-                if deviatoricCurvatureForce:
-                    addForce(
-                        system.getForces().getDeviatoricCurvatureForceVec(),
-                        "deviatoricCurvatureForce",
-                    )
-                if externalForce:
-                    addForce(system.getForces().getExternalForceVec(), "externalForce")
-                if capillaryForce:
-                    addForce(
-                        system.getForces().getCapillaryForceVec(), "capillaryForce"
-                    )
-                if lineCapillaryForce:
-                    addForce(
-                        system.getForces().getLineCapillaryForceVec(),
-                        "lineCapillaryForce",
-                    )
-                if osmoticForce:
-                    addForce(system.getForces().getOsmoticForceVec(), "osmoticForce")
-                if adsorptionForce:
-                    addForce(
-                        system.getForces().getAdsorptionForceVec(), "adsorptionForce"
-                    )
-                if aggregationForce:
-                    addForce(
-                        system.getForces().getAggregationForceVec(), "aggregationForce"
-                    )
-                if entropyForce:
-                    addForce(system.getForces().getEntropyForceVec(), "entropyForce")
-                if springForce:
-                    addForce(system.getForces().getSpringForceVec(), "springForce")
-            if showPotential:
-                if chemicalPotential:
-                    addPotential(
-                        system.getForces().getChemicalPotential(), "chemicalPotential"
-                    )
-                if spontaneousCurvaturePotential:
-                    addPotential(
-                        system.getForces().getSpontaneousCurvaturePotential(),
-                        "spontaneousCurvaturePotential",
-                    )
-                if deviatoricCurvaturePotential:
-                    addPotential(
-                        system.getForces().getDeviatoricCurvaturePotential(),
-                        "deviatoricCurvaturePotential",
-                    )
-                if aggregationPotential:
-                    addPotential(
-                        system.getForces().getAggregationPotential(),
-                        "aggregationPotential",
-                    )
-                if dirichletPotential:
-                    addPotential(
-                        system.getForces().getDirichletPotential(), "dirichletPotential"
-                    )
-                if adsorptionPotential:
-                    addPotential(
-                        system.getForces().getAdsorptionPotential(),
-                        "adsorptionPotential",
-                    )
-                if entropyPotential:
-                    addPotential(
-                        system.getForces().getEntropyPotential(), "entropyPotential"
-                    )
+        if showForce and hasParameters:
+            if mechanicalForce:
+                addForce(system.getForces().getMechanicalForceVec(), "mechanicalForce")
+            if spontaneousCurvatureForce:
+                addForce(
+                    system.getForces().getSpontaneousCurvatureForceVec(),
+                    "spontaneousCurvatureForce",
+                )
+            if deviatoricCurvatureForce:
+                addForce(
+                    system.getForces().getDeviatoricCurvatureForceVec(),
+                    "deviatoricCurvatureForce",
+                )
+            if externalForce:
+                addForce(system.getForces().getExternalForceVec(), "externalForce")
+            if capillaryForce:
+                addForce(system.getForces().getCapillaryForceVec(), "capillaryForce")
+            if lineCapillaryForce:
+                addForce(
+                    system.getForces().getLineCapillaryForceVec(),
+                    "lineCapillaryForce",
+                )
+            if osmoticForce:
+                addForce(system.getForces().getOsmoticForceVec(), "osmoticForce")
+            if adsorptionForce:
+                addForce(system.getForces().getAdsorptionForceVec(), "adsorptionForce")
+            if aggregationForce:
+                addForce(
+                    system.getForces().getAggregationForceVec(), "aggregationForce"
+                )
+            if entropyForce:
+                addForce(system.getForces().getEntropyForceVec(), "entropyForce")
+            if springForce:
+                addForce(system.getForces().getSpringForceVec(), "springForce")
+        if showPotential and hasParameters:
+            if chemicalPotential:
+                addPotential(
+                    system.getForces().getChemicalPotential(), "chemicalPotential"
+                )
+            if spontaneousCurvaturePotential:
+                addPotential(
+                    system.getForces().getSpontaneousCurvaturePotential(),
+                    "spontaneousCurvaturePotential",
+                )
+            if deviatoricCurvaturePotential:
+                addPotential(
+                    system.getForces().getDeviatoricCurvaturePotential(),
+                    "deviatoricCurvaturePotential",
+                )
+            if aggregationPotential:
+                addPotential(
+                    system.getForces().getAggregationPotential(),
+                    "aggregationPotential",
+                )
+            if dirichletPotential:
+                addPotential(
+                    system.getForces().getDirichletPotential(), "dirichletPotential"
+                )
+            if adsorptionPotential:
+                addPotential(
+                    system.getForces().getAdsorptionPotential(),
+                    "adsorptionPotential",
+                )
+            if entropyPotential:
+                addPotential(
+                    system.getForces().getEntropyPotential(), "entropyPotential"
+                )
 
     def callback():
         psim.PushItemWidth(100)
@@ -1124,7 +1217,7 @@ def animate(
         changed[3], isPointwiseValue = psim.Checkbox(
             "Pointwise (vs. integrated)", isPointwiseValue
         )
-        if parameters:
+        if hasParameters:
             if parameters.variation.isShapeVariation:
                 changed[6], showForce = psim.Checkbox("Mechanical forces", showForce)
                 psim.SameLine()

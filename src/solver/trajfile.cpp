@@ -223,6 +223,27 @@ TrajFile::getProteinDensity(const std::size_t idx) const {
   return vec;
 }
 
+// notable vertex
+void TrajFile::writeNotableVertex(
+    const std::size_t idx, const Eigen::Matrix<bool, Eigen::Dynamic, 1> &data) {
+  if (!writeable)
+    mem3dg_runtime_error("Cannot write to read only file.");
+
+  assert(data.rows() == nvertices_dim.getSize());
+
+  vertex_var.putVar({idx, 0}, {1, nvertices_dim.getSize()}, data.data());
+}
+
+Eigen::Matrix<bool, Eigen::Dynamic, 1>
+TrajFile::getNotableVertex(const std::size_t idx) const {
+  assert(idx < nFrames());
+
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> vec(nvertices_dim.getSize(), 1);
+
+  vertex_var.getVar({idx, 0}, {1, nvertices_dim.getSize()}, vec.data());
+  return vec;
+}
+
 // mean curvature
 void TrajFile::writeMeanCurvature(
     const std::size_t idx,

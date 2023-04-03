@@ -41,9 +41,13 @@ bool Euler::integrate() {
 
   signal(SIGINT, signalHandler);
 
-  double initialTime = system.time, lastUpdateGeodesics = system.time,
-         lastProcessMesh = system.time, lastComputeAvoidingForce = system.time,
+  double initialTime = system.time, lastComputeAvoidingForce = system.time,
          lastSave = system.time;
+  std::map<std::string, double> lastUpdateTime{{"geodesics", system.time},
+                                               {"mutateMesh", system.time},
+                                               {"protein", system.time},
+                                               {"notableVertex", system.time},
+                                               {"mask", system.time}};
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
@@ -95,36 +99,8 @@ bool Euler::integrate() {
       break;
     }
 
-    // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > (processMeshPeriod * timeStep)) {
-      lastProcessMesh = system.time;
-      system.mutateMesh();
-      system.updateConfigurations();
-      system.refVpg = system.vpg->copy();
-      system.updateReferenceConfigurations();
-      if (system.parameters.point.isFloatVertex)
-        system.findFloatCenter(
-            3 * system.vpg->edgeLength(
-                    system.center.nearestVertex().halfedge().edge()));
-    }
-
-    // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics >
-        (updateGeodesicsPeriod * timeStep)) {
-      lastUpdateGeodesics = system.time;
-      if (system.parameters.point.isFloatVertex)
-        system.findFloatCenter(
-            3 * system.vpg->edgeLength(
-                    system.center.nearestVertex().halfedge().edge()));
-      system.geodesicDistance.raw() = system.computeGeodesicDistance();
-      if (system.parameters.protein.ifPrescribe)
-        system.prescribeGeodesicProteinDensityDistribution();
-      system.updateConfigurations();
-    }
-
-    // step forward
-    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
-      system.time += 1e-10 * characteristicTimeStep;
+    if (system.updatePrescription(lastUpdateTime, timeStep)) {
+      system.time += 1e-5 * timeStep;
     } else {
       march();
     }
@@ -182,7 +158,7 @@ void Euler::status() {
   }
 
   // compute the free energy of the system
-  if (system.parameters.external.isActivated)
+  if (system.parameters.external.form != NULL)
     system.computeExternalWork(system.time, timeStep);
   system.computeTotalEnergy();
 
@@ -195,22 +171,58 @@ void Euler::status() {
   }
 }
 
+// std::tuple<EigenVectorX3dr, EigenVectorX1d>
+// Euler::flowMap(EigenVectorX3dr &position, EigenVectorX1d &protein, double h) {
+//   toMatrix(system.geometry.vpg->inputVertexPositions) = position;
+//   system.proteinDensity.raw() = protein;
+
+//   system.updateConfigurations();
+//   system.computeConservativeForcing();
+//   system.addNonconservativeForcing(h);
+
+//   system.velocity = system.forces.mechanicalForceVec;
+
+//   if (system.parameters.variation.isProteinVariation) {
+//     if (system.parameters.variation.isProteinConservation) {
+//       system.proteinRateOfChange.raw() =
+//           system.parameters.proteinMobility *
+//           system.geometry.vpg->hodge0Inverse *
+//           system.geometry.vpg->d0.transpose() *
+//           system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
+//     } else {
+//       system.proteinRateOfChange = system.parameters.proteinMobility *
+//                                    system.forces.chemicalPotential /
+//                                    system.geometry.vpg->vertexDualAreas;
+//     }
+//   }
+
+//   return std::make_tuple(
+//       toMatrix(system.geometry.vpg->inputVertexPositions) +
+//           toMatrix(system.velocity) * h,
+//       (system.proteinDensity + system.proteinRateOfChange * h).raw());
+// }
+
 void Euler::march() {
   // compute velocity, which are independent of time
+
+  // fixPointIteration(flowMap, characteristicTimeStep, 0.01);
+
   system.velocity = system.forces.mechanicalForceVec;
   system.mechErrorNorm = (toMatrix(system.velocity).array() *
                           toMatrix(system.forces.mechanicalForceVec).array())
                              .sum();
+
   if (system.parameters.variation.isProteinVariation) {
     if (system.parameters.variation.isProteinConservation) {
       system.proteinRateOfChange.raw() =
-          system.parameters.proteinMobility * system.vpg->hodge0Inverse *
-          system.vpg->d0.transpose() *
+          system.parameters.proteinMobility *
+          system.geometry.vpg->hodge0Inverse *
+          system.geometry.vpg->d0.transpose() *
           system.computeInPlaneFluxForm(system.forces.chemicalPotential.raw());
     } else {
       system.proteinRateOfChange = system.parameters.proteinMobility *
                                    system.forces.chemicalPotential /
-                                   system.vpg->vertexDualAreas;
+                                   system.geometry.vpg->vertexDualAreas;
     }
     system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
                             system.forces.chemicalPotential.raw().array())
@@ -235,7 +247,7 @@ void Euler::march() {
   } else {
     timeStep = characteristicTimeStep;
   }
-  system.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 

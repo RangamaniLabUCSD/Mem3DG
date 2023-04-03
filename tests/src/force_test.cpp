@@ -44,20 +44,41 @@ protected:
   EigenVectorX1d proteinDensity;
   EigenVectorX3dr velocity;
   Parameters p;
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex;
   double h = 0.1;
 
   ForceTest() {
+    // Create mesh and geometry objects
+    std::tie(topologyMatrix, vertexMatrix) =
+        getCylinderMatrix(1, 10, 10, 5, 0.3);
+    std::tie(topologyMatrix, refVertexMatrix) = getCylinderMatrix(1, 10, 10);
+    proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
+    velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
+    std::size_t notableVertex_index =
+        mem3dg::getVertexClosestToEmbeddedCoordinate(
+            vertexMatrix, std::array<double, 3>{0, 0, 1});
+    notableVertex = Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(
+        vertexMatrix.rows(), false);
+    notableVertex[notableVertex_index] = true;
 
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = true;
     p.variation.geodesicMask = -1;
-    p.point.isFloatVertex = false;
-    p.point.pt.resize(3, 1);
-    p.point.pt << 0, 0, 1;
-    p.protein.geodesicProteinDensityDistribution.resize(4, 1);
-    p.protein.profile = "tanh";
-    p.protein.geodesicProteinDensityDistribution << 1, 1, 0.7, 0.2;
-    p.protein.tanhSharpness = 3;
+
+    auto geodesicProteinDensity = [](double time, EigenVectorX1d meanCurvature,
+                                     EigenVectorX1d geodesicDistance) {
+      EigenVectorX1d proteinDensity;
+      proteinDensity.resize(geodesicDistance.rows(), 1);
+      for (std::size_t i = 0; i < geodesicDistance.rows(); i++) {
+        proteinDensity[i] = tanhDistribution(geodesicDistance[i], 3, 1);
+      }
+      // tanhDistribution(proteinDensity, geodesicDistance, 10, 1);
+      proteinDensity.array() *= 0.5;
+      proteinDensity.array() += 0.2;
+      return proteinDensity;
+    };
+    p.protein.prescribeProteinDensityDistribution = geodesicProteinDensity;
+    p.protein.proteinInteriorPenalty = 1e-6;
 
     p.bending.alpha = 1;
     p.bending.dA0 = 4;
@@ -68,10 +89,12 @@ protected:
     p.bending.Kbc = 0;
     p.bending.H0c = -1;
 
-    p.tension.isConstantSurfaceTension = true;
-    p.tension.Ksg = 1e-2;
-    p.tension.A_res = 0;
-    p.tension.lambdaSG = 0;
+    auto constantSurfaceTensionModel = [](double area) {
+      double tension = 1e-2;
+      double energy = tension * area;
+      return std::make_tuple(tension, energy);
+    };
+    p.tension.form = constantSurfaceTensionModel;
 
     p.adsorption.epsilon = -1e-2;
 
@@ -79,14 +102,12 @@ protected:
 
     p.entropy.xi = -1e-4;
 
-    p.osmotic.isPreferredVolume = false;
-    p.osmotic.isConstantOsmoticPressure = true;
-    p.osmotic.Kv = 1e-2;
-    p.osmotic.V_res = 0;
-    p.osmotic.Vt = -1;
-    p.osmotic.cam = -1;
-    p.osmotic.n = 1;
-    p.osmotic.lambdaV = 0;
+    auto constantOmosticPressureModel = [](double volume) {
+      double osmoticPressure = 1e-2;
+      double pressureEnergy = -osmoticPressure * volume;
+      return std::make_tuple(osmoticPressure, pressureEnergy);
+    };
+    p.osmotic.form = constantOmosticPressureModel;
 
     p.boundary.shapeBoundaryCondition = "pin";
     p.boundary.proteinBoundaryCondition = "pin";
@@ -104,13 +125,6 @@ protected:
     p.spring.Kst = 1e-3;
     p.spring.Kse = 1e-3;
     p.spring.Ksl = 1e-3;
-
-    // Create mesh and geometry objects
-    std::tie(topologyMatrix, vertexMatrix) =
-        getCylinderMatrix(1, 10, 10, 5, 0.3);
-    std::tie(topologyMatrix, refVertexMatrix) = getCylinderMatrix(1, 10, 10);
-    proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
-    velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
   }
 };
 
@@ -121,10 +135,10 @@ protected:
  */
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, refVertexMatrix,
-                           proteinDensity, velocity, p, 0);
-  f.initialize(0, true);
-  f.prescribeGeodesicProteinDensityDistribution();
+  mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
+                                    refVertexMatrix, notableVertex);
+  mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
+  f.initialize(false, true);
   f.updateConfigurations();
   // First time calculation of force
   f.computeConservativeForcing();
@@ -154,10 +168,10 @@ TEST_F(ForceTest, ConservativeForcesTest) {
 TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
-  mem3dg::solver::System f(topologyMatrix, vertexMatrix, refVertexMatrix,
-                           proteinDensity, velocity, p, 0);
-  f.initialize(0, true);
-  f.prescribeGeodesicProteinDensityDistribution();
+  mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
+                                    refVertexMatrix, notableVertex);
+  mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
+  f.initialize(false, true);
   f.updateConfigurations();
   EXPECT_TRUE(f.testConservativeForcing(h));
 };

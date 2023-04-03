@@ -21,6 +21,7 @@
 #include "version.h"
 
 
+#include "solver/geometry.h"
 #include "solver/system.h"
 #include "solver/forces.h"
 #include "solver/mesh_process.h"
