@@ -24,7 +24,7 @@ if(M3DG_GET_OWN_EIGEN)
   FetchContent_Declare(
     eigen
     GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
-    GIT_TAG         3.3.9
+    GIT_TAG         3.4.0
     GIT_SHALLOW     TRUE
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-build"

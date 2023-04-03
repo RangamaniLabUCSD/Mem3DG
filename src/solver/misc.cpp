@@ -633,7 +633,7 @@ void System::findVertexCenter(double range) {
 
   } else if (parameters.point.pt.rows() == 2 ||
              parameters.point.pt.rows() == 3) {
-    // Find the cloest vertex to the point in the x-y plane or in the space
+    // Find the closest vertex to the point in the x-y plane or in the space
     center = gc::SurfacePoint(closestVertexToPt(
         *mesh, *vpg, parameters.point.pt, geodesicDistance, range));
   } else {
@@ -642,7 +642,9 @@ void System::findVertexCenter(double range) {
 
   centerTracker.fill(false);
   centerTracker[center.vertex] = true;
-  int num = centerTracker.raw().cast<int>().sum();
+  // Check for only one true...
+  auto lv = centerTracker.raw().reshaped();
+  int num = std::count(lv.begin(), lv.end(), true);
   if (num == 0) {
     mem3dg_runtime_error("Surface point is not updated!");
   } else if (num > 1) {
@@ -776,7 +778,9 @@ void System::findFloatCenter(double range) {
   centerTracker[center.face.halfedge().vertex()] = true;
   centerTracker[center.face.halfedge().next().vertex()] = true;
   centerTracker[center.face.halfedge().next().next().vertex()] = true;
-  int num = centerTracker.raw().cast<int>().sum();
+  
+  auto lv = centerTracker.raw().reshaped();
+  int num = std::count(lv.begin(), lv.end(), true);
   if (num == 0) {
     mem3dg_runtime_error("Surface point is not updated!");
   } else if (num > 3) {
