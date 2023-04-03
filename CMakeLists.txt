@@ -53,8 +53,8 @@ configure_file(
 )
 set(VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
 
-# Require c++14 and standard libraries
-set(CMAKE_CXX_STANDARD 14)
+# Require c++20 and standard libraries
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

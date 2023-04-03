@@ -421,10 +421,17 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
 
   // save variable to richData and save ply file
   if (ifOutputMeshFile) {
-    char buffer[50];
-    sprintf(buffer, ifJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
-            (int)frame, (int)system.time);
-    system.saveRichData(outputDirectory + "/" + std::string(buffer),
+
+    std::stringstream ss;
+    ss << "/" << (int)frame << "_" << (int)system.time << "_.";
+    if (ifJustGeometryPly) {
+      ss << "obj";
+    } else {
+      ss << "ply";
+    }
+    // sprintf(buffer, ifJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
+    //         (int)frame, (int)system.time);
+    system.saveRichData(outputDirectory + "/" + ss.str(),
                         ifJustGeometryPly);
   }
 
