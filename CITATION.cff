@@ -27,12 +27,12 @@ preferred-citation:
 - family-names: "Rangamani"
   given-names: "Padmini"
   orcid: "https://orcid.org/0000-0001-5953-4347"
-  doi: "10.1101/2021.10.30.466618"
-  journal: "bioRxiv"
-  month: 11
+  doi: "10.1016/j.bpr.2022.100062"
+  journal: "Biophysical Reports"
+  month: 09
   start: 1 # First page number
-  end: 40 # Last page number
+  end: 32 # Last page number
   title: "Mem3DG: Modeling Membrane Mechanochemical Dynamics in 3D using Discrete Differential Geometry"
-  issue: 1
-  volume: 1
-  year: 2021
+  issue: 3
+  volume: 2
+  year: 2022
