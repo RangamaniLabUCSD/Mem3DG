@@ -14,7 +14,7 @@ Development of Mem3DG is funded in part by AFOSR MURI FA9550-18-1-0051, and a Ha
 ## Installation
 
 ```
-git submodule --init --recursive
+git submodule update --init --recursive
 mkdir build
 cd build
 cmake -DBUILD_PYDDG=ON -DWITH_NETCDF=ON -DCMAKE_BUILD_TYPE=Release ..
