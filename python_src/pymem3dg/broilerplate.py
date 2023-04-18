@@ -46,7 +46,7 @@ def constantSurfaceTensionModel(area: float, tension: float):
     """constant surface tension model
 
     Args:
-        area (float): total surface area of the mesh. Unused 
+        area (float): total surface area of the mesh. Unused
         tension (float): value of surface tension
 
     Returns:
@@ -56,7 +56,9 @@ def constantSurfaceTensionModel(area: float, tension: float):
     return (tension, energy)
 
 
-def preferredAreaSurfaceTensionModel(area: float, modulus: float, preferredArea: float, reservoirArea: float = 0):
+def preferredAreaSurfaceTensionModel(
+    area: float, modulus: float, preferredArea: float, reservoirArea: float = 0
+):
     """harmonic potential type model with a preferred area
 
     Args:
@@ -77,7 +79,7 @@ def constantOsmoticPressureModel(volume: float, pressure: float):
     """constant osmotic pressure model
 
     Args:
-        volume (float): enclosed volume of the mesh. Unused 
+        volume (float): enclosed volume of the mesh. Unused
         pressure (float): value of osmotic pressure
 
     Returns:
@@ -94,7 +96,7 @@ def preferredVolumeOsmoticPressureModel(
 
     Args:
         volume (float): enclosed volume
-        strength (float): osmotic stregth coefficient 
+        strength (float): osmotic strength coefficient
         preferredVolume (float): value of preferred volume
 
     Returns:
@@ -166,7 +168,7 @@ def prescribeGaussianPointForce(
     geodesicDistances: list,
     Kf: float,
     std: float,
-    tau: float
+    tau: float,
 ):
     """form function that generate external force on a single vertex following a Gaussian distribution of geodesic distance
 
@@ -183,7 +185,11 @@ def prescribeGaussianPointForce(
         (npt.NDArray[np.float64]): vertex force matrix
     """
     direction = dg_util.rowwiseNormalize(vertexPositions)
-    magnitude = Kf * np.exp(-time / tau) * dg_util.gaussianDistribution(geodesicDistances, 0, std)
+    magnitude = (
+        Kf
+        * np.exp(-time / tau)
+        * dg_util.gaussianDistribution(geodesicDistances, 0, std)
+    )
     return dg_util.rowwiseScaling(magnitude, direction)
 
 

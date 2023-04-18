@@ -70,7 +70,7 @@ public:
 #endif
 
   // key parameters (read/write)
-  /// characterisitic time step
+  /// characteristic time step
   double characteristicTimeStep;
   // total simulation time
   double totalTime = std::numeric_limits<double>::max();
@@ -201,7 +201,7 @@ public:
    * @param chemicalDirection, direction of protein density, most likely some
    * function of gradient
    * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+   * @param c1, constant for Wolfe condition, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
   double backtrack(Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
@@ -214,7 +214,7 @@ public:
    * @param positionDirection, direction of shape, most likely some function of
    * gradient
    * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+   * @param c1, constant for Wolfe condition, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
   double mechanicalBacktrack(
@@ -227,7 +227,7 @@ public:
    * @param chemicalDirection, direction of protein density, most likely some
    * function of gradient
    * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+   * @param c1, constant for Wolfe condition, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
   double
@@ -243,11 +243,12 @@ public:
   // /**
   //  * @brief fix point iteration implicit solve
   //  * @param FlowMap functional of position and protein flow map
-  //  * @param h time step 
+  //  * @param h time step
   //  * @param tolearance convergence tolerance relative to timestep
   //  */
   // std::tuple<EigenVectorX3dr, EigenVectorX1d>
-  // fixPointIteration(std::function<std::tuple<EigenVectorX3dr, EigenVectorX1d>(
+  // fixPointIteration(std::function<std::tuple<EigenVectorX3dr,
+  // EigenVectorX1d>(
   //                       EigenVectorX3dr &, EigenVectorX1d &, double)>
   //                       flowMap,
   //                   const double h, const double tolereance);

@@ -73,7 +73,7 @@ def getDiamond(
     """generate diamond shaped mesh
 
     Args:
-        dihedral (float): dihedral angle fo the diamond
+        dihedral (float): dihedral angle of the diamond
 
     Returns:
         tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]: face and vertex matrices
@@ -142,7 +142,7 @@ def getVertexClosestToEmbeddedCoordinate(
 def getVertexFurthestFromBoundary(
     faceMatrix: npt.NDArray[np.int64], vertexMatrix: npt.NDArray[np.float64]
 ) -> int:
-    """Find the index of the vertex furthest away from the boudaries
+    """Find the index of the vertex furthest away from the boundaries
 
     Args:
         faceMatrix (npt.NDArray[np.int64]): face matrix
@@ -153,8 +153,10 @@ def getVertexFurthestFromBoundary(
     """
     return dg.getVertexFurthestFromBoundary(faceMatrix, vertexMatrix)
 
-def linearSubdivide( 
-      face: npt.NDArray[np.int64], vertex: npt.NDArray[np.float64], nSub: int) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]: 
+
+def linearSubdivide(
+    face: npt.NDArray[np.int64], vertex: npt.NDArray[np.float64], nSub: int
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]:
     """subdivide the mesh with linear interpolation
 
     Args:
@@ -165,10 +167,12 @@ def linearSubdivide(
     Returns:
         tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]: face and vertex matrix
     """
-    return dg.linearSubdivide(face = face, vertex = vertex, nSub = nSub)
+    return dg.linearSubdivide(face=face, vertex=vertex, nSub=nSub)
 
-def loopSubdivide( 
-      face: npt.NDArray[np.int64], vertex: npt.NDArray[np.float64], nSub: int) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]: 
+
+def loopSubdivide(
+    face: npt.NDArray[np.int64], vertex: npt.NDArray[np.float64], nSub: int
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]:
     """subdivide the mesh with loop scheme
 
     Args:
@@ -179,5 +183,4 @@ def loopSubdivide(
     Returns:
         tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]: face and vertex matrix
     """
-    return dg.loopSubdivide(face = face, vertex = vertex, nSub = nSub)
-          
+    return dg.loopSubdivide(face=face, vertex=vertex, nSub=nSub)

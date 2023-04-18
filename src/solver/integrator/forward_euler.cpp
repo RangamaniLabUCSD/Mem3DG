@@ -84,7 +84,7 @@ bool Euler::integrate() {
       }
     }
 
-    // Evaluate and threhold status data
+    // Evaluate and threshold status data
     status();
 
     // Save files every tSave period and print some info; save data before exit
@@ -114,7 +114,7 @@ bool Euler::integrate() {
   }
 #endif
 
-  // return if optimization is sucessful
+  // return if optimization is successful
   if (!SUCCESS && ifOutputTrajFile) {
     std::string filePath = outputDirectory;
     filePath.append("/");
@@ -139,7 +139,7 @@ void Euler::checkParameters() {
 }
 
 void Euler::status() {
-  // compute summerized forces
+  // compute summearized forces
   system.computeConservativeForcing();
   system.addNonconservativeForcing(timeStep);
 
@@ -172,7 +172,8 @@ void Euler::status() {
 }
 
 // std::tuple<EigenVectorX3dr, EigenVectorX1d>
-// Euler::flowMap(EigenVectorX3dr &position, EigenVectorX1d &protein, double h) {
+// Euler::flowMap(EigenVectorX3dr &position, EigenVectorX1d &protein, double h)
+// {
 //   toMatrix(system.geometry.vpg->inputVertexPositions) = position;
 //   system.proteinDensity.raw() = protein;
 

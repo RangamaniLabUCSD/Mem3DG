@@ -46,13 +46,12 @@ DLL_PUBLIC std::tuple<Eigen::Matrix<size_t, Eigen::Dynamic, 3>,
 getFaceAndVertexMatrix(std::string &plyName);
 
 /**
- * @brief retrive all richData element name from .ply file. Namely the list of
+ * @brief retrieve all richData element name from .ply file. Namely the list of
  * the places where data live in, such as vertex, edge or face.
  * @param plyName PLY file to read
  * @return list of all element names
  */
-DLL_PUBLIC std::vector<std::string>
-getDataElementName(std::string &plyName);
+DLL_PUBLIC std::vector<std::string> getDataElementName(std::string &plyName);
 
 /**
  * @brief
@@ -73,7 +72,7 @@ getDataPropertyName(std::string &plyName, std::string &elementName);
  */
 DLL_PUBLIC Eigen::Matrix<double, Eigen::Dynamic, 1>
 getData(std::string &plyName, std::string &elementName,
-            std::string &vertexProperties);
+        std::string &vertexProperties);
 
 /**
  * @brief Construct an hexagon mesh in PolygonSoup form
@@ -301,7 +300,7 @@ DLL_PUBLIC std::size_t getVertexClosestToEmbeddedCoordinate(
         true, true, true});
 
 /**
- * @brief Find the index of the vertex furthest away from the boudaries
+ * @brief Find the index of the vertex furthest away from the boundaries
  *
  * @param mesh surface mesh
  * @param vpg vertex position geometry

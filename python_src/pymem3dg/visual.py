@@ -75,7 +75,7 @@ def polyscopeStyle(setLengthScale=False):
 
 
 def getColorbar(fig, range, orientation="horizontal", label="", num_points=100):
-    """Genereate color map
+    """Generate color map
 
     Args:
         fig (matplotlib.figure.Figure): Figure object
@@ -818,14 +818,14 @@ def setPolyscopePermutations(psmesh, face, vertex):
 def visualizeGeometry(
     geometry: dg.Geometry, showBasics: bool = False
 ) -> ps.SurfaceMesh:
-    """visualize pymem3dg.Geometry 
+    """visualize pymem3dg.Geometry
 
     Args:
         geometry (dg.Geometry): pymem3dg.Geometry instance
         showBasics (bool, optional): whether show basics. Defaults to False.
 
     Returns:
-        ps.SurfaceMesh: handle to the polyscope mesh 
+        ps.SurfaceMesh: handle to the polyscope mesh
     """
     ps.init()
     polyscopeStyle()

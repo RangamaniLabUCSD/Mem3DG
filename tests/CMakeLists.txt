@@ -19,7 +19,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG origin/main
   GIT_SHALLOW TRUE
-  SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-src" 
+  SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
   SYSTEM
 )
@@ -37,7 +37,7 @@ target_link_libraries(Mem3DG-tests mem3dg gtest_main)
 
 add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
 
-# # Configure testing of Python module 
+# # Configure testing of Python module
 # find_package(pytest)
 # if(NOT PYTEST_FOUND AND BUILD_PYMEM3DG)
 #     message(WARNING "pytest could not be found! Please install pytest to run python tests.")
@@ -52,11 +52,11 @@ add_test(NAME Mem3DG_Main_Tests COMMAND Mem3DG-tests)
 # ##############################################################################
 # Main DDG target
 # ##############################################################################
-add_executable(ddg scratch.cpp) 
-target_link_libraries(ddg PRIVATE mem3dg) 
+add_executable(ddg scratch.cpp)
+target_link_libraries(ddg PRIVATE mem3dg)
 
-add_executable(ddg_patch scratch_patch.cpp) 
-target_link_libraries(ddg_patch PRIVATE mem3dg) 
+add_executable(ddg_patch scratch_patch.cpp)
+target_link_libraries(ddg_patch PRIVATE mem3dg)
 
-add_executable(scratch_ctl scratch_ctl.cpp) 
-target_link_libraries(scratch_ctl PRIVATE mem3dg) 
+add_executable(scratch_ctl scratch_ctl.cpp)
+target_link_libraries(scratch_ctl PRIVATE mem3dg)

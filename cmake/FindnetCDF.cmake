@@ -29,7 +29,7 @@ if (netCDF_FOUND)
         list(FILTER _libs EXCLUDE REGEX ".*/MacOSX11.0.sdk/.*")
 	set_target_properties(netCDF::netcdf PROPERTIES INTERFACE_LINK_LIBRARIES "${_libs}")
       endif ()
-      
+
       set_target_properties(NetCDF::NetCDF PROPERTIES
         INTERFACE_LINK_LIBRARIES "netCDF::netcdf")
     elseif (TARGET "netcdf")

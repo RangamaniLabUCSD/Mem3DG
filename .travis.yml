@@ -27,14 +27,14 @@ branches:
 jobs:
   fast_finish: true
   include:
-  - stage: test 
+  - stage: test
     os: windows
-    cache: 
-      directories: 
+    cache:
+      directories:
         - ${DEPS_DIR}/vcpkg/installed
         - /c/Users/travis/AppData/Local/vcpkg/archives
 
-  - stage: test 
+  - stage: test
     os: osx
     osx_image: xcode11.6
     addons:
@@ -53,7 +53,7 @@ jobs:
       homebrew:
         packages: ['cmake', 'ninja', 'netcdf', 'eigen', 'pybind11']
 
-  - stage: test 
+  - stage: test
     os: linux
     dist: bionic
     compiler: gcc
@@ -102,7 +102,7 @@ jobs:
       - mkdir -p build && cd build;
       - cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=OFF -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DBUILD_MEM3DG_DOCS=ON -GNinja ..;
       - ninja mem3dg_docs;
-    deploy: 
+    deploy:
       provider: pages
       strategy: git
       local_dir: build/docs/html
@@ -112,7 +112,7 @@ jobs:
       on:
         branch: master
         repo: RangamaniLabUCSD/Mem3DG
-  
+
   - stage: deploy
     if: branch =~ ^v?((\d+)(\.\d+)*)(-?(a|b|c|rc|alpha|beta)([0-9]+)?)?$
     os: linux
@@ -136,8 +136,8 @@ jobs:
       on:
         tags: true
         repo: RangamaniLabUCSD/Mem3DG
-       
-        
+
+
 before_install:
   - if [[ "${MATRIX_EVAL}" != "" ]]; then eval ${MATRIX_EVAL}; fi
   - |
@@ -145,7 +145,7 @@ before_install:
         mkdir -p ${DEPS_DIR}/vcpkg
         pushd ${DEPS_DIR}/vcpkg
         git init
-        git remote add origin https://github.com/microsoft/vcpkg 
+        git remote add origin https://github.com/microsoft/vcpkg
         git fetch origin master
         git checkout -b master origin/master
         ./bootstrap-vcpkg.bat

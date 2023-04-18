@@ -9,7 +9,7 @@ on:
       # The regex: /^v?((\d+)(\.\d+)*)(-?(a|b|c|rc|alpha|beta)([0-9]+)?)?$
       - 'v[0-9].[0-9]+.[0-9]+*'
   pull_request:
-    branches: 
+    branches:
       - master
       - development
 
@@ -34,13 +34,13 @@ jobs:
       - uses: actions/setup-python@v4
         id: pyexe
         with:
-          python-version: '3.10' 
+          python-version: '3.10'
 
       # - name: Setup python libs
       #   id: pyexe
       #   run: |
       #     python3 --version
-      #     python3 -m pip install pytest 
+      #     python3 -m pip install pytest
       #     py_exe_path=$(which python3)
       #     echo ::set-output name=path::$py_exe_path
 
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/setup-python@v4
         id: pyexe
         with:
-          python-version: '3.10' 
+          python-version: '3.10'
 
       # - name: Setup python libs
       #   id: pyexe
@@ -84,7 +84,7 @@ jobs:
       #     # python3 -m pip install pytest
       #     py_exe_path=$(which python3)
       #     echo ::set-output name=path::$py_exe_path
-      
+
       - name: Resolve dependencies
         run: brew install netcdf eigen pybind11 netcdf-cxx
 
@@ -126,7 +126,7 @@ jobs:
   #       with:
   #         vcpkgGitCommitId: 5c9f906558f9bb12ee9811d6edc98ec9255c6cda5
   #         setupOnly: true
-      
+
   #     - name: Download libraries
   #       run: $VCPKG_ROOT/vcpkg install netcdf-c:x64-windows netcdf-cxx4:x64-windows eigen3:x64-windows
 
@@ -159,7 +159,7 @@ jobs:
 
     - name: Configure python version
       uses: actions/setup-python@v2
-      with: 
+      with:
         python-version: 3.8
 
     - name: Setup python libs
@@ -177,7 +177,7 @@ jobs:
 
     - name: Build pymem3dg and install
       run: |
-        ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON     
+        ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON
 
     - name: Build docs
       run: |
@@ -192,7 +192,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         destination_dir: ${{ steps.version.outputs.version }}/cpp
         publish_dir: ./build/docs/cpp/html
-    
+
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
@@ -209,7 +209,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    
+
     steps:
     - uses: actions/checkout@v3
       with:

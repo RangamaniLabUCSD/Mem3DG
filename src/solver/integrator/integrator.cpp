@@ -87,6 +87,7 @@ double Integrator::backtrack(
     double c1) {
 
   // cache energy of the last time step
+  // codespell: previousE
   const Energy previousE = system.energy;
 
   // validate the directions
@@ -431,8 +432,7 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
     }
     // sprintf(buffer, ifJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
     //         (int)frame, (int)system.time);
-    system.saveRichData(outputDirectory + "/" + ss.str(),
-                        ifJustGeometryPly);
+    system.saveRichData(outputDirectory + "/" + ss.str(), ifJustGeometryPly);
   }
 
   frame++;

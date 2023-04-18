@@ -417,9 +417,8 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, 1>
   getProteinDensity(const std::size_t idx) const;
 
-  void
-  writeNotableVertex(const std::size_t idx,
-                      const Eigen::Matrix<bool, Eigen::Dynamic, 1> &data);
+  void writeNotableVertex(const std::size_t idx,
+                          const Eigen::Matrix<bool, Eigen::Dynamic, 1> &data);
 
   Eigen::Matrix<bool, Eigen::Dynamic, 1>
   getNotableVertex(const std::size_t idx) const;

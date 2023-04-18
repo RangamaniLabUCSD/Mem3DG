@@ -277,9 +277,9 @@ public:
    */
   Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
            std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_)
-      : mesh(std::move(ptrmesh_)),
-        vpg(std::move(ptrvpg_)), geodesicDistance{*mesh, 0},
-        notableVertex{*mesh, false}, refLcrs{*mesh, 0} {
+      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
+        geodesicDistance{*mesh, 0}, notableVertex{*mesh, false},
+        refLcrs{*mesh, 0} {
     refVpg = vpg->copy();
 
     // GC computed properties

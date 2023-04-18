@@ -30,8 +30,8 @@ void throw_runtime_error(const char *function, const char *file, const int line,
   throw std::runtime_error(ss.str());
 }
 template <typename... T>
-void throw_runtime_message(const char *function, const char *file, const int line,
-                         T &&...ts) {
+void throw_runtime_message(const char *function, const char *file,
+                           const int line, T &&...ts) {
   std::stringstream ss;
   ss << "Message: ";
   int dummy[] = {0, ((ss << std::forward<T>(ts)), 0)...};
@@ -42,17 +42,17 @@ void throw_runtime_message(const char *function, const char *file, const int lin
 } // namespace internal
 } // namespace mem3dg
 
-#ifdef _MSC_VER 
-  #define __PRETTY_FUNCTION__ __FUNCSIG__ 
+#ifdef _MSC_VER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
 #define mem3dg_runtime_error(...)                                              \
   mem3dg::internal::throw_runtime_error(__PRETTY_FUNCTION__, __FILE__,         \
                                         __LINE__, __VA_ARGS__);
 
-#define mem3dg_runtime_message(...)                                              \
-  mem3dg::internal::throw_runtime_message(__PRETTY_FUNCTION__, __FILE__,         \
-                                        __LINE__, __VA_ARGS__);
+#define mem3dg_runtime_message(...)                                            \
+  mem3dg::internal::throw_runtime_message(__PRETTY_FUNCTION__, __FILE__,       \
+                                          __LINE__, __VA_ARGS__);
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef _DLL

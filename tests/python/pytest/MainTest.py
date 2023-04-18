@@ -168,8 +168,8 @@ class TestExampleIntegration(object):
         )
         fe.ifPrintToConsole = True
         fe.ifOutputTrajFile = True
-        sucess = fe.integrate()
-        assert sucess == True
+        success = fe.integrate()
+        assert success == True
         return p
 
     def test_shape_variation(self):
@@ -203,8 +203,8 @@ class TestExampleIntegration(object):
         )
         fe.ifPrintToConsole = True
         fe.ifOutputTrajFile = True
-        sucess = fe.integrate()
-        assert sucess == True
+        success = fe.integrate()
+        assert success == True
         return p
 
     def test_protein_variation(self):
@@ -235,8 +235,8 @@ class TestExampleIntegration(object):
         )
         fe.ifPrintToConsole = True
         fe.ifOutputTrajFile = True
-        sucess = fe.integrate()
-        assert sucess == True
+        success = fe.integrate()
+        assert success == True
         return p
 
 
@@ -302,6 +302,7 @@ class TestMeshIO(object):
         """test mesh marking functions"""
         face, vertex = dg_meshop.getIcosphere(radius=1, subdivision=3)
         faceData = np.zeros(np.shape(face)[0])
+
         # polyscope.init()
         # polyscope.remove_all_structures()
         # ps_mesh = polyscope.register_surface_mesh("my mesh", vertex, face)

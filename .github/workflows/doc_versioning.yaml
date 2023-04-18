@@ -1,4 +1,4 @@
-name: Tracking Documentation Versions 
+name: Tracking Documentation Versions
 
 on:
   push:
