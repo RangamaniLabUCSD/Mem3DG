@@ -1,4 +1,4 @@
-exclude: "libraries/*"
+exclude: "^libraries/|.ply$"
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0
@@ -23,6 +23,7 @@ repos:
   rev: "23.1.0"
   hooks:
     - id: black
+      files: "^python_src/pymem3dg/|^tests/python"
 
 - repo: https://github.com/codespell-project/codespell
   rev: "v2.2.2"
