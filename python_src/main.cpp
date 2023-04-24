@@ -25,10 +25,9 @@
 #include "mem3dg/solver/integrator/conjugate_gradient.h"
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/solver/system.h"
+#include "mem3dg/version.h"
 
-#include <geometrycentral/surface/meshio.h>
-#include <geometrycentral/surface/rich_surface_mesh_data.h>
-#include <geometrycentral/surface/surface_mesh.h>
+#include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include "mem3dg/mem3dg"
 #include "pybind11/cast.h"
@@ -42,6 +41,8 @@ namespace py = pybind11;
 // Initialize the `pymem3dg` module
 PYBIND11_MODULE(_core, pymem3dg) {
   pymem3dg.doc() = "Python wrapper around the DDG solver C++ library.";
+  pymem3dg.attr("__version__") = MEM3DG_VERSION;
+  pymem3dg.attr("__short_version__") = MEM3DG_VERSION_SHORT;
 
 #pragma region integrators
   // ==========================================================

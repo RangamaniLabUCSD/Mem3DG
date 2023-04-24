@@ -32,7 +32,7 @@ if(M3DG_GET_OWN_PYBIND11)
     add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
   endif()
 else()
-  find_package(pybind11 REQUIRED)
+  find_package(pybind11 REQUIRED CONFIG)
 endif()
 
 # mem3dg static library
