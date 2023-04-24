@@ -17,7 +17,7 @@ import pymem3dg.read.meshop as dg_meshop
 import pymem3dg.read.mesh as dg_mesh
 import pymem3dg.util as dg_util
 import pymem3dg.visual as dg_vis
-import pymem3dg.broilerplate as dg_broil
+import pymem3dg.boilerplate as dg_boil
 
 from cmath import sqrt
 import polyscope
@@ -61,8 +61,8 @@ class TestInitialization(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
-        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
+        p.tension.form = partial(dg_boil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_boil.constantOsmoticPressureModel, pressure=0.01)
         arguments = self.initialConditions
         arguments["parameters"] = p
         s1 = dg.System(**arguments)
@@ -80,7 +80,7 @@ class TestInitialization(object):
 
         # protein
         system.parameters.protein.prescribeProteinDensityDistribution = partial(
-            dg_broil.prescribeGeodesicPoteinDensityDistribution,
+            dg_boil.prescribeGeodesicPoteinDensityDistribution,
             sharpness=20,
             radius=0.5,
         )
@@ -94,17 +94,17 @@ class TestInitialization(object):
 
         # external force
         system.parameters.external.form = partial(
-            dg_broil.prescribeGaussianPointForce, Kf=0.01, std=1, tau=100
+            dg_boil.prescribeGaussianPointForce, Kf=0.01, std=1, tau=100
         )
         system.prescribeExternalForce()
         system.parameters.external.form = partial(
-            dg_broil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10
+            dg_boil.prescribePeriodicForceOnCylinder, Kf=0.01, freq=10
         )
         system.prescribeExternalForce()
 
         # osmotic pressure
         system.parameters.osmotic.form = partial(
-            dg_broil.constantOsmoticPressureModel, pressure=0.01
+            dg_boil.constantOsmoticPressureModel, pressure=0.01
         )
         system.initialize()
         assert system.getForces().getOsmoticPressure() == 0.01
@@ -115,7 +115,7 @@ class TestInitialization(object):
 
         # surface tension
         system.parameters.tension.form = partial(
-            dg_broil.constantSurfaceTensionModel, tension=0.01
+            dg_boil.constantSurfaceTensionModel, tension=0.01
         )
         system.initialize()
         assert system.getForces().getSurfaceTension() == 0.01
@@ -141,13 +141,13 @@ class TestExampleIntegration(object):
         p.variation.isShapeVariation = True
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
-        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
+        p.tension.form = partial(dg_boil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_boil.constantOsmoticPressureModel, pressure=0.01)
         p.dirichlet.eta = p.bending.Kb
         p.proteinMobility = 1
         p.spring.Kst = 1
         p.external.form = partial(
-            dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
+            dg_boil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
         )
         arguments = self.initialization.initialConditions
         arguments["parameters"] = p
@@ -183,11 +183,11 @@ class TestExampleIntegration(object):
         p.variation.isProteinVariation = False
         p.bending.Kbc = 0.1
         p.bending.H0c = 10
-        p.tension.form = partial(dg_broil.constantSurfaceTensionModel, tension=0.5)
-        p.osmotic.form = partial(dg_broil.constantOsmoticPressureModel, pressure=0.01)
+        p.tension.form = partial(dg_boil.constantSurfaceTensionModel, tension=0.5)
+        p.osmotic.form = partial(dg_boil.constantOsmoticPressureModel, pressure=0.01)
         p.spring.Kst = 1
         p.external.form = partial(
-            dg_broil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
+            dg_boil.prescribeGaussianPointForce, Kf=0.005, std=0.02, tau=100
         )
         arguments = self.initialization.initialConditions
         arguments["parameters"] = p
