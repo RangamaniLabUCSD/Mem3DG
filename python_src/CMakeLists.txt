@@ -46,11 +46,18 @@ set_target_properties(mem3dg_static
 )
 
 set(PYMEM3DG_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
-)
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_forces.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_integrators.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_geometry.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_mutators.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_system.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_parameters.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_energy.cpp"
+    )
 
 pybind11_add_module(_core MODULE ${PYMEM3DG_SOURCES})
-target_link_libraries(_core PRIVATE mem3dg_static) # polyscope igl::core)
+target_link_libraries(_core PRIVATE mem3dg_static)
 if(WITH_NETCDF)
   target_compile_definitions(_core PUBLIC -DMEM3DG_WITH_NETCDF)
 endif()
