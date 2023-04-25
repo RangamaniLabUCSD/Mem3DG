@@ -26,6 +26,7 @@ if(M3DG_GET_OWN_EIGEN)
     GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
     GIT_TAG         3.4.0
     GIT_SHALLOW     TRUE
+    SYSTEM
     SOURCE_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-src"
     BINARY_DIR      "${CMAKE_CURRENT_BINARY_DIR}/eigen-build"
   )
@@ -67,7 +68,7 @@ endif()
 #     geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON
 #   )
 # endif()
-add_subdirectory(geometry-central)
+add_subdirectory(geometry-central SYSTEM)
 set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ############################################################################

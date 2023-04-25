@@ -23,14 +23,11 @@ if(M3DG_GET_OWN_PYBIND11)
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
     GIT_TAG v2.10.4
     GIT_SHALLOW TRUE
+    SYSTEM
     SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
   )
-  FetchContent_GetProperties(pybind11)
-  if(NOT pybind11_POPULATED)
-    FetchContent_Populate(pybind11)
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
-  endif()
+  FetchContent_MakeAvailable(pybind11)
 else()
   find_package(pybind11 REQUIRED CONFIG)
 endif()
