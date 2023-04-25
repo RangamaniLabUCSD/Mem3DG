@@ -52,7 +52,7 @@ if(EXISTS "${EIGEN3_INCLUDE_DIR}/Eigen/src/Core/util/Macros.h")
     # Complain about the inadequate version
     message(STATUS "Eigen3 version ${EIGEN3_VERSION} found in ${EIGEN3_INCLUDE_DIR}, " "but at least version ${EIGEN3_FIND_VERSION} is required")
   else(${EIGEN3_VERSION} VERSION_LESS ${EIGEN3_FIND_VERSION})
-    # Suitable version of Eigen3 found. Set varibles
+    # Suitable version of Eigen3 found. Set variables
     set(EIGEN3_VERSION ${EIGEN3_VERSION} PARENT_SCOPE)
     set(EIGEN3_FOUND true PARENT_SCOPE)
     set(EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} PARENT_SCOPE)

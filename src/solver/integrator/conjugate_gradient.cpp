@@ -62,7 +62,7 @@ bool ConjugateGradient::integrate() {
   // time integration loop
   for (;;) {
 
-    // Evaluate and threhold status data
+    // Evaluate and threshold status data
     status();
 
     // Save files every tSave period and print some info
@@ -94,7 +94,7 @@ bool ConjugateGradient::integrate() {
   }
 #endif
 
-  // return if optimization is sucessful
+  // return if optimization is successful
   if (!SUCCESS && ifOutputTrajFile) {
     std::string filePath = outputDirectory;
     filePath.append("/");
@@ -142,7 +142,7 @@ void ConjugateGradient::checkParameters() {
 void ConjugateGradient::status() {
   auto physicalForce = system.forces.mechanicalForce.raw();
 
-  // compute summerized forces
+  // compute summarized forces
   system.computeConservativeForcing();
   system.addNonconservativeForcing(timeStep);
 

@@ -82,7 +82,7 @@ void System::checkConfiguration() {
           parameters.dirichlet.eta != 0 || parameters.adsorption.epsilon != 0 ||
           parameters.aggregation.chi != 0)
         mem3dg_runtime_message(
-            "For homogenous membrane simulation, good practice is to set "
+            "For homogeneous membrane simulation, good practice is to set "
             "proteinDensity = 1, Kb = 0, eta  = 0, "
             "epsilon = 0, chi = "
             "0 to "

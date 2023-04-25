@@ -687,7 +687,7 @@ DLL_PUBLIC inline void markFileName(std::string filePath,
 }
 
 /**
- * @brief height = 1 fo jump step domain
+ * @brief height = 1 for jump step domain
  *
  * @param (double) sharpness of transition
  * @param (double) radius of height = 1

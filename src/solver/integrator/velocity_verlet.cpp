@@ -64,7 +64,7 @@ bool VelocityVerlet::integrate() {
   // time integration loop
   for (;;) {
 
-    // Evaluate and threhold status data
+    // Evaluate and threshold status data
     status();
 
     // Save files every tSave period and print some info; save data before exit
@@ -95,7 +95,7 @@ bool VelocityVerlet::integrate() {
   }
 #endif
 
-  // return if optimization is sucessful
+  // return if optimization is successful
   if (!SUCCESS && ifOutputTrajFile) {
     std::string filePath = outputDirectory;
     filePath.append("/");
@@ -118,7 +118,7 @@ void VelocityVerlet::checkParameters() {
   }
   if (isBacktrack && system.parameters.dpd.gamma != 0) {
     mem3dg_runtime_message(
-        "Fluctuation can lead to failture in backtracking algorithm!");
+        "Fluctuation can lead to failure in backtracking algorithm!");
   }
 }
 
@@ -227,7 +227,7 @@ void VelocityVerlet::march() {
   system.velocity +=
       timeStep * pastMechanicalForceVec; // v_{i+1} = v_i + a_i * dt_i
 
-  // compute summerized forces
+  // compute summarized forces
   system.computeConservativeForcing();
   system.addNonconservativeForcing(
       timeStep); // a_{i+1} at (x_{i+1}, v_{i+1}, dt_i)

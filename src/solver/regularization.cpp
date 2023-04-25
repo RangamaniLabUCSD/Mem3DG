@@ -207,7 +207,7 @@ bool System::edgeFlip() {
     }
 
     if (meshProcessor.meshMutator.ifFlip(e, *geometry.vpg)) {
-      bool sucess = geometry.mesh->flip(e);
+      bool success = geometry.mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
       meshProcessor.meshMutator.markVertices(mutationMarker, he.tailVertex());

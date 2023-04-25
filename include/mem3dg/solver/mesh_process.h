@@ -84,7 +84,7 @@ struct MeshProcessor {
     bool splitSharp = false;
     /// split obtuse triangle
     bool splitFat = false;
-    /// split poor aspected triangle that is still Delaunay
+    /// split poor aspect ratio triangle that is still Delaunay
     bool splitSkinnyDelaunay = false;
     /// min edge length
     double minimumEdgeLength = 0.001;

@@ -76,7 +76,7 @@ using AlignedEigenMap_T =
  * the data for you.
  *
  * @tparam T        Typename of the contained data
- * @tparam k        Numver of columns
+ * @tparam k        Number of columns
  * @tparam Options  Storage order \b Eigen::RowMajor or \b Eigen::ColMajor
  */
 template <typename T, std::size_t k, int Options = Eigen::ColMajor>

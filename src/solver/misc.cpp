@@ -127,12 +127,12 @@ bool System::testConservativeForcing(const double timeStep) {
     std::string marker = " <-----\n";
 
     std::cout << key;
-    for (std::size_t i = 0; i < space[0]; i++) // for console readibility
+    for (std::size_t i = 0; i < space[0]; i++) // for console readability
       std::cout << " ";
     double difference_h = abs(expectedDelta1 - actualDelta1);
     if (actualDelta1 != 0) {
       std::cout << half1.str();
-      for (std::size_t i = 0; i < space[1]; i++) // for console readibility
+      for (std::size_t i = 0; i < space[1]; i++) // for console readability
         std::cout << " ";
       std::cout << "expect " << expectedDelta1;
       if ((actualDelta1 < 0) || !std::isfinite(currentEnergy) ||
@@ -151,19 +151,19 @@ bool System::testConservativeForcing(const double timeStep) {
     space[0] = alignment[0];
     double difference_xh = abs(expectedDelta2 - actualDelta2);
     if (difference_h < 1e-15 && difference_xh < 1e-15) { // probably exact
-      for (std::size_t i = 0; i < space[0]; i++) // for console readibility
+      for (std::size_t i = 0; i < space[0]; i++) // for console readability
         std::cout << " ";
       std::cout << "exact\n" << std::endl;
       return true;
     }
-    for (std::size_t i = 0; i < space[0]; i++) // for console readibility
+    for (std::size_t i = 0; i < space[0]; i++) // for console readability
       std::cout << " ";
     std::ostringstream half2;
     half2 << "converge with "
           << pow(difference_xh / difference_h, 1 / expectRate) << ", ";
     space[1] = alignment[1] - half2.str().length() - alignment[0];
     std::cout << half2.str();
-    for (std::size_t i = 0; i < space[1]; i++) // for console readibility
+    for (std::size_t i = 0; i < space[1]; i++) // for console readability
       std::cout << " ";
     std::cout << "expect " << expectRate;
     if (abs(difference_xh / difference_h - pow(stepFold, expectRate)) >
@@ -247,7 +247,7 @@ bool System::testConservativeForcing(const double timeStep) {
                            energy.spontaneousCurvatureEnergy,
                            "spontaneousCurvatureForceVec",
                            "spontaneousCurvatureEnergy") &&
-            SUCCESS; // leaving && SUCESS to the last to ensure running all
+            SUCCESS; // leaving && success to the last to ensure running all
                      // the tests
   SUCCESS = testChemical(forces.spontaneousCurvaturePotential,
                          previousEnergy.spontaneousCurvatureEnergy,

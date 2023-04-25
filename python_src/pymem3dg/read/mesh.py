@@ -18,7 +18,7 @@ def getFaceAndVertexMatrix(
 
 
 def getDataElementName(meshName: str) -> list:
-    """retrive all richData element name from .ply file. Namely the list of the places where data live in, such as vertex, edge or face
+    """Retrieve all richData element name from .ply file. Namely the list of the places where data live in, such as vertex, edge or face
 
     Args:
         meshName (str): mesh file name

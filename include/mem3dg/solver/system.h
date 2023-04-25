@@ -203,7 +203,7 @@ private:
   //                std::get<2>(initialConditionsTuple),
   //                std::get<3>(initialConditionsTuple)){};
 
-  // // below is temperary
+  // // below is temporary
   //   System(std::tuple<std::unique_ptr<Geometry>, EigenVectorX1d,
   //   EigenVectorX3dr,
   //                     double>
