@@ -18,7 +18,7 @@ import numpy as np
 import numpy.typing as npt
 
 
-def rowwiseNormalize(matrix: npt.NDArray[np.int64]):
+def rowwiseNormalize(matrix: npt.NDArray[np.float64]):
     """Rowwise normalize the matrix
 
     Args:
@@ -31,7 +31,7 @@ def rowwiseNormalize(matrix: npt.NDArray[np.int64]):
     return rowwiseScaling(rowwiseNorm(matrix) ** (-1), matrix)
 
 
-def rowwiseNorm(matrix: npt.NDArray[np.int64]):
+def rowwiseNorm(matrix: npt.NDArray[np.float64]):
     """rowwise norm
 
     Args:
@@ -46,7 +46,7 @@ def rowwiseNorm(matrix: npt.NDArray[np.int64]):
         return np.sum(matrix**2, axis=1) ** (0.5)
 
 
-def rowwiseScaling(scaling: npt.NDArray[np.int64], matrix: npt.NDArray[np.int64]):
+def rowwiseScaling(scaling: npt.NDArray[np.float64], matrix: npt.NDArray[np.float64]):
     """rowwise scaling
 
     Args:
@@ -63,7 +63,7 @@ def rowwiseScaling(scaling: npt.NDArray[np.int64], matrix: npt.NDArray[np.int64]
         # return matrix * scaling.reshape((-1, 1))
 
 
-def rowwiseDotProduct(a: npt.NDArray[np.int64], b: npt.NDArray[np.int64]):
+def rowwiseDotProduct(a: npt.NDArray[np.float64], b: npt.NDArray[np.float64]):
     """rowwise dot product
 
     Args:
@@ -76,7 +76,7 @@ def rowwiseDotProduct(a: npt.NDArray[np.int64], b: npt.NDArray[np.int64]):
     return np.sum(a * b, axis=1)
 
 
-def gaussianDistribution(x: npt.NDArray[np.int64], mean: float, sd: float):
+def gaussianDistribution(x: npt.NDArray[np.float64], mean: float, sd: float):
     """Gaussian distribution
 
     Args:
@@ -91,7 +91,7 @@ def gaussianDistribution(x: npt.NDArray[np.int64], mean: float, sd: float):
     return prob_density
 
 
-def tanhDistribution(x: npt.NDArray[np.int64], sharpness: float, center: float = 0):
+def tanhDistribution(x: npt.NDArray[np.float64], sharpness: float, center: float = 0):
     """unit tanh distribution y(x) that is y=1 at x=-inf and y=0 at x=+inf
     Args:
         x (array): distribution argument
@@ -105,7 +105,7 @@ def tanhDistribution(x: npt.NDArray[np.int64], sharpness: float, center: float =
 
 
 def sphericalHarmonicsPerturbation(
-    coordinate: npt.NDArray[np.int64],
+    coordinate: npt.NDArray[np.float64],
     m: int,
     n: int,
     amplitude: float,

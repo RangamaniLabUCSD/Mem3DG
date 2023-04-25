@@ -27,9 +27,10 @@ import pymem3dg.util as dg_util
 import polyscope as ps
 import polyscope.imgui as psim
 import numpy.typing as npt
+from typing import Union, List
 
 
-def matplotlibStyle(s=6, m=8, l=10):
+def matplotlibStyle(small_size=6, medium_size=8, large_size=10):
     """Helper to set matplotlib style
 
     Args:
@@ -42,13 +43,13 @@ def matplotlibStyle(s=6, m=8, l=10):
     plt.rcParams["lines.linewidth"] = 2
     plt.rcParams["savefig.dpi"] = 600
     # mpl.rcParams.update({'font.size': 8})
-    plt.rc("font", size=l)  # controls default text sizes
-    plt.rc("axes", titlesize=l)  # fontsize of the axes title
-    plt.rc("axes", labelsize=m)  # fontsize of the x and y labels
-    plt.rc("xtick", labelsize=m)  # fontsize of the tick labels
-    plt.rc("ytick", labelsize=m)  # fontsize of the tick labels
-    plt.rc("legend", fontsize=s, frameon=False)  # legend fontsize
-    plt.rc("figure", titlesize=l)  # fontsize of the figure title
+    plt.rc("font", size=large_size)  # controls default text sizes
+    plt.rc("axes", titlesize=large_size)  # fontsize of the axes title
+    plt.rc("axes", labelsize=medium_size)  # fontsize of the x and y labels
+    plt.rc("xtick", labelsize=medium_size)  # fontsize of the tick labels
+    plt.rc("ytick", labelsize=medium_size)  # fontsize of the tick labels
+    plt.rc("legend", fontsize=small_size, frameon=False)  # legend fontsize
+    plt.rc("figure", titlesize=large_size)  # fontsize of the figure title
     plt.rc("pdf", fonttype=42)
 
 
@@ -139,7 +140,7 @@ def overlayColorbar():
         png = "video/frame{}.png".format(dg_util.zeroPadding(frame))
         figureName = "colormapped/frame{}.png".format(frame)
 
-        plotScreenshot(ax, png, [0, 1], "$\phi$", orientation="vertical")
+        plotScreenshot(ax, png, [0, 1], r"$\phi$", orientation="vertical")
         fig.savefig(figureName, transparent=True, dpi=1500)
 
 
@@ -168,7 +169,7 @@ def plotProteinDensity(ax, trajFile, frames=None):
         parameters (pymem3dg.Parameters): pymem3dg Parameters instance
         frames (list, optional): list of frames to plot. Defaults to all frames in trajectory file
     """
-    if frames == None:
+    if frames is None:
         frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     proteinDensity = np.array([])
@@ -195,9 +196,9 @@ def plotProteinDensity(ax, trajFile, frames=None):
         area_weight = np.append(area_weight, area_weight_now)
         totalProtein[plotFrame] = np.sum(area_weight_now * proteinDensity_now)
 
-    ax.set_xlabel("$t$")
-    ax.set_ylabel("$\phi$", color="tab:blue")
-    cmap = sns.cubehelix_palette(start=0, light=1, as_cmap=True)
+    ax.set_xlabel(r"$t$")
+    ax.set_ylabel(r"$\phi$", color="tab:blue")
+    # cmap = sns.cubehelix_palette(start=0, light=1, as_cmap=True)
     # sns.kdeplot(
     #     x=proteinDensity_time,
     #     y=proteinDensity,
@@ -226,7 +227,7 @@ def plotProteinDensity(ax, trajFile, frames=None):
     ax2 = ax.twinx()
     ax2.set_ylim([0, 2])
     ax2.set_ylabel(
-        "$\int \phi ~dA$", color="grey"
+        r"$\int \phi ~dA$", color="grey"
     )  # we already handled the x-label with ax1
     ax2.plot(time, totalProtein, ":", color="grey")
     ax2.tick_params(axis="y", labelcolor="grey")
@@ -262,7 +263,7 @@ def plotChemicalPotentials(
         aggregationPotential (bool, optional): option to visualize components, default to False
         entropyPotential (bool, optional): option to visualize components, default to False
     """
-    if frames == None:
+    if frames is None:
         frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
@@ -306,15 +307,15 @@ def plotChemicalPotentials(
         )
     ms = 4  # marker size
     markerEvery = round(frameNum / 10)
-    ax.set_xlabel("$t$")
-    ax.set_ylabel("$\|\mu\|^2 [k_BT]$")
+    ax.set_xlabel(r"$t$")
+    ax.set_ylabel(r"$\|\mu\|^2 [k_BT]$")
 
     def actualPlotting(ax_local):
         ax_local.plot(
             time,
             dg_util.femtoJToKBT(chemicalPotential_, 296),
             "-x",
-            label="$\mu$",
+            label=r"$\mu$",
             markersize=ms,
             markevery=markerEvery,
         )
@@ -323,7 +324,7 @@ def plotChemicalPotentials(
                 time,
                 dg_util.femtoJToKBT(spontaneousCurvaturePotential_, 296),
                 ":x",
-                label="$\mu_b$",
+                label=r"$\mu_b$",
                 markersize=ms,
                 markevery=markerEvery,
             )
@@ -332,7 +333,7 @@ def plotChemicalPotentials(
                 time,
                 dg_util.femtoJToKBT(adsorptionPotential_, 296),
                 ":x",
-                label="$\mu_a$",
+                label=r"$\mu_a$",
                 markersize=ms,
                 markevery=markerEvery,
             )
@@ -341,7 +342,7 @@ def plotChemicalPotentials(
                 time,
                 dg_util.femtoJToKBT(dirichletPotential_, 296),
                 ":x",
-                label="$\mu_d$",
+                label=r"$\mu_d$",
                 markersize=ms,
                 markevery=markerEvery,
             )
@@ -350,7 +351,7 @@ def plotChemicalPotentials(
                 time,
                 dg_util.femtoJToKBT(deviatoricCurvaturePotential_, 296),
                 ":x",
-                label="$\mu_{dev}$",
+                label=r"$\mu_{dev}$",
                 markersize=ms,
                 markevery=markerEvery,
             )
@@ -359,7 +360,7 @@ def plotChemicalPotentials(
                 time,
                 dg_util.femtoJToKBT(aggregationPotential_, 296),
                 ":x",
-                label="$\mu_{agg}$",
+                label=r"$\mu_{agg}$",
                 markersize=ms,
                 markevery=markerEvery,
             )
@@ -368,7 +369,7 @@ def plotChemicalPotentials(
                 time,
                 dg_util.femtoJToKBT(entropyPotential_, 296),
                 ":x",
-                label="$\mu_{entr}$",
+                label=r"$\mu_{entr}$",
                 markersize=ms,
                 markevery=markerEvery,
             )
@@ -418,7 +419,7 @@ def plotMechanicalForces(
         springForce (bool, optional): option to visualize components. Default to False
         lineCapillaryForce (bool, optional): option to visualize components. Default to False
     """
-    if frames == None:
+    if frames is None:
         frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
@@ -475,8 +476,8 @@ def plotMechanicalForces(
 
     ms = 4  # marker size
     markerEvery = round(frameNum / 10)
-    ax.set_xlabel("$t$")
-    ax.set_ylabel("$\|f\|^2 [k_BT]$")
+    ax.set_xlabel(r"$t$")
+    ax.set_ylabel(r"$\|f\|^2 [k_BT]$")
 
     def actualPlotting(ax_local):
         ax_local.plot(
@@ -583,10 +584,10 @@ def plotMechanicalForces(
 def plotEnergy(
     ax,
     trajFile: str,
-    parameters: dg.Parameters,
+    parameters: Union[dg.Parameters, None] = None,
     zeroing: bool = False,
     logScale: bool = False,
-    frames: list = None,
+    frames: Union[range, List, None] = None,
     kineticEnergy: bool = False,
     potentialEnergy: bool = False,
     externalWork: bool = False,
@@ -627,7 +628,7 @@ def plotEnergy(
         lcrSpringEnergy (bool, optional): option to visualize components. Defaults to False
         dirichletEnergy (bool, optional): option to visualize components. Defaults to False
     """
-    if frames == None:
+    if frames is None:
         frames = range(dg_nc.sizeOf(trajFile))
     frameNum = np.size(frames)
     time = np.zeros(frameNum)
@@ -652,7 +653,7 @@ def plotEnergy(
         ncFrame = frames[plotFrame]
         geometry = dg.Geometry(trajFile, ncFrame)
         system = dg.System(geometry, trajFile, ncFrame, parameters)
-        system.initialize(ifMutateMesh=0, ifMute=True)
+        system.initialize(ifMutateMesh=False, ifMute=True)
         time[plotFrame] = system.time
         system.computeTotalEnergy()
         energy = system.getEnergy()
@@ -897,8 +898,8 @@ def visualizeGeometry(
 
 def animate(
     trajNc: str,
-    parameters: dg.Parameters = None,
-    frames: list = None,
+    parameters: Union[dg.Parameters, None] = None,
+    frames: Union[range, List, None] = None,
     showBasics=False,
     showForce=False,
     showPotential=False,
@@ -958,7 +959,7 @@ def animate(
         deviatoricCurvaturePotential(bool, optional): optional data to visualize. Defaults to True
     """
     hasParameters = parameters is not None
-    if frames == None:
+    if frames is None:
         frames = range(dg_nc.sizeOf(trajNc))
 
     maxFrameInd = np.size(frames) - 1
@@ -1053,6 +1054,10 @@ def animate(
                 psmesh.add_scalar_quantity("vertexDualArea", vertexDualAreas)
 
         def computeProteinRateOfChange(potential: npt.NDArray[np.float64]):
+            if parameters is None:
+                raise RuntimeError(
+                    "Cannot compute protein rate of change without the input parameters"
+                )
             d0T = system.getGeometry().getVertexAdjacencyMatrix().T
             flux = system.computeInPlaneFluxForm(potential)
             rateOfChange = parameters.proteinMobility * d0T @ flux
@@ -1090,7 +1095,10 @@ def animate(
                         system.getGeometry().getPolyscopeEdgeOrientations(),
                     )
             else:
-                if parameters.variation.isProteinConservation:
+                if (
+                    parameters is not None
+                    and parameters.variation.isProteinConservation
+                ):
                     rateOfChange = computeProteinRateOfChange(potential)
                     # limit = np.max(abs(rateOfChange))
                     limit = np.max(abs(np.percentile(rateOfChange, [1, 99])))
@@ -1184,16 +1192,16 @@ def animate(
 
     def callback():
         psim.PushItemWidth(100)
-        nonlocal prevFrameInd, currFrameInd, time, isPlay, isRecord, transparency, isPointwiseValue, isForceVec, isFluxForm, showBasics, showPotential, showForce, recordingDir
+        nonlocal prevFrameInd, currFrameInd, time, isPlay, isRecord, transparency
+        nonlocal isPointwiseValue, isForceVec, isFluxForm, showBasics, showPotential
+        nonlocal showForce, recordingDir
         changed = [False for i in range(9)]
         if psim.Button("Play/Pause"):
             isPlay = ~isPlay
         psim.SameLine()
         changed[0], currFrameInd = psim.SliderInt("", currFrameInd, 0, maxFrameInd)
         psim.SameLine()
-        psim.TextUnformatted(
-            "Frames: {:d}, time: ".format(frames[currFrameInd]) + "{0:.3g}".format(time)
-        )
+        psim.TextUnformatted(f"Frames: {frames[currFrameInd]:d}, time: {time:0:.3g}")
 
         if psim.Button("Record/Stop"):
             isRecord = ~isRecord
