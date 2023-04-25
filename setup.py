@@ -162,7 +162,6 @@ except ImportError:
     print('  conda install scikit-build', file=sys.stderr)
     sys.exit(1)
 
-tests_require = ["pytest"]
 
 from setuptools import find_packages
 

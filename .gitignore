@@ -155,3 +155,5 @@ docs/src/conf.py
 python_src/pymem3dg/include
 python_src/pymem3dg/lib
 imgui.ini
+*.ply
+*.nc
