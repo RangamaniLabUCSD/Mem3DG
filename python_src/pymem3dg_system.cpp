@@ -181,7 +181,6 @@ void init_system(py::module_ &pymem3dg) {
    * @brief Method: initialize System
    */
   system.def("initialize", &System::initialize, py::arg("ifMutateMesh") = false,
-             py::arg("ifMute") = false,
              R"delim(
           initialize the system
       )delim");

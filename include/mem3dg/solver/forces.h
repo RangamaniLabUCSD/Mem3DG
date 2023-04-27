@@ -155,9 +155,10 @@ struct Forces {
   /// Cached chemical potential
   gcs::VertexData<double> chemicalPotential;
 
-  /// force mask
+  /// @brief Force mask for limiting force direction e.g., enforcing boundary
+  /// conditions
   gcs::VertexData<gc::Vector3> forceMask;
-  /// protein mask
+  /// Protein mask
   gcs::VertexData<double> proteinMask;
 
   Forces(Geometry &geometry_) : Forces(*geometry_.mesh, *geometry_.vpg){};

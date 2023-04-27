@@ -26,8 +26,8 @@ void System::prescribeGeodesicMasks() {
           geometry.geodesicDistance.raw().maxCoeff() ||
       parameters.variation.geodesicMask <
           geometry.geodesicDistance.raw().minCoeff()) {
-    mem3dg_runtime_error("either all vertices or none is "
-                         "initializeConstantsin integration disk, "
+    mem3dg_runtime_error("either all vertices or none are "
+                         "in integration disk, "
                          "set radius = -1 to disable!");
   }
   for (gcs::Vertex v : geometry.mesh->vertices()) {
@@ -203,6 +203,7 @@ bool System::testConservativeForcing(const double timeStep) {
           dt * forces.maskForce(toMatrix(forceVec)).squaredNorm();
       return std::tuple<double, double>(actualDelta, expectedDelta);
     };
+
     double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
     std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
     std::tie(actualDelta2, expectedDelta2) = computeDelta(stepFold * timeStep);

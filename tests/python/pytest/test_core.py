@@ -172,7 +172,7 @@ class TestExampleIntegration(object):
             arguments = self.initialConditions
             arguments["parameters"] = p
             g = dg.System(**arguments)
-            g.initialize(ifMutateMesh=False, ifMute=False)
+            g.initialize(ifMutateMesh=False)
             g.computeTotalEnergy()
             g.computeConservativeForcing()
             g.addNonconservativeForcing()
@@ -214,7 +214,7 @@ class TestExampleIntegration(object):
             arguments = self.initialConditions
             arguments["parameters"] = p
             g = dg.System(**arguments)
-            g.initialize(ifMutateMesh=False, ifMute=False)
+            g.initialize(ifMutateMesh=False)
             fe = dg.Euler(
                 system=g,
                 characteristicTimeStep=1e-3,
@@ -246,7 +246,7 @@ class TestExampleIntegration(object):
             arguments = self.initialConditions
             arguments["parameters"] = p
             g = dg.System(**arguments)
-            g.initialize(ifMutateMesh=False, ifMute=False)
+            g.initialize(ifMutateMesh=False)
             fe = dg.Euler(
                 system=g,
                 characteristicTimeStep=0.1,
@@ -296,7 +296,7 @@ class TestContinuation(object):
             arguments = self.initialConditions
             arguments["parameters"] = p
             g = dg.System(**arguments)
-            g.initialize(ifMutateMesh=False, ifMute=False)
+            g.initialize(ifMutateMesh=False)
             g.computeTotalEnergy()
             g.computeConservativeForcing()
             g.addNonconservativeForcing()
@@ -375,7 +375,7 @@ class TestMeshIO(object):
             arguments = self.initialConditions
             arguments["parameters"] = p
             g = dg.System(**arguments)
-            g.initialize(ifMutateMesh=False, ifMute=False)
+            g.initialize(ifMutateMesh=False)
             g.computeTotalEnergy()
             g.computeConservativeForcing()
             g.addNonconservativeForcing()
@@ -510,7 +510,7 @@ class TestVisualization(object):
             arguments = self.initialConditions
             arguments["parameters"] = p
             g = dg.System(**arguments)
-            g.initialize(ifMutateMesh=False, ifMute=False)
+            g.initialize(ifMutateMesh=False)
             g.computeTotalEnergy()
             g.computeConservativeForcing()
             g.addNonconservativeForcing()
@@ -620,7 +620,7 @@ class TestVisualization(object):
             arguments = self.initialConditions
             arguments["parameters"] = p
             g = dg.System(**arguments)
-            g.initialize(ifMutateMesh=False, ifMute=False)
+            g.initialize(ifMutateMesh=False)
             g.computeTotalEnergy()
             g.computeConservativeForcing()
             g.addNonconservativeForcing()

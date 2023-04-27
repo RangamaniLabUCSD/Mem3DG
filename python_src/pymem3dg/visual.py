@@ -280,7 +280,7 @@ def plotChemicalPotentials(
         ncFrame = frames[plotFrame]
         geometry = dg.Geometry(trajFile, ncFrame)
         system = dg.System(geometry, trajFile, ncFrame, parameters)
-        system.initialize(ifMutateMesh=0, ifMute=True)
+        system.initialize(ifMutateMesh=0)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
         system.addNonconservativeForcing()
@@ -439,7 +439,7 @@ def plotMechanicalForces(
         ncFrame = frames[plotFrame]
         geometry = dg.Geometry(trajFile, ncFrame)
         system = dg.System(geometry, trajFile, ncFrame, parameters)
-        system.initialize(ifMutateMesh=0, ifMute=True)
+        system.initialize(ifMutateMesh=0)
         time[plotFrame] = system.time
         system.computeConservativeForcing()
         system.addNonconservativeForcing()
@@ -653,7 +653,7 @@ def plotEnergy(
         ncFrame = frames[plotFrame]
         geometry = dg.Geometry(trajFile, ncFrame)
         system = dg.System(geometry, trajFile, ncFrame, parameters)
-        system.initialize(ifMutateMesh=False, ifMute=True)
+        system.initialize(ifMutateMesh=False)
         time[plotFrame] = system.time
         system.computeTotalEnergy()
         energy = system.getEnergy()
@@ -985,7 +985,7 @@ def animate(
         geometry = dg.Geometry(trajNc, frame)
         if hasParameters:
             system = dg.System(geometry, trajNc, frame, parameters)
-            system.initialize(ifMutateMesh=0, ifMute=True)
+            system.initialize(ifMutateMesh=0)
             system.computeConservativeForcing()
             system.addNonconservativeForcing()
         vertex = geometry.getVertexMatrix()
@@ -1201,7 +1201,7 @@ def animate(
         psim.SameLine()
         changed[0], currFrameInd = psim.SliderInt("", currFrameInd, 0, maxFrameInd)
         psim.SameLine()
-        psim.TextUnformatted(f"Frames: {frames[currFrameInd]:d}, time: {time:0:.3g}")
+        psim.TextUnformatted(f"Frames: {frames[currFrameInd]:d}, time: {time:.3g}")
 
         if psim.Button("Record/Stop"):
             isRecord = ~isRecord

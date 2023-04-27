@@ -362,18 +362,15 @@ public:
    * @brief Initialize system
    *
    */
-  void initialize(bool ifMutateMesh = false, bool ifMute = false);
-
-  /**
-   * @brief Initialize all constant values (on refVpg) needed for computation
-   *
-   */
-  void initializeConstants(bool ifMute);
+  void initialize(bool ifMutateMesh = false);
 
   /**
    * @brief Update the vertex position and recompute cached values
-   * (all quantities that characterizes the current energy state)
-   * Careful: 1. when using eigenMap: memory address may change after update!!
+   *
+   * All vpg dependent quantities, volume, and area of mesh
+   *
+   * @warning Function may invalidate the memory address of existing Eigen
+   * Mapped views!
    */
   void updateConfigurations();
 
@@ -564,7 +561,9 @@ public:
   // =============        regularization.cpp    ===============
   // ==========================================================
   /**
-   * @brief Mesh mutation
+   * @brief Perform mesh mutation
+   *
+   * @param nMutation Iterations of mutations
    */
   void mutateMesh(size_t nMutation = 1);
 
@@ -575,9 +574,13 @@ public:
   void vertexShift();
 
   /**
-   * @brief Edge flip if not Delaunay
+   * @brief One pass edge flipping if not Delaunay
    */
   bool edgeFlip();
+  /**
+   * @brief Flip edges using a queue if not Delaunay
+   *
+   */
   void flipEdge();
 
   /**

@@ -99,7 +99,7 @@ int main() {
   Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex =
       Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(vpg.rows(), false);
   notableVertex[notableVertex_index] = true;
-  mem3dg::solver::Geometry geometry(mesh, vpg, refVpg, notableVertex);
+  mem3dg::solver::Geometry geometry(mesh, vpg, notableVertex);
   mem3dg::solver::System system(geometry, phi, vel, p, 0);
   system.initialize();
   //   system.testConservativeForcing(0.001);

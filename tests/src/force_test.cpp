@@ -40,7 +40,6 @@ protected:
   // std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
   Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> topologyMatrix;
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> vertexMatrix;
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> refVertexMatrix;
   EigenVectorX1d proteinDensity;
   EigenVectorX3dr velocity;
   Parameters p;
@@ -51,7 +50,6 @@ protected:
     // Create mesh and geometry objects
     std::tie(topologyMatrix, vertexMatrix) =
         getCylinderMatrix(1, 10, 10, 5, 0.3);
-    std::tie(topologyMatrix, refVertexMatrix) = getCylinderMatrix(1, 10, 10);
     proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
     velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
     std::size_t notableVertex_index =
@@ -136,9 +134,9 @@ protected:
 TEST_F(ForceTest, ConservativeForcesTest) {
   // Instantiate system object
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
-                                    refVertexMatrix, notableVertex);
+                                    notableVertex);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
-  f.initialize(false, true);
+  f.initialize(false);
   f.updateConfigurations();
   // First time calculation of force
   f.computeConservativeForcing();
@@ -169,10 +167,22 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
 
   // initialize the system
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
-                                    refVertexMatrix, notableVertex);
+                                    notableVertex);
   mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
-  f.initialize(false, true);
+
+  // A few sanity checks to ensure that ref VPG matches
+  EigenVectorX3dr vpg = toMatrix(f.geometry.vpg->inputVertexPositions);
+  EigenVectorX3dr refvpg = toMatrix(f.geometry.refVpg->inputVertexPositions);
+  EXPECT_TRUE(vpg.isApprox(refvpg));
+
+  // Manually perturb refvpg to force spring penalty
+  std::tie(std::ignore, refvpg) = getCylinderMatrix(1, 10, 10);
+  gc::EigenMap<double, 3>(f.geometry.refVpg->inputVertexPositions) = refvpg;
+  f.geometry.refVpg->refreshQuantities();
+
+  f.initialize(false);
   f.updateConfigurations();
+
   EXPECT_TRUE(f.testConservativeForcing(h));
 };
 } // namespace solver

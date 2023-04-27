@@ -261,11 +261,12 @@ inline double signedVolumeFromFace(gcs::Face &f,
 }
 
 /**
- * @brief Get mesh volume
+ * @brief Get the volume of a mesh object
  *
- * @param f
- * @param vpg
- * @return double
+ * @param mesh Manifold surface mesh topology
+ * @param vpg The vertex position geometry of the mesh
+ * @param isFillHole Flag for filling holes in open mesh
+ * @return The signed volume of the geometry
  */
 DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
                                        gcs::VertexPositionGeometry &vpg,

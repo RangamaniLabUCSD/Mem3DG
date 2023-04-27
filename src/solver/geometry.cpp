@@ -13,6 +13,7 @@
 //
 
 #include "mem3dg/solver/geometry.h"
+#include <geometrycentral/surface/surface_mesh.h>
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -25,11 +26,20 @@ void Geometry::saveGeometry(std::string PathToSave) {
 }
 
 #ifdef MEM3DG_WITH_NETCDF
+
+/**
+ * @brief
+ *
+ * @param trajFile
+ * @param startingFrame
+ * @return std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+ * std::unique_ptr<gcs::VertexPositionGeometry>,
+ * Eigen::Matrix<bool, Eigen::Dynamic, 1>>
+ */
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>,
            Eigen::Matrix<bool, Eigen::Dynamic, 1>>
 Geometry::readTrajFile(std::string trajFile, int startingFrame) {
-
   // Declare pointers to mesh / geometry objects
   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
@@ -40,11 +50,7 @@ Geometry::readTrajFile(std::string trajFile, int startingFrame) {
       fd.getCoords(startingFrame), fd.getTopology(startingFrame));
   Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex_here =
       fd.getNotableVertex(startingFrame);
-  // std::size_t vertexIndex;
-  // for (vertexIndex = 0; vertexIndex < notableVertex.rows(); ++vertexIndex) {
-  //   if (notableVertex[vertexIndex])
-  //     break;
-  // }
+
   return std::make_tuple(std::move(mesh), std::move(vpg), notableVertex_here);
 }
 #endif
@@ -63,24 +69,24 @@ Geometry::readMeshFile(std::string inputMesh) {
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-Geometry::readMeshFile(std::string inputMesh, std::string referenceMesh) {
+// std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+//            std::unique_ptr<gcs::VertexPositionGeometry>,
+//            std::unique_ptr<gcs::VertexPositionGeometry>>
+// Geometry::readMeshFile(std::string inputMesh, std::string referenceMesh) {
 
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> refMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+//   // Declare pointers to mesh / geometry objects
+//   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+//   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+//   std::unique_ptr<gcs::ManifoldSurfaceMesh> refMesh;
+//   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
-  std::tie(refMesh, refVpg) = gcs::readManifoldSurfaceMesh(referenceMesh);
-  refVpg = refVpg->reinterpretTo(*mesh);
+//   // Load input mesh and geometry
+//   std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+//   std::tie(refMesh, refVpg) = gcs::readManifoldSurfaceMesh(referenceMesh);
+//   refVpg = refVpg->reinterpretTo(*mesh);
 
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
-}
+//   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+// }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            std::unique_ptr<gcs::VertexPositionGeometry>>
@@ -98,26 +104,26 @@ Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
   return std::make_tuple(std::move(mesh), std::move(vpg));
 }
 
-std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-           std::unique_ptr<gcs::VertexPositionGeometry>,
-           std::unique_ptr<gcs::VertexPositionGeometry>>
-Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
-                       EigenVectorX3dr &vertexPositionMatrix,
-                       EigenVectorX3dr &refVertexPositionMatrix) {
+// std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+//            std::unique_ptr<gcs::VertexPositionGeometry>,
+//            std::unique_ptr<gcs::VertexPositionGeometry>>
+// Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
+//                        EigenVectorX3dr &vertexPositionMatrix,
+//                        EigenVectorX3dr &refVertexPositionMatrix) {
 
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
-  std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
+//   // Declare pointers to mesh / geometry objects
+//   std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
+//   std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+//   std::unique_ptr<gcs::VertexPositionGeometry> refVpg;
 
-  // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
-      vertexPositionMatrix, faceVertexMatrix);
-  refVpg = std::make_unique<gcs::VertexPositionGeometry>(
-      *mesh, refVertexPositionMatrix);
+//   // Load input mesh and geometry
+//   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+//       vertexPositionMatrix, faceVertexMatrix);
+//   refVpg = std::make_unique<gcs::VertexPositionGeometry>(
+//       *mesh, refVertexPositionMatrix);
 
-  return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
-}
+//   return std::make_tuple(std::move(mesh), std::move(vpg), std::move(refVpg));
+// }
 
 double Geometry::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
                                          gcs::Halfedge &he) const {
@@ -151,8 +157,8 @@ void Geometry::computeFaceTangentialDerivative(
 }
 
 EigenVectorX1d Geometry::computeGeodesicDistance() {
-  // 1) notable vertex is all false, return zero vector
-  assert(notableVertex.raw().cast<std::size_t>().sum() != 0);
+  // assert(std::count(notableVertex.raw().begin(), notableVertex.raw().end(),
+  //                   true) != 0);
   geodesicDistance.fill(std::numeric_limits<double>::max());
 
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
@@ -178,11 +184,7 @@ void Geometry::updateReferenceConfigurations() {
 void Geometry::updateConfigurations() {
   // refresh cached quantities after regularization
   vpg->refreshQuantities();
-
-  /// volume and osmotic pressure
   volume = getMeshVolume(*mesh, *vpg, true);
-
-  // area and surface tension
   surfaceArea = vpg->faceAreas.raw().sum();
 }
 

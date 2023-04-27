@@ -21,12 +21,6 @@
 
 #include "Eigen/src/Core/util/Constants.h"
 
-#include "mem3dg/solver/geometry.h"
-#include "mem3dg/solver/integrator/conjugate_gradient.h"
-#include "mem3dg/solver/mesh_process.h"
-#include "mem3dg/solver/system.h"
-#include "mem3dg/version.h"
-
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 
 #include "mem3dg/mem3dg"
@@ -50,32 +44,27 @@ void init_geometry(py::module_ &pymem3dg) {
   /**
    * @brief Constructors
    */
-  geometry.def(py::init<std::string, std::string,
-                        Eigen::Matrix<bool, Eigen::Dynamic, 1> &>(),
-               py::arg("inputMesh"), py::arg("referenceMesh"),
-               py::arg("notableVertex"),
-               R"delim(
+  geometry.def(
+      py::init<std::string, Eigen::Matrix<bool, Eigen::Dynamic, 1> &>(),
+      py::arg("inputMesh"), py::arg("notableVertex"),
+      R"delim(
         Geometry constructor with .ply files.
       )delim");
-  geometry.def(py::init<std::string, std::string>(), py::arg("inputMesh"),
-               py::arg("referenceMesh"),
+  geometry.def(py::init<std::string>(), py::arg("inputMesh"),
                R"delim(
           Geometry constructor with .ply files.
         )delim");
-  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &,
+  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &,
                         Eigen::Matrix<bool, Eigen::Dynamic, 1> &>(),
                py::arg("faceMatrix"), py::arg("vertexMatrix"),
-               py::arg("referenceVertexMatrix"), py::arg("notableVertex"),
+               py::arg("notableVertex"),
 
                R"delim(
         Geometry constructor with Matrices
       )delim");
-  geometry.def(
-      py::init<EigenVectorX3sr &, EigenVectorX3dr &, EigenVectorX3dr &>(),
-      py::arg("faceMatrix"), py::arg("vertexMatrix"),
-      py::arg("referenceVertexMatrix"),
-
-      R"delim(
+  geometry.def(py::init<EigenVectorX3sr &, EigenVectorX3dr &>(),
+               py::arg("faceMatrix"), py::arg("vertexMatrix"),
+               R"delim(
         Geometry constructor with Matrices
       )delim");
 #ifdef MEM3DG_WITH_NETCDF

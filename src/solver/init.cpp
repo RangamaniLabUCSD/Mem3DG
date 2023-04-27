@@ -20,13 +20,17 @@ namespace gcs = ::geometrycentral::surface;
 namespace mem3dg {
 namespace solver {
 
-void System::initialize(bool ifMutateMesh, bool ifMute) {
+void System::initialize(bool ifMutateMesh) {
   checkConfiguration();
+  // Called by CheckConfiguration();
+  meshProcessor.summarizeStatus();
+
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
-  meshProcessor.summarizeStatus();
+
   updateConfigurations();
   geometry.updateReferenceConfigurations();
+
   bool ifUpdateNotableVertex = true, ifUpdateGeodesics = true,
        ifUpdateProteinDensityDistribution = true, ifUpdateMask = true;
   updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
@@ -125,7 +129,7 @@ void System::updateConfigurations() {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }
 
-  /// surface tension and osmotic pressure
+  /// volume and osmotic pressure
   if (parameters.osmotic.form != NULL)
     std::tie(forces.osmoticPressure, energy.pressureEnergy) =
         parameters.osmotic.form(geometry.volume);
@@ -206,33 +210,6 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
 
   if (ifUpdateProteinDensityDistribution) {
     if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
-      // // in-place implementation, needed to be migrated to python
-      // std::array<double, 2> r_heter{
-      //     parameters.protein.geodesicProteinDensityDistribution[0],
-      //     parameters.protein.geodesicProteinDensityDistribution[1]};
-      // geometry.vpg->requireVertexTangentBasis();
-      // if (parameters.protein.profile == "gaussian") {
-      //   gaussianDistribution(proteinDensity.raw(),
-      //   geometry.geodesicDistance.raw(),
-      //                        geometry.vpg->inputVertexPositions -
-      //                            geometry.vpg->inputVertexPositions[center.nearestVertex()],
-      //                        geometry.vpg->vertexTangentBasis[center.nearestVertex()],
-      //                        r_heter);
-      // } else if (parameters.protein.profile == "tanh") {
-      //   tanhDistribution(proteinDensity.raw(),
-      //   geometry.geodesicDistance.raw(),
-      //                    geometry.vpg->inputVertexPositions -
-      //                        geometry.vpg->inputVertexPositions[center.nearestVertex()],
-      //                    geometry.vpg->vertexTangentBasis[center.nearestVertex()],
-      //                    parameters.protein.tanhSharpness, r_heter);
-      // }
-      // geometry.vpg->unrequireVertexTangentBasis();
-      // proteinDensity.raw() *=
-      //     parameters.protein.geodesicProteinDensityDistribution[2] -
-      //     parameters.protein.geodesicProteinDensityDistribution[3];
-      // proteinDensity.raw().array() +=
-      //     parameters.protein.geodesicProteinDensityDistribution[3];
-
       proteinDensity.raw() =
           parameters.protein.prescribeProteinDensityDistribution(
               time, geometry.vpg->vertexMeanCurvatures.raw(),
@@ -251,10 +228,6 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
       // mem3dg_runtime_message("geodesicMask not activated!")
     }
   }
-
-  // std::cout << ifMutateMesh << " " << ifUpdateNotableVertex << " "
-  //           << ifUpdateGeodesics << " " << ifUpdateProteinDensityDistribution
-  //           << " " << ifUpdateMask << std::endl;
 
   return ifMutateMesh || ifUpdateNotableVertex || ifUpdateGeodesics ||
          ifUpdateProteinDensityDistribution || ifUpdateMask;

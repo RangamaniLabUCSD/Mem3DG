@@ -16,19 +16,19 @@
 
 // #include <cassert>
 
-#include "geometrycentral/surface/halfedge_element_types.h"
-#include "geometrycentral/surface/manifold_surface_mesh.h"
+#include <geometrycentral/surface/halfedge_element_types.h>
 #include <geometrycentral/surface/halfedge_mesh.h>
 #include <geometrycentral/surface/heat_method_distance.h>
 #include <geometrycentral/surface/intrinsic_geometry_interface.h>
+#include <geometrycentral/surface/manifold_surface_mesh.h>
 #include <geometrycentral/surface/meshio.h>
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
 
-#include "geometrycentral/utilities/vector2.h"
-#include "geometrycentral/utilities/vector3.h"
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
+#include <geometrycentral/utilities/vector2.h>
+#include <geometrycentral/utilities/vector3.h>
 
 #include <Eigen/Core>
 #include <Eigen/SparseLU>
@@ -85,33 +85,6 @@ public:
    * @brief Construct Geometry
    * @param faceMatrix mesh face matrix
    * @param vertexMatrix mesh vertex matrix
-   * @param refVertexMatrix reference mesh vertex matrix
-   * @param notableVertex notable vertex data
-   * @return geometry instance
-   *
-   */
-  Geometry(EigenVectorX3sr &faceMatrix, EigenVectorX3dr &vertexMatrix,
-           EigenVectorX3dr &refVertexMatrix,
-           Eigen::Matrix<bool, Eigen::Dynamic, 1> &notableVertex_)
-      : Geometry(readMatrices(faceMatrix, vertexMatrix, refVertexMatrix),
-                 notableVertex_){};
-
-  /**
-   * @brief Construct Geometry
-   * @param faceMatrix mesh face matrix
-   * @param vertexMatrix mesh vertex matrix
-   * @param refVertexMatrix reference mesh vertex matrix
-   * @return geometry instance
-   *
-   */
-  Geometry(EigenVectorX3sr &faceMatrix, EigenVectorX3dr &vertexMatrix,
-           EigenVectorX3dr &refVertexMatrix)
-      : Geometry(readMatrices(faceMatrix, vertexMatrix, refVertexMatrix)){};
-
-  /**
-   * @brief Construct Geometry
-   * @param faceMatrix mesh face matrix
-   * @param vertexMatrix mesh vertex matrix
    * @param notableVertex notable vertex data
    * @return geometry instance
    *
@@ -136,17 +109,6 @@ public:
   /**
    * @brief Construct Geometry
    * @param inputMesh file for initial mesh
-   * @param refMesh file for reference mesh
-   * @param notableVertex_ notable vertex data
-   * @return geometry instance
-   */
-  Geometry(std::string inputMesh, std::string refMesh,
-           Eigen::Matrix<bool, Eigen::Dynamic, 1> &notableVertex_)
-      : Geometry(readMeshFile(inputMesh, refMesh), notableVertex_){};
-
-  /**
-   * @brief Construct Geometry
-   * @param inputMesh file for initial mesh
    * @param notableVertex_ notable vertex data
    * @return geometry instance
    */
@@ -157,18 +119,11 @@ public:
   /**
    * @brief Construct Geometry
    * @param inputMesh file for initial mesh
-   * @param refMesh file for reference mesh
-   * @return geometry instance
-   */
-  Geometry(std::string inputMesh, std::string refMesh)
-      : Geometry(readMeshFile(inputMesh, refMesh)){};
-  /**
-   * @brief Construct Geometry
-   * @param inputMesh file for initial mesh
    * @return geometry instance
    */
   Geometry(std::string inputMesh) : Geometry(readMeshFile(inputMesh)){};
 
+#ifdef MEM3DG_WITH_NETCDF
   // =======================================
   // =======       NetCDF Files     ========
   // =======================================
@@ -180,35 +135,25 @@ public:
    */
   Geometry(std::string trajFile, int startingFrame)
       : Geometry(readTrajFile(trajFile, startingFrame)){};
+#endif
 
 private:
   // =======================================
   // =======       Tuple            ========
   // =======================================
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                      std::unique_ptr<gcs::VertexPositionGeometry>,
-                      std::unique_ptr<gcs::VertexPositionGeometry>>
-               tuple)
-      : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
-                 std::move(std::get<2>(tuple))){};
-  Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
                tuple)
       : Geometry(std::move(std::get<0>(tuple)),
                  std::move(std::get<1>(tuple))){};
-  Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-                      std::unique_ptr<gcs::VertexPositionGeometry>,
-                      std::unique_ptr<gcs::VertexPositionGeometry>>
-               tuple,
-           Eigen::Matrix<bool, Eigen::Dynamic, 1> &notableVertex_)
-      : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
-                 std::move(std::get<2>(tuple)), notableVertex_){};
+
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>>
                tuple,
            Eigen::Matrix<bool, Eigen::Dynamic, 1> &notableVertex_)
       : Geometry(std::move(std::get<0>(tuple)), std::move(std::get<1>(tuple)),
                  notableVertex_){};
+
   Geometry(std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
                       std::unique_ptr<gcs::VertexPositionGeometry>,
                       Eigen::Matrix<bool, Eigen::Dynamic, 1>>
@@ -224,38 +169,6 @@ public:
    * @brief Construct Geometry
    * @param ptrmesh_ manifold surface mesh
    * @param ptrvpg_ vertex position geometry
-   * @param refptrvpg_ reference vertex position geometry
-   * @param notableVertex_ notable vertex data
-   * @return geometry instance
-   */
-  Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-           std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-           std::unique_ptr<gcs::VertexPositionGeometry> refptrvpg_,
-           Eigen::Matrix<bool, Eigen::Dynamic, 1> &notableVertex_)
-      : Geometry(std::move(ptrmesh_), std::move(ptrvpg_), notableVertex_) {
-    refVpg = std::move(refptrvpg_);
-    updateReferenceConfigurations();
-  }
-
-  /**
-   * @brief Construct Geometry
-   * @param ptrmesh_ manifold surface mesh
-   * @param ptrvpg_ vertex position geometry
-   * @param refptrvpg_ reference vertex position geometry
-   * @return geometry instance
-   */
-  Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
-           std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_,
-           std::unique_ptr<gcs::VertexPositionGeometry> refptrvpg_)
-      : Geometry(std::move(ptrmesh_), std::move(ptrvpg_)) {
-    refVpg = std::move(refptrvpg_);
-    updateReferenceConfigurations();
-  }
-
-  /**
-   * @brief Construct Geometry
-   * @param ptrmesh_ manifold surface mesh
-   * @param ptrvpg_ vertex position geometry
    * @param notableVertex_ notable vertex data
    * @return geometry instance
    */
@@ -264,8 +177,9 @@ public:
            Eigen::Matrix<bool, Eigen::Dynamic, 1> &notableVertex_)
       : Geometry(std::move(ptrmesh_), std::move(ptrvpg_)) {
     notableVertex.raw() = notableVertex_;
-    if (notableVertex.raw().cast<size_t>().sum() == 0)
-      mem3dg_runtime_error("notableVertex cannot be all false!");
+    // auto &nv = notableVertex.raw();
+    // if (std::count(nv.begin(), nv.end(), true) == 0)
+    //   mem3dg_runtime_error("notableVertex cannot be all false!");
     computeGeodesicDistance();
   }
 
@@ -302,7 +216,7 @@ public:
     vpg->requireEdgeCotanWeights();
     // vpg->requireVertexTangentBasis();
 
-    notableVertex[0] = true;
+    // notableVertex[0] = true;
     volume = getMeshVolume(*mesh, *vpg, true);
     surfaceArea = vpg->faceAreas.raw().sum();
     updateReferenceConfigurations();
@@ -353,12 +267,12 @@ public:
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readMatrices(EigenVectorX3sr &faceVertexMatrix,
                EigenVectorX3dr &vertexPositionMatrix);
-  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMatrices(EigenVectorX3sr &faceVertexMatrix,
-               EigenVectorX3dr &vertexPositionMatrix,
-               EigenVectorX3dr &refVertexPositionMatrix);
+  // std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+  //            std::unique_ptr<gcs::VertexPositionGeometry>,
+  //            std::unique_ptr<gcs::VertexPositionGeometry>>
+  // readMatrices(EigenVectorX3sr &faceVertexMatrix,
+  //              EigenVectorX3dr &vertexPositionMatrix,
+  //              EigenVectorX3dr &refVertexPositionMatrix);
   /**
    * @brief Construct a tuple of unique_ptrs from mesh and refMesh path
    *
@@ -367,10 +281,10 @@ public:
              std::unique_ptr<gcs::VertexPositionGeometry>>
   readMeshFile(std::string inputMesh);
 
-  std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
-             std::unique_ptr<gcs::VertexPositionGeometry>,
-             std::unique_ptr<gcs::VertexPositionGeometry>>
-  readMeshFile(std::string inputMesh, std::string referenceMesh);
+  // std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
+  //            std::unique_ptr<gcs::VertexPositionGeometry>,
+  //            std::unique_ptr<gcs::VertexPositionGeometry>>
+  // readMeshFile(std::string inputMesh, std::string referenceMesh);
 
   /**
    * @brief Save RichData to .ply file

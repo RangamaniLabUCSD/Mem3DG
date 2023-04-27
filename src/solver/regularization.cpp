@@ -231,8 +231,9 @@ void System::flipEdge() {
     toCheck.push(e);
     inQueue[e] = true;
   }
-  // counter and limit for number of flips
+  // Limiter for max flips
   int flipMax = 100 * geometry.mesh->nVertices();
+  // Counter of flip attempts
   int flipCnt = 0;
   while (!toCheck.empty() && flipCnt < flipMax) {
     gc::Edge e = toCheck.front();
@@ -242,16 +243,19 @@ void System::flipEdge() {
     // (if not already)
     if (meshProcessor.meshMutator.ifFlip(e, *geometry.vpg)) {
       flipCnt++;
-      gc::Halfedge he = e.halfedge();
-      gc::Halfedge he1 = he.next();
-      gc::Halfedge he2 = he1.next();
-      gc::Halfedge he3 = he.twin().next();
-      gc::Halfedge he4 = he3.next();
+      gcs::Halfedge he = e.halfedge();
 
-      if (gc::sum(forces.forceMask[he.vertex()] +
-                  forces.forceMask[he.twin().vertex()]) < 0.5) {
+      // Dont flip if edge has masked force (enforce boundary condition)
+      if (gc::sum(forces.forceMask[he.tailVertex()] +
+                  forces.forceMask[he.tipVertex()]) < 0.5) {
         continue;
       }
+      // Current triangle
+      gcs::Halfedge he1 = he.next();
+      gcs::Halfedge he2 = he1.next();
+      // Twin triangle
+      gcs::Halfedge he3 = he.twin().next();
+      gcs::Halfedge he4 = he3.next();
 
       if (!inQueue[he1.edge()]) {
         toCheck.push(he1.edge());
@@ -270,6 +274,7 @@ void System::flipEdge() {
         inQueue[he4.edge()] = true;
       }
       geometry.mesh->flip(e);
+
       meshProcessor.meshMutator.markVertices(mutationMarker, he.tailVertex());
       meshProcessor.meshMutator.markVertices(mutationMarker, he.tipVertex());
     }
