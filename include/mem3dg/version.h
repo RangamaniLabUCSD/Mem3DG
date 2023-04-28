@@ -14,9 +14,10 @@
 
 #pragma once
 
+#include "mem3dg/macros.h"
 #include <string>
 
 namespace mem3dg {
-extern const std::string MEM3DG_VERSION;
-extern const std::string MEM3DG_VERSION_SHORT;
+DLL_PUBLIC extern const std::string MEM3DG_VERSION;
+DLL_PUBLIC extern const std::string MEM3DG_VERSION_SHORT;
 } // end namespace mem3dg

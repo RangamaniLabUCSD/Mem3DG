@@ -88,7 +88,7 @@ set(LINKED_LIBS geometry-central pcg::pcg igl::core)
 
 if(WITH_NETCDF)
   message(STATUS "${VCPKG_TARGET_TRIPLET}")
-  find_package(netCDF REQUIRED)
+  find_package(netCDF "4.3.1" REQUIRED)
   message(DEBUG "netCDF version: ${netCDF_VERSION}")
   message(DEBUG "netCDF dir: ${netCDF_DIR}")
   message(DEBUG "netCDF include dir: ${netCDF_INCLUDE_DIR}")

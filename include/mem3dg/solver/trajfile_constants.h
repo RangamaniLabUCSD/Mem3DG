@@ -49,6 +49,8 @@ static const std::string CONVENTIONS_VALUE = "Mem3DG";
 static const std::string CONVENTIONS_VERSION_NAME = "ConventionsVersion";
 /// Conventions version value
 static const std::string CONVENTIONS_VERSION_VALUE = "0.0.1";
+/// Conventions mem3dg version name
+static const std::string MEM3DG_VERSION_NAME = "Mem3DGVersion";
 
 static const std::string PARAM_GROUP_NAME = "Parameters";
 static const std::string TRAJ_GROUP_NAME = "Trajectory";

@@ -38,6 +38,7 @@
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/trajfile_constants.h"
 #include "mem3dg/type_utilities.h"
+#include "mem3dg/version.h"
 
 namespace mem3dg {
 namespace solver {
@@ -128,6 +129,7 @@ public:
     // initialize data
     fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
     fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
+    fd->putAtt(MEM3DG_VERSION_NAME, MEM3DG_VERSION);
 
     frame_dim = fd->addDim(FRAME_NAME);
     npolygons_dim = fd->addDim(NPOLYGONS_NAME, mesh.nFaces());

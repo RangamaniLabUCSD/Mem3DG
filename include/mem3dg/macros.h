@@ -15,6 +15,7 @@
 #pragma once
 
 #include <exception>
+#include <iostream>
 #include <sstream>
 
 namespace mem3dg {

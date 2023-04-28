@@ -38,6 +38,7 @@
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/trajfile_constants.h"
 #include "mem3dg/type_utilities.h"
+#include "mem3dg/version.h"
 
 namespace mem3dg {
 namespace solver {
@@ -85,26 +86,21 @@ public:
       return MutableTrajFile(filename, NcFile::newFile);
   };
 
-  ///////////////////////////////////////////////
-  // Reintroduce when Netcdf 4.3.1 is standard
-  // Ubuntu 18.04 uses 4.3.0
-  ///////////////////////////////////////////////
-  //   /**
-  //    * @brief Open a new file and populate it with the convention
-  //    *
-  //    * @param filename  Filename to save to
-  //    * @param replace   Whether to replace an existing file or exit
-  //    *
-  //    * @exception netCDF::exceptions::NcExist File already exists and
-  //    * replace/overwrite flag is not specified.
-  //    *
-  //    * @return MutableTrajFile helper object to manipulate the bound NetCDF
-  //    file.
-  // ;   */
-  //   static MutableTrajFile newDisklessFile(const std::string &filename) {
-  //     return MutableTrajFile(filename, NC_NETCDF4 | NC_CLOBBER |
-  //     NC_DISKLESS);
-  //   }
+  /**
+   * @brief Open a new file and populate it with the convention
+   *
+   * @param filename  Filename to save to
+   * @param replace   Whether to replace an existing file or exit
+   *
+   * @exception netCDF::exceptions::NcExist File already exists and
+   * replace/overwrite flag is not specified.
+   *
+   * @return MutableTrajFile helper object to manipulate the bound NetCDF
+   file.
+;   */
+  static MutableTrajFile newDisklessFile(const std::string &filename) {
+    return MutableTrajFile(filename, NC_NETCDF4 | NC_CLOBBER | NC_DISKLESS);
+  }
 
   /**
    * @brief Open an existing NetCDF file in read/write mode
@@ -203,27 +199,23 @@ public:
     initializeConventions();
   }
 
-  ///////////////////////////////////////////////
-  // Reintroduce when Netcdf 4.3.1 is standard
-  // Ubuntu 18.04 uses 4.3.0
-  ///////////////////////////////////////////////
-  // /**
-  //  * @brief Create a New File object with NetCDF-C modes
-  //  *
-  //  * @param filename    Path to file to create
-  //  * @param ncFileMode  Mode to create the file
-  //  */
-  // void createNewFile(const std::string &filename, const int ncFileMode) {
-  //   if (fd != nullptr) {
-  //     mem3dg_runtime_error("Cannot open an already opened file.");
-  //   }
+  /**
+   * @brief Create a New File object with NetCDF-C modes
+   *
+   * @param filename    Path to file to create
+   * @param ncFileMode  Mode to create the file
+   */
+  void createNewFile(const std::string &filename, const int ncFileMode) {
+    if (fd != nullptr) {
+      mem3dg_runtime_error("Cannot open an already opened file.");
+    }
 
-  //   writeable = true;
+    writeable = true;
 
-  //   fd = new NcFile();
-  //   fd->create(filename, ncFileMode);
-  //   initializeConventions();
-  // }
+    fd = new NcFile();
+    fd->create(filename, ncFileMode);
+    initializeConventions();
+  }
 
 #pragma endregion initialization_helpers
 
@@ -680,22 +672,18 @@ private:
       createNewFile(filename, fMode);
   }
 
-  ///////////////////////////////////////////////
-  // Reintroduce when Netcdf 4.3.1 is standard
-  // Ubuntu 18.04 uses 4.3.0
-  ///////////////////////////////////////////////
-  // /**
-  //  * @brief Private constructor for new file using ncflags directly
-  //  *
-  //  * Note that this only creates new files!
-  //  *
-  //  * @param filename      Path to file of interest
-  //  * @param ncFileFlags   Mode to create file with
-  //  */
-  // MutableTrajFile(const std::string &filename, const int ncFileFlags)
-  //     : filename(filename), fd(nullptr), writeable(true) {
-  //   createNewFile(filename, ncFileFlags);
-  // }
+  /**
+   * @brief Private constructor for new file using ncflags directly
+   *
+   * Note that this only creates new files!
+   *
+   * @param filename      Path to file of interest
+   * @param ncFileFlags   Mode to create file with
+   */
+  MutableTrajFile(const std::string &filename, const int ncFileFlags)
+      : filename(filename), fd(nullptr), writeable(true) {
+    createNewFile(filename, ncFileFlags);
+  }
 
   /**
    * @brief Initialize a new file with the given conventions
@@ -707,6 +695,7 @@ private:
     // initialize data
     fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
     fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
+    fd->putAtt(MEM3DG_VERSION_NAME, MEM3DG_VERSION);
 
     parameter_group = fd->addGroup(PARAM_GROUP_NAME);
     traj_group = fd->addGroup(TRAJ_GROUP_NAME);
