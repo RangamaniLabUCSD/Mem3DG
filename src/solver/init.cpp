@@ -22,19 +22,18 @@ namespace solver {
 
 void System::initialize(bool ifMutateMesh) {
   checkConfiguration();
-  // Called by CheckConfiguration();
-  meshProcessor.summarizeStatus();
 
   pcg_extras::seed_seq_from<std::random_device> seed_source;
   rng = pcg32(seed_source);
-
-  updateConfigurations();
-  geometry.updateReferenceConfigurations();
 
   bool ifUpdateNotableVertex = true, ifUpdateGeodesics = true,
        ifUpdateProteinDensityDistribution = true, ifUpdateMask = true;
   updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
                      ifUpdateProteinDensityDistribution, ifUpdateMask);
+
+  updateConfigurations();
+  geometry.updateReferenceConfigurations();
+
   if (geometry.mesh->hasBoundary()) {
     boundaryForceMask(*geometry.mesh, forces.forceMask,
                       parameters.boundary.shapeBoundaryCondition);
@@ -183,7 +182,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
     if (meshProcessor.isMeshMutate) {
       mutateMesh();
       updateConfigurations();
-      geometry.refVpg = geometry.vpg->copy();
+      geometry.updateReferenceMeshFromVPG();
       geometry.updateReferenceConfigurations();
     } else {
       ifMutateMesh = false;

@@ -39,7 +39,7 @@ class TestLoadCheck(object):
 class TestInitialization(object):
     face, vertex = dg_meshop.getIcosphere(1, 3)
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
-    geometry = dg.Geometry(face, vertex, vertex)
+    geometry = dg.Geometry(face, vertex)
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
     initialConditions = {
@@ -53,11 +53,12 @@ class TestInitialization(object):
 
     def test_geometry(self):
         # test matrix based initialization
-        g1 = dg.Geometry(self.face, self.vertex, self.vertex, self.notableVertex)
-        g2 = dg.Geometry(self.face, self.vertex, self.vertex)
+        g1 = dg.Geometry(self.face, self.vertex, self.notableVertex)
+        g2 = dg.Geometry(self.face, self.vertex)
         # test the notable vertex argument
         assert (g1.getNotableVertex() == self.notableVertex).all()
-        assert g2.getNotableVertex()[0]
+        for i in range(len(self.vertex)):
+            assert g2.getNotableVertex()[i] == False
 
     def test_system(self):
         p = dg.Parameters()
@@ -80,7 +81,7 @@ class TestInitialization(object):
             radius=1, radialSubdivision=5, axialSubdivision=5, frequency=1, amplitude=0
         )
         p = dg.Parameters()
-        geometry = dg.Geometry(face, vertex, vertex, self.notableVertex)
+        geometry = dg.Geometry(face, vertex, self.notableVertex)
         system = dg.System(geometry, p)
         system.initialize()
 
@@ -138,17 +139,19 @@ class TestInitialization(object):
 class TestExampleIntegration(object):
     face, vertex = dg_meshop.getIcosphere(1, 3)
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
-    geometry = dg.Geometry(face, vertex, vertex)
+
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
+
+    notableVertex = np.full(np.shape(vertex)[0], False)
+    notableVertex[0] = True
+    geometry = dg.Geometry(face, vertex, notableVertex)
+
     initialConditions = {
         "geometry": geometry,
         "proteinDensity": proteinDensity,
         "velocity": velocity,
     }
-    notableVertex = [False] * np.shape(vertex)[0]
-    notableVertex[10] = True
-    notableVertex[50] = True
 
     def test_shape_and_protein_variation(self):
         """test simulation with both shape and protein variation"""
@@ -264,17 +267,19 @@ class TestExampleIntegration(object):
 class TestContinuation(object):
     face, vertex = dg_meshop.getIcosphere(1, 3)
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
-    geometry = dg.Geometry(face, vertex, vertex)
+
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
+
+    notableVertex = np.full(np.shape(vertex)[0], False)
+    notableVertex[0] = True
+    geometry = dg.Geometry(face, vertex, notableVertex)
+
     initialConditions = {
         "geometry": geometry,
         "proteinDensity": proteinDensity,
         "velocity": velocity,
     }
-    notableVertex = [False] * np.shape(vertex)[0]
-    notableVertex[10] = True
-    notableVertex[50] = True
 
     def test_initialization(self):
         with tempfile.TemporaryDirectory() as outputDir:
@@ -320,7 +325,7 @@ class TestContinuation(object):
             face, vertex = dg_nc.getFaceAndVertexMatrix(
                 trajNc=outputDir + "/traj.nc", frame=frame
             )
-            g2 = dg.Geometry(face, vertex, vertex)
+            g2 = dg.Geometry(face, vertex)
             g3 = dg.Geometry(outputDir + "/traj.nc", frame)
             assert g3.getSurfaceArea() == g2.getSurfaceArea()
             g = dg.Geometry(outputDir + "/traj.nc", 0)
@@ -330,17 +335,19 @@ class TestContinuation(object):
 class TestMeshIO(object):
     face, vertex = dg_meshop.getIcosphere(1, 3)
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
-    geometry = dg.Geometry(face, vertex, vertex)
+
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
+
+    notableVertex = np.full(np.shape(vertex)[0], False)
+    notableVertex[0] = True
+    geometry = dg.Geometry(face, vertex, notableVertex)
+
     initialConditions = {
         "geometry": geometry,
         "proteinDensity": proteinDensity,
         "velocity": velocity,
     }
-    notableVertex = [False] * np.shape(vertex)[0]
-    notableVertex[10] = True
-    notableVertex[50] = True
 
     def test_mesh_generation(self):
         """test mesh generation functions"""
@@ -472,17 +479,19 @@ class TestVisualization(object):
 
     face, vertex = dg_meshop.getIcosphere(1, 3)
     vertex = dg_util.sphericalHarmonicsPerturbation(vertex, 5, 6, 0.1)
-    geometry = dg.Geometry(face, vertex, vertex)
+
     proteinDensity = np.ones(np.shape(vertex)[0]) * 0.1
     velocity = np.zeros(np.shape(vertex))
+
+    notableVertex = np.full(np.shape(vertex)[0], False)
+    notableVertex[0] = True
+    geometry = dg.Geometry(face, vertex, notableVertex)
+
     initialConditions = {
         "geometry": geometry,
         "proteinDensity": proteinDensity,
         "velocity": velocity,
     }
-    notableVertex = [False] * np.shape(vertex)[0]
-    notableVertex[10] = True
-    notableVertex[50] = True
 
     # initialization = TestInitialization()
     # trajectory = TestExampleIntegration()

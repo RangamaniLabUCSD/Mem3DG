@@ -341,3 +341,23 @@ inline auto toMatrix(gcs::VertexData<gc::Vector3> &vector) {
 }
 
 } // namespace mem3dg
+
+namespace std {
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
+
+inline std::string to_string(gcs::VertexData<gc::Vector3> &a) {
+  auto map = gc::EigenMap<double, 3>(a);
+  ostringstream output;
+  output << map;
+  return output.str();
+}
+
+inline std::string to_string(gcs::VertexData<double> &a) {
+  auto map = a.raw();
+  ostringstream output;
+  output << map;
+  return output.str();
+}
+
+} // namespace std

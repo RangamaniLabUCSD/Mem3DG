@@ -194,7 +194,7 @@ public:
       : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
         geodesicDistance{*mesh, 0}, notableVertex{*mesh, false},
         refLcrs{*mesh, 0} {
-    refVpg = vpg->copy();
+    updateReferenceMeshFromVPG();
 
     // GC computed properties
     vpg->requireFaceNormals();
@@ -306,6 +306,12 @@ public:
   // ==========================================================
   // ================     init.cpp           ==================
   // ==========================================================
+
+  inline void updateReferenceMeshFromVPG() {
+    refVpg = vpg->copy();
+    refVpg->requireEdgeLengths();
+    refVpg->requireFaceAreas();
+  }
 
   /**
    * @brief Update the vertex position and recompute cached values
