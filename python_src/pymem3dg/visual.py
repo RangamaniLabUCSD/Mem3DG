@@ -831,7 +831,7 @@ def visualizeGeometry(
     ps.init()
     polyscopeStyle()
     transparency = 1
-    isPointwiseValue = False
+    isPointwiseValue = True
     vertex = geometry.getVertexMatrix()
     face = geometry.getFaceMatrix()
     psmesh = ps.register_surface_mesh(
@@ -967,7 +967,7 @@ def animate(
     currFrameInd = 0
     time = dg_nc.getData(trajNc, frames[currFrameInd], "Trajectory", "time", 1)
     isFluxForm = False
-    isPointwiseValue = False
+    isPointwiseValue = True
     isForceVec = False
     recordingDir = ""
 
@@ -982,7 +982,12 @@ def animate(
         nonlocal currFrameInd, time, isPointwiseValue, isForceVec, isFluxForm, showPotential, showForce, showBasics
         frame = frames[currFrameInd]
         time = dg_nc.getData(trajNc, frame, "Trajectory", "time", 1)
-        geometry = dg.Geometry(trajNc, frame)
+
+        try:
+            geometry = dg.Geometry(trajNc, frame)
+        except Exception as e:
+            print(e)
+            return
         if hasParameters:
             system = dg.System(geometry, trajNc, frame, parameters)
             system.initialize(ifMutateMesh=0)
@@ -1005,7 +1010,7 @@ def animate(
                 psmesh.add_scalar_quantity(
                     "proteinDensity",
                     proteinDensity,
-                    vminmax=(-1, 1),  # keep the center (white) at 0
+                    # vminmax=(-1, 1),  # keep the center (white) at 0
                     cmap="coolwarm",
                     enabled=True,
                 )
@@ -1196,8 +1201,22 @@ def animate(
         nonlocal isPointwiseValue, isForceVec, isFluxForm, showBasics, showPotential
         nonlocal showForce, recordingDir
         changed = [False for i in range(9)]
-        if psim.Button("Play/Pause"):
-            isPlay = ~isPlay
+        if psim.ArrowButton("Back one frame", 0):
+            currFrameInd = currFrameInd - 1
+            if currFrameInd < 0:
+                currFrameInd = maxFrameInd
+        psim.SameLine()
+        if not isPlay:
+            if psim.Button("Play"):
+                isPlay = ~isPlay
+        else:
+            if psim.Button("Pause"):
+                isPlay = ~isPlay
+        psim.SameLine()
+        if psim.ArrowButton("Forward one frame", 1):
+            currFrameInd = currFrameInd + 1
+            if currFrameInd >= maxFrameInd:
+                currFrameInd = maxFrameInd
         psim.SameLine()
         changed[0], currFrameInd = psim.SliderInt("", currFrameInd, 0, maxFrameInd)
         psim.SameLine()
@@ -1211,7 +1230,7 @@ def animate(
         if isRecord:
             if ~isPlay:
                 isPlay = True
-            defaultName = "frame{}.png".format(currFrameInd)
+            defaultName = f"frame{currFrameInd:04d}.png"
             ps.screenshot(recordingDir + defaultName)
         if isPlay:
             currFrameInd = currFrameInd + 1
