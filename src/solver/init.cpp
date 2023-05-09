@@ -111,19 +111,16 @@ void System::updateConfigurations() {
     Kd.raw() = parameters.bending.Kd +
                parameters.bending.Kdc * proteinDensity.raw().array();
   } else if (parameters.bending.relation == "hill") {
-    Eigen::Matrix<double, Eigen::Dynamic, 1> proteinDensitySq =
+    EigenVectorX1d proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
-    H0.raw() = (parameters.bending.H0c * proteinDensitySq.array() /
-                (1 + proteinDensitySq.array()))
-                   .matrix();
-    Kb.raw() = (parameters.bending.Kb + parameters.bending.Kbc *
-                                            proteinDensitySq.array() /
-                                            (1 + proteinDensitySq.array()))
-                   .matrix();
-    Kd.raw() = (parameters.bending.Kd + parameters.bending.Kdc *
-                                            proteinDensitySq.array() /
-                                            (1 + proteinDensitySq.array()))
-                   .matrix();
+    H0.raw() = parameters.bending.H0c * proteinDensitySq.array() /
+               (1 + proteinDensitySq.array());
+    Kb.raw() = parameters.bending.Kb + parameters.bending.Kbc *
+                                           proteinDensitySq.array() /
+                                           (1 + proteinDensitySq.array());
+    Kd.raw() = parameters.bending.Kd + parameters.bending.Kdc *
+                                           proteinDensitySq.array() /
+                                           (1 + proteinDensitySq.array());
   } else {
     mem3dg_runtime_error("updateVertexPosition: P.relation is invalid option!");
   }

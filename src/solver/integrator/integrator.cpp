@@ -400,7 +400,9 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << (system.proteinDensity * system.geometry.vpg->vertexDualAreas)
                .raw()
                .sum()
-        << std::endl;
+        << "\n"
+        << "H0: [" << system.H0.raw().minCoeff() << ","
+        << system.H0.raw().maxCoeff() << "]" << std::endl;
 
     // report the backtracking if verbose
     if (timeStep != characteristicTimeStep && ifPrintToConsole) {
