@@ -188,10 +188,14 @@ void System::computeEntropyEnergy() {
 
 void System::computeProteinInteriorPenalty() {
   // interior method to constrain protein density to remain from 0 to 1
+  // Note that nans are removed by substituting zero
+  EigenVectorX1d a = proteinDensity.raw().array().log();
+  a = (a.array().isFinite()).select(a, 0);
+  EigenVectorX1d b = (1 - proteinDensity.raw().array()).log();
+  b = (b.array().isFinite()).select(b, 0);
+
   energy.proteinInteriorPenalty =
-      -parameters.protein.proteinInteriorPenalty *
-      ((proteinDensity.raw().array()).log().sum() +
-       (1 - proteinDensity.raw().array()).log().sum());
+      -parameters.protein.proteinInteriorPenalty * (a.sum() + b.sum());
 }
 
 void System::computeSelfAvoidanceEnergy() {

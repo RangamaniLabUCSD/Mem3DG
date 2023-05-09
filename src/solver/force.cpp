@@ -377,11 +377,15 @@ void System::computeChemicalPotentials() {
         forces.maskProtein(-parameters.dirichlet.eta *
                            geometry.vpg->cotanLaplacian * proteinDensity.raw());
 
-  if (parameters.protein.proteinInteriorPenalty != 0)
-    forces.interiorPenaltyPotential.raw() =
-        forces.maskProtein(parameters.protein.proteinInteriorPenalty *
-                           (1 / proteinDensity.raw().array() -
-                            1 / (1 - proteinDensity.raw().array())));
+  if (parameters.protein.proteinInteriorPenalty != 0) {
+    // Doing some tricks to penalize
+    EigenVectorX1d a = 1 / proteinDensity.raw().array();
+    a = (a.array().isFinite()).select(a, 0);
+    EigenVectorX1d b = 1 / (1 - proteinDensity.raw().array());
+    b = (b.array().isFinite()).select(b, 0);
+    forces.interiorPenaltyPotential.raw() = forces.maskProtein(
+        parameters.protein.proteinInteriorPenalty * (a.array() - b.array()));
+  }
 
   forces.chemicalPotential =
       forces.adsorptionPotential + forces.aggregationPotential +
