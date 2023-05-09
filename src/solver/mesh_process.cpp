@@ -19,6 +19,7 @@
 #include "mem3dg/constants.h"
 #include "mem3dg/meshops.h"
 #include <Eigen/Core>
+#include <algorithm>
 #include <cmath>
 
 namespace mem3dg {
@@ -243,15 +244,13 @@ double MeshProcessor::MeshMutator::computeCurvatureThresholdLength(
   gcs::Halfedge he = e.halfedge();
   // curvature based remeshing:
   // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
-  double k1 = (abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tipVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tipVertex()));
-  double k2 = (abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tailVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tailVertex()));
-  return std::sqrt(6 * curvTol / ((k1 > k2) ? k1 : k2) - 3 * curvTol * curvTol);
+  auto tip = he.tipVertex();
+  auto tail = he.tailVertex();
+  double k1 = std::max(abs(vpg.vertexMaxPrincipalCurvature(tip)),
+                       abs(vpg.vertexMinPrincipalCurvature(tip)));
+  double k2 = std::max(abs(vpg.vertexMaxPrincipalCurvature(tail)),
+                       abs(vpg.vertexMinPrincipalCurvature(tail)));
+  return std::sqrt(6 * curvTol / (std::max(k1, k2)) - 3 * curvTol * curvTol);
 }
 
 } // namespace solver
