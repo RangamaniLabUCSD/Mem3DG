@@ -26,7 +26,7 @@ macro(get_version_from_git)
 
   # parse the version information into pieces.
   string(REGEX MATCH
-      "^v?(([0-9]+)(\\.?[0-9]+)*)-?(alpha[0-9]*|beta[0-9]*|dev[0-9]*|a[0-9]*|b[0-9]*|c[0-9]*)?-?([0-9]+)?-?([a-z0-9]+)?-?(dirty)?$"
+      "^v?(([0-9]+)(\\.?[0-9]+)*)-?(alpha[0-9]*|beta[0-9]*|dev[0-9]*|rc[0-9]*|a[0-9]*|b[0-9]*|c[0-9]*)?-?([0-9]+)?-?([a-z0-9]+)?-?(dirty)?$"
       MATCH_RESULT
       "${VERSION}"
   )
