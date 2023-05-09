@@ -981,15 +981,18 @@ def animate(
     def show(trajNc):
         nonlocal currFrameInd, time, isPointwiseValue, isForceVec, isFluxForm, showPotential, showForce, showBasics
         frame = frames[currFrameInd]
-        time = dg_nc.getData(trajNc, frame, "Trajectory", "time", 1)
-
         try:
+            time = dg_nc.getData(trajNc, frame, "Trajectory", "time", 1)
             geometry = dg.Geometry(trajNc, frame)
         except Exception as e:
             print(e)
             return
         if hasParameters:
-            system = dg.System(geometry, trajNc, frame, parameters)
+            try:
+                system = dg.System(geometry, trajNc, frame, parameters)
+            except Exception as e:
+                print(e)
+                return
             system.initialize(ifMutateMesh=0)
             system.computeConservativeForcing()
             system.addNonconservativeForcing()
