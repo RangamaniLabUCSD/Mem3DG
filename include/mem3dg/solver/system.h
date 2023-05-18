@@ -59,8 +59,9 @@
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
+/// @brief mem3dg namespace
 namespace mem3dg {
-
+/// @brief solver namespace
 namespace solver {
 
 struct Energy {
@@ -169,58 +170,6 @@ public:
 #endif
 
 private:
-  // =======================================
-  // =======       Tuple            ========
-  // =======================================
-  //   /**
-  //    * @brief Construct System
-  //    * @param initialConditionTuple <geometry of the system, vertex protein
-  //    * density, velocity of the vertex, time of the system>
-  //    * @param p Parameters of the system
-  //    * @return system instance
-  //    *
-  //    */
-  //   System(std::tuple<Geometry &&, EigenVectorX1d &, EigenVectorX3dr &,
-  //   double>
-  //              initialConditionsTuple,
-  //          Parameters &p)
-  //       : System(std::get<0>(initialConditionsTuple),
-  //                std::get<1>(initialConditionsTuple),
-  //                std::get<2>(initialConditionsTuple), p,
-  //                std::get<3>(initialConditionsTuple)){};
-  //   /**
-  //    * @brief Construct System
-  //    * @param initialConditionTuple <geometry of the system, vertex protein
-  //    * density, velocity of the vertex, time of the system>
-  //    * @return system instance
-  //    *
-  //    */
-  //   System(std::tuple<Geometry &&, EigenVectorX1d &&, EigenVectorX3dr &&,
-  //   double>
-  //              initialConditionsTuple)
-  //       : System(std::get<0>(initialConditionsTuple),
-  //                std::get<1>(initialConditionsTuple),
-  //                std::get<2>(initialConditionsTuple),
-  //                std::get<3>(initialConditionsTuple)){};
-
-  // // below is temporary
-  //   System(std::tuple<std::unique_ptr<Geometry>, EigenVectorX1d,
-  //   EigenVectorX3dr,
-  //                     double>
-  //              initialConditionsTuple,
-  //          Parameters &p)
-  //       : System(*std::move(std::get<0>(initialConditionsTuple)),
-  //                std::get<1>(initialConditionsTuple),
-  //                std::get<2>(initialConditionsTuple), p,
-  //                std::get<3>(initialConditionsTuple)){};
-
-  //   System(std::unique_ptr<Geometry> geometryptr, EigenVectorX1d
-  //   &proteinDensity_,
-  //          EigenVectorX3dr &velocity_, Parameters &p, double time_ = 0)
-  //       : System(*std::move(geometryptr).get(), proteinDensity_, velocity_,
-  //       p,
-  //                time_) {}
-
   /**
    * @brief Construct System
    * @param geometry_ geometry of the system
@@ -581,13 +530,113 @@ public:
    * @brief Flip edges using a queue if not Delaunay
    *
    */
-  void flipEdge();
+  void edgeFlipQueued();
+
+  inline gcs::Vertex splitEdge(gcs::Edge e) {
+    gcs::Vertex vertex1 = e.firstVertex(), vertex2 = e.secondVertex();
+    gc::Vector3 vertex1Pos = geometry.vpg->vertexPositions[vertex1];
+    gc::Vector3 vertex2Pos = geometry.vpg->vertexPositions[vertex2];
+    gc::Vector3 vertex1Vel = velocity[vertex1];
+    gc::Vector3 vertex2Vel = velocity[vertex2];
+    double vertex1GeoDist = geometry.geodesicDistance[vertex1];
+    double vertex2GeoDist = geometry.geodesicDistance[vertex2];
+    double vertex1Phi = proteinDensity[vertex1];
+    double vertex2Phi = proteinDensity[vertex2];
+
+    // bool vertex1PointTracker = geometry.notableVertex[vertex1];
+    // bool vertex2PointTracker = geometry.notableVertex[vertex2];
+
+    // split the edge
+    gcs::Vertex newVertex = geometry.mesh->splitEdgeTriangular(e).vertex();
+
+    // update quantities
+    // Note: think about conservation of energy, momentum and angular
+    // momentum
+    // averageData(geometry.vpg->inputVertexPositions, vertex1, vertex2,
+    // newVertex); averageData(velocity, vertex1, vertex2, newVertex);
+    // averageData(geometry.geodesicDistance, vertex1, vertex2, newVertex);
+    // averageData(proteinDensity, vertex1, vertex2, newVertex);
+    geometry.vpg->vertexPositions[newVertex] = 0.5 * (vertex1Pos + vertex2Pos);
+    velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+    geometry.geodesicDistance[newVertex] =
+        0.5 * (vertex1GeoDist + vertex2GeoDist);
+    proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+    geometry.notableVertex[newVertex] = false;
+    forces.forceMask[newVertex] = gc::Vector3{1, 1, 1};
+    return newVertex;
+  }
 
   /**
-   * @brief Get regularization pressure component of the system
+   * @brief Perform edge collapse
+   *
+   * @warning if e is a part of a pinch triangle than the new vertex can be
+   * null.
+   *
+   * @param e Edge to collapse
+   * @return gcs::Vertex Resultant vertex. Warning: if the edge collapse would
+   * cause issues the result can be null
    */
-  bool meshGrowth();
-  bool growMesh();
+  inline gcs::Vertex collapseEdge(gcs::Edge e) {
+    // First collect data
+    gcs::Vertex vertex1 = e.firstVertex(), vertex2 = e.secondVertex();
+    gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
+    gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
+    gc::Vector3 vertex1Pos = geometry.vpg->vertexPositions[vertex1];
+    gc::Vector3 vertex2Pos = geometry.vpg->vertexPositions[vertex2];
+    gc::Vector3 vertex1Vel = velocity[vertex1];
+    gc::Vector3 vertex2Vel = velocity[vertex2];
+    double vertex1GeoDist = geometry.geodesicDistance[vertex1];
+    double vertex2GeoDist = geometry.geodesicDistance[vertex2];
+    double vertex1Phi = proteinDensity[vertex1];
+    double vertex2Phi = proteinDensity[vertex2];
+    bool vertex1PointTracker = geometry.notableVertex[vertex1];
+    bool vertex2PointTracker = geometry.notableVertex[vertex2];
+
+    // collapse the edge
+    gcs::Vertex newVertex = geometry.mesh->collapseEdgeTriangular(e);
+
+    // vertex maybe void if edge was on a pinch triangle
+    if (newVertex.getIndex() != gc::INVALID_IND) {
+
+      // update quantities
+      // Note: think about conservation of energy, momentum and angular
+      // momentum
+      geometry.vpg->vertexPositions[newVertex] =
+          ((gc::sum(vertex1ForceMask) < 2.5) || vertex1PointTracker)
+              ? vertex1Pos
+          : ((gc::sum(vertex2ForceMask) < 2.5) || vertex1PointTracker)
+              ? vertex2Pos
+              : (vertex1Pos + vertex2Pos) / 2;
+      // averageData(velocity, vertex1, vertex2, newVertex);
+      // averageData(geometry.geodesicDistance, vertex1, vertex2, newVertex);
+      // averageData(proteinDensity, vertex1, vertex2, newVertex);
+      velocity[newVertex] = 0.5 * (vertex1Vel + vertex2Vel);
+      geometry.geodesicDistance[newVertex] =
+          0.5 * (vertex1GeoDist + vertex2GeoDist);
+      proteinDensity[newVertex] = 0.5 * (vertex1Phi + vertex2Phi);
+      geometry.notableVertex[newVertex] =
+          vertex1PointTracker || vertex2PointTracker;
+    }
+    return newVertex;
+  }
+
+  bool ifFoldover(const gcs::Edge e, const double angle = 0.5) const;
+
+  /**
+   * @brief Split/collapse mesh mutations without cache
+   *
+   * @return true
+   * @return false
+   */
+  bool processSplitCollapse();
+
+  /**
+   * @brief Process split/collapse mutations with a queue
+   *
+   * @return true
+   * @return false
+   */
+  bool processSplitCollapseQueued();
 
   /**
    * @brief global smoothing after mutation of the mesh
