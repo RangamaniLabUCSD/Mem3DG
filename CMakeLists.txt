@@ -18,7 +18,8 @@ cmake_policy(SET CMP0091 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Force globally
 cmake_policy(SET CMP0063 NEW)
 
-cmake_minimum_required(VERSION 3.11)
+# 3.25 required for SYSTEM target property
+cmake_minimum_required(VERSION 3.25)
 
 # Add path to custom modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -126,11 +127,14 @@ add_library(mem3dg SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
 target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
 
 if(BUILD_PYMEM3DG)
-  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+  find_package(
+    Python
+    COMPONENTS Interpreter Development
+    REQUIRED
+  )
   add_subdirectory(python_src)
   install(TARGETS _core DESTINATION .)
 endif()
-
 
 enable_testing()
 add_subdirectory(tests)
