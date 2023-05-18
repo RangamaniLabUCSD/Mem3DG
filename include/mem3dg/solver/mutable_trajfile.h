@@ -40,7 +40,9 @@
 #include "mem3dg/type_utilities.h"
 #include "mem3dg/version.h"
 
+/// Mem3dg namespace
 namespace mem3dg {
+/// solver namespace
 namespace solver {
 
 namespace gc = ::geometrycentral;

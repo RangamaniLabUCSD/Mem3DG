@@ -47,7 +47,7 @@ void System::backtraceEnergyGrowth(const double timeStep,
     computeExternalWork(time, timeStep);
   computeTotalEnergy();
   std::cout << "<<<<<" << std::endl;
-  mem3dg_runtime_message("backtracing the component that leads to the energy "
+  mem3dg_runtime_warning("backtracing the component that leads to the energy "
                          "growth (<--'s highlight growing components)");
   std::cout << "\nUsing time step " << timeStep << ":" << std::endl;
   std::cout << "\n";
@@ -97,7 +97,7 @@ void System::backtraceEnergyGrowth(const double timeStep,
 
 bool System::testConservativeForcing(const double timeStep) {
   std::cout << "<<<<<" << std::endl;
-  mem3dg_runtime_message("numerically testing componentwise forcing--energy "
+  mem3dg_runtime_warning("numerically testing componentwise forcing--energy "
                          "relation (<--'s highlight possible inconsistency)");
   std::cout << "\nUsing time step " << timeStep << ":" << std::endl;
   std::cout << "\n";
@@ -428,46 +428,46 @@ bool System::checkFiniteness() {
   if (!std::isfinite(mechErrorNorm)) {
     finite = false;
     if (!std::isfinite(toMatrix(velocity).norm())) {
-      mem3dg_runtime_message("Velocity is not finite!");
+      mem3dg_runtime_warning("Velocity is not finite!");
     }
 
     if (!std::isfinite(toMatrix(forces.mechanicalForceVec).norm())) {
       if (!std::isfinite(toMatrix(forces.capillaryForceVec).norm())) {
-        mem3dg_runtime_message("Capillary force is not finite!");
+        mem3dg_runtime_warning("Capillary force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.adsorptionForceVec).norm())) {
-        mem3dg_runtime_message("Adsorption force is not finite!");
+        mem3dg_runtime_warning("Adsorption force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.aggregationForceVec).norm())) {
-        mem3dg_runtime_message("Aggregation force is not finite!");
+        mem3dg_runtime_warning("Aggregation force is not finite!");
       }
       if (!std::isfinite(
               toMatrix(forces.spontaneousCurvatureForceVec).norm())) {
-        mem3dg_runtime_message("Spontaneous curvature force is not finite!");
+        mem3dg_runtime_warning("Spontaneous curvature force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.deviatoricCurvatureForceVec).norm())) {
-        mem3dg_runtime_message("Deviatoric curvature force is not finite!");
+        mem3dg_runtime_warning("Deviatoric curvature force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.areaDifferenceForceVec).norm())) {
-        mem3dg_runtime_message("Area difference force is not finite!");
+        mem3dg_runtime_warning("Area difference force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.osmoticForceVec).norm())) {
-        mem3dg_runtime_message("Osmotic force is not finite!");
+        mem3dg_runtime_warning("Osmotic force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.lineCapillaryForceVec).norm())) {
-        mem3dg_runtime_message("Line capillary force is not finite!");
+        mem3dg_runtime_warning("Line capillary force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.externalForceVec).norm())) {
-        mem3dg_runtime_message("External force is not finite!");
+        mem3dg_runtime_warning("External force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.selfAvoidanceForceVec).norm())) {
-        mem3dg_runtime_message("Self avoidance force is not finite!");
+        mem3dg_runtime_warning("Self avoidance force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.entropyForceVec).norm())) {
-        mem3dg_runtime_message("Entropy force is not finite!");
+        mem3dg_runtime_warning("Entropy force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.springForceVec).norm())) {
-        mem3dg_runtime_message("Spring force is not finite!");
+        mem3dg_runtime_warning("Spring force is not finite!");
       }
     }
   }
@@ -476,32 +476,32 @@ bool System::checkFiniteness() {
     finite = false;
 
     if (!std::isfinite(proteinRateOfChange.raw().norm())) {
-      mem3dg_runtime_message("Protein velocity is not finite!");
+      mem3dg_runtime_warning("Protein velocity is not finite!");
     }
 
     if (!std::isfinite(forces.chemicalPotential.raw().norm())) {
       if (!std::isfinite(forces.spontaneousCurvaturePotential.raw().norm())) {
-        mem3dg_runtime_message(
+        mem3dg_runtime_warning(
             "Spontaneous curvature Potential is not finite!");
       }
       if (!std::isfinite(forces.deviatoricCurvaturePotential.raw().norm())) {
-        mem3dg_runtime_message("Deviatoric curvature Potential is not finite!");
+        mem3dg_runtime_warning("Deviatoric curvature Potential is not finite!");
       }
       if (!std::isfinite(forces.interiorPenaltyPotential.raw().norm())) {
-        mem3dg_runtime_message(
+        mem3dg_runtime_warning(
             "Protein interior penalty potential is not finite!");
       }
       if (!std::isfinite(forces.dirichletPotential.raw().norm())) {
-        mem3dg_runtime_message("Dirichlet potential is not finite!");
+        mem3dg_runtime_warning("Dirichlet potential is not finite!");
       }
       if (!std::isfinite(forces.adsorptionPotential.raw().norm())) {
-        mem3dg_runtime_message("Adsorption potential is not finite!");
+        mem3dg_runtime_warning("Adsorption potential is not finite!");
       }
       if (!std::isfinite(forces.aggregationPotential.raw().norm())) {
-        mem3dg_runtime_message("Aggregation potential is not finite!");
+        mem3dg_runtime_warning("Aggregation potential is not finite!");
       }
       if (!std::isfinite(forces.entropyPotential.raw().norm())) {
-        mem3dg_runtime_message("Entropy potential is not finite!");
+        mem3dg_runtime_warning("Entropy potential is not finite!");
       }
     }
   }
@@ -509,55 +509,55 @@ bool System::checkFiniteness() {
   if (!std::isfinite(energy.totalEnergy)) {
     finite = false;
     if (!std::isfinite(energy.kineticEnergy)) {
-      mem3dg_runtime_message("Kinetic energy is not finite!");
+      mem3dg_runtime_warning("Kinetic energy is not finite!");
     }
     if (!std::isfinite(energy.externalWork)) {
-      mem3dg_runtime_message("External work is not finite!");
+      mem3dg_runtime_warning("External work is not finite!");
     }
     if (!std::isfinite(energy.potentialEnergy)) {
       if (!std::isfinite(energy.spontaneousCurvatureEnergy)) {
-        mem3dg_runtime_message("Spontaneous curvature energy is not finite!");
+        mem3dg_runtime_warning("Spontaneous curvature energy is not finite!");
       }
       if (!std::isfinite(energy.deviatoricCurvatureEnergy)) {
-        mem3dg_runtime_message("Deviatoric curvature energy is not finite!");
+        mem3dg_runtime_warning("Deviatoric curvature energy is not finite!");
       }
       if (!std::isfinite(energy.areaDifferenceEnergy)) {
-        mem3dg_runtime_message("Area difference energy is not finite!");
+        mem3dg_runtime_warning("Area difference energy is not finite!");
       }
       if (!std::isfinite(energy.surfaceEnergy)) {
-        mem3dg_runtime_message("Surface energy is not finite!");
+        mem3dg_runtime_warning("Surface energy is not finite!");
       }
       if (!std::isfinite(energy.pressureEnergy)) {
-        mem3dg_runtime_message("Pressure energy is not finite!");
+        mem3dg_runtime_warning("Pressure energy is not finite!");
       }
       if (!std::isfinite(energy.adsorptionEnergy)) {
-        mem3dg_runtime_message("Adsorption energy is not finite!");
+        mem3dg_runtime_warning("Adsorption energy is not finite!");
       }
       if (!std::isfinite(energy.aggregationEnergy)) {
-        mem3dg_runtime_message("Aggregation energy is not finite!");
+        mem3dg_runtime_warning("Aggregation energy is not finite!");
       }
       if (!std::isfinite(energy.dirichletEnergy)) {
-        mem3dg_runtime_message("Line tension energy is not finite!");
+        mem3dg_runtime_warning("Line tension energy is not finite!");
       }
       if (!std::isfinite(energy.proteinInteriorPenalty)) {
-        mem3dg_runtime_message(
+        mem3dg_runtime_warning(
             "Protein interior penalty energy is not finite!");
       }
       if (!std::isfinite(energy.selfAvoidancePenalty)) {
-        mem3dg_runtime_message(
+        mem3dg_runtime_warning(
             "Membrane self-avoidance penalty energy is not finite!");
       }
       if (!std::isfinite(energy.entropyEnergy)) {
-        mem3dg_runtime_message("Entropy energy is not finite!");
+        mem3dg_runtime_warning("Entropy energy is not finite!");
       }
       if (!std::isfinite(energy.lcrSpringEnergy)) {
-        mem3dg_runtime_message("lcr spring energy is not finite!");
+        mem3dg_runtime_warning("lcr spring energy is not finite!");
       }
       if (!std::isfinite(energy.edgeSpringEnergy)) {
-        mem3dg_runtime_message("edge spring energy is not finite!");
+        mem3dg_runtime_warning("edge spring energy is not finite!");
       }
       if (!std::isfinite(energy.faceSpringEnergy)) {
-        mem3dg_runtime_message("face spring energy is not finite!");
+        mem3dg_runtime_warning("face spring energy is not finite!");
       }
     }
   }

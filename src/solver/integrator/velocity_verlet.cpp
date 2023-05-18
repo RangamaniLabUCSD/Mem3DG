@@ -117,7 +117,7 @@ void VelocityVerlet::checkParameters() {
                          "integration! Note that 0 < damping/time step < 1!");
   }
   if (isBacktrack && system.parameters.dpd.gamma != 0) {
-    mem3dg_runtime_message(
+    mem3dg_runtime_warning(
         "Fluctuation can lead to failure in backtracking algorithm!");
   }
 }
@@ -147,7 +147,7 @@ void VelocityVerlet::status() {
     EXIT = true;
     SUCCESS = false;
     if (!std::isfinite(timeStep))
-      mem3dg_runtime_message("time step is not finite!");
+      mem3dg_runtime_warning("time step is not finite!");
   }
 
   // check energy increase

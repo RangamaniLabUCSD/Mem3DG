@@ -226,7 +226,6 @@ public:
     }
   }
 
-public:
   /**
    * @brief Destroy the Geometry
    *

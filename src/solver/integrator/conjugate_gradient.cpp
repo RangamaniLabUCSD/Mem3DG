@@ -174,7 +174,7 @@ void ConjugateGradient::status() {
     EXIT = true;
     SUCCESS = false;
     if (!std::isfinite(timeStep))
-      mem3dg_runtime_message("time step is not finite!");
+      mem3dg_runtime_warning("time step is not finite!");
   }
 }
 

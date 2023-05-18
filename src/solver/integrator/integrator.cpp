@@ -39,7 +39,7 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
               (initialMaximumForce / currentMaximumForce);
 
   if (characteristicTimeStep / dt > 1e3) {
-    mem3dg_runtime_message("Time step too small! May consider restarting the "
+    mem3dg_runtime_warning("Time step too small! May consider restarting the "
                            "simulation in small time scale");
     std::cout << "Current size / initial size = "
               << currentMinimumSize /
@@ -100,7 +100,7 @@ double Integrator::backtrack(
                           positionDirection.array())
                              .sum();
     if (positionProjection < 0)
-      mem3dg_runtime_message("Velocity on energy "
+      mem3dg_runtime_warning("Velocity on energy "
                              "uphill direction!");
   }
   if (system.parameters.variation.isProteinVariation) {
@@ -108,7 +108,7 @@ double Integrator::backtrack(
                           chemicalDirection.array())
                              .sum();
     if (chemicalProjection < 0)
-      mem3dg_runtime_message("chemical evolution on energy "
+      mem3dg_runtime_warning("chemical evolution on energy "
                              "uphill direction!");
   }
 
@@ -200,7 +200,7 @@ double Integrator::chemicalBacktrack(
                         chemicalDirection.array())
                            .sum();
   if (chemicalProjection < 0) {
-    mem3dg_runtime_message("chemical evolution on energy "
+    mem3dg_runtime_warning("chemical evolution on energy "
                            "uphill direction!");
   }
   // calculate initial energy as reference level
@@ -281,7 +281,7 @@ double Integrator::mechanicalBacktrack(
                         positionDirection.array())
                            .sum();
   if (positionProjection < 0)
-    mem3dg_runtime_message("Velocity on energy "
+    mem3dg_runtime_warning("Velocity on energy "
                            "uphill direction!");
 
   // calculate initial energy as reference level
@@ -367,6 +367,11 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << "h: "
         << toMatrix(system.geometry.vpg->inputVertexPositions).col(2).maxCoeff()
         << "\n"
+        << "minE: " << system.geometry.vpg->edgeLengths.raw().minCoeff()
+        << "; maxE: " << system.geometry.vpg->edgeLengths.raw().maxCoeff()
+        << "\n"
+        << "minA: " << system.geometry.vpg->faceAreas.raw().minCoeff()
+        << "; maxA: " << system.geometry.vpg->faceAreas.raw().maxCoeff() << "\n"
         << "E_total: " << system.energy.totalEnergy << "\n"
         << "E_kin: " << system.energy.kineticEnergy << "\n"
         << "E_pot: " << system.energy.potentialEnergy << "\n"

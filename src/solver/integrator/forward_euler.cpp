@@ -167,7 +167,7 @@ void Euler::status() {
     EXIT = true;
     SUCCESS = false;
     if (!std::isfinite(timeStep))
-      mem3dg_runtime_message("time step is not finite!");
+      mem3dg_runtime_warning("time step is not finite!");
   }
 }
 
@@ -244,7 +244,8 @@ void Euler::march() {
     if (system.parameters.variation.isProteinVariation)
       timeStep_chem =
           chemicalBacktrack(system.proteinRateOfChange.raw(), rho, c1);
-    timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
+    timeStep = std::min(timeStep_chem, timeStep_mech);
+    // (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
   }

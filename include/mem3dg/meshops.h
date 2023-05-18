@@ -101,7 +101,7 @@ DLL_PUBLIC inline int findMedianIndex(int l, int r) {
 }
 
 /**
- * @brief find the range of data based on percentile (quatile)
+ * @brief find the range of data based on percentile (quartile)
  * @param a raw buffer of vector
  * @param n size of vector
  * @param r upper bound of range
@@ -498,16 +498,10 @@ DLL_PUBLIC inline void boundaryForceMask(gcs::SurfaceMesh &mesh,
   }
   if (!(gc::EigenMap<double, 3>(mask).array() < 0.5).any() &&
       boundaryConditionType != "none") {
-    std::cout
-        << "\nboundaryForceMask(double): WARNING: there is no boundary vertex "
-           "in the mesh!"
-        << std::endl;
+    mem3dg_runtime_warning("there is no boundary vertex in the mesh!");
   }
   if (!(gc::EigenMap<double, 3>(mask).array() > 0.5).any()) {
-    std::cout
-        << "\nboundaryForceMask(double): WARNING: there is no non-masked DOF "
-           "in the mesh!"
-        << std::endl;
+    mem3dg_runtime_warning("there is no non-masked DOF in the mesh!");
   }
 }
 

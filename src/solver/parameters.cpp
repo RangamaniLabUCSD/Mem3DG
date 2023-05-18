@@ -51,25 +51,25 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   // variation
   if (!variation.isShapeVariation) {
     if (tension.form != NULL) {
-      mem3dg_runtime_message("tension.form is not NULL!");
+      mem3dg_runtime_warning("tension.form is not NULL!");
     }
     if (osmotic.form != NULL) {
-      mem3dg_runtime_message("osmotic.form is not NULL!");
+      mem3dg_runtime_warning("osmotic.form is not NULL!");
     }
     if (boundary.shapeBoundaryCondition != "none") {
-      mem3dg_runtime_message("shape boundary condition is not none for non "
+      mem3dg_runtime_warning("shape boundary condition is not none for non "
                              "shape variation simulation");
     }
   }
 
   if (variation.isProteinVariation != (proteinMobility > 0)) {
-    mem3dg_runtime_message("proteinMobility value is not consistent with the "
+    mem3dg_runtime_warning("proteinMobility value is not consistent with the "
                            "protein variation option!");
   }
 
   if (variation.isProteinConservation) {
     if (adsorption.epsilon != 0)
-      mem3dg_runtime_message(
+      mem3dg_runtime_warning(
           "protein adsorption has no effect when conserve protein!")
   }
 
@@ -77,24 +77,24 @@ void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
   if (hasBoundary) {
     if (boundary.shapeBoundaryCondition == "none" &&
         variation.isShapeVariation) {
-      mem3dg_runtime_message(
+      mem3dg_runtime_warning(
           "Shape boundary condition type (roller, pin or fixed) "
           "has not been specified for open boundary mesh! May result in "
           "unexpected behavior(e.g. osmotic force). ");
     }
     if (boundary.proteinBoundaryCondition != "pin" &&
         variation.isProteinVariation) {
-      mem3dg_runtime_message("Protein boundary condition type (pin) "
+      mem3dg_runtime_warning("Protein boundary condition type (pin) "
                              "has not been specified for open boundary mesh!");
     }
   } else {
     if (boundary.shapeBoundaryCondition != "none") {
-      mem3dg_runtime_message(
+      mem3dg_runtime_warning(
           "Shape boundary condition type should be disable (= \"none\") "
           "for closed boundary mesh!");
     }
     if (boundary.proteinBoundaryCondition != "none") {
-      mem3dg_runtime_message(
+      mem3dg_runtime_warning(
           "Protein boundary condition type should be disable (= \"none\") "
           "for closed boundary mesh!");
     }
