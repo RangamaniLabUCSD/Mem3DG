@@ -13,7 +13,12 @@
 //
 
 #include "mem3dg/solver/geometry.h"
+#include "mem3dg/macros.h"
 #include <geometrycentral/surface/surface_mesh.h>
+
+#ifdef MEM3DG_WITH_NETCDF
+#include <netcdf>
+#endif
 
 namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
@@ -26,6 +31,7 @@ void Geometry::saveGeometry(std::string PathToSave) {
 }
 
 #ifdef MEM3DG_WITH_NETCDF
+namespace nc = ::netCDF;
 
 /**
  * @brief
@@ -48,8 +54,15 @@ Geometry::readTrajFile(std::string trajFile, int startingFrame) {
   fd.getNcFrame(startingFrame);
   std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology(startingFrame));
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex_here =
-      fd.getNotableVertex(startingFrame);
+
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex_here;
+  try {
+    notableVertex_here = fd.getNotableVertex(startingFrame);
+  } catch (const nc::exceptions::NcException &e) {
+    notableVertex_here =
+        Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(mesh->nVertices());
+    mem3dg_runtime_warning("Trajfile has no attribute `notable vertex`");
+  }
 
   return std::make_tuple(std::move(mesh), std::move(vpg), notableVertex_here);
 }
