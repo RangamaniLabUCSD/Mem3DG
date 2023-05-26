@@ -79,6 +79,13 @@ option(WITH_NETCDF "Build with NetCDF (binary trajectory output)?" ON)
 option(BUILD_MEM3DG_DOCS "Configure documentation" OFF)
 option(M3DG_GET_OWN_EIGEN "Download own Eigen" ON)
 option(M3DG_GET_OWN_PYBIND11 "Download own pybind11" ON)
+option(WITH_LIBUNWIND "Link libunwind for stack traces" OFF)
+option(WITH_OPENMP "Build with OpenMP support" OFF)
+option(LINK_PROFILER "Link profiler gperftools" OFF)
+
+option(MEM3DG_PEDANTIC "Be extremely pedantic while compiling" OFF)
+
+mark_as_advanced(FORCE MEM3DG_PEDANTIC)
 
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS
@@ -88,7 +95,7 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg igl::core)
 
 if(WITH_NETCDF)
-  message(STATUS "${VCPKG_TARGET_TRIPLET}")
+  message(STATUS "VCPKG Triplet: ${VCPKG_TARGET_TRIPLET}")
   find_package(netCDF "4.3.1" REQUIRED)
   message(DEBUG "netCDF version: ${netCDF_VERSION}")
   message(DEBUG "netCDF dir: ${netCDF_DIR}")
@@ -101,6 +108,11 @@ if(WITH_NETCDF)
   message(DEBUG "netcdf-cxx4 library: ${netcdf-cxx4_LIBRARIES}")
   message(DEBUG "netcdf-cxx4 version: ${netcdf-cxx4_VERSION}")
   list(APPEND LINKED_LIBS NetCDF::NetCDF-cxx4)
+endif()
+
+if(WITH_OPENMP)
+  find_package(OpenMP REQUIRED)
+  list(APPEND LINKED_LIBS OpenMP::OpenMP_CXX)
 endif()
 
 # ##############################################################################
@@ -116,10 +128,31 @@ target_include_directories(
   mem3dg_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
+if(LINK_PROFILER)
+  find_package(Gperftools REQUIRED)
+  list(APPEND LINKED_LIBS ${GPERFTOOLS_PROFILER})
+  target_include_directories(mem3dg_objlib PUBLIC ${GPERFTOOLS_INCLUDE_DIR})
+  target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_GPERFTOOLS)
+endif()
+
 target_link_libraries(mem3dg_objlib PUBLIC ${LINKED_LIBS})
 set_target_properties(mem3dg_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(WITH_LIBUNWIND)
+  target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_LIBUNWIND)
+endif()
+
 if(WITH_NETCDF)
   target_compile_definitions(mem3dg_objlib PUBLIC -DMEM3DG_WITH_NETCDF)
+endif()
+
+if(MEM3DG_PEDANTIC)
+  if(NOT MSVC)
+    target_compile_options(
+      mem3dg_objlib PRIVATE "-Wall" "-Wextra" "-Wshadow" "-Wnon-virtual-dtor"
+                            "-pedantic"
+    )
+  endif(NOT MSVC)
 endif()
 
 # mem3dg library

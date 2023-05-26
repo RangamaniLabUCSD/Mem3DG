@@ -251,8 +251,16 @@ void init_integrators(py::module_ &pymem3dg) {
   /**
    * @brief methods
    */
-  euler.def("integrate", &Euler::integrate,
-            R"delim(
+  euler.def(
+      "integrate",
+      [](Euler &self) {
+        py::scoped_ostream_redirect stream(
+            std::cout,                                // std::ostream&
+            py::module_::import("sys").attr("stdout") // Python output
+        );
+        self.integrate();
+      },
+      R"delim(
             integrate
         )delim");
 

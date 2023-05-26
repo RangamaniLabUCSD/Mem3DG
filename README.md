@@ -23,6 +23,18 @@ cmake --build . --config Release
 
 Source released can also be obtained from [PyPi](https://pypi.org/project/pymem3dg/).
 
+
+## Building pymem3dg
+
+The python library can be built using pip:
+```
+pip install . -v
+```
+Options can be passed to scikit-build by exporting environment variables.
+```
+export SKBUILD_CONFIGURE_OPTIONS="-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo"
+```
+
 ## Temporary notes for setting up netcdf (especially on windows...)
 
 1. Download `vcpkg` and follow the instructions to install
