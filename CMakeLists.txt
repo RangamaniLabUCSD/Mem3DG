@@ -110,11 +110,6 @@ if(WITH_NETCDF)
   list(APPEND LINKED_LIBS NetCDF::NetCDF-cxx4)
 endif()
 
-if(WITH_OPENMP)
-  find_package(OpenMP REQUIRED)
-  list(APPEND LINKED_LIBS OpenMP::OpenMP_CXX)
-endif()
-
 # ##############################################################################
 # DDG SOLVER LIBRARY
 # ##############################################################################
@@ -128,6 +123,14 @@ target_include_directories(
   mem3dg_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
+if(WITH_OPENMP)
+  find_package(OpenMP REQUIRED)
+  # list(APPEND LINKED_LIBS OpenMP::OpenMP_CXX)
+  target_link_libraries(
+    mem3dg_objlib PRIVATE $<$<CONFIG:Release>:OpenMP::OpenMP_CXX>
+  )
+endif()
 
 if(LINK_PROFILER)
   find_package(Gperftools REQUIRED)
