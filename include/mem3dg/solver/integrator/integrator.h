@@ -130,8 +130,8 @@ public:
   Integrator(System &system_, double characteristicTimeStep_, double tolerance_,
              std::string outputDirectory_)
       : system(system_), characteristicTimeStep(characteristicTimeStep_),
-        tolerance(tolerance_), outputDirectory(outputDirectory_),
-        timeStep(characteristicTimeStep_) {
+        tolerance(tolerance_), timeStep(characteristicTimeStep_),
+        outputDirectory(outputDirectory_) {
     ifDisableIntegrate = true;
     ifPrintToConsole = true;
     // Initialize the timestep-meshsize ratio
@@ -152,7 +152,7 @@ public:
    * @brief Destroy the Integrator
    *
    */
-  ~Integrator() {}
+  virtual ~Integrator() = default;
 
   // ==========================================================
   // =================   Template functions    ================
@@ -173,17 +173,17 @@ public:
 
 #ifdef MEM3DG_WITH_NETCDF
   /**
-   * @brief Initialize netcdf traj file
+   * @brief Initialize netcdf trajectory file
    */
   void createMutableNetcdfFile(bool isContinue);
 
   /**
-   * @brief close netcdf traj file
+   * @brief close netcdf trajectory file
    */
   void closeMutableNetcdfFile();
 
   /**
-   * @brief Save data to netcdf traj file
+   * @brief Save data to netcdf trajectory file
    */
   void saveMutableNetcdfData();
 

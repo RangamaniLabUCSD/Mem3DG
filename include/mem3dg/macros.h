@@ -22,6 +22,41 @@
 #include <exception>
 #include <iostream>
 #include <sstream>
+// #include <stacktrace>  # Introduced in C++ 23!
+
+#ifdef MEM3DG_WITH_LIBUNWIND
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+
+inline void show_backtrace() {
+  unw_cursor_t cursor;
+  unw_context_t context;
+
+  // Initialize cursor to current frame for local unwinding.
+  unw_getcontext(&context);
+  unw_init_local(&cursor, &context);
+
+  // Unwind frames one by one, going up the frame stack.
+  while (unw_step(&cursor) > 0) {
+    unw_word_t offset, ip;
+    // get instruction pointer
+    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    if (ip == 0) {
+      break;
+    }
+    printf("0x%lx:", ip);
+
+    char sym[256];
+    if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
+      printf(" (%s+0x%lx)\n", sym, offset);
+    } else {
+      printf(" -- error: unable to obtain symbol name for this frame\n");
+    }
+  }
+}
+#else
+#define show_backtrace() ((void)0)
+#endif
 
 /// Mem3dg namespace
 namespace mem3dg {
@@ -45,6 +80,7 @@ void throw_runtime_error(const char *function, const char *file, const int line,
   ss << "Error: ";
   [[maybe_unused]] int dummy[] = {0, ((ss << std::forward<T>(ts)), 0)...};
   ss << " in function " << function << " at " << file << ":" << line;
+  show_backtrace();
   throw std::runtime_error(ss.str());
 }
 
@@ -106,8 +142,19 @@ void runtime_message(const char *function, const char *file, const int line,
   mem3dg::detail::runtime_warning(__PRETTY_FUNCTION__, __FILE__, __LINE__,     \
                                   __VA_ARGS__);
 
+#ifdef NO_MEM3DG_SAFETY_CHECKS
+#define MEM3DG_SAFETY_ASSERT(CONDITION, MSG)
+#else
+#define MEM3DG_SAFETY_ASSERT(CONDITION, MSG)                                   \
+  if (!(CONDITION)) {                                                          \
+    throw std::runtime_error("MEM3DG_SAFETY_ASSERT FAILURE from " +            \
+                             std::string(__FILE__) + ":" +                     \
+                             std::to_string(__LINE__) + " - " + (MSG));        \
+  }
+#endif
+
 #ifdef NDEBUG
-#define mem3dg_debug_message(...) ((void)0);
+#define mem3dg_debug_message(...) ((void)0)
 #else
 /**
  * @brief Helper for printing debug messages

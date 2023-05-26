@@ -47,9 +47,16 @@ namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
 namespace solver {
-
+/**
+ * @brief Mesh processor
+ *
+ */
 struct MeshProcessor {
 
+  /**
+   * @brief Mesh mutator object
+   *
+   */
   struct MeshMutator {
     /// period of mesh mutation
     std::size_t mutateMeshPeriod = std::numeric_limits<std::size_t>::max();
@@ -91,9 +98,9 @@ struct MeshProcessor {
     /// max edge length
     double maximumEdgeLength = 0.01;
 
-    /// collapse skinny triangles
+    /// collapse skinny triangles based on angles
     bool collapseSkinny = false;
-    /// collapse small triangles
+    /// collapse triangles smaller than the \a targetFaceArea
     bool collapseSmall = false;
     /// target face area
     double targetFaceArea = 0.001;
@@ -104,24 +111,34 @@ struct MeshProcessor {
     double curvTol = 0.0012;
 
     /**
-     * @brief summarizeStatus
+     * @brief Aggregate fine mutation flags to set broader flag states
      */
     void summarizeStatus();
 
     /**
-     * @brief return condition of edge flip
+     * @brief Check flip conditions for edge e
+     *
+     * Affected by \a flipNonDelaunay and \a flipNonDelaunayRequireFlat flags
+     *
+     * @param e edge of interest
+     * @param vpg geometry
+     * @return true if edge \a e should be flipped
+     * @return false if edge \a e is ok
      */
-    bool ifFlip(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
+    bool checkFlipCondition(const gcs::Edge e,
+                            const gcs::VertexPositionGeometry &vpg);
 
     /**
      * @brief return condition of edge split
      */
-    bool ifSplit(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+    bool checkSplitCondition(const gc::Edge e,
+                             const gcs::VertexPositionGeometry &vpg);
 
     /**
      * @brief return condition of edge collapse
      */
-    bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+    bool checkCollapseCondition(const gc::Edge e,
+                                const gcs::VertexPositionGeometry &vpg);
 
     void markVertices(gcs::VertexData<bool> &mutationMarker,
                       const gcs::Vertex v, const size_t layer = 0);
@@ -140,7 +157,7 @@ struct MeshProcessor {
   bool isMeshMutate = false;
 
   /**
-   * @brief summarizeStatus
+   * @brief Aggregate fine mutation flags to set broader flag states
    */
   void summarizeStatus();
 };

@@ -134,7 +134,7 @@ public:
 #pragma endregion named_constructors
 
   /// Default constructor
-  MutableTrajFile() : writeable(false), fd(nullptr){};
+  MutableTrajFile() : fd(nullptr), writeable(false){};
 
   /// Default copy constructor
   MutableTrajFile(MutableTrajFile &&rhs) = default;

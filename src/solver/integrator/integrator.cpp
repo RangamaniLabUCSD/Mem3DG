@@ -311,7 +311,7 @@ double Integrator::mechanicalBacktrack(
       break;
     }
 
-    // limit of backtraking iterations
+    // limit of backtracking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
       std::cout << "\n(time=" << system.time
                 << ") mechanicalBacktrack: line search failure! Simulation "
@@ -367,6 +367,7 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << "h: "
         << toMatrix(system.geometry.vpg->inputVertexPositions).col(2).maxCoeff()
         << "\n"
+        << "nFaces: " << system.geometry.mesh->nFaces() << "\n"
         << "minE: " << system.geometry.vpg->edgeLengths.raw().minCoeff()
         << "; maxE: " << system.geometry.vpg->edgeLengths.raw().maxCoeff()
         << "\n"
@@ -437,8 +438,6 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
     } else {
       ss << "ply";
     }
-    // sprintf(buffer, ifJustGeometryPly ? "/f%d_t%d_.obj" : "/f%d_t%d_.ply",
-    //         (int)frame, (int)system.time);
     system.saveRichData(outputDirectory + "/" + ss.str(), ifJustGeometryPly);
   }
 

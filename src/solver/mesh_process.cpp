@@ -34,23 +34,24 @@ void MeshProcessor::summarizeStatus() {
                  meshMutator.isSmoothenMesh;
 };
 
-bool MeshProcessor::MeshMutator::ifFlip(
+bool MeshProcessor::MeshMutator::checkFlipCondition(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
   gcs::Halfedge he = e.halfedge();
-  bool condition = false;
 
   if (flipNonDelaunay && !e.isBoundary()) {
-    bool nonDelaunay =
-        (vpg.cornerAngle(he.next().next().corner()) +
-         vpg.cornerAngle(he.twin().next().next().corner())) > (constants::PI);
+    // Check if flatness condition is required
     if (flipNonDelaunayRequireFlat) {
-      bool flat = abs(vpg.edgeDihedralAngle(he.edge())) < (constants::PI / 36);
-      nonDelaunay = nonDelaunay && flat;
+      if (!(abs(vpg.edgeDihedralAngle(he.edge())) < (constants::PI / 36))) {
+        // short circuit if flatness required and not flat
+        return false;
+      }
     }
-    condition = condition || nonDelaunay;
+    // True if non-delaunay
+    return (vpg.cornerAngle(he.next().next().corner()) +
+            vpg.cornerAngle(he.twin().next().next().corner())) >
+           (constants::PI);
   }
-
-  return condition;
+  return false;
 }
 
 void MeshProcessor::MeshMutator::summarizeStatus() {
@@ -61,7 +62,7 @@ void MeshProcessor::MeshMutator::summarizeStatus() {
   isChangeTopology = isFlipEdge || isSplitEdge || isCollapseEdge;
 };
 
-bool MeshProcessor::MeshMutator::ifCollapse(
+bool MeshProcessor::MeshMutator::checkCollapseCondition(
     const gc::Edge e, const gcs::VertexPositionGeometry &vpg) {
   if (vpg.edgeLength(e) >= maximumEdgeLength) {
     return false;
@@ -85,18 +86,25 @@ bool MeshProcessor::MeshMutator::ifCollapse(
     // is2Skinny = (vpg.cornerAngle(he.next().next().corner()) +
     //              vpg.cornerAngle(he.twin().next().next().corner())) <
     //             constants::PI / 3;
-    is2Skinny =
-        (isBoundary)
-            ? (vpg.cornerAngle(he.next().next().corner()) < constants::PI / 6)
-            : (vpg.cornerAngle(he.next().next().corner()) +
-               vpg.cornerAngle(he.twin().next().next().corner())) <
-                      constants::PI / 3 ||
-                  (vpg.cornerAngle(he.next().corner()) +
-                   vpg.cornerAngle(he.twin().corner())) >
-                      (constants::PI * 1.333) ||
-                  (vpg.cornerAngle(he.corner()) +
-                   vpg.cornerAngle(he.twin().next().corner())) >
-                      (constants::PI * 1.333);
+
+    if (isBoundary) {
+      // check opposite angle
+      is2Skinny =
+          (vpg.cornerAngle(he.next().next().corner()) < constants::PI / 6);
+    } else {
+      is2Skinny =
+          (vpg.cornerAngle(he.next().next().corner()) +
+           vpg.cornerAngle(he.twin().next().next().corner())) <
+              constants::PI / 3 ||
+          (vpg.cornerAngle(he.next().corner()) +
+           vpg.cornerAngle(he.twin().corner())) > (constants::PI * 1.333) ||
+          (vpg.cornerAngle(he.corner()) +
+           vpg.cornerAngle(he.twin().next().corner())) >
+              (constants::PI * 1.333);
+    }
+    // if (is2Skinny) {
+    //   mem3dg_print("is2Skinny");
+    // }
     condition = is2Skinny;
   }
 
@@ -105,13 +113,22 @@ bool MeshProcessor::MeshMutator::ifCollapse(
     std::size_t num_neighbor;
     std::tie(areaSum, num_neighbor) = neighborAreaSum(e, vpg);
 
-    size_t gap = isBoundary ? 1 : 2;
-    is2Small =
-        (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
-        (num_neighbor - gap) * targetFaceArea;
+    if (isBoundary) {
+      is2Small = (areaSum - vpg.faceArea(he.face())) <
+                 (num_neighbor - 1) * targetFaceArea;
+    } else {
+      is2Small =
+          (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
+          (num_neighbor - 2) * targetFaceArea;
+    }
     // isSmooth =
     //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
     //     targetdH0);
+    if (is2Small) {
+      if (abs(vpg.edgeDihedralAngle(e)) > (constants::PI / 6)) {
+        is2Small = false;
+      }
+    }
     condition = condition || is2Small;
   }
 
@@ -121,12 +138,10 @@ bool MeshProcessor::MeshMutator::ifCollapse(
     condition = condition || isFlat;
   }
 
-  // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
-
   return condition;
 }
 
-bool MeshProcessor::MeshMutator::ifSplit(
+bool MeshProcessor::MeshMutator::checkSplitCondition(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
 
   if (vpg.edgeLength(e) <= minimumEdgeLength) {
@@ -176,6 +191,7 @@ bool MeshProcessor::MeshMutator::ifSplit(
   }
 
   if (splitSharp) {
+    mem3dg_runtime_error("Split sharp is currently not supported");
     // is2Sharp = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 *
     // targetdH0);
   }
@@ -249,7 +265,8 @@ double MeshProcessor::MeshMutator::computeCurvatureThresholdLength(
                        abs(vpg.vertexMinPrincipalCurvature(tip)));
   double k2 = std::max(abs(vpg.vertexMaxPrincipalCurvature(tail)),
                        abs(vpg.vertexMinPrincipalCurvature(tail)));
-  return std::sqrt(6 * curvTol / (std::max(k1, k2)) - 3 * curvTol * curvTol);
+
+  return std::sqrt(6 * curvTol / std::max(k1, k2) - 3 * curvTol * curvTol);
 }
 
 } // namespace solver

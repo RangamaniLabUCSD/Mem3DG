@@ -640,7 +640,7 @@ public:
 
   /**
    * @brief global smoothing after mutation of the mesh
-   * @param initStep init guess of time step
+   * @param initStep initial guess of time step
    * @param target target reduce of force norm
    * @param maxIteration maximum number of iteration
    */
