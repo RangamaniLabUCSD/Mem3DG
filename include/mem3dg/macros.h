@@ -99,7 +99,6 @@ void runtime_warning(const char *function, const char *file, const int line,
   std::stringstream ss;
   ss << "Warning: ";
   [[maybe_unused]] int dummy[] = {0, ((ss << std::forward<T>(ts)), 0)...};
-  static_cast<void>(dummy); // Avoid warning for unused variable
   ss << " in function " << function << " at " << file << ":" << line;
   std::cerr << ss.str() << std::endl;
 }
