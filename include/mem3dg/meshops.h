@@ -101,7 +101,7 @@ DLL_PUBLIC inline int findMedianIndex(int l, int r) {
 }
 
 /**
- * @brief find the range of data based on percentile (quatile)
+ * @brief find the range of data based on percentile (quartile)
  * @param a raw buffer of vector
  * @param n size of vector
  * @param r upper bound of range
@@ -151,30 +151,31 @@ DLL_PUBLIC inline bool hasOutlier(const Eigen::VectorXd &vec,
 
 /**
  * @brief test whether exist outliers to the set of data based range function
+ *
+ * For example: (Outlier <--> r) < [threshold * (l <--> r)]
+ *
  * @param vec data vector
  * @param threshold coefficient used to bound the outlier.
- * For example: (Outlier <--> r) < [threshold * (l <--> r)]
- * @return
+ * @return mask
  */
-DLL_PUBLIC inline Eigen::Matrix<bool, Eigen::Dynamic, 1>
-outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5,
-            bool negate = false) {
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
-  mask.resize(vec.rows(), 1);
-  Eigen::VectorXd sorted_vec;
+DLL_PUBLIC inline EigenVectorX1_T<bool> outlierMask(const EigenVectorX1d &vec,
+                                                    double threshold = 0.5,
+                                                    bool negate = false) {
+  EigenVectorX1_T<bool> mask(vec.rows(), 1);
+  EigenVectorX1d sorted_vec(vec.rows(), 1);
   sortVector(vec, sorted_vec);
   double r, l, range;
   findRange(sorted_vec.data(), sorted_vec.size(), r, l);
   range = r - l;
   if (negate) {
     // outlier: true
-    for (std::size_t i = 0; i < vec.rows(); i++) {
+    for (Eigen::Index i = 0; i < vec.rows(); i++) {
       mask[i] = ((vec[i] - r < threshold * range) &&
                  (l - vec[i] < threshold * range));
     }
   } else {
     // outlier: false
-    for (std::size_t i = 0; i < vec.rows(); i++) {
+    for (Eigen::Index i = 0; i < vec.rows(); i++) {
       mask[i] = ((vec[i] - r > threshold * range) ||
                  (l - vec[i] > threshold * range));
     }
@@ -183,7 +184,7 @@ outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5,
 }
 
 /**
- * @brief Signal handler for pybindf
+ * @brief Signal handler for pybind
  */
 DLL_PUBLIC inline void signalHandler(int signum) {
   std::cout << "Interrupt signal (" << signum << ") received.\n";
@@ -498,16 +499,10 @@ DLL_PUBLIC inline void boundaryForceMask(gcs::SurfaceMesh &mesh,
   }
   if (!(gc::EigenMap<double, 3>(mask).array() < 0.5).any() &&
       boundaryConditionType != "none") {
-    std::cout
-        << "\nboundaryForceMask(double): WARNING: there is no boundary vertex "
-           "in the mesh!"
-        << std::endl;
+    mem3dg_runtime_warning("there is no boundary vertex in the mesh!");
   }
   if (!(gc::EigenMap<double, 3>(mask).array() > 0.5).any()) {
-    std::cout
-        << "\nboundaryForceMask(double): WARNING: there is no non-masked DOF "
-           "in the mesh!"
-        << std::endl;
+    mem3dg_runtime_warning("there is no non-masked DOF in the mesh!");
   }
 }
 
@@ -530,7 +525,7 @@ DLL_PUBLIC inline void
 removeRotation(const Eigen::Ref<const EigenVectorX3dr> &position,
                Eigen::Ref<EigenVectorX3dr> force) {
   Eigen::Matrix<double, 1, 3> sum(0, 0, 0);
-  for (std::size_t i = 0; i < force.rows(); ++i) {
+  for (Eigen::Index i = 0; i < force.rows(); ++i) {
     sum += position.row(i).cross(force.row(i));
   }
   force = force.rowwise() - (sum / force.rows());
@@ -577,7 +572,7 @@ DLL_PUBLIC inline void gaussianDistribution(
     const std::array<double, 2> &stdDev) {
   distribution.resize(distances.rows(), 1);
   distribution.setConstant(1.0);
-  for (std::size_t i = 0; i < distances.rows(); i++) {
+  for (Eigen::Index i = 0; i < distances.rows(); i++) {
     if (distances[i] != 0) {
       distribution[i] = gaussianDistribution(
           distances[i], vertexPositionsFromPtInd[i], tangentBasis, stdDev);
@@ -631,7 +626,7 @@ tanhDistribution(EigenVectorX1d &distribution,
                  const double sharpness, const std::array<double, 2> &axes) {
   distribution.resize(distances.rows(), 1);
   distribution.setConstant(1.0);
-  for (std::size_t i = 0; i < distances.rows(); i++) {
+  for (Eigen::Index i = 0; i < distances.rows(); i++) {
     if (distances[i] != 0) {
       distribution[i] =
           tanhDistribution(distances[i], vertexPositionsFromPtInd[i],
@@ -726,7 +721,7 @@ jumpDistribution(EigenVectorX1d &distribution,
                  const std::array<double, 2> &axes) {
   distribution.resize(distances.rows(), 1);
   distribution.setConstant(1.0);
-  for (std::size_t i = 0; i < distances.rows(); i++) {
+  for (Eigen::Index i = 0; i < distances.rows(); i++) {
     if (distances[i] != 0) {
       distribution[i] = jumpDistribution(
           distances[i], vertexPositionsFromPtInd[i], tangentBasis, axes);

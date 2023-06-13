@@ -42,6 +42,8 @@ from ._core import (
     loopSubdivide,
     processSoup,
     spring,
+    startProfiler,
+    stopProfiler,
 )
 
 __all__ = [
@@ -88,4 +90,6 @@ __all__ = [
     "loopSubdivide",
     "processSoup",
     "spring",
+    "startProfiler",
+    "stopProfiler",
 ]

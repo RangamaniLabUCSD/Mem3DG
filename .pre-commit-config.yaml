@@ -1,33 +1,38 @@
 exclude: "^libraries/|.ply$"
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
-  hooks:
-  - id: check-added-large-files
-  - id: check-case-conflict
-  - id: check-merge-conflict
-  - id: check-symlinks
-  - id: check-yaml
-  - id: debug-statements
-  - id: end-of-file-fixer
-  - id: mixed-line-ending
-  - id: requirements-txt-fixer
-  - id: trailing-whitespace
-
--   repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 'v16.0.1'
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
     hooks:
-    -   id: clang-format
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
 
-- repo: https://github.com/psf/black
-  rev: "23.1.0"
-  hooks:
-    - id: black
-      files: "^python_src/pymem3dg/|^tests/python"
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: "v16.0.1"
+    hooks:
+      - id: clang-format
 
-- repo: https://github.com/codespell-project/codespell
-  rev: "v2.2.2"
-  hooks:
-    - id: codespell
-      additional_dependencies:
-        - tomli
+  - repo: https://github.com/psf/black
+    rev: "23.1.0"
+    hooks:
+      - id: black
+        files: "^python_src/pymem3dg/|^tests/python"
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: "v2.2.2"
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
+
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format

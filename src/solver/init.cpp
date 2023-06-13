@@ -84,7 +84,7 @@ void System::checkConfiguration() {
       if (proteinDensity[0] != 1 || parameters.bending.Kb != 0 ||
           parameters.dirichlet.eta != 0 || parameters.adsorption.epsilon != 0 ||
           parameters.aggregation.chi != 0)
-        mem3dg_runtime_message(
+        mem3dg_runtime_warning(
             "For homogeneous membrane simulation, good practice is to set "
             "proteinDensity = 1, Kb = 0, eta  = 0, "
             "epsilon = 0, chi = "
@@ -183,7 +183,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
       geometry.updateReferenceConfigurations();
     } else {
       ifMutateMesh = false;
-      // mem3dg_runtime_message("Meshmutator is not activated!");
+      // mem3dg_runtime_warning("Meshmutator is not activated!");
     }
   }
 
@@ -195,7 +195,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
           geometry.geodesicDistance.raw());
     } else {
       ifUpdateNotableVertex = false;
-      // mem3dg_runtime_message("Parameter.point.prescribeNotableVertex is
+      // mem3dg_runtime_warning("Parameter.point.prescribeNotableVertex is
       // NULL!");
     }
   }
@@ -212,7 +212,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
               geometry.geodesicDistance.raw());
     } else {
       ifUpdateProteinDensityDistribution = false;
-      // mem3dg_runtime_message("Parameter protein form is NULL!")
+      // mem3dg_runtime_warning("Parameter protein form is NULL!")
     }
   }
 
@@ -221,7 +221,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
       prescribeGeodesicMasks();
     } else {
       ifUpdateMask = false;
-      // mem3dg_runtime_message("geodesicMask not activated!")
+      // mem3dg_runtime_warning("geodesicMask not activated!")
     }
   }
 

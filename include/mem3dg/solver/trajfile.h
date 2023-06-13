@@ -62,7 +62,7 @@ public:
   using NcFile = nc::NcFile;
   using NcException = nc::exceptions::NcException;
 
-  TrajFile() : writeable(false), fd(nullptr){};
+  TrajFile() : fd(nullptr), writeable(false){};
 
   void open(const std::string &filename, const NcFile::FileMode fMode) {
     if ((fd != nullptr) && (fMode != NcFile::read)) {

@@ -12,6 +12,13 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_num_threads() 0
+#define omp_get_thread_num() 0
+#endif
+
 #include "mem3dg/solver/system.h"
 
 namespace mem3dg {
@@ -21,11 +28,9 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void System::computeGeometricForces() {
-  assert(geometry.mesh->isCompressed());
-  // if(!geometry.mesh->isCompressed()){
-  //   mem3dg_runtime_error("Mesh must be compressed to compute forces!");
-  // }
-
+  MEM3DG_SAFETY_ASSERT(geometry.mesh->isCompressed(),
+                       "Mesh must be compressed to compute geometric forces.");
+#pragma omp parallel for
   for (std::size_t i = 0; i < geometry.mesh->nVertices(); ++i) {
     computeGeometricForces(i);
   }

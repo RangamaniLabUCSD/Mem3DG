@@ -32,6 +32,10 @@
 #include "mem3dg/mem3dg"
 #include "pybind11/cast.h"
 
+#ifdef MEM3DG_WITH_GPERFTOOLS
+#include <gperftools/profiler.h>
+#endif
+
 namespace py = pybind11;
 namespace gc = ::geometrycentral;
 
@@ -61,6 +65,27 @@ PYBIND11_MODULE(_core, pymem3dg) {
   init_system(pymem3dg);
   init_parameters(pymem3dg);
   init_energy(pymem3dg);
+
+#ifdef MEM3DG_WITH_GPERFTOOLS
+  pymem3dg.def("startProfiler", &ProfilerStart, "start profiler",
+               py::arg("filename"));
+  pymem3dg.def("stopProfiler", &ProfilerStop, "stop profiler");
+#else
+  pymem3dg.def(
+      "startProfiler",
+      []([[maybe_unused]] std::string foo) {
+        mem3dg_runtime_warning("Library is not linked with gperftools. "
+                               "Profiling is not available.");
+      },
+      "start profiler", py::arg("filename"));
+  pymem3dg.def(
+      "stopProfiler",
+      []() {
+        mem3dg_runtime_warning("Library is not linked with gperftools. "
+                               "Profiling is not available.");
+      },
+      "stop profiler");
+#endif
 
 #pragma region mesh_io
   // ==========================================================

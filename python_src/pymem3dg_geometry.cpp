@@ -164,6 +164,12 @@ void init_geometry(py::module_ &pymem3dg) {
           get vertex dual area
       )delim");
   geometry.def(
+      "getFaceAreas", [](Geometry &s) { return s.vpg->faceAreas.raw(); },
+      py::return_value_policy::copy,
+      R"delim(
+          get face area
+      )delim");
+  geometry.def(
       "getVertexMeanCurvatures",
       [](Geometry &s) {
         s.vpg->requireVertexMeanCurvatures();

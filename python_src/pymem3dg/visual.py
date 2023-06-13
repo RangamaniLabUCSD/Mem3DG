@@ -792,16 +792,19 @@ def interlaceImages(fileList, videoName):
     clip.write_gif(videoName + ".gif")
 
 
-def setPolyscopePermutations(psmesh, face, vertex):
+def setPolyscopePermutations(psmesh: ps.SurfaceMesh, face, vertex):
     """set polyscope permutation convention
 
     Args:
-        psmesh (polysocpe.SurfaceMesh): polyscope SurfaceMesh instance
+        psmesh (polyscope.SurfaceMesh): polyscope SurfaceMesh instance
         face (np.ndarray): face topology matrix
         vertex (np.ndarray): vertex position matrix
     """
     geometry = dg.Geometry(face, vertex)
+
+    # List[Tuple[List, int], 5]
     polyscopePermutations = geometry.getPolyscopePermutations()
+    # In case of non compressed mesh
     psmesh.set_all_permutations(
         vertex_perm=np.array(polyscopePermutations[0][0]),
         vertex_perm_size=polyscopePermutations[0][1],
@@ -809,10 +812,10 @@ def setPolyscopePermutations(psmesh, face, vertex):
         face_perm_size=polyscopePermutations[1][1],
         edge_perm=np.array(polyscopePermutations[2][0]),
         edge_perm_size=polyscopePermutations[2][1],
-        corner_perm=np.array(polyscopePermutations[4][0]),
-        corner_perm_size=polyscopePermutations[4][1],
         halfedge_perm=np.array(polyscopePermutations[3][0]),
         halfedge_perm_size=polyscopePermutations[3][1],
+        corner_perm=np.array(polyscopePermutations[4][0]),
+        corner_perm_size=polyscopePermutations[4][1],
     )
 
 
