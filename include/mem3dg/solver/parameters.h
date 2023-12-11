@@ -56,10 +56,18 @@ namespace solver {
 
 struct Parameters {
   struct Bending {
+    /// membrane thickness
+    double D = 0;
+    /// unity modulus
+    double alpha = 0;
+    /// preferred area difference
+    double dA0 = 0;
+
     /// Deviatoric modulus
     double Kd = 0;
     /// Constant of deviatoric modulus vs protein density
     double Kdc = 0;
+
     /// Bending modulus
     double Kb = 0;
     /// Constant of bending modulus vs protein density
@@ -68,48 +76,21 @@ struct Parameters {
     double H0c = 0;
     /// type of relation between H0 and protein density, "linear" or "hill"
     std::string relation = "linear";
+
+    /**
+     * @brief check parameter conflicts
+     */
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Tension {
-    /// Whether adopt constant surface tension
-    bool isConstantSurfaceTension = false;
-    /// Global stretching modulus
-    double Ksg = 0;
-    /// Area reservior
-    double A_res = 0;
-    /// preferred  total face area
-    double At = -1;
-    /// augmented Lagrangian parameter for area
-    double lambdaSG = 0;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    void checkParameters();
+    /// tension(area) function form
+    std::function<std::tuple<double, double>(double)> form = NULL;
   };
 
   struct Osmotic {
-    /// Whether adopt preferred volume parametrization
-    bool isPreferredVolume = false;
-    /// Whether adopt constant osmotic pressure
-    bool isConstantOsmoticPressure = false;
-    /// pressure-volume modulus
-    double Kv = 0;
-    /// preferred volume
-    double Vt = -1;
-    /// Ambient Pressure
-    double cam = -1;
-    /// volume reservoir
-    double V_res = 0;
-    /// Enclosed solute (atto-mol)
-    double n = 1;
-    /// augmented Lagrangian parameter for volume
-    double lambdaV = 0;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    void checkParameters();
+    /// pressure(volume) function form
+    std::function<std::tuple<double, double>(double)> form = NULL;
   };
 
   struct Adsorption {
@@ -120,6 +101,11 @@ struct Parameters {
   struct Aggregation {
     /// aggregation energy constant
     double chi = 0;
+  };
+
+  struct Entropy {
+    /// entropy energy constant
+    double xi = 0;
   };
 
   struct Dirichlet {
@@ -139,8 +125,10 @@ struct Parameters {
   };
 
   struct External {
-    /// Magnitude of external force
-    double Kf = 0;
+    /// form of external force
+    std::function<EigenVectorX3dr(EigenVectorX3dr, EigenVectorX1d, double,
+                                  EigenVectorX1d)>
+        form = NULL;
   };
 
   struct DPD {
@@ -157,56 +145,58 @@ struct Parameters {
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Variation {
     /// Whether or not consider protein binding
     bool isProteinVariation = false;
+    /// Whether conserve protein mass;
+    bool isProteinConservation = false;
     /// Whether or not consider shape evolution
     bool isShapeVariation = true;
     /// domain of shape variation
-    double radius = -1;
+    double geodesicMask = -1;
+    /// period of updating mask
+    std::size_t updateMaskPeriod = std::numeric_limits<std::size_t>::max();
 
     /**
      * @brief check parameter conflicts
      */
-    void checkParameters();
+    DLL_PUBLIC void checkParameters();
   };
 
   struct Point {
-    /// The point
-    EigenVectorX1d pt = Eigen::MatrixXd::Constant(1, 1, 0);
-    /// Whether floating "the" vertex
-    bool isFloatVertex = false;
-
-    /**
-     * @brief check parameter conflicts
-     */
-    void checkParameters();
+    /// prescription of center finding
+    std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
+        EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
+        prescribeNotableVertex = NULL;
+    /// period of updating geodesic distance from notableVertex calculation
+    std::size_t updateGeodesicsPeriod = std::numeric_limits<std::size_t>::max();
+    /// period of updating notable vertex based functional
+    /// prescribeNotableVertex
+    std::size_t updateNotableVertexPeriod =
+        std::numeric_limits<std::size_t>::max();
   };
 
-  struct ProteinDistribution {
-    /// protein boundary condition: pin
-    std::string profile = "none";
-    /// (initial) protein density
-    EigenVectorX1d protein0 = Eigen::MatrixXd::Constant(1, 1, 1);
-    /// sharpness of tanh transition
-    double tanhSharpness = 20;
+  struct Protein {
     /// interior point parameter for protein density
-    double lambdaPhi = 1e-6;
-    /// type of input
-    enum TypeOfProtein0 {
-      Disabled,
-      Homogeneous,
-      GeodesicPhaseSeparation,
-      VertexWise
-    };
-    TypeOfProtein0 typeOfProtein0;
-    /**
-     * @brief check parameter conflicts
-     */
-    void checkParameters(size_t nVertex);
+    double proteinInteriorPenalty = 0; // 1e-6
+    /// precription of protein density
+    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+        prescribeProteinDensityDistribution = NULL;
+    /// period of updating protein density distribution
+    std::size_t updateProteinDensityDistributionPeriod =
+        std::numeric_limits<std::size_t>::max();
+  };
+
+  struct Spring {
+    /// triangle ratio constant
+    double Kst = 0;
+    /// Local stretching modulus
+    double Ksl = 0;
+    /// Edge spring constant
+    double Kse = 0;
   };
 
   /// bending parameters
@@ -219,6 +209,8 @@ struct Parameters {
   Adsorption adsorption;
   /// protein aggregation parameters
   Aggregation aggregation;
+  /// protein entropy parameters
+  Entropy entropy;
   /// protein dirichlet energy parameters
   Dirichlet dirichlet;
   /// self avoidance energy parameters
@@ -234,7 +226,9 @@ struct Parameters {
   /// reference point
   Point point;
   /// protein distribution
-  ProteinDistribution proteinDistribution;
+  Protein protein = Protein();
+  /// mesh regularizer
+  Spring spring;
 
   /// mobility constant
   double proteinMobility = 0;
@@ -246,7 +240,7 @@ struct Parameters {
   /**
    * @brief check parameter conflicts
    */
-  void checkParameters(bool hasBoundary, size_t nVertex);
+  DLL_PUBLIC void checkParameters(bool hasBoundary, size_t nVertex);
 };
 
 } // namespace solver

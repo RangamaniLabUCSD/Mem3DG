@@ -23,6 +23,18 @@ cmake --build . --config Release
 
 Source released can also be obtained from [PyPi](https://pypi.org/project/pymem3dg/).
 
+
+## Building pymem3dg
+
+The python library can be built using pip:
+```
+pip install . -v
+```
+Options can be passed to scikit-build by exporting environment variables.
+```
+export SKBUILD_CONFIGURE_OPTIONS="-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo"
+```
+
 ## Temporary notes for setting up netcdf (especially on windows...)
 
 1. Download `vcpkg` and follow the instructions to install
@@ -44,3 +56,6 @@ The toolchain options can be passed through `setup.py` accordingly:
 
 * Meshes are represented using [Geometry-Central](https://geometry-central.net/).
 * Optional trajectory output uses [NetCDF-cxx4](https://github.com/Unidata/netcdf-cxx4).
+### Visualization
+* Optional trajectory visualization in Python uses [Polyscope](https://polyscope.run/py/).
+* Optional trajectory reading in Python uses [NetCDF4-python](https://github.com/Unidata/netcdf4-python).

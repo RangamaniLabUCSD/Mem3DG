@@ -1,11 +1,11 @@
-# Required for building
-scikit-build
+docutils==0.16
+jupyter_sphinx==0.3.1
+markupsafe==2.0.1
+nbsphinx==0.8.5
 numpy
 pytest==6.2.3
+# Required for building
+scikit-build
 sphinx==4.0.2
-markupsafe==2.0.1
-docutils==0.16
 sphinx-issues==1.2.0
-nbsphinx==0.8.5
-jupyter_sphinx==0.3.1
 sphinx_rtd_theme

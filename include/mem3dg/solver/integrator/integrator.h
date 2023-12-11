@@ -43,65 +43,63 @@ namespace integrator {
 // =============        Integrator             ==============
 // ==========================================================
 class DLL_PUBLIC Integrator {
-protected:
-  /// time step
-  double timeStep;
-  /// last time saving the data
-  double lastSave;
-  /// last time updating geodesics
-  double lastUpdateGeodesics;
-  /// last time processing mesh
-  double lastProcessMesh;
-  /// last time compute avoiding force
-  double lastComputeAvoidingForce;
-  /// Starting time of the simulation
-  double initialTime;
+public:
+  // variables (read-only)
+  /// initial maximum force
+  double initialMaximumForce;
+  /// ratio of time step to the squared mesh size
+  double dt_size2_ratio;
   /// Flag of success of the simulation
   bool SUCCESS = true;
   /// Flag for terminating the simulation
   bool EXIT = false;
-  /// Frame index of the trajectory output
-  std::size_t frame = 0;
-  /// Normalized area difference to reference mesh
-  double areaDifference;
-  /// Normalized volume/osmotic pressure difference
-  double volumeDifference;
-  /// ratio of time step to the squared mesh size
-  double dt_size2_ratio;
-  /// initial maximum force
-  double initialMaximumForce;
-  /// TrajFile
-#ifdef MEM3DG_WITH_NETCDF
-  TrajFile trajFile;
-  MutableTrajFile mutableTrajFile;
-#endif
-
-public:
+  /// time step
+  double timeStep;
+  /// frame index
+  size_t frame = 0;
+  /// is continuing simulation
+  bool isContinuation;
+  /// whether disable the use of integrate()
+  bool ifDisableIntegrate;
   /// System object to be integrated
   System &system;
-  /// characterisitic time step
+  /// TrajFile
+#ifdef MEM3DG_WITH_NETCDF
+  MutableTrajFile mutableTrajFile;
+  bool isMutableNetcdfFileCreated = false;
+#endif
+
+  // key parameters (read/write)
+  /// characteristic time step
   double characteristicTimeStep;
   // total simulation time
-  double totalTime;
+  double totalTime = std::numeric_limits<double>::max();
   /// period of saving output data
   double savePeriod;
   /// tolerance for termination
   double tolerance;
+  /// option to scale time step according to mesh size
+  bool ifAdaptiveStep = false;
   /// path to the output directory
   std::string outputDirectory;
+  /// option to use backtracking line search algorithm
+  bool isBacktrack = true;
+  /// backtracking coefficient
+  double rho = 0.7;
+  /// Wolfe condition parameter
+  double c1 = 0.001;
 
-  /// period of saving output data
-  double updateGeodesicsPeriod;
-  /// period of saving output data
-  double processMeshPeriod;
+  // defaulted parameters (read/write)
+  /// if just save geometry .ply file
+  bool ifJustGeometryPly = false;
+  /// if output netcdf traj file
+  bool ifOutputTrajFile = false;
+  /// if output .ply file
+  bool ifOutputMeshFile = false;
+  /// if print to console
+  bool ifPrintToConsole = false;
   /// name of the trajectory file
   std::string trajFileName = "traj.nc";
-  /// option to scale time step according to mesh size
-  bool isAdaptiveStep = true;
-  /// verbosity level of integrator
-  size_t verbosity = 3;
-  /// just save geometry .ply file
-  bool isJustGeometryPly = false;
 
   // ==========================================================
   // =============        Constructor            ==============
@@ -117,30 +115,44 @@ public:
    */
   Integrator(System &system_, double characteristicTimeStep_, double totalTime_,
              double savePeriod_, double tolerance_,
+             std::string outputDirectory_, std::size_t frame_ = 0)
+      : Integrator(system_, characteristicTimeStep_, tolerance_,
+                   outputDirectory_) {
+    totalTime = totalTime_;
+    frame = frame_;
+    savePeriod = savePeriod_;
+
+    ifDisableIntegrate = false;
+    ifPrintToConsole = false;
+    isContinuation = (frame != 0);
+  }
+
+  Integrator(System &system_, double characteristicTimeStep_, double tolerance_,
              std::string outputDirectory_)
       : system(system_), characteristicTimeStep(characteristicTimeStep_),
-        totalTime(totalTime_), savePeriod(savePeriod_), tolerance(tolerance_),
-        updateGeodesicsPeriod(totalTime_), processMeshPeriod(totalTime_),
-        outputDirectory(outputDirectory_), initialTime(system_.time),
-        lastUpdateGeodesics(system_.time), lastProcessMesh(system_.time),
-        lastComputeAvoidingForce(system_.time), lastSave(system_.time),
-        timeStep(characteristicTimeStep_) {
-
+        tolerance(tolerance_), timeStep(characteristicTimeStep_),
+        outputDirectory(outputDirectory_) {
+    ifDisableIntegrate = true;
+    ifPrintToConsole = true;
     // Initialize the timestep-meshsize ratio
-    dt_size2_ratio = characteristicTimeStep /
-                     std::pow(system.vpg->edgeLengths.raw().minCoeff(), 2);
+    dt_size2_ratio =
+        characteristicTimeStep /
+        std::pow(system.geometry.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
-    system.computePhysicalForcing(timeStep);
+    system.computeConservativeForcing();
+    system.addNonconservativeForcing(timeStep);
     initialMaximumForce =
         system.parameters.variation.isShapeVariation
-            ? toMatrix(system.forces.mechanicalForce).cwiseAbs().maxCoeff()
+            ? system.forces.mechanicalForce.raw().cwiseAbs().maxCoeff()
             : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
-
-    // Initialize geometry constraints
-    areaDifference = std::numeric_limits<double>::infinity();
-    volumeDifference = std::numeric_limits<double>::infinity();
   }
+
+  /**
+   * @brief Destroy the Integrator
+   *
+   */
+  virtual ~Integrator() = default;
 
   // ==========================================================
   // =================   Template functions    ================
@@ -156,82 +168,30 @@ public:
   /**
    * @brief Save trajectory, mesh and print to console
    */
-  void saveData();
+  void saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
+                bool ifPrintToConsole);
 
 #ifdef MEM3DG_WITH_NETCDF
   /**
-   * @brief Initialize netcdf traj file
+   * @brief Initialize netcdf trajectory file
    */
-  void createNetcdfFile();
+  void createMutableNetcdfFile(bool isContinue);
+
   /**
-   * @brief Initialize netcdf traj file
+   * @brief close netcdf trajectory file
    */
-  void createMutableNetcdfFile();
+  void closeMutableNetcdfFile();
+
   /**
-   * @brief Save data to netcdf traj file
-   */
-  void saveNetcdfData();
-  /**
-   * @brief Save data to netcdf traj file
+   * @brief Save data to netcdf trajectory file
    */
   void saveMutableNetcdfData();
 
 #endif
 
-  /**
-   * @brief Mark the file name
-   *
-   * @param dirPath path of the directory
-   * @param file name of the file, for example in the form of "/traj.nc"
-   * @param marker_str marker used to mark the file, such as marker = "_failed"
-   * results in new file name of "/traj_failed.nc"
-   */
-  void markFileName(std::string marker_str);
-
-  /**
-   * @brief Save parameters to txt file
-   * @return
-   */
-  void getParameterLog(std::string inputMesh);
-
-  /**
-   * @brief Save status log to txt file
-   * @return
-   */
-  void getStatusLog(std::string nameOfFile, std::size_t frame, double areaError,
-                    double volumeError, double bendingError, double faceError,
-                    std::string inputMesh);
-
   // ==========================================================
   // =============     Helper functions          ==============
   // ==========================================================
-  /**
-   * @brief Thresholding when adopting reduced volume parametrization
-   * @param EXIT, reference to the exit flag
-   * @param isAugmentedLagrangian, whether using augmented lagrangian method
-   * @param dArea, normalized area difference
-   * @param dVolume, normalized volume difference
-   * @param ctol, exit criterion for constraint
-   * @param increment, increment coefficient of penalty when using incremental
-   * penalty method
-   * @return
-   */
-  void reducedVolumeThreshold(bool &EXIT, const bool isAugmentedLagrangian,
-                              const double dArea, const double dVolume,
-                              const double ctol, double increment);
-  /**
-   * @brief Thresholding when adopting ambient pressure constraint
-   * @param EXIT, reference to the exit flag
-   * @param isAugmentedLagrangian, whether using augmented lagrangian method
-   * @param dArea, normalized area difference
-   * @param ctol, exit criterion for constraint
-   * @param increment, increment coefficient of penalty when using incremental
-   * penalty method
-   * @return
-   */
-  void pressureConstraintThreshold(bool &EXIT, const bool isAugmentedLagrangian,
-                                   const double dArea, const double ctol,
-                                   double increment);
 
   /**
    * @brief Backtracking algorithm that dynamically adjust step size based on
@@ -241,11 +201,11 @@ public:
    * @param chemicalDirection, direction of protein density, most likely some
    * function of gradient
    * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+   * @param c1, constant for Wolfe condition, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
   double backtrack(Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-                   Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
+                   Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
                    double rho = 0.7, double c1 = 0.001);
 
   /**
@@ -254,7 +214,7 @@ public:
    * @param positionDirection, direction of shape, most likely some function of
    * gradient
    * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+   * @param c1, constant for Wolfe condition, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
   double mechanicalBacktrack(
@@ -267,35 +227,31 @@ public:
    * @param chemicalDirection, direction of protein density, most likely some
    * function of gradient
    * @param rho, discount factor
-   * @param c1, constant for Wolfe condtion, between 0 to 1, usually ~ 1e-4
+   * @param c1, constant for Wolfe condition, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double chemicalBacktrack(
-      Eigen::Matrix<double, Eigen::Dynamic, 1> &&chemicalDirection,
-      double rho = 0.7, double c1 = 0.001);
-
-  /**
-   * @brief Check finiteness of simulation states and backtrack for error in
-   * specific component
-   * @return
-   */
-  void finitenessErrorBacktrace();
-
-  /**
-   * @brief Backtrack the line search failure by inspecting specific
-   * energy-force relation
-   * @return
-   */
-  void lineSearchErrorBacktrace(const double alpha,
-                                const EigenVectorX3dr initial_pos,
-                                const EigenVectorX1d init_proteinDensity,
-                                const Energy previousE, bool runAll = false);
+  double
+  chemicalBacktrack(Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
+                    double rho = 0.7, double c1 = 0);
 
   /**
    * @brief get adaptive characteristic time step
-   * @return
+   * @return characteristic time step
    */
-  double updateAdaptiveCharacteristicStep();
+  double getAdaptiveCharacteristicTimeStep();
+
+  // /**
+  //  * @brief fix point iteration implicit solve
+  //  * @param FlowMap functional of position and protein flow map
+  //  * @param h time step
+  //  * @param tolearance convergence tolerance relative to timestep
+  //  */
+  // std::tuple<EigenVectorX3dr, EigenVectorX1d>
+  // fixPointIteration(std::function<std::tuple<EigenVectorX3dr,
+  // EigenVectorX1d>(
+  //                       EigenVectorX3dr &, EigenVectorX1d &, double)>
+  //                       flowMap,
+  //                   const double h, const double tolereance);
 };
 } // namespace integrator
 } // namespace solver

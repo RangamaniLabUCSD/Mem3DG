@@ -37,50 +37,39 @@ namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool ConjugateGradient::integrate() {
-
+  if (ifDisableIntegrate)
+    mem3dg_runtime_error("integrate() is disabled for current construction!");
   signal(SIGINT, signalHandler);
 
-#ifdef __linux__
-  // start the timer
-  struct timeval start;
-  gettimeofday(&start, NULL);
-#endif
+  double initialTime = system.time, lastComputeAvoidingForce = system.time,
+         lastSave = system.time;
+  std::map<std::string, double> lastUpdateTime{{"geodesics", system.time},
+                                               {"mutateMesh", system.time},
+                                               {"protein", system.time},
+                                               {"notableVertex", system.time},
+                                               {"mask", system.time}};
 
   // initialize netcdf traj file
 #ifdef MEM3DG_WITH_NETCDF
-  if (verbosity > 0) {
-    // createNetcdfFile();
-    createMutableNetcdfFile();
-    // print to console
-    std::cout << "Initialized NetCDF file at "
-              << outputDirectory + "/" + trajFileName << std::endl;
+  if (ifOutputTrajFile) {
+    createMutableNetcdfFile(isContinuation);
+    if (ifPrintToConsole)
+      std::cout << "Initialized NetCDF file at "
+                << outputDirectory + "/" + trajFileName << std::endl;
   }
 #endif
 
   // time integration loop
   for (;;) {
 
-    // Evaluate and threhold status data
+    // Evaluate and threshold status data
     status();
 
     // Save files every tSave period and print some info
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
-      saveData();
-    }
-
-    // Process mesh every tProcessMesh period
-    if (system.time - lastProcessMesh > processMeshPeriod) {
-      lastProcessMesh = system.time;
-      system.mutateMesh();
-      system.updateConfigurations(false);
-    }
-
-    // update geodesics every tUpdateGeodesics period
-    if (system.time - lastUpdateGeodesics > updateGeodesicsPeriod) {
-      lastUpdateGeodesics = system.time;
-      system.updateConfigurations(true);
+      saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
 
     // break loop if EXIT flag is on
@@ -89,31 +78,33 @@ bool ConjugateGradient::integrate() {
     }
 
     // step forward
-    if (system.time == lastProcessMesh || system.time == lastUpdateGeodesics) {
-      system.time += 1e-10 * characteristicTimeStep;
+    if (system.updatePrescription(lastUpdateTime, timeStep)) {
+      system.time += 1e-5 * timeStep;
       countCG = 0;
     } else {
       march();
     }
   }
 
-  // return if optimization is sucessful
-  if (!SUCCESS) {
-    if (tolerance == 0) {
-      markFileName("_most");
-    } else {
-      markFileName("_failed");
-    }
-  }
-
-  // stop the timer and report time spent
-#ifdef __linux__
-  double duration = getDuration(start);
-  if (verbosity > 0) {
-    std::cout << "\nTotal integration time: " << duration << " seconds"
-              << std::endl;
+#ifdef MEM3DG_WITH_NETCDF
+  if (ifOutputTrajFile) {
+    closeMutableNetcdfFile();
+    if (ifPrintToConsole)
+      std::cout << "Closed NetCDF file" << std::endl;
   }
 #endif
+
+  // return if optimization is successful
+  if (!SUCCESS && ifOutputTrajFile) {
+    std::string filePath = outputDirectory;
+    filePath.append("/");
+    filePath.append(trajFileName);
+    if (tolerance == 0) {
+      markFileName(filePath, "_most", ".");
+    } else {
+      markFileName(filePath, "_failed", ".");
+    }
+  }
 
   return SUCCESS;
 }
@@ -138,7 +129,7 @@ void ConjugateGradient::checkParameters() {
   if (restartPeriod < 1) {
     mem3dg_runtime_error("restartNum > 0!");
   }
-  if (system.parameters.external.Kf != 0) {
+  if (system.parameters.external.form != NULL) {
     mem3dg_runtime_error(
         "External force can not be applied using energy optimization")
   }
@@ -149,37 +140,42 @@ void ConjugateGradient::checkParameters() {
 }
 
 void ConjugateGradient::status() {
-  auto physicalForce = toMatrix(system.forces.mechanicalForce);
+  auto physicalForce = system.forces.mechanicalForce.raw();
 
-  // compute summerized forces
-  system.computePhysicalForcing(timeStep);
+  // compute summarized forces
+  system.computeConservativeForcing();
+  system.addNonconservativeForcing(timeStep);
 
-  // compute the area contraint error
-  areaDifference = abs(system.surfaceArea / system.parameters.tension.At - 1);
-  if (system.parameters.osmotic.isPreferredVolume) {
-    volumeDifference = abs(system.volume / system.parameters.osmotic.Vt - 1);
-    reducedVolumeThreshold(EXIT, isAugmentedLagrangian, areaDifference,
-                           volumeDifference, constraintTolerance, 1.3);
-  } else {
-    volumeDifference = abs(system.parameters.osmotic.n / system.volume /
-                               system.parameters.osmotic.cam -
-                           1.0);
-    pressureConstraintThreshold(EXIT, isAugmentedLagrangian, areaDifference,
-                                constraintTolerance, 1.3);
+  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
+    // areaDifference = abs(system.surfaceArea / system.parameters.tension.At -
+    // 1); volumeDifference =
+    //     (system.parameters.osmotic.isPreferredVolume)
+    //         ? abs(system.volume / system.parameters.osmotic.Vt - 1)
+    //         : abs(system.parameters.osmotic.n / system.volume /
+    //                   system.parameters.osmotic.cam -
+    //               1.0);
+    if (ifPrintToConsole)
+      std::cout << "\nError norm smaller than tolerance." << std::endl;
+    EXIT = true;
   }
 
   // exit if reached time
   if (system.time > totalTime) {
-    std::cout << "\nReached time." << std::endl;
+    if (ifPrintToConsole)
+      std::cout << "\nReached time." << std::endl;
     EXIT = true;
-    SUCCESS = false;
   }
 
   // compute the free energy of the system
   system.computeTotalEnergy();
 
-  // backtracing for error
-  finitenessErrorBacktrace();
+  // check finiteness
+  if (!std::isfinite(timeStep) || !system.checkFiniteness()) {
+    EXIT = true;
+    SUCCESS = false;
+    if (!std::isfinite(timeStep))
+      mem3dg_runtime_warning("time step is not finite!");
+  }
 }
 
 void ConjugateGradient::march() {
@@ -193,7 +189,7 @@ void ConjugateGradient::march() {
              ? system.forces.chemicalPotential.raw().squaredNorm()
              : 0);
     system.velocity = system.forces.mechanicalForceVec;
-    system.proteinVelocity =
+    system.proteinRateOfChange =
         system.parameters.proteinMobility * system.forces.chemicalPotential;
     countCG = 1;
   } else {
@@ -206,38 +202,79 @@ void ConjugateGradient::march() {
              : 0);
     system.velocity *= currentNormSquared / pastNormSquared;
     system.velocity += system.forces.mechanicalForceVec;
-    system.proteinVelocity *= currentNormSquared / pastNormSquared;
-    system.proteinVelocity +=
+    system.proteinRateOfChange *= currentNormSquared / pastNormSquared;
+    system.proteinRateOfChange +=
         system.parameters.proteinMobility * system.forces.chemicalPotential;
     pastNormSquared = currentNormSquared;
     countCG++;
   }
+  system.mechErrorNorm = (toMatrix(system.velocity).array() *
+                          toMatrix(system.forces.mechanicalForceVec).array())
+                             .sum();
+  system.chemErrorNorm = (system.proteinRateOfChange.raw().array() *
+                          system.forces.chemicalPotential.raw().array())
+                             .sum();
 
   // adjust time step if adopt adaptive time step based on mesh size
-  if (isAdaptiveStep) {
-    updateAdaptiveCharacteristicStep();
+  if (ifAdaptiveStep) {
+    characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
   // time stepping on vertex position
   if (isBacktrack) {
     timeStep = backtrack(toMatrix(system.velocity),
-                         toMatrix(system.proteinVelocity), rho, c1);
+                         system.proteinRateOfChange.raw(), rho, c1);
   } else {
     timeStep = characteristicTimeStep;
   }
-  system.vpg->inputVertexPositions += system.velocity * timeStep;
-  system.proteinDensity += system.proteinVelocity * timeStep;
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 
-  // regularization
-  if (system.meshProcessor.isMeshRegularize) {
-    system.computeRegularizationForce();
-    system.vpg->inputVertexPositions.raw() +=
-        system.forces.regularizationForce.raw();
-  }
-
   // recompute cached values
-  system.updateConfigurations(false);
+  system.updateConfigurations();
+}
+
+void ConjugateGradient::enforceAugmentedLagrangianConstraints(
+    double &lambdaSG, double &lambdaV, const double dA, const double dV,
+    const double tol) {
+  if (ifPrintToConsole)
+    std::cout << "\n["
+              << "lambdaSG"
+              << ", "
+              << "lambdaV"
+              << "] = [" << lambdaSG << ", " << lambdaV << "]";
+  // update coefficient
+  if (dA > tol) {
+    double tension, energy;
+    std::tie(tension, energy) =
+        system.parameters.tension.form(system.geometry.surfaceArea);
+    lambdaSG += tension;
+  }
+  if (dV > tol) {
+    double pressure, energy;
+    std::tie(pressure, energy) =
+        system.parameters.osmotic.form(system.geometry.volume);
+    lambdaV += pressure;
+  }
+  if (ifPrintToConsole)
+    std::cout << " -> [" << lambdaSG << ", " << lambdaV << "]" << std::endl;
+}
+
+void ConjugateGradient::enforceIncrementalPenaltyConstraints(double &Ksg,
+                                                             double &Kv,
+                                                             const double dA,
+                                                             const double dV,
+                                                             double increment) {
+  if (ifPrintToConsole)
+    std::cout << "\n[Ksg, Kv] = [" << Ksg << ", " << Kv << "]";
+  // update coefficient
+  if (dA > constraintTolerance)
+    Ksg *= increment;
+  if (dV > constraintTolerance)
+    Kv *= increment;
+  if (ifPrintToConsole)
+    std::cout << " -> [" << Ksg << ", " << Kv << "]" << std::endl;
 }
 
 } // namespace integrator

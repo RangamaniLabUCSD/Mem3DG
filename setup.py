@@ -1,16 +1,16 @@
 # Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-# 
+#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-# 
+#
 # Copyright (c) 2020:
 #     Laboratory for Computational Cellular Mechanobiology
 #     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
 #     Christopher T. Lee (ctlee@ucsd.edu)
 #     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
-# 
+#
 
 """PyMem3DG: Membrane Dynamics in 3D using Discrete Differential Geometry
 
@@ -53,9 +53,9 @@ def git_version():
 
 def standardize_version(version_string):
     """Standardize the version string
-    
+
     Args:
-        version_string (str): input version string 
+        version_string (str): input version string
     Returns:
         str: standardized version
     """
@@ -80,7 +80,7 @@ def standardize_version(version_string):
                 (?P<commits_since>[0-9]+)?
                 [-_\.]?
                 (?P<sha>[a-z0-9]*)?
-                [-_\.]? 
+                [-_\.]?
                 (?P<dirty>dirty)?
             )?
         )
@@ -162,7 +162,6 @@ except ImportError:
     print('  conda install scikit-build', file=sys.stderr)
     sys.exit(1)
 
-tests_require = ["pytest"]
 
 from setuptools import find_packages
 
@@ -176,7 +175,7 @@ setup(
     url="https://github.com/RangamaniLabUCSD/Mem3DG",
     packages=find_packages(where="python_src"),
     package_dir={"": "python_src"},
-    cmake_install_dir="python_src/pymem3dg",    
+    cmake_install_dir="python_src/pymem3dg",
     include_package_data=True,
     extras_require={"test": ["pytest"]},
 

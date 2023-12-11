@@ -23,30 +23,36 @@ namespace integrator {
 
 /**
  * @brief Velocity Verlet time Integration
+ * @param system_ System object to be integrated
+ * @param characteristicTimeStep_ time step, or the initial time step for
+ * backtracking algorithm
+ * @param totalTime_ total simulation time
+ * @param savePeriod_ period of saving output data (in the unit of
+ * characteristicTimeStep_)
+ * @param tolerance_ tolerance of force L2 norm for termination
+ * @param outputDirectory_ path to the output directory
+ * @param frame_ frame index, if nonzero, enable continuation mode
  */
 class DLL_PUBLIC VelocityVerlet : public Integrator {
 private:
-  // previous force
+  /// previous force
   gcs::VertexData<gc::Vector3> pastMechanicalForceVec;
-  // total energy of the system
+  /// total energy of the system
   double initialTotalEnergy;
 
 public:
+  /// option to detect total energy nonconservation (increase)
   bool isCapEnergy = true;
+
   VelocityVerlet(System &system_, double characteristicTimeStep_,
                  double totalTime_, double savePeriod_, double tolerance_,
-                 std::string outputDirectory_)
+                 std::string outputDirectory_, std::size_t frame_ = 0)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
-                   tolerance_, outputDirectory_) {
-
-    // print to console
-    std::cout << "Running Velocity Verlet integrator ..." << std::endl;
-
+                   tolerance_, outputDirectory_, frame_) {
     // check the validity of parameter
     checkParameters();
 
-    pastMechanicalForceVec =
-        gc::VertexData<gc::Vector3>(*system.mesh, {0, 0, 0});
+    pastMechanicalForceVec = system.forces.mechanicalForceVec;
 
     initialTotalEnergy = system.computeTotalEnergy();
     initialTotalEnergy -= system.energy.proteinInteriorPenalty;

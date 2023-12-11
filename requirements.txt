@@ -1,7 +1,7 @@
-  
+
 # Required for building
 cmake >= 3.12
-scikit-build
+numpy
 pybind11
 pytest
-numpy
+scikit-build

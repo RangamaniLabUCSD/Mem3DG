@@ -1,7 +1,7 @@
 def __bootstrap__():
     global __bootstrap__, __loader__, __file__
     import sys, importlib.util
-    try: 
+    try:
         import importlib.resources as pkg_resources
     except ImportError:
         # Try backported to PY<37 `importlib_resources`.

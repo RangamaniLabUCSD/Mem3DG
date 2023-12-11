@@ -19,6 +19,7 @@
 #include "mem3dg/constants.h"
 #include "mem3dg/meshops.h"
 #include <Eigen/Core>
+#include <algorithm>
 #include <cmath>
 
 namespace mem3dg {
@@ -28,139 +29,45 @@ namespace gc = ::geometrycentral;
 namespace gcs = ::geometrycentral::surface;
 
 void MeshProcessor::summarizeStatus() {
-  meshRegularizer.summarizeStatus();
   meshMutator.summarizeStatus();
-
-  isMeshRegularize = (meshRegularizer.Kst != 0) || (meshRegularizer.Ksl != 0) ||
-                     (meshRegularizer.Kse != 0);
-  isMeshMutate = meshMutator.isChangeTopology || meshMutator.shiftVertex;
-
-  if (!meshRegularizer.ifHasRefMesh && isMeshRegularize) {
-    mem3dg_runtime_error(
-        "To apply mesh regularization, reference mesh has to be provided!");
-  }
-  if (meshMutator.isChangeTopology && isMeshRegularize) {
-    mem3dg_runtime_error("For topology changing simulation, mesh "
-                         "regularization cannot be applied!");
-  }
+  isMeshMutate = meshMutator.isChangeTopology || meshMutator.isShiftVertex ||
+                 meshMutator.isSmoothenMesh;
 };
 
-void MeshProcessor::MeshRegularizer::summarizeStatus() {
-  ifHasRefMesh = (nEdge != 0) || (nVertex != 0) || (nFace != 0);
-};
-
-void MeshProcessor::MeshRegularizer::readReferenceData(std::string refMesh,
-                                                       std::size_t nSub) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
-
-  // Load input reference mesh and geometry
-  std::tie(referenceMesh, referenceVpg) = gcs::readManifoldSurfaceMesh(refMesh);
-
-  // Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
-    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
-  }
-
-  nEdge = referenceMesh->nEdges();
-  nVertex = referenceMesh->nVertices();
-  nFace = referenceMesh->nFaces();
-
-  referenceVpg->requireEdgeLengths();
-  referenceVpg->requireFaceAreas();
-  refFaceAreas = referenceVpg->faceAreas.raw();
-  refEdgeLengths = referenceVpg->edgeLengths.raw();
-  refLcrs.resize(referenceMesh->nEdges(), 1);
-  for (std::size_t i = 0; i < referenceMesh->nEdges(); ++i) {
-    gcs::Edge e{referenceMesh->edge(i)};
-    refLcrs[i] = computeLengthCrossRatio(*referenceVpg, e);
-  }
-
-  meanTargetFaceArea = refFaceAreas.sum() / referenceMesh->nFaces();
-  meanTargetEdgeLength = refEdgeLengths.sum() / referenceMesh->nEdges();
-}
-
-void MeshProcessor::MeshRegularizer::readReferenceData(
-    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-    std::size_t nSub) {
-
-  // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> referenceMesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> referenceVpg;
-
-  // Load input reference mesh and geometry
-  std::tie(referenceMesh, referenceVpg) =
-      gcs::makeManifoldSurfaceMeshAndGeometry(refVertexMatrix, topologyMatrix);
-  std::cout << "Loaded reference mesh " << std::endl;
-
-  // Subdivide the mesh and geometry objects
-  if (nSub > 0) {
-    // mem3dg::subdivide(ptrRefMesh, ptrRefVpg, nSub);
-    mem3dg::loopSubdivide(referenceMesh, referenceVpg, nSub);
-  }
-
-  nEdge = referenceMesh->nEdges();
-  nVertex = referenceMesh->nVertices();
-  nFace = referenceMesh->nFaces();
-
-  referenceVpg->requireEdgeLengths();
-  referenceVpg->requireFaceAreas();
-  refFaceAreas = referenceVpg->faceAreas.raw();
-  refEdgeLengths = referenceVpg->edgeLengths.raw();
-  refLcrs.resize(referenceMesh->nEdges(), 1);
-  for (std::size_t i = 0; i < referenceMesh->nEdges(); ++i) {
-    gcs::Edge e{referenceMesh->edge(i)};
-    refLcrs[i] = computeLengthCrossRatio(*referenceVpg, e);
-  }
-
-  meanTargetFaceArea = refFaceAreas.sum() / referenceMesh->nFaces();
-  meanTargetEdgeLength = refEdgeLengths.sum() / referenceMesh->nEdges();
-}
-
-double MeshProcessor::MeshRegularizer::computeLengthCrossRatio(
-    gcs::VertexPositionGeometry &vpg, gcs::Edge &e) const {
-
-  gcs::Edge lj = e.halfedge().next().edge();
-  gcs::Edge ki = e.halfedge().twin().next().edge();
-  gcs::Edge il = e.halfedge().next().next().edge();
-  gcs::Edge jk = e.halfedge().twin().next().next().edge();
-  return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-         vpg.edgeLengths[lj];
-}
-
-bool MeshProcessor::MeshMutator::ifFlip(
+bool MeshProcessor::MeshMutator::checkFlipCondition(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
   gcs::Halfedge he = e.halfedge();
-  bool condition = false;
 
   if (flipNonDelaunay && !e.isBoundary()) {
-    bool nonDelaunay =
-        (vpg.cornerAngle(he.next().next().corner()) +
-         vpg.cornerAngle(he.twin().next().next().corner())) > (constants::PI);
+    // Check if flatness condition is required
     if (flipNonDelaunayRequireFlat) {
-      bool flat = abs(vpg.edgeDihedralAngle(he.edge())) < (constants::PI / 36);
-      nonDelaunay = nonDelaunay && flat;
+      if (!(abs(vpg.edgeDihedralAngle(he.edge())) < (constants::PI / 36))) {
+        // short circuit if flatness required and not flat
+        return false;
+      }
     }
-    condition = condition || nonDelaunay;
+    // True if non-delaunay
+    return (vpg.cornerAngle(he.next().next().corner()) +
+            vpg.cornerAngle(he.twin().next().next().corner())) >
+           (constants::PI);
   }
-
-  return condition;
+  return false;
 }
 
 void MeshProcessor::MeshMutator::summarizeStatus() {
-  isEdgeFlip = (flipNonDelaunay || flipNonDelaunayRequireFlat);
+  isFlipEdge = (flipNonDelaunay || flipNonDelaunayRequireFlat);
   isSplitEdge = (splitCurved || splitLarge || splitLong || splitSharp ||
                  splitSkinnyDelaunay);
-  isCollapseEdge = (collapseSkinny || collapseSmall || collapseSmallNeedFlat);
-  isChangeTopology = isEdgeFlip || isSplitEdge || isCollapseEdge;
+  isCollapseEdge = (collapseSkinny || collapseSmall || collapseFlat);
+  isChangeTopology = isFlipEdge || isSplitEdge || isCollapseEdge;
 };
 
-bool MeshProcessor::MeshMutator::ifCollapse(
+bool MeshProcessor::MeshMutator::checkCollapseCondition(
     const gc::Edge e, const gcs::VertexPositionGeometry &vpg) {
+  if (vpg.edgeLength(e) >= maximumEdgeLength) {
+    return false;
+  }
+
   gcs::Halfedge he = e.halfedge();
   bool isBoundary = e.isBoundary();
   if (!he.isInterior()) {
@@ -179,18 +86,25 @@ bool MeshProcessor::MeshMutator::ifCollapse(
     // is2Skinny = (vpg.cornerAngle(he.next().next().corner()) +
     //              vpg.cornerAngle(he.twin().next().next().corner())) <
     //             constants::PI / 3;
-    is2Skinny =
-        (isBoundary)
-            ? (vpg.cornerAngle(he.next().next().corner()) < constants::PI / 6)
-            : (vpg.cornerAngle(he.next().next().corner()) +
-               vpg.cornerAngle(he.twin().next().next().corner())) <
-                      constants::PI / 3 ||
-                  (vpg.cornerAngle(he.next().corner()) +
-                   vpg.cornerAngle(he.twin().corner())) >
-                      (constants::PI * 1.333) ||
-                  (vpg.cornerAngle(he.corner()) +
-                   vpg.cornerAngle(he.twin().next().corner())) >
-                      (constants::PI * 1.333);
+
+    if (isBoundary) {
+      // check opposite angle
+      is2Skinny =
+          (vpg.cornerAngle(he.next().next().corner()) < constants::PI / 6);
+    } else {
+      is2Skinny =
+          (vpg.cornerAngle(he.next().next().corner()) +
+           vpg.cornerAngle(he.twin().next().next().corner())) <
+              constants::PI / 3 ||
+          (vpg.cornerAngle(he.next().corner()) +
+           vpg.cornerAngle(he.twin().corner())) > (constants::PI * 1.333) ||
+          (vpg.cornerAngle(he.corner()) +
+           vpg.cornerAngle(he.twin().next().corner())) >
+              (constants::PI * 1.333);
+    }
+    // if (is2Skinny) {
+    //   mem3dg_print("is2Skinny");
+    // }
     condition = is2Skinny;
   }
 
@@ -199,28 +113,41 @@ bool MeshProcessor::MeshMutator::ifCollapse(
     std::size_t num_neighbor;
     std::tie(areaSum, num_neighbor) = neighborAreaSum(e, vpg);
 
-    size_t gap = isBoundary ? 1 : 2;
-    is2Small =
-        (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
-        (num_neighbor - gap) * targetFaceArea;
-    if (collapseSmallNeedFlat) {
-      isFlat =
-          vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
-      is2Small = is2Small && isFlat;
+    if (isBoundary) {
+      is2Small = (areaSum - vpg.faceArea(he.face())) <
+                 (num_neighbor - 1) * targetFaceArea;
+    } else {
+      is2Small =
+          (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
+          (num_neighbor - 2) * targetFaceArea;
     }
     // isSmooth =
     //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
     //     targetdH0);
+    if (is2Small) {
+      if (abs(vpg.edgeDihedralAngle(e)) > (constants::PI / 6)) {
+        is2Small = false;
+      }
+    }
     condition = condition || is2Small;
   }
 
-  // isCollapse = is2Skinny; //|| (is2Small && isFlat && isSmooth);
+  if (collapseFlat) {
+    isFlat =
+        vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
+    condition = condition || isFlat;
+  }
 
   return condition;
 }
 
-bool MeshProcessor::MeshMutator::ifSplit(
+bool MeshProcessor::MeshMutator::checkSplitCondition(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
+
+  if (vpg.edgeLength(e) <= minimumEdgeLength) {
+    return false;
+  }
+
   gcs::Halfedge he = e.halfedge();
   bool isBoundary = e.isBoundary();
   if (!he.isInterior()) {
@@ -264,6 +191,7 @@ bool MeshProcessor::MeshMutator::ifSplit(
   }
 
   if (splitSharp) {
+    mem3dg_runtime_error("Split sharp is currently not supported");
     // is2Sharp = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 *
     // targetdH0);
   }
@@ -299,8 +227,7 @@ bool MeshProcessor::MeshMutator::ifSplit(
 void MeshProcessor::MeshMutator::markVertices(
     gcs::VertexData<bool> &mutationMarker, const gcs::Vertex v,
     const size_t layer) {
-  if (layer > 2)
-    mem3dg_runtime_error("max layer number is 2!");
+  assert(("Max layer number is 2!", layer < 2));
   mutationMarker[v] = true;
   if (layer > 0) {
     for (gc::Vertex nv : v.adjacentVertices()) {
@@ -332,15 +259,14 @@ double MeshProcessor::MeshMutator::computeCurvatureThresholdLength(
   gcs::Halfedge he = e.halfedge();
   // curvature based remeshing:
   // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
-  double k1 = (abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tipVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tipVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tipVertex()));
-  double k2 = (abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex())) >
-               abs(vpg.vertexMinPrincipalCurvature(he.tailVertex())))
-                  ? abs(vpg.vertexMaxPrincipalCurvature(he.tailVertex()))
-                  : abs(vpg.vertexMinPrincipalCurvature(he.tailVertex()));
-  return std::sqrt(6 * curvTol / ((k1 > k2) ? k1 : k2) - 3 * curvTol * curvTol);
+  auto tip = he.tipVertex();
+  auto tail = he.tailVertex();
+  double k1 = std::max(abs(vpg.vertexMaxPrincipalCurvature(tip)),
+                       abs(vpg.vertexMinPrincipalCurvature(tip)));
+  double k2 = std::max(abs(vpg.vertexMaxPrincipalCurvature(tail)),
+                       abs(vpg.vertexMinPrincipalCurvature(tail)));
+
+  return std::sqrt(6 * curvTol / std::max(k1, k2) - 3 * curvTol * curvTol);
 }
 
 } // namespace solver

@@ -1,0 +1,14 @@
+#
+# This list is used by git-shortlog to fix a few botched name translations
+# in the mem3dg archive, either because the author's full name was messed up
+# and/or not always written the same way, making contributions from the
+# same person appearing not to be so.
+#
+Christopher T. Lee <ctlee@ucsd.edu> <ctlee@UCSD.EDU>
+Christopher T. Lee <ctlee@ucsd.edu> Chris Lee <ctlee@ucsd.edu>
+Christopher T. Lee <ctlee@ucsd.edu>  Christopher Lee <ctlee@ucsd.edu>
+Cuncheng Zhu <cuzhu@ucsd.edu> cuncheng zhu <zhucuncheng@gmail.com>
+Cuncheng Zhu <cuzhu@ucsd.edu> cuzhu@ucsd.edu <cuzhu@ucsd.edu>
+Cuncheng Zhu <cuzhu@ucsd.edu> cuzhucuncheng <cuzhu@ucsd.edu>
+Cuncheng Zhu <cuzhu@ucsd.edu> zhucuncheng@gmail.com <cuzhu@ctlee@cortex.rangamani.ucsd.edu>
+Serge Dmitrieff <serge.dmitrieff@gmail.com>

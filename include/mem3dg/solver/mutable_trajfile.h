@@ -38,8 +38,11 @@
 #include "mem3dg/meshops.h"
 #include "mem3dg/solver/trajfile_constants.h"
 #include "mem3dg/type_utilities.h"
+#include "mem3dg/version.h"
 
+/// Mem3dg namespace
 namespace mem3dg {
+/// solver namespace
 namespace solver {
 
 namespace gc = ::geometrycentral;
@@ -85,26 +88,21 @@ public:
       return MutableTrajFile(filename, NcFile::newFile);
   };
 
-  ///////////////////////////////////////////////
-  // Reintroduce when Netcdf 4.3.1 is standard
-  // Ubuntu 18.04 uses 4.3.0
-  ///////////////////////////////////////////////
-  //   /**
-  //    * @brief Open a new file and populate it with the convention
-  //    *
-  //    * @param filename  Filename to save to
-  //    * @param replace   Whether to replace an existing file or exit
-  //    *
-  //    * @exception netCDF::exceptions::NcExist File already exists and
-  //    * replace/overwrite flag is not specified.
-  //    *
-  //    * @return MutableTrajFile helper object to manipulate the bound NetCDF
-  //    file.
-  // ;   */
-  //   static MutableTrajFile newDisklessFile(const std::string &filename) {
-  //     return MutableTrajFile(filename, NC_NETCDF4 | NC_CLOBBER |
-  //     NC_DISKLESS);
-  //   }
+  /**
+   * @brief Open a new file and populate it with the convention
+   *
+   * @param filename  Filename to save to
+   * @param replace   Whether to replace an existing file or exit
+   *
+   * @exception netCDF::exceptions::NcExist File already exists and
+   * replace/overwrite flag is not specified.
+   *
+   * @return MutableTrajFile helper object to manipulate the bound NetCDF
+   file.
+;   */
+  static MutableTrajFile newDisklessFile(const std::string &filename) {
+    return MutableTrajFile(filename, NC_NETCDF4 | NC_CLOBBER | NC_DISKLESS);
+  }
 
   /**
    * @brief Open an existing NetCDF file in read/write mode
@@ -136,7 +134,7 @@ public:
 #pragma endregion named_constructors
 
   /// Default constructor
-  MutableTrajFile() : writeable(false), fd(nullptr){};
+  MutableTrajFile() : fd(nullptr), writeable(false){};
 
   /// Default copy constructor
   MutableTrajFile(MutableTrajFile &&rhs) = default;
@@ -178,7 +176,9 @@ public:
     time_var = traj_group.getVar(TIME_VAR);
     topo_var = traj_group.getVar(TOPO_VAR);
     coord_var = traj_group.getVar(COORD_VAR);
+    refcoord_var = traj_group.getVar(REFCOORD_VAR);
     phi_var = traj_group.getVar(PHI_VAR);
+    vertex_var = traj_group.getVar(VERTEX_VAR);
     vel_var = traj_group.getVar(VEL_VAR);
     extF_var = traj_group.getVar(EXTF_VAR);
   }
@@ -201,27 +201,23 @@ public:
     initializeConventions();
   }
 
-  ///////////////////////////////////////////////
-  // Reintroduce when Netcdf 4.3.1 is standard
-  // Ubuntu 18.04 uses 4.3.0
-  ///////////////////////////////////////////////
-  // /**
-  //  * @brief Create a New File object with NetCDF-C modes
-  //  *
-  //  * @param filename    Path to file to create
-  //  * @param ncFileMode  Mode to create the file
-  //  */
-  // void createNewFile(const std::string &filename, const int ncFileMode) {
-  //   if (fd != nullptr) {
-  //     mem3dg_runtime_error("Cannot open an already opened file.");
-  //   }
+  /**
+   * @brief Create a New File object with NetCDF-C modes
+   *
+   * @param filename    Path to file to create
+   * @param ncFileMode  Mode to create the file
+   */
+  void createNewFile(const std::string &filename, const int ncFileMode) {
+    if (fd != nullptr) {
+      mem3dg_runtime_error("Cannot open an already opened file.");
+    }
 
-  //   writeable = true;
+    writeable = true;
 
-  //   fd = new NcFile();
-  //   fd->create(filename, ncFileMode);
-  //   initializeConventions();
-  // }
+    fd = new NcFile();
+    fd->create(filename, ncFileMode);
+    initializeConventions();
+  }
 
 #pragma endregion initialization_helpers
 
@@ -251,7 +247,9 @@ public:
     time_var = nc::NcVar{};
     topo_var = nc::NcVar{};
     coord_var = nc::NcVar{};
+    refcoord_var = nc::NcVar{};
     phi_var = nc::NcVar{};
+    vertex_var = nc::NcVar{};
     vel_var = nc::NcVar{};
     extF_var = nc::NcVar{};
     filename = "";
@@ -341,6 +339,27 @@ public:
   }
 
   /**
+   * @brief Write the reference coordinates for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex position geometry
+   */
+  void writeRefCoords(const std::size_t idx,
+                      const gc::VertexPositionGeometry &data) {
+    writeVar<gc::Vertex>(refcoord_var, idx, data.inputVertexPositions);
+  }
+
+  /**
+   * @brief Write the reference coordinates for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  Vertex position geometry
+   */
+  void writeRefCoords(const std::size_t idx, const EigenVectorX3dr &data) {
+    writeVar<double, 3>(refcoord_var, idx, data);
+  }
+
+  /**
    * @brief Get the coordinates of a given frame
    *
    * @param idx               Index of the frame
@@ -348,6 +367,16 @@ public:
    */
   EigenVectorX3dr getCoords(const std::size_t idx) {
     return getVar<double, SPATIAL_DIMS>(coord_var, idx);
+  }
+
+  /**
+   * @brief Get the reference coordinates of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return EigenVectorX3dr  Coordinates data
+   */
+  EigenVectorX3dr getRefCoords(const std::size_t idx) {
+    return getVar<double, SPATIAL_DIMS>(refcoord_var, idx);
   }
 
   /**
@@ -369,6 +398,28 @@ public:
    */
   EigenVectorX1d getProteinDensity(const std::size_t idx) {
     return getVar1d<double>(phi_var, idx);
+  }
+
+  /**
+   * @brief Write the notable vertex for a frame
+   *
+   * @param idx   Index of the frame
+   * @param data  notable vertex
+   */
+  void writeNotableVertex(const std::size_t idx,
+                          const gc::MeshData<gc::Vertex, bool> &data) {
+    writeVar(vertex_var, idx, data);
+  }
+
+  /**
+   * @brief Get the notable vertex of a given frame
+   *
+   * @param idx               Index of the frame
+   * @return notable vertex
+   */
+  Eigen::Matrix<bool, Eigen::Dynamic, 1>
+  getNotableVertex(const std::size_t idx) {
+    return getVar1d<bool>(vertex_var, idx);
   }
 
   /**
@@ -582,7 +633,7 @@ private:
 
   template <typename T>
   EigenVectorX1_T<T> getVar1d(const nc::NcVar &var,
-                                const std::size_t idx) const {
+                              const std::size_t idx) const {
     assert(idx < nFrames());
 
     nc_vlen_t vlenData;
@@ -591,10 +642,10 @@ private:
     // Initialize an Eigen object and copy the data over
     EigenVectorX1_T<T> vec(vlenData.len);
     // Bind to nc_vlen_t memory and copy data over
-    vec = AlignedEigenMap_T<T, 1, Eigen::ColMajor>(static_cast<T *>(vlenData.p), vlenData.len);
+    vec = AlignedEigenMap_T<T, 1, Eigen::ColMajor>(static_cast<T *>(vlenData.p),
+                                                   vlenData.len);
     return vec;
   }
-
 
   template <typename T,
             typename = std::enable_if_t<std::is_fundamental<T>::value>>
@@ -623,22 +674,18 @@ private:
       createNewFile(filename, fMode);
   }
 
-  ///////////////////////////////////////////////
-  // Reintroduce when Netcdf 4.3.1 is standard
-  // Ubuntu 18.04 uses 4.3.0
-  ///////////////////////////////////////////////
-  // /**
-  //  * @brief Private constructor for new file using ncflags directly
-  //  *
-  //  * Note that this only creates new files!
-  //  *
-  //  * @param filename      Path to file of interest
-  //  * @param ncFileFlags   Mode to create file with
-  //  */
-  // MutableTrajFile(const std::string &filename, const int ncFileFlags)
-  //     : filename(filename), fd(nullptr), writeable(true) {
-  //   createNewFile(filename, ncFileFlags);
-  // }
+  /**
+   * @brief Private constructor for new file using ncflags directly
+   *
+   * Note that this only creates new files!
+   *
+   * @param filename      Path to file of interest
+   * @param ncFileFlags   Mode to create file with
+   */
+  MutableTrajFile(const std::string &filename, const int ncFileFlags)
+      : filename(filename), fd(nullptr), writeable(true) {
+    createNewFile(filename, ncFileFlags);
+  }
 
   /**
    * @brief Initialize a new file with the given conventions
@@ -650,6 +697,7 @@ private:
     // initialize data
     fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
     fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
+    fd->putAtt(MEM3DG_VERSION_NAME, MEM3DG_VERSION);
 
     parameter_group = fd->addGroup(PARAM_GROUP_NAME);
     traj_group = fd->addGroup(TRAJ_GROUP_NAME);
@@ -662,17 +710,15 @@ private:
 
     uint_array_t = traj_group.addVlenType(UINT_ARR, nc::ncUint);
     double_array_t = traj_group.addVlenType(DOUBLE_ARR, nc::ncDouble);
+    bool_array_t = traj_group.addVlenType(BOOL_ARR, nc::ncByte);
 
     topo_var = traj_group.addVar(TOPO_VAR, uint_array_t, {frame_dim});
-    topo_var.setCompression(true, true, compression_level);
     coord_var = traj_group.addVar(COORD_VAR, double_array_t, {frame_dim});
-    coord_var.setCompression(true, true, compression_level);
+    refcoord_var = traj_group.addVar(REFCOORD_VAR, double_array_t, {frame_dim});
+    vertex_var = traj_group.addVar(VERTEX_VAR, bool_array_t, {frame_dim});
     phi_var = traj_group.addVar(PHI_VAR, double_array_t, {frame_dim});
-    phi_var.setCompression(true, true, compression_level);
     vel_var = traj_group.addVar(VEL_VAR, double_array_t, {frame_dim});
-    vel_var.setCompression(true, true, compression_level);
     extF_var = traj_group.addVar(EXTF_VAR, double_array_t, {frame_dim});
-    extF_var.setCompression(true, true, compression_level);
   }
 
   /// Bound NcFile
@@ -687,6 +733,7 @@ private:
   /// Variable length type for topology
   nc::NcVlenType uint_array_t;
   nc::NcVlenType double_array_t;
+  nc::NcVlenType bool_array_t;
 
   /// Variable for storing time
   nc::NcVar time_var;
@@ -695,8 +742,12 @@ private:
   nc::NcVar topo_var;
   /// Vlen variable for coordinates
   nc::NcVar coord_var;
+  /// Vlen variable for reference coordinates
+  nc::NcVar refcoord_var;
   /// Vlen variable for protein density
   nc::NcVar phi_var;
+  /// Vlen variable for notable vertex
+  nc::NcVar vertex_var;
   /// Vlen variable for velocities
   nc::NcVar vel_var;
   /// Vlen variable for external forces

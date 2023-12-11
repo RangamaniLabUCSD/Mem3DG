@@ -47,63 +47,22 @@ namespace gcs = ::geometrycentral::surface;
 
 namespace mem3dg {
 namespace solver {
-
+/**
+ * @brief Mesh processor
+ *
+ */
 struct MeshProcessor {
-  struct MeshRegularizer {
-    // whether has reference mesh
-    bool ifHasRefMesh;
 
-    // whether conduct smoothing 
-    bool isSmoothenMesh = false;
-
-    /// triangle ratio constant
-    double Kst = 0;
-    /// Local stretching modulus
-    double Ksl = 0;
-    /// Edge spring constant
-    double Kse = 0;
-
-    /// Reference face area
-    EigenVectorX1d refFaceAreas;
-    /// Reference edge length
-    EigenVectorX1d refEdgeLengths;
-    /// Reference Lcr
-    EigenVectorX1d refLcrs;
-    /// Mean target area per face
-    double meanTargetFaceArea;
-    /// Mean target area per face
-    double meanTargetEdgeLength;
-    /// number of edges of reference mesh
-    size_t nEdge = 0;
-    /// number of vertices of the reference mesh
-    size_t nVertex = 0;
-    /// number of faces of the reference face
-    size_t nFace = 0;
-
-    /**
-     * @brief summarizeStatus
-     */
-    void summarizeStatus();
-
-    /**
-     * @brief read needed data from a mesh to perform regularization
-     */
-    void readReferenceData(std::string refMesh, std::size_t nSub);
-    void readReferenceData(
-        Eigen::Matrix<std::size_t, Eigen::Dynamic, 3> &topologyMatrix,
-        Eigen::Matrix<double, Eigen::Dynamic, 3> &refVertexMatrix,
-        std::size_t nSub);
-
-    /**
-     * @brief helper function to compute LCR
-     */
-    double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
-                                   gcs::Edge &e) const;
-  };
-
+  /**
+   * @brief Mesh mutator object
+   *
+   */
   struct MeshMutator {
+    /// period of mesh mutation
+    std::size_t mutateMeshPeriod = std::numeric_limits<std::size_t>::max();
+
     /// Whether edge flip
-    bool isEdgeFlip = false;
+    bool isFlipEdge = false;
     /// Whether split edge
     bool isSplitEdge = false;
     /// Whether collapse edge
@@ -112,7 +71,10 @@ struct MeshProcessor {
     bool isChangeTopology = false;
 
     /// whether vertex shift
-    bool shiftVertex = false;
+    bool isShiftVertex = false;
+
+    // whether conduct smoothing
+    bool isSmoothenMesh = false;
 
     /// flip non-delaunay edge
     bool flipNonDelaunay = false;
@@ -129,43 +91,57 @@ struct MeshProcessor {
     bool splitSharp = false;
     /// split obtuse triangle
     bool splitFat = false;
-    /// split poor aspected triangle that is still Delaunay
+    /// split poor aspect ratio triangle that is still Delaunay
     bool splitSkinnyDelaunay = false;
+    /// min edge length
+    double minimumEdgeLength = 0.001;
+    /// max edge length
+    double maximumEdgeLength = 0.01;
 
-    /// collapse skinny triangles
+    /// collapse skinny triangles based on angles
     bool collapseSkinny = false;
-    /// collapse small triangles
+    /// collapse triangles smaller than the \a targetFaceArea
     bool collapseSmall = false;
     /// target face area
     double targetFaceArea = 0.001;
     /// whether require flatness condition when collapsing small edge
-    bool collapseSmallNeedFlat = false;
+    bool collapseFlat = false;
 
     /// tolerance for curvature approximation
     double curvTol = 0.0012;
 
     /**
-     * @brief summarizeStatus
+     * @brief Aggregate fine mutation flags to set broader flag states
      */
     void summarizeStatus();
 
     /**
-     * @brief return condition of edge flip
+     * @brief Check flip conditions for edge e
+     *
+     * Affected by \a flipNonDelaunay and \a flipNonDelaunayRequireFlat flags
+     *
+     * @param e edge of interest
+     * @param vpg geometry
+     * @return true if edge \a e should be flipped
+     * @return false if edge \a e is ok
      */
-    bool ifFlip(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
+    bool checkFlipCondition(const gcs::Edge e,
+                            const gcs::VertexPositionGeometry &vpg);
 
     /**
      * @brief return condition of edge split
      */
-    bool ifSplit(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+    bool checkSplitCondition(const gc::Edge e,
+                             const gcs::VertexPositionGeometry &vpg);
 
     /**
      * @brief return condition of edge collapse
      */
-    bool ifCollapse(const gc::Edge e, const gcs::VertexPositionGeometry &vpg);
+    bool checkCollapseCondition(const gc::Edge e,
+                                const gcs::VertexPositionGeometry &vpg);
 
     void markVertices(gcs::VertexData<bool> &mutationMarker,
-                            const gcs::Vertex v, const size_t layer = 0);
+                      const gcs::Vertex v, const size_t layer = 0);
 
     std::tuple<double, std::size_t>
     neighborAreaSum(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
@@ -177,15 +153,11 @@ struct MeshProcessor {
 
   /// mesh mutator
   MeshMutator meshMutator;
-  /// mesh regularizer
-  MeshRegularizer meshRegularizer;
-  /// Whether regularize mesh
-  bool isMeshRegularize = false;
   /// Whether mutate mesh
   bool isMeshMutate = false;
 
   /**
-   * @brief summarizeStatus
+   * @brief Aggregate fine mutation flags to set broader flag states
    */
   void summarizeStatus();
 };

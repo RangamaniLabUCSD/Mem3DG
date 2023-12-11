@@ -42,6 +42,9 @@ using EigenVectorX3dr =
 using EigenVectorX3ur =
     Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using EigenVectorX3u = Eigen::Matrix<std::uint32_t, Eigen::Dynamic, 3>;
+using EigenVectorX3sr =
+    Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using EigenVectorX3s = Eigen::Matrix<std::size_t, Eigen::Dynamic, 3>;
 
 template <typename T, int k>
 using EigenVectorXkr_T = Eigen::Matrix<T, Eigen::Dynamic, k, Eigen::RowMajor>;
@@ -73,7 +76,7 @@ using AlignedEigenMap_T =
  * the data for you.
  *
  * @tparam T        Typename of the contained data
- * @tparam k        Numver of columns
+ * @tparam k        Number of columns
  * @tparam Options  Storage order \b Eigen::RowMajor or \b Eigen::ColMajor
  */
 template <typename T, std::size_t k, int Options = Eigen::ColMajor>
@@ -337,6 +340,24 @@ inline auto toMatrix(gcs::VertexData<gc::Vector3> &vector) {
   return gc::EigenMap<double, 3>(vector);
 }
 
-inline auto toMatrix(gcs::VertexData<double> &vector) { return vector.raw(); }
-
 } // namespace mem3dg
+
+namespace std {
+namespace gc = ::geometrycentral;
+namespace gcs = ::geometrycentral::surface;
+
+inline std::string to_string(gcs::VertexData<gc::Vector3> &a) {
+  auto map = gc::EigenMap<double, 3>(a);
+  ostringstream output;
+  output << map;
+  return output.str();
+}
+
+inline std::string to_string(gcs::VertexData<double> &a) {
+  auto map = a.raw();
+  ostringstream output;
+  output << map;
+  return output.str();
+}
+
+} // namespace std

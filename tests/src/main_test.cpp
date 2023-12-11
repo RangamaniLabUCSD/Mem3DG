@@ -12,9 +12,15 @@
 //     Padmini Rangamani (prangamani@eng.ucsd.edu)
 //
 
+#include "mem3dg/version.h"
 #include "gtest/gtest.h"
 
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
+}
+
+TEST(TestCore, TestMem3DGVersionExists) {
+  ASSERT_TRUE(!mem3dg::MEM3DG_VERSION.empty());
+  ASSERT_TRUE(!mem3dg::MEM3DG_VERSION_SHORT.empty());
 }

@@ -49,6 +49,8 @@ static const std::string CONVENTIONS_VALUE = "Mem3DG";
 static const std::string CONVENTIONS_VERSION_NAME = "ConventionsVersion";
 /// Conventions version value
 static const std::string CONVENTIONS_VERSION_VALUE = "0.0.1";
+/// Conventions mem3dg version name
+static const std::string MEM3DG_VERSION_NAME = "Mem3DGVersion";
 
 static const std::string PARAM_GROUP_NAME = "Parameters";
 static const std::string TRAJ_GROUP_NAME = "Trajectory";
@@ -87,6 +89,8 @@ static const std::string MEANCURVE_VAR = "meancurvature";
 static const std::string GAUSSCURVE_VAR = "gausscurvature";
 /// Name of the protein density data
 static const std::string PHI_VAR = "proteindensity";
+/// Name of the notable vertex data
+static const std::string VERTEX_VAR = "notablevertex";
 /// Name of the spontaneous curvature data
 static const std::string SPONCURVE_VAR = "sponcurvature";
 /// Name of the external pressure data
@@ -148,6 +152,8 @@ static const std::string H_H0_VAR = "curvaturediff";
 static const std::string UINT_ARR = "uint_array";
 /// Name of double array vlen type
 static const std::string DOUBLE_ARR = "double_array";
+/// Name of bool array vlen type
+static const std::string BOOL_ARR = "bool_array";
 
 #endif
 } // namespace solver

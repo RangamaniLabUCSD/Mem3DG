@@ -10,7 +10,7 @@ graft cmake
 # C++ sources
 graft src
 graft libraries
-graft include 
+graft include
 
 # PyMem3DG sources
 graft python_src

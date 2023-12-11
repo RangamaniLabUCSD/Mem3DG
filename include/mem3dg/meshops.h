@@ -19,6 +19,7 @@
 
 #include "geometrycentral/surface/halfedge_element_types.h"
 #include "geometrycentral/surface/halfedge_factories.h"
+#include "geometrycentral/surface/surface_point.h"
 #include "geometrycentral/surface/tufted_laplacian.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 #include "geometrycentral/utilities/vector3.h"
@@ -100,7 +101,7 @@ DLL_PUBLIC inline int findMedianIndex(int l, int r) {
 }
 
 /**
- * @brief find the range of data based on percentile (quatile)
+ * @brief find the range of data based on percentile (quartile)
  * @param a raw buffer of vector
  * @param n size of vector
  * @param r upper bound of range
@@ -150,30 +151,31 @@ DLL_PUBLIC inline bool hasOutlier(const Eigen::VectorXd &vec,
 
 /**
  * @brief test whether exist outliers to the set of data based range function
+ *
+ * For example: (Outlier <--> r) < [threshold * (l <--> r)]
+ *
  * @param vec data vector
  * @param threshold coefficient used to bound the outlier.
- * For example: (Outlier <--> r) < [threshold * (l <--> r)]
- * @return
+ * @return mask
  */
-DLL_PUBLIC inline Eigen::Matrix<bool, Eigen::Dynamic, 1>
-outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5,
-            bool negate = false) {
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> mask;
-  mask.resize(vec.rows(), 1);
-  Eigen::VectorXd sorted_vec;
+DLL_PUBLIC inline EigenVectorX1_T<bool> outlierMask(const EigenVectorX1d &vec,
+                                                    double threshold = 0.5,
+                                                    bool negate = false) {
+  EigenVectorX1_T<bool> mask(vec.rows(), 1);
+  EigenVectorX1d sorted_vec(vec.rows(), 1);
   sortVector(vec, sorted_vec);
   double r, l, range;
   findRange(sorted_vec.data(), sorted_vec.size(), r, l);
   range = r - l;
   if (negate) {
     // outlier: true
-    for (std::size_t i = 0; i < vec.rows(); i++) {
+    for (Eigen::Index i = 0; i < vec.rows(); i++) {
       mask[i] = ((vec[i] - r < threshold * range) &&
                  (l - vec[i] < threshold * range));
     }
   } else {
     // outlier: false
-    for (std::size_t i = 0; i < vec.rows(); i++) {
+    for (Eigen::Index i = 0; i < vec.rows(); i++) {
       mask[i] = ((vec[i] - r > threshold * range) ||
                  (l - vec[i] > threshold * range));
     }
@@ -182,7 +184,7 @@ outlierMask(const Eigen::VectorXd &vec, double threshold = 0.5,
 }
 
 /**
- * @brief Signal handler for pybindf
+ * @brief Signal handler for pybind
  */
 DLL_PUBLIC inline void signalHandler(int signum) {
   std::cout << "Interrupt signal (" << signum << ") received.\n";
@@ -260,11 +262,12 @@ inline double signedVolumeFromFace(gcs::Face &f,
 }
 
 /**
- * @brief Get mesh volume
+ * @brief Get the volume of a mesh object
  *
- * @param f
- * @param vpg
- * @return double
+ * @param mesh Manifold surface mesh topology
+ * @param vpg The vertex position geometry of the mesh
+ * @param isFillHole Flag for filling holes in open mesh
+ * @return The signed volume of the geometry
  */
 DLL_PUBLIC inline double getMeshVolume(gcs::ManifoldSurfaceMesh &mesh,
                                        gcs::VertexPositionGeometry &vpg,
@@ -345,8 +348,8 @@ DLL_PUBLIC inline gc::Vector3 cartesianToBarycentric(gc::Vector2 &v1,
  * @return
  */
 DLL_PUBLIC inline gc::Vector3
-correspondBarycentricCoordinates(gc::Vector3 &baryCoords_,
-                                 gcs::Halfedge &firstHalfedge) {
+correspondBarycentricCoordinates(const gc::Vector3 baryCoords_,
+                                 const gcs::Halfedge &firstHalfedge) {
   std::size_t vertexInd = 0;
   gc::Vector3 baryCoords;
   for (gcs::Vertex v : firstHalfedge.face().adjacentVertices()) {
@@ -496,16 +499,10 @@ DLL_PUBLIC inline void boundaryForceMask(gcs::SurfaceMesh &mesh,
   }
   if (!(gc::EigenMap<double, 3>(mask).array() < 0.5).any() &&
       boundaryConditionType != "none") {
-    std::cout
-        << "\nboundaryForceMask(double): WARNING: there is no boundary vertex "
-           "in the mesh!"
-        << std::endl;
+    mem3dg_runtime_warning("there is no boundary vertex in the mesh!");
   }
   if (!(gc::EigenMap<double, 3>(mask).array() > 0.5).any()) {
-    std::cout
-        << "\nboundaryForceMask(double): WARNING: there is no non-masked DOF "
-           "in the mesh!"
-        << std::endl;
+    mem3dg_runtime_warning("there is no non-masked DOF in the mesh!");
   }
 }
 
@@ -528,68 +525,10 @@ DLL_PUBLIC inline void
 removeRotation(const Eigen::Ref<const EigenVectorX3dr> &position,
                Eigen::Ref<EigenVectorX3dr> force) {
   Eigen::Matrix<double, 1, 3> sum(0, 0, 0);
-  for (std::size_t i = 0; i < force.rows(); ++i) {
+  for (Eigen::Index i = 0; i < force.rows(); ++i) {
     sum += position.row(i).cross(force.row(i));
   }
   force = force.rowwise() - (sum / force.rows());
-}
-
-/**
- * @brief find the closest point index to a given point
- *
- * @param mesh mesh
- * @param vpg geometry
- * @param position position of the target space point
- * @param geodesicDistance geodesic distance from a particular point in order
- * to specify range of search
- * @param range range of search
- */
-DLL_PUBLIC inline gcs::Vertex
-closestVertexToPt(gcs::SurfaceMesh &mesh, gcs::VertexPositionGeometry &vpg,
-                  const Eigen::Ref<const EigenVectorX1d> &position,
-                  gcs::VertexData<double> &geodesicDistance,
-                  double range = 1e10) {
-  gcs::Vertex theVertex;
-  double shorestDistance = 1e18;
-  bool isIntialized = !geodesicDistance.raw().isZero(0);
-  if (!isIntialized) {
-    // std::cout << "\nWARNING: closestVertexToPt: geodesicDistance not "
-    //              "initialized, searching for all "
-    //              "vertices!"
-    //           << std::endl;
-  }
-  for (gcs::Vertex v : mesh.vertices()) {
-    if (geodesicDistance[v] > range) {
-      continue;
-    }
-    if (geodesicDistance[v] < 0 && isIntialized) {
-      std::cout << "\nWARNING: closestVertexToPt: geodesicDistance of this "
-                   "vertex is "
-                << geodesicDistance[v]
-                << " which is less than 0, may be "
-                   "uninitialized/updated!"
-                << std::endl;
-    }
-    double distance;
-    if (position.rows() == 2) {
-      distance = (gc::Vector2{vpg.inputVertexPositions[v].x,
-                              vpg.inputVertexPositions[v].y} -
-                  gc::Vector2{position[0], position[1]})
-                     .norm();
-    } else if (position.rows() == 3) {
-      distance = (vpg.inputVertexPositions[v] -
-                  gc::Vector3{position[0], position[1], position[2]})
-                     .norm();
-    } else {
-      mem3dg_runtime_error(
-          "closestVertexToPt: does not support non-2d/3d position vector!");
-    }
-    if (distance < shorestDistance) {
-      shorestDistance = distance;
-      theVertex = v;
-    }
-  }
-  return theVertex;
 }
 
 /**
@@ -633,7 +572,7 @@ DLL_PUBLIC inline void gaussianDistribution(
     const std::array<double, 2> &stdDev) {
   distribution.resize(distances.rows(), 1);
   distribution.setConstant(1.0);
-  for (std::size_t i = 0; i < distances.rows(); i++) {
+  for (Eigen::Index i = 0; i < distances.rows(); i++) {
     if (distances[i] != 0) {
       distribution[i] = gaussianDistribution(
           distances[i], vertexPositionsFromPtInd[i], tangentBasis, stdDev);
@@ -644,10 +583,9 @@ DLL_PUBLIC inline void gaussianDistribution(
 /**
  * @brief height = 1 tanh step function with radius r
  *
- * @param (double) sharpness of transition
- * @param (double) radius of height = 1
- * @param (Eigen vector) distance vector
- * @param (vertexPositionGeometry) vpg
+ * @param sharpness sharpness of transition
+ * @param ax radius of height = 1
+ * @param distance distance vector
  *
  */
 inline double tanhDistribution(const double &distance, const double &sharpness,
@@ -688,7 +626,7 @@ tanhDistribution(EigenVectorX1d &distribution,
                  const double sharpness, const std::array<double, 2> &axes) {
   distribution.resize(distances.rows(), 1);
   distribution.setConstant(1.0);
-  for (std::size_t i = 0; i < distances.rows(); i++) {
+  for (Eigen::Index i = 0; i < distances.rows(); i++) {
     if (distances[i] != 0) {
       distribution[i] =
           tanhDistribution(distances[i], vertexPositionsFromPtInd[i],
@@ -698,7 +636,54 @@ tanhDistribution(EigenVectorX1d &distribution,
 }
 
 /**
- * @brief height = 1 fo jump step domain
+ * @brief Slice string using two deliminator
+ *
+ */
+DLL_PUBLIC inline std::string
+sliceString(std::string fileName, std::string delim1, std::string delim2) {
+  // int start = 0;
+  int start = fileName.find_last_of(delim1) + 1;
+  int end = fileName.find_last_of(delim2);
+  std::string string;
+  if (start != -1 && end != -1 && end > start) {
+    string = fileName.substr(start, end - start);
+  }
+  return string;
+}
+
+/**
+ * @brief Mark the file name
+ *
+ * @param dirPath path of the directory
+ * @param file name of the file, for example in the form of "/traj.nc"
+ * @param marker_str marker used to mark the file, such as marker = "_failed"
+ * results in new file name of "/traj_failed.nc"
+ */
+DLL_PUBLIC inline void markFileName(std::string filePath,
+                                    std::string marker_str,
+                                    std::string delimiter = ".") {
+  size_t pos = 0;
+  std::string token;
+  if ((pos = filePath.find_last_of(delimiter)) != std::string::npos) {
+    token = filePath.substr(0, pos);
+    filePath.erase(0, pos + delimiter.length());
+  }
+
+  std::string newFilePath = token, oldFilePath = token;
+  oldFilePath.append(delimiter);
+  oldFilePath.append(filePath);
+  newFilePath.append(marker_str);
+  newFilePath.append(delimiter);
+  newFilePath.append(filePath);
+
+  // rename file
+  int result = rename(oldFilePath.c_str(), newFilePath.c_str());
+  if (result != 0)
+    mem3dg_runtime_error("Error renaming the file!");
+}
+
+/**
+ * @brief height = 1 for jump step domain
  *
  * @param (double) sharpness of transition
  * @param (double) radius of height = 1
@@ -706,10 +691,11 @@ tanhDistribution(EigenVectorX1d &distribution,
  * @param (vertexPositionGeometry) vpg
  *
  */
-inline double jumpDistribution(const double &distance,
-                               const gc::Vector3 &vertexPositionFromPtInd,
-                               const std::array<gc::Vector3, 2> &tangentBasis,
-                               const std::array<double, 2> &axes) {
+DLL_PUBLIC inline double
+jumpDistribution(const double &distance,
+                 const gc::Vector3 &vertexPositionFromPtInd,
+                 const std::array<gc::Vector3, 2> &tangentBasis,
+                 const std::array<double, 2> &axes) {
   double x = gc::dot(vertexPositionFromPtInd, tangentBasis[0]);
   double y = gc::dot(vertexPositionFromPtInd, tangentBasis[1]);
   double cos_t = 1.0;
@@ -735,7 +721,7 @@ jumpDistribution(EigenVectorX1d &distribution,
                  const std::array<double, 2> &axes) {
   distribution.resize(distances.rows(), 1);
   distribution.setConstant(1.0);
-  for (std::size_t i = 0; i < distances.rows(); i++) {
+  for (Eigen::Index i = 0; i < distances.rows(); i++) {
     if (distances[i] != 0) {
       distribution[i] = jumpDistribution(
           distances[i], vertexPositionsFromPtInd[i], tangentBasis, axes);

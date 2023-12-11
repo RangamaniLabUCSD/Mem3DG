@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.dll
 
 # C extensions
 *.so
@@ -153,3 +154,6 @@ docs/src/conf.py
 
 python_src/pymem3dg/include
 python_src/pymem3dg/lib
+imgui.ini
+*.ply
+*.nc
