@@ -3,31 +3,31 @@ message: If you use this software, please cite it as below.
 title: Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
 abstract: This library performs 3D membrane simulations
 authors:
-- family-names: Zhu
-  given-names: Cuncheng
+- family-names: "Zhu"
+  given-names: "Cuncheng"
   orcid: https://orcid.org/0000-0003-1373-3492
-- family-names: Lee
-  given-names: Christopher T."
+- family-names: "Lee"
+  given-names: "Christopher T."
   orcid: https://orcid.org/0000-0002-0670-2308
-- family-names: Rangamani
-  given-names: Padmini
+- family-names: "Rangamani"
+  given-names: "Padmini"
   orcid: https://orcid.org/0000-0001-5953-4347
-version: 0.0.5
+version: 0.0.6-rc2
 doi: 10.5281/zenodo.1234
 date-released: 2021-03-09
 url: https://github.com/RangamaniLabUCSD/Mem3DG/
 preferred-citation:
   type: article
   authors:
-- family-names: "Zhu"
-  given-names: "Cuncheng"
-  orcid: "https://orcid.org/0000-0003-1373-3492"
-- family-names: "Lee"
-  given-names: "Christopher T."
-  orcid: "https://orcid.org/0000-0002-0670-2308"
-- family-names: "Rangamani"
-  given-names: "Padmini"
-  orcid: "https://orcid.org/0000-0001-5953-4347"
+  - family-names: "Zhu"
+    given-names: "Cuncheng"
+    orcid: "https://orcid.org/0000-0003-1373-3492"
+  - family-names: "Lee"
+    given-names: "Christopher T."
+    orcid: "https://orcid.org/0000-0002-0670-2308"
+  - family-names: "Rangamani"
+    given-names: "Padmini"
+    orcid: "https://orcid.org/0000-0001-5953-4347"
   doi: "10.1016/j.bpr.2022.100062"
   journal: "Biophysical Reports"
   month: 09
