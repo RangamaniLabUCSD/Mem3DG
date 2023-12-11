@@ -13,8 +13,8 @@ authors:
   given-names: "Padmini"
   orcid: https://orcid.org/0000-0001-5953-4347
 version: 0.0.6-rc3
-doi: 10.5281/zenodo.1234
-date-released: 2021-03-09
+doi: 10.5281/zenodo.10359392
+date-released: 2023-12-11
 url: https://github.com/RangamaniLabUCSD/Mem3DG/
 preferred-citation:
   type: article
