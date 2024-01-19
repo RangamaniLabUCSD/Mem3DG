@@ -1,7 +1,9 @@
 # Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
 
-[![Build Status](https://travis-ci.com/RangamaniLabUCSD/Mem3DG.svg?token=HxusyqZoDyxkhvY6GCzF&branch=master)](https://travis-ci.com/RangamaniLabUCSD/Mem3DG)
+[![Testing and release](https://github.com/RangamaniLabUCSD/Mem3DG/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/RangamaniLabUCSD/Mem3DG/actions/workflows/ci.yaml)
+[![Zenodo](https://zenodo.org/badge/244037679.svg)](https://zenodo.org/doi/10.5281/zenodo.10359392)
 [![PyPI](https://img.shields.io/pypi/v/pymem3dg)](https://pypi.org/project/pymem3dg/)
+[![Conda-forge](https://anaconda.org/conda-forge/pymem3dg/badges/version.svg)](https://anaconda.org/conda-forge/pymem3dg)
 
 Mem3DG is a flexible software package to model the membrane and its dynamics using unstructured meshes.
 This work is currently under heavy development, please star this repository to follow along!
