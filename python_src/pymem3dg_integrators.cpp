@@ -258,7 +258,7 @@ void init_integrators(py::module_ &pymem3dg) {
             std::cout,                                // std::ostream&
             py::module_::import("sys").attr("stdout") // Python output
         );
-        self.integrate();
+        return self.integrate();
       },
       R"delim(
             integrate
