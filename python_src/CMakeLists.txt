@@ -12,7 +12,6 @@
 #     Padmini Rangamani (prangamani@eng.ucsd.edu)
 #
 
-
 # ##############################################################################
 # GET PYBIND11
 # ##############################################################################
@@ -23,8 +22,7 @@ if(M3DG_GET_OWN_PYBIND11)
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
     GIT_TAG v2.10.4
     GIT_SHALLOW TRUE
-    SYSTEM
-    SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
+    SYSTEM SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
   )
   FetchContent_MakeAvailable(pybind11)
@@ -37,9 +35,9 @@ add_library(
   mem3dg_static STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:mem3dg_objlib>
 )
 target_link_libraries(mem3dg_static PUBLIC mem3dg_objlib)
-set_target_properties(mem3dg_static
-    PROPERTIES POSITION_INDEPENDENT_CODE ON
-    CXX_VISIBILITY_PRESET hidden
+set_target_properties(
+  mem3dg_static PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET
+                                                        hidden
 )
 
 set(PYMEM3DG_SOURCES
@@ -51,19 +49,21 @@ set(PYMEM3DG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_system.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_parameters.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg_energy.cpp"
-    )
+)
 
 pybind11_add_module(_core MODULE ${PYMEM3DG_SOURCES})
 target_link_libraries(_core PRIVATE mem3dg_static)
+
 if(WITH_NETCDF)
   target_compile_definitions(_core PUBLIC -DMEM3DG_WITH_NETCDF)
 endif()
 
-# install(TARGETS _core DESTINATION .)
-# file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-#              INPUT ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)
+install(TARGETS _core LIBRARY DESTINATION pymem3dg/ COMPONENT PythonModule)
 
-# if(SKBUILD)
-#   install(TARGETS pymem3dg LIBRARY DESTINATION pymem3dg)
-#   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py DESTINATION pymem3dg)
+# install(TARGETS _core DESTINATION .) file(GENERATE OUTPUT
+# ${CMAKE_CURRENT_BINARY_DIR}/__init__.py INPUT
+# ${CMAKE_SOURCE_DIR}/cmake/__init__.py.in)
+
+# if(SKBUILD) install(TARGETS pymem3dg LIBRARY DESTINATION pymem3dg)
+# install(FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py DESTINATION pymem3dg)
 # endif()

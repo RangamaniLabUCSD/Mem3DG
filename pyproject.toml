@@ -1,14 +1,71 @@
 [build-system]
-requires = ["setuptools", "wheel", "scikit-build", "cmake", "ninja", "pybind11"]
-build-backend = "setuptools.build_meta"
+requires = [
+    "scikit-build-core",
+    "pybind11",
+    "setuptools_scm"
+    ]
+build-backend = "scikit_build_core.build"
+
+
+[project]
+name = "pymem3dg"
+authors = [
+    { name = "Cuncheng Zhu", email = "cuzhu@ucsd.edu" },
+    { name = "Christopher T. Lee", email = "ctlee@ucsd.edu" },
+]
+description = "PyMem3DG: Membrane Dynamics in 3D using Discrete Differential Geometry"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = [
+    "meshing",
+    "membrane mechanics",
+    "discrete differential geometry",
+    "Helfrich",
+]
+license = { text = "Mozilla Public License 2.0 (MPL 2.0)" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = ["numpy"]
+dynamic = ["version"]
+
+
+[tool.scikit-build]
+cmake.args = [
+    "-DBUILD_PYMEM3DG=ON",
+    "-DSUITESPARSE=OFF",
+]
+wheel.packages = ["python_src/pymem3dg"]
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+sdist.include = ["python_src/pymem3dg/_version.py"]
+install.components = ["PythonModule"]
+install.strip = false
+
+
+[tool.setuptools_scm] # Section required
+#write_to = "python_src/pymem3dg/_version.py"
+
 
 [tool.pytest.ini_options]
-testpaths=["tests"]
+testpaths = ["tests"]
 filterwarnings = [
     "error",
     # Produced by seaborn
     "ignore: distutils Version classes are deprecated. Use packaging.version instead.",
 ]
+
 
 [tool.codespell]
 skip = '*.ply,*.nc'

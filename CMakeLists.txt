@@ -37,16 +37,6 @@ project(
 )
 message(STATUS "Mem3DG version: ${VERSION}")
 
-if(SKBUILD)
-  message(STATUS "The project is being built using scikit-build")
-  # Currently, Scikit-build does not support FindPython, so we convert the
-  # provided hints ourselves.
-  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
-  set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
-  set(Python_LIBRARY "${PYTHON_LIBRARY}")
-  set(Python_VERSION "${PYTHON_VERSION_STRING}")
-endif()
-
 # Configure version.cpp to give access to version in code
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.cpp.in
@@ -95,7 +85,9 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg igl::core)
 
 if(WITH_NETCDF)
-  message(STATUS "VCPKG Triplet: ${VCPKG_TARGET_TRIPLET}")
+  if(VCPKG_TARGET_TRIPLET)
+    message(STATUS "VCPKG Triplet: ${VCPKG_TARGET_TRIPLET}")
+  endif()
   find_package(netCDF "4.3.1" REQUIRED)
   message(DEBUG "netCDF version: ${netCDF_VERSION}")
   message(DEBUG "netCDF dir: ${netCDF_DIR}")
@@ -169,7 +161,6 @@ if(BUILD_PYMEM3DG)
     REQUIRED
   )
   add_subdirectory(python_src)
-  install(TARGETS _core DESTINATION .)
 endif()
 
 enable_testing()

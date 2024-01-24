@@ -88,12 +88,14 @@ jobs:
       - name: Resolve dependencies
         run: brew install netcdf eigen pybind11 netcdf-cxx
 
-      - name: Build and test
+      - name: Build
         run: |
           mkdir -p build && cd build;
           cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.python-path }} --log-level=DEBUG ..
           cmake --build . --config Release -j 4
-          ctest -C Release -V -j 4
+
+      - name: Test
+        run: ctest -C Release -V -j 4
 
 
   # build_windows:
@@ -158,9 +160,9 @@ jobs:
         echo ::set-output name=version::$mem3dg_version
 
     - name: Configure python version
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.8
+        python-version: 3.10
 
     - name: Setup python libs
       id: pyexe
@@ -177,7 +179,7 @@ jobs:
 
     - name: Build pymem3dg and install
       run: |
-        ${{ steps.pyexe.outputs.path }} setup.py install -- -DWITH_NETCDF=ON
+         python3 -m pip install -v .
 
     - name: Build docs
       run: |
@@ -186,19 +188,21 @@ jobs:
         cmake --build . --target mem3dg_doxy_docs --config Release -j 4
         cmake --build . --target mem3dg_sphinx_docs --config Release -j 4
 
-    - name: Deploy
+    - name: Deploy cpp docs
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         destination_dir: ${{ steps.version.outputs.version }}/cpp
         publish_dir: ./build/docs/cpp/html
+        enable_jekyll: true
 
-    - name: Deploy
+    - name: Deploy python docs
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         destination_dir: ${{ steps.version.outputs.version }}/py
         publish_dir: ./build/docs/py/html
+        enable_jekyll: true
 
 
   deploy_to_pypi:
@@ -217,10 +221,10 @@ jobs:
         submodules: recursive
 
     - name: Update python libs
-      run: python -m pip install scikit-build pytest
+      run: python -m pip install build
 
     - name: Configures source dist
-      run: python setup.py sdist
+      run: python -m build --sdist
 
     - name: Display structure of files
       run: ls -R
@@ -230,10 +234,3 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
-
-    # - name: Publish package to TestPyPI
-    #   uses: pypa/gh-action-pypi-publish@release/v1
-    #   with:
-    #     user: __token__
-    #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-    #     repository_url: https://test.pypi.org/legacy/
