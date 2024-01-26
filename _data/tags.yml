@@ -1,7 +1,3 @@
 # Ordered oldest to newest
 main:
-- tag: v0.0.3-alpha3
-- tag: v0.0.5-alpha1
-- tag: v0.0.6-rc1
-- tag: v0.0.6-rc2
 - tag: v0.0.6-rc3
