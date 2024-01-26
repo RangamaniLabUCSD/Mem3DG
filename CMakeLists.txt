@@ -17,6 +17,8 @@ cmake_policy(SET CMP0091 NEW)
 # Honor visibility for all target types
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Force globally
 cmake_policy(SET CMP0063 NEW)
+# respect project version
+cmake_policy(SET CMP0048 NEW)
 
 # 3.25 required for SYSTEM target property
 cmake_minimum_required(VERSION 3.25)
@@ -30,7 +32,7 @@ include(Macros)
 get_version_from_git()
 project(
   Mem3DG
-  VERSION ${VERSION_SHORT}
+  VERSION ${VERSION_RELEASE}
   DESCRIPTION "Membrane Dynamics in 3D using Discrete Differential Geometry"
   HOMEPAGE_URL "https://rangamanilabucsd.github.io/Mem3DG/"
   LANGUAGES CXX

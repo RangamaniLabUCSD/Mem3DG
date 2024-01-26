@@ -97,7 +97,6 @@ macro(get_version_from_git)
   endif()
 
   # If dirty increment version
-
   if((VERSION_DIRTY OR VERSION_DEV) AND NOT USING_PKG_INFO)
     if(VERSION_PRE)
       math(EXPR VERSION_PRE_N "${VERSION_PRE_N} + 1")
@@ -115,6 +114,7 @@ macro(get_version_from_git)
   set(VERSION_SHORT ${VERSION_RELEASE})
   if(VERSION_PRE)
     string(APPEND VERSION ${VERSION_PRE})
+    string(APPEND VERSION_SHORT ${VERSION_PRE})
   endif()
   if(VERSION_DIRTY
      OR VERSION_DEV

@@ -168,7 +168,6 @@ jobs:
       id: pyexe
       run: |
         python3 --version
-        python3 -m pip install -r ./docs/rtd-requirements.txt
         py_exe_path=$(which python3)
         echo ::set-output name=path::$py_exe_path
 
@@ -179,7 +178,7 @@ jobs:
 
     - name: Build pymem3dg and install
       run: |
-         python3 -m pip install -v .
+         python3 -m pip install -v -e ".[docs]""
 
     - name: Build docs
       run: |

@@ -1,9 +1,5 @@
 [build-system]
-requires = [
-    "scikit-build-core",
-    "pybind11",
-    "setuptools_scm"
-    ]
+requires = ["scikit-build-core", "pybind11", "setuptools_scm"]
 build-backend = "scikit_build_core.build"
 
 
@@ -38,15 +34,32 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
-dependencies = ["numpy"]
+dependencies = [
+    "numpy",
+    "scipy",
+    "netCDF4",
+    "polyscope",
+    "matplotlib",
+    "seaborn",
+    "xarray",
+]
 dynamic = ["version"]
+
+[project.optional-dependencies]
+docs = [
+    "docutils",
+    "jupyter_sphinx",
+    "markupsafe",
+    "nbsphinx",
+    "sphinx",
+    "sphinx-issues",
+    "sphinx_rtd_theme",
+]
+tests = ["pytest"]
 
 
 [tool.scikit-build]
-cmake.args = [
-    "-DBUILD_PYMEM3DG=ON",
-    "-DSUITESPARSE=OFF",
-]
+cmake.args = ["-DBUILD_PYMEM3DG=ON", "-DSUITESPARSE=OFF"]
 wheel.packages = ["python_src/pymem3dg"]
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 install.components = ["PythonModule"]
