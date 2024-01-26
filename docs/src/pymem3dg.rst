@@ -6,4 +6,7 @@ Python API Reference
 .. autosummary::
    :toctree: _pythonapi
 
-   pymem3dg
+   pymem3dg._core
+   pymem3dg.util
+   pymem3dg.boilerplate
+   pymem3dg.visual

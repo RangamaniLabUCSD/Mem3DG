@@ -54,6 +54,7 @@ docs = [
     "sphinx",
     "sphinx-issues",
     "sphinx_rtd_theme",
+    "sphinx-mdinclude"
 ]
 tests = ["pytest"]
 

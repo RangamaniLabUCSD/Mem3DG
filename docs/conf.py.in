@@ -39,6 +39,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx_issues',
+    'sphinx_mdinclude',
     'nbsphinx',
     'jupyter_sphinx',
 ]
@@ -108,11 +109,7 @@ except ImportError:
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['@CMAKE_CURRENT_SOURCE_DIR@/src/_static']
 
-html_context = {
-    'css_files': [
-        '_static/theme_overrides.css',  # override wide tables in RTD theme
-        ],
-     }
+
 
 ##############################
 # Intersphinx Settings
