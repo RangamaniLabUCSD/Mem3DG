@@ -129,8 +129,8 @@ public:
 
   Integrator(System &system_, double characteristicTimeStep_, double tolerance_,
              std::string outputDirectory_)
-      : system(system_), characteristicTimeStep(characteristicTimeStep_),
-        tolerance(tolerance_), timeStep(characteristicTimeStep_),
+      : timeStep(characteristicTimeStep_), system(system_),
+        characteristicTimeStep(characteristicTimeStep_), tolerance(tolerance_),
         outputDirectory(outputDirectory_) {
     ifDisableIntegrate = true;
     ifPrintToConsole = true;
@@ -205,8 +205,7 @@ public:
    * @return alpha, line search step size
    */
   double backtrack(Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-                   Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
-                   double rho = 0.7, double c1 = 0.001);
+                   Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection);
 
   /**
    * @brief Backtracking algorithm that dynamically adjust step size based on
@@ -218,8 +217,7 @@ public:
    * @return alpha, line search step size
    */
   double mechanicalBacktrack(
-      Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-      double rho = 0.7, double c1 = 0.001);
+      Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection);
 
   /**
    * @brief Backtracking algorithm that dynamically adjust step size based on
@@ -230,9 +228,8 @@ public:
    * @param c1, constant for Wolfe condition, between 0 to 1, usually ~ 1e-4
    * @return alpha, line search step size
    */
-  double
-  chemicalBacktrack(Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection,
-                    double rho = 0.7, double c1 = 0);
+  double chemicalBacktrack(
+      Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection);
 
   /**
    * @brief get adaptive characteristic time step

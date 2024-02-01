@@ -25,7 +25,7 @@ gc::Vector3 Geometry::computeCornerAngleVariation(gcs::Corner c,
   gcs::Halfedge he = c.halfedge();
   gc::Vector3 n = vpg->faceNormals[c.face()];
   gc::Vector3 ej = vecFromHalfedge(he, *vpg);
-  gc::Vector3 ei = vecFromHalfedge(he.next(), *vpg);
+  // gc::Vector3 ei = vecFromHalfedge(he.next(), *vpg); // unused
   gc::Vector3 ek = vecFromHalfedge(he.next().next(), *vpg);
   if (c.vertex() == v) { // vi
     gc::Vector3 grad_anglek = -gc::cross(n, ej).normalize() / gc::norm(ej);
@@ -36,7 +36,8 @@ gc::Vector3 Geometry::computeCornerAngleVariation(gcs::Corner c,
   } else if (he.next().next().vertex() == v) { // vj
     return -gc::cross(n, ek).normalize() / gc::norm(ek);
   } else {
-    mem3dg_runtime_error("Unexpected combination of corner and vertex!");
+    mem3dg_runtime_error("Vertex, ", v, ", does not participate in Corner, ", c,
+                         "!");
     return gc::Vector3{0, 0, 0};
   }
 }
@@ -52,29 +53,32 @@ gc::Vector3 Geometry::computeCornerAngleVariation(gcs::Halfedge he,
 
 gc::Vector3 Geometry::computeDihedralAngleVariation(gcs::Halfedge he,
                                                     gcs::Vertex v) {
-  double l = vpg->edgeLengths[he.edge()];
   if (he.edge().isBoundary()) {
     return gc::Vector3{0, 0, 0};
-  } else if (he.vertex() == v) {
-    return (vpg->halfedgeCotanWeights[he.next().next()] *
-                vpg->faceNormals[he.face()] +
-            vpg->halfedgeCotanWeights[he.twin().next()] *
-                vpg->faceNormals[he.twin().face()]) /
-           l;
-  } else if (he.next().vertex() == v) {
-    return (vpg->halfedgeCotanWeights[he.twin().next().next()] *
-                vpg->faceNormals[he.twin().face()] +
-            vpg->halfedgeCotanWeights[he.next()] *
-                vpg->faceNormals[he.face()]) /
-           l;
-  } else if (he.next().next().vertex() == v) {
-    return (-(vpg->halfedgeCotanWeights[he.next().next()] +
-              vpg->halfedgeCotanWeights[he.next()]) *
-            vpg->faceNormals[he.face()]) /
-           l;
   } else {
-    mem3dg_runtime_error("Unexpected combination of halfedge and vertex!");
-    return gc::Vector3{0, 0, 0};
+    double l = vpg->edgeLengths[he.edge()];
+    if (he.vertex() == v) {
+      return (vpg->halfedgeCotanWeights[he.next().next()] *
+                  vpg->faceNormals[he.face()] +
+              vpg->halfedgeCotanWeights[he.twin().next()] *
+                  vpg->faceNormals[he.twin().face()]) /
+             l;
+    } else if (he.next().vertex() == v) {
+      return (vpg->halfedgeCotanWeights[he.twin().next().next()] *
+                  vpg->faceNormals[he.twin().face()] +
+              vpg->halfedgeCotanWeights[he.next()] *
+                  vpg->faceNormals[he.face()]) /
+             l;
+    } else if (he.next().next().vertex() == v) {
+      return (-(vpg->halfedgeCotanWeights[he.next().next()] +
+                vpg->halfedgeCotanWeights[he.next()]) *
+              vpg->faceNormals[he.face()]) /
+             l;
+    } else {
+      mem3dg_runtime_error("Vertex, ", v,
+                           ", does not participate in Halfedge, ", he, "!");
+      return gc::Vector3{0, 0, 0};
+    }
   }
 }
 
@@ -92,7 +96,7 @@ Geometry::computeHalfedgeSchlafliVector(gcs::VertexPositionGeometry &vpg,
   bool boundaryVertex = he.vertex().isBoundary();
   bool boundaryEdge = he.edge().isBoundary();
   bool interiorHalfedge = he.isInterior();
-  bool interiorTwinHalfedge = he.twin().isInterior();
+  // bool interiorTwinHalfedge = he.twin().isInterior();
   gc::Vector3 schlafliVec1{0, 0, 0};
   gc::Vector3 schlafliVec2{0, 0, 0};
   if (!boundaryEdge) {
@@ -246,7 +250,7 @@ Geometry::computeHalfedgeSquaredIntegratedDerivativeNormVariationVector(
     return gc::Vector3({0, 0, 0});
   } else {
     // Edge and normal vector
-    gc::Vector3 n = vpg->faceNormals[he.face()];
+    // gc::Vector3 n = vpg->faceNormals[he.face()];
     gc::Vector3 ej = vecFromHalfedge(he, *vpg);
     gc::Vector3 ei = vecFromHalfedge(he.next(), *vpg);
     gc::Vector3 ek = vecFromHalfedge(he.next().next(), *vpg);

@@ -339,10 +339,9 @@ double System::computeIntegratedPower(double dt) {
                                 toMatrix(velocity))
                   .sum();
 }
-double System::computeIntegratedPower(double dt, EigenVectorX3dr &&velocity) {
+double System::computeIntegratedPower(double dt, EigenVectorX3dr &&vel) {
   prescribeExternalForce();
-  return dt *
-         rowwiseDotProduct(toMatrix(forces.externalForceVec), velocity).sum();
+  return dt * rowwiseDotProduct(toMatrix(forces.externalForceVec), vel).sum();
 }
 
 double System::computeExternalWork(double currentTime, double dt) {

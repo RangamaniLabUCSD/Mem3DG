@@ -72,7 +72,7 @@ public:
   /**
    * @brief Open a new file and populate it with the convention
    *
-   * @param filename  Filename to save to
+   * @param fn  Filename to save to
    * @param replace   Whether to replace an existing file or exit
    *
    * @exception netCDF::exceptions::NcExist File already exists and
@@ -80,18 +80,17 @@ public:
    *
    * @return MutableTrajFile helper object to manipulate the bound NetCDF file.
    */
-  static MutableTrajFile newFile(const std::string &filename,
-                                 bool replace = false) {
+  static MutableTrajFile newFile(const std::string &fn, bool replace = false) {
     if (replace)
-      return MutableTrajFile(filename, NcFile::replace);
+      return MutableTrajFile(fn, NcFile::replace);
     else
-      return MutableTrajFile(filename, NcFile::newFile);
+      return MutableTrajFile(fn, NcFile::newFile);
   };
 
   /**
    * @brief Open a new file and populate it with the convention
    *
-   * @param filename  Filename to save to
+   * @param fn  Filename to save to
    * @param replace   Whether to replace an existing file or exit
    *
    * @exception netCDF::exceptions::NcExist File already exists and
@@ -100,36 +99,36 @@ public:
    * @return MutableTrajFile helper object to manipulate the bound NetCDF
    file.
 ;   */
-  static MutableTrajFile newDisklessFile(const std::string &filename) {
-    return MutableTrajFile(filename, NC_NETCDF4 | NC_CLOBBER | NC_DISKLESS);
+  static MutableTrajFile newDisklessFile(const std::string &fn) {
+    return MutableTrajFile(fn, NC_NETCDF4 | NC_CLOBBER | NC_DISKLESS);
   }
 
   /**
    * @brief Open an existing NetCDF file in read/write mode
    *
-   * @param filename  Filename of interest
+   * @param fn  Filename of interest
    *
    * @exception std::runtime_error if file does not conform to the convention
    * @exception netCDF::exceptions::* If file does not exist
    *
    * @return MutableTrajFile helper object to manipulate the bound NetCDF file.
    */
-  static MutableTrajFile openRW(const std::string &filename) {
-    return MutableTrajFile(filename, NcFile::write);
+  static MutableTrajFile openRW(const std::string &fn) {
+    return MutableTrajFile(fn, NcFile::write);
   }
 
   /**
    * @brief Open an existing NetCDF file in read only mode
    *
-   * @param filename  Filename of interest
+   * @param fn  Filename of interest
    *
    * @exception std::runtime_error if file does not conform to the convention
    * @exception netCDF::exceptions::* If file does not exist
    *
    * @return MutableTrajFile helper object to manipulate the bound NetCDF file.
    */
-  static MutableTrajFile openReadOnly(const std::string &filename) {
-    return MutableTrajFile(filename, NcFile::read);
+  static MutableTrajFile openReadOnly(const std::string &fn) {
+    return MutableTrajFile(fn, NcFile::read);
   };
 #pragma endregion named_constructors
 
@@ -153,15 +152,15 @@ public:
   /**
    * @brief Open an existing trajectory file for reading/writing
    *
-   * @param filename  Path to file to open
+   * @param fn  Path to file to open
    * @param fMode     Mode to open file with
    */
-  void open(const std::string &filename, const NcFile::FileMode fMode) {
+  void open(const std::string &fn, const NcFile::FileMode fMode) {
     if ((fd != nullptr) && (fMode != NcFile::read)) {
       mem3dg_runtime_error("Cannot open an already opened ...");
     }
 
-    fd = new NcFile(filename, fMode);
+    fd = new NcFile(fn, fMode);
     writeable = fMode != NcFile::read;
     check_metadata();
 
@@ -186,28 +185,27 @@ public:
   /**
    * @brief Create a new file with NcFile file modes (from NetCDF-C++4)
    *
-   * @param filename  Path to file to create
+   * @param fn  Path to file to create
    * @param fMode     Mode to create the file
    */
-  void createNewFile(const std::string &filename,
-                     const NcFile::FileMode fMode) {
+  void createNewFile(const std::string &fn, const NcFile::FileMode fMode) {
     if (fd != nullptr) {
       mem3dg_runtime_error("Cannot open an already open ...");
     }
 
     writeable = true;
 
-    fd = new NcFile(filename, fMode);
+    fd = new NcFile(fn, fMode);
     initializeConventions();
   }
 
   /**
    * @brief Create a New File object with NetCDF-C modes
    *
-   * @param filename    Path to file to create
+   * @param fn    Path to file to create
    * @param ncFileMode  Mode to create the file
    */
-  void createNewFile(const std::string &filename, const int ncFileMode) {
+  void createNewFile(const std::string &fn, const int ncFileMode) {
     if (fd != nullptr) {
       mem3dg_runtime_error("Cannot open an already opened file.");
     }
@@ -215,7 +213,7 @@ public:
     writeable = true;
 
     fd = new NcFile();
-    fd->create(filename, ncFileMode);
+    fd->create(fn, ncFileMode);
     initializeConventions();
   }
 
@@ -663,15 +661,15 @@ private:
    *
    * The metadata is checked for consistency with the convention.
    *
-   * @param filename Path to file of interest
+   * @param fn Path to file of interest
    * @param fMode    Mode to open/create file with
    */
-  MutableTrajFile(const std::string &filename, const NcFile::FileMode fMode)
-      : filename(filename), fd(nullptr), writeable(fMode != NcFile::read) {
+  MutableTrajFile(const std::string &fn, const NcFile::FileMode fMode)
+      : fd(nullptr), filename(fn), writeable(fMode != NcFile::read) {
     if (fMode == NcFile::read || fMode == NcFile::write)
-      open(filename, fMode);
+      open(fn, fMode);
     else
-      createNewFile(filename, fMode);
+      createNewFile(fn, fMode);
   }
 
   /**
@@ -679,12 +677,12 @@ private:
    *
    * Note that this only creates new files!
    *
-   * @param filename      Path to file of interest
+   * @param fn      Path to file of interest
    * @param ncFileFlags   Mode to create file with
    */
-  MutableTrajFile(const std::string &filename, const int ncFileFlags)
-      : filename(filename), fd(nullptr), writeable(true) {
-    createNewFile(filename, ncFileFlags);
+  MutableTrajFile(const std::string &fn, const int ncFileFlags)
+      : fd(nullptr), filename(fn), writeable(true) {
+    createNewFile(fn, ncFileFlags);
   }
 
   /**

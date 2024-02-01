@@ -125,12 +125,12 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   //     std::make_unique<Geometry>(trajFile, startingFrame);
   MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
   // Map continuation variables
-  double time = fd.getTime(startingFrame);
+  double time_ = fd.getTime(startingFrame);
   EigenVectorX3dr initialVelocity = fd.getVelocity(startingFrame);
   EigenVectorX1d initialProteinDensity = fd.getProteinDensity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 
-  return std::make_tuple(initialProteinDensity, initialVelocity, time);
+  return std::make_tuple(initialProteinDensity, initialVelocity, time_);
   // return std::forward_as_tuple(Geometry(trajFile, startingFrame),
   // fd.getProteinDensity(startingFrame),  fd.getVelocity(startingFrame), time);
 }

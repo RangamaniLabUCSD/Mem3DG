@@ -184,7 +184,7 @@ bool System::testConservativeForcing(const double timeStep) {
                             gcs::VertexData<gc::Vector3> &forceVec,
                             const double &previousEnergy,
                             const double &currentEnergy, std::string forceKey,
-                            std::string energyKey) {
+                            [[maybe_unused]] std::string energyKey) {
     double stepFold = 2;
     std::string key = forceKey; // + std::string("--") + energyKey;
 
@@ -216,7 +216,7 @@ bool System::testConservativeForcing(const double timeStep) {
                                   const double &previousEnergy,
                                   const double &currentEnergy,
                                   std::string potentialKey,
-                                  std::string energyKey) {
+                                  [[maybe_unused]] std::string energyKey) {
     double stepFold = 2;
     std::string key = potentialKey; // + std::string("--") + energyKey;
 
@@ -401,27 +401,28 @@ bool System::testConservativeForcing(const double timeStep) {
   return SUCCESS;
 }
 
-void System::check_pcg() {
-  // Generate a normal distribution around that mean
-  std::normal_distribution<> normal_dist(0, 2);
+// void System::check_pcg() {
+//   // Generate a normal distribution around that mean
+//   std::normal_distribution<> normal_dist(0, 2);
 
-  // Make a copy of the RNG state to use later
-  pcg32 rng_checkpoint = rng;
+//   // Make a copy of the RNG state to use later
+//   pcg32 rng_checkpoint = rng;
 
-  // Produce histogram
-  std::map<int, int> hist;
-  for (int n = 0; n < 10000; ++n) {
-    ++hist[std::round(normal_dist(rng))];
-  }
-  std::cout << "Normal distribution around " << 0 << ":\n";
-  for (auto p : hist) {
-    std::cout << std::fixed << std::setprecision(1) << std::setw(2) << p.first
-              << ' ' << std::string(p.second / 30, '*') << '\n';
-  }
+//   // Produce histogram
+//   std::map<int, int> hist;
+//   for (int n = 0; n < 10000; ++n) {
+//     ++hist[std::round(normal_dist(rng))];
+//   }
+//   std::cout << "Normal distribution around " << 0 << ":\n";
+//   for (auto p : hist) {
+//     std::cout << std::fixed << std::setprecision(1) << std::setw(2) <<
+//     p.first
+//               << ' ' << std::string(p.second / 30, '*') << '\n';
+//   }
 
-  // Produce information about RNG usage
-  std::cout << "Required " << (rng - rng_checkpoint) << " random numbers.\n";
-}
+//   // Produce information about RNG usage
+//   std::cout << "Required " << (rng - rng_checkpoint) << " random numbers.\n";
+// }
 
 bool System::checkFiniteness() {
   bool finite = true;

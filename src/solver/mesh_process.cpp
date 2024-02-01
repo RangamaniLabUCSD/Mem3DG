@@ -78,8 +78,8 @@ bool MeshProcessor::MeshMutator::checkCollapseCondition(
   bool is2Small = false;
   bool is2Skinny = false;
   bool isFlat = false;
-  bool isSmooth = true;
-  bool isCollapse = false;
+  // bool isSmooth = true;
+  // bool isCollapse = false;
 
   // conditions for collapsing
   if (collapseSkinny) {
@@ -159,7 +159,7 @@ bool MeshProcessor::MeshMutator::checkSplitCondition(
   bool is2Large = false;
   bool is2Long = false;
   bool is2Curved = false;
-  bool is2Sharp = false;
+  // bool is2Sharp = false;
   bool is2Fat = false;
   bool is2Skinny = false;
   bool isDelaunay = false;

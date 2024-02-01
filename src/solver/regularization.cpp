@@ -207,7 +207,7 @@ bool System::edgeFlip() {
     }
 
     if (meshProcessor.meshMutator.checkFlipCondition(e, *geometry.vpg)) {
-      bool success = geometry.mesh->flip(e);
+      [[maybe_unused]] bool success = geometry.mesh->flip(e);
       isOrigEdge[e] = false;
       isFlipped = true;
       meshProcessor.meshMutator.markVertices(mutationMarker, he.tailVertex());
@@ -327,8 +327,8 @@ bool System::processSplitCollapse() {
       auto newVertex = collapseEdge(e);
       if (newVertex.getIndex() != gc::INVALID_IND) {
         // isOrigVertex[newVertex] = false;
-        for (gcs::Edge e : newVertex.adjacentEdges()) {
-          isOrigEdge[e] = false;
+        for (gcs::Edge eAdjacent : newVertex.adjacentEdges()) {
+          isOrigEdge[eAdjacent] = false;
         }
         meshProcessor.meshMutator.markVertices(mutationMarker, newVertex);
         isGrown = true;
@@ -508,11 +508,12 @@ void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
     vertexNormal1.normalize();
     double H_center =
         geometry.vpg->vertexMeanCurvature(v) / geometry.vpg->vertexDualArea(v);
-    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+    for (gcs::Halfedge he_outgoing : v.outgoingHalfedges()) {
       localLapH1 +=
-          geometry.vpg->edgeCotanWeight(he.edge()) *
-          (H_center - geometry.vpg->vertexMeanCurvature(he.tipVertex()) /
-                          geometry.vpg->vertexDualArea(he.tipVertex()));
+          geometry.vpg->edgeCotanWeight(he_outgoing.edge()) *
+          (H_center -
+           geometry.vpg->vertexMeanCurvature(he_outgoing.tipVertex()) /
+               geometry.vpg->vertexDualArea(he_outgoing.tipVertex()));
     }
 
     v = he.tipVertex();
@@ -523,11 +524,12 @@ void System::localSmoothing(const gcs::Halfedge &he, std::size_t num,
     vertexNormal2.normalize();
     H_center =
         geometry.vpg->vertexMeanCurvature(v) / geometry.vpg->vertexDualArea(v);
-    for (gcs::Halfedge he : v.outgoingHalfedges()) {
+    for (gcs::Halfedge he_outgoing : v.outgoingHalfedges()) {
       localLapH2 +=
-          geometry.vpg->edgeCotanWeight(he.edge()) *
-          (H_center - geometry.vpg->vertexMeanCurvature(he.tipVertex()) /
-                          geometry.vpg->vertexDualArea(he.tipVertex()));
+          geometry.vpg->edgeCotanWeight(he_outgoing.edge()) *
+          (H_center -
+           geometry.vpg->vertexMeanCurvature(he_outgoing.tipVertex()) /
+               geometry.vpg->vertexDualArea(he_outgoing.tipVertex()));
     }
 
     geometry.vpg->inputVertexPositions[he.tailVertex()] -=

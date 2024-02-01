@@ -43,8 +43,9 @@ bool VelocityVerlet::integrate() {
 
   signal(SIGINT, signalHandler);
 
-  double initialTime = system.time, lastComputeAvoidingForce = system.time,
-         lastSave = system.time;
+  double initialTime = system.time;
+  // double lastComputeAvoidingForce = system.time,
+  double lastSave = system.time;
   std::map<std::string, double> lastUpdateTime{{"geodesics", system.time},
                                                {"mutateMesh", system.time},
                                                {"protein", system.time},
@@ -198,10 +199,9 @@ void VelocityVerlet::march() {
     double timeStep_mech = std::numeric_limits<double>::max(),
            timeStep_chem = std::numeric_limits<double>::max();
     if (system.parameters.variation.isShapeVariation)
-      timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity), rho, c1);
+      timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity));
     if (system.parameters.variation.isProteinVariation)
-      timeStep_chem =
-          chemicalBacktrack(system.proteinRateOfChange.raw(), rho, c1);
+      timeStep_chem = chemicalBacktrack(system.proteinRateOfChange.raw());
     timeStep = (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;

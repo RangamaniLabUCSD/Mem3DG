@@ -191,9 +191,8 @@ public:
    */
   Geometry(std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrmesh_,
            std::unique_ptr<gcs::VertexPositionGeometry> ptrvpg_)
-      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)),
-        geodesicDistance{*mesh, 0}, notableVertex{*mesh, false},
-        refLcrs{*mesh, 0} {
+      : mesh(std::move(ptrmesh_)), vpg(std::move(ptrvpg_)), refLcrs{*mesh, 0},
+        geodesicDistance{*mesh, 0}, notableVertex{*mesh, false} {
     updateReferenceMeshFromVPG();
 
     // GC computed properties
