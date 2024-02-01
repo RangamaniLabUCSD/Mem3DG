@@ -54,8 +54,10 @@ endif()
 # add_subdirectory( ${geometrycentrallib_SOURCE_DIR}
 # ${geometrycentrallib_BINARY_DIR} ) set_target_properties( geometry-central
 # PROPERTIES POSITION_INDEPENDENT_CODE ON ) endif()
-add_subdirectory(geometry-central SYSTEM EXCLUDE_FROM_ALL)
+add_subdirectory(geometry-central EXCLUDE_FROM_ALL SYSTEM )
 set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# Suppress noise from sprintf deprecated
+target_compile_options(geometry-central PRIVATE "-Wno-deprecated-declarations")
 
 # ##############################################################################
 # Configure libigl
