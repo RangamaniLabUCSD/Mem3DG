@@ -178,7 +178,7 @@ jobs:
 
     - name: Build pymem3dg and install
       run: |
-         python3 -m pip install -v -e ".[docs]""
+         python3 -m pip install -v ".[docs]"
 
     - name: Build docs
       run: |
