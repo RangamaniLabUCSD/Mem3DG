@@ -101,6 +101,7 @@ bool Euler::integrate() {
 
     if (system.updatePrescription(lastUpdateTime, timeStep)) {
       system.time += 1e-5 * timeStep;
+      system.updateConfigurations(); // Update configurations after mutation
     } else {
       march();
     }
@@ -244,7 +245,6 @@ void Euler::march() {
     if (system.parameters.variation.isProteinVariation)
       timeStep_chem = chemicalBacktrack(system.proteinRateOfChange.raw());
     timeStep = std::min(timeStep_chem, timeStep_mech);
-    // (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
   }
