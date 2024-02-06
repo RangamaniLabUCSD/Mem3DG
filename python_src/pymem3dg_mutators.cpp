@@ -173,10 +173,17 @@ void init_mutators(py::module_ &pymem3dg) {
                             R"delim(
           tolerance for curvature approximation
       )delim");
-  meshmutator.def_readwrite("targetFaceArea",
-                            &MeshProcessor::MeshMutator::targetFaceArea,
+
+  meshmutator.def_readwrite("maximumFaceArea",
+                            &MeshProcessor::MeshMutator::maximumFaceArea,
                             R"delim(
-          target face area
+          target maximum face area
+      )delim");
+
+  meshmutator.def_readwrite("minimumFaceArea",
+                            &MeshProcessor::MeshMutator::minimumFaceArea,
+                            R"delim(
+          target minimum face area
       )delim");
 
   py::class_<MeshProcessor> meshprocessor(pymem3dg, "MeshProcessor",

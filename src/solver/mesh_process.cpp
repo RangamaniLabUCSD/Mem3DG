@@ -102,9 +102,6 @@ bool MeshProcessor::MeshMutator::checkCollapseCondition(
            vpg.cornerAngle(he.twin().next().corner())) >
               (constants::PI * 1.333);
     }
-    // if (is2Skinny) {
-    //   mem3dg_print("is2Skinny");
-    // }
     condition = is2Skinny;
   }
 
@@ -112,15 +109,8 @@ bool MeshProcessor::MeshMutator::checkCollapseCondition(
     double areaSum;
     std::size_t num_neighbor;
     std::tie(areaSum, num_neighbor) = neighborAreaSum(e, vpg);
+    is2Small = areaSum < num_neighbor * minimumFaceArea;
 
-    if (isBoundary) {
-      is2Small = (areaSum - vpg.faceArea(he.face())) <
-                 (num_neighbor - 1) * targetFaceArea;
-    } else {
-      is2Small =
-          (areaSum - vpg.faceArea(he.face()) - vpg.faceArea(he.twin().face())) <
-          (num_neighbor - 2) * targetFaceArea;
-    }
     // isSmooth =
     //     abs(H0[he.tipVertex()] - H0[he.tailVertex()]) < (0.667 *
     //     targetdH0);
@@ -169,9 +159,9 @@ bool MeshProcessor::MeshMutator::checkSplitCondition(
   // Conditions for splitting
   if (splitLarge) {
     is2Large = (isBoundary)
-                   ? vpg.faceArea(he.face()) > (2 * targetFaceArea)
+                   ? vpg.faceArea(he.face()) > (2 * maximumFaceArea)
                    : (vpg.faceArea(he.face()) +
-                      vpg.faceArea(he.twin().face())) > (4 * targetFaceArea);
+                      vpg.faceArea(he.twin().face())) > (4 * maximumFaceArea);
     condition = condition || is2Large;
   }
 
@@ -244,23 +234,27 @@ void MeshProcessor::MeshMutator::markVertices(
 std::tuple<double, std::size_t> MeshProcessor::MeshMutator::neighborAreaSum(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
   double area = 0;
-  std::size_t num_neighbor = -2;
+  std::size_t num_neighbor = 0;
   for (gcs::Vertex v : e.adjacentVertices()) {
     for (gcs::Face f : v.adjacentFaces()) {
       area += vpg.faceArea(f);
       num_neighbor++;
     }
   }
+  // subtract double count
+  for (gcs::Face f : e.adjacentFaces()) {
+    area -= vpg.faceArea(f);
+    num_neighbor--;
+  }
   return std::tie(area, num_neighbor);
 }
 
 double MeshProcessor::MeshMutator::computeCurvatureThresholdLength(
     const gcs::Edge e, const gcs::VertexPositionGeometry &vpg) {
-  gcs::Halfedge he = e.halfedge();
   // curvature based remeshing:
   // https://www.irit.fr/recherches/VORTEX/publications/rendu-geometrie/EGshort2013_Dunyach_et_al.pdf
-  auto tip = he.tipVertex();
-  auto tail = he.tailVertex();
+  auto tip = e.firstVertex();
+  auto tail = e.secondVertex();
   double k1 = std::max(abs(vpg.vertexMaxPrincipalCurvature(tip)),
                        abs(vpg.vertexMinPrincipalCurvature(tip)));
   double k2 = std::max(abs(vpg.vertexMaxPrincipalCurvature(tail)),
