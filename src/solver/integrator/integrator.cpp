@@ -39,14 +39,13 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
               (initialMaximumForce / currentMaximumForce);
 
   if (characteristicTimeStep / dt > 1e3) {
-    mem3dg_runtime_warning("Time step too small! May consider restarting the "
-                           "simulation in small time scale");
-    std::cout << "Current size / initial size = "
-              << currentMinimumSize /
-                     pow(characteristicTimeStep / dt_size2_ratio, 0.5)
-              << std::endl;
-    std::cout << "Current force / initial force = "
-              << currentMaximumForce / initialMaximumForce << std::endl;
+    mem3dg_runtime_warning(
+        "Adaptive time step has become too small!",
+        "Consider restarting simulation in smaller timestep.",
+        "Current size / initial size =",
+        currentMinimumSize / pow(characteristicTimeStep / dt_size2_ratio, 0.5),
+        "Current force / initial force =",
+        currentMaximumForce / initialMaximumForce);
     EXIT = true;
     SUCCESS = false;
   }
@@ -271,21 +270,19 @@ double Integrator::mechanicalBacktrack(
   const Energy previousE = system.energy;
 
   // validate the directions
-  double positionProjection = 0;
-  positionProjection = ((toMatrix(system.forces.conservativeForceVec) +
-                         toMatrix(system.forces.externalForceVec))
-                            .array() *
-                        positionDirection.array())
-                           .sum();
+  double positionProjection = ((toMatrix(system.forces.conservativeForceVec) +
+                                toMatrix(system.forces.externalForceVec))
+                                   .array() *
+                               positionDirection.array())
+                                  .sum();
   if (positionProjection < 0)
     mem3dg_runtime_warning("Velocity on energy "
                            "uphill direction!");
 
   // calculate initial energy as reference level
-  gc::VertexData<gc::Vector3> initial_pos(*system.geometry.mesh);
-  initial_pos = system.geometry.vpg->inputVertexPositions;
-  gc::VertexData<double> initial_protein(*system.geometry.mesh,
-                                         system.proteinDensity.raw());
+  gc::VertexData<gc::Vector3> initial_pos(
+      system.geometry.vpg->inputVertexPositions);
+  gc::VertexData<double> initial_protein(system.proteinDensity);
   const double init_time = system.time;
 
   // declare variables used in backtracking iterations

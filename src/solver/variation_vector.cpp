@@ -153,6 +153,7 @@ Geometry::computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
   bool interiorHalfedge = he.isInterior();
   bool interiorTwinHalfedge = he.twin().isInterior();
   gc::Vector3 areaGrad{0, 0, 0};
+  // 1/2 for each halfedge and 1/2 of cross product for area
   if (interiorHalfedge) {
     areaGrad +=
         0.25 * gc::cross(vpg.faceNormals[fID], vecFromHalfedge(he.next(), vpg));
@@ -161,6 +162,7 @@ Geometry::computeHalfedgeMeanCurvatureVector(gcs::VertexPositionGeometry &vpg,
     areaGrad += 0.25 * gc::cross(vpg.faceNormals[fID_he_twin],
                                  vecFromHalfedge(he.twin().next().next(), vpg));
   }
+  // area gradient is 2 times H
   return areaGrad / 2;
 }
 
