@@ -138,16 +138,19 @@ void System::updateConfigurations() {
 bool System::updatePrescription(std::map<std::string, double> &lastUpdateTime,
                                 double timeStep) {
   bool ifMutateMesh = (time - lastUpdateTime["mutateMesh"] >
-                       (meshProcessor.meshMutator.mutateMeshPeriod)),
-       ifUpdateNotableVertex = (time - lastUpdateTime["notableVertex"] >
-                                (parameters.point.updateNotableVertexPeriod)),
-       ifUpdateGeodesics = (time - lastUpdateTime["geodesics"] >
-                            (parameters.point.updateGeodesicsPeriod)),
+                       (meshProcessor.meshMutator.mutateMeshPeriod * timeStep)),
+       ifUpdateNotableVertex =
+           (time - lastUpdateTime["notableVertex"] >
+            (parameters.point.updateNotableVertexPeriod * timeStep)),
+       ifUpdateGeodesics =
+           (time - lastUpdateTime["geodesics"] >
+            (parameters.point.updateGeodesicsPeriod * timeStep)),
        ifUpdateProteinDensityDistribution =
            (time - lastUpdateTime["protein"] >
-            (parameters.protein.updateProteinDensityDistributionPeriod)),
+            (parameters.protein.updateProteinDensityDistributionPeriod *
+             timeStep)),
        ifUpdateMask = (time - lastUpdateTime["mask"] >
-                       (parameters.variation.updateMaskPeriod));
+                       (parameters.variation.updateMaskPeriod * timeStep));
 
   bool updated =
       updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
