@@ -241,13 +241,14 @@ void init_parameters(py::module_ &pymem3dg) {
   point.def_readwrite("prescribeNotableVertex",
                       &Parameters::Point::prescribeNotableVertex,
                       R"delim(
-          functional to find the notable vertex of the mesh
-        args:
+        Functional to find the notable vertex of the mesh
+
+        Args:
             faceMatrix (npt.NDarray[int64])
             vertexMatrix (npt.NDarray[float64])
             geodesicDistance (list)
-        return:
-            notable vertex (bool list)
+        Returns:
+            list[bool]: List of whether each vertex is notable
       )delim");
   point.def_readwrite("updateGeodesicsPeriod",
                       &Parameters::Point::updateGeodesicsPeriod, R"delim(

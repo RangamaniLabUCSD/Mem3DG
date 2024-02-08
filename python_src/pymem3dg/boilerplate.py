@@ -38,7 +38,19 @@ def setDefaultMeshProcessor(system: dg.System, lengthScale: float):
     system.meshProcessor.meshMutator.collapseSkinny = True
     system.meshProcessor.meshMutator.collapseFlat = True
     system.meshProcessor.meshMutator.collapseSmall = True
-    system.meshProcessor.meshMutator.targetFaceArea = 0.0003 * lengthScale**2
+    # system.meshProcessor.meshMutator.targetFaceArea = 0.0003 * lengthScale**2
+    system.meshProcessor.meshMutator.minimumFaceArea = (
+        np.sqrt(3)
+        / 4
+        * system.meshProcessor.meshMutator.minimumEdgeLength
+        * system.meshProcessor.meshMutator.minimumEdgeLength
+    )
+    system.meshProcessor.meshMutator.maximumFaceArea = (
+        np.sqrt(3)
+        / 4
+        * system.meshProcessor.meshMutator.maximumEdgeLength
+        * system.meshProcessor.meshMutator.maximumEdgeLength
+    )
     system.meshProcessor.meshMutator.isSmoothenMesh = True
 
 

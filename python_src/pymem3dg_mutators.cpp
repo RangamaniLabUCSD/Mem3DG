@@ -44,37 +44,43 @@ void init_mutators(py::module_ &pymem3dg) {
   // ==========================================================
   py::class_<MeshProcessor::MeshMutator> meshmutator(pymem3dg, "MeshMutator",
                                                      R"delim(
-        The mesh mutator settings
-    )delim");
+                                                      Settings for mesh mutator
+                                                     )delim");
   meshmutator.def(py::init<>(),
                   R"delim(
-       meshmutator constructor
-      )delim");
+                    Constructor of mesh mutator object
+                  )delim");
   meshmutator.def_readwrite("mutateMeshPeriod",
                             &MeshProcessor::MeshMutator::mutateMeshPeriod,
                             R"delim(
-          period of mesh mutation. measured in # of integration iteration
+        Frequency (in numbers of iterations) at which to apply of mesh mutations.
       )delim");
   meshmutator.def_readonly("isFlipEdge",
                            &MeshProcessor::MeshMutator::isFlipEdge,
                            R"delim(
-          get the option of whether do edge flip
-      )delim");
+                             Whether to perform edge flipping
+                           )delim");
   meshmutator.def_readonly("isSplitEdge",
                            &MeshProcessor::MeshMutator::isSplitEdge,
                            R"delim(
-          get the option of whether split edge to grow mesh
-      )delim");
+                              Whether edges should be split.
+
+                              Note:
+                                  Increases the number of elements in the mesh
+                           )delim");
   meshmutator.def_readonly("isCollapseEdge",
                            &MeshProcessor::MeshMutator::isCollapseEdge,
                            R"delim(
-          get the option of whether Collapse edge to grow mesh
+        Whether edges should be collapsed.
+
+        Note:
+            Decreases the number of elements in the mesh
       )delim");
   meshmutator.def_readonly("isChangeTopology",
                            &MeshProcessor::MeshMutator::isChangeTopology,
                            R"delim(
-          get the option of change topology
-      )delim");
+                              Whether the mesh manipulations changing topology are permitted
+                           )delim");
 
   /**
    * @brief vertex shifting
@@ -82,8 +88,8 @@ void init_mutators(py::module_ &pymem3dg) {
   meshmutator.def_readwrite("isShiftVertex",
                             &MeshProcessor::MeshMutator::isShiftVertex,
                             R"delim(
-          get the option of whether do vertex shift
-      )delim");
+                              Boolean controlling if vertex shifting is run
+                            )delim");
 
   /**
    * @brief mesh smoothing
@@ -91,8 +97,8 @@ void init_mutators(py::module_ &pymem3dg) {
   meshmutator.def_readwrite("isSmoothenMesh",
                             &MeshProcessor::MeshMutator::isSmoothenMesh,
                             R"delim(
-          whether conduct mesh smoothing operation
-      )delim");
+                              Boolean controlling if mesh smoothing operations are run
+                            )delim");
 
   /**
    * @brief flipping criterion
@@ -100,13 +106,13 @@ void init_mutators(py::module_ &pymem3dg) {
   meshmutator.def_readwrite("flipNonDelaunay",
                             &MeshProcessor::MeshMutator::flipNonDelaunay,
                             R"delim(
-          whether flip non-Delaunay edge
-      )delim");
+                              Whether to flip non - Delaunay edge
+                            )delim");
   meshmutator.def_readwrite(
       "flipNonDelaunayRequireFlat",
       &MeshProcessor::MeshMutator::flipNonDelaunayRequireFlat,
       R"delim(
-          whether require flatness condition when flipping non-Delaunay edge
+        Whether to require flatness condition when flipping non - Delaunay edge
       )delim");
 
   /**
@@ -115,41 +121,50 @@ void init_mutators(py::module_ &pymem3dg) {
   meshmutator.def_readwrite("splitLarge",
                             &MeshProcessor::MeshMutator::splitLarge,
                             R"delim(
-          split edge with large faces
-      )delim");
+                              Split edges with large incident faces
+                            )delim");
   meshmutator.def_readwrite("splitLong", &MeshProcessor::MeshMutator::splitLong,
                             R"delim(
-          split long edge
-      )delim");
+                              Split long edge
+                            )delim");
   meshmutator.def_readwrite("splitCurved",
                             &MeshProcessor::MeshMutator::splitCurved,
                             R"delim(
-          split edge on high curvature domain
-      )delim");
+                              Split edges on high curvature domains
+                            )delim");
+  meshmutator.def_readwrite("splitCurvedScaleFactor",
+                            &MeshProcessor::MeshMutator::splitCurvedScaleFactor,
+                            R"delim(
+        Split edge if it is longer than this scale factor times the estimated optimal edge length given by curvTol.
+    )delim");
+
   meshmutator.def_readwrite("splitSharp",
                             &MeshProcessor::MeshMutator::splitSharp,
                             R"delim(
-          split edge with sharp membrane property change
-      )delim");
+                              Split edge with sharp membrane property changes
+
+                              .. warning::
+                                  Current not implemented
+                            )delim");
   meshmutator.def_readwrite("splitFat", &MeshProcessor::MeshMutator::splitFat,
                             R"delim(
-          split obtuse triangle
-      )delim");
+                              Split obtuse triangles
+                            )delim");
   meshmutator.def_readwrite("splitSkinnyDelaunay",
                             &MeshProcessor::MeshMutator::splitSkinnyDelaunay,
                             R"delim(
-          split poor aspect ratio triangle that is still Delaunay
+        Split triangles with poor aspect ratio which are still Delaunay
       )delim");
   meshmutator.def_readwrite("minimumEdgeLength",
                             &MeshProcessor::MeshMutator::minimumEdgeLength,
                             R"delim(
-          minimum edge length
-      )delim");
+                              Target minimum edge length
+                            )delim");
   meshmutator.def_readwrite("maximumEdgeLength",
                             &MeshProcessor::MeshMutator::maximumEdgeLength,
                             R"delim(
-          maximum edge length
-      )delim");
+                              Target maximum edge length
+                            )delim");
 
   /**
    * @brief collapsing criterion
@@ -157,51 +172,58 @@ void init_mutators(py::module_ &pymem3dg) {
   meshmutator.def_readwrite("collapseSkinny",
                             &MeshProcessor::MeshMutator::collapseSkinny,
                             R"delim(
-          collapse skinny triangles
-      )delim");
+                              Collapse skinny triangles
+                            )delim");
   meshmutator.def_readwrite("collapseSmall",
                             &MeshProcessor::MeshMutator::collapseSmall,
                             R"delim(
-          collapse small triangles
-      )delim");
+                              Collapse small triangles
+                            )delim");
   meshmutator.def_readwrite("collapseFlat",
                             &MeshProcessor::MeshMutator::collapseFlat,
                             R"delim(
-         collapse flat edge
+                              Collapse flat edges
+                            )delim");
+  meshmutator.def_readwrite(
+      "collapseFlatScaleFactor",
+      &MeshProcessor::MeshMutator::collapseFlatScaleFactor,
+      R"delim(
+        Collapse edge if it is shorter than this scale factor times the
+            estimated optimal edge length given by curvTol.
       )delim");
   meshmutator.def_readwrite("curvTol", &MeshProcessor::MeshMutator::curvTol,
                             R"delim(
-          tolerance for curvature approximation
-      )delim");
+                              Tolerance for curvature approximation
+                            )delim");
 
   meshmutator.def_readwrite("maximumFaceArea",
                             &MeshProcessor::MeshMutator::maximumFaceArea,
                             R"delim(
-          target maximum face area
-      )delim");
+                              Target maximum face area
+                            )delim");
 
   meshmutator.def_readwrite("minimumFaceArea",
                             &MeshProcessor::MeshMutator::minimumFaceArea,
                             R"delim(
-          target minimum face area
-      )delim");
+                              Target minimum face area
+                            )delim");
 
   py::class_<MeshProcessor> meshprocessor(pymem3dg, "MeshProcessor",
                                           R"delim(
-        The mesh processor settings
-    )delim");
+                                            Object to store mesh processing settings
+                                          )delim");
   meshprocessor.def(py::init<>(),
                     R"delim(
-       meshprocessor constructor
-      )delim");
+                      MeshProcessor constructor
+                    )delim");
   meshprocessor.def_readwrite("meshMutator", &MeshProcessor::meshMutator,
                               R"delim(
-          meshMutator struct
-      )delim");
+                                meshMutator object
+                              )delim");
   meshprocessor.def_readonly("isMeshMutate", &MeshProcessor::isMeshMutate,
                              R"delim(
-          get the option of whether do mesh mutation
-      )delim");
+                               Whether to perform mesh mutation operations
+                             )delim");
 }
 } // namespace integrator
 } // namespace solver

@@ -123,8 +123,8 @@ bool MeshProcessor::MeshMutator::checkCollapseCondition(
   }
 
   if (collapseFlat) {
-    isFlat =
-        vpg.edgeLength(e) < (0.667 * computeCurvatureThresholdLength(e, vpg));
+    isFlat = vpg.edgeLength(e) < (collapseFlatScaleFactor *
+                                  computeCurvatureThresholdLength(e, vpg));
     condition = condition || isFlat;
   }
 
@@ -175,8 +175,8 @@ bool MeshProcessor::MeshMutator::checkSplitCondition(
   }
 
   if (splitCurved) {
-    is2Curved =
-        vpg.edgeLength(e) > (2 * computeCurvatureThresholdLength(e, vpg));
+    is2Curved = vpg.edgeLength(e) > (splitCurvedScaleFactor *
+                                     computeCurvatureThresholdLength(e, vpg));
     condition = is2Curved || condition;
   }
 
