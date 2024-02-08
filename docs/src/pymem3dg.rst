@@ -5,6 +5,7 @@ Python API Reference
 
 .. autosummary::
    :toctree: _pythonapi
+   :template: module.rst
 
    pymem3dg._core
    pymem3dg.util
