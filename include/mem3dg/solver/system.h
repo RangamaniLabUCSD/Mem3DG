@@ -604,7 +604,7 @@ public:
       geometry.vpg->vertexPositions[newVertex] =
           ((gc::sum(vertex1ForceMask) < 2.5) || vertex1PointTracker)
               ? vertex1Pos
-          : ((gc::sum(vertex2ForceMask) < 2.5) || vertex1PointTracker)
+          : ((gc::sum(vertex2ForceMask) < 2.5) || vertex2PointTracker)
               ? vertex2Pos
               : (vertex1Pos + vertex2Pos) / 2;
       // averageData(velocity, vertex1, vertex2, newVertex);
