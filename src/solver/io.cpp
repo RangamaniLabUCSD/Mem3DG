@@ -41,9 +41,6 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     gcs::VertexData<double> tkr(*geometry.mesh);
     tkr.fromVector(geometry.notableVertex.raw().cast<double>());
     richData.addVertexProperty("notableVertex", tkr);
-    // gcs::VertexData<int> mutMkr(*geometry.mesh);
-    // mutMkr.fromVector(mutationMarker.raw().cast<int>());
-    // richData.addVertexProperty("smoothing_mask", mutMkr);
 
     // write geometry
     gcs::VertexData<double> meanCurv(*geometry.mesh);
