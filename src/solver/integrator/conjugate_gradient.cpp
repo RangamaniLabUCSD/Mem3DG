@@ -41,8 +41,8 @@ bool ConjugateGradient::integrate() {
     mem3dg_runtime_error("integrate() is disabled for current construction!");
   signal(SIGINT, signalHandler);
 
-  double initialTime = system.time, lastComputeAvoidingForce = system.time,
-         lastSave = system.time;
+  double initialTime = system.time, lastSave = system.time;
+  // double  lastComputeAvoidingForce = system.time;
   std::map<std::string, double> lastUpdateTime{{"geodesics", system.time},
                                                {"mutateMesh", system.time},
                                                {"protein", system.time},
@@ -222,8 +222,8 @@ void ConjugateGradient::march() {
 
   // time stepping on vertex position
   if (isBacktrack) {
-    timeStep = backtrack(toMatrix(system.velocity),
-                         system.proteinRateOfChange.raw(), rho, c1);
+    timeStep =
+        backtrack(toMatrix(system.velocity), system.proteinRateOfChange.raw());
   } else {
     timeStep = characteristicTimeStep;
   }

@@ -101,6 +101,7 @@ bool Euler::integrate() {
 
     if (system.updatePrescription(lastUpdateTime, timeStep)) {
       system.time += 1e-5 * timeStep;
+      system.updateConfigurations(); // Update configurations after mutation
     } else {
       march();
     }
@@ -240,12 +241,10 @@ void Euler::march() {
     double timeStep_mech = std::numeric_limits<double>::max(),
            timeStep_chem = std::numeric_limits<double>::max();
     if (system.parameters.variation.isShapeVariation)
-      timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity), rho, c1);
+      timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity));
     if (system.parameters.variation.isProteinVariation)
-      timeStep_chem =
-          chemicalBacktrack(system.proteinRateOfChange.raw(), rho, c1);
+      timeStep_chem = chemicalBacktrack(system.proteinRateOfChange.raw());
     timeStep = std::min(timeStep_chem, timeStep_mech);
-    // (timeStep_chem < timeStep_mech) ? timeStep_chem : timeStep_mech;
   } else {
     timeStep = characteristicTimeStep;
   }

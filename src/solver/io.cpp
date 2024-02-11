@@ -41,9 +41,6 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     gcs::VertexData<double> tkr(*geometry.mesh);
     tkr.fromVector(geometry.notableVertex.raw().cast<double>());
     richData.addVertexProperty("notableVertex", tkr);
-    // gcs::VertexData<int> mutMkr(*geometry.mesh);
-    // mutMkr.fromVector(mutationMarker.raw().cast<int>());
-    // richData.addVertexProperty("smoothing_mask", mutMkr);
 
     // write geometry
     gcs::VertexData<double> meanCurv(*geometry.mesh);
@@ -125,12 +122,12 @@ System::readTrajFile(std::string trajFile, int startingFrame) {
   //     std::make_unique<Geometry>(trajFile, startingFrame);
   MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
   // Map continuation variables
-  double time = fd.getTime(startingFrame);
+  double time_ = fd.getTime(startingFrame);
   EigenVectorX3dr initialVelocity = fd.getVelocity(startingFrame);
   EigenVectorX1d initialProteinDensity = fd.getProteinDensity(startingFrame);
   // F.toMatrix(vel_protein) = fd.getProteinVelocity(startingFrame);
 
-  return std::make_tuple(initialProteinDensity, initialVelocity, time);
+  return std::make_tuple(initialProteinDensity, initialVelocity, time_);
   // return std::forward_as_tuple(Geometry(trajFile, startingFrame),
   // fd.getProteinDensity(startingFrame),  fd.getVelocity(startingFrame), time);
 }

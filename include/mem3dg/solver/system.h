@@ -243,7 +243,7 @@ public:
    *
    */
   System(Geometry &geometry_, double time_ = 0)
-      : geometry(geometry_), forces(geometry), time(time_) {
+      : geometry(geometry_), time(time_), forces(geometry) {
     energy = Energy({time, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     proteinDensity = gc::VertexData<double>(*geometry.mesh, 1);
     proteinDensityGradient =
@@ -604,7 +604,7 @@ public:
       geometry.vpg->vertexPositions[newVertex] =
           ((gc::sum(vertex1ForceMask) < 2.5) || vertex1PointTracker)
               ? vertex1Pos
-          : ((gc::sum(vertex2ForceMask) < 2.5) || vertex1PointTracker)
+          : ((gc::sum(vertex2ForceMask) < 2.5) || vertex2PointTracker)
               ? vertex2Pos
               : (vertex1Pos + vertex2Pos) / 2;
       // averageData(velocity, vertex1, vertex2, newVertex);
@@ -686,7 +686,7 @@ public:
    * @brief testing of random number generator pcg
    *
    */
-  void check_pcg();
+  // void check_pcg();
 
   /**
    * @brief prescribe mask based on geodesic disk

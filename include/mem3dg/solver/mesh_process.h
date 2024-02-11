@@ -85,8 +85,7 @@ struct MeshProcessor {
     bool splitLarge = false;
     /// split long edge
     bool splitLong = false;
-    /// split edge on high curvature domain
-    bool splitCurved = false;
+
     /// split edge with sharp membrane property change
     bool splitSharp = false;
     /// split obtuse triangle
@@ -96,19 +95,37 @@ struct MeshProcessor {
     /// min edge length
     double minimumEdgeLength = 0.001;
     /// max edge length
-    double maximumEdgeLength = 0.01;
+    double maximumEdgeLength = 0.1;
 
     /// collapse skinny triangles based on angles
     bool collapseSkinny = false;
-    /// collapse triangles smaller than the \a targetFaceArea
+    /// collapse triangles smaller than the \a minimumFaceArea
     bool collapseSmall = false;
-    /// target face area
-    double targetFaceArea = 0.001;
-    /// whether require flatness condition when collapsing small edge
-    bool collapseFlat = false;
+    double maximumFaceArea = 4.33e-3;
+    double minimumFaceArea = 4.33e-7;
 
-    /// tolerance for curvature approximation
+    /**
+     * @brief Whether to collapse short edges on low curvature domains
+     *
+     * Tolerance related to \a curvTol and
+     */
+    bool collapseFlat = false;
+    /// Whether to split edge on high curvature domain
+    bool splitCurved = false;
+    /// Error tolerance for edge length with respect to local curvature
     double curvTol = 0.0012;
+    /** @brief Scale factor of optimal edge length for low curvature regions
+     *
+     * Scales the edge length given by local curvature and \a curvTol. If an
+     * edge is shorter than this value it is collapsed.
+     */
+    double collapseFlatScaleFactor = 1.33;
+    /** @brief Scale factor of optimal edge length for high curvature regions
+     *
+     * Scales the edge length given by local curvature and \a curvTol. If an
+     * edge is longer than this value then it is collapsed.
+     */
+    double splitCurvedScaleFactor = 2;
 
     /**
      * @brief Aggregate fine mutation flags to set broader flag states
@@ -143,6 +160,15 @@ struct MeshProcessor {
     void markVertices(gcs::VertexData<bool> &mutationMarker,
                       const gcs::Vertex v, const size_t layer = 0);
 
+    /**
+     * @brief  Compute the number of faces incident on vertices of edge and
+     * their areas.
+     *
+     * @param e   Edge of interest
+     * @param vpg Vertex position and geometry
+     * @return std::tuple<double, std::size_t> Total area and number of faces
+     * incident on vertices of edge
+     */
     std::tuple<double, std::size_t>
     neighborAreaSum(const gcs::Edge e, const gcs::VertexPositionGeometry &vpg);
 

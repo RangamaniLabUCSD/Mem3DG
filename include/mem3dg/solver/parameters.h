@@ -240,7 +240,7 @@ struct Parameters {
   /**
    * @brief check parameter conflicts
    */
-  DLL_PUBLIC void checkParameters(bool hasBoundary, size_t nVertex);
+  DLL_PUBLIC void checkParameters(bool hasBoundary);
 };
 
 } // namespace solver

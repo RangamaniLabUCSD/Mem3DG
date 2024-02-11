@@ -47,12 +47,12 @@ std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
            Eigen::Matrix<bool, Eigen::Dynamic, 1>>
 Geometry::readTrajFile(std::string trajFile, int startingFrame) {
   // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg_;
 
   MutableTrajFile fd = MutableTrajFile::openReadOnly(trajFile);
   fd.getNcFrame(startingFrame);
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+  std::tie(mesh_, vpg_) = gcs::makeManifoldSurfaceMeshAndGeometry(
       fd.getCoords(startingFrame), fd.getTopology(startingFrame));
 
   Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex_here;
@@ -60,11 +60,11 @@ Geometry::readTrajFile(std::string trajFile, int startingFrame) {
     notableVertex_here = fd.getNotableVertex(startingFrame);
   } catch (const nc::exceptions::NcException &e) {
     notableVertex_here =
-        Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(mesh->nVertices());
+        Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(mesh_->nVertices());
     mem3dg_runtime_warning("Trajfile has no attribute `notable vertex`");
   }
 
-  return std::make_tuple(std::move(mesh), std::move(vpg), notableVertex_here);
+  return std::make_tuple(std::move(mesh_), std::move(vpg_), notableVertex_here);
 }
 #endif
 
@@ -73,13 +73,13 @@ std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
 Geometry::readMeshFile(std::string inputMesh) {
 
   // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg_;
 
   // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::readManifoldSurfaceMesh(inputMesh);
+  std::tie(mesh_, vpg_) = gcs::readManifoldSurfaceMesh(inputMesh);
 
-  return std::make_tuple(std::move(mesh), std::move(vpg));
+  return std::make_tuple(std::move(mesh_), std::move(vpg_));
 }
 
 std::tuple<std::unique_ptr<gcs::ManifoldSurfaceMesh>,
@@ -88,17 +88,17 @@ Geometry::readMatrices(EigenVectorX3sr &faceVertexMatrix,
                        EigenVectorX3dr &vertexPositionMatrix) {
 
   // Declare pointers to mesh / geometry objects
-  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh;
-  std::unique_ptr<gcs::VertexPositionGeometry> vpg;
+  std::unique_ptr<gcs::ManifoldSurfaceMesh> mesh_;
+  std::unique_ptr<gcs::VertexPositionGeometry> vpg_;
 
   // Load input mesh and geometry
-  std::tie(mesh, vpg) = gcs::makeManifoldSurfaceMeshAndGeometry(
+  std::tie(mesh_, vpg_) = gcs::makeManifoldSurfaceMeshAndGeometry(
       vertexPositionMatrix, faceVertexMatrix);
 
-  return std::make_tuple(std::move(mesh), std::move(vpg));
+  return std::make_tuple(std::move(mesh_), std::move(vpg_));
 }
 
-double Geometry::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
+double Geometry::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg_,
                                          gcs::Halfedge &he) const {
   if (he.edge().isBoundary()) {
     return 1;
@@ -107,8 +107,8 @@ double Geometry::computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
     gcs::Edge ki = he.twin().next().edge();
     gcs::Edge il = he.next().next().edge();
     gcs::Edge jk = he.twin().next().next().edge();
-    return vpg.edgeLengths[il] * vpg.edgeLengths[jk] / vpg.edgeLengths[ki] /
-           vpg.edgeLengths[lj];
+    return vpg_.edgeLengths[il] * vpg_.edgeLengths[jk] / vpg_.edgeLengths[ki] /
+           vpg_.edgeLengths[lj];
   }
 }
 
