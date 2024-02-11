@@ -47,8 +47,7 @@ void System::initialize(bool ifMutateMesh) {
 }
 
 void System::checkConfiguration() {
-  parameters.checkParameters(geometry.mesh->hasBoundary(),
-                             geometry.mesh->nVertices());
+  parameters.checkParameters(geometry.mesh->hasBoundary());
   meshProcessor.summarizeStatus();
   if (meshProcessor.isMeshMutate && !parameters.variation.isShapeVariation) {
     mem3dg_runtime_error("Mesh mutation operation not allowed for non shape "

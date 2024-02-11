@@ -39,14 +39,13 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
               (initialMaximumForce / currentMaximumForce);
 
   if (characteristicTimeStep / dt > 1e3) {
-    mem3dg_runtime_warning("Time step too small! May consider restarting the "
-                           "simulation in small time scale");
-    std::cout << "Current size / initial size = "
-              << currentMinimumSize /
-                     pow(characteristicTimeStep / dt_size2_ratio, 0.5)
-              << std::endl;
-    std::cout << "Current force / initial force = "
-              << currentMaximumForce / initialMaximumForce << std::endl;
+    mem3dg_runtime_warning(
+        "Adaptive time step has become too small!",
+        "Consider restarting simulation in smaller timestep.",
+        "Current size / initial size =",
+        currentMinimumSize / pow(characteristicTimeStep / dt_size2_ratio, 0.5),
+        "Current force / initial force =",
+        currentMaximumForce / initialMaximumForce);
     EXIT = true;
     SUCCESS = false;
   }
@@ -83,8 +82,7 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
 
 double Integrator::backtrack(
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection,
-    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
-    double c1) {
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection) {
 
   // cache energy of the last time step
   // codespell: previousE
@@ -121,7 +119,7 @@ double Integrator::backtrack(
 
   // declare variables used in backtracking iterations
   double alpha = characteristicTimeStep;
-  std::size_t count = 0;
+  [[maybe_unused]] std::size_t count = 0;
 
   // zeroth iteration
   if (system.parameters.variation.isShapeVariation) {
@@ -188,8 +186,7 @@ double Integrator::backtrack(
   return alpha;
 }
 double Integrator::chemicalBacktrack(
-    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection, double rho,
-    double c1) {
+    Eigen::Matrix<double, Eigen::Dynamic, 1> &chemicalDirection) {
 
   // cache energy of the last time step
   const Energy previousE = system.energy;
@@ -212,7 +209,7 @@ double Integrator::chemicalBacktrack(
 
   // declare variables used in backtracking iterations
   double alpha = characteristicTimeStep;
-  std::size_t count = 0;
+  [[maybe_unused]] std::size_t count = 0;
 
   // zeroth iteration
   system.proteinDensity.raw() += alpha * chemicalDirection;
@@ -267,33 +264,30 @@ double Integrator::chemicalBacktrack(
 }
 
 double Integrator::mechanicalBacktrack(
-    Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection, double rho,
-    double c1) {
+    Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection) {
 
   // cache energy of the last time step
   const Energy previousE = system.energy;
 
   // validate the directions
-  double positionProjection = 0;
-  positionProjection = ((toMatrix(system.forces.conservativeForceVec) +
-                         toMatrix(system.forces.externalForceVec))
-                            .array() *
-                        positionDirection.array())
-                           .sum();
+  double positionProjection = ((toMatrix(system.forces.conservativeForceVec) +
+                                toMatrix(system.forces.externalForceVec))
+                                   .array() *
+                               positionDirection.array())
+                                  .sum();
   if (positionProjection < 0)
     mem3dg_runtime_warning("Velocity on energy "
                            "uphill direction!");
 
   // calculate initial energy as reference level
-  gc::VertexData<gc::Vector3> initial_pos(*system.geometry.mesh);
-  initial_pos = system.geometry.vpg->inputVertexPositions;
-  gc::VertexData<double> initial_protein(*system.geometry.mesh,
-                                         system.proteinDensity.raw());
+  gc::VertexData<gc::Vector3> initial_pos(
+      system.geometry.vpg->inputVertexPositions);
+  gc::VertexData<double> initial_protein(system.proteinDensity);
   const double init_time = system.time;
 
   // declare variables used in backtracking iterations
   double alpha = characteristicTimeStep;
-  std::size_t count = 0;
+  [[maybe_unused]] std::size_t count = 0;
 
   // zeroth iteration
   toMatrix(system.geometry.vpg->inputVertexPositions) +=
@@ -351,10 +345,10 @@ double Integrator::mechanicalBacktrack(
   return alpha;
 }
 
-void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
-                          bool ifPrintToConsole) {
+void Integrator::saveData(bool outputTrajFile, bool outputMeshFile,
+                          bool printToConsole) {
   // print in-progress information in the console
-  if (ifPrintToConsole) {
+  if (printToConsole) {
     std::cout
         << "\n"
         << "t: " << system.time << ", "
@@ -411,7 +405,7 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
         << system.H0.raw().maxCoeff() << "]" << std::endl;
 
     // report the backtracking if verbose
-    if (timeStep != characteristicTimeStep && ifPrintToConsole) {
+    if (timeStep != characteristicTimeStep && printToConsole) {
       std::cout << "timeStep: " << characteristicTimeStep << " -> " << timeStep
                 << std::endl;
       system.testConservativeForcing(characteristicTimeStep);
@@ -424,12 +418,12 @@ void Integrator::saveData(bool ifOutputTrajFile, bool ifOutputMeshFile,
 
 #ifdef MEM3DG_WITH_NETCDF
   // save variable to netcdf traj file
-  if (ifOutputTrajFile)
+  if (outputTrajFile)
     saveMutableNetcdfData();
 #endif
 
   // save variable to richData and save ply file
-  if (ifOutputMeshFile) {
+  if (outputMeshFile) {
 
     std::stringstream ss;
     ss << "/" << (int)frame << "_" << (int)system.time << "_.";

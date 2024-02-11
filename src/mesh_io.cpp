@@ -93,13 +93,13 @@ void linearSubdivide(std::unique_ptr<gcs::ManifoldSurfaceMesh> &mesh,
       vpg->inputVertexPositions[newV] = newPos;
 
       // iterate through the edges incident on the new vertex
-      for (gcs::Edge e : newV.adjacentEdges()) {
-        isOrigEdge[e] = false;                    // mark the new edges
-        gcs::Vertex otherV = e.otherVertex(newV); // other side of edge
+      for (gcs::Edge e_incident : newV.adjacentEdges()) {
+        isOrigEdge[e_incident] = false;                    // mark the new edges
+        gcs::Vertex otherV = e_incident.otherVertex(newV); // other side of edge
 
         // if this is a new edge between an old an new vertex, save for flipping
         if (isOrigVert[otherV] && otherV != oldA && otherV != oldB) {
-          toFlip.push_back(e);
+          toFlip.push_back(e_incident);
         }
       }
     }
@@ -247,7 +247,7 @@ icosphere(double R, int nSub) {
   polygons.reserve(finalSize);
 
   // Subdivide n times by quadrisection
-  for (std::size_t iter = 0; iter < nSub; ++iter) {
+  for (int iter = 0; iter < nSub; ++iter) {
     std::size_t sz = polygons.size();
     polygons_new.clear();
     for (std::size_t f = 0; f < sz; ++f) {
@@ -296,9 +296,9 @@ hexagon(double R, int nSub) {
   std::vector<std::vector<std::size_t>> polygons;
 
   // Initialize vertex coordinates
-  auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
-    return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
-  };
+  // auto makeNormedVertex = [](double x, double y, double z) -> gc::Vector3 {
+  // return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
+  // };
 
   for (std::size_t i = 0; i < 6; i++) {
     coords.emplace_back(gc::Vector3{R * cos(constants::PI / 3 * i),
@@ -518,7 +518,7 @@ std::size_t getVertexClosestToEmbeddedCoordinate(
         "number of accounted coordinate can not be less than 1!");
   std::size_t closestVertex;
   double shortestDistanceSq = std::numeric_limits<double>::max();
-  for (std::size_t v = 0; v < vertexMatrix.rows(); ++v) {
+  for (int v = 0; v < vertexMatrix.rows(); ++v) {
     if (!filter[v])
       continue;
     double distanceSq = 0.0;

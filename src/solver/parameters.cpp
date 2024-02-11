@@ -44,7 +44,7 @@ void Parameters::Variation::checkParameters() {
   }
 }
 
-void Parameters::checkParameters(bool hasBoundary, size_t nVertex) {
+void Parameters::checkParameters(bool hasBoundary) {
   bending.checkParameters();
   variation.checkParameters();
 

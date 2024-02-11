@@ -17,6 +17,8 @@ cmake_policy(SET CMP0091 NEW)
 # Honor visibility for all target types
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Force globally
 cmake_policy(SET CMP0063 NEW)
+# respect project version
+cmake_policy(SET CMP0048 NEW)
 
 # 3.25 required for SYSTEM target property
 cmake_minimum_required(VERSION 3.25)
@@ -30,22 +32,12 @@ include(Macros)
 get_version_from_git()
 project(
   Mem3DG
-  VERSION ${VERSION_SHORT}
+  VERSION ${VERSION_RELEASE}
   DESCRIPTION "Membrane Dynamics in 3D using Discrete Differential Geometry"
   HOMEPAGE_URL "https://rangamanilabucsd.github.io/Mem3DG/"
   LANGUAGES CXX
 )
 message(STATUS "Mem3DG version: ${VERSION}")
-
-if(SKBUILD)
-  message(STATUS "The project is being built using scikit-build")
-  # Currently, Scikit-build does not support FindPython, so we convert the
-  # provided hints ourselves.
-  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
-  set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
-  set(Python_LIBRARY "${PYTHON_LIBRARY}")
-  set(Python_VERSION "${PYTHON_VERSION_STRING}")
-endif()
 
 # Configure version.cpp to give access to version in code
 configure_file(
@@ -95,7 +87,9 @@ add_subdirectory(libraries)
 set(LINKED_LIBS geometry-central pcg::pcg igl::core)
 
 if(WITH_NETCDF)
-  message(STATUS "VCPKG Triplet: ${VCPKG_TARGET_TRIPLET}")
+  if(VCPKG_TARGET_TRIPLET)
+    message(STATUS "VCPKG Triplet: ${VCPKG_TARGET_TRIPLET}")
+  endif()
   find_package(netCDF "4.3.1" REQUIRED)
   message(DEBUG "netCDF version: ${netCDF_VERSION}")
   message(DEBUG "netCDF dir: ${netCDF_DIR}")
@@ -169,7 +163,6 @@ if(BUILD_PYMEM3DG)
     REQUIRED
   )
   add_subdirectory(python_src)
-  install(TARGETS _core DESTINATION .)
 endif()
 
 enable_testing()

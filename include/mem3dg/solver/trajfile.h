@@ -64,12 +64,12 @@ public:
 
   TrajFile() : fd(nullptr), writeable(false){};
 
-  void open(const std::string &filename, const NcFile::FileMode fMode) {
+  void open(const std::string &fn, const NcFile::FileMode fMode) {
     if ((fd != nullptr) && (fMode != NcFile::read)) {
       mem3dg_runtime_error("Cannot open an already opened ...");
     }
 
-    fd = new NcFile(filename, fMode);
+    fd = new NcFile(fn, fMode);
     writeable = fMode != NcFile::read;
     check_metadata();
 
@@ -116,7 +116,7 @@ public:
     H_H0_var = fd->getVar(H_H0_VAR);
   }
 
-  void createNewFile(const std::string &filename, gcs::SurfaceMesh &mesh,
+  void createNewFile(const std::string &fn, gcs::SurfaceMesh &mesh,
                      gcs::VertexPositionGeometry &refVpg,
                      const NcFile::FileMode fMode) {
     if (fd != nullptr) {
@@ -125,7 +125,7 @@ public:
 
     writeable = true;
 
-    fd = new NcFile(filename, fMode);
+    fd = new NcFile(fn, fMode);
     // initialize data
     fd->putAtt(CONVENTIONS_NAME, CONVENTIONS_VALUE);
     fd->putAtt(CONVENTIONS_VERSION_NAME, CONVENTIONS_VERSION_VALUE);
@@ -290,7 +290,7 @@ public:
   /**
    * @brief Open a new file and populate it with the convention
    *
-   * @param filename  Filename to save to
+   * @param fn  Filename to save to
    * @param mesh      Mesh of interest
    * @param replace   Whether to replace an existing file or exit
    *
@@ -299,41 +299,41 @@ public:
    *
    * @return TrajFile helper object to manipulate the bound NetCDF file.
    */
-  static TrajFile newFile(const std::string &filename, gcs::SurfaceMesh &mesh,
+  static TrajFile newFile(const std::string &fn, gcs::SurfaceMesh &mesh,
                           gcs::VertexPositionGeometry &refVpg,
                           bool replace = false) {
     if (replace)
-      return TrajFile(filename, mesh, refVpg, NcFile::replace);
+      return TrajFile(fn, mesh, refVpg, NcFile::replace);
     else
-      return TrajFile(filename, mesh, refVpg, NcFile::newFile);
+      return TrajFile(fn, mesh, refVpg, NcFile::newFile);
   };
 
   /**
    * @brief Open an existing NetCDF file in read/write mode
    *
-   * @param filename  Filename of interest
+   * @param fn  Filename of interest
    *
    * @exception std::runtime_error if file does not conform to the convention
    * @exception netCDF::exceptions::* If file does not exist
    *
    * @return TrajFile helper object to manipulate the bound NetCDF file.
    */
-  static TrajFile openRW(const std::string &filename) {
-    return TrajFile(filename, NcFile::write);
+  static TrajFile openRW(const std::string &fn) {
+    return TrajFile(fn, NcFile::write);
   }
 
   /**
    * @brief Open an existing NetCDF file in read only mode
    *
-   * @param filename  Filename of interest
+   * @param fn  Filename of interest
    *
    * @exception std::runtime_error if file does not conform to the convention
    * @exception netCDF::exceptions::* If file does not exist
    *
    * @return TrajFile helper object to manipulate the bound NetCDF file.
    */
-  static TrajFile openReadOnly(const std::string &filename) {
-    return TrajFile(filename, NcFile::read);
+  static TrajFile openReadOnly(const std::string &fn) {
+    return TrajFile(fn, NcFile::read);
   };
 
   /**
@@ -573,13 +573,13 @@ private:
    * The metadata is checked for consistency with the convention. This
    * function should only be called with fMode set to `read` or `write`.
    *
-   * @param filename Path to file of interest
+   * @param fn Path to file of interest
    * @param fMode    Mode to open file with
    */
-  TrajFile(const std::string &filename, const NcFile::FileMode fMode)
-      : filename(filename), // fd(new NcFile(filename, fMode)),
+  TrajFile(const std::string &fn, const NcFile::FileMode fMode)
+      : filename(fn), // fd(new NcFile(fn, fMode)),
         writeable(fMode != NcFile::read) {
-    open(filename, fMode);
+    open(fn, fMode);
   }
 
   /**
@@ -591,11 +591,11 @@ private:
    * @param mesh     Mesh to store
    * @param fMode    Mode to create file with (replace, newFile)
    */
-  TrajFile(const std::string &filename, gcs::SurfaceMesh &mesh,
+  TrajFile(const std::string &fn, gcs::SurfaceMesh &mesh,
            gcs::VertexPositionGeometry &refVpg, const NcFile::FileMode fMode)
-      : filename(filename), // fd(new NcFile(filename, fMode)),
+      : filename(fn), // fd(new NcFile(fn, fMode)),
         writeable(true) {
-    createNewFile(filename, mesh, refVpg, fMode);
+    createNewFile(fn, mesh, refVpg, fMode);
   }
 
   /// Bound NcFile

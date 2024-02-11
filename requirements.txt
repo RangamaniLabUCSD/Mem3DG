@@ -1,7 +1,0 @@
-
-# Required for building
-cmake >= 3.12
-numpy
-pybind11
-pytest
-scikit-build
