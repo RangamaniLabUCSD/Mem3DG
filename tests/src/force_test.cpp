@@ -31,9 +31,8 @@
 namespace mem3dg {
 namespace solver {
 namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
 
-class ForceTest : public testing::Test {
+class CylinderForceTest : public testing::Test {
 protected:
   // initialize mesh and vpg
   // std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
@@ -46,7 +45,7 @@ protected:
   Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex;
   double h = 0.1;
 
-  ForceTest() {
+  CylinderForceTest() {
     // Create mesh and geometry objects
     std::tie(topologyMatrix, vertexMatrix) =
         getCylinderMatrix(1, 10, 10, 5, 0.3);
@@ -131,7 +130,7 @@ protected:
  * when computed twice
  *
  */
-TEST_F(ForceTest, ConservativeForcesTest) {
+TEST_F(CylinderForceTest, ConservativeForcesTest) {
   // Instantiate system object
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
                                     notableVertex);
@@ -163,7 +162,7 @@ TEST_F(ForceTest, ConservativeForcesTest) {
  * 1. decrease in energy
  * 2. decrease in second order (or exact)
  */
-TEST_F(ForceTest, ConsistentForceEnergy) {
+TEST_F(CylinderForceTest, ConsistentForceEnergy) {
 
   // initialize the system
   mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix,
@@ -185,5 +184,112 @@ TEST_F(ForceTest, ConsistentForceEnergy) {
 
   EXPECT_TRUE(f.testConservativeForcing(h));
 };
+
+class CylinderRollerTest : public testing::Test {
+protected:
+  // initialize mesh and vpg
+  // std::unique_ptr<gcs::ManifoldSurfaceMesh> ptrMesh;
+  // std::unique_ptr<gcs::VertexPositionGeometry> ptrVpg;
+  Eigen::Matrix<std::size_t, Eigen::Dynamic, 3, Eigen::RowMajor> topologyMatrix;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> vertexMatrix;
+  EigenVectorX1d proteinDensity;
+  EigenVectorX3dr velocity;
+  Parameters p;
+  Eigen::Matrix<bool, Eigen::Dynamic, 1> notableVertex;
+  double h = 0.05;
+
+  CylinderRollerTest() {
+    // Create mesh and geometry objects
+    std::tie(topologyMatrix, vertexMatrix) =
+        getCylinderMatrix(1, 10, 10, 5, 0.3);
+    proteinDensity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 1, 1);
+    velocity = Eigen::MatrixXd::Constant(vertexMatrix.rows(), 3, 0);
+
+    p.variation.isShapeVariation = true;
+    p.variation.isProteinVariation = false;
+
+    p.bending.Kd = -8.22e-5;
+    p.bending.Kdc = 0;
+    p.bending.Kb = 8.22e-5;
+    p.bending.Kbc = 0;
+    p.bending.H0c = 6;
+
+    auto constantSurfaceTensionModel = [](double area) {
+      double tension = 1e-2;
+      double energy = tension * area;
+      return std::make_tuple(tension, energy);
+    };
+    p.tension.form = constantSurfaceTensionModel;
+
+    auto constantOmosticPressureModel = [](double volume) {
+      double osmoticPressure = 1e-2;
+      double pressureEnergy = -osmoticPressure * volume;
+      return std::make_tuple(osmoticPressure, pressureEnergy);
+    };
+    p.osmotic.form = constantOmosticPressureModel;
+
+    p.boundary.shapeBoundaryCondition = "roller";
+    p.boundary.proteinBoundaryCondition = "none";
+  }
+};
+
+/**
+ * @brief Test whether force is conservative: result need to be the same
+ * when computed twice
+ *
+ */
+TEST_F(CylinderRollerTest, ConservativeRollerTest) {
+  // Instantiate system object
+  mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix);
+  mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
+  f.initialize(false);
+  f.updateConfigurations();
+  // First time calculation of force
+  f.computeConservativeForcing();
+  EigenVectorX3dr conservativeForceVec1 =
+      toMatrix(f.forces.conservativeForceVec);
+  EigenVectorX1d chemicalPotential1 = f.forces.chemicalPotential.raw();
+  // Second time calculation of force
+  f.computeConservativeForcing();
+  EigenVectorX3dr conservativeForceVec2 =
+      toMatrix(f.forces.conservativeForceVec);
+  EigenVectorX1d chemicalPotential2 = f.forces.chemicalPotential.raw();
+
+  // Comparison of 2 force calculations
+  EXPECT_TRUE(conservativeForceVec1.isApprox(conservativeForceVec2));
+  EXPECT_TRUE(chemicalPotential1.isApprox(chemicalPotential2));
+  //   EXPECT_TRUE((conservativeForceVec1 - conservativeForceVec2).norm() <
+  //   1e-12); EXPECT_TRUE((chemicalPotential1 - chemicalPotential2).norm() <
+  //   1e-12); EXPECT_TRUE((regularizationForce1 - regularizationForce2).norm()
+  //   < 1e-12);
+};
+
+/**
+ * @brief Test whether integrating with the force will lead to
+ * 1. decrease in energy
+ * 2. decrease in second order (or exact)
+ */
+TEST_F(CylinderRollerTest, ConsistentRollerEnergy) {
+
+  // initialize the system
+  mem3dg::solver::Geometry geometry(topologyMatrix, vertexMatrix);
+  mem3dg::solver::System f(geometry, proteinDensity, velocity, p, 0);
+
+  // A few sanity checks to ensure that ref VPG matches
+  EigenVectorX3dr vpg = toMatrix(f.geometry.vpg->inputVertexPositions);
+  EigenVectorX3dr refvpg = toMatrix(f.geometry.refVpg->inputVertexPositions);
+  EXPECT_TRUE(vpg.isApprox(refvpg));
+
+  // Manually perturb refvpg to force spring penalty
+  std::tie(std::ignore, refvpg) = getCylinderMatrix(1, 10, 10);
+  gc::EigenMap<double, 3>(f.geometry.refVpg->inputVertexPositions) = refvpg;
+  f.geometry.refVpg->refreshQuantities();
+
+  f.initialize(false);
+  f.updateConfigurations();
+
+  EXPECT_TRUE(f.testConservativeForcing(h));
+};
+
 } // namespace solver
 } // namespace mem3dg
