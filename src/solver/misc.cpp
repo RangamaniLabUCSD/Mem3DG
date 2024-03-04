@@ -46,21 +46,17 @@ void System::backtraceEnergyGrowth(const double timeStep,
   if (parameters.external.form != NULL)
     computeExternalWork(time, timeStep);
   computeTotalEnergy();
-  std::cout << "<<<<<" << std::endl;
-  mem3dg_runtime_warning("backtracing the component that leads to the energy "
-                         "growth (<--'s highlight growing components)");
-  std::cout << "\nUsing time step " << timeStep << ":" << std::endl;
-  std::cout << "\n";
+  mem3dg_print("<<<<<");
+  mem3dg_print("back tracing the component that leads to the energy "
+               "growth (<--'s highlight growing components)");
+  mem3dg_print("Using time step ", timeStep, ":\n");
   auto checkGrowth = [](const double &previousEnergy,
                         const double &currentEnergy, std::string key) {
     if (currentEnergy != previousEnergy) {
       std::string marker = "";
       if (currentEnergy > previousEnergy || !std::isfinite(currentEnergy))
         marker = " <--";
-      std::cout << key << " increased "
-                << currentEnergy - previousEnergy
-                // << " from " << previousEnergy << " to " << currentEnergy
-                << marker << std::endl;
+      mem3dg_print(key, "increased", currentEnergy - previousEnergy, marker);
     }
   };
   checkGrowth(previousEnergy.potentialEnergy, energy.potentialEnergy,
@@ -92,8 +88,86 @@ void System::backtraceEnergyGrowth(const double timeStep,
               "faceSpringEnergy");
   checkGrowth(previousEnergy.lcrSpringEnergy, energy.lcrSpringEnergy,
               "lcrSpringEnergy");
-  std::cout << ">>>>>" << std::endl;
+  mem3dg_print(">>>>>");
 };
+
+namespace detail {
+bool summarizeTracingResults(double actualDelta1, double expectedDelta1,
+                             double actualDelta2, double expectedDelta2,
+                             double stepFold, std::string key,
+                             double currentEnergy,
+                             double floatTolerance = 1e-15,
+                             double deltaEnergyTolerance = 0.01,
+                             double convergenceTolerance = 0.03) {
+  double expectRate = 2;
+  int precision = 5;
+  std::string marker = " <-----\n";
+  // // PRINT LINE SPACINGS
+  // std::ostringstream ss;
+  // for (int i = 0; i < 10; ++i) {
+  //   for (int j = 0; j < 10; ++j) {
+  //     ss << i;
+  //   }
+  // }
+  // ss << std::endl;
+  // for (int i = 0; i < 10; ++i) {
+  //   for (int j = 0; j < 10; ++j) {
+  //     ss << j;
+  //   }
+  // }
+  // std::cout << ss.str() << std::endl;
+  // mem3dg_print("Using tolerances (float, ΔE, convergence):", floatTolerance,
+  //              deltaEnergyTolerance, convergenceTolerance);
+
+  key = key + std::string(": ");
+
+  mem3dg_print_nospace(std::left, std::setw(35), key);
+  double difference_h = abs(expectedDelta1 - actualDelta1);
+  if (actualDelta1 != 0) {
+    mem3dg_print_nospace(std::left, std::setw(10), "decrease", std::right,
+                         std::setw(10), std::setprecision(precision),
+                         actualDelta1, ", ", std::left, std::setw(10), "expect",
+                         std::right, std::setw(10),
+                         std::setprecision(precision), expectedDelta1);
+
+    if ((actualDelta1 < 0) || !std::isfinite(currentEnergy) ||
+        (difference_h / abs(actualDelta1)) >
+            deltaEnergyTolerance) { // criteria 1: closeness
+      mem3dg_print_noendl(marker, "\n");
+      return false;
+    } else {
+      mem3dg_print_noendl("\n");
+    }
+  } else {
+    mem3dg_print("inactivated", marker);
+    return true;
+  }
+
+  // test using x * timeStep for convergence
+  double difference_xh = abs(expectedDelta2 - actualDelta2);
+  if (difference_h < floatTolerance &&
+      difference_xh < floatTolerance) { // probably exact
+    mem3dg_print(std::setw(35), "exact\n");
+    return true;
+  }
+  mem3dg_print_nospace(std::setw(35), " ", std::left, std::setw(10), "converge",
+                       std::right, std::setw(10), std::setprecision(precision),
+                       pow(difference_xh / difference_h, 1 / expectRate), ", ",
+                       std::left, std::setw(10), "expect ", std::right,
+                       std::setw(10), std::setprecision(precision), expectRate);
+
+  if (abs(difference_xh / difference_h - pow(stepFold, expectRate)) >
+      convergenceTolerance) { // criteria 2: convergence rate
+    mem3dg_print_noendl(marker, "\n");
+    return false;
+  } else {
+    mem3dg_print_noendl("\n");
+  }
+
+  mem3dg_print_noendl("\n");
+  return true;
+};
+} // namespace detail
 
 bool System::testConservativeForcing(const double timeStep) {
   std::cout << "<<<<<" << std::endl;
@@ -111,80 +185,13 @@ bool System::testConservativeForcing(const double timeStep) {
 
   bool SUCCESS = true;
 
-  auto summerize = [](double actualDelta1, double expectedDelta1,
-                      double actualDelta2, double expectedDelta2,
-                      double stepFold, std::string key, double currentEnergy) {
-    double expectRate = 2;
-    std::array<std::size_t, 2> alignment{35, 60};
-    std::array<std::size_t, 2> space;
-    key = key + std::string(": ");
-    space[0] = alignment[0] - key.length();
-
-    std::ostringstream half1;
-    half1 << "decrease " << actualDelta1 << ", ";
-    space[1] = alignment[1] - half1.str().length() - alignment[0];
-
-    std::string marker = " <-----\n";
-
-    std::cout << key;
-    for (std::size_t i = 0; i < space[0]; i++) // for console readability
-      std::cout << " ";
-    double difference_h = abs(expectedDelta1 - actualDelta1);
-    if (actualDelta1 != 0) {
-      std::cout << half1.str();
-      for (std::size_t i = 0; i < space[1]; i++) // for console readability
-        std::cout << " ";
-      std::cout << "expect " << expectedDelta1;
-      if ((actualDelta1 < 0) || !std::isfinite(currentEnergy) ||
-          (difference_h / abs(actualDelta1)) > 0.01) { // criteria 1: closeness
-        std::cout << marker << std::endl;
-        return false;
-      } else {
-        std::cout << "" << std::endl;
-      }
-    } else {
-      std::cout << "inactivated" << marker << std::endl;
-      return false;
-    }
-
-    // test using x * timeStep for convergence
-    space[0] = alignment[0];
-    double difference_xh = abs(expectedDelta2 - actualDelta2);
-    if (difference_h < 1e-15 && difference_xh < 1e-15) { // probably exact
-      for (std::size_t i = 0; i < space[0]; i++) // for console readability
-        std::cout << " ";
-      std::cout << "exact\n" << std::endl;
-      return true;
-    }
-    for (std::size_t i = 0; i < space[0]; i++) // for console readability
-      std::cout << " ";
-    std::ostringstream half2;
-    half2 << "converge with "
-          << pow(difference_xh / difference_h, 1 / expectRate) << ", ";
-    space[1] = alignment[1] - half2.str().length() - alignment[0];
-    std::cout << half2.str();
-    for (std::size_t i = 0; i < space[1]; i++) // for console readability
-      std::cout << " ";
-    std::cout << "expect " << expectRate;
-    if (abs(difference_xh / difference_h - pow(stepFold, expectRate)) >
-        0.03) { // criteria 2: convergence rate
-      std::cout << marker << std::endl;
-      return false;
-    } else {
-      std::cout << "" << std::endl;
-    }
-
-    std::cout << "" << std::endl;
-    return true;
-  };
-
   // lambda function to test mechanical forces
   auto testMechanical = [previousProteinDensity, previousPosition, timeStep,
-                         this, summerize](
-                            gcs::VertexData<gc::Vector3> &forceVec,
-                            const double &previousEnergy,
-                            const double &currentEnergy, std::string forceKey,
-                            [[maybe_unused]] std::string energyKey) {
+                         this](gcs::VertexData<gc::Vector3> &forceVec,
+                               const double &previousEnergy,
+                               const double &currentEnergy,
+                               std::string forceKey,
+                               [[maybe_unused]] std::string energyKey) {
     double stepFold = 2;
     std::string key = forceKey; // + std::string("--") + energyKey;
 
@@ -207,37 +214,42 @@ bool System::testConservativeForcing(const double timeStep) {
     double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
     std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
     std::tie(actualDelta2, expectedDelta2) = computeDelta(stepFold * timeStep);
-    return summerize(actualDelta1, expectedDelta1, actualDelta2, expectedDelta2,
-                     stepFold, key, currentEnergy);
+    return detail::summarizeTracingResults(actualDelta1, expectedDelta1,
+                                           actualDelta2, expectedDelta2,
+                                           stepFold, key, currentEnergy);
   };
 
-  auto testChemical = [previousProteinDensity, previousPosition, timeStep, this,
-                       summerize](gcs::VertexData<double> &potential,
-                                  const double &previousEnergy,
-                                  const double &currentEnergy,
-                                  std::string potentialKey,
-                                  [[maybe_unused]] std::string energyKey) {
+  auto testChemical = [previousProteinDensity, previousPosition, timeStep,
+                       this](gcs::VertexData<double> &chemPotential,
+                             const double &previousEnergy,
+                             const double &currentEnergy,
+                             std::string chemPotentialKey,
+                             [[maybe_unused]] std::string energyKey) {
     double stepFold = 2;
-    std::string key = potentialKey; // + std::string("--") + energyKey;
+    std::string key = chemPotentialKey; // + std::string("--") + energyKey;
 
     // lambda function to compute energy delta
     auto computeDelta = [&](double dt) {
       toMatrix(geometry.vpg->inputVertexPositions) = previousPosition;
       proteinDensity.raw() =
-          previousProteinDensity +
-          dt * parameters.proteinMobility * forces.maskProtein(potential.raw());
+          previousProteinDensity + dt * parameters.proteinMobility *
+                                       forces.maskProtein(chemPotential.raw());
       updateConfigurations();
       computeTotalEnergy();
       double actualDelta = -currentEnergy + previousEnergy;
-      double expectedDelta = dt * parameters.proteinMobility *
-                             forces.maskProtein(potential.raw()).squaredNorm();
+      double expectedDelta =
+          dt * parameters.proteinMobility *
+          forces.maskProtein(chemPotential.raw()).squaredNorm();
+      forces.maskProtein(chemPotential.raw()).squaredNorm();
+      forces.maskProtein(chemPotential.raw()).squaredNorm();
       return std::tuple<double, double>(actualDelta, expectedDelta);
     };
     double actualDelta1, expectedDelta1, actualDelta2, expectedDelta2;
     std::tie(actualDelta1, expectedDelta1) = computeDelta(timeStep);
     std::tie(actualDelta2, expectedDelta2) = computeDelta(stepFold * timeStep);
-    return summerize(actualDelta1, expectedDelta1, actualDelta2, expectedDelta2,
-                     stepFold, key, currentEnergy);
+    return detail::summarizeTracingResults(actualDelta1, expectedDelta1,
+                                           actualDelta2, expectedDelta2,
+                                           stepFold, key, currentEnergy);
   };
 
   // ==========================================================
