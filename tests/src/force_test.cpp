@@ -80,10 +80,12 @@ protected:
     p.bending.alpha = 1;
     p.bending.dA0 = 4;
     p.bending.D = 0.01;
+    p.bending.Kg = -10.22e-5;
+    p.bending.Kgc = -1.1 * 10.22e-5;
     p.bending.Kd = 8.22e-5;
-    p.bending.Kdc = 8.22e-5;
-    p.bending.Kb = 8.22e-5;
-    p.bending.Kbc = 0;
+    p.bending.Kdc = 1.1 * 8.22e-5;
+    p.bending.Kb = 4.22e-5;
+    p.bending.Kbc = 1.2 * 4.22e-5;
     p.bending.H0c = -1;
 
     auto constantSurfaceTensionModel = [](double area) {
@@ -208,10 +210,10 @@ protected:
     p.variation.isShapeVariation = true;
     p.variation.isProteinVariation = false;
 
-    p.bending.Kd = -8.22e-5;
-    p.bending.Kdc = 0;
-    p.bending.Kb = 8.22e-5;
-    p.bending.Kbc = 0;
+    p.bending.Kg = 0;
+    p.bending.Kgc = -8.22e-5;
+    p.bending.Kb = 0;
+    p.bending.Kbc = 8.22e-5;
     p.bending.H0c = 6;
 
     auto constantSurfaceTensionModel = [](double area) {

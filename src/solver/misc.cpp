@@ -170,11 +170,10 @@ bool summarizeTracingResults(double actualDelta1, double expectedDelta1,
 } // namespace detail
 
 bool System::testConservativeForcing(const double timeStep) {
-  std::cout << "<<<<<" << std::endl;
-  mem3dg_runtime_warning("numerically testing componentwise forcing--energy "
-                         "relation (<--'s highlight possible inconsistency)");
-  std::cout << "\nUsing time step " << timeStep << ":" << std::endl;
-  std::cout << "\n";
+  mem3dg_print("<<<<<");
+  mem3dg_print("numerically testing componentwise forcing--energy "
+               "relation (<--'s highlight possible inconsistency)");
+  mem3dg_print_nospace("Using time step ", timeStep, ":\n");
   updateConfigurations();
   computeTotalEnergy();
   computeConservativeForcing();
@@ -276,6 +275,21 @@ bool System::testConservativeForcing(const double timeStep) {
                            energy.areaDifferenceEnergy,
                            "areaDifferenceForceVec", "areaDifferenceEnergy") &&
             SUCCESS;
+  // ==========================================================
+  // ================ Gaussian curvature   ==================
+  // ==========================================================
+  SUCCESS =
+      testMechanical(forces.gaussianCurvatureForceVec,
+                     previousEnergy.gaussianCurvatureEnergy,
+                     energy.gaussianCurvatureEnergy,
+                     "gaussianCurvatureForceVec", "gaussianCurvatureEnergy") &&
+      SUCCESS;
+  SUCCESS =
+      testChemical(forces.gaussianCurvaturePotential,
+                   previousEnergy.gaussianCurvatureEnergy,
+                   energy.gaussianCurvatureEnergy, "gaussianCurvaturePotential",
+                   "gaussianCurvatureEnergy") &&
+      SUCCESS;
   // ==========================================================
   // ================ Deviatoric curvature   ==================
   // ==========================================================
@@ -413,29 +427,6 @@ bool System::testConservativeForcing(const double timeStep) {
   return SUCCESS;
 }
 
-// void System::check_pcg() {
-//   // Generate a normal distribution around that mean
-//   std::normal_distribution<> normal_dist(0, 2);
-
-//   // Make a copy of the RNG state to use later
-//   pcg32 rng_checkpoint = rng;
-
-//   // Produce histogram
-//   std::map<int, int> hist;
-//   for (int n = 0; n < 10000; ++n) {
-//     ++hist[std::round(normal_dist(rng))];
-//   }
-//   std::cout << "Normal distribution around " << 0 << ":\n";
-//   for (auto p : hist) {
-//     std::cout << std::fixed << std::setprecision(1) << std::setw(2) <<
-//     p.first
-//               << ' ' << std::string(p.second / 30, '*') << '\n';
-//   }
-
-//   // Produce information about RNG usage
-//   std::cout << "Required " << (rng - rng_checkpoint) << " random numbers.\n";
-// }
-
 bool System::checkFiniteness() {
   bool finite = true;
   if (!std::isfinite(mechErrorNorm)) {
@@ -457,6 +448,9 @@ bool System::checkFiniteness() {
       if (!std::isfinite(
               toMatrix(forces.spontaneousCurvatureForceVec).norm())) {
         mem3dg_runtime_warning("Spontaneous curvature force is not finite!");
+      }
+      if (!std::isfinite(toMatrix(forces.gaussianCurvatureForceVec).norm())) {
+        mem3dg_runtime_warning("Gaussian curvature force is not finite!");
       }
       if (!std::isfinite(toMatrix(forces.deviatoricCurvatureForceVec).norm())) {
         mem3dg_runtime_warning("Deviatoric curvature force is not finite!");
@@ -497,6 +491,9 @@ bool System::checkFiniteness() {
         mem3dg_runtime_warning(
             "Spontaneous curvature Potential is not finite!");
       }
+      if (!std::isfinite(forces.gaussianCurvaturePotential.raw().norm())) {
+        mem3dg_runtime_warning("Gaussian curvature Potential is not finite!");
+      }
       if (!std::isfinite(forces.deviatoricCurvaturePotential.raw().norm())) {
         mem3dg_runtime_warning("Deviatoric curvature Potential is not finite!");
       }
@@ -530,6 +527,9 @@ bool System::checkFiniteness() {
     if (!std::isfinite(energy.potentialEnergy)) {
       if (!std::isfinite(energy.spontaneousCurvatureEnergy)) {
         mem3dg_runtime_warning("Spontaneous curvature energy is not finite!");
+      }
+      if (!std::isfinite(energy.gaussianCurvatureEnergy)) {
+        mem3dg_runtime_warning("Gaussian curvature energy is not finite!");
       }
       if (!std::isfinite(energy.deviatoricCurvatureEnergy)) {
         mem3dg_runtime_warning("Deviatoric curvature energy is not finite!");
