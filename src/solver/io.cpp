@@ -57,6 +57,8 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     // write pressures
     richData.addVertexProperty("spontaneousCurvatureForce",
                                forces.spontaneousCurvatureForce);
+    richData.addVertexProperty("gaussianCurvatureForce",
+                               forces.gaussianCurvatureForce);
     richData.addVertexProperty("deviatoricCurvatureForce",
                                forces.deviatoricCurvatureForce);
     richData.addVertexProperty("areaDifferenceForce",
@@ -74,6 +76,8 @@ void System::saveRichData(std::string PathToSave, bool isJustGeometry) {
     richData.addVertexProperty("dirichletPotential", forces.dirichletPotential);
     richData.addVertexProperty("spontaneousCurvaturePotential",
                                forces.spontaneousCurvaturePotential);
+    richData.addVertexProperty("gaussianCurvaturePotential",
+                               forces.gaussianCurvaturePotential);
     richData.addVertexProperty("deviatoricCurvaturePotential",
                                forces.deviatoricCurvaturePotential);
     richData.addVertexProperty("adsorptionPotential",

@@ -63,6 +63,11 @@ struct Parameters {
     /// preferred area difference
     double dA0 = 0;
 
+    /// Gaussian modulus
+    double Kg = 0;
+    /// Constant of gaussian modulus vs protein density
+    double Kgc = 0;
+
     /// Deviatoric modulus
     double Kd = 0;
     /// Constant of deviatoric modulus vs protein density

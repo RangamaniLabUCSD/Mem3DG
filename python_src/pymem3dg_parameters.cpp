@@ -110,6 +110,14 @@ void init_parameters(py::module_ &pymem3dg) {
                         R"delim(
           get constant of deviatoric modulus vs protein density
       )delim");
+  bending.def_readwrite("Kg", &Parameters::Bending::Kg,
+                        R"delim(
+          get Gaussian rigidity of the membrane
+      )delim");
+  bending.def_readwrite("Kgc", &Parameters::Bending::Kgc,
+                        R"delim(
+          get constant of Gaussian modulus vs protein density
+      )delim");
   bending.def_readwrite("Kb", &Parameters::Bending::Kb,
                         R"delim(
           get Bending rigidity of the bare membrane
