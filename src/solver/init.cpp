@@ -214,6 +214,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
           parameters.protein.prescribeProteinDensityDistribution(
               time, geometry.vpg->vertexMeanCurvatures.raw(),
               geometry.geodesicDistance.raw());
+      updateConfigurations();
     } else {
       ifUpdateProteinDensityDistribution = false;
       // mem3dg_runtime_warning("Parameter protein form is NULL!")

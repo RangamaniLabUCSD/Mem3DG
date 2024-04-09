@@ -35,7 +35,6 @@ namespace integrator {
 namespace gc = ::geometrycentral;
 
 bool Euler::integrate() {
-
   if (ifDisableIntegrate)
     mem3dg_runtime_error("integrate() is disabled for current construction!");
 
@@ -101,7 +100,6 @@ bool Euler::integrate() {
 
     if (system.updatePrescription(lastUpdateTime, timeStep)) {
       system.time += 1e-5 * timeStep;
-      system.updateConfigurations(); // Update configurations after mutation
     } else {
       march();
     }
