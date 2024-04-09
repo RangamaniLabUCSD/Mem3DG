@@ -47,9 +47,6 @@
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/type_utilities.h"
 
-namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
-
 namespace mem3dg {
 
 namespace solver {
@@ -187,7 +184,7 @@ struct Parameters {
   struct Protein {
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 0; // 1e-6
-    /// precription of protein density
+    /// prescription of protein density
     std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
         prescribeProteinDensityDistribution = NULL;
     /// period of updating protein density distribution

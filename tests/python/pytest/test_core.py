@@ -87,7 +87,7 @@ class TestInitialization(object):
 
         # protein
         system.parameters.protein.prescribeProteinDensityDistribution = partial(
-            dg_boil.prescribeGeodesicPoteinDensityDistribution,
+            dg_boil.prescribeGeodesicProteinDensityDistribution,
             sharpness=20,
             radius=0.5,
         )
