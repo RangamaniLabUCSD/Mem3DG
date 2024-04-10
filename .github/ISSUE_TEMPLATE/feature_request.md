@@ -13,7 +13,7 @@ assignees: ''
 
 **Use cases**
 
-(Describe how the feature will make a differece - from a user point of view, not just developers.)
+(Describe how the feature will make a difference - from a user point of view, not just developers.)
 
 **Impact**
 
@@ -21,7 +21,7 @@ assignees: ''
 
 **Detailed description**
 
-(Describe the feature in detail. If this is e.g. a new algorithm you developed, are there a lot of people who have cited the paper, or other implementations available? How does it go  beyond the current state of the code?)
+(Describe the feature in detail. If this is e.g. a new algorithm you developed, are there a lot of people who have cited the paper, or other implementations available? How does it go beyond the current state of the code?)
 
 **Requirements**
 
