@@ -141,7 +141,7 @@ dmypy.json
 /.vs
 /.vscode
 
-CMakeSettings.json
+/CMakeSettings.json
 docs/html/
 .polyscope.ini
 _skbuild/
@@ -157,3 +157,4 @@ python_src/pymem3dg/lib
 imgui.ini
 *.ply
 *.nc
+Testing
