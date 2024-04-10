@@ -1,1 +1,13 @@
 .git_archival.txt  export-subst
+
+# Generic rules
+*.cpp           filter=copyright
+*.h             filter=copyright
+CMakeLists.txt  filter=copyright
+*.cmake         filter=copyright
+*.py            filter=copyright
+
+# Exceptions: files to exclude
+libraries/pcg/*     !filter
+libraries/pcg/**    !filter
+libraries/pcg/**/*  !filter
