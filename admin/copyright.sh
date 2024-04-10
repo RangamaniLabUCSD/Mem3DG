@@ -28,11 +28,32 @@ function usage() {
     echo "<cmode>:  off|add|update*|replace|full"
 }
 
-# git ls-tree --full-tree --name-only -r HEAD > $tmpdir/files
-# cat $tmpdir/files | git check-attr --stdin filter | sed -e 's/.*: filter: //' | paste $tmpdir/files - | grep -E 'copyright$' > $tmpdir/filtered; cat $tmpdir/filtered
-# grep -E 'copyright$' < $tmpdir/filtered| cut -f1 > $tmpdir/filelist_copyright
+
+### SHORTCIRCUIT LOGIC
+# Switch to the root of the source tree and check the config file
+srcdir=`git rev-parse --show-toplevel`
+pushd $srcdir >/dev/null
+admin_dir=$srcdir/admin
+
+# Actual processing starts: create a temporary directory
+tmpdir=`mktemp -d -t mem3dg_copyright.XXXXXX`
+
+git ls-tree --full-tree --name-only -r HEAD > $tmpdir/files
+cat $tmpdir/files | git check-attr --stdin filter | sed -e 's/.*: filter: //' | paste $tmpdir/files - | grep -E 'copyright$' > $tmpdir/filtered; cat $tmpdir/filtered
+grep -E 'copyright$' < $tmpdir/filtered| cut -f1 > $tmpdir/filelist_copyright
+
+if ! $admin_dir/copyright.py -F $tmpdir/filelist_copyright --add-missing --update-header --replace-header
+    then
+        echo "Copyright checking failed!"
+        rm -rf $tmpdir
+        exit 2
+    fi
+
+rm -rf $tmpdir
+exit 0
 
 
+#### THE REST IS IGNORED
 action="check-workdir"
 declare -a diffargs
 baserev="origin/main"

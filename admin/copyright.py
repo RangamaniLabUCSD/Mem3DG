@@ -135,6 +135,7 @@ for more information.
         if not state.has_copyright:
             if options.add_missing:
                 need_update = True
+                first_year = current_year
             if options.check or not need_update:
                 reporter.report("copyright header missing")
             elif options.add_missing:
@@ -190,7 +191,12 @@ class CommentHandlerC(object):
         line_index = 1
         while line_index < len(content_lines):
             line = content_lines[line_index]
-            if "*/" in content_lines[line_index] or len(content_lines[line_index]) == 0:
+            # Detect end of block
+            if (
+                "*/" in content_lines[line_index]
+                or len(content_lines[line_index]) == 0
+                or "#include" in content_lines[line_index]
+            ):
                 break
             comment_block.append(line.lstrip("* ").lstrip("// ").rstrip())
             line_index += 1
