@@ -2,7 +2,7 @@
 #
 # Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG).
 #
-# Copyright 2020- The Mem3DG Authors
+# Copyright 2024- The Mem3DG Authors
 # and the project initiators Cuncheng Zhu, Christopher T. Lee, and
 # Padmini Rangamani.
 #
