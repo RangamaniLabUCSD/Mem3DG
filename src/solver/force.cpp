@@ -55,6 +55,7 @@ void System::computeGeometricForces(size_t i) {
   gc::Vector3 spontaneousCurvatureForceVec_areaGrad{0, 0, 0};
   gc::Vector3 spontaneousCurvatureForceVec_gaussVec{0, 0, 0};
   gc::Vector3 spontaneousCurvatureForceVec_schlafliVec{0, 0, 0};
+  gc::Vector3 gaussianCurvatureForceVec{0, 0, 0};
   gc::Vector3 deviatoricCurvatureForceVec{0, 0, 0};
   gc::Vector3 deviatoricCurvatureForceVec_mean{0, 0, 0};
   gc::Vector3 deviatoricCurvatureForceVec_gauss{0, 0, 0};
@@ -67,16 +68,14 @@ void System::computeGeometricForces(size_t i) {
   gc::Vector3 entropyForceVec{0, 0, 0};
   double Ai = geometry.vpg->vertexDualAreas[i];
   double Hi = geometry.vpg->vertexMeanCurvatures[i] / Ai;
-  double KGi = geometry.vpg->vertexGaussianCurvatures[i] / Ai;
   double H0i = H0[i];
   double Kbi = Kb[i];
+  double Kgi = Kg[i];
   double Kdi = Kd[i];
   double proteinDensityi = proteinDensity[i];
   double areaDifferenceK =
       0.25 * parameters.bending.alpha * parameters.bending.Kb * constants::PI;
   double totalMeanCurvature = geometry.vpg->vertexMeanCurvatures.raw().sum();
-
-  bool boundaryVertex = v.isBoundary();
 
   for (gc::Halfedge he : v.outgoingHalfedges()) {
     std::size_t fID = he.face().getIndex();
@@ -88,14 +87,13 @@ void System::computeGeometricForces(size_t i) {
                                          : gc::Vector3{0, 0, 0}};
     double Aj = geometry.vpg->vertexDualAreas[i_vj];
     double Hj = geometry.vpg->vertexMeanCurvatures[i_vj] / Aj;
-    double KGj = geometry.vpg->vertexGaussianCurvatures[i_vj] / Aj;
     double H0j = H0[i_vj];
     double Kbj = Kb[i_vj];
+    double Kgj = Kg[i_vj];
     double Kdj = Kd[i_vj];
     double proteinDensityj = proteinDensity[i_vj];
     bool interiorHalfedge = he.isInterior();
     // bool boundaryEdge = he.edge().isBoundary();
-    bool boundaryNeighborVertex = he.next().vertex().isBoundary();
 
     // compute fundamental variational vectors
     gc::Vector3 areaGrad =
@@ -126,11 +124,14 @@ void System::computeGeometricForces(size_t i) {
                   proteinDensity, he) /
                   geometry.vpg->faceAreas[fID]
             : gc::Vector3{0.0, 0.0, 0.0};
+
+    //  bool boundaryVertex = v.isBoundary();
     gc::Vector3 gaussVarVec1 =
-        boundaryVertex ? gc::Vector3{0.0, 0.0, 0.0}
+        v.isBoundary() ? gc::Vector3{0.0, 0.0, 0.0}
                        : -geometry.computeCornerAngleVariation(he, he.vertex());
+    //  bool boundaryNeighborVertex = he.next().vertex().isBoundary();
     gc::Vector3 gaussVarVec2 =
-        boundaryNeighborVertex
+        he.next().vertex().isBoundary()
             ? gc::Vector3{0.0, 0.0, 0.0}
             : -geometry.computeCornerAngleVariation(he.next(), he.vertex()) -
                   geometry.computeCornerAngleVariation(he.twin(), he.vertex());
@@ -138,7 +139,7 @@ void System::computeGeometricForces(size_t i) {
     // Assemble to forces
     if (Kbi != 0 || Kbj != 0) { // spontaneous curvature force
       spontaneousCurvatureForceVec_schlafliVec -=
-          (Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2);
+          Kbi * (Hi - H0i) * schlafliVec1 + Kbj * (Hj - H0j) * schlafliVec2;
       spontaneousCurvatureForceVec_areaGrad -=
           (Kbi * (H0i * H0i - Hi * Hi) / 3 +
            Kbj * (H0j * H0j - Hj * Hj) * 2 / 3) *
@@ -146,31 +147,38 @@ void System::computeGeometricForces(size_t i) {
       spontaneousCurvatureForceVec_gaussVec -=
           (Kbi * (Hi - H0i) + Kbj * (Hj - H0j)) * gaussVec;
     }
+
     if (forces.osmoticPressure != 0) // omostic force
       osmoticForceVec +=
           forces.osmoticPressure *
           geometry.computeHalfedgeVolumeVariationVector(*geometry.vpg, he);
+
     if (forces.surfaceTension != 0) // surface capillary force
       capillaryForceVec -= forces.surfaceTension * areaGrad;
-    if (Kdi != 0 || Kdj != 0) { // deviatoric curvature force
-      deviatoricCurvatureForceVec_gauss -=
-          2 * Kdi * KGi * gaussVarVec1 + 2 * Kdj * KGj * gaussVarVec2 -
-          (Kdi * KGi * KGi / 3 + Kdj * KGj * KGj * 2 / 3) * areaGrad;
-      // deviatoricCurvatureForceVec_mean -=
-      //     (Kdi * Hi + Kdj * Hj) * gaussVec +
-      //     (Kdi * (-Hi * Hi) / 3 + Kdj * (-Hj * Hj) * 2 / 3) * areaGrad +
-      //     (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2);
-      // deviatoricCurvatureForceVec_gauss +=
-      //     Kdi * gaussVarVec1 + Kdj * gaussVarVec2;
+
+    if (Kgi != 0 || Kgj != 0) { // gaussian curvature forces
+      gaussianCurvatureForceVec -= Kgi * gaussVarVec1 + Kgj * gaussVarVec2;
     }
+
+    if (Kdi != 0 || Kdj != 0) { // deviatoric curvature force
+      deviatoricCurvatureForceVec_mean -=
+          (Kdi * Hi + Kdj * Hj) * gaussVec +
+          (Kdi * (-Hi * Hi) / 3 + Kdj * (-Hj * Hj) * 2 / 3) * areaGrad +
+          (Kdi * Hi * schlafliVec1 + Kdj * Hj * schlafliVec2);
+      deviatoricCurvatureForceVec_gauss +=
+          Kdi * gaussVarVec1 + Kdj * gaussVarVec2;
+    }
+
     if (parameters.adsorption.epsilon != 0) // adsorption force
       adsorptionForceVec -= (proteinDensityi / 3 + proteinDensityj * 2 / 3) *
                             parameters.adsorption.epsilon * areaGrad;
+
     if (parameters.aggregation.chi != 0) // aggregation force
       aggregationForceVec -=
           (pow(pow(2 * proteinDensityi - 1, 2) - 1, 2) / 3 +
            pow(pow(2 * proteinDensityj - 1, 2) - 1, 2) * 2 / 3) *
           parameters.aggregation.chi * areaGrad;
+
     if (parameters.entropy.xi != 0) // entropy force
       entropyForceVec -= ((proteinDensityi * log(proteinDensityi) +
                            (1 - proteinDensityi) * log(1 - proteinDensityi)) /
@@ -179,10 +187,12 @@ void System::computeGeometricForces(size_t i) {
                            (1 - proteinDensityj) * log(1 - proteinDensityj)) *
                               2 / 3) *
                          parameters.entropy.xi * areaGrad;
+
     if (parameters.dirichlet.eta != 0) // line capillary force
       lineCapillaryForceVec -=
           parameters.dirichlet.eta *
           (0.125 * dirichletVec - 0.5 * dphi_ijk.norm2() * oneSidedAreaGrad);
+
     if (parameters.bending.alpha != 0) // area difference force
       areaDifferenceForceVec -=
           4 * areaDifferenceK *
@@ -198,6 +208,9 @@ void System::computeGeometricForces(size_t i) {
               parameters.bending.D / parameters.bending.D /
               geometry.surfaceArea / geometry.surfaceArea * areaGrad;
   }
+  spontaneousCurvatureForceVec_areaGrad *= 2;
+  spontaneousCurvatureForceVec_gaussVec *= 2;
+  spontaneousCurvatureForceVec_schlafliVec *= 2;
 
   spontaneousCurvatureForceVec = spontaneousCurvatureForceVec_areaGrad +
                                  spontaneousCurvatureForceVec_gaussVec +
@@ -214,6 +227,7 @@ void System::computeGeometricForces(size_t i) {
       forces.maskForce(spontaneousCurvatureForceVec_schlafliVec, i);
   spontaneousCurvatureForceVec =
       forces.maskForce(spontaneousCurvatureForceVec, i);
+  gaussianCurvatureForceVec = forces.maskForce(gaussianCurvatureForceVec, i);
   deviatoricCurvatureForceVec_mean =
       forces.maskForce(deviatoricCurvatureForceVec_mean, i);
   deviatoricCurvatureForceVec_gauss =
@@ -236,6 +250,7 @@ void System::computeGeometricForces(size_t i) {
   forces.spontaneousCurvatureForceVec_schlafliVec[i] =
       spontaneousCurvatureForceVec_schlafliVec;
   forces.spontaneousCurvatureForceVec[i] = spontaneousCurvatureForceVec;
+  forces.gaussianCurvatureForceVec[i] = gaussianCurvatureForceVec;
   forces.deviatoricCurvatureForceVec[i] = deviatoricCurvatureForceVec;
   forces.deviatoricCurvatureForceVec_mean[i] = deviatoricCurvatureForceVec_mean;
   forces.deviatoricCurvatureForceVec_gauss[i] =
@@ -251,6 +266,8 @@ void System::computeGeometricForces(size_t i) {
   // Scalar force by projection to angle-weighted normal
   forces.spontaneousCurvatureForce[i] =
       forces.ontoNormal(spontaneousCurvatureForceVec, i);
+  forces.gaussianCurvatureForce[i] =
+      forces.ontoNormal(gaussianCurvatureForceVec, i);
   forces.deviatoricCurvatureForce[i] =
       forces.ontoNormal(deviatoricCurvatureForceVec, i);
   forces.areaDifferenceForce[i] = forces.ontoNormal(areaDifferenceForceVec, i);
@@ -315,14 +332,13 @@ void System::computeChemicalPotentials() {
   gcs::VertexData<double> dH0dphi(*geometry.mesh, 0);
   gcs::VertexData<double> dKbdphi(*geometry.mesh, 0);
   gcs::VertexData<double> dKddphi(*geometry.mesh, 0);
-  auto meanCurvDiff = (geometry.vpg->vertexMeanCurvatures.raw().array() /
-                       geometry.vpg->vertexDualAreas.raw().array()) -
-                      H0.raw().array();
+  gcs::VertexData<double> dKgdphi(*geometry.mesh, 0);
 
   if (parameters.bending.relation == "linear") {
     dH0dphi.fill(parameters.bending.H0c);
     dKbdphi.fill(parameters.bending.Kbc);
     dKddphi.fill(parameters.bending.Kdc);
+    dKgdphi.fill(parameters.bending.Kgc);
   } else if (parameters.bending.relation == "hill") {
     EigenVectorX1d proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
@@ -338,23 +354,35 @@ void System::computeChemicalPotentials() {
         (2 * parameters.bending.Kdc * proteinDensity.raw().array() /
          ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
             .matrix();
+    dKgdphi.raw() =
+        (2 * parameters.bending.Kgc * proteinDensity.raw().array() /
+         ((1 + proteinDensitySq.array()) * (1 + proteinDensitySq.array())))
+            .matrix();
   }
 
   if (parameters.bending.Kb != 0 || parameters.bending.Kbc != 0) {
+    auto meanCurvDiff = (geometry.vpg->vertexMeanCurvatures.raw().array() /
+                         geometry.vpg->vertexDualAreas.raw().array()) -
+                        H0.raw().array();
+
     forces.spontaneousCurvaturePotential.raw() = forces.maskProtein(
-        -geometry.vpg->vertexDualAreas.raw().array() *
-        (meanCurvDiff * meanCurvDiff * dKbdphi.raw().array() -
-         2 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array()));
+        geometry.vpg->vertexDualAreas.raw().array() *
+        (4 * Kb.raw().array() * meanCurvDiff * dH0dphi.raw().array() -
+         2 * meanCurvDiff * meanCurvDiff * dKbdphi.raw().array()));
+  }
+
+  if (parameters.bending.Kg != 0 || parameters.bending.Kgc != 0) {
+    forces.gaussianCurvaturePotential.raw() =
+        -dKgdphi.raw().array() *
+        geometry.vpg->vertexGaussianCurvatures.raw().array();
   }
 
   if (parameters.bending.Kd != 0 || parameters.bending.Kdc != 0) {
     forces.deviatoricCurvaturePotential.raw() =
         -dKddphi.raw().array() *
-        geometry.vpg->vertexGaussianCurvatures.raw().array().square() /
-        geometry.vpg->vertexDualAreas.raw().array();
-    // (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
-    //      geometry.vpg->vertexDualAreas.raw().array() -
-    //  geometry.vpg->vertexGaussianCurvatures.raw().array());
+        (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
+             geometry.vpg->vertexDualAreas.raw().array() -
+         geometry.vpg->vertexGaussianCurvatures.raw().array());
   }
 
   if (parameters.adsorption.epsilon != 0)
@@ -397,8 +425,8 @@ void System::computeChemicalPotentials() {
   forces.chemicalPotential =
       forces.adsorptionPotential + forces.aggregationPotential +
       forces.entropyPotential + forces.spontaneousCurvaturePotential +
-      forces.deviatoricCurvaturePotential + forces.dirichletPotential +
-      forces.interiorPenaltyPotential;
+      forces.gaussianCurvaturePotential + forces.deviatoricCurvaturePotential +
+      forces.dirichletPotential + forces.interiorPenaltyPotential;
 }
 
 EigenVectorX1d
@@ -597,6 +625,7 @@ void System::computeConservativeForcing() {
   forces.spontaneousCurvatureForceVec_gaussVec.fill({0, 0, 0});
   forces.spontaneousCurvatureForceVec_schlafliVec.fill({0, 0, 0});
 
+  forces.gaussianCurvatureForceVec.fill({0, 0, 0});
   forces.deviatoricCurvatureForceVec.fill({0, 0, 0});
   forces.areaDifferenceForceVec.fill({0, 0, 0});
 
@@ -631,6 +660,7 @@ void System::computeConservativeForcing() {
 
   forces.dirichletPotential.raw().setZero();
   forces.spontaneousCurvaturePotential.raw().setZero();
+  forces.gaussianCurvaturePotential.raw().setZero();
   forces.deviatoricCurvaturePotential.raw().setZero();
   forces.adsorptionPotential.raw().setZero();
   forces.aggregationPotential.raw().setZero();
@@ -652,7 +682,7 @@ void System::computeConservativeForcing() {
     // summerize all conservative forces
     forces.conservativeForceVec =
         forces.osmoticForceVec + forces.capillaryForceVec +
-        forces.spontaneousCurvatureForceVec +
+        forces.spontaneousCurvatureForceVec + forces.gaussianCurvatureForceVec +
         forces.deviatoricCurvatureForceVec + forces.areaDifferenceForceVec +
         forces.lineCapillaryForceVec + forces.adsorptionForceVec +
         forces.aggregationForceVec + forces.entropyForceVec +

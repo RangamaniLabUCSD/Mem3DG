@@ -176,7 +176,7 @@ namespace detail {
  * @param t object to print
  */
 template <typename T> void mem3dg_print(std::ostringstream &ss, T &&t) {
-  ss << std::forward<T>(t) << " ";
+  ss << std::forward<T>(t);
 }
 
 /**
@@ -193,6 +193,32 @@ void mem3dg_print(std::ostringstream &ss, T &&t, TS &&...ts) {
   ss << std::forward<T>(t) << " ";
   mem3dg_print(ss, std::forward<TS>(ts)...);
 }
+
+/**
+ * @brief Terminating case of helpful print
+ *
+ * @tparam T typename of argument to print
+ * @param ss reference to active ostringstream
+ * @param t object to print
+ */
+template <typename T> void mem3dg_print_nospace(std::ostringstream &ss, T &&t) {
+  ss << std::forward<T>(t);
+}
+
+/**
+ * @brief Recursive condition of helpful print
+ *
+ * @tparam T typename of current argument
+ * @tparam TS pack of subsequent types
+ * @param ss reference to active ostringstream
+ * @param t current object to output
+ * @param ts pack of following objects
+ */
+template <typename T, typename... TS>
+void mem3dg_print_nospace(std::ostringstream &ss, T &&t, TS &&...ts) {
+  ss << std::forward<T>(t);
+  mem3dg_print_nospace(ss, std::forward<TS>(ts)...);
+}
 } // namespace detail
 
 /**
@@ -206,6 +232,32 @@ template <typename... TS> void mem3dg_print(TS &&...ts) {
   std::ostringstream ss;
   detail::mem3dg_print(ss, std::forward<TS>(ts)...);
   std::cout << ss.str() << std::endl;
+}
+
+/**
+ * @brief A helpful print function which auto adds spaces between objects, but
+ * no final endl.
+ *
+ * @tparam TS pack of types for objects to print
+ * @param ts pack of objects
+ */
+template <typename... TS> void mem3dg_print_noendl(TS &&...ts) {
+  std::ostringstream ss;
+  detail::mem3dg_print(ss, std::forward<TS>(ts)...);
+  std::cout << ss.str();
+}
+
+/**
+ * @brief A helpful print function which prints
+ * objects.
+ *
+ * @tparam TS pack of types for objects to print
+ * @param ts pack of objects
+ */
+template <typename... TS> void mem3dg_print_nospace(TS &&...ts) {
+  std::ostringstream ss;
+  detail::mem3dg_print_nospace(ss, std::forward<TS>(ts)...);
+  std::cout << ss.str();
 }
 
 /**

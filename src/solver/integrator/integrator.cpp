@@ -410,7 +410,7 @@ void Integrator::saveData(bool outputTrajFile, bool outputMeshFile,
     if (timeStep != characteristicTimeStep && printToConsole) {
       std::cout << "timeStep: " << characteristicTimeStep << " -> " << timeStep
                 << std::endl;
-      system.testConservativeForcing(characteristicTimeStep);
+      system.testConservativeForcing(timeStep);
     }
 
     if (EXIT)

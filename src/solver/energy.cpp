@@ -43,26 +43,28 @@ void System::computeSpontaneousCurvatureEnergy() {
               geometry.vpg->vertexDualAreas.raw().array() -
           H0.raw().array());
   energy.spontaneousCurvatureEnergy =
-      (Kb.raw().array() * geometry.vpg->vertexDualAreas.raw().array() *
-       H_difference.array().square())
-          .sum();
+      2 * (Kb.raw().array() * geometry.vpg->vertexDualAreas.raw().array() *
+           H_difference.array().square())
+              .sum();
 
   // when considering topological changes, additional term of gauss curvature
   // E.BE = P.Kb * H_difference.transpose() * M * H_difference + P.KG * (M *
   // K).sum();
 }
 
+void System::computeGaussianCurvatureEnergy() {
+  energy.gaussianCurvatureEnergy =
+      (Kg.raw().array() * geometry.vpg->vertexGaussianCurvatures.raw().array())
+          .sum();
+}
+
 void System::computeDeviatoricCurvatureEnergy() {
   energy.deviatoricCurvatureEnergy =
       (Kd.raw().array() *
-       geometry.vpg->vertexGaussianCurvatures.raw().array().square() /
-       geometry.vpg->vertexDualAreas.raw().array())
+       (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
+            geometry.vpg->vertexDualAreas.raw().array() -
+        geometry.vpg->vertexGaussianCurvatures.raw().array()))
           .sum();
-  // (Kd.raw().array() *
-  //  (geometry.vpg->vertexMeanCurvatures.raw().array().square() /
-  //       geometry.vpg->vertexDualAreas.raw().array() -
-  //   geometry.vpg->vertexGaussianCurvatures.raw().array()))
-  //     .sum();
 }
 
 void System::computeAreaDifferenceEnergy() {
@@ -285,6 +287,7 @@ double System::computePotentialEnergy() {
   energy.lcrSpringEnergy = 0;
 
   computeSpontaneousCurvatureEnergy();
+  computeGaussianCurvatureEnergy();
   computeDeviatoricCurvatureEnergy();
 
   // optional internal potential energy
@@ -325,10 +328,10 @@ double System::computePotentialEnergy() {
 
   // summerize internal potential energy
   energy.potentialEnergy =
-      energy.spontaneousCurvatureEnergy + energy.deviatoricCurvatureEnergy +
-      energy.areaDifferenceEnergy + energy.surfaceEnergy +
-      energy.pressureEnergy + energy.adsorptionEnergy + energy.dirichletEnergy +
-      energy.aggregationEnergy + energy.entropyEnergy +
+      energy.spontaneousCurvatureEnergy + energy.gaussianCurvatureEnergy +
+      energy.deviatoricCurvatureEnergy + energy.areaDifferenceEnergy +
+      energy.surfaceEnergy + energy.pressureEnergy + energy.adsorptionEnergy +
+      energy.dirichletEnergy + energy.aggregationEnergy + energy.entropyEnergy +
       energy.selfAvoidancePenalty + energy.proteinInteriorPenalty +
       energy.edgeSpringEnergy + energy.faceSpringEnergy +
       energy.lcrSpringEnergy;

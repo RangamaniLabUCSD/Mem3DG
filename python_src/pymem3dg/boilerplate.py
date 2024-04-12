@@ -150,7 +150,7 @@ def ambientSolutionOsmoticPressureModel(
     return (pressure, energy)
 
 
-def prescribeGeodesicPoteinDensityDistribution(
+def prescribeGeodesicProteinDensityDistribution(
     time: float,
     vertexMeanCuravtures: npt.NDArray[np.float64],
     geodesicDistance: npt.NDArray[np.float64],
