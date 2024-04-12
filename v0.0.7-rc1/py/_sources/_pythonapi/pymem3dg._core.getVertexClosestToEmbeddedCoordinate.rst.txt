@@ -1,0 +1,6 @@
+pymem3dg.\_core.getVertexClosestToEmbeddedCoordinate
+====================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: getVertexClosestToEmbeddedCoordinate

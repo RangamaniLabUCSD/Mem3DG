@@ -1,0 +1,6 @@
+pymem3dg.visual.plotEnergy
+==========================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: plotEnergy

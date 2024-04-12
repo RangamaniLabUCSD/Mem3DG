@@ -1,0 +1,6 @@
+pymem3dg.\_core.spring.Kst
+==========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: spring.Kst

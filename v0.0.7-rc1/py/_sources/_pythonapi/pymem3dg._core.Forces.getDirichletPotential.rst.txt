@@ -1,0 +1,6 @@
+pymem3dg.\_core.Forces.getDirichletPotential
+============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Forces.getDirichletPotential

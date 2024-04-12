@@ -1,0 +1,6 @@
+pymem3dg.\_core.stopProfiler
+============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: stopProfiler

@@ -1,0 +1,6 @@
+pymem3dg.\_core.VelocityVerlet.ifPrintToConsole
+===============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: VelocityVerlet.ifPrintToConsole

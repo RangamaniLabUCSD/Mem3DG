@@ -1,0 +1,6 @@
+pymem3dg.\_core.Parameters.variation
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Parameters.variation

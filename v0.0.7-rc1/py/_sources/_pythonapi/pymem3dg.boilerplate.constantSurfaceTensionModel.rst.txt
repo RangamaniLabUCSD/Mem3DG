@@ -1,0 +1,6 @@
+pymem3dg.boilerplate.constantSurfaceTensionModel
+================================================
+
+.. currentmodule:: pymem3dg.boilerplate
+
+.. autofunction:: constantSurfaceTensionModel

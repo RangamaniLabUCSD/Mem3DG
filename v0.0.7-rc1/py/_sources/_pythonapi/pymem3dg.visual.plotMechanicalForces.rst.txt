@@ -1,0 +1,6 @@
+pymem3dg.visual.plotMechanicalForces
+====================================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: plotMechanicalForces

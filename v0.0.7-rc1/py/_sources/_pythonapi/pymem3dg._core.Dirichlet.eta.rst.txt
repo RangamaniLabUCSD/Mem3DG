@@ -1,0 +1,6 @@
+pymem3dg.\_core.Dirichlet.eta
+=============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Dirichlet.eta

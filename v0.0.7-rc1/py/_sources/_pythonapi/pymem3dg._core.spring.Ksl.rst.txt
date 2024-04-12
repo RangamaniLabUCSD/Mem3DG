@@ -1,0 +1,6 @@
+pymem3dg.\_core.spring.Ksl
+==========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: spring.Ksl

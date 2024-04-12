@@ -1,0 +1,6 @@
+pymem3dg.visual.plotProteinDensity
+==================================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: plotProteinDensity

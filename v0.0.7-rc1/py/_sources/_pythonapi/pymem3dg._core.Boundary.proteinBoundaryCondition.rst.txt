@@ -1,0 +1,6 @@
+pymem3dg.\_core.Boundary.proteinBoundaryCondition
+=================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Boundary.proteinBoundaryCondition

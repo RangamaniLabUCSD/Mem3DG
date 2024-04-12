@@ -1,0 +1,6 @@
+pymem3dg.util.femtoJToKBT
+=========================
+
+.. currentmodule:: pymem3dg.util
+
+.. autofunction:: femtoJToKBT

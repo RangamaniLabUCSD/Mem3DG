@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.\_\_init\_\_
+===================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: System.__init__

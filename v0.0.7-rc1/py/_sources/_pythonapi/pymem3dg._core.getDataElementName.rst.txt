@@ -1,0 +1,6 @@
+pymem3dg.\_core.getDataElementName
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: getDataElementName

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Protein.\_\_init\_\_
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Protein.__init__

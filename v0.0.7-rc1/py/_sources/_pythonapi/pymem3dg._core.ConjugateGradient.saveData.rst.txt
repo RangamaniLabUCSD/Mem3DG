@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.saveData
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: ConjugateGradient.saveData

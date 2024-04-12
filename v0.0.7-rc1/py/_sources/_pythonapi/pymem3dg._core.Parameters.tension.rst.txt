@@ -1,0 +1,6 @@
+pymem3dg.\_core.Parameters.tension
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Parameters.tension

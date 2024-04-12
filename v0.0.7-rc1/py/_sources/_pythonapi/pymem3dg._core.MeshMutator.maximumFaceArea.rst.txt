@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.maximumFaceArea
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshMutator.maximumFaceArea

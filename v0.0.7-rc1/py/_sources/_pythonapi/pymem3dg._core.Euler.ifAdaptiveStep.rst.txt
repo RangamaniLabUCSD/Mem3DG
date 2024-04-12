@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.ifAdaptiveStep
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Euler.ifAdaptiveStep

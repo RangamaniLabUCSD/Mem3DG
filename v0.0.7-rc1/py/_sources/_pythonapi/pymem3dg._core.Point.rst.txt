@@ -1,0 +1,35 @@
+
+Point
+=====
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Point
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Point.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Point.prescribeNotableVertex
+   
+      Point.updateGeodesicsPeriod
+   
+      Point.updateNotableVertexPeriod
+   
+

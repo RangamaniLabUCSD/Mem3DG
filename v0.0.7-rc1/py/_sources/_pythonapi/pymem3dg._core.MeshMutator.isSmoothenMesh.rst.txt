@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.isSmoothenMesh
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshMutator.isSmoothenMesh

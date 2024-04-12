@@ -1,0 +1,6 @@
+pymem3dg.\_core.Tension.form
+============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Tension.form

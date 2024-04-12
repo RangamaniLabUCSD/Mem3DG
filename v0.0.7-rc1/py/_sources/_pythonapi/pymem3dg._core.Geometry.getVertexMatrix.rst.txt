@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.getVertexMatrix
+========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.getVertexMatrix

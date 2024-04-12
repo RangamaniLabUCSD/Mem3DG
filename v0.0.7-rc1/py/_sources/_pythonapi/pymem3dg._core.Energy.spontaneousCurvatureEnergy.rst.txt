@@ -1,0 +1,6 @@
+pymem3dg.\_core.Energy.spontaneousCurvatureEnergy
+=================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Energy.spontaneousCurvatureEnergy

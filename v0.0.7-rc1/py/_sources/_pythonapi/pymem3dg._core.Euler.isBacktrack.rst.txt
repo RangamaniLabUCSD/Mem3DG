@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.isBacktrack
+=================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Euler.isBacktrack

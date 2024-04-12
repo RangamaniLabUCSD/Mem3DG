@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.getEdgeAdjacencyMatrix
+===============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.getEdgeAdjacencyMatrix

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Variation.\_\_init\_\_
+======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Variation.__init__

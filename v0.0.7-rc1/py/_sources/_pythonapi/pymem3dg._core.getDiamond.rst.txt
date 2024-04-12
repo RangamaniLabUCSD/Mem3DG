@@ -1,0 +1,6 @@
+pymem3dg.\_core.getDiamond
+==========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: getDiamond

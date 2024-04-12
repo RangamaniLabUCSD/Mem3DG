@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.trajFileName
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Euler.trajFileName

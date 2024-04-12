@@ -1,0 +1,6 @@
+pymem3dg.boilerplate.prescribeGeodesicProteinDensityDistribution
+================================================================
+
+.. currentmodule:: pymem3dg.boilerplate
+
+.. autofunction:: prescribeGeodesicProteinDensityDistribution

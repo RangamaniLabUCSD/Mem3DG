@@ -1,0 +1,110 @@
+﻿pymem3dg.\_core
+===============
+
+.. rubric:: Description
+
+.. automodule:: pymem3dg._core
+
+
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree: .
+      :template: class.rst
+      
+      Adsorption
+      
+      Aggregation
+      
+      Bending
+      
+      Boundary
+      
+      ConjugateGradient
+      
+      DPD
+      
+      Dirichlet
+      
+      Energy
+      
+      Entropy
+      
+      Euler
+      
+      External
+      
+      Forces
+      
+      Geometry
+      
+      MeshMutator
+      
+      MeshProcessor
+      
+      Osmotic
+      
+      Parameters
+      
+      Point
+      
+      Protein
+      
+      SelfAvoidance
+      
+      System
+      
+      Tension
+      
+      Variation
+      
+      VelocityVerlet
+      
+      spring
+      
+
+
+
+
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree: .
+      
+      getCylinder
+      
+      getData
+      
+      getDataElementName
+      
+      getDataPropertyName
+      
+      getDiamond
+      
+      getFaceAndVertexMatrix
+      
+      getFaceSurfacePointClosestToEmbeddedCoordinate
+      
+      getHexagon
+      
+      getIcosphere
+      
+      getTetrahedron
+      
+      getVertexClosestToEmbeddedCoordinate
+      
+      getVertexFurthestFromBoundary
+      
+      linearSubdivide
+      
+      loopSubdivide
+      
+      processSoup
+      
+      startProfiler
+      
+      stopProfiler
+      
+

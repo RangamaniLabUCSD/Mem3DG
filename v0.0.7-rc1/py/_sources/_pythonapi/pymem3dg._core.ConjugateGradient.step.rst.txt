@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.step
+======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: ConjugateGradient.step

@@ -1,0 +1,77 @@
+
+Euler
+=====
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Euler
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Euler.__init__
+   
+      Euler.closeMutableNetcdfFile
+   
+      Euler.createMutableNetcdfFile
+   
+      Euler.integrate
+   
+      Euler.march
+   
+      Euler.saveData
+   
+      Euler.saveMutableNetcdfData
+   
+      Euler.status
+   
+      Euler.step
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Euler.EXIT
+   
+      Euler.c1
+   
+      Euler.characteristicTimeStep
+   
+      Euler.ifAdaptiveStep
+   
+      Euler.ifJustGeometryPly
+   
+      Euler.ifOutputMeshFile
+   
+      Euler.ifOutputTrajFile
+   
+      Euler.ifPrintToConsole
+   
+      Euler.isBacktrack
+   
+      Euler.outputDirectory
+   
+      Euler.rho
+   
+      Euler.savePeriod
+   
+      Euler.timeStep
+   
+      Euler.tolerance
+   
+      Euler.totalTime
+   
+      Euler.trajFileName
+   
+

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.createMutableNetcdfFile
+=============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Euler.createMutableNetcdfFile

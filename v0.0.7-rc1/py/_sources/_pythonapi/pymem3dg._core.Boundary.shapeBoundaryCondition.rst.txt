@@ -1,0 +1,6 @@
+pymem3dg.\_core.Boundary.shapeBoundaryCondition
+===============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Boundary.shapeBoundaryCondition

@@ -1,0 +1,6 @@
+pymem3dg.\_core.getFaceAndVertexMatrix
+======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: getFaceAndVertexMatrix

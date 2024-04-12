@@ -1,0 +1,6 @@
+pymem3dg.visual.interlaceImages
+===============================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: interlaceImages

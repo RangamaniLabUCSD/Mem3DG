@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.updateConfigurations
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: System.updateConfigurations

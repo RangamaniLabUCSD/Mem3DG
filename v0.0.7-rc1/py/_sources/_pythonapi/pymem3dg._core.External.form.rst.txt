@@ -1,0 +1,6 @@
+pymem3dg.\_core.External.form
+=============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: External.form

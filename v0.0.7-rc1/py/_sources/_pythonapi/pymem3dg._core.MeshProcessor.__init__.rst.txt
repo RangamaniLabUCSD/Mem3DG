@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshProcessor.\_\_init\_\_
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: MeshProcessor.__init__

@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.getGeometry
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: System.getGeometry

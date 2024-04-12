@@ -1,0 +1,6 @@
+pymem3dg.\_core.Point.updateGeodesicsPeriod
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Point.updateGeodesicsPeriod

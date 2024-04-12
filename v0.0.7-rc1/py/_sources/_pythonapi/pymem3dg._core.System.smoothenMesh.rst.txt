@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.smoothenMesh
+===================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: System.smoothenMesh

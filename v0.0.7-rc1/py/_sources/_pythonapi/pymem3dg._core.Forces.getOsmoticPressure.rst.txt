@@ -1,0 +1,6 @@
+pymem3dg.\_core.Forces.getOsmoticPressure
+=========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Forces.getOsmoticPressure

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Aggregation.\_\_init\_\_
+========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Aggregation.__init__

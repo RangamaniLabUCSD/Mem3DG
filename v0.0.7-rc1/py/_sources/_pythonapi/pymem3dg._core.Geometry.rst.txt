@@ -1,0 +1,71 @@
+
+Geometry
+========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Geometry
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Geometry.__init__
+   
+      Geometry.computeGeodesicDistance
+   
+      Geometry.getCotanLaplacian
+   
+      Geometry.getEdgeAdjacencyMatrix
+   
+      Geometry.getEdgeLengths
+   
+      Geometry.getFaceAreas
+   
+      Geometry.getFaceMatrix
+   
+      Geometry.getGeodesicDistance
+   
+      Geometry.getLumpedMassMatrix
+   
+      Geometry.getNotableVertex
+   
+      Geometry.getPolyscopeEdgeOrientations
+   
+      Geometry.getPolyscopePermutations
+   
+      Geometry.getSurfaceArea
+   
+      Geometry.getVertexAdjacencyMatrix
+   
+      Geometry.getVertexDualAreas
+   
+      Geometry.getVertexGaussianCurvatureVectors
+   
+      Geometry.getVertexGaussianCurvatures
+   
+      Geometry.getVertexMatrix
+   
+      Geometry.getVertexMeanCurvatureVectors
+   
+      Geometry.getVertexMeanCurvatures
+   
+      Geometry.getVertexNormals
+   
+      Geometry.getVertexSchlafliLaplacianMeanCurvatureVectors
+   
+      Geometry.getVertexVolumeVariationVectors
+   
+      Geometry.getVolume
+   
+      Geometry.setInputVertexPositions
+   
+
+
+
+
+
+

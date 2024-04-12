@@ -1,0 +1,33 @@
+
+Boundary
+========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Boundary
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Boundary.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Boundary.proteinBoundaryCondition
+   
+      Boundary.shapeBoundaryCondition
+   
+

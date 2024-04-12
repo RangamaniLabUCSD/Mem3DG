@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.c1
+========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Euler.c1

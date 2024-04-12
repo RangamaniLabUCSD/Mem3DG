@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.computeTotalEnergy
+=========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: System.computeTotalEnergy

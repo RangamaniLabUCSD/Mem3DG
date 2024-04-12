@@ -1,0 +1,6 @@
+pymem3dg.\_core.VelocityVerlet.isBacktrack
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: VelocityVerlet.isBacktrack

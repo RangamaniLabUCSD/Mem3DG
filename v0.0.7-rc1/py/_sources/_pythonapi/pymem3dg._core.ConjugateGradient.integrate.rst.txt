@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.integrate
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: ConjugateGradient.integrate

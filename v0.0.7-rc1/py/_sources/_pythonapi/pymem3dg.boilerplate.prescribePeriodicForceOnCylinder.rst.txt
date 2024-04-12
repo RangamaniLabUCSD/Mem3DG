@@ -1,0 +1,6 @@
+pymem3dg.boilerplate.prescribePeriodicForceOnCylinder
+=====================================================
+
+.. currentmodule:: pymem3dg.boilerplate
+
+.. autofunction:: prescribePeriodicForceOnCylinder

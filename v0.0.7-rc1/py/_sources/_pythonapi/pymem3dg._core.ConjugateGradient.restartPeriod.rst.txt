@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.restartPeriod
+===============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: ConjugateGradient.restartPeriod

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Protein.updateProteinDensityDistributionPeriod
+==============================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Protein.updateProteinDensityDistributionPeriod

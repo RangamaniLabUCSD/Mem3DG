@@ -1,0 +1,6 @@
+pymem3dg.\_core.getDataPropertyName
+===================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: getDataPropertyName

@@ -1,0 +1,6 @@
+pymem3dg.\_core.VelocityVerlet.rho
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: VelocityVerlet.rho

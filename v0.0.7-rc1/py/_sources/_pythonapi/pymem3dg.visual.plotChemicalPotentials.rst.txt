@@ -1,0 +1,6 @@
+pymem3dg.visual.plotChemicalPotentials
+======================================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: plotChemicalPotentials

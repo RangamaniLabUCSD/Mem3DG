@@ -1,0 +1,6 @@
+pymem3dg.\_core.Entropy.xi
+==========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Entropy.xi

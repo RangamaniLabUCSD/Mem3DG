@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.parameters
+=================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: System.parameters

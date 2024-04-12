@@ -1,0 +1,6 @@
+pymem3dg.visual.polyscopeStyle
+==============================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: polyscopeStyle

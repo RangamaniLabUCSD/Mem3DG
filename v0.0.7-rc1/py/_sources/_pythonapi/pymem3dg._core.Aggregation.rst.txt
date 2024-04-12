@@ -1,0 +1,31 @@
+
+Aggregation
+===========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Aggregation
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Aggregation.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Aggregation.chi
+   
+

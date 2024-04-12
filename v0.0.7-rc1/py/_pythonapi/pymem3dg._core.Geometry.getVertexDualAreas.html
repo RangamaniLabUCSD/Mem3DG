@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pymem3dg._core.Geometry.getVertexDualAreas &mdash; Mem3DG 0.0.7rc1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=775fdba5"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/thebelab-helper.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pymem3dg._core.Geometry.getVertexGaussianCurvatureVectors" href="pymem3dg._core.Geometry.getVertexGaussianCurvatureVectors.html" />
+    <link rel="prev" title="pymem3dg._core.Geometry.getVertexAdjacencyMatrix" href="pymem3dg._core.Geometry.getVertexAdjacencyMatrix.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Mem3DG
+          </a>
+              <div class="version">
+                0.0.7rc1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../pymem3dg.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pymem3dg._core.html">pymem3dg._core</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Adsorption.html">Adsorption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Aggregation.html">Aggregation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Bending.html">Bending</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Boundary.html">Boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.ConjugateGradient.html">ConjugateGradient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.DPD.html">DPD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Dirichlet.html">Dirichlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Energy.html">Energy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Entropy.html">Entropy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Euler.html">Euler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.External.html">External</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Forces.html">Forces</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="pymem3dg._core.Geometry.html">Geometry</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.html#pymem3dg._core.Geometry"><code class="docutils literal notranslate"><span class="pre">Geometry</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.__init__.html">pymem3dg._core.Geometry.__init__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.computeGeodesicDistance.html">pymem3dg._core.Geometry.computeGeodesicDistance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getCotanLaplacian.html">pymem3dg._core.Geometry.getCotanLaplacian</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getEdgeAdjacencyMatrix.html">pymem3dg._core.Geometry.getEdgeAdjacencyMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getEdgeLengths.html">pymem3dg._core.Geometry.getEdgeLengths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getFaceAreas.html">pymem3dg._core.Geometry.getFaceAreas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getFaceMatrix.html">pymem3dg._core.Geometry.getFaceMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getGeodesicDistance.html">pymem3dg._core.Geometry.getGeodesicDistance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getLumpedMassMatrix.html">pymem3dg._core.Geometry.getLumpedMassMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getNotableVertex.html">pymem3dg._core.Geometry.getNotableVertex</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getPolyscopeEdgeOrientations.html">pymem3dg._core.Geometry.getPolyscopeEdgeOrientations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getPolyscopePermutations.html">pymem3dg._core.Geometry.getPolyscopePermutations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getSurfaceArea.html">pymem3dg._core.Geometry.getSurfaceArea</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexAdjacencyMatrix.html">pymem3dg._core.Geometry.getVertexAdjacencyMatrix</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">pymem3dg._core.Geometry.getVertexDualAreas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexGaussianCurvatureVectors.html">pymem3dg._core.Geometry.getVertexGaussianCurvatureVectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexGaussianCurvatures.html">pymem3dg._core.Geometry.getVertexGaussianCurvatures</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexMatrix.html">pymem3dg._core.Geometry.getVertexMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexMeanCurvatureVectors.html">pymem3dg._core.Geometry.getVertexMeanCurvatureVectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexMeanCurvatures.html">pymem3dg._core.Geometry.getVertexMeanCurvatures</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexNormals.html">pymem3dg._core.Geometry.getVertexNormals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexSchlafliLaplacianMeanCurvatureVectors.html">pymem3dg._core.Geometry.getVertexSchlafliLaplacianMeanCurvatureVectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVertexVolumeVariationVectors.html">pymem3dg._core.Geometry.getVertexVolumeVariationVectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.getVolume.html">pymem3dg._core.Geometry.getVolume</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Geometry.setInputVertexPositions.html">pymem3dg._core.Geometry.setInputVertexPositions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.MeshMutator.html">MeshMutator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.MeshProcessor.html">MeshProcessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Osmotic.html">Osmotic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Parameters.html">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Point.html">Point</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Protein.html">Protein</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.SelfAvoidance.html">SelfAvoidance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.System.html">System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Tension.html">Tension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Variation.html">Variation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.VelocityVerlet.html">VelocityVerlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.spring.html">spring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getCylinder.html">pymem3dg._core.getCylinder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getData.html">pymem3dg._core.getData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDataElementName.html">pymem3dg._core.getDataElementName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDataPropertyName.html">pymem3dg._core.getDataPropertyName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDiamond.html">pymem3dg._core.getDiamond</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getFaceAndVertexMatrix.html">pymem3dg._core.getFaceAndVertexMatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getFaceSurfacePointClosestToEmbeddedCoordinate.html">pymem3dg._core.getFaceSurfacePointClosestToEmbeddedCoordinate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getHexagon.html">pymem3dg._core.getHexagon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getIcosphere.html">pymem3dg._core.getIcosphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getTetrahedron.html">pymem3dg._core.getTetrahedron</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getVertexClosestToEmbeddedCoordinate.html">pymem3dg._core.getVertexClosestToEmbeddedCoordinate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getVertexFurthestFromBoundary.html">pymem3dg._core.getVertexFurthestFromBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.linearSubdivide.html">pymem3dg._core.linearSubdivide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.loopSubdivide.html">pymem3dg._core.loopSubdivide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.processSoup.html">pymem3dg._core.processSoup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.startProfiler.html">pymem3dg._core.startProfiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.stopProfiler.html">pymem3dg._core.stopProfiler</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.util.html">pymem3dg.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.boilerplate.html">pymem3dg.boilerplate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.visual.html">pymem3dg.visual</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Mem3DG</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pymem3dg.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="pymem3dg._core.html">pymem3dg._core</a></li>
+          <li class="breadcrumb-item"><a href="pymem3dg._core.Geometry.html">Geometry</a></li>
+      <li class="breadcrumb-item active">pymem3dg._core.Geometry.getVertexDualAreas</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_pythonapi/pymem3dg._core.Geometry.getVertexDualAreas.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pymem3dg-core-geometry-getvertexdualareas">
+<h1>pymem3dg._core.Geometry.getVertexDualAreas<a class="headerlink" href="#pymem3dg-core-geometry-getvertexdualareas" title="Link to this heading">¶</a></h1>
+<dl class="py method">
+<dt class="sig sig-object py" id="pymem3dg._core.Geometry.getVertexDualAreas">
+<span class="sig-prename descclassname"><span class="pre">Geometry.</span></span><span class="sig-name descname"><span class="pre">getVertexDualAreas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pymem3dg._core.Geometry.html#pymem3dg._core.Geometry" title="pymem3dg._core.Geometry"><span class="pre">pymem3dg._core.Geometry</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.float64</span><span class="p"><span class="pre">[</span></span><span class="pre">m</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pymem3dg._core.Geometry.getVertexDualAreas" title="Link to this definition">¶</a></dt>
+<dd><p>get vertex dual area</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pymem3dg._core.Geometry.getVertexAdjacencyMatrix.html" class="btn btn-neutral float-left" title="pymem3dg._core.Geometry.getVertexAdjacencyMatrix" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pymem3dg._core.Geometry.getVertexGaussianCurvatureVectors.html" class="btn btn-neutral float-right" title="pymem3dg._core.Geometry.getVertexGaussianCurvatureVectors" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Cuncheng Zhu, Christopher T. Lee, and Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

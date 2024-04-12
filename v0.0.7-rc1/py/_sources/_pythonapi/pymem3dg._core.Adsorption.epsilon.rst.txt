@@ -1,0 +1,6 @@
+pymem3dg.\_core.Adsorption.epsilon
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Adsorption.epsilon

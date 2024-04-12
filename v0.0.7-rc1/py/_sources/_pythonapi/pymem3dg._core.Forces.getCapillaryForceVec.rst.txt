@@ -1,0 +1,6 @@
+pymem3dg.\_core.Forces.getCapillaryForceVec
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Forces.getCapillaryForceVec

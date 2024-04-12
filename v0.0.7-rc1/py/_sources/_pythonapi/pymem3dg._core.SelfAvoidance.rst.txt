@@ -1,0 +1,37 @@
+
+SelfAvoidance
+=============
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: SelfAvoidance
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      SelfAvoidance.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      SelfAvoidance.d
+   
+      SelfAvoidance.mu
+   
+      SelfAvoidance.n
+   
+      SelfAvoidance.p
+   
+

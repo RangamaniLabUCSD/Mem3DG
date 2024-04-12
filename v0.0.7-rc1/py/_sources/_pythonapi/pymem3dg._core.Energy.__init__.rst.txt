@@ -1,0 +1,6 @@
+pymem3dg.\_core.Energy.\_\_init\_\_
+===================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Energy.__init__

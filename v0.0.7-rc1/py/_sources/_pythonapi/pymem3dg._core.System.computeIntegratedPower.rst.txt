@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.computeIntegratedPower
+=============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: System.computeIntegratedPower

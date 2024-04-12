@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.getNotableVertex
+=========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.getNotableVertex

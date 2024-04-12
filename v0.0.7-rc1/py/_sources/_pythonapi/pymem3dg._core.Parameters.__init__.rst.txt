@@ -1,0 +1,6 @@
+pymem3dg.\_core.Parameters.\_\_init\_\_
+=======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Parameters.__init__

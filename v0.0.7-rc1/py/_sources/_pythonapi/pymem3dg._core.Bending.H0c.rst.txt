@@ -1,0 +1,6 @@
+pymem3dg.\_core.Bending.H0c
+===========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Bending.H0c

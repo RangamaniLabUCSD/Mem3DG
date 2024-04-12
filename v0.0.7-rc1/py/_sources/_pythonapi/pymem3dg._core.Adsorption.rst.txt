@@ -1,0 +1,31 @@
+
+Adsorption
+==========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Adsorption
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Adsorption.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Adsorption.epsilon
+   
+

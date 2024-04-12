@@ -1,0 +1,6 @@
+pymem3dg.boilerplate.ambientSolutionOsmoticPressureModel
+========================================================
+
+.. currentmodule:: pymem3dg.boilerplate
+
+.. autofunction:: ambientSolutionOsmoticPressureModel

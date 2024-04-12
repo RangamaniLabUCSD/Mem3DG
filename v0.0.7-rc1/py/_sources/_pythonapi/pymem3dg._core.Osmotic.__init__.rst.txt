@@ -1,0 +1,6 @@
+pymem3dg.\_core.Osmotic.\_\_init\_\_
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Osmotic.__init__

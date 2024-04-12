@@ -1,0 +1,6 @@
+pymem3dg.\_core.Boundary.\_\_init\_\_
+=====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Boundary.__init__

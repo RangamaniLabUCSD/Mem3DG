@@ -1,0 +1,39 @@
+
+Variation
+=========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Variation
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Variation.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Variation.geodesicMask
+   
+      Variation.isProteinConservation
+   
+      Variation.isProteinVariation
+   
+      Variation.isShapeVariation
+   
+      Variation.updateMaskPeriod
+   
+

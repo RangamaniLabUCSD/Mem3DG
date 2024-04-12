@@ -1,0 +1,6 @@
+pymem3dg.\_core.Bending.\_\_init\_\_
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Bending.__init__

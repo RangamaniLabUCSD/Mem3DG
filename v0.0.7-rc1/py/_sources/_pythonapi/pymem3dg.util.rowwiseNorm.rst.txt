@@ -1,0 +1,6 @@
+pymem3dg.util.rowwiseNorm
+=========================
+
+.. currentmodule:: pymem3dg.util
+
+.. autofunction:: rowwiseNorm

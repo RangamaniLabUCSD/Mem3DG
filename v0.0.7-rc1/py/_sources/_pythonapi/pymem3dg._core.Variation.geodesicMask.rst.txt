@@ -1,0 +1,6 @@
+pymem3dg.\_core.Variation.geodesicMask
+======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Variation.geodesicMask

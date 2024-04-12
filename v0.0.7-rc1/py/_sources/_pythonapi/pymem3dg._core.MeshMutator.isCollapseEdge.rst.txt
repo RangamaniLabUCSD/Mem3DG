@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.isCollapseEdge
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshMutator.isCollapseEdge

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pymem3dg.visual.visualizeGeometry &mdash; Mem3DG 0.0.7rc1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=775fdba5"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/thebelab-helper.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pymem3dg.visual.visualizePly" href="pymem3dg.visual.visualizePly.html" />
+    <link rel="prev" title="pymem3dg.visual.setPolyscopePermutations" href="pymem3dg.visual.setPolyscopePermutations.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Mem3DG
+          </a>
+              <div class="version">
+                0.0.7rc1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../pymem3dg.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg._core.html">pymem3dg._core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.util.html">pymem3dg.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.boilerplate.html">pymem3dg.boilerplate</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pymem3dg.visual.html">pymem3dg.visual</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.animate.html">pymem3dg.visual.animate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.getColorbar.html">pymem3dg.visual.getColorbar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.interlaceImages.html">pymem3dg.visual.interlaceImages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.matplotlibStyle.html">pymem3dg.visual.matplotlibStyle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.overlayColorbar.html">pymem3dg.visual.overlayColorbar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.plotChemicalPotentials.html">pymem3dg.visual.plotChemicalPotentials</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.plotEnergy.html">pymem3dg.visual.plotEnergy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.plotMechanicalForces.html">pymem3dg.visual.plotMechanicalForces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.plotProteinDensity.html">pymem3dg.visual.plotProteinDensity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.plotScreenshot.html">pymem3dg.visual.plotScreenshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.polyscopeStyle.html">pymem3dg.visual.polyscopeStyle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.setPolyscopePermutations.html">pymem3dg.visual.setPolyscopePermutations</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pymem3dg.visual.visualizeGeometry</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pymem3dg.visual.visualizeGeometry"><code class="docutils literal notranslate"><span class="pre">visualizeGeometry()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg.visual.visualizePly.html">pymem3dg.visual.visualizePly</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Mem3DG</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pymem3dg.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="pymem3dg.visual.html">pymem3dg.visual</a></li>
+      <li class="breadcrumb-item active">pymem3dg.visual.visualizeGeometry</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_pythonapi/pymem3dg.visual.visualizeGeometry.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pymem3dg-visual-visualizegeometry">
+<h1>pymem3dg.visual.visualizeGeometry<a class="headerlink" href="#pymem3dg-visual-visualizegeometry" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pymem3dg.visual.visualizeGeometry">
+<span class="sig-prename descclassname"><span class="pre">pymem3dg.visual.</span></span><span class="sig-name descname"><span class="pre">visualizeGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geometry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pymem3dg._core.Geometry.html#pymem3dg._core.Geometry" title="pymem3dg._core.Geometry"><span class="pre">Geometry</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">showBasics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SurfaceMesh</span></span></span><a class="headerlink" href="#pymem3dg.visual.visualizeGeometry" title="Link to this definition">¶</a></dt>
+<dd><p>visualize pymem3dg.Geometry</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>geometry</strong> (<em>dg.Geometry</em>) – pymem3dg.Geometry instance</p></li>
+<li><p><strong>showBasics</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>optional</em>) – whether show basics. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>handle to the polyscope mesh</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ps.SurfaceMesh</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pymem3dg.visual.setPolyscopePermutations.html" class="btn btn-neutral float-left" title="pymem3dg.visual.setPolyscopePermutations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pymem3dg.visual.visualizePly.html" class="btn btn-neutral float-right" title="pymem3dg.visual.visualizePly" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Cuncheng Zhu, Christopher T. Lee, and Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

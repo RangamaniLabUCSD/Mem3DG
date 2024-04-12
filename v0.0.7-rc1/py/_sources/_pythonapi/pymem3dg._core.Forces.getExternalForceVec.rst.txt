@@ -1,0 +1,6 @@
+pymem3dg.\_core.Forces.getExternalForceVec
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Forces.getExternalForceVec
