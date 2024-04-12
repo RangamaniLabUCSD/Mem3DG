@@ -1,0 +1,6 @@
+pymem3dg.\_core.Bending.relation
+================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Bending.relation

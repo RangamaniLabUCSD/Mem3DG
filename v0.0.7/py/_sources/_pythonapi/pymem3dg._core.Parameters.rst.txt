@@ -1,0 +1,65 @@
+
+Parameters
+==========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Parameters
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Parameters.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Parameters.adsorption
+   
+      Parameters.aggregation
+   
+      Parameters.bending
+   
+      Parameters.boundary
+   
+      Parameters.damping
+   
+      Parameters.dirichlet
+   
+      Parameters.dpd
+   
+      Parameters.entropy
+   
+      Parameters.external
+   
+      Parameters.osmotic
+   
+      Parameters.point
+   
+      Parameters.protein
+   
+      Parameters.proteinMobility
+   
+      Parameters.selfAvoidance
+   
+      Parameters.spring
+   
+      Parameters.temperature
+   
+      Parameters.tension
+   
+      Parameters.variation
+   
+

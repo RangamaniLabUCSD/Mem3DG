@@ -1,0 +1,51 @@
+
+Bending
+=======
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Bending
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Bending.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Bending.D
+   
+      Bending.H0c
+   
+      Bending.Kb
+   
+      Bending.Kbc
+   
+      Bending.Kd
+   
+      Bending.Kdc
+   
+      Bending.Kg
+   
+      Bending.Kgc
+   
+      Bending.alpha
+   
+      Bending.dA0
+   
+      Bending.relation
+   
+

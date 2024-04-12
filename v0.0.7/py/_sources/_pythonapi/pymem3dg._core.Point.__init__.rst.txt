@@ -1,0 +1,6 @@
+pymem3dg.\_core.Point.\_\_init\_\_
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Point.__init__

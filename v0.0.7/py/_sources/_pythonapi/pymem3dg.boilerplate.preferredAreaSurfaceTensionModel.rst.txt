@@ -1,0 +1,6 @@
+pymem3dg.boilerplate.preferredAreaSurfaceTensionModel
+=====================================================
+
+.. currentmodule:: pymem3dg.boilerplate
+
+.. autofunction:: preferredAreaSurfaceTensionModel

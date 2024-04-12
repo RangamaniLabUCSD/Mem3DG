@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.outputDirectory
+=====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Euler.outputDirectory

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Bending.Kb
+==========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Bending.Kb

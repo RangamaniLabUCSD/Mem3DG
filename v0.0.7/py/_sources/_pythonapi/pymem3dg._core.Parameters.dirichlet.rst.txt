@@ -1,0 +1,6 @@
+pymem3dg.\_core.Parameters.dirichlet
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Parameters.dirichlet

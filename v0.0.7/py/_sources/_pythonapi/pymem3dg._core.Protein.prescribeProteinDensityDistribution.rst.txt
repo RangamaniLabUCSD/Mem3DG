@@ -1,0 +1,6 @@
+pymem3dg.\_core.Protein.prescribeProteinDensityDistribution
+===========================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Protein.prescribeProteinDensityDistribution

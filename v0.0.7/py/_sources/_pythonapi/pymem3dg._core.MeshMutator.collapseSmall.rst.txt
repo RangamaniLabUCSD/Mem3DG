@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.collapseSmall
+=========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshMutator.collapseSmall

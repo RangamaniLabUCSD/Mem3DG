@@ -1,0 +1,6 @@
+pymem3dg.visual.animate
+=======================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: animate

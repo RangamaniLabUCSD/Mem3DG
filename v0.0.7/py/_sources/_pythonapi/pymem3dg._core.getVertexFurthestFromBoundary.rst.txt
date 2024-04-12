@@ -1,0 +1,6 @@
+pymem3dg.\_core.getVertexFurthestFromBoundary
+=============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: getVertexFurthestFromBoundary

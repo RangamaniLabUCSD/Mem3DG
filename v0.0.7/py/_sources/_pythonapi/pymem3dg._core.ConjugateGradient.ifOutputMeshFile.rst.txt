@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.ifOutputMeshFile
+==================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: ConjugateGradient.ifOutputMeshFile

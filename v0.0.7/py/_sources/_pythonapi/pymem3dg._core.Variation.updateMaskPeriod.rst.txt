@@ -1,0 +1,6 @@
+pymem3dg.\_core.Variation.updateMaskPeriod
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Variation.updateMaskPeriod

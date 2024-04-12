@@ -1,0 +1,63 @@
+
+Energy
+======
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Energy
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Energy.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Energy.adsorptionEnergy
+   
+      Energy.aggregationEnergy
+   
+      Energy.areaDifferenceEnergy
+   
+      Energy.deviatoricCurvatureEnergy
+   
+      Energy.dirichletEnergy
+   
+      Energy.edgeSpringEnergy
+   
+      Energy.entropyEnergy
+   
+      Energy.externalWork
+   
+      Energy.faceSpringEnergy
+   
+      Energy.kineticEnergy
+   
+      Energy.lcrSpringEnergy
+   
+      Energy.potentialEnergy
+   
+      Energy.pressureEnergy
+   
+      Energy.proteinInteriorPenalty
+   
+      Energy.spontaneousCurvatureEnergy
+   
+      Energy.surfaceEnergy
+   
+      Energy.totalEnergy
+   
+

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Aggregation.chi
+===============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Aggregation.chi

@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.c1
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: ConjugateGradient.c1

@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.maximumEdgeLength
+=============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshMutator.maximumEdgeLength

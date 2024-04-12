@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.splitSkinnyDelaunay
+===============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshMutator.splitSkinnyDelaunay

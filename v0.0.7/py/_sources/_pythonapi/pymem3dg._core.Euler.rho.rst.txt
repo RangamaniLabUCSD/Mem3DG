@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.rho
+=========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Euler.rho

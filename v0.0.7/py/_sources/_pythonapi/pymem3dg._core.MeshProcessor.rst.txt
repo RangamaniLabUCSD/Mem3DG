@@ -1,0 +1,33 @@
+
+MeshProcessor
+=============
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: MeshProcessor
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      MeshProcessor.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      MeshProcessor.isMeshMutate
+   
+      MeshProcessor.meshMutator
+   
+

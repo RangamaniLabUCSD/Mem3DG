@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.ifPrintToConsole
+======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Euler.ifPrintToConsole

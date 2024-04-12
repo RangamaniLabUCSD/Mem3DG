@@ -1,0 +1,73 @@
+
+System
+======
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: System
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      System.__init__
+   
+      System.addNonconservativeForcing
+   
+      System.computeConservativeForcing
+   
+      System.computeInPlaneFluxForm
+   
+      System.computeIntegratedPower
+   
+      System.computeTotalEnergy
+   
+      System.getEnergy
+   
+      System.getForces
+   
+      System.getGeometry
+   
+      System.getProteinDensity
+   
+      System.getProteinRateOfChange
+   
+      System.getSpontaneousCurvature
+   
+      System.getVelocity
+   
+      System.initialize
+   
+      System.mutateMesh
+   
+      System.prescribeExternalForce
+   
+      System.saveRichData
+   
+      System.smoothenMesh
+   
+      System.testConservativeForcing
+   
+      System.updateConfigurations
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      System.meshProcessor
+   
+      System.parameters
+   
+      System.time
+   
+

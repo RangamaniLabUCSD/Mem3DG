@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.getLumpedMassMatrix
+============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.getLumpedMassMatrix

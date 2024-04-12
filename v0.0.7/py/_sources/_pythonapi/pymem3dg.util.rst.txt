@@ -1,0 +1,41 @@
+﻿pymem3dg.util
+=============
+
+.. rubric:: Description
+
+.. automodule:: pymem3dg.util
+
+
+
+
+
+
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree: .
+      
+      femtoJToKBT
+      
+      gaussianDistribution
+      
+      linearSampling
+      
+      rowwiseDotProduct
+      
+      rowwiseNorm
+      
+      rowwiseNormalize
+      
+      rowwiseScaling
+      
+      smooth
+      
+      sphericalHarmonicsPerturbation
+      
+      tanhDistribution
+      
+      zeroPadding
+      
+

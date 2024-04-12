@@ -1,0 +1,6 @@
+pymem3dg.visual.visualizeGeometry
+=================================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: visualizeGeometry

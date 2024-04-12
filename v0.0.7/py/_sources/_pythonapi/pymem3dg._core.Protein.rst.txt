@@ -1,0 +1,35 @@
+
+Protein
+=======
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Protein
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Protein.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Protein.prescribeProteinDensityDistribution
+   
+      Protein.proteinInteriorPenalty
+   
+      Protein.updateProteinDensityDistributionPeriod
+   
+

@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.tolerance
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: ConjugateGradient.tolerance

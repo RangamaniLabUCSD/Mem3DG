@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG) &mdash; Mem3DG 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+      <link rel="stylesheet" type="text/css" href="_static/thebelab.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=bbaf98b3"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/thebelab-helper.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Python API Reference" href="pymem3dg.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Mem3DG
+          </a>
+              <div class="version">
+                0.0.7
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pymem3dg.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Mem3DG</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="membrane-dynamics-in-3d-using-discrete-differential-geometry-mem3dg">
+<h1>Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)<a class="headerlink" href="#membrane-dynamics-in-3d-using-discrete-differential-geometry-mem3dg" title="Link to this heading">¶</a></h1>
+<a class="reference external image-reference" href="https://github.com/RangamaniLabUCSD/Mem3DG/actions/workflows/ci.yaml"><img alt="Testing and release" src="https://github.com/RangamaniLabUCSD/Mem3DG/actions/workflows/ci.yaml/badge.svg?branch=main" /></a>
+<a class="reference external image-reference" href="https://zenodo.org/doi/10.5281/zenodo.10359392"><img alt="Zenodo" src="https://zenodo.org/badge/244037679.svg" /></a>
+<a class="reference external image-reference" href="https://pypi.org/project/pymem3dg/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pymem3dg" /></a>
+<a class="reference external image-reference" href="https://anaconda.org/conda-forge/pymem3dg"><img alt="Conda-forge" src="https://anaconda.org/conda-forge/pymem3dg/badges/version.svg" /></a>
+<p>Mem3DG is a flexible software package to model the membrane and its dynamics using unstructured meshes.
+This work is currently under heavy development, please star this repository to follow along!</p>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
+<p>The core of Mem3DG is written in C++ with functions exposed to a Python interface using pybind11.
+The python interface and helper utilities for visualization and analysis are bundled together into a python package called pymem3dg.
+pymem3dg can be obtained using pip (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pymem3dg</span></code>) or conda (<code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">pymem3dg</span></code>) from their respective repositories.
+For the majority of users who wish to develop models, this is the recommended installation procedure.</p>
+<section id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h3>
+<p>We acknowledge the use of helpful external libraries including:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://geometry-central.net/">Geometry-Central</a>, the core mesh data structure</p></li>
+<li><p><a class="reference external" href="https://libigl.github.io/">libigl</a>, some geometry input generation</p></li>
+<li><p><a class="reference external" href="https://pybind11.readthedocs.io/en/stable/">pybind11</a>, for Python-C++ interoperability</p></li>
+<li><p><a class="reference external" href="https://polyscope.run/py/">Polyscope</a>, trajectory visualization GUI</p></li>
+<li><p><a class="reference external" href="https://www.pcg-random.org/index.html">PCG</a>, random number generation</p></li>
+<li><p><a class="reference external" href="https://github.com/Unidata/netcdf-cxx4">NetCDF-cxx4</a>, binary trajectory I/O</p></li>
+</ul>
+<p>While the majority of these libraries are either included in this repository</p>
+</section>
+<section id="building-for-development">
+<h3>Building for development<a class="headerlink" href="#building-for-development" title="Link to this heading">¶</a></h3>
+<p>For advanced users who seek to modify the code, develop simulations in C++ directly, or produce/link to Mem3DG shared libraries, Mem3DG can be configured and built using CMake.
+After cloning the repository, initialize submodules and their dependencies, and follow the standard CMake out-of-source configuration and build procedures.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>-DWITH_NETCDF<span class="o">=</span>ON<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>..
+cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>--config<span class="w"> </span>Release
+</pre></div>
+</div>
+<p>There are several CMake options which you can configure.
+Further options can be discovered by inspecting the CMakeLists.txt or using a utility like <code class="docutils literal notranslate"><span class="pre">ccmake</span></code> or <code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">-LAH</span></code>.
+These options can be passed during the configuration step (e.g., <code class="docutils literal notranslate"><span class="pre">-DWITH_NETCDF=ON</span></code>).</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">option</span><span class="p">(</span><span class="s">BUILD_PYMEM3DG</span><span class="w"> </span><span class="s2">&quot;Build the python extensions?&quot;</span><span class="w"> </span><span class="s">ON</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">WITH_NETCDF</span><span class="w"> </span><span class="s2">&quot;Build with NetCDF (binary trajectory output)?&quot;</span><span class="w"> </span><span class="s">ON</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">BUILD_MEM3DG_DOCS</span><span class="w"> </span><span class="s2">&quot;Configure documentation&quot;</span><span class="w"> </span><span class="s">OFF</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">M3DG_GET_OWN_EIGEN</span><span class="w"> </span><span class="s2">&quot;Download own Eigen&quot;</span><span class="w"> </span><span class="s">ON</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">M3DG_GET_OWN_PYBIND11</span><span class="w"> </span><span class="s2">&quot;Download own pybind11&quot;</span><span class="w"> </span><span class="s">ON</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">WITH_LIBUNWIND</span><span class="w"> </span><span class="s2">&quot;Link libunwind for stack traces&quot;</span><span class="w"> </span><span class="s">OFF</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">WITH_OPENMP</span><span class="w"> </span><span class="s2">&quot;Build with OpenMP support&quot;</span><span class="w"> </span><span class="s">OFF</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">LINK_PROFILER</span><span class="w"> </span><span class="s2">&quot;Link profiler gperftools&quot;</span><span class="w"> </span><span class="s">OFF</span><span class="p">)</span>
+<span class="nb">option</span><span class="p">(</span><span class="s">MEM3DG_PEDANTIC</span><span class="w"> </span><span class="s2">&quot;Be extremely pedantic while compiling&quot;</span><span class="w"> </span><span class="s">OFF</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="building-pymem3dg">
+<h3>Building <code class="docutils literal notranslate"><span class="pre">pymem3dg</span></code><a class="headerlink" href="#building-pymem3dg" title="Link to this heading">¶</a></h3>
+<p>While the pymem3dg extension module can be built directly with CMake, packaging and installing in a matter which conforms with guidelines from the <a class="reference external" href="https://packaging.python.org/en/latest/">Python packaging authority</a> is best done using python tooling.
+We use <code class="docutils literal notranslate"><span class="pre">`scikit-build-core</span></code> &lt;<a class="reference external" href="https://scikit-build-core.readthedocs.io/en/latest/">https://scikit-build-core.readthedocs.io/en/latest/</a>&gt;`_ to bridge between CMake and the Python build system.
+Typical Python metadata and details are specified in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>.</p>
+<p>pymem3dg can be built and installed by using pip from the root of this repository.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>.
+</pre></div>
+</div>
+<p>Extra dependencies for building the documentation and tests can be installed as well <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-v</span> <span class="pre">.[docs,tests]</span></code>.
+Other options can be passed to CMake by modifying config-settings in pip.
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span> <span class="pre">--config-settings=cmake.build-type=&quot;Debug&quot;</span></code></p>
+</section>
+</section>
+<section id="acknowledging-your-use-of-mem3dg">
+<h2>Acknowledging your use of Mem3DG<a class="headerlink" href="#acknowledging-your-use-of-mem3dg" title="Link to this heading">¶</a></h2>
+<p>Mem3DG is developed by <a class="reference external" href="https://github.com/cuzhucuncheng">Cuncheng Zhu</a>, <a class="reference external" href="https://ctlee.github.io/">Christopher T. Lee</a>, with contributions from others.
+Development of Mem3DG is funded in part by AFOSR MURI FA9550-18-1-0051, and a Hartwell Foundation Postdoctoral Fellowship.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pymem3dg.html">Python API Reference</a></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pymem3dg.html" class="btn btn-neutral float-right" title="Python API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Cuncheng Zhu, Christopher T. Lee, and Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

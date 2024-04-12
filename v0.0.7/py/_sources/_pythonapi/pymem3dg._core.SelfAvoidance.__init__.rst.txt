@@ -1,0 +1,6 @@
+pymem3dg.\_core.SelfAvoidance.\_\_init\_\_
+==========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: SelfAvoidance.__init__

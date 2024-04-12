@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.getEdgeLengths
+=======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.getEdgeLengths

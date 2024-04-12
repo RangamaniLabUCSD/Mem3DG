@@ -1,0 +1,6 @@
+pymem3dg.visual.overlayColorbar
+===============================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: overlayColorbar

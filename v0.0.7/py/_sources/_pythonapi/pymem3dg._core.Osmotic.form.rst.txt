@@ -1,0 +1,6 @@
+pymem3dg.\_core.Osmotic.form
+============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Osmotic.form

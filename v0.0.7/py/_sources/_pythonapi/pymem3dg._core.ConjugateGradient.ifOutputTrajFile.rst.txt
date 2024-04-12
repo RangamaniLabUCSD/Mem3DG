@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.ifOutputTrajFile
+==================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: ConjugateGradient.ifOutputTrajFile

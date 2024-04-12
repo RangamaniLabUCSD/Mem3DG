@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.integrate
+===============================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Euler.integrate

@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.meshProcessor
+====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: System.meshProcessor

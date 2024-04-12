@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.\_\_init\_\_
+========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: MeshMutator.__init__

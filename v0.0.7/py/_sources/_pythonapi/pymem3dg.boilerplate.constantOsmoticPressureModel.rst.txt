@@ -1,0 +1,6 @@
+pymem3dg.boilerplate.constantOsmoticPressureModel
+=================================================
+
+.. currentmodule:: pymem3dg.boilerplate
+
+.. autofunction:: constantOsmoticPressureModel

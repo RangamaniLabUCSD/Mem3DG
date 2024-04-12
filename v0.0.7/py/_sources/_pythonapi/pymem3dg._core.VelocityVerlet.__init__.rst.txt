@@ -1,0 +1,6 @@
+pymem3dg.\_core.VelocityVerlet.\_\_init\_\_
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: VelocityVerlet.__init__

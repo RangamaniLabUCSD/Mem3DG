@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.\_\_init\_\_
+=====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.__init__

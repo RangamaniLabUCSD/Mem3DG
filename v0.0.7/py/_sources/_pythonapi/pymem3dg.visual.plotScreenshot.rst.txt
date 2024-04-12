@@ -1,0 +1,6 @@
+pymem3dg.visual.plotScreenshot
+==============================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: plotScreenshot

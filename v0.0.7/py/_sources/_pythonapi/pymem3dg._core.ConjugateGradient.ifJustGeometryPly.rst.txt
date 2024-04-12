@@ -1,0 +1,6 @@
+pymem3dg.\_core.ConjugateGradient.ifJustGeometryPly
+===================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: ConjugateGradient.ifJustGeometryPly

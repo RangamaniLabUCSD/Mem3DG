@@ -1,0 +1,35 @@
+
+spring
+======
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: spring
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      spring.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      spring.Kse
+   
+      spring.Ksl
+   
+      spring.Kst
+   
+

@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshMutator.collapseFlatScaleFactor
+===================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshMutator.collapseFlatScaleFactor

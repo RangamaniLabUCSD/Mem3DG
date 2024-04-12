@@ -1,0 +1,6 @@
+pymem3dg.\_core.Forces.getSpontaneousCurvatureForceVec
+======================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Forces.getSpontaneousCurvatureForceVec

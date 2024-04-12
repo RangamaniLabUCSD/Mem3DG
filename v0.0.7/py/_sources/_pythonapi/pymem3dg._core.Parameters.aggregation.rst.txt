@@ -1,0 +1,6 @@
+pymem3dg.\_core.Parameters.aggregation
+======================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Parameters.aggregation

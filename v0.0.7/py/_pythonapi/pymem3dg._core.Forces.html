@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forces &mdash; Mem3DG 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=bbaf98b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/thebelab-helper.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pymem3dg._core.Forces.__init__" href="pymem3dg._core.Forces.__init__.html" />
+    <link rel="prev" title="pymem3dg._core.External.form" href="pymem3dg._core.External.form.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Mem3DG
+          </a>
+              <div class="version">
+                0.0.7
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../pymem3dg.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pymem3dg._core.html">pymem3dg._core</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Adsorption.html">Adsorption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Aggregation.html">Aggregation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Bending.html">Bending</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Boundary.html">Boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.ConjugateGradient.html">ConjugateGradient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.DPD.html">DPD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Dirichlet.html">Dirichlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Energy.html">Energy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Entropy.html">Entropy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Euler.html">Euler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.External.html">External</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Forces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pymem3dg._core.Forces"><code class="docutils literal notranslate"><span class="pre">Forces</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.__init__.html">pymem3dg._core.Forces.__init__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getAdsorptionForceVec.html">pymem3dg._core.Forces.getAdsorptionForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getAdsorptionPotential.html">pymem3dg._core.Forces.getAdsorptionPotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getAggregationForceVec.html">pymem3dg._core.Forces.getAggregationForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getAggregationPotential.html">pymem3dg._core.Forces.getAggregationPotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getAreaDifferenceForceVec.html">pymem3dg._core.Forces.getAreaDifferenceForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getCapillaryForceVec.html">pymem3dg._core.Forces.getCapillaryForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getChemicalPotential.html">pymem3dg._core.Forces.getChemicalPotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getDeviatoricCurvatureForceVec.html">pymem3dg._core.Forces.getDeviatoricCurvatureForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getDeviatoricCurvaturePotential.html">pymem3dg._core.Forces.getDeviatoricCurvaturePotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getDirichletPotential.html">pymem3dg._core.Forces.getDirichletPotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getEntropyForceVec.html">pymem3dg._core.Forces.getEntropyForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getEntropyPotential.html">pymem3dg._core.Forces.getEntropyPotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getExternalForceVec.html">pymem3dg._core.Forces.getExternalForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getInteriorPenaltyPotential.html">pymem3dg._core.Forces.getInteriorPenaltyPotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getLineCapillaryForceVec.html">pymem3dg._core.Forces.getLineCapillaryForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getMechanicalForceVec.html">pymem3dg._core.Forces.getMechanicalForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getOsmoticForceVec.html">pymem3dg._core.Forces.getOsmoticForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getOsmoticPressure.html">pymem3dg._core.Forces.getOsmoticPressure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec.html">pymem3dg._core.Forces.getSpontaneousCurvatureForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_areaGrad.html">pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_areaGrad</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_gaussVec.html">pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_gaussVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_schlafliVec.html">pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_schlafliVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvaturePotential.html">pymem3dg._core.Forces.getSpontaneousCurvaturePotential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getSpringForceVec.html">pymem3dg._core.Forces.getSpringForceVec</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.Forces.getSurfaceTension.html">pymem3dg._core.Forces.getSurfaceTension</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Geometry.html">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.MeshMutator.html">MeshMutator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.MeshProcessor.html">MeshProcessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Osmotic.html">Osmotic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Parameters.html">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Point.html">Point</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Protein.html">Protein</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.SelfAvoidance.html">SelfAvoidance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.System.html">System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Tension.html">Tension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Variation.html">Variation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.VelocityVerlet.html">VelocityVerlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.spring.html">spring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getCylinder.html">pymem3dg._core.getCylinder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getData.html">pymem3dg._core.getData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDataElementName.html">pymem3dg._core.getDataElementName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDataPropertyName.html">pymem3dg._core.getDataPropertyName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDiamond.html">pymem3dg._core.getDiamond</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getFaceAndVertexMatrix.html">pymem3dg._core.getFaceAndVertexMatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getFaceSurfacePointClosestToEmbeddedCoordinate.html">pymem3dg._core.getFaceSurfacePointClosestToEmbeddedCoordinate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getHexagon.html">pymem3dg._core.getHexagon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getIcosphere.html">pymem3dg._core.getIcosphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getTetrahedron.html">pymem3dg._core.getTetrahedron</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getVertexClosestToEmbeddedCoordinate.html">pymem3dg._core.getVertexClosestToEmbeddedCoordinate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getVertexFurthestFromBoundary.html">pymem3dg._core.getVertexFurthestFromBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.linearSubdivide.html">pymem3dg._core.linearSubdivide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.loopSubdivide.html">pymem3dg._core.loopSubdivide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.processSoup.html">pymem3dg._core.processSoup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.startProfiler.html">pymem3dg._core.startProfiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.stopProfiler.html">pymem3dg._core.stopProfiler</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.util.html">pymem3dg.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.boilerplate.html">pymem3dg.boilerplate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.visual.html">pymem3dg.visual</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Mem3DG</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pymem3dg.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="pymem3dg._core.html">pymem3dg._core</a></li>
+      <li class="breadcrumb-item active">Forces</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_pythonapi/pymem3dg._core.Forces.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="forces">
+<h1>Forces<a class="headerlink" href="#forces" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pymem3dg._core.Forces">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pymem3dg._core.</span></span><span class="sig-name descname"><span class="pre">Forces</span></span><a class="headerlink" href="#pymem3dg._core.Forces" title="Link to this definition">¶</a></dt>
+<dd><p>The forces object</p>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.__init__.html#pymem3dg._core.Forces.__init__" title="pymem3dg._core.Forces.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.__init__</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getAdsorptionForceVec.html#pymem3dg._core.Forces.getAdsorptionForceVec" title="pymem3dg._core.Forces.getAdsorptionForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getAdsorptionForceVec</span></code></a>(self)</p></td>
+<td><p>get the adsorption force</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getAdsorptionPotential.html#pymem3dg._core.Forces.getAdsorptionPotential" title="pymem3dg._core.Forces.getAdsorptionPotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getAdsorptionPotential</span></code></a>(self)</p></td>
+<td><p>get the adsorption potential</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getAggregationForceVec.html#pymem3dg._core.Forces.getAggregationForceVec" title="pymem3dg._core.Forces.getAggregationForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getAggregationForceVec</span></code></a>(self)</p></td>
+<td><p>get the aggregation force</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getAggregationPotential.html#pymem3dg._core.Forces.getAggregationPotential" title="pymem3dg._core.Forces.getAggregationPotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getAggregationPotential</span></code></a>(self)</p></td>
+<td><p>get the aggregation potential</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getAreaDifferenceForceVec.html#pymem3dg._core.Forces.getAreaDifferenceForceVec" title="pymem3dg._core.Forces.getAreaDifferenceForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getAreaDifferenceForceVec</span></code></a>(self)</p></td>
+<td><p>get the area difference force of the system</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getCapillaryForceVec.html#pymem3dg._core.Forces.getCapillaryForceVec" title="pymem3dg._core.Forces.getCapillaryForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getCapillaryForceVec</span></code></a>(self)</p></td>
+<td><p>get the tension-induced capillary Force</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getChemicalPotential.html#pymem3dg._core.Forces.getChemicalPotential" title="pymem3dg._core.Forces.getChemicalPotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getChemicalPotential</span></code></a>(self)</p></td>
+<td><p>get the chemical Potential</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getDeviatoricCurvatureForceVec.html#pymem3dg._core.Forces.getDeviatoricCurvatureForceVec" title="pymem3dg._core.Forces.getDeviatoricCurvatureForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getDeviatoricCurvatureForceVec</span></code></a>(self)</p></td>
+<td><p>get the deviatoric curvature force of the system</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getDeviatoricCurvaturePotential.html#pymem3dg._core.Forces.getDeviatoricCurvaturePotential" title="pymem3dg._core.Forces.getDeviatoricCurvaturePotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getDeviatoricCurvaturePotential</span></code></a>(self)</p></td>
+<td><p>get the deviatoric curvature potential</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getDirichletPotential.html#pymem3dg._core.Forces.getDirichletPotential" title="pymem3dg._core.Forces.getDirichletPotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getDirichletPotential</span></code></a>(self)</p></td>
+<td><p>get the dirichlet Potential</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getEntropyForceVec.html#pymem3dg._core.Forces.getEntropyForceVec" title="pymem3dg._core.Forces.getEntropyForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getEntropyForceVec</span></code></a>(self)</p></td>
+<td><p>get the entropy force</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getEntropyPotential.html#pymem3dg._core.Forces.getEntropyPotential" title="pymem3dg._core.Forces.getEntropyPotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getEntropyPotential</span></code></a>(self)</p></td>
+<td><p>get the entropy Potential</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getExternalForceVec.html#pymem3dg._core.Forces.getExternalForceVec" title="pymem3dg._core.Forces.getExternalForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getExternalForceVec</span></code></a>(self)</p></td>
+<td><p>get the externally-applied Force</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getInteriorPenaltyPotential.html#pymem3dg._core.Forces.getInteriorPenaltyPotential" title="pymem3dg._core.Forces.getInteriorPenaltyPotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getInteriorPenaltyPotential</span></code></a>(self)</p></td>
+<td><p>get the interior point potential</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getLineCapillaryForceVec.html#pymem3dg._core.Forces.getLineCapillaryForceVec" title="pymem3dg._core.Forces.getLineCapillaryForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getLineCapillaryForceVec</span></code></a>(self)</p></td>
+<td><p>get the interfacial line tension</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getMechanicalForceVec.html#pymem3dg._core.Forces.getMechanicalForceVec" title="pymem3dg._core.Forces.getMechanicalForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getMechanicalForceVec</span></code></a>(self)</p></td>
+<td><p>get the the total mechanical force</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getOsmoticForceVec.html#pymem3dg._core.Forces.getOsmoticForceVec" title="pymem3dg._core.Forces.getOsmoticForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getOsmoticForceVec</span></code></a>(self)</p></td>
+<td><p>get the osmotic force</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getOsmoticPressure.html#pymem3dg._core.Forces.getOsmoticPressure" title="pymem3dg._core.Forces.getOsmoticPressure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getOsmoticPressure</span></code></a>(self)</p></td>
+<td><p>get the osmotic pressure</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec.html#pymem3dg._core.Forces.getSpontaneousCurvatureForceVec" title="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getSpontaneousCurvatureForceVec</span></code></a>(self)</p></td>
+<td><p>get the spontaneous curvature force of the system</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_areaGrad.html#pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_areaGrad" title="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_areaGrad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getSpontaneousCurvatureForceVec_areaGrad</span></code></a>(self)</p></td>
+<td><p>get the area gradient component of the spontaneous curvature force of the system</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_gaussVec.html#pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_gaussVec" title="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_gaussVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getSpontaneousCurvatureForceVec_gaussVec</span></code></a>(self)</p></td>
+<td><p>get the the gaussian curvature vector component of the spontaneous curvature force of the system</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_schlafliVec.html#pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_schlafliVec" title="pymem3dg._core.Forces.getSpontaneousCurvatureForceVec_schlafliVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getSpontaneousCurvatureForceVec_schlafliVec</span></code></a>(self)</p></td>
+<td><p>get the Schlaflic (smoothing) component of the spontaneous curvature force of the system</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getSpontaneousCurvaturePotential.html#pymem3dg._core.Forces.getSpontaneousCurvaturePotential" title="pymem3dg._core.Forces.getSpontaneousCurvaturePotential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getSpontaneousCurvaturePotential</span></code></a>(self)</p></td>
+<td><p>get the spontaneous curvature potential</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getSpringForceVec.html#pymem3dg._core.Forces.getSpringForceVec" title="pymem3dg._core.Forces.getSpringForceVec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getSpringForceVec</span></code></a>(self)</p></td>
+<td><p>get the spring force</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.Forces.getSurfaceTension.html#pymem3dg._core.Forces.getSurfaceTension" title="pymem3dg._core.Forces.getSurfaceTension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Forces.getSurfaceTension</span></code></a>(self)</p></td>
+<td><p>get the Surface tension</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pymem3dg._core.External.form.html" class="btn btn-neutral float-left" title="pymem3dg._core.External.form" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pymem3dg._core.Forces.__init__.html" class="btn btn-neutral float-right" title="pymem3dg._core.Forces.__init__" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Cuncheng Zhu, Christopher T. Lee, and Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Parameters.damping
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Parameters.damping

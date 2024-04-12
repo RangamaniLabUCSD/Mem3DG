@@ -1,0 +1,6 @@
+pymem3dg.util.sphericalHarmonicsPerturbation
+============================================
+
+.. currentmodule:: pymem3dg.util
+
+.. autofunction:: sphericalHarmonicsPerturbation

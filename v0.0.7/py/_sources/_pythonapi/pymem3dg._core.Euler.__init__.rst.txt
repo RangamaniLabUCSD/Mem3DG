@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.\_\_init\_\_
+==================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Euler.__init__

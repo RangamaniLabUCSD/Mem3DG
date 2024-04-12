@@ -1,0 +1,73 @@
+
+Forces
+======
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Forces
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Forces.__init__
+   
+      Forces.getAdsorptionForceVec
+   
+      Forces.getAdsorptionPotential
+   
+      Forces.getAggregationForceVec
+   
+      Forces.getAggregationPotential
+   
+      Forces.getAreaDifferenceForceVec
+   
+      Forces.getCapillaryForceVec
+   
+      Forces.getChemicalPotential
+   
+      Forces.getDeviatoricCurvatureForceVec
+   
+      Forces.getDeviatoricCurvaturePotential
+   
+      Forces.getDirichletPotential
+   
+      Forces.getEntropyForceVec
+   
+      Forces.getEntropyPotential
+   
+      Forces.getExternalForceVec
+   
+      Forces.getInteriorPenaltyPotential
+   
+      Forces.getLineCapillaryForceVec
+   
+      Forces.getMechanicalForceVec
+   
+      Forces.getOsmoticForceVec
+   
+      Forces.getOsmoticPressure
+   
+      Forces.getSpontaneousCurvatureForceVec
+   
+      Forces.getSpontaneousCurvatureForceVec_areaGrad
+   
+      Forces.getSpontaneousCurvatureForceVec_gaussVec
+   
+      Forces.getSpontaneousCurvatureForceVec_schlafliVec
+   
+      Forces.getSpontaneousCurvaturePotential
+   
+      Forces.getSpringForceVec
+   
+      Forces.getSurfaceTension
+   
+
+
+
+
+
+

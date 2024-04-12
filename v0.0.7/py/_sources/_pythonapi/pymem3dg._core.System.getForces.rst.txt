@@ -1,0 +1,6 @@
+pymem3dg.\_core.System.getForces
+================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: System.getForces

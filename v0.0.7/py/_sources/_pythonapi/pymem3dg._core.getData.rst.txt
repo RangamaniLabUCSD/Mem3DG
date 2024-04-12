@@ -1,0 +1,6 @@
+pymem3dg.\_core.getData
+=======================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: getData

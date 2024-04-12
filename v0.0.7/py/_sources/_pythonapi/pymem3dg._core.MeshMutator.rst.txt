@@ -1,0 +1,79 @@
+
+MeshMutator
+===========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: MeshMutator
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      MeshMutator.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      MeshMutator.collapseFlat
+   
+      MeshMutator.collapseFlatScaleFactor
+   
+      MeshMutator.collapseSkinny
+   
+      MeshMutator.collapseSmall
+   
+      MeshMutator.curvTol
+   
+      MeshMutator.flipNonDelaunay
+   
+      MeshMutator.flipNonDelaunayRequireFlat
+   
+      MeshMutator.isChangeTopology
+   
+      MeshMutator.isCollapseEdge
+   
+      MeshMutator.isFlipEdge
+   
+      MeshMutator.isShiftVertex
+   
+      MeshMutator.isSmoothenMesh
+   
+      MeshMutator.isSplitEdge
+   
+      MeshMutator.maximumEdgeLength
+   
+      MeshMutator.maximumFaceArea
+   
+      MeshMutator.minimumEdgeLength
+   
+      MeshMutator.minimumFaceArea
+   
+      MeshMutator.mutateMeshPeriod
+   
+      MeshMutator.splitCurved
+   
+      MeshMutator.splitCurvedScaleFactor
+   
+      MeshMutator.splitFat
+   
+      MeshMutator.splitLarge
+   
+      MeshMutator.splitLong
+   
+      MeshMutator.splitSharp
+   
+      MeshMutator.splitSkinnyDelaunay
+   
+

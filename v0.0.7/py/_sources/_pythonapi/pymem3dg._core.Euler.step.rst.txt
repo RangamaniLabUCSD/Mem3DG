@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.step
+==========================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Euler.step

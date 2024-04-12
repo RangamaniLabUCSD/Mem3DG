@@ -1,0 +1,6 @@
+pymem3dg.\_core.VelocityVerlet.c1
+=================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: VelocityVerlet.c1

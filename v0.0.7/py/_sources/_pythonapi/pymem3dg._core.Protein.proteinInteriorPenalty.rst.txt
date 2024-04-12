@@ -1,0 +1,6 @@
+pymem3dg.\_core.Protein.proteinInteriorPenalty
+==============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Protein.proteinInteriorPenalty

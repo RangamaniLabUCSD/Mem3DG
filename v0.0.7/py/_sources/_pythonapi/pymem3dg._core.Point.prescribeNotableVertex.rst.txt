@@ -1,0 +1,6 @@
+pymem3dg.\_core.Point.prescribeNotableVertex
+============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: Point.prescribeNotableVertex

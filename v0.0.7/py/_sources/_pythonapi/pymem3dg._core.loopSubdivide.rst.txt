@@ -1,0 +1,6 @@
+pymem3dg.\_core.loopSubdivide
+=============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: loopSubdivide

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Forces.getInteriorPenaltyPotential
+==================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Forces.getInteriorPenaltyPotential

@@ -1,0 +1,6 @@
+pymem3dg.visual.setPolyscopePermutations
+========================================
+
+.. currentmodule:: pymem3dg.visual
+
+.. autofunction:: setPolyscopePermutations

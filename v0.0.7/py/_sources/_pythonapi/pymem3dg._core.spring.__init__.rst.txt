@@ -1,0 +1,6 @@
+pymem3dg.\_core.spring.\_\_init\_\_
+===================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: spring.__init__

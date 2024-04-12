@@ -1,0 +1,6 @@
+pymem3dg.\_core.SelfAvoidance.n
+===============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: SelfAvoidance.n

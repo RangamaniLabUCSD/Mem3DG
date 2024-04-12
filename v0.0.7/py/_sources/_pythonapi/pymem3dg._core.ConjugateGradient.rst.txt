@@ -1,0 +1,73 @@
+
+ConjugateGradient
+=================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: ConjugateGradient
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ConjugateGradient.__init__
+   
+      ConjugateGradient.integrate
+   
+      ConjugateGradient.march
+   
+      ConjugateGradient.saveData
+   
+      ConjugateGradient.status
+   
+      ConjugateGradient.step
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ConjugateGradient.c1
+   
+      ConjugateGradient.characteristicTimeStep
+   
+      ConjugateGradient.constraintTolerance
+   
+      ConjugateGradient.ifAdaptiveStep
+   
+      ConjugateGradient.ifJustGeometryPly
+   
+      ConjugateGradient.ifOutputMeshFile
+   
+      ConjugateGradient.ifOutputTrajFile
+   
+      ConjugateGradient.ifPrintToConsole
+   
+      ConjugateGradient.isAugementedLagrangian
+   
+      ConjugateGradient.isBacktrack
+   
+      ConjugateGradient.outputDirectory
+   
+      ConjugateGradient.restartPeriod
+   
+      ConjugateGradient.rho
+   
+      ConjugateGradient.savePeriod
+   
+      ConjugateGradient.tolerance
+   
+      ConjugateGradient.totalTime
+   
+      ConjugateGradient.trajFileName
+   
+

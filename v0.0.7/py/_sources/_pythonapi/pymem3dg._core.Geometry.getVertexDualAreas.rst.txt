@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.getVertexDualAreas
+===========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.getVertexDualAreas

@@ -1,0 +1,6 @@
+pymem3dg.\_core.VelocityVerlet.ifOutputMeshFile
+===============================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: VelocityVerlet.ifOutputMeshFile

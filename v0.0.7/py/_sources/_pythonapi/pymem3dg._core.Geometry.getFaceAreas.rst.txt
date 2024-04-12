@@ -1,0 +1,6 @@
+pymem3dg.\_core.Geometry.getFaceAreas
+=====================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Geometry.getFaceAreas

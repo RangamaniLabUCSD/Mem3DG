@@ -1,0 +1,6 @@
+pymem3dg.\_core.MeshProcessor.meshMutator
+=========================================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: MeshProcessor.meshMutator

@@ -1,0 +1,6 @@
+pymem3dg.\_core.Euler.saveData
+==============================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Euler.saveData

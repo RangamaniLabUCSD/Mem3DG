@@ -1,0 +1,59 @@
+
+VelocityVerlet
+==============
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: VelocityVerlet
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      VelocityVerlet.__init__
+   
+      VelocityVerlet.integrate
+   
+      VelocityVerlet.march
+   
+      VelocityVerlet.saveData
+   
+      VelocityVerlet.status
+   
+      VelocityVerlet.step
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      VelocityVerlet.c1
+   
+      VelocityVerlet.ifAdaptiveStep
+   
+      VelocityVerlet.ifOutputMeshFile
+   
+      VelocityVerlet.ifOutputTrajFile
+   
+      VelocityVerlet.ifPrintToConsole
+   
+      VelocityVerlet.isBacktrack
+   
+      VelocityVerlet.isCapEnergy
+   
+      VelocityVerlet.outputDirectory
+   
+      VelocityVerlet.rho
+   
+      VelocityVerlet.trajFileName
+   
+

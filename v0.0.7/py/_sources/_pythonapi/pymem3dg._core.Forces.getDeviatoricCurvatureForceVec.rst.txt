@@ -1,0 +1,6 @@
+pymem3dg.\_core.Forces.getDeviatoricCurvatureForceVec
+=====================================================
+
+.. currentmodule:: pymem3dg._core
+
+.. automethod:: Forces.getDeviatoricCurvatureForceVec

@@ -1,0 +1,6 @@
+pymem3dg.\_core.linearSubdivide
+===============================
+
+.. currentmodule:: pymem3dg._core
+
+.. autofunction:: linearSubdivide

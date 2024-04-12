@@ -1,0 +1,6 @@
+pymem3dg.\_core.DPD.gamma
+=========================
+
+.. currentmodule:: pymem3dg._core
+
+.. autoproperty:: DPD.gamma

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System &mdash; Mem3DG 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/documentation_options.js?v=bbaf98b3"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/thebelab-helper.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pymem3dg._core.System.__init__" href="pymem3dg._core.System.__init__.html" />
+    <link rel="prev" title="pymem3dg._core.SelfAvoidance.p" href="pymem3dg._core.SelfAvoidance.p.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Mem3DG
+          </a>
+              <div class="version">
+                0.0.7
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../pymem3dg.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pymem3dg._core.html">pymem3dg._core</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Adsorption.html">Adsorption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Aggregation.html">Aggregation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Bending.html">Bending</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Boundary.html">Boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.ConjugateGradient.html">ConjugateGradient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.DPD.html">DPD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Dirichlet.html">Dirichlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Energy.html">Energy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Entropy.html">Entropy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Euler.html">Euler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.External.html">External</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Forces.html">Forces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Geometry.html">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.MeshMutator.html">MeshMutator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.MeshProcessor.html">MeshProcessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Osmotic.html">Osmotic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Parameters.html">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Point.html">Point</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Protein.html">Protein</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.SelfAvoidance.html">SelfAvoidance</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pymem3dg._core.System"><code class="docutils literal notranslate"><span class="pre">System</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.__init__.html">pymem3dg._core.System.__init__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.addNonconservativeForcing.html">pymem3dg._core.System.addNonconservativeForcing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.computeConservativeForcing.html">pymem3dg._core.System.computeConservativeForcing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.computeInPlaneFluxForm.html">pymem3dg._core.System.computeInPlaneFluxForm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.computeIntegratedPower.html">pymem3dg._core.System.computeIntegratedPower</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.computeTotalEnergy.html">pymem3dg._core.System.computeTotalEnergy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.getEnergy.html">pymem3dg._core.System.getEnergy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.getForces.html">pymem3dg._core.System.getForces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.getGeometry.html">pymem3dg._core.System.getGeometry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.getProteinDensity.html">pymem3dg._core.System.getProteinDensity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.getProteinRateOfChange.html">pymem3dg._core.System.getProteinRateOfChange</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.getSpontaneousCurvature.html">pymem3dg._core.System.getSpontaneousCurvature</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.getVelocity.html">pymem3dg._core.System.getVelocity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.initialize.html">pymem3dg._core.System.initialize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.mutateMesh.html">pymem3dg._core.System.mutateMesh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.prescribeExternalForce.html">pymem3dg._core.System.prescribeExternalForce</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.saveRichData.html">pymem3dg._core.System.saveRichData</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.smoothenMesh.html">pymem3dg._core.System.smoothenMesh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.testConservativeForcing.html">pymem3dg._core.System.testConservativeForcing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.updateConfigurations.html">pymem3dg._core.System.updateConfigurations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.meshProcessor.html">pymem3dg._core.System.meshProcessor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.parameters.html">pymem3dg._core.System.parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pymem3dg._core.System.time.html">pymem3dg._core.System.time</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Tension.html">Tension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.Variation.html">Variation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.VelocityVerlet.html">VelocityVerlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.spring.html">spring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getCylinder.html">pymem3dg._core.getCylinder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getData.html">pymem3dg._core.getData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDataElementName.html">pymem3dg._core.getDataElementName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDataPropertyName.html">pymem3dg._core.getDataPropertyName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getDiamond.html">pymem3dg._core.getDiamond</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getFaceAndVertexMatrix.html">pymem3dg._core.getFaceAndVertexMatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getFaceSurfacePointClosestToEmbeddedCoordinate.html">pymem3dg._core.getFaceSurfacePointClosestToEmbeddedCoordinate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getHexagon.html">pymem3dg._core.getHexagon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getIcosphere.html">pymem3dg._core.getIcosphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getTetrahedron.html">pymem3dg._core.getTetrahedron</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getVertexClosestToEmbeddedCoordinate.html">pymem3dg._core.getVertexClosestToEmbeddedCoordinate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.getVertexFurthestFromBoundary.html">pymem3dg._core.getVertexFurthestFromBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.linearSubdivide.html">pymem3dg._core.linearSubdivide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.loopSubdivide.html">pymem3dg._core.loopSubdivide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.processSoup.html">pymem3dg._core.processSoup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.startProfiler.html">pymem3dg._core.startProfiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pymem3dg._core.stopProfiler.html">pymem3dg._core.stopProfiler</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.util.html">pymem3dg.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.boilerplate.html">pymem3dg.boilerplate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pymem3dg.visual.html">pymem3dg.visual</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Mem3DG</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pymem3dg.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="pymem3dg._core.html">pymem3dg._core</a></li>
+      <li class="breadcrumb-item active">System</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_pythonapi/pymem3dg._core.System.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="system">
+<h1>System<a class="headerlink" href="#system" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pymem3dg._core.System">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pymem3dg._core.</span></span><span class="sig-name descname"><span class="pre">System</span></span><a class="headerlink" href="#pymem3dg._core.System" title="Link to this definition">¶</a></dt>
+<dd><p>The system</p>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.__init__.html#pymem3dg._core.System.__init__" title="pymem3dg._core.System.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.__init__</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Overloaded function.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.addNonconservativeForcing.html#pymem3dg._core.System.addNonconservativeForcing" title="pymem3dg._core.System.addNonconservativeForcing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.addNonconservativeForcing</span></code></a>(self[, ...])</p></td>
+<td><p>Compute and append all non-conservative forces, update mechanicalForce(Vec) and mechErrorNorm</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.computeConservativeForcing.html#pymem3dg._core.System.computeConservativeForcing" title="pymem3dg._core.System.computeConservativeForcing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.computeConservativeForcing</span></code></a>(self)</p></td>
+<td><p>Compute and update all conservative forces, update mechanicalForce(Vec) with conservativeForce(Vec)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.computeInPlaneFluxForm.html#pymem3dg._core.System.computeInPlaneFluxForm" title="pymem3dg._core.System.computeInPlaneFluxForm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.computeInPlaneFluxForm</span></code></a>(self, ...)</p></td>
+<td><p>Compute in plane flux form from chemical potential</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.computeIntegratedPower.html#pymem3dg._core.System.computeIntegratedPower" title="pymem3dg._core.System.computeIntegratedPower"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.computeIntegratedPower</span></code></a>(self, dt)</p></td>
+<td><p>Intermediate function to integrate the power</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.computeTotalEnergy.html#pymem3dg._core.System.computeTotalEnergy" title="pymem3dg._core.System.computeTotalEnergy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.computeTotalEnergy</span></code></a>(self)</p></td>
+<td><p>compute the total energy, where total energy = kinetic energy + potential energy - external work</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.getEnergy.html#pymem3dg._core.System.getEnergy" title="pymem3dg._core.System.getEnergy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.getEnergy</span></code></a>(self)</p></td>
+<td><p>Get the energy</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.getForces.html#pymem3dg._core.System.getForces" title="pymem3dg._core.System.getForces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.getForces</span></code></a>(self)</p></td>
+<td><p>Get the pointwise forces</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.getGeometry.html#pymem3dg._core.System.getGeometry" title="pymem3dg._core.System.getGeometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.getGeometry</span></code></a>(self)</p></td>
+<td><p>Get the geometry</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.getProteinDensity.html#pymem3dg._core.System.getProteinDensity" title="pymem3dg._core.System.getProteinDensity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.getProteinDensity</span></code></a>(self)</p></td>
+<td><p>get the protein Density</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.getProteinRateOfChange.html#pymem3dg._core.System.getProteinRateOfChange" title="pymem3dg._core.System.getProteinRateOfChange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.getProteinRateOfChange</span></code></a>(self)</p></td>
+<td><p>get the protein rate of change</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.getSpontaneousCurvature.html#pymem3dg._core.System.getSpontaneousCurvature" title="pymem3dg._core.System.getSpontaneousCurvature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.getSpontaneousCurvature</span></code></a>(self)</p></td>
+<td><p>get the pointwise spontaneous curvature</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.getVelocity.html#pymem3dg._core.System.getVelocity" title="pymem3dg._core.System.getVelocity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.getVelocity</span></code></a>(self)</p></td>
+<td><p>get the vertex velocity matrix</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.initialize.html#pymem3dg._core.System.initialize" title="pymem3dg._core.System.initialize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.initialize</span></code></a>(self[, ifMutateMesh])</p></td>
+<td><p>initialize the system</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.mutateMesh.html#pymem3dg._core.System.mutateMesh" title="pymem3dg._core.System.mutateMesh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.mutateMesh</span></code></a>(self[, nMutation])</p></td>
+<td><p>mutate the mesh</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.prescribeExternalForce.html#pymem3dg._core.System.prescribeExternalForce" title="pymem3dg._core.System.prescribeExternalForce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.prescribeExternalForce</span></code></a>(self)</p></td>
+<td><p>prescribe the External Force</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.saveRichData.html#pymem3dg._core.System.saveRichData" title="pymem3dg._core.System.saveRichData"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.saveRichData</span></code></a>(self, pathToSave[, ...])</p></td>
+<td><p>save snapshot data to directory</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.smoothenMesh.html#pymem3dg._core.System.smoothenMesh" title="pymem3dg._core.System.smoothenMesh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.smoothenMesh</span></code></a>(self, initStep, target, ...)</p></td>
+<td><p>smoothen the mesh using spontaneous curvature force</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.testConservativeForcing.html#pymem3dg._core.System.testConservativeForcing" title="pymem3dg._core.System.testConservativeForcing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.testConservativeForcing</span></code></a>(self, timeStep)</p></td>
+<td><p>test conservative force computation by validating energy decrease</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.updateConfigurations.html#pymem3dg._core.System.updateConfigurations" title="pymem3dg._core.System.updateConfigurations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.updateConfigurations</span></code></a>(self)</p></td>
+<td><p>update the system configuration due to changes in state variables (e.g vertex positions or protein density)</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.meshProcessor.html#pymem3dg._core.System.meshProcessor" title="pymem3dg._core.System.meshProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.meshProcessor</span></code></a></p></td>
+<td><p>Get the mesh processor object</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pymem3dg._core.System.parameters.html#pymem3dg._core.System.parameters" title="pymem3dg._core.System.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.parameters</span></code></a></p></td>
+<td><p>Get the Parameters struct</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pymem3dg._core.System.time.html#pymem3dg._core.System.time" title="pymem3dg._core.System.time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">System.time</span></code></a></p></td>
+<td><p>Get the time</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pymem3dg._core.SelfAvoidance.p.html" class="btn btn-neutral float-left" title="pymem3dg._core.SelfAvoidance.p" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pymem3dg._core.System.__init__.html" class="btn btn-neutral float-right" title="pymem3dg._core.System.__init__" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Cuncheng Zhu, Christopher T. Lee, and Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

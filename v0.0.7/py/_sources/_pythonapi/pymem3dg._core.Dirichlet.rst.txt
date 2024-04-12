@@ -1,0 +1,31 @@
+
+Dirichlet
+=========
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: Dirichlet
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      Dirichlet.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      Dirichlet.eta
+   
+

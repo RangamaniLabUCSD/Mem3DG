@@ -1,0 +1,31 @@
+
+DPD
+===
+
+.. currentmodule:: pymem3dg._core
+
+.. autoclass:: DPD
+
+
+
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      DPD.__init__
+   
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      DPD.gamma
+   
+
