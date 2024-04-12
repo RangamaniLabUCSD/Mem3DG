@@ -1,17 +1,19 @@
-// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-//
-// Copyright (c) 2020:
-//     Laboratory for Computational Cellular Mechanobiology
-//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
-//     Christopher T. Lee (ctlee@ucsd.edu)
-//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangamani (prangamani@eng.ucsd.edu)
-//
-#include <cstdarg>
+/*
+ * Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG).
+ *
+ * Copyright 2020- The Mem3DG Authors
+ * and the project initiators Cuncheng Zhu, Christopher T. Lee, and
+ * Padmini Rangamani.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Please help us support Mem3DG development by citing the research
+ * papers on the package. Check out https://github.com/RangamaniLabUCSD/Mem3DG/
+ * for more information.
+ */
+
 #include <cstddef>
 #include <pybind11/eigen.h>
 #include <pybind11/functional.h>
@@ -109,6 +111,14 @@ void init_parameters(py::module_ &pymem3dg) {
   bending.def_readwrite("Kdc", &Parameters::Bending::Kdc,
                         R"delim(
           get constant of deviatoric modulus vs protein density
+      )delim");
+  bending.def_readwrite("Kg", &Parameters::Bending::Kg,
+                        R"delim(
+          get Gaussian rigidity of the membrane
+      )delim");
+  bending.def_readwrite("Kgc", &Parameters::Bending::Kgc,
+                        R"delim(
+          get constant of Gaussian modulus vs protein density
       )delim");
   bending.def_readwrite("Kb", &Parameters::Bending::Kb,
                         R"delim(

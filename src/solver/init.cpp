@@ -1,16 +1,18 @@
-// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-//
-// Copyright (c) 2020:
-//     Laboratory for Computational Cellular Mechanobiology
-//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
-//     Christopher T. Lee (ctlee@ucsd.edu)
-//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangamani (prangamani@eng.ucsd.edu)
-//
+/*
+ * Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG).
+ *
+ * Copyright 2020- The Mem3DG Authors
+ * and the project initiators Cuncheng Zhu, Christopher T. Lee, and
+ * Padmini Rangamani.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Please help us support Mem3DG development by citing the research
+ * papers on the package. Check out https://github.com/RangamaniLabUCSD/Mem3DG/
+ * for more information.
+ */
 
 #include "mem3dg/solver/system.h"
 
@@ -109,6 +111,8 @@ void System::updateConfigurations() {
                parameters.bending.Kbc * proteinDensity.raw().array();
     Kd.raw() = parameters.bending.Kd +
                parameters.bending.Kdc * proteinDensity.raw().array();
+    Kg.raw() = parameters.bending.Kg +
+               parameters.bending.Kgc * proteinDensity.raw().array();
   } else if (parameters.bending.relation == "hill") {
     EigenVectorX1d proteinDensitySq =
         (proteinDensity.raw().array() * proteinDensity.raw().array()).matrix();
@@ -118,6 +122,9 @@ void System::updateConfigurations() {
                                            proteinDensitySq.array() /
                                            (1 + proteinDensitySq.array());
     Kd.raw() = parameters.bending.Kd + parameters.bending.Kdc *
+                                           proteinDensitySq.array() /
+                                           (1 + proteinDensitySq.array());
+    Kg.raw() = parameters.bending.Kg + parameters.bending.Kgc *
                                            proteinDensitySq.array() /
                                            (1 + proteinDensitySq.array());
   } else {
@@ -209,6 +216,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
           parameters.protein.prescribeProteinDensityDistribution(
               time, geometry.vpg->vertexMeanCurvatures.raw(),
               geometry.geodesicDistance.raw());
+      updateConfigurations();
     } else {
       ifUpdateProteinDensityDistribution = false;
       // mem3dg_runtime_warning("Parameter protein form is NULL!")

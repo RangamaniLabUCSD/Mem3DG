@@ -1,16 +1,18 @@
-// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-//
-// Copyright (c) 2020:
-//     Laboratory for Computational Cellular Mechanobiology
-//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
-//     Christopher T. Lee (ctlee@ucsd.edu)
-//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangamani (prangamani@eng.ucsd.edu)
-//
+/*
+ * Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG).
+ *
+ * Copyright 2020- The Mem3DG Authors
+ * and the project initiators Cuncheng Zhu, Christopher T. Lee, and
+ * Padmini Rangamani.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Please help us support Mem3DG development by citing the research
+ * papers on the package. Check out https://github.com/RangamaniLabUCSD/Mem3DG/
+ * for more information.
+ */
 
 /**
  * @file macros.h
@@ -174,7 +176,7 @@ namespace detail {
  * @param t object to print
  */
 template <typename T> void mem3dg_print(std::ostringstream &ss, T &&t) {
-  ss << std::forward<T>(t) << " ";
+  ss << std::forward<T>(t);
 }
 
 /**
@@ -191,6 +193,32 @@ void mem3dg_print(std::ostringstream &ss, T &&t, TS &&...ts) {
   ss << std::forward<T>(t) << " ";
   mem3dg_print(ss, std::forward<TS>(ts)...);
 }
+
+/**
+ * @brief Terminating case of helpful print
+ *
+ * @tparam T typename of argument to print
+ * @param ss reference to active ostringstream
+ * @param t object to print
+ */
+template <typename T> void mem3dg_print_nospace(std::ostringstream &ss, T &&t) {
+  ss << std::forward<T>(t);
+}
+
+/**
+ * @brief Recursive condition of helpful print
+ *
+ * @tparam T typename of current argument
+ * @tparam TS pack of subsequent types
+ * @param ss reference to active ostringstream
+ * @param t current object to output
+ * @param ts pack of following objects
+ */
+template <typename T, typename... TS>
+void mem3dg_print_nospace(std::ostringstream &ss, T &&t, TS &&...ts) {
+  ss << std::forward<T>(t);
+  mem3dg_print_nospace(ss, std::forward<TS>(ts)...);
+}
 } // namespace detail
 
 /**
@@ -204,6 +232,32 @@ template <typename... TS> void mem3dg_print(TS &&...ts) {
   std::ostringstream ss;
   detail::mem3dg_print(ss, std::forward<TS>(ts)...);
   std::cout << ss.str() << std::endl;
+}
+
+/**
+ * @brief A helpful print function which auto adds spaces between objects, but
+ * no final endl.
+ *
+ * @tparam TS pack of types for objects to print
+ * @param ts pack of objects
+ */
+template <typename... TS> void mem3dg_print_noendl(TS &&...ts) {
+  std::ostringstream ss;
+  detail::mem3dg_print(ss, std::forward<TS>(ts)...);
+  std::cout << ss.str();
+}
+
+/**
+ * @brief A helpful print function which prints
+ * objects.
+ *
+ * @tparam TS pack of types for objects to print
+ * @param ts pack of objects
+ */
+template <typename... TS> void mem3dg_print_nospace(TS &&...ts) {
+  std::ostringstream ss;
+  detail::mem3dg_print_nospace(ss, std::forward<TS>(ts)...);
+  std::cout << ss.str();
 }
 
 /**

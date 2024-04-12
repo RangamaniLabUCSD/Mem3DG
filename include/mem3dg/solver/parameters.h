@@ -1,16 +1,18 @@
-// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-//
-// Copyright (c) 2020:
-//     Laboratory for Computational Cellular Mechanobiology
-//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
-//     Christopher T. Lee (ctlee@ucsd.edu)
-//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangamani (prangamani@eng.ucsd.edu)
-//
+/*
+ * Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG).
+ *
+ * Copyright 2020- The Mem3DG Authors
+ * and the project initiators Cuncheng Zhu, Christopher T. Lee, and
+ * Padmini Rangamani.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Please help us support Mem3DG development by citing the research
+ * papers on the package. Check out https://github.com/RangamaniLabUCSD/Mem3DG/
+ * for more information.
+ */
 
 #pragma once
 
@@ -47,9 +49,6 @@
 #include "mem3dg/solver/mesh_process.h"
 #include "mem3dg/type_utilities.h"
 
-namespace gc = ::geometrycentral;
-namespace gcs = ::geometrycentral::surface;
-
 namespace mem3dg {
 
 namespace solver {
@@ -62,6 +61,11 @@ struct Parameters {
     double alpha = 0;
     /// preferred area difference
     double dA0 = 0;
+
+    /// Gaussian modulus
+    double Kg = 0;
+    /// Constant of gaussian modulus vs protein density
+    double Kgc = 0;
 
     /// Deviatoric modulus
     double Kd = 0;
@@ -182,7 +186,7 @@ struct Parameters {
   struct Protein {
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 0; // 1e-6
-    /// precription of protein density
+    /// prescription of protein density
     std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
         prescribeProteinDensityDistribution = NULL;
     /// period of updating protein density distribution

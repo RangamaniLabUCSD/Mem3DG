@@ -1,16 +1,18 @@
-// Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG)
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-//
-// Copyright (c) 2020:
-//     Laboratory for Computational Cellular Mechanobiology
-//     Cuncheng Zhu (cuzhu@eng.ucsd.edu)
-//     Christopher T. Lee (ctlee@ucsd.edu)
-//     Ravi Ramamoorthi (ravir@cs.ucsd.edu)
-//     Padmini Rangamani (prangamani@eng.ucsd.edu)
-//
+/*
+ * Membrane Dynamics in 3D using Discrete Differential Geometry (Mem3DG).
+ *
+ * Copyright 2020- The Mem3DG Authors
+ * and the project initiators Cuncheng Zhu, Christopher T. Lee, and
+ * Padmini Rangamani.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Please help us support Mem3DG development by citing the research
+ * papers on the package. Check out https://github.com/RangamaniLabUCSD/Mem3DG/
+ * for more information.
+ */
 
 #pragma once
 
@@ -75,6 +77,8 @@ struct Energy {
   double potentialEnergy = 0;
   /// spontaneous curvature energy of the membrane
   double spontaneousCurvatureEnergy = 0;
+  /// Gaussian curvature energy
+  double gaussianCurvatureEnergy = 0;
   /// deviatoric curvature energy of the membrane
   double deviatoricCurvatureEnergy = 0;
   /// area difference energy of the membrane
@@ -143,6 +147,8 @@ public:
   gcs::VertexData<double> Kb;
   /// deviatoric rigidity of the membrane
   gcs::VertexData<double> Kd;
+  /// gaussian modulus of the membrane
+  gcs::VertexData<double> Kg;
   /// is Smooth
   bool isSmooth;
   /// if being mutated
@@ -253,6 +259,7 @@ public:
     H0 = gcs::VertexData<double>(*geometry.mesh);
     Kb = gcs::VertexData<double>(*geometry.mesh);
     Kd = gcs::VertexData<double>(*geometry.mesh);
+    Kg = gcs::VertexData<double>(*geometry.mesh);
 
     chemErrorNorm = 0;
     mechErrorNorm = 0;
@@ -414,6 +421,11 @@ public:
    * @brief Compute spontaneous curvature energy
    */
   void computeSpontaneousCurvatureEnergy();
+
+  /**
+   * @brief Compute deviatoric curvature energy
+   */
+  void computeGaussianCurvatureEnergy();
 
   /**
    * @brief Compute deviatoric curvature energy
