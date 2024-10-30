@@ -27,6 +27,7 @@
 #include <geometrycentral/surface/rich_surface_mesh_data.h>
 #include <geometrycentral/surface/surface_mesh.h>
 #include <geometrycentral/surface/vertex_position_geometry.h>
+#include <geometrycentral/surface/vector_heat_method.h>
 
 #include <geometrycentral/utilities/eigen_interop_helpers.h>
 #include <geometrycentral/utilities/vector2.h>

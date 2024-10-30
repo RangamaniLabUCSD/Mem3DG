@@ -17,6 +17,8 @@
 #include "mem3dg/solver/geometry.h"
 #include "mem3dg/macros.h"
 #include <geometrycentral/surface/surface_mesh.h>
+//#include <geometrycentral/surface/surface_centers.h> 
+//#include <geometrycentral/surface/intrinsic_geometry_interface.h> 
 
 #ifdef MEM3DG_WITH_NETCDF
 #include <netcdf>
@@ -132,18 +134,23 @@ void Geometry::computeFaceTangentialDerivative(
 }
 
 EigenVectorX1d Geometry::computeGeodesicDistance() {
-  // assert(std::count(notableVertex.raw().begin(), notableVertex.raw().end(),
-  //                   true) != 0);
   geodesicDistance.fill(std::numeric_limits<double>::max());
-
+  notableVertex.fill(false);
+  std::vector<gcs::Vertex> boundaryPoints;
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-  // gc::Vertex centerVertex;
+
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    if (notableVertex[i]) {
-      geodesicDistance.raw() = geodesicDistance.raw().cwiseMin(
-          heatSolver.computeDistance(mesh->vertex(i)).raw());
+    if (mesh->vertex(i).isBoundary()) {
+      boundaryPoints.push_back(mesh->vertex(i));
     }
   }
+  auto geodesicDistanceNotable = heatSolver.computeDistance(boundaryPoints);
+  auto minimalIndex = std::distance(std::begin(geodesicDistanceNotable.raw()), std::max_element(std::begin(geodesicDistanceNotable.raw()), std::end(geodesicDistanceNotable.raw())));
+
+  geodesicDistance.raw() = geodesicDistance.raw().cwiseMin(
+          heatSolver.computeDistance(mesh->vertex(minimalIndex)).raw());
+
+  notableVertex[minimalIndex] = true;
   return geodesicDistance.raw();
 }
 

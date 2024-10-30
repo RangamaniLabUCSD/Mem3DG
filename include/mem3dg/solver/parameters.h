@@ -173,7 +173,7 @@ struct Parameters {
   struct Point {
     /// prescription of center finding
     std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
-        EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
+        Eigen::Matrix<bool, Eigen::Dynamic, 1>)>
         prescribeNotableVertex = NULL;
     /// period of updating geodesic distance from notableVertex calculation
     std::size_t updateGeodesicsPeriod = std::numeric_limits<std::size_t>::max();
@@ -187,7 +187,7 @@ struct Parameters {
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 0; // 1e-6
     /// prescription of protein density
-    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+    std::function<EigenVectorX1d(Eigen::Matrix<bool, Eigen::Dynamic, 1>, EigenVectorX3sr, EigenVectorX3dr, double, EigenVectorX1d, EigenVectorX1d)>
         prescribeProteinDensityDistribution = NULL;
     /// period of updating protein density distribution
     std::size_t updateProteinDensityDistributionPeriod =
