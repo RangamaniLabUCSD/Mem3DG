@@ -261,7 +261,30 @@ void init_geometry(py::module_ &pymem3dg) {
   /**
    * @brief Methods
    */
-  geometry.def("computeGeodesicDistance", &Geometry::computeGeodesicDistance,
+  geometry.def("computeGeodesicDistance",
+               py::overload_cast<>(&Geometry::computeGeodesicDistance),
+               R"delim(
+
+          compute the geodesic distance centered around Center cached in System
+
+          return: NDarray[double]
+      )delim");
+
+  // This version is hard to call since there's not an easy way to create
+  // gcs::Vertex at this point...
+  //   geometry.def("computeGeodesicDistance", py::overload_cast<const
+  //   std::vector<gcs::Vertex>&>(&Geometry::computeGeodesicDistance),
+  //                R"delim(
+
+  //           compute the geodesic distance centered around Center cached in
+  //           System
+
+  //           return: NDarray[double]
+  //       )delim");
+
+  geometry.def("computeGeodesicDistance",
+               py::overload_cast<const std::vector<int> &>(
+                   &Geometry::computeGeodesicDistance),
                R"delim(
 
           compute the geodesic distance centered around Center cached in System

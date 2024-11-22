@@ -409,6 +409,24 @@ public:
   EigenVectorX1d computeGeodesicDistance();
 
   /**
+   * @brief Compute geodesic distances relative to a set of vertices
+   *
+   * @param points Set of vertices to get geodesic distances from
+   * @return EigenVectorX1d   Geodesic distances
+   */
+  EigenVectorX1d
+  computeGeodesicDistance(const std::vector<gcs::Vertex> &points);
+
+  /**
+   * @brief Compute geodesic distances relative to a set of vertices specified
+   * by index
+   *
+   * @param points Indices of notable vertices
+   * @return EigenVectorX1d Geodesic distances
+   */
+  EigenVectorX1d computeGeodesicDistance(const std::vector<int> &points);
+
+  /**
    * @brief Get tangential derivative of quantities on face
    */
   void computeFaceTangentialDerivative(gcs::VertexData<double> &quantities,
