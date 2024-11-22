@@ -127,7 +127,7 @@ void init_geometry(py::module_ &pymem3dg) {
   geometry.def(
       "getVertexMatrix",
       [](Geometry &s) {
-        return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
+        return gc::EigenMap<double, 3>(s.vpg->vertexPositions);
       },
       py::return_value_policy::copy,
       R"delim(
@@ -295,6 +295,7 @@ void init_geometry(py::module_ &pymem3dg) {
   geometry.def(
       "isBoundary",
       py::overload_cast<const std::size_t>(&Geometry::isBoundary, py::const_),
+      py::arg("index"),
       R"delim(
           check if the vertex is on the boundary
 

@@ -195,10 +195,8 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
 
   if (ifUpdateNotableVertex) {
     if (parameters.point.prescribeNotableVertex != NULL) {
-      geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
-          geometry.mesh->getFaceVertexMatrix<std::size_t>(),
-          toMatrix(geometry.vpg->vertexPositions),
-          geometry.geodesicDistance.raw());
+      geometry.notableVertex.raw() =
+          parameters.point.prescribeNotableVertex(geometry);
     } else {
       ifUpdateNotableVertex = false;
       // mem3dg_runtime_warning("Parameter.point.prescribeNotableVertex is

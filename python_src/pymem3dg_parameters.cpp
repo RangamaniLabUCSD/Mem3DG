@@ -250,13 +250,12 @@ void init_parameters(py::module_ &pymem3dg) {
     )delim");
   point.def_readwrite("prescribeNotableVertex",
                       &Parameters::Point::prescribeNotableVertex,
+                      py::args("geometry"),
                       R"delim(
         Functional to find the notable vertex of the mesh
 
         Args:
-            faceMatrix (npt.NDarray[int64])
-            vertexMatrix (npt.NDarray[float64])
-            geodesicDistance (list)
+            geometry (Geometry)
         Returns:
             list[bool]: List of whether each vertex is notable
       )delim");
