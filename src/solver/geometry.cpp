@@ -132,7 +132,7 @@ void Geometry::computeFaceTangentialDerivative(
 }
 
 // exists for legacy purposes at this point...
-EigenVectorX1d Geometry::computeGeodesicDistance() {
+EigenVectorX1d Geometry::computeGeodesicDistance() const {
   // assert(std::count(notableVertex.raw().begin(), notableVertex.raw().end(),
   //                   true) != 0);
   std::vector<gcs::Vertex> notableVertices;
@@ -144,14 +144,14 @@ EigenVectorX1d Geometry::computeGeodesicDistance() {
   return computeGeodesicDistance(notableVertices);
 }
 
-EigenVectorX1d
-Geometry::computeGeodesicDistance(const std::vector<gcs::Vertex> &points) {
+EigenVectorX1d Geometry::computeGeodesicDistance(
+    const std::vector<gcs::Vertex> &points) const {
   gcs::HeatMethodDistanceSolver heatSolver(*vpg);
   return heatSolver.computeDistance(points).raw();
 }
 
-EigenVectorX1d
-Geometry::computeGeodesicDistance(const std::vector<int> &points) {
+EigenVectorX1d Geometry::computeGeodesicDistance(
+    const std::vector<std::size_t> &points) const {
   std::vector<gcs::Vertex> output;
   std::transform(points.begin(), points.end(), std::back_inserter(output),
                  [this](int value) { return mesh->vertex(value); });

@@ -406,7 +406,7 @@ public:
   /**
    * @brief update cache of geodesicDistance
    */
-  EigenVectorX1d computeGeodesicDistance();
+  EigenVectorX1d computeGeodesicDistance() const;
 
   /**
    * @brief Compute geodesic distances relative to a set of vertices
@@ -415,7 +415,7 @@ public:
    * @return EigenVectorX1d   Geodesic distances
    */
   EigenVectorX1d
-  computeGeodesicDistance(const std::vector<gcs::Vertex> &points);
+  computeGeodesicDistance(const std::vector<gcs::Vertex> &points) const;
 
   /**
    * @brief Compute geodesic distances relative to a set of vertices specified
@@ -424,7 +424,8 @@ public:
    * @param points Indices of notable vertices
    * @return EigenVectorX1d Geodesic distances
    */
-  EigenVectorX1d computeGeodesicDistance(const std::vector<int> &points);
+  EigenVectorX1d
+  computeGeodesicDistance(const std::vector<std::size_t> &points) const;
 
   /**
    * @brief Get tangential derivative of quantities on face
@@ -437,6 +438,15 @@ public:
    */
   double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
                                  gcs::Halfedge &he) const;
+
+  inline gcs::Vertex vertex(const std::size_t i) const {
+    return mesh->vertex(i);
+  }
+
+  inline bool isBoundary(const std::size_t i) const {
+    return mesh->vertex(i).isBoundary();
+  }
+  inline bool isBoundary(const gcs::Vertex v) const { return v.isBoundary(); }
 };
 } // namespace solver
 } // namespace mem3dg

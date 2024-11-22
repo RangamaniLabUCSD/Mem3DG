@@ -261,10 +261,10 @@ void init_geometry(py::module_ &pymem3dg) {
   /**
    * @brief Methods
    */
-  geometry.def("computeGeodesicDistance",
-               py::overload_cast<>(&Geometry::computeGeodesicDistance),
-               R"delim(
-
+  geometry.def(
+      "computeGeodesicDistance",
+      py::overload_cast<>(&Geometry::computeGeodesicDistance, py::const_),
+      R"delim(
           compute the geodesic distance centered around Center cached in System
 
           return: NDarray[double]
@@ -283,13 +283,22 @@ void init_geometry(py::module_ &pymem3dg) {
   //       )delim");
 
   geometry.def("computeGeodesicDistance",
-               py::overload_cast<const std::vector<int> &>(
-                   &Geometry::computeGeodesicDistance),
+               py::overload_cast<const std::vector<std::size_t> &>(
+                   &Geometry::computeGeodesicDistance, py::const_),
+               py::arg("points"),
                R"delim(
+            compute the geodesic distance centered around Center cached in System
 
-          compute the geodesic distance centered around Center cached in System
+            return: NDarray[double]
+        )delim");
 
-          return: NDarray[double]
+  geometry.def(
+      "isBoundary",
+      py::overload_cast<const std::size_t>(&Geometry::isBoundary, py::const_),
+      R"delim(
+          check if the vertex is on the boundary
+
+          return: bool
       )delim");
 }
 } // namespace integrator
