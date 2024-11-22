@@ -261,10 +261,9 @@ void init_geometry(py::module_ &pymem3dg) {
   /**
    * @brief Methods
    */
-  geometry.def(
-      "computeGeodesicDistance",
-      py::overload_cast<>(&Geometry::computeGeodesicDistance, py::const_),
-      R"delim(
+  geometry.def("computeGeodesicDistance",
+               py::overload_cast<>(&Geometry::computeGeodesicDistance),
+               R"delim(
           compute the geodesic distance centered around Center cached in System
 
           return: NDarray[double]
@@ -287,7 +286,7 @@ void init_geometry(py::module_ &pymem3dg) {
                    &Geometry::computeGeodesicDistance, py::const_),
                py::arg("points"),
                R"delim(
-            compute the geodesic distance centered around Center cached in System
+            compute the geodesic distance from a set of vertex indices
 
             return: NDarray[double]
         )delim");
@@ -301,6 +300,10 @@ void init_geometry(py::module_ &pymem3dg) {
 
           return: bool
       )delim");
+
+  geometry.def("nVertices", &Geometry::nVertices);
+  geometry.def("nEdges", &Geometry::nEdges);
+  geometry.def("nFaces", &Geometry::nFaces);
 }
 } // namespace integrator
 } // namespace solver

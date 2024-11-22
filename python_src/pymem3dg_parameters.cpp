@@ -250,14 +250,10 @@ void init_parameters(py::module_ &pymem3dg) {
     )delim");
   point.def_readwrite("prescribeNotableVertex",
                       &Parameters::Point::prescribeNotableVertex,
-                      py::args("geometry"),
                       R"delim(
-        Functional to find the notable vertex of the mesh
+        Getter/setter for function to find the notable vertex of the mesh.
 
-        Args:
-            geometry (Geometry)
-        Returns:
-            list[bool]: List of whether each vertex is notable
+        The function should fit the prototype (geometry) -> list[bool]
       )delim");
   point.def_readwrite("updateGeodesicsPeriod",
                       &Parameters::Point::updateGeodesicsPeriod, R"delim(

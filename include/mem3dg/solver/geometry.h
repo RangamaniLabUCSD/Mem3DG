@@ -406,7 +406,7 @@ public:
   /**
    * @brief update cache of geodesicDistance
    */
-  EigenVectorX1d computeGeodesicDistance() const;
+  EigenVectorX1d computeGeodesicDistance();
 
   /**
    * @brief Compute geodesic distances relative to a set of vertices
@@ -447,6 +447,9 @@ public:
     return mesh->vertex(i).isBoundary();
   }
   inline bool isBoundary(const gcs::Vertex v) const { return v.isBoundary(); }
+  inline std::size_t nVertices() const { return mesh->nVertices(); }
+  inline std::size_t nEdges() const { return mesh->nEdges(); }
+  inline std::size_t nFaces() const { return mesh->nFaces(); }
 };
 } // namespace solver
 } // namespace mem3dg
