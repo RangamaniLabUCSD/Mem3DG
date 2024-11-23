@@ -46,19 +46,16 @@ endif()
 # ##############################################################################
 # GET GEOMETRY CENTRAL
 # ##############################################################################
-# FetchContent_Declare( geometrycentrallib GIT_REPOSITORY
-# https://github.com/nmwsharp/geometry-central.git GIT_TAG origin/master
-# GIT_SHALLOW TRUE SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-src"
-# BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/geometrycentral-build" )
-# FetchContent_GetProperties(geometrycentrallib) if(NOT
-# geometrycentrallib_POPULATED) FetchContent_Populate(geometrycentrallib)
-# add_subdirectory( ${geometrycentrallib_SOURCE_DIR}
-# ${geometrycentrallib_BINARY_DIR} ) set_target_properties( geometry-central
-# PROPERTIES POSITION_INDEPENDENT_CODE ON ) endif()
+
+
+
+set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(geometry-central EXCLUDE_FROM_ALL SYSTEM )
-set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
+# set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # Suppress noise from sprintf deprecated
-target_compile_options(geometry-central PRIVATE "-Wno-deprecated-declarations")
+# target_compile_options(geometry-central PRIVATE "-Wno-deprecated-declarations")
 
 # ##############################################################################
 # Configure libigl
