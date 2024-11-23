@@ -52,8 +52,8 @@ endif()
 set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(geometry-central EXCLUDE_FROM_ALL SYSTEM )
+set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
-# set_target_properties(geometry-central PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # Suppress noise from sprintf deprecated
 # target_compile_options(geometry-central PRIVATE "-Wno-deprecated-declarations")
 
