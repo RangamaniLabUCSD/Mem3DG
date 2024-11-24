@@ -80,7 +80,7 @@ jobs:
 
       - name: Resolve dependencies
         run: |
-          conda install -c netcdf-cxx4 eigen pybind11
+          conda install netcdf-cxx4 eigen pybind11
 
       - name: Build
         run: |
