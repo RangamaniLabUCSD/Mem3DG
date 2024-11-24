@@ -72,28 +72,20 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - uses: actions/setup-python@v5
-        id: pyexe
+      - uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.10'
-
-      # - name: Setup python libs
-      #   id: pyexe
-      #   run: |
-      #     python3 --version
-      #     # python3 -m pip install pytest
-      #     py_exe_path=$(which python3)
-      #     echo ::set-output name=path::$py_exe_path
+          activate-environment: mem3dg
+          python-version: 3.10
+          channels: conda-forge
 
       - name: Resolve dependencies
         run: |
-          brew unlink pkg-config@0.29.2
-          brew install netcdf eigen pybind11 netcdf-cxx
+          conda install -c netcdf-cxx4 eigen pybind11
 
       - name: Build
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON -DPython_EXECUTABLE:FILEPATH=${{ steps.pyexe.outputs.python-path }} --log-level=DEBUG ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON --log-level=DEBUG ..
           cmake --build . --config Release -j 4
 
       - name: Test
