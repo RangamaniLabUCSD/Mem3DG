@@ -409,6 +409,25 @@ public:
   EigenVectorX1d computeGeodesicDistance();
 
   /**
+   * @brief Compute geodesic distances relative to a set of vertices
+   *
+   * @param points Set of vertices to get geodesic distances from
+   * @return EigenVectorX1d   Geodesic distances
+   */
+  EigenVectorX1d
+  computeGeodesicDistance(const std::vector<gcs::Vertex> &points) const;
+
+  /**
+   * @brief Compute geodesic distances relative to a set of vertices specified
+   * by index
+   *
+   * @param points Indices of notable vertices
+   * @return EigenVectorX1d Geodesic distances
+   */
+  EigenVectorX1d
+  computeGeodesicDistance(const std::vector<std::size_t> &points) const;
+
+  /**
    * @brief Get tangential derivative of quantities on face
    */
   void computeFaceTangentialDerivative(gcs::VertexData<double> &quantities,
@@ -419,6 +438,18 @@ public:
    */
   double computeLengthCrossRatio(gcs::VertexPositionGeometry &vpg,
                                  gcs::Halfedge &he) const;
+
+  inline gcs::Vertex vertex(const std::size_t i) const {
+    return mesh->vertex(i);
+  }
+
+  inline bool isBoundary(const std::size_t i) const {
+    return mesh->vertex(i).isBoundary();
+  }
+  inline bool isBoundary(const gcs::Vertex v) const { return v.isBoundary(); }
+  inline std::size_t nVertices() const { return mesh->nVertices(); }
+  inline std::size_t nEdges() const { return mesh->nEdges(); }
+  inline std::size_t nFaces() const { return mesh->nFaces(); }
 };
 } // namespace solver
 } // namespace mem3dg

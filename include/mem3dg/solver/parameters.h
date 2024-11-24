@@ -172,8 +172,7 @@ struct Parameters {
 
   struct Point {
     /// prescription of center finding
-    std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
-        EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
+    std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(const Geometry &)>
         prescribeNotableVertex = NULL;
     /// period of updating geodesic distance from notableVertex calculation
     std::size_t updateGeodesicsPeriod = std::numeric_limits<std::size_t>::max();
