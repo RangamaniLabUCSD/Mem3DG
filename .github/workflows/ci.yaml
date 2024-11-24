@@ -88,6 +88,7 @@ jobs:
       - name: Resolve dependencies
         run: |
           brew update
+          brew upgrade
           brew unlink pkg-config@0.29.2
           brew install netcdf eigen pybind11 netcdf-cxx
 
