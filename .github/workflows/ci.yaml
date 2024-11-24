@@ -61,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest]
+        os: [macos-15]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -87,9 +87,6 @@ jobs:
 
       - name: Resolve dependencies
         run: |
-          brew update
-          brew upgrade
-          brew unlink pkg-config@0.29.2
           brew install netcdf eigen pybind11 netcdf-cxx
 
       - name: Build
