@@ -85,7 +85,7 @@ jobs:
       - name: Build
         run: |
           mkdir -p build && cd build;
-          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON --log-level=DEBUG ..
+          cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_PYMEM3DG=ON -DSUITESPARSE=OFF -DWITH_NETCDF=ON --log-level=DEBUG -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} ..
           cmake --build . --config Release -j 4
 
       - name: Test
