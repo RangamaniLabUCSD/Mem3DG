@@ -404,7 +404,9 @@ void Integrator::saveData(bool outputTrajFile, bool outputMeshFile,
                .sum()
         << "\n"
         << "H0: [" << system.H0.raw().minCoeff() << ","
-        << system.H0.raw().maxCoeff() << "]" << std::endl;
+        << system.H0.raw().maxCoeff() << "]"
+        << "\n"
+        << "timestep: " << timeStep << std::endl;
 
     // report the backtracking if verbose
     if (timeStep != characteristicTimeStep && printToConsole) {

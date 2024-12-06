@@ -100,11 +100,9 @@ bool Euler::integrate() {
       break;
     }
 
-    if (system.updatePrescription(lastUpdateTime, timeStep)) {
-      system.time += 1e-5 * timeStep;
-    } else {
-      march();
-    }
+    // Mutate mesh, update notable vertex, geodesics, protein density, and mask
+    system.updatePrescription(lastUpdateTime, baseTimeStep);
+    march();
   }
 
 #ifdef MEM3DG_WITH_NETCDF
