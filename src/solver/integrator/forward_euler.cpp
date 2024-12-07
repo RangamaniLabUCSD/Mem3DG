@@ -88,21 +88,24 @@ bool Euler::integrate() {
     // Evaluate and threshold status data
     status();
 
+    mem3dg_print_noendl("TIME: ", system.time, " dt:", timeStep, "\r");
     // Save files every tSave period and print some info; save data before exit
     if (system.time - lastSave >= savePeriod || system.time == initialTime ||
         EXIT) {
       lastSave = system.time;
       saveData(ifOutputTrajFile, ifOutputMeshFile, ifPrintToConsole);
     }
-
     // break loop if EXIT flag is on
     if (EXIT) {
       break;
     }
 
     // Mutate mesh, update notable vertex, geodesics, protein density, and mask
-    system.updatePrescription(lastUpdateTime, baseTimeStep);
-    march();
+    if (system.updatePrescription(lastUpdateTime, baseTimeStep)) {
+      system.time += 1e-5 * timeStep;
+    } else {
+      march();
+    }
   }
 
 #ifdef MEM3DG_WITH_NETCDF
@@ -145,7 +148,7 @@ void Euler::status() {
   // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     if (ifPrintToConsole)
-      std::cout << "\nError norm smaller than tolerance." << std::endl;
+      mem3dg_print("Error norm smaller than tolerance.");
     EXIT = true;
   }
 
