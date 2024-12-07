@@ -285,6 +285,7 @@ void init_parameters(py::module_ &pymem3dg) {
       R"delim(
           functional to set the protein density distribution prescription
         args:
+            geometry (Geometry)
             time (float)
             vertexMeanCurvatures (list)
             geodesicDistance (list)

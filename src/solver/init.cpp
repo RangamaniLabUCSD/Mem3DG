@@ -210,7 +210,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
     if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
       proteinDensity.raw() =
           parameters.protein.prescribeProteinDensityDistribution(
-              time, geometry.vpg->vertexMeanCurvatures.raw(),
+              geometry, time, geometry.vpg->vertexMeanCurvatures.raw(),
               geometry.geodesicDistance.raw());
       updateConfigurations();
     } else {

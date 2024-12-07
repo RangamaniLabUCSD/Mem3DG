@@ -64,7 +64,8 @@ protected:
     p.variation.isProteinVariation = true;
     p.variation.geodesicMask = -1;
 
-    auto geodesicProteinDensity = [](double time, EigenVectorX1d meanCurvature,
+    auto geodesicProteinDensity = [](const Geometry &g, double time,
+                                     EigenVectorX1d meanCurvature,
                                      EigenVectorX1d geodesicDistance) {
       EigenVectorX1d proteinDensity;
       proteinDensity.resize(geodesicDistance.rows(), 1);

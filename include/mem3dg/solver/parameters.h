@@ -186,7 +186,8 @@ struct Parameters {
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 0; // 1e-6
     /// prescription of protein density
-    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+    std::function<EigenVectorX1d(const Geometry &, double, EigenVectorX1d,
+                                 EigenVectorX1d)>
         prescribeProteinDensityDistribution = NULL;
     /// period of updating protein density distribution
     std::size_t updateProteinDensityDistributionPeriod =
