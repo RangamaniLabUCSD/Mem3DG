@@ -129,8 +129,8 @@ void System::mutateMesh(size_t nRepetition) {
 
 void System::vertexShift() {
   for (gcs::Vertex v : geometry.mesh->vertices()) {
-    // Only move if not significantly force masked
-    if (gc::sum(forces.forceMask[v]) > 0.5) {
+    // Only move if not significantly force masked nor notable
+    if (gc::sum(forces.forceMask[v]) > 0.5 && !geometry.notableVertex[v]) {
       if (v.isBoundary()) {
         gc::Vector3 barycenter{0.0, 0.0, 0.0};
         std::vector<gcs::Vertex> adjacent_boundary_vertices;
@@ -314,6 +314,9 @@ bool System::processSplitCollapse() {
     gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
     // don't keep processing static vertices
     if (gc::sum(vertex1ForceMask + vertex2ForceMask) <= maskThreshold)
+      continue;
+
+    if (geometry.notableVertex[vertex1] || geometry.notableVertex[vertex2])
       continue;
 
     // Splitting
