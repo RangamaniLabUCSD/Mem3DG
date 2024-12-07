@@ -293,6 +293,11 @@ bool System::processSplitCollapse() {
   gcs::EdgeData<bool> isOrigEdge(*geometry.mesh, true);
   // gcs::VertexData<bool> isOrigVertex(*geometry.mesh, true);
 
+  double maskThreshold = 0.5;
+  if (this->parameters.boundary.shapeBoundaryCondition == "fixed") {
+    maskThreshold = 3;
+  }
+
   // expand the mesh when area is too large
   for (gcs::Edge e : geometry.mesh->edges()) {
 
@@ -308,7 +313,7 @@ bool System::processSplitCollapse() {
     gc::Vector3 vertex1ForceMask = forces.forceMask[vertex1];
     gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
     // don't keep processing static vertices
-    if (gc::sum(vertex1ForceMask + vertex2ForceMask) < 0.5)
+    if (gc::sum(vertex1ForceMask + vertex2ForceMask) <= maskThreshold)
       continue;
 
     // Splitting
@@ -350,6 +355,12 @@ bool System::processSplitCollapseQueued() {
   std::vector<gcs::Edge> toSplit;
   std::vector<gcs::Edge> toCollapse;
 
+  // Unmasked vertices will lead to a summed make value of 6
+  double maskThreshold = 0.5;
+  if (this->parameters.boundary.shapeBoundaryCondition == "fixed") {
+    maskThreshold = 3;
+  }
+
   for (gc::Edge e : geometry.mesh->edges()) {
     toSplit.push_back(e);
   }
@@ -366,7 +377,7 @@ bool System::processSplitCollapseQueued() {
     gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
 
     if (meshProcessor.meshMutator.checkSplitCondition(e, *geometry.vpg) &&
-        gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5) {
+        gc::sum(vertex1ForceMask + vertex2ForceMask) > maskThreshold) {
 
       auto newVertex = splitEdge(e);
 
@@ -388,7 +399,7 @@ bool System::processSplitCollapseQueued() {
       gc::Vector3 vertex2ForceMask = forces.forceMask[vertex2];
 
       if (meshProcessor.meshMutator.checkCollapseCondition(e, *geometry.vpg) &&
-          gc::sum(vertex1ForceMask + vertex2ForceMask) > 0.5 &&
+          gc::sum(vertex1ForceMask + vertex2ForceMask) > maskThreshold &&
           !ifFoldover(e)) {
 
         auto newVertex = collapseEdge(e);
