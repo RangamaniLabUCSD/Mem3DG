@@ -186,6 +186,13 @@ void init_forces(py::module_ &pymem3dg) {
           get the spontaneous curvature potential
       )delim");
   forces.def(
+      "getGaussianCurvatureForceVec",
+      [](Forces &s) { return toMatrix(s.gaussianCurvatureForceVec); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the Gaussian curvature force of the system
+      )delim");
+  forces.def(
       "getDeviatoricCurvaturePotential",
       [](Forces &s) { return s.deviatoricCurvaturePotential.raw(); },
       py::return_value_policy::copy,
