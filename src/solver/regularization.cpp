@@ -130,7 +130,7 @@ void System::mutateMesh(size_t nRepetition) {
 void System::vertexShift() {
   for (gcs::Vertex v : geometry.mesh->vertices()) {
     // Only move if not significantly force masked nor notable
-    if (gc::sum(forces.forceMask[v]) > 0.5 && !geometry.notableVertex[v]) {
+    if (gc::sum(forces.forceMask[v]) > 2 && !geometry.notableVertex[v]) {
       if (v.isBoundary()) {
         gc::Vector3 barycenter{0.0, 0.0, 0.0};
         std::vector<gcs::Vertex> adjacent_boundary_vertices;
@@ -293,7 +293,7 @@ bool System::processSplitCollapse() {
   gcs::EdgeData<bool> isOrigEdge(*geometry.mesh, true);
   // gcs::VertexData<bool> isOrigVertex(*geometry.mesh, true);
 
-  double maskThreshold = 0.5;
+  double maskThreshold = 3.5;
   if (this->parameters.boundary.shapeBoundaryCondition == "fixed") {
     maskThreshold = 3;
   }
@@ -346,6 +346,8 @@ bool System::processSplitCollapse() {
       }
     }
   } // end for edge
+  isGrown = removeLowValencyVertices();
+
   if (isGrown) {
     geometry.mesh->compress();
   }
@@ -359,7 +361,7 @@ bool System::processSplitCollapseQueued() {
   std::vector<gcs::Edge> toCollapse;
 
   // Unmasked vertices will lead to a summed make value of 6
-  double maskThreshold = 0.5;
+  double maskThreshold = 3.5;
   if (this->parameters.boundary.shapeBoundaryCondition == "fixed") {
     maskThreshold = 3;
   }
@@ -416,6 +418,16 @@ bool System::processSplitCollapseQueued() {
   if (didSplitOrCollapse)
     geometry.mesh->compress();
   return didSplitOrCollapse;
+}
+
+bool System::removeLowValencyVertices(std::size_t degree) {
+  for (gc::Vertex v : geometry.mesh->vertices()) {
+    if (v.degree() <= degree && !v.isBoundary()) {
+      auto face = geometry.mesh->removeVertex(v);
+      geometry.mesh->triangulate(face);
+    }
+  }
+  return true;
 }
 
 Eigen::Matrix<bool, Eigen::Dynamic, 1>
