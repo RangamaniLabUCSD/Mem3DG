@@ -916,6 +916,7 @@ def animate(
     mechanicalForce: bool = True,
     spontaneousCurvatureForce: bool = True,
     deviatoricCurvatureForce: bool = True,
+    gaussianCurvatureForce: bool = True,
     externalForce: bool = True,
     capillaryForce: bool = True,
     lineCapillaryForce: bool = True,
@@ -1146,6 +1147,11 @@ def animate(
                 addForce(
                     system.getForces().getDeviatoricCurvatureForceVec(),
                     "deviatoricCurvatureForce",
+                )
+            if gaussianCurvatureForce:
+                addForce(
+                    system.getForces().getGaussianCurvatureForceVec(),
+                    "gaussianCurvatureForce",
                 )
             if externalForce:
                 addForce(system.getForces().getExternalForceVec(), "externalForce")

@@ -133,25 +133,33 @@ void Geometry::computeFaceTangentialDerivative(
   }
 }
 
+// exists for legacy purposes at this point...
 EigenVectorX1d Geometry::computeGeodesicDistance() {
-  geodesicDistance.fill(std::numeric_limits<double>::max());
-  notableVertex.fill(false);
-  std::vector<gcs::Vertex> boundaryPoints;
-  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
-
+  // assert(std::count(notableVertex.raw().begin(), notableVertex.raw().end(),
+  //                   true) != 0);
+  std::vector<gcs::Vertex> notableVertices;
   for (std::size_t i = 0; i < mesh->nVertices(); ++i) {
-    if (mesh->vertex(i).isBoundary()) {
-      boundaryPoints.push_back(mesh->vertex(i));
+    if (notableVertex[i]) {
+      notableVertices.emplace_back(mesh->vertex(i));
     }
   }
-  auto geodesicDistanceNotable = heatSolver.computeDistance(boundaryPoints);
-  auto minimalIndex = std::distance(std::begin(geodesicDistanceNotable.raw()), std::max_element(std::begin(geodesicDistanceNotable.raw()), std::end(geodesicDistanceNotable.raw())));
-
-  geodesicDistance.raw() = geodesicDistance.raw().cwiseMin(
-          heatSolver.computeDistance(mesh->vertex(minimalIndex)).raw());
-
-  notableVertex[minimalIndex] = true;
+  geodesicDistance.raw() = computeGeodesicDistance(notableVertices);
   return geodesicDistance.raw();
+}
+
+EigenVectorX1d Geometry::computeGeodesicDistance(
+    const std::vector<gcs::Vertex> &points) const {
+  gcs::HeatMethodDistanceSolver heatSolver(*vpg);
+  return heatSolver.computeDistance(points).raw();
+}
+
+EigenVectorX1d Geometry::computeGeodesicDistance(
+    const std::vector<std::size_t> &points) const {
+  std::vector<gcs::Vertex> output;
+  std::transform(points.begin(), points.end(), std::back_inserter(output),
+                 [this](int value) { return mesh->vertex(value); });
+
+  return computeGeodesicDistance(output);
 }
 
 void Geometry::updateReferenceConfigurations() {

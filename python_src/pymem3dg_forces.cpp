@@ -72,6 +72,13 @@ void init_forces(py::module_ &pymem3dg) {
           get the deviatoric curvature force of the system
       )delim");
   forces.def(
+      "getGaussianCurvatureForceVec",
+      [](Forces &s) { return toMatrix(s.gaussianCurvatureForceVec); },
+      py::return_value_policy::copy,
+      R"delim(
+          get the gaussian curvature force of the system
+      )delim");
+  forces.def(
       "getAreaDifferenceForceVec",
       [](Forces &s) { return toMatrix(s.areaDifferenceForceVec); },
       py::return_value_policy::copy,

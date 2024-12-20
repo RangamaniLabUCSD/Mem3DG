@@ -145,19 +145,17 @@ void System::updateConfigurations() {
 bool System::updatePrescription(std::map<std::string, double> &lastUpdateTime,
                                 double timeStep) {
   bool ifMutateMesh = (time - lastUpdateTime["mutateMesh"] >
-                       (meshProcessor.meshMutator.mutateMeshPeriod * timeStep)),
-       ifUpdateNotableVertex =
-           (time - lastUpdateTime["notableVertex"] >
-            (parameters.point.updateNotableVertexPeriod * timeStep)),
-       ifUpdateGeodesics =
-           (time - lastUpdateTime["geodesics"] >
-            (parameters.point.updateGeodesicsPeriod * timeStep)),
+                       (meshProcessor.meshMutator.mutateMeshPeriod)),
+       ifUpdateNotableVertex = (time - lastUpdateTime["notableVertex"] >
+                                (parameters.point.updateNotableVertexPeriod)),
+       ifUpdateGeodesics = (time - lastUpdateTime["geodesics"] >
+                            (parameters.point.updateGeodesicsPeriod)),
        ifUpdateProteinDensityDistribution =
            (time - lastUpdateTime["protein"] >
             (parameters.protein.updateProteinDensityDistributionPeriod *
              timeStep)),
        ifUpdateMask = (time - lastUpdateTime["mask"] >
-                       (parameters.variation.updateMaskPeriod * timeStep));
+                       (parameters.variation.updateMaskPeriod));
 
   bool updated =
       updatePrescription(ifMutateMesh, ifUpdateNotableVertex, ifUpdateGeodesics,
@@ -195,8 +193,8 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
 
   if (ifUpdateNotableVertex) {
     if (parameters.point.prescribeNotableVertex != NULL) {
-      geometry.notableVertex.raw() = parameters.point.prescribeNotableVertex(
-          geometry.notableVertex.raw());
+      geometry.notableVertex.raw() =
+          parameters.point.prescribeNotableVertex(geometry);
     } else {
       ifUpdateNotableVertex = false;
       // mem3dg_runtime_warning("Parameter.point.prescribeNotableVertex is
@@ -212,10 +210,7 @@ bool System::updatePrescription(bool &ifMutateMesh, bool &ifUpdateNotableVertex,
     if (parameters.protein.prescribeProteinDensityDistribution != NULL) {
       proteinDensity.raw() =
           parameters.protein.prescribeProteinDensityDistribution(
-              geometry.notableVertex.raw(),
-              geometry.mesh->getFaceVertexMatrix<std::size_t>(),
-              toMatrix(geometry.vpg->vertexPositions),
-              time, geometry.vpg->vertexMeanCurvatures.raw(),
+              geometry, time, geometry.vpg->vertexMeanCurvatures.raw(),
               geometry.geodesicDistance.raw());
       updateConfigurations();
     } else {

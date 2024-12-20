@@ -76,9 +76,25 @@ option(WITH_LIBUNWIND "Link libunwind for stack traces" OFF)
 option(WITH_OPENMP "Build with OpenMP support" OFF)
 option(LINK_PROFILER "Link profiler gperftools" OFF)
 
+if(CMAKE_PROJECT_NAME STREQUAL "mem3dg")
+  option(BUILD_SHARED_LIBS
+         "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)"
+         OFF
+  )
+endif()
+
+# option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
 option(MEM3DG_PEDANTIC "Be extremely pedantic while compiling" OFF)
 
 mark_as_advanced(FORCE MEM3DG_PEDANTIC)
+
+if(BUILD_PYMEM3DG AND BUILD_SHARED_LIBS)
+  message(
+    FATAL_ERROR
+      "Cannot build shared libraries with Python bindings. Please set BUILD_PYMEM3DG=OFF or BUILD_SHARED_LIBS=OFF"
+  )
+endif()
 
 # ##############################################################################
 # BUNDLED LIBRARIES & EXTERNAL LIBS
@@ -91,13 +107,6 @@ if(WITH_NETCDF)
   if(VCPKG_TARGET_TRIPLET)
     message(STATUS "VCPKG Triplet: ${VCPKG_TARGET_TRIPLET}")
   endif()
-  # find_package(netCDF "4.3.1" REQUIRED)
-  # message(DEBUG "netCDF version: ${netCDF_VERSION}")
-  # message(DEBUG "netCDF dir: ${netCDF_DIR}")
-  # message(DEBUG "netCDF include dir: ${netCDF_INCLUDE_DIR}")
-  # message(DEBUG "netCDF libraries: ${netCDF_LIBRARIES}")
-  # list(APPEND LINKED_LIBS NetCDF::NetCDF)
-
   find_package(netcdf-cxx4 REQUIRED)
   message(DEBUG "netcdf-cxx4 include: ${netcdf-cxx4_INCLUDE_DIRS}")
   message(DEBUG "netcdf-cxx4 library: ${netcdf-cxx4_LIBRARIES}")
@@ -154,7 +163,7 @@ if(MEM3DG_PEDANTIC)
 endif()
 
 # mem3dg library
-add_library(mem3dg SHARED $<TARGET_OBJECTS:mem3dg_objlib>)
+add_library(mem3dg $<TARGET_OBJECTS:mem3dg_objlib>)
 target_link_libraries(mem3dg PUBLIC mem3dg_objlib)
 
 if(BUILD_PYMEM3DG)
@@ -179,11 +188,12 @@ install(
   TARGETS mem3dg
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
 )
 install(
   DIRECTORY include/mem3dg
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  COMPONENT Development
   FILES_MATCHING
   PATTERN "*.h"
 )

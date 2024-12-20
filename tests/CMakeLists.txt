@@ -15,11 +15,14 @@
 
 include(FetchContent)
 
+set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
+set(BUILD_SHARED_LIBS OFF)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG origin/main
   GIT_SHALLOW TRUE
+  EXCLUDE_FROM_ALL SYSTEM
 )
 # Prevent overriding the parent project's compiler/linker settings on Windows
 set(gtest_force_shared_crt
@@ -27,15 +30,8 @@ set(gtest_force_shared_crt
     CACHE BOOL "" FORCE
 )
 
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-  FetchContent_Populate(googletest)
-endif()
-add_subdirectory(
-  ${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} SYSTEM EXCLUDE_FROM_ALL
-)
-
-# FetchContent_MakeAvailable(googletest)
+FetchContent_MakeAvailable(googletest)
+set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
 
 # Build the tests
 set(MEM3DG_TEST_SRCS src/main_test.cpp src/product_test.cpp src/force_test.cpp
