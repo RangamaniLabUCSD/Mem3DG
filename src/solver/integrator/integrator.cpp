@@ -37,20 +37,22 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
           ? system.forces.mechanicalForce.raw().cwiseAbs().maxCoeff()
           : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
-  double dt = (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
-              (initialMaximumForce / currentMaximumForce);
+  // double dt = (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
+  //             (initialMaximumForce / currentMaximumForce);
+  double dt = (dt_size2_ratio * currentMinimumSize) *
+            (initialMaximumForce / currentMaximumForce);
 
-  if (characteristicTimeStep / dt > 1e3) {
-    mem3dg_runtime_warning(
-        "Adaptive time step has become too small!",
-        "Consider restarting simulation in smaller timestep.",
-        "Current size / initial size =",
-        currentMinimumSize / pow(characteristicTimeStep / dt_size2_ratio, 0.5),
-        "Current force / initial force =",
-        currentMaximumForce / initialMaximumForce);
-    EXIT = true;
-    SUCCESS = false;
-  }
+  // if (characteristicTimeStep / dt > 1e3) {
+  //   mem3dg_runtime_warning(
+  //       "Adaptive time step has become too small!",
+  //       "Consider restarting simulation in smaller timestep.",
+  //       "Current size / initial size =",
+  //       currentMinimumSize / pow(characteristicTimeStep / dt_size2_ratio, 0.5),
+  //       "Current force / initial force =",
+  //       currentMaximumForce / initialMaximumForce);
+  //   EXIT = true;
+  //   SUCCESS = false;
+  // }
   return dt;
 }
 

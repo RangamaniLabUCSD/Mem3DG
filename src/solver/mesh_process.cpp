@@ -152,7 +152,7 @@ bool MeshProcessor::MeshMutator::checkSplitCondition(
   bool is2Large = false;
   bool is2Long = false;
   bool is2Curved = false;
-  // bool is2Sharp = false;
+  bool is2Sharp = false;
   bool is2Fat = false;
   bool is2Skinny = false;
   bool isDelaunay = false;
@@ -184,7 +184,10 @@ bool MeshProcessor::MeshMutator::checkSplitCondition(
   }
 
   if (splitSharp) {
-    mem3dg_runtime_error("Split sharp is currently not supported");
+    // mem3dg_runtime_error("Split sharp is currently not supported");
+    std::size_t i_vj = he.tipVertex().getIndex();
+    is2Sharp = vpg.vertexMeanCurvatures[i_vj]> 10;//splitCurvedScaleFactor;
+    condition = is2Sharp || condition;
     // is2Sharp = abs(H0[he.tipVertex()] - H0[he.tailVertex()]) > (2 *
     // targetdH0);
   }
