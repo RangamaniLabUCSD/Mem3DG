@@ -2,20 +2,18 @@ import flags
 import numpy
 import scipy.sparse
 from _typeshed import Incomplete
-from typing import Callable, overload
+from typing import Callable, List, Tuple, overload
 
 __short_version__: str
 __version__: str
 
 class Adsorption:
     epsilon: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Aggregation:
     chi: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Bending:
     D: float
@@ -24,19 +22,15 @@ class Bending:
     Kbc: float
     Kd: float
     Kdc: float
-    Kg: float
-    Kgc: float
     alpha: float
     dA0: float
     relation: str
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.Bending) -> None"""
+    def __init__(self) -> None: ...
 
 class Boundary:
     proteinBoundaryCondition: str
     shapeBoundaryCondition: str
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.Boundary) -> None"""
+    def __init__(self) -> None: ...
 
 class ConjugateGradient:
     c1: float
@@ -61,50 +55,14 @@ class ConjugateGradient:
         tolerance: float,
         outputDirectory: str,
         frame: int = ...,
-    ) -> None:
-        """__init__(self: pymem3dg._core.ConjugateGradient, system: mem3dg::solver::System, characteristicTimeStep: float, totalTime: float, savePeriod: float, tolerance: float, outputDirectory: str, frame: int = 0) -> None
-
-
-        Conjugate Gradient optimizer constructor
-
-        """
-    def integrate(self) -> bool:
-        """integrate(self: pymem3dg._core.ConjugateGradient) -> bool
-
-
-        integrate
-
-        """
-    def march(self) -> None:
-        """march(self: pymem3dg._core.ConjugateGradient) -> None
-
-
-        stepping forward
-
-        """
+    ) -> None: ...
+    def integrate(self) -> bool: ...
+    def march(self) -> None: ...
     def saveData(
         self, ifOutputTrajFile: bool, ifOutputMeshFile: bool, ifPrintToConsole: bool
-    ) -> None:
-        """saveData(self: pymem3dg._core.ConjugateGradient, ifOutputTrajFile: bool, ifOutputMeshFile: bool, ifPrintToConsole: bool) -> None
-
-
-        save data to output directory
-
-        """
-    def status(self) -> None:
-        """status(self: pymem3dg._core.ConjugateGradient) -> None
-
-
-        status computation and thresholding
-
-        """
-    def step(self, n: int) -> None:
-        """step(self: pymem3dg._core.ConjugateGradient, n: int) -> None
-
-
-        step for n iterations
-
-        """
+    ) -> None: ...
+    def status(self) -> None: ...
+    def step(self, n: int) -> None: ...
     @property
     def characteristicTimeStep(self) -> float: ...
     @property
@@ -116,17 +74,14 @@ class ConjugateGradient:
 
 class DPD:
     gamma: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Dirichlet:
     eta: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Energy:
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.Energy) -> None"""
+    def __init__(self) -> None: ...
     @property
     def adsorptionEnergy(self) -> float: ...
     @property
@@ -164,8 +119,7 @@ class Energy:
 
 class Entropy:
     xi: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Euler:
     c1: float
@@ -188,22 +142,7 @@ class Euler:
         tolerance: float,
         outputDirectory: str,
         frame: int = ...,
-    ) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.Euler, system: mem3dg::solver::System, characteristicTimeStep: float, totalTime: float, savePeriod: float, tolerance: float, outputDirectory: str, frame: int = 0) -> None
-
-
-                Euler integrator (steepest descent) constructor
-
-
-        2. __init__(self: pymem3dg._core.Euler, system: mem3dg::solver::System, characteristicTimeStep: float, tolerance: float, outputDirectory: str) -> None
-
-
-                Euler integrator (steepest descent) constructor
-
-        """
+    ) -> None: ...
     @overload
     def __init__(
         self,
@@ -211,80 +150,17 @@ class Euler:
         characteristicTimeStep: float,
         tolerance: float,
         outputDirectory: str,
-    ) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.Euler, system: mem3dg::solver::System, characteristicTimeStep: float, totalTime: float, savePeriod: float, tolerance: float, outputDirectory: str, frame: int = 0) -> None
-
-
-                Euler integrator (steepest descent) constructor
-
-
-        2. __init__(self: pymem3dg._core.Euler, system: mem3dg::solver::System, characteristicTimeStep: float, tolerance: float, outputDirectory: str) -> None
-
-
-                Euler integrator (steepest descent) constructor
-
-        """
-    def closeMutableNetcdfFile(self) -> None:
-        """closeMutableNetcdfFile(self: pymem3dg._core.Euler) -> None
-
-
-        close netcdf file
-
-        """
-    def createMutableNetcdfFile(self, isContinue: bool) -> None:
-        """createMutableNetcdfFile(self: pymem3dg._core.Euler, isContinue: bool) -> None
-
-
-        create netcdf file
-
-        """
-    def integrate(self) -> bool:
-        """integrate(self: pymem3dg._core.Euler) -> bool
-
-
-        integrate
-
-        """
-    def march(self) -> None:
-        """march(self: pymem3dg._core.Euler) -> None
-
-
-        stepping forward
-
-        """
+    ) -> None: ...
+    def closeMutableNetcdfFile(self) -> None: ...
+    def createMutableNetcdfFile(self, isContinue: bool) -> None: ...
+    def integrate(self) -> bool: ...
+    def march(self) -> None: ...
     def saveData(
         self, ifOutputTrajFile: bool, ifOutputMeshFile: bool, ifPrintToConsole: bool
-    ) -> None:
-        """saveData(self: pymem3dg._core.Euler, ifOutputTrajFile: bool, ifOutputMeshFile: bool, ifPrintToConsole: bool) -> None
-
-
-        save data to output directory
-
-        """
-    def saveMutableNetcdfData(self) -> None:
-        """saveMutableNetcdfData(self: pymem3dg._core.Euler) -> None
-
-
-        write to netcdf file
-
-        """
-    def status(self) -> None:
-        """status(self: pymem3dg._core.Euler) -> None
-
-
-        status computation and thresholding
-
-        """
-    def step(self, n: int) -> None:
-        """step(self: pymem3dg._core.Euler, n: int) -> None
-
-
-        step for n iterations
-
-        """
+    ) -> None: ...
+    def saveMutableNetcdfData(self) -> None: ...
+    def status(self) -> None: ...
+    def step(self, n: int) -> None: ...
     @property
     def EXIT(self) -> bool: ...
     @property
@@ -308,637 +184,128 @@ class External:
         ],
         numpy.ndarray[numpy.float64[m, 3]],
     ]
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Forces:
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
     def getAdsorptionForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getAdsorptionForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the adsorption force
-
-        """
-    def getAdsorptionPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getAdsorptionPotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the adsorption potential
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getAdsorptionPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getAggregationForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getAggregationForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the aggregation force
-
-        """
-    def getAggregationPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getAggregationPotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the aggregation potential
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getAggregationPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getAreaDifferenceForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getAreaDifferenceForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the area difference force of the system
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getCapillaryForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getCapillaryForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the tension-induced capillary Force
-
-        """
-    def getChemicalPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getChemicalPotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the chemical Potential
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getChemicalPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getDeviatoricCurvatureForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getDeviatoricCurvatureForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the deviatoric curvature force of the system
-
-        """
-    def getDeviatoricCurvaturePotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getDeviatoricCurvaturePotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the deviatoric curvature potential
-
-        """
-    def getDirichletPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getDirichletPotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the dirichlet Potential
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getDeviatoricCurvaturePotential(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def getDirichletPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getEntropyForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getEntropyForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the entropy force
-
-        """
-    def getEntropyPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getEntropyPotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the entropy Potential
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getEntropyPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getExternalForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getExternalForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the externally-applied Force
-
-        """
-    def getInteriorPenaltyPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getInteriorPenaltyPotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the interior point potential
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getInteriorPenaltyPotential(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getLineCapillaryForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getLineCapillaryForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the interfacial line tension
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getMechanicalForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getMechanicalForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the the total mechanical force
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getOsmoticForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getOsmoticForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the osmotic force
-
-        """
-    def getOsmoticPressure(self) -> float:
-        """getOsmoticPressure(self: pymem3dg._core.Forces) -> float
-
-
-        get the osmotic pressure
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getOsmoticPressure(self) -> float: ...
     def getSpontaneousCurvatureForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getSpontaneousCurvatureForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the spontaneous curvature force of the system
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getSpontaneousCurvatureForceVec_areaGrad(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getSpontaneousCurvatureForceVec_areaGrad(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the area gradient component of the spontaneous curvature force of the system
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getSpontaneousCurvatureForceVec_gaussVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getSpontaneousCurvatureForceVec_gaussVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the the gaussian curvature vector component of the spontaneous curvature force of the system
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getSpontaneousCurvatureForceVec_schlafliVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getSpontaneousCurvatureForceVec_schlafliVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the Schlaflic (smoothing) component of the spontaneous curvature force of the system
-
-        """
-    def getSpontaneousCurvaturePotential(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getSpontaneousCurvaturePotential(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the spontaneous curvature potential
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getSpontaneousCurvaturePotential(
+        self,
+    ) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getSpringForceVec(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getSpringForceVec(self: pymem3dg._core.Forces) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the spring force
-
-        """
-    def getSurfaceTension(self) -> float:
-        """getSurfaceTension(self: pymem3dg._core.Forces) -> float
-
-
-        get the Surface tension
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getSurfaceTension(self) -> float: ...
 
 class Geometry:
     @overload
     def __init__(
         self, inputMesh: str, notableVertex: numpy.ndarray[bool[m, 1]]
-    ) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.Geometry, inputMesh: str, notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with .ply files.
-
-
-        2. __init__(self: pymem3dg._core.Geometry, inputMesh: str) -> None
-
-
-                  Geometry constructor with .ply files.
-
-
-        3. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]], notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        4. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        5. __init__(self: pymem3dg._core.Geometry, trajFile: str, startingFrame: int) -> None
-
-
-                Geometry constructor with NetCDF trajectory file
-
-        """
+    ) -> None: ...
     @overload
-    def __init__(self, inputMesh: str) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.Geometry, inputMesh: str, notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with .ply files.
-
-
-        2. __init__(self: pymem3dg._core.Geometry, inputMesh: str) -> None
-
-
-                  Geometry constructor with .ply files.
-
-
-        3. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]], notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        4. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        5. __init__(self: pymem3dg._core.Geometry, trajFile: str, startingFrame: int) -> None
-
-
-                Geometry constructor with NetCDF trajectory file
-
-        """
+    def __init__(self, inputMesh: str) -> None: ...
     @overload
     def __init__(
         self,
         faceMatrix: numpy.ndarray[numpy.uint64[m, 3]],
         vertexMatrix: numpy.ndarray[numpy.float64[m, 3]],
         notableVertex: numpy.ndarray[bool[m, 1]],
-    ) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.Geometry, inputMesh: str, notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with .ply files.
-
-
-        2. __init__(self: pymem3dg._core.Geometry, inputMesh: str) -> None
-
-
-                  Geometry constructor with .ply files.
-
-
-        3. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]], notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        4. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        5. __init__(self: pymem3dg._core.Geometry, trajFile: str, startingFrame: int) -> None
-
-
-                Geometry constructor with NetCDF trajectory file
-
-        """
+    ) -> None: ...
     @overload
     def __init__(
         self,
         faceMatrix: numpy.ndarray[numpy.uint64[m, 3]],
         vertexMatrix: numpy.ndarray[numpy.float64[m, 3]],
-    ) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.Geometry, inputMesh: str, notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with .ply files.
-
-
-        2. __init__(self: pymem3dg._core.Geometry, inputMesh: str) -> None
-
-
-                  Geometry constructor with .ply files.
-
-
-        3. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]], notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        4. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        5. __init__(self: pymem3dg._core.Geometry, trajFile: str, startingFrame: int) -> None
-
-
-                Geometry constructor with NetCDF trajectory file
-
-        """
+    ) -> None: ...
     @overload
-    def __init__(self, trajFile: str, startingFrame: int) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.Geometry, inputMesh: str, notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with .ply files.
-
-
-        2. __init__(self: pymem3dg._core.Geometry, inputMesh: str) -> None
-
-
-                  Geometry constructor with .ply files.
-
-
-        3. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]], notableVertex: numpy.ndarray[bool[m, 1]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        4. __init__(self: pymem3dg._core.Geometry, faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]]) -> None
-
-
-                Geometry constructor with Matrices
-
-
-        5. __init__(self: pymem3dg._core.Geometry, trajFile: str, startingFrame: int) -> None
-
-
-                Geometry constructor with NetCDF trajectory file
-
-        """
-    @overload
-    def computeGeodesicDistance(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """computeGeodesicDistance(*args, **kwargs)
-        Overloaded function.
-
-        1. computeGeodesicDistance(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-                  compute the geodesic distance centered around Center cached in System
-
-                  return: NDarray[double]
-
-
-        2. computeGeodesicDistance(self: pymem3dg._core.Geometry, points: list[int]) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-                    compute the geodesic distance from a set of vertex indices
-
-                    return: NDarray[double]
-
-        """
-    @overload
-    def computeGeodesicDistance(
-        self, points: list[int]
-    ) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """computeGeodesicDistance(*args, **kwargs)
-        Overloaded function.
-
-        1. computeGeodesicDistance(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-                  compute the geodesic distance centered around Center cached in System
-
-                  return: NDarray[double]
-
-
-        2. computeGeodesicDistance(self: pymem3dg._core.Geometry, points: list[int]) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-                    compute the geodesic distance from a set of vertex indices
-
-                    return: NDarray[double]
-
-        """
-    def getCotanLaplacian(self) -> scipy.sparse.csc_matrix[numpy.float64]:
-        """getCotanLaplacian(self: pymem3dg._core.Geometry) -> scipy.sparse.csc_matrix[numpy.float64]
-
-
-        get the Cotan Laplacian matrix of the mesh
-
-        """
-    def getEdgeAdjacencyMatrix(self) -> scipy.sparse.csc_matrix[numpy.float64]:
-        """getEdgeAdjacencyMatrix(self: pymem3dg._core.Geometry) -> scipy.sparse.csc_matrix[numpy.float64]
-
-
-        get the signed F-E edge adjacency matrix, equivalent of d1 operator
-
-        """
-    def getEdgeLengths(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getEdgeLengths(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get edge lengths
-
-        """
-    def getFaceAreas(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getFaceAreas(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get face area
-
-        """
-    def getFaceMatrix(self) -> numpy.ndarray[numpy.uint64[m, n]]:
-        """getFaceMatrix(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.uint64[m, n]]
-
-
-        get the face matrix
-
-        """
-    def getGeodesicDistance(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getGeodesicDistance(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the geodesic distance from notable vertices of the mesh
-
-        """
-    def getLumpedMassMatrix(self) -> scipy.sparse.csc_matrix[numpy.float64]:
-        """getLumpedMassMatrix(self: pymem3dg._core.Geometry) -> scipy.sparse.csc_matrix[numpy.float64]
-
-
-        get the lumped mass matrix of the mesh
-
-        """
-    def getNotableVertex(self) -> numpy.ndarray[bool[m, 1]]:
-        """getNotableVertex(self: pymem3dg._core.Geometry) -> numpy.ndarray[bool[m, 1]]
-
-
-        get vertex data to track the notable vertex, which may or may not be a single vertex
-
-        """
-    def getPolyscopeEdgeOrientations(self) -> numpy.ndarray[numpy.int8[m, 1]]:
-        """getPolyscopeEdgeOrientations(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.int8[m, 1]]
-
-
-        get polyscope edge orientation
-
-        """
-    def getPolyscopePermutations(self, *args, **kwargs):
-        """getPolyscopePermutations(self: pymem3dg._core.Geometry) -> Annotated[list[tuple[list[int], int]], FixedSize(5)]
-
-
-        get polyscope permutation
-
-        """
-    def getSurfaceArea(self) -> float:
-        """getSurfaceArea(self: pymem3dg._core.Geometry) -> float
-
-
-        get the surface area of the mesh
-
-        """
-    def getVertexAdjacencyMatrix(self) -> scipy.sparse.csc_matrix[numpy.float64]:
-        """getVertexAdjacencyMatrix(self: pymem3dg._core.Geometry) -> scipy.sparse.csc_matrix[numpy.float64]
-
-
-        get the signed E-V vertex adjacency matrix, equivalent of d0 operator
-
-        """
-    def getVertexDualAreas(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getVertexDualAreas(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get vertex dual area
-
-        """
+    def __init__(self, trajFile: str, startingFrame: int) -> None: ...
+    def computeGeodesicDistance(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def getCotanLaplacian(self) -> scipy.sparse.csc_matrix[numpy.float64]: ...
+    def getEdgeAdjacencyMatrix(self) -> scipy.sparse.csc_matrix[numpy.float64]: ...
+    def getEdgeLengths(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def getFaceAreas(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def getFaceMatrix(self) -> numpy.ndarray[numpy.uint64[m, n]]: ...
+    def getGeodesicDistance(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def getLumpedMassMatrix(self) -> scipy.sparse.csc_matrix[numpy.float64]: ...
+    def getNotableVertex(self) -> numpy.ndarray[bool[m, 1]]: ...
+    def getPolyscopeEdgeOrientations(self) -> numpy.ndarray[numpy.int8[m, 1]]: ...
+    def getPolyscopePermutations(self) -> List[None]: ...
+    def getSurfaceArea(self) -> float: ...
+    def getVertexAdjacencyMatrix(self) -> scipy.sparse.csc_matrix[numpy.float64]: ...
+    def getVertexDualAreas(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getVertexGaussianCurvatureVectors(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getVertexGaussianCurvatureVectors(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the integrated vector Gaussian Curvature
-
-        """
-    def getVertexGaussianCurvatures(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getVertexGaussianCurvatures(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the integrated scalar Gaussian Curvature
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getVertexGaussianCurvatures(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getVertexMatrix(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getVertexMatrix(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the vertex matrix
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getVertexMeanCurvatureVectors(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getVertexMeanCurvatureVectors(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the integrated vector Mean Curvature
-
-        """
-    def getVertexMeanCurvatures(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getVertexMeanCurvatures(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        get the integrated scalar mean curvature
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getVertexMeanCurvatures(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getVertexNormals(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getVertexNormals(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get angle-weighted normal on vertices
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getVertexSchlafliLaplacianMeanCurvatureVectors(
         self, arg0: numpy.ndarray[numpy.float64[m, 1]]
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getVertexSchlafliLaplacianMeanCurvatureVectors(self: pymem3dg._core.Geometry, arg0: numpy.ndarray[numpy.float64[m, 1]]) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the vertex Schlafli based Laplacian of mean curvature Vectors
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
     def getVertexVolumeVariationVectors(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getVertexVolumeVariationVectors(self: pymem3dg._core.Geometry) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-
-        get the integrated vector volume variation (dual area)
-
-        """
-    def getVolume(self) -> float:
-        """getVolume(self: pymem3dg._core.Geometry) -> float
-
-
-        get the enclosed volume of the mesh
-
-        """
-    def isBoundary(self, index: int) -> bool:
-        """isBoundary(self: pymem3dg._core.Geometry, index: int) -> bool
-
-
-        check if the vertex is on the boundary
-
-        return: bool
-
-        """
-    def nEdges(self) -> int:
-        """nEdges(self: pymem3dg._core.Geometry) -> int"""
-    def nFaces(self) -> int:
-        """nFaces(self: pymem3dg._core.Geometry) -> int"""
-    def nVertices(self) -> int:
-        """nVertices(self: pymem3dg._core.Geometry) -> int"""
-    def setInputVertexPositions(self, arg0: numpy.ndarray[numpy.float64[m, 3]]) -> None:
-        """setInputVertexPositions(self: pymem3dg._core.Geometry, arg0: numpy.ndarray[numpy.float64[m, 3]]) -> None
-
-
-        set the vertex matrix
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def getVolume(self) -> float: ...
+    def setInputVertexPositions(
+        self, arg0: numpy.ndarray[numpy.float64[m, 3]]
+    ) -> None: ...
 
 class MeshMutator:
     collapseFlat: bool
@@ -962,13 +329,7 @@ class MeshMutator:
     splitLong: bool
     splitSharp: bool
     splitSkinnyDelaunay: bool
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.MeshMutator) -> None
-
-
-        Constructor of mesh mutator object
-
-        """
+    def __init__(self) -> None: ...
     @property
     def isChangeTopology(self) -> bool: ...
     @property
@@ -980,20 +341,13 @@ class MeshMutator:
 
 class MeshProcessor:
     meshMutator: MeshMutator
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.MeshProcessor) -> None
-
-
-        MeshProcessor constructor
-
-        """
+    def __init__(self) -> None: ...
     @property
     def isMeshMutate(self) -> bool: ...
 
 class Osmotic:
-    form: Callable[[float], tuple[float, float]]
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    form: Callable[[float], Tuple[float, float]]
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Parameters:
     adsorption: Adsorption
@@ -1014,38 +368,36 @@ class Parameters:
     temperature: float
     tension: Tension
     variation: Variation
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.Parameters) -> None"""
+    def __init__(self) -> None: ...
 
 class Point:
-    prescribeNotableVertex: Callable[[Geometry], numpy.ndarray[bool[m, 1]]]
-    updateGeodesicsPeriod: float
-    updateNotableVertexPeriod: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    prescribeNotableVertex: Callable[
+        [
+            numpy.ndarray[numpy.uint64[m, 3]],
+            numpy.ndarray[numpy.float64[m, 3]],
+            numpy.ndarray[numpy.float64[m, 1]],
+        ],
+        numpy.ndarray[bool[m, 1]],
+    ]
+    updateGeodesicsPeriod: int
+    updateNotableVertexPeriod: int
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class Protein:
     prescribeProteinDensityDistribution: Callable[
-        [
-            Geometry,
-            float,
-            numpy.ndarray[numpy.float64[m, 1]],
-            numpy.ndarray[numpy.float64[m, 1]],
-        ],
+        [float, numpy.ndarray[numpy.float64[m, 1]], numpy.ndarray[numpy.float64[m, 1]]],
         numpy.ndarray[numpy.float64[m, 1]],
     ]
     proteinInteriorPenalty: float
-    updateProteinDensityDistributionPeriod: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    updateProteinDensityDistributionPeriod: int
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class SelfAvoidance:
     d: float
     mu: float
     n: int
     p: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 class System:
     meshProcessor: MeshProcessor
@@ -1059,245 +411,50 @@ class System:
         velocity: numpy.ndarray[numpy.float64[m, 3]],
         parameters,
         time: float = ...,
-    ) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, proteinDensity: numpy.ndarray[numpy.float64[m, 1]], velocity: numpy.ndarray[numpy.float64[m, 3]], parameters: mem3dg::solver::Parameters, time: float = 0) -> None
-
-
-                System constructor with Matrices
-
-
-        2. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, parameters: mem3dg::solver::Parameters, time: float = 0) -> None
-
-
-                System constructor with Matrices
-
-
-        3. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, trajFile: str, startingFrame: int, parameters: mem3dg::solver::Parameters) -> None
-
-
-                System constructor with NetCDF trajectory file
-
-        """
+    ) -> None: ...
     @overload
-    def __init__(self, geometry: Geometry, parameters, time: float = ...) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, proteinDensity: numpy.ndarray[numpy.float64[m, 1]], velocity: numpy.ndarray[numpy.float64[m, 3]], parameters: mem3dg::solver::Parameters, time: float = 0) -> None
-
-
-                System constructor with Matrices
-
-
-        2. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, parameters: mem3dg::solver::Parameters, time: float = 0) -> None
-
-
-                System constructor with Matrices
-
-
-        3. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, trajFile: str, startingFrame: int, parameters: mem3dg::solver::Parameters) -> None
-
-
-                System constructor with NetCDF trajectory file
-
-        """
+    def __init__(self, geometry: Geometry, parameters, time: float = ...) -> None: ...
     @overload
     def __init__(
         self, geometry: Geometry, trajFile: str, startingFrame: int, parameters
-    ) -> None:
-        """__init__(*args, **kwargs)
-        Overloaded function.
-
-        1. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, proteinDensity: numpy.ndarray[numpy.float64[m, 1]], velocity: numpy.ndarray[numpy.float64[m, 3]], parameters: mem3dg::solver::Parameters, time: float = 0) -> None
-
-
-                System constructor with Matrices
-
-
-        2. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, parameters: mem3dg::solver::Parameters, time: float = 0) -> None
-
-
-                System constructor with Matrices
-
-
-        3. __init__(self: pymem3dg._core.System, geometry: pymem3dg._core.Geometry, trajFile: str, startingFrame: int, parameters: mem3dg::solver::Parameters) -> None
-
-
-                System constructor with NetCDF trajectory file
-
-        """
-    def addNonconservativeForcing(self, timeStep: float = ...) -> None:
-        """addNonconservativeForcing(self: pymem3dg._core.System, timeStep: float = 0) -> None
-
-
-        Compute and append all non-conservative forces, update mechanicalForce(Vec) and mechErrorNorm
-
-        """
-    def computeConservativeForcing(self) -> None:
-        """computeConservativeForcing(self: pymem3dg._core.System) -> None
-
-
-        Compute and update all conservative forces, update mechanicalForce(Vec) with conservativeForce(Vec)
-
-        """
+    ) -> None: ...
+    def addNonconservativeForcing(self, timeStep: float = ...) -> None: ...
+    def computeConservativeForcing(self) -> None: ...
     def computeInPlaneFluxForm(
         self, chemicalPotential: numpy.ndarray[numpy.float64[m, 1]]
-    ) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """computeInPlaneFluxForm(self: pymem3dg._core.System, chemicalPotential: numpy.ndarray[numpy.float64[m, 1]]) -> numpy.ndarray[numpy.float64[m, 1]]
-
-
-        Compute in plane flux form from chemical potential
-
-        Args:
-            chemicalPotential (npt.NDArray[np.float64]): components (or sum) of chemical potential
-
-        Returns
-            np.NDArray[np.float64]: in plane flux form on edges
-
-        """
-    def computeIntegratedPower(self, dt: float) -> float:
-        """computeIntegratedPower(self: pymem3dg._core.System, dt: float) -> float
-
-
-        Intermediate function to integrate the power
-
-        """
-    def computeTotalEnergy(self) -> float:
-        """computeTotalEnergy(self: pymem3dg._core.System) -> float
-
-
-        compute the total energy, where total energy = kinetic energy + potential energy - external work
-
-        """
-    def getEnergy(self, *args, **kwargs):
-        """getEnergy(self: pymem3dg._core.System) -> mem3dg::solver::Energy
-
-
-        Get the energy
-
-        Args:
-            System (:py:class:`System`): System of interest
-
-        Returns:
-            :py:class:`float`: Energy
-
-        """
-    def getForces(self) -> Forces:
-        """getForces(self: pymem3dg._core.System) -> pymem3dg._core.Forces
-
-
-        Get the pointwise forces
-
-        Args:
-            System (:py:class:`System`): System of interest
-
-        Returns:
-            :py:class:`pymem3dg.Forces`: Forces
-
-        """
-    def getGeometry(self) -> Geometry:
-        """getGeometry(self: pymem3dg._core.System) -> pymem3dg._core.Geometry
-
-
-        Get the geometry
-
-        Args:
-            System (:py:class:`System`): System of interest
-
-        Returns:
-            :py:class:`pymem3dg.Geometry`: Geometry
-
-        """
-    def getProteinDensity(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getProteinDensity(self: pymem3dg._core.System) -> numpy.ndarray[numpy.float64[m, 1]]
-
-        get the protein Density
-        """
-    def getProteinRateOfChange(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getProteinRateOfChange(self: pymem3dg._core.System) -> numpy.ndarray[numpy.float64[m, 1]]
-
-        get the protein rate of change
-        """
-    def getSpontaneousCurvature(self) -> numpy.ndarray[numpy.float64[m, 1]]:
-        """getSpontaneousCurvature(self: pymem3dg._core.System) -> numpy.ndarray[numpy.float64[m, 1]]
-
-        get the pointwise spontaneous curvature
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def computeIntegratedPower(self, dt: float) -> float: ...
+    def computeTotalEnergy(self) -> float: ...
+    def getEnergy(self, *args, **kwargs): ...
+    def getForces(self) -> Forces: ...
+    def getGeometry(self) -> Geometry: ...
+    def getProteinDensity(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def getProteinRateOfChange(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+    def getSpontaneousCurvature(self) -> numpy.ndarray[numpy.float64[m, 1]]: ...
     def getVelocity(
         self,
-    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]:
-        """getVelocity(self: pymem3dg._core.System) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]
-
-        get the vertex velocity matrix
-        """
-    def initialize(self, ifMutateMesh: bool = ...) -> None:
-        """initialize(self: pymem3dg._core.System, ifMutateMesh: bool = False) -> None
-
-
-        initialize the system
-
-        """
-    def mutateMesh(self, nMutation: int = ...) -> None:
-        """mutateMesh(self: pymem3dg._core.System, nMutation: int = 1) -> None
-
-
-        mutate the mesh
-
-        """
-    def prescribeExternalForce(self) -> numpy.ndarray[numpy.float64[m, 3]]:
-        """prescribeExternalForce(self: pymem3dg._core.System) -> numpy.ndarray[numpy.float64[m, 3]]
-
-
-        prescribe the External Force
-
-        """
-    def saveRichData(self, pathToSave: str, isJustGeometry: bool = ...) -> None:
-        """saveRichData(self: pymem3dg._core.System, pathToSave: str, isJustGeometry: bool = False) -> None
-
-
-        save snapshot data to directory
-
-        """
+    ) -> numpy.ndarray[numpy.float64[m, 3], flags.writeable, flags.c_contiguous]: ...
+    def initialize(self, ifMutateMesh: bool = ...) -> None: ...
+    def mutateMesh(self, nMutation: int = ...) -> None: ...
+    def prescribeExternalForce(self) -> numpy.ndarray[numpy.float64[m, 3]]: ...
+    def saveRichData(self, pathToSave: str, isJustGeometry: bool = ...) -> None: ...
     def smoothenMesh(
         self, initStep: float, target: float, maxIteration: int
-    ) -> numpy.ndarray[bool[m, 1]]:
-        """smoothenMesh(self: pymem3dg._core.System, initStep: float, target: float, maxIteration: int) -> numpy.ndarray[bool[m, 1]]
-
-
-        smoothen the mesh using spontaneous curvature force
-
-        """
-    def testConservativeForcing(self, timeStep: float) -> bool:
-        """testConservativeForcing(self: pymem3dg._core.System, timeStep: float) -> bool
-
-
-        test conservative force computation by validating energy decrease
-
-        """
-    def updateConfigurations(self) -> None:
-        """updateConfigurations(self: pymem3dg._core.System) -> None
-
-
-        update the system configuration due to changes in state variables (e.g vertex positions or protein density)
-
-        """
+    ) -> numpy.ndarray[bool[m, 1]]: ...
+    def testConservativeForcing(self, timeStep: float) -> bool: ...
+    def updateConfigurations(self) -> None: ...
 
 class Tension:
-    form: Callable[[float], tuple[float, float]]
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.Tension) -> None"""
+    form: Callable[[float], Tuple[float, float]]
+    def __init__(self) -> None: ...
 
 class Variation:
     geodesicMask: float
     isProteinConservation: bool
     isProteinVariation: bool
     isShapeVariation: bool
-    updateMaskPeriod: float
-    def __init__(self) -> None:
-        """__init__(self: pymem3dg._core.Variation) -> None"""
+    updateMaskPeriod: int
+    def __init__(self) -> None: ...
 
 class VelocityVerlet:
     c1: float
@@ -1319,57 +476,20 @@ class VelocityVerlet:
         tolerance: float,
         outputDirectory: str,
         frame: int = ...,
-    ) -> None:
-        """__init__(self: pymem3dg._core.VelocityVerlet, system: mem3dg::solver::System, characteristicTimeStep: float, totalTime: float, savePeriod: float, tolerance: float, outputDirectory: str, frame: int = 0) -> None
-
-
-        Velocity Verlet integrator constructor
-
-        """
-    def integrate(self) -> bool:
-        """integrate(self: pymem3dg._core.VelocityVerlet) -> bool
-
-
-        integrate
-
-        """
-    def march(self) -> None:
-        """march(self: pymem3dg._core.VelocityVerlet) -> None
-
-
-        stepping forward
-
-        """
+    ) -> None: ...
+    def integrate(self) -> bool: ...
+    def march(self) -> None: ...
     def saveData(
         self, ifOutputTrajFile: bool, ifOutputMeshFile: bool, ifPrintToConsole: bool
-    ) -> None:
-        """saveData(self: pymem3dg._core.VelocityVerlet, ifOutputTrajFile: bool, ifOutputMeshFile: bool, ifPrintToConsole: bool) -> None
-
-
-        save data to output directory
-
-        """
-    def status(self) -> None:
-        """status(self: pymem3dg._core.VelocityVerlet) -> None
-
-
-        status computation and thresholding
-
-        """
-    def step(self, n: int) -> None:
-        """step(self: pymem3dg._core.VelocityVerlet, n: int) -> None
-
-
-        step for n iterations
-
-        """
+    ) -> None: ...
+    def status(self) -> None: ...
+    def step(self, n: int) -> None: ...
 
 class spring:
     Kse: float
     Ksl: float
     Kst: float
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature."""
+    def __init__(self, *args, **kwargs) -> None: ...
 
 def getCylinder(
     radius: float,
@@ -1377,144 +497,56 @@ def getCylinder(
     axialSubdivision: int,
     frequency: float = ...,
     amplitude: float = ...,
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """getCylinder(radius: float, radialSubdivision: int, axialSubdivision: int, frequency: float = 1, amplitude: float = 0) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-    get face and vertex matrix of a non-capped cylinder
-    """
-
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
 def getData(
     plyName: str, elementName: str, propertyName: str
-) -> numpy.ndarray[numpy.float64[m, 1]]:
-    """getData(plyName: str, elementName: str, propertyName: str) -> numpy.ndarray[numpy.float64[m, 1]]
-
-    read richData from .ply file
-
-    """
-
-def getDataElementName(plyName: str) -> list[str]:
-    """getDataElementName(plyName: str) -> list[str]
-
-    retrieve all richData element name from .ply file. Namely the list of the places where data live in, such as vertex, edge or face.
-
-    """
-
-def getDataPropertyName(plyName: str, elementName: str) -> list[str]:
-    """getDataPropertyName(plyName: str, elementName: str) -> list[str]
-
-    retrieve all richData property name from .ply file. Namely the list of the data where data on the particular element, such as vertex, edge or face.
-
-    """
-
+) -> numpy.ndarray[numpy.float64[m, 1]]: ...
+def getDataElementName(plyName: str) -> List[str]: ...
+def getDataPropertyName(plyName: str, elementName: str) -> List[str]: ...
 def getDiamond(
     dihedral: float,
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """getDiamond(dihedral: float) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-    get face and vertex matrix of diamond
-    """
-
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
 def getFaceAndVertexMatrix(
     plyName: str,
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """getFaceAndVertexMatrix(plyName: str) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-
-    read face matrix and vertex matrix from .ply file
-
-    """
-
-def getFaceSurfacePointClosestToEmbeddedCoordinate(*args, **kwargs):
-    """getFaceSurfacePointClosestToEmbeddedCoordinate(faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]], embeddedCoordinate: Annotated[list[float], FixedSize(3)], filter: numpy.ndarray[bool[m, 1]], accountedCoordinate: Annotated[list[bool], FixedSize(3)] = [True, True, True]) -> tuple[int, Annotated[list[float], FixedSize(3)]]
-
-    find the face surface point closest to a embedded coordinate
-    """
-
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
+def getFaceSurfacePointClosestToEmbeddedCoordinate(
+    faceMatrix: numpy.ndarray[numpy.uint64[m, 3]],
+    vertexMatrix: numpy.ndarray[numpy.float64[m, 3]],
+    embeddedCoordinate: List[float[3]],
+    filter: numpy.ndarray[bool[m, 1]],
+    accountedCoordinate: List[bool[3]] = ...,
+) -> Tuple[int, List[float[3]]]: ...
 def getHexagon(
     radius: float, subdivision: int = ...
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """getHexagon(radius: float, subdivision: int = 0) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-    get face and vertex matrix of Hexagon
-    """
-
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
 def getIcosphere(
     radius: float, subdivision: int = ...
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """getIcosphere(radius: float, subdivision: int = 0) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-    get face and vertex matrix of icosphere
-    """
-
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
 def getTetrahedron() -> (
-    tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-):
-    """getTetrahedron() -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-    get face and vertex matrix of tetrahedron
-    """
-
+    Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
+): ...
 def getVertexClosestToEmbeddedCoordinate(
     vertexMatrix: numpy.ndarray[numpy.float64[m, 3]],
-    embeddedCoordinate,
+    embeddedCoordinate: List[float[3]],
     filter: numpy.ndarray[bool[m, 1]],
-    accountedCoordinate=...,
-) -> int:
-    """getVertexClosestToEmbeddedCoordinate(vertexMatrix: numpy.ndarray[numpy.float64[m, 3]], embeddedCoordinate: Annotated[list[float], FixedSize(3)], filter: numpy.ndarray[bool[m, 1]], accountedCoordinate: Annotated[list[bool], FixedSize(3)] = [True, True, True]) -> int
-
-    find the index of vertex closest to a embedded coordinate
-    """
-
+    accountedCoordinate: List[bool[3]] = ...,
+) -> int: ...
 def getVertexFurthestFromBoundary(
     faceMatrix: numpy.ndarray[numpy.uint64[m, 3]],
     vertexMatrix: numpy.ndarray[numpy.float64[m, 3]],
-) -> int:
-    """getVertexFurthestFromBoundary(faceMatrix: numpy.ndarray[numpy.uint64[m, 3]], vertexMatrix: numpy.ndarray[numpy.float64[m, 3]]) -> int
-
-    find the vertex furthest away from the boundaries
-    """
-
+) -> int: ...
 def linearSubdivide(
     face: numpy.ndarray[numpy.uint64[m, 3]],
     vertex: numpy.ndarray[numpy.float64[m, 3]],
     nSub: int,
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """linearSubdivide(face: numpy.ndarray[numpy.uint64[m, 3]], vertex: numpy.ndarray[numpy.float64[m, 3]], nSub: int) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-
-    subdivide the mesh with linear interpolation
-
-    """
-
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
 def loopSubdivide(
     face: numpy.ndarray[numpy.uint64[m, 3]],
     vertex: numpy.ndarray[numpy.float64[m, 3]],
     nSub: int,
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """loopSubdivide(face: numpy.ndarray[numpy.uint64[m, 3]], vertex: numpy.ndarray[numpy.float64[m, 3]], nSub: int) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-
-    subdivide the mesh in loop scheme
-
-    """
-
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
 def processSoup(
     meshName: str,
-) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]:
-    """processSoup(meshName: str) -> tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]
-
-    process soup data in .ply and return face and vertex matrices.
-
-    """
-
-def startProfiler(filename: str) -> None:
-    """startProfiler(filename: str) -> None
-
-    start profiler
-    """
-
-def stopProfiler() -> None:
-    """stopProfiler() -> None
-
-    stop profiler
-    """
+) -> Tuple[numpy.ndarray[numpy.uint64[m, 3]], numpy.ndarray[numpy.float64[m, 3]]]: ...
+def startProfiler(filename: str) -> int: ...
+def stopProfiler() -> None: ...

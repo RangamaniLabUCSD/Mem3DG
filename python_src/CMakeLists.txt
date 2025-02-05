@@ -21,7 +21,7 @@ if(M3DG_GET_OWN_PYBIND11)
   FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
-    GIT_TAG v2.13.6
+    GIT_TAG v2.10.4
     GIT_SHALLOW TRUE
     SYSTEM SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-src" BINARY_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/pybind11-build"
@@ -30,6 +30,16 @@ if(M3DG_GET_OWN_PYBIND11)
 else()
   find_package(pybind11 REQUIRED CONFIG)
 endif()
+
+# mem3dg static library
+add_library(
+  mem3dg_static STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:mem3dg_objlib>
+)
+target_link_libraries(mem3dg_static PUBLIC mem3dg_objlib)
+set_target_properties(
+  mem3dg_static PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET
+                                                        hidden
+)
 
 set(PYMEM3DG_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/pymem3dg.cpp"
@@ -43,8 +53,7 @@ set(PYMEM3DG_SOURCES
 )
 
 pybind11_add_module(_core MODULE ${PYMEM3DG_SOURCES})
-# target_link_libraries(_core PRIVATE mem3dg_static)
-target_link_libraries(_core PRIVATE mem3dg)
+target_link_libraries(_core PRIVATE mem3dg_static)
 
 if(WITH_NETCDF)
   target_compile_definitions(_core PUBLIC -DMEM3DG_WITH_NETCDF)
