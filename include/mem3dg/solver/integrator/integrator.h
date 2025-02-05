@@ -91,8 +91,7 @@ public:
   /// backtracking coefficient
   double rho = 0.7;
   /// Wolfe condition parameter
-  // double c1 = 0.001;
-  double c1 = 0.1;
+  double c1 = 0.001;
 
   // defaulted parameters (read/write)
   /// if just save geometry .ply file
@@ -140,12 +139,10 @@ public:
         outputDirectory(outputDirectory_) {
     ifDisableIntegrate = true;
     ifPrintToConsole = true;
-    // dt_size2_ratio =
-    //     characteristicTimeStep /
-    //     std::pow(system.geometry.vpg->edgeLengths.raw().minCoeff(), 2);
+    // Initialize the timestep-meshsize ratio
     dt_size2_ratio =
         characteristicTimeStep /
-        system.geometry.vpg->edgeLengths.raw().minCoeff();
+        std::pow(system.geometry.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
     system.computeConservativeForcing();

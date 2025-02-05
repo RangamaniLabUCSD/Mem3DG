@@ -237,9 +237,6 @@ void Euler::march() {
     characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
-
-
-
   // backtracking to obtain stable time step
   if (isBacktrack) {
     double timeStep_mech = std::numeric_limits<double>::max(),
@@ -252,24 +249,9 @@ void Euler::march() {
   } else {
     timeStep = characteristicTimeStep;
   }
-
-  // // march the system with increment time step obtained above
-  // double hdt = timeStep;
-
-  // // stepping on vertex position
-  // system.geometry.vpg->inputVertexPositions +=
-  //     system.velocity * timeStep +
-  //     hdt * pastMechanicalForceVec; 
-  // system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
-  // system.geometry.vpg->inputVertexPositions += (system.velocity+2*pastMechanicalForceVec+past2MechanicalForceVec) * timeStep/2;
-  system.geometry.vpg->inputVertexPositions += (system.velocity+pastMechanicalForceVec) * timeStep/2;
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
-
-  // past2MechanicalForceVec = pastMechanicalForceVec;
-
-  pastMechanicalForceVec = system.forces.mechanicalForceVec;
-
 
   // recompute cached values
   system.updateConfigurations();
