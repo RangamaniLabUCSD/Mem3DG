@@ -153,7 +153,7 @@ def ambientSolutionOsmoticPressureModel(
 def prescribeGeodesicProteinDensityDistribution(
     geometry: dg.Geometry,
     time: float,
-    vertexMeanCuravtures: npt.NDArray[np.float64],
+    vertexMeanCurvatures: npt.NDArray[np.float64],
     geodesicDistance: npt.NDArray[np.float64],
     sharpness: float,
     radius: float,
