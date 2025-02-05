@@ -650,8 +650,6 @@ public:
    */
   bool processSplitCollapseQueued();
 
-  bool removeLowValencyVertices(std::size_t degree = 4);
-
   /**
    * @brief global smoothing after mutation of the mesh
    * @param initStep initial guess of time step

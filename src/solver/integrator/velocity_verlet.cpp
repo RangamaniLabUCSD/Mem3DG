@@ -83,7 +83,7 @@ bool VelocityVerlet::integrate() {
     }
 
     // step forward
-    if (system.updatePrescription(lastUpdateTime, baseTimeStep)) {
+    if (system.updatePrescription(lastUpdateTime, timeStep)) {
       system.time += 1e-5 * timeStep;
     } else {
       march();

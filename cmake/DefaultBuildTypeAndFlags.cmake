@@ -37,9 +37,33 @@ endif()
 
 if(MSVC)
   option(USE_MSVC_RUNTIME_LIBRARY_DLL "Use MSVC runtime library DLL" ON)
-  if(USE_MSVC_RUNTIME_LIBRARY_DLL)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+
+  if(CMAKE_VERSION VERSION_LESS 3.15 AND NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
+    foreach(
+      flag
+      CMAKE_C_FLAGS
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      CMAKE_CXX_FLAGS
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    )
+      if(${flag} MATCHES "/MD")
+        string(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
+      endif()
+      if(${flag} MATCHES "/MDd")
+        string(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
+      endif()
+    endforeach()
   else()
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if(USE_MSVC_RUNTIME_LIBRARY_DLL)
+      set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    else()
+      set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
   endif()
 endif(MSVC)

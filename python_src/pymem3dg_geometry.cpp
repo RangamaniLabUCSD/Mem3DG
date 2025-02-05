@@ -127,7 +127,7 @@ void init_geometry(py::module_ &pymem3dg) {
   geometry.def(
       "getVertexMatrix",
       [](Geometry &s) {
-        return gc::EigenMap<double, 3>(s.vpg->vertexPositions);
+        return gc::EigenMap<double, 3>(s.vpg->inputVertexPositions);
       },
       py::return_value_policy::copy,
       R"delim(
@@ -261,49 +261,13 @@ void init_geometry(py::module_ &pymem3dg) {
   /**
    * @brief Methods
    */
-  geometry.def("computeGeodesicDistance",
-               py::overload_cast<>(&Geometry::computeGeodesicDistance),
+  geometry.def("computeGeodesicDistance", &Geometry::computeGeodesicDistance,
                R"delim(
+
           compute the geodesic distance centered around Center cached in System
 
           return: NDarray[double]
       )delim");
-
-  // This version is hard to call since there's not an easy way to create
-  // gcs::Vertex at this point...
-  //   geometry.def("computeGeodesicDistance", py::overload_cast<const
-  //   std::vector<gcs::Vertex>&>(&Geometry::computeGeodesicDistance),
-  //                R"delim(
-
-  //           compute the geodesic distance centered around Center cached in
-  //           System
-
-  //           return: NDarray[double]
-  //       )delim");
-
-  geometry.def("computeGeodesicDistance",
-               py::overload_cast<const std::vector<std::size_t> &>(
-                   &Geometry::computeGeodesicDistance, py::const_),
-               py::arg("points"),
-               R"delim(
-            compute the geodesic distance from a set of vertex indices
-
-            return: NDarray[double]
-        )delim");
-
-  geometry.def(
-      "isBoundary",
-      py::overload_cast<const std::size_t>(&Geometry::isBoundary, py::const_),
-      py::arg("index"),
-      R"delim(
-          check if the vertex is on the boundary
-
-          return: bool
-      )delim");
-
-  geometry.def("nVertices", &Geometry::nVertices);
-  geometry.def("nEdges", &Geometry::nEdges);
-  geometry.def("nFaces", &Geometry::nFaces);
 }
 } // namespace integrator
 } // namespace solver
