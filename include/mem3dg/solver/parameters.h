@@ -162,7 +162,7 @@ struct Parameters {
     /// domain of shape variation
     double geodesicMask = -1;
     /// period of updating mask
-    std::size_t updateMaskPeriod = std::numeric_limits<std::size_t>::max();
+    double updateMaskPeriod = std::numeric_limits<double>::max();
 
     /**
      * @brief check parameter conflicts
@@ -172,26 +172,25 @@ struct Parameters {
 
   struct Point {
     /// prescription of center finding
-    std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(
-        EigenVectorX3sr, EigenVectorX3dr, EigenVectorX1d)>
+    std::function<Eigen::Matrix<bool, Eigen::Dynamic, 1>(const Geometry &)>
         prescribeNotableVertex = NULL;
     /// period of updating geodesic distance from notableVertex calculation
-    std::size_t updateGeodesicsPeriod = std::numeric_limits<std::size_t>::max();
+    double updateGeodesicsPeriod = std::numeric_limits<double>::max();
     /// period of updating notable vertex based functional
     /// prescribeNotableVertex
-    std::size_t updateNotableVertexPeriod =
-        std::numeric_limits<std::size_t>::max();
+    double updateNotableVertexPeriod = std::numeric_limits<double>::max();
   };
 
   struct Protein {
     /// interior point parameter for protein density
     double proteinInteriorPenalty = 0; // 1e-6
     /// prescription of protein density
-    std::function<EigenVectorX1d(double, EigenVectorX1d, EigenVectorX1d)>
+    std::function<EigenVectorX1d(const Geometry &, double, EigenVectorX1d,
+                                 EigenVectorX1d)>
         prescribeProteinDensityDistribution = NULL;
     /// period of updating protein density distribution
-    std::size_t updateProteinDensityDistributionPeriod =
-        std::numeric_limits<std::size_t>::max();
+    double updateProteinDensityDistributionPeriod =
+        std::numeric_limits<double>::max();
   };
 
   struct Spring {

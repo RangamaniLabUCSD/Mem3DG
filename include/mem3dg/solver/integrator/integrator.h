@@ -74,6 +74,8 @@ public:
   // key parameters (read/write)
   /// characteristic time step
   double characteristicTimeStep;
+  // Original time step at construction
+  double baseTimeStep;
   // total simulation time
   double totalTime = std::numeric_limits<double>::max();
   /// period of saving output data
@@ -132,7 +134,8 @@ public:
   Integrator(System &system_, double characteristicTimeStep_, double tolerance_,
              std::string outputDirectory_)
       : timeStep(characteristicTimeStep_), system(system_),
-        characteristicTimeStep(characteristicTimeStep_), tolerance(tolerance_),
+        characteristicTimeStep(characteristicTimeStep_),
+        baseTimeStep(characteristicTimeStep_), tolerance(tolerance_),
         outputDirectory(outputDirectory_) {
     ifDisableIntegrate = true;
     ifPrintToConsole = true;
