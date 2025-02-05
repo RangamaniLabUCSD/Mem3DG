@@ -237,21 +237,50 @@ void Euler::march() {
     characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
   }
 
+  
+
+
   // backtracking to obtain stable time step
   if (isBacktrack) {
     double timeStep_mech = std::numeric_limits<double>::max(),
            timeStep_chem = std::numeric_limits<double>::max();
     if (system.parameters.variation.isShapeVariation)
       timeStep_mech = mechanicalBacktrack(toMatrix(system.velocity));
+
+    // if (system.parameters.variation.isShapeVariation)
+    //   timeStep_mech = mechanicalBacktrack(toMatrix(directionVec));
+
     if (system.parameters.variation.isProteinVariation)
       timeStep_chem = chemicalBacktrack(system.proteinRateOfChange.raw());
     timeStep = std::min(timeStep_chem, timeStep_mech);
   } else {
     timeStep = characteristicTimeStep;
   }
-  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
+
+  // // march the system with increment time step obtained above
+  // double hdt = timeStep;
+
+  // // stepping on vertex position
+  // system.geometry.vpg->inputVertexPositions +=
+  //     system.velocity * timeStep +
+  //     hdt * pastMechanicalForceVec; 
+  // system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
+  // system.geometry.vpg->inputVertexPositions += (system.velocity+2*pastMechanicalForceVec+past2MechanicalForceVec) * timeStep/2;
+  if (initialArea == 0) {
+    initialArea = system.geometry.surfaceArea;}
+  // system.geometry.vpg->inputVertexPositions += (system.velocity+2*pastMechanicalForceVec+2*past2MechanicalForceVec+past3MechanicalForceVec) * (timeStep/6) ;
+  system.geometry.vpg->inputVertexPositions += (system.velocity+pastMechanicalForceVec) * timeStep/2;
+
+  system.geometry.vpg->inputVertexPositions *= sqrt(initialArea/system.geometry.surfaceArea);
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
+
+  // past3MechanicalForceVec = past2MechanicalForceVec;
+  // past2MechanicalForceVec = pastMechanicalForceVec;
+
+  pastMechanicalForceVec = system.forces.mechanicalForceVec;
+
+
 
   // recompute cached values
   system.updateConfigurations();

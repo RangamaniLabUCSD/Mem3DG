@@ -36,18 +36,29 @@ namespace integrator {
  */
 class DLL_PUBLIC Euler : public Integrator {
 public:
+  gcs::VertexData<gc::Vector3> pastMechanicalForceVec;
+  gcs::VertexData<gc::Vector3> past2MechanicalForceVec;
+  gcs::VertexData<gc::Vector3> past3MechanicalForceVec;
+  double initialArea = 0;
+
   Euler(System &system_, double characteristicTimeStep_, double totalTime_,
         double savePeriod_, double tolerance_, std::string outputDirectory_,
         std::size_t frame_ = 0)
       : Integrator(system_, characteristicTimeStep_, totalTime_, savePeriod_,
                    tolerance_, outputDirectory_, frame_) {
     // check the validity of parameter
+    pastMechanicalForceVec = system.forces.mechanicalForceVec;
+    past2MechanicalForceVec = pastMechanicalForceVec;
+    past3MechanicalForceVec = past2MechanicalForceVec;
     checkParameters();
   }
   Euler(System &system_, double characteristicTimeStep_, double tolerance_,
         std::string outputDirectory_)
       : Integrator(system_, characteristicTimeStep_, tolerance_,
                    outputDirectory_) {
+    pastMechanicalForceVec = system.forces.mechanicalForceVec;
+    past2MechanicalForceVec = pastMechanicalForceVec;
+    past3MechanicalForceVec = past2MechanicalForceVec;
     checkParameters();
   }
 

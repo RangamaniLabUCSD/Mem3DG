@@ -265,6 +265,88 @@ double Integrator::chemicalBacktrack(
   return alpha;
 }
 
+// double Integrator::mechanicalBacktrack(
+//     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection) {
+
+//   // cache energy of the last time step
+//   const Energy previousE = system.energy;
+
+//   // validate the directions
+//   double positionProjection = ((toMatrix(system.forces.conservativeForceVec) +
+//                                 toMatrix(system.forces.externalForceVec))
+//                                    .array() *
+//                                positionDirection.array())
+//                                   .sum();
+//   if (positionProjection < 0)
+//     mem3dg_runtime_warning("Velocity on energy "
+//                            "uphill direction!");
+
+//   // calculate initial energy as reference level
+//   gc::VertexData<gc::Vector3> initial_pos(
+//       system.geometry.vpg->inputVertexPositions);
+//   gc::VertexData<double> initial_protein(system.proteinDensity);
+//   const double init_time = system.time;
+
+//   // declare variables used in backtracking iterations
+//   double alpha = characteristicTimeStep;
+//   [[maybe_unused]] std::size_t count = 0;
+
+//   // zeroth iteration
+//   toMatrix(system.geometry.vpg->inputVertexPositions) +=
+//       alpha * positionDirection;
+//   system.time += alpha;
+//   system.updateConfigurations();
+//   system.computePotentialEnergy();
+
+//   while (true) {
+//     // Wolfe condition fulfillment
+//     if ((system.energy.potentialEnergy <=
+//          (previousE.potentialEnergy + system.computeIntegratedPower(alpha) -
+//           c1 * alpha * positionProjection)) &&
+//         std::isfinite(system.energy.potentialEnergy)) {
+//       break;
+//     }
+
+//     // limit of backtracking iterations
+//     if (alpha < 1e-5 * characteristicTimeStep) {
+//       std::cout << "\n(time=" << system.time
+//                 << ") mechanicalBacktrack: line search failure! Simulation "
+//                    "stopped."
+//                 << std::endl;
+//       system.backtraceEnergyGrowth(alpha, previousE);
+//       // recover the initial configuration
+//       system.time = init_time;
+//       system.proteinDensity = initial_protein;
+//       system.geometry.vpg->inputVertexPositions = initial_pos;
+//       system.testConservativeForcing(alpha);
+//       system.testConservativeForcing(characteristicTimeStep);
+//       EXIT = true;
+//       SUCCESS = false;
+//       break;
+//     }
+
+//     // backtracking time step
+//     alpha *= rho;
+//     toMatrix(system.geometry.vpg->inputVertexPositions) =
+//         toMatrix(initial_pos) + alpha * positionDirection;
+
+//     system.time = init_time + alpha;
+//     system.updateConfigurations();
+//     system.computePotentialEnergy();
+
+//     // count the number of iterations
+//     count++;
+//   }
+
+//   // recover the initial configuration
+//   system.time = init_time;
+//   system.proteinDensity = initial_protein;
+//   system.geometry.vpg->inputVertexPositions = initial_pos;
+//   system.updateConfigurations();
+//   system.computePotentialEnergy();
+//   return alpha;
+// }
+
 double Integrator::mechanicalBacktrack(
     Eigen::Matrix<double, Eigen::Dynamic, 3> &&positionDirection) {
 
@@ -309,10 +391,10 @@ double Integrator::mechanicalBacktrack(
 
     // limit of backtracking iterations
     if (alpha < 1e-5 * characteristicTimeStep) {
-      std::cout << "\n(time=" << system.time
-                << ") mechanicalBacktrack: line search failure! Simulation "
-                   "stopped."
-                << std::endl;
+      // std::cout << "\n(time=" << system.time
+      //           << ") mechanicalBacktrack: line search failure! Simulation "
+      //              "stopped."
+      //           << std::endl;
       system.backtraceEnergyGrowth(alpha, previousE);
       // recover the initial configuration
       system.time = init_time;
@@ -320,11 +402,17 @@ double Integrator::mechanicalBacktrack(
       system.geometry.vpg->inputVertexPositions = initial_pos;
       system.testConservativeForcing(alpha);
       system.testConservativeForcing(characteristicTimeStep);
-      EXIT = true;
-      SUCCESS = false;
+      // EXIT = true;
+      // SUCCESS = false;
+      alpha = 1e-5 * characteristicTimeStep;
       break;
     }
 
+    // // limit of backtracking iterations
+    // if (alpha < 1e-2 * characteristicTimeStep) {
+    //   alpha = 1e-2 * characteristicTimeStep;
+    //   break;
+    // }
     // backtracking time step
     alpha *= rho;
     toMatrix(system.geometry.vpg->inputVertexPositions) =
