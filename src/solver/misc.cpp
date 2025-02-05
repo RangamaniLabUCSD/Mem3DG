@@ -188,7 +188,7 @@ bool System::testConservativeForcing(const double timeStep) {
 
   // lambda function to test mechanical forces
   auto testMechanical = [previousProteinDensity, previousPosition, timeStep,
-                         this](gcs::VertexData<gc::Vector3> &forceVec,
+                         this](const gcs::VertexData<gc::Vector3> &forceVec,
                                const double &previousEnergy,
                                const double &currentEnergy,
                                std::string forceKey,

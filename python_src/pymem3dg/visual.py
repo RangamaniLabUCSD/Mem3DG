@@ -915,6 +915,7 @@ def animate(
     gaussianCurvature: bool = True,
     mechanicalForce: bool = True,
     spontaneousCurvatureForce: bool = True,
+    gaussianCurvatureForce: bool = True,
     deviatoricCurvatureForce: bool = True,
     externalForce: bool = True,
     capillaryForce: bool = True,
@@ -945,6 +946,7 @@ def animate(
         gaussianCurvature (bool, optional): optional data to visualize. Defaults to True
         mechanicalForce (bool, optional): optional data to visualize. Defaults to True
         spontaneousCurvatureForce (bool, optional): optional data to visualize. Defaults to True
+        gaussianCurvatureForce (bool, optional): optional data to visualize. Defaults to True
         deviatoricCurvatureForce (bool, optional): optional data to visualize. Defaults to True
         externalForce (bool, optional): optional data to visualize. Defaults to True
         capillaryForce (bool, optional): optional data to visualize. Defaults to True
@@ -1141,6 +1143,11 @@ def animate(
                 addForce(
                     system.getForces().getSpontaneousCurvatureForceVec(),
                     "spontaneousCurvatureForce",
+                )
+            if gaussianCurvatureForce:
+                addForce(
+                    system.getForces().getGaussianCurvatureForceVec(),
+                    "gaussianCurvatureForce",
                 )
             if deviatoricCurvatureForce:
                 addForce(
