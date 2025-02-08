@@ -37,20 +37,23 @@ double Integrator::getAdaptiveCharacteristicTimeStep() {
           ? system.forces.mechanicalForce.raw().cwiseAbs().maxCoeff()
           : system.forces.chemicalPotential.raw().cwiseAbs().maxCoeff();
 
-  double dt = (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
+  double dt = (dt_size2_ratio * currentMinimumSize) *
               (initialMaximumForce / currentMaximumForce);
 
-  if (characteristicTimeStep / dt > 1e3) {
-    mem3dg_runtime_warning(
-        "Adaptive time step has become too small!",
-        "Consider restarting simulation in smaller timestep.",
-        "Current size / initial size =",
-        currentMinimumSize / pow(characteristicTimeStep / dt_size2_ratio, 0.5),
-        "Current force / initial force =",
-        currentMaximumForce / initialMaximumForce);
-    EXIT = true;
-    SUCCESS = false;
-  }
+  // double dt = (dt_size2_ratio * currentMinimumSize * currentMinimumSize) *
+  //             (initialMaximumForce / currentMaximumForce);
+
+  // if (characteristicTimeStep / dt > 1e3) {
+  //   mem3dg_runtime_warning(
+  //       "Adaptive time step has become too small!",
+  //       "Consider restarting simulation in smaller timestep.",
+  //       "Current size / initial size =",
+  //       currentMinimumSize / pow(characteristicTimeStep / dt_size2_ratio, 0.5),
+  //       "Current force / initial force =",
+  //       currentMaximumForce / initialMaximumForce);
+  //   EXIT = true;
+  //   SUCCESS = false;
+  // }
   return dt;
 }
 
@@ -402,12 +405,10 @@ double Integrator::mechanicalBacktrack(
       system.geometry.vpg->inputVertexPositions = initial_pos;
       system.testConservativeForcing(alpha);
       system.testConservativeForcing(characteristicTimeStep);
-      // EXIT = true;
-      // SUCCESS = false;
-      alpha = 1e-5 * characteristicTimeStep;
+      EXIT = true;
+      SUCCESS = false;
       break;
     }
-
     // // limit of backtracking iterations
     // if (alpha < 1e-2 * characteristicTimeStep) {
     //   alpha = 1e-2 * characteristicTimeStep;

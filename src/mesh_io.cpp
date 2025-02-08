@@ -302,21 +302,21 @@ hexagon(double R, int nSub) {
   // return gc::Vector3{std::move(x), std::move(y), std::move(z)}.normalize();
   // };
 
-  for (std::size_t i = 0; i < 20; i++) {
-    coords.emplace_back(gc::Vector3{R * cos(constants::PI / 10 * i),
-                                    R * sin(constants::PI / 10 * i), 0});
-    polygons.emplace_back(std::vector<std::size_t>{20, i, (i+1)% 20});
+  // for (std::size_t i = 0; i < 20; i++) {
+  //   coords.emplace_back(gc::Vector3{R * cos(constants::PI / 10 * i),
+  //                                   R * sin(constants::PI / 10 * i), 0});
+  //   polygons.emplace_back(std::vector<std::size_t>{20, i, (i+1)% 20});
+  // }
+  // coords.emplace_back(gc::Vector3{0, 0, 0});
+  for (std::size_t i = 0; i < 6; i++) {
+    coords.emplace_back(gc::Vector3{R * cos(constants::PI / 3 * i),
+                                    R * sin(constants::PI / 3 * i), 0});
+    polygons.emplace_back(std::vector<std::size_t>{6, i, (i+1)% 6});
   }
   coords.emplace_back(gc::Vector3{0, 0, 0});
 
   // Initialize Faces
 
-  // polygons.emplace_back(std::vector<std::size_t>{6, 0, 1});
-  // polygons.emplace_back(std::vector<std::size_t>{6, 1, 2});
-  // polygons.emplace_back(std::vector<std::size_t>{6, 2, 3});
-  // polygons.emplace_back(std::vector<std::size_t>{6, 3, 4});
-  // polygons.emplace_back(std::vector<std::size_t>{6, 4, 5});
-  // polygons.emplace_back(std::vector<std::size_t>{6, 5, 0});
 
   gcs::SimplePolygonMesh soup(polygons, coords);
   soup.mergeIdenticalVertices();

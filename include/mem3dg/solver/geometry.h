@@ -72,6 +72,8 @@ public:
   gcs::HalfedgeData<double> refLcrs;
   /// surface area
   double surfaceArea;
+  /// frame area
+  double projectArea;
   /// Volume
   double volume;
 
@@ -220,6 +222,24 @@ public:
     // notableVertex[0] = true;
     volume = getMeshVolume(*mesh, *vpg, true);
     surfaceArea = vpg->faceAreas.raw().sum();
+
+    // Define frame area
+    std::vector<gc::Vector3> hull;
+    int N = hull.size();
+    double pArea = 0.0;
+
+    for (gcs::BoundaryLoop bl : vpg->mesh.boundaryLoops()) {
+      for (gcs::Vertex v0 : bl.adjacentVertices()) {
+        hull.emplace_back(vpg->vertexPositions[v0]);
+        }
+      }
+    for (int i = 0; i < N; i++){
+      int j = (i+1)%N;
+      pArea += (hull[i].x * hull[j].y) - (hull[j].x * hull[i].y);
+    }
+    projectArea = std::abs(pArea)*0.5;
+    ////////////////
+
     updateReferenceConfigurations();
     if (!mesh->hasBoundary() && mesh->genus() != 0) {
       mem3dg_runtime_error(

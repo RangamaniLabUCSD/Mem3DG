@@ -69,6 +69,25 @@ def constantSurfaceTensionModel(area: float, tension: float):
     return (tension, energy)
 
 
+# def preferredAreaSurfaceTensionModel(
+#     area: float, modulus: float, preferredArea: float, reservoirArea: float = 0
+# ):
+#     """harmonic potential type model with a preferred area
+
+#     Args:
+#         area (float): total surface area
+#         modulus (float): stretching modulus
+#         preferredArea (float): value of preferred area
+
+#     Returns:
+#         tuple: surface tension and surface energy
+#     """
+#     area_difference = (area + reservoirArea) - preferredArea
+#     tension = modulus * area_difference / preferredArea
+#     energy = tension * area_difference / 2
+#     return (tension, energy)
+
+########## Define the frame tension ###########
 def preferredAreaSurfaceTensionModel(
     area: float, modulus: float, preferredArea: float, reservoirArea: float = 0
 ):

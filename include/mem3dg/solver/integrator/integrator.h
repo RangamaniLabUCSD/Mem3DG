@@ -142,7 +142,10 @@ public:
     // Initialize the timestep-meshsize ratio
     dt_size2_ratio =
         characteristicTimeStep /
-        std::pow(system.geometry.vpg->edgeLengths.raw().minCoeff(), 2);
+        (system.geometry.vpg->edgeLengths.raw().minCoeff());
+    // dt_size2_ratio =
+    //     characteristicTimeStep /
+    //     std::pow(system.geometry.vpg->edgeLengths.raw().minCoeff(), 2);
 
     // Initialize the initial maxForce
     system.computeConservativeForcing();

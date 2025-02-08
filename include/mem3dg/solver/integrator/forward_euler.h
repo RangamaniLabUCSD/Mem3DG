@@ -39,6 +39,8 @@ public:
   gcs::VertexData<gc::Vector3> pastMechanicalForceVec;
   gcs::VertexData<gc::Vector3> past2MechanicalForceVec;
   gcs::VertexData<gc::Vector3> past3MechanicalForceVec;
+  // std::vector<double> initBoundaryDistance;
+  // std::vector<double> boundaryDistance;
   double initialArea = 0;
 
   Euler(System &system_, double characteristicTimeStep_, double totalTime_,

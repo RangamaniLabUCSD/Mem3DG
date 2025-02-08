@@ -257,19 +257,49 @@ void Euler::march() {
     timeStep = characteristicTimeStep;
   }
 
-  // // march the system with increment time step obtained above
-  // double hdt = timeStep;
-
-  // // stepping on vertex position
-  // system.geometry.vpg->inputVertexPositions +=
-  //     system.velocity * timeStep +
-  //     hdt * pastMechanicalForceVec; 
-  // system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
-  // system.geometry.vpg->inputVertexPositions += (system.velocity+2*pastMechanicalForceVec+past2MechanicalForceVec) * timeStep/2;
   if (initialArea == 0) {
-    initialArea = system.geometry.surfaceArea;}
-  // system.geometry.vpg->inputVertexPositions += (system.velocity+2*pastMechanicalForceVec+2*past2MechanicalForceVec+past3MechanicalForceVec) * (timeStep/6) ;
-  system.geometry.vpg->inputVertexPositions += (system.velocity+pastMechanicalForceVec) * timeStep/2;
+    initialArea = system.geometry.surfaceArea;
+  }
+
+
+  // std::vector<double> boundaryDistance;
+
+  // if (initialArea == 0) {
+  //   EigenVectorX1d tempInitDistance = system.geometry.computeGeodesicDistance();
+  //   initialArea = system.geometry.surfaceArea;
+  //   for (gcs::BoundaryLoop bl : system.geometry.vpg->mesh.boundaryLoops()) {
+  //     for (gcs::Vertex v0 : bl.adjacentVertices()) {
+  //           initBoundaryDistance.emplace_back(tempInitDistance(v0.getIndex()));
+  //         }
+  //       }
+  //     }
+
+  // EigenVectorX1d tempDistance = system.geometry.computeGeodesicDistance();
+
+  // system.geometry.vpg->inputVertexPositions += (system.velocity+pastMechanicalForceVec) * timeStep/2;
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep/2;
+  // std::size_t i = 0;
+  // for (gcs::BoundaryLoop bl : system.geometry.vpg->mesh.boundaryLoops()) {
+  //   for (gcs::Vertex v1 : bl.adjacentVertices()) {
+  //             boundaryDistance.emplace_back(tempDistance(v1.getIndex()));
+  //             system.geometry.vpg->inputVertexPositions[v1]*= initBoundaryDistance[i]/boundaryDistance[i];
+  //             i += 1;
+  //     }
+  //   }
+
+//initialTriangleAreas[f] 
+  
+  // for (gcs::Face f : system.geometry.mesh->faces()) {
+  //     double currentTriangleAreas=system.geometry.vpg->faceAreas[f];
+  //     double scaleFactor = sqrt(0.001 / currentTriangleAreas);
+  //     for (gcs::Vertex v : f.adjacentVertices()) {
+  //         system.geometry.vpg->inputVertexPositions[v] *= scaleFactor;
+  //     }
+  // }
+
+
+
+
 
   system.geometry.vpg->inputVertexPositions *= sqrt(initialArea/system.geometry.surfaceArea);
   system.proteinDensity += system.proteinRateOfChange * timeStep;
@@ -278,7 +308,7 @@ void Euler::march() {
   // past3MechanicalForceVec = past2MechanicalForceVec;
   // past2MechanicalForceVec = pastMechanicalForceVec;
 
-  pastMechanicalForceVec = system.forces.mechanicalForceVec;
+  // pastMechanicalForceVec = system.forces.mechanicalForceVec;
 
 
 
