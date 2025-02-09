@@ -474,6 +474,11 @@ DLL_PUBLIC inline void boundaryForceMask(gcs::SurfaceMesh &mesh,
                                          gcs::VertexData<gc::Vector3> &mask,
                                          std::string boundaryConditionType) {
   if (boundaryConditionType == "fixed") {
+    // for (gcs::Vertex v : mesh.vertices()){
+    //   if (v.notableVertex()){
+
+    //   }
+    // }
     for (gcs::BoundaryLoop bl : mesh.boundaryLoops()) {
       for (gcs::Vertex v0 : bl.adjacentVertices()) {
         for (gcs::Vertex v01 : v0.adjacentVertices()) {

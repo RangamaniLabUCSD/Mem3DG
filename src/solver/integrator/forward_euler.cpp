@@ -277,7 +277,14 @@ void Euler::march() {
   // EigenVectorX1d tempDistance = system.geometry.computeGeodesicDistance();
 
   // system.geometry.vpg->inputVertexPositions += (system.velocity+pastMechanicalForceVec) * timeStep/2;
-  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep/2;
+  for (gcs::Vertex v : system.geometry.mesh->vertices()){
+    if (system.geometry.notableVertex[v]){
+      system.velocity[v].x = 0;
+      system.velocity[v].y = 0;
+    }
+  }
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
+
   // std::size_t i = 0;
   // for (gcs::BoundaryLoop bl : system.geometry.vpg->mesh.boundaryLoops()) {
   //   for (gcs::Vertex v1 : bl.adjacentVertices()) {

@@ -148,7 +148,7 @@ void ConjugateGradient::status() {
   system.computeConservativeForcing();
   system.addNonconservativeForcing(timeStep);
 
-  if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
+  if (abs(system.mechErrorNorm) < tolerance && abs(system.chemErrorNorm) < tolerance) {
     // areaDifference = abs(system.surfaceArea / system.parameters.tension.At -
     // 1); volumeDifference =
     //     (system.parameters.osmotic.isPreferredVolume)
@@ -202,8 +202,11 @@ void ConjugateGradient::march() {
         (system.parameters.variation.isProteinVariation
              ? system.forces.chemicalPotential.raw().squaredNorm()
              : 0);
-    system.velocity *= currentNormSquared / pastNormSquared;
-    system.velocity += system.forces.mechanicalForceVec;
+    double beta = currentNormSquared / pastNormSquared;
+    system.velocity = system.forces.mechanicalForceVec + beta * system.velocity;
+
+    // system.velocity *= currentNormSquared / pastNormSquared;
+    // system.velocity += system.forces.mechanicalForceVec;
     system.proteinRateOfChange *= currentNormSquared / pastNormSquared;
     system.proteinRateOfChange +=
         system.parameters.proteinMobility * system.forces.chemicalPotential;
@@ -219,7 +222,8 @@ void ConjugateGradient::march() {
 
   // adjust time step if adopt adaptive time step based on mesh size
   if (ifAdaptiveStep) {
-    characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
+    // characteristicTimeStep = getAdaptiveCharacteristicTimeStep();
+    timeStep = getAdaptiveCharacteristicTimeStep();
   }
 
   // time stepping on vertex position
@@ -229,7 +233,11 @@ void ConjugateGradient::march() {
   } else {
     timeStep = characteristicTimeStep;
   }
+  if (initialArea == 0) {
+    initialArea = system.geometry.surfaceArea;
+  }
   system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
+  system.geometry.vpg->inputVertexPositions *= sqrt(initialArea/system.geometry.surfaceArea);
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 

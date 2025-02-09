@@ -159,8 +159,8 @@ double Integrator::backtrack(
       system.geometry.vpg->inputVertexPositions = initial_pos;
       system.testConservativeForcing(alpha);
       system.testConservativeForcing(characteristicTimeStep);
-      EXIT = true;
-      SUCCESS = false;
+      // EXIT = true;
+      // SUCCESS = false;
       break;
     }
 

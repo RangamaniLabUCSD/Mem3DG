@@ -46,9 +46,10 @@ private:
   std::size_t countCG = 0;
 
 public:
-  std::size_t restartPeriod = 5;
+  std::size_t restartPeriod = 3;//5;
   double constraintTolerance = 0.01;
   bool isAugmentedLagrangian = false;
+  double initialArea = 0;
 
   // std::size_t countPM = 0;
 
