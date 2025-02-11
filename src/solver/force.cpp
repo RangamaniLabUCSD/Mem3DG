@@ -156,7 +156,8 @@ void System::computeGeometricForces(size_t i) {
     // if (forces.surfaceTension != 0) // surface capillary force
     //   capillaryForceVec -= forces.surfaceTension * areaGrad;
     if (forces.surfaceTension != 0) // surface capillary force
-      capillaryForceVec -= forces.surfaceTension * areaGrad.removeComponent({0,0,1});
+      capillaryForceVec -= forces.surfaceTension * areaGrad;
+      // capillaryForceVec -= forces.surfaceTension * areaGrad.removeComponent({0,0,1});
 
     if (Kgi != 0 || Kgj != 0) { // gaussian curvature forces
       gaussianCurvatureForceVec -= Kgi * gaussVarVec1 + Kgj * gaussVarVec2;

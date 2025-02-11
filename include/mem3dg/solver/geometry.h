@@ -238,6 +238,7 @@ public:
       pArea += (hull[i].x * hull[j].y) - (hull[j].x * hull[i].y);
     }
     projectArea = std::abs(pArea)*0.5;
+    // projectArea = 3.722*sqrt(std::abs(pArea)*0.5);
     ////////////////
 
     updateReferenceConfigurations();

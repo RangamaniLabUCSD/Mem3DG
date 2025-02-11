@@ -145,6 +145,10 @@ void Euler::status() {
   system.computeConservativeForcing();
   system.addNonconservativeForcing(timeStep);
 
+  // if (system.forces.mechanicalForceVec.norm() < 1e-6 * initialGradientNorm) {
+  //   EXIT = true;
+  // }
+
   // exit if under error tolerance
   if (system.mechErrorNorm < tolerance && system.chemErrorNorm < tolerance) {
     if (ifPrintToConsole)
