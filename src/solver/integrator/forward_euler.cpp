@@ -260,9 +260,15 @@ void Euler::march() {
   // system.geometry.vpg->inputVertexPositions +=
   //     system.velocity * timeStep +
   //     hdt * pastMechanicalForceVec; 
-  // system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
+  for (gcs::Vertex v : system.geometry.mesh->vertices()){
+    if (system.geometry.notableVertex[v]){
+      system.velocity[v].x = 0;
+      system.velocity[v].y = 0;
+    }
+  }
+  system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
   // system.geometry.vpg->inputVertexPositions += (system.velocity+2*pastMechanicalForceVec+past2MechanicalForceVec) * timeStep/2;
-  system.geometry.vpg->inputVertexPositions += (system.velocity+pastMechanicalForceVec) * timeStep/2;
+  // system.geometry.vpg->inputVertexPositions += (system.velocity+pastMechanicalForceVec) * timeStep/2;
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
 
