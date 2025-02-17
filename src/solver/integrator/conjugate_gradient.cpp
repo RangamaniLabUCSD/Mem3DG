@@ -183,6 +183,7 @@ void ConjugateGradient::status() {
 void ConjugateGradient::march() {
   // determine conjugate gradient direction, restart after nVertices() cycles
   if (countCG % restartPeriod == 0) {
+  // if (countCG % restartPeriod == 0) {
     pastNormSquared =
         (system.parameters.variation.isShapeVariation
              ? toMatrix(system.forces.mechanicalForceVec).squaredNorm()
@@ -190,6 +191,7 @@ void ConjugateGradient::march() {
         (system.parameters.variation.isProteinVariation
              ? system.forces.chemicalPotential.raw().squaredNorm()
              : 0);
+    descentDirection = system.forces.mechanicalForceVec;
     system.velocity = system.forces.mechanicalForceVec;
     system.proteinRateOfChange =
         system.parameters.proteinMobility * system.forces.chemicalPotential;
@@ -202,11 +204,13 @@ void ConjugateGradient::march() {
         (system.parameters.variation.isProteinVariation
              ? system.forces.chemicalPotential.raw().squaredNorm()
              : 0);
-    double beta = currentNormSquared / pastNormSquared;
-    system.velocity = system.forces.mechanicalForceVec + beta * system.velocity;
+    // double beta = currentNormSquared / pastNormSquared;
+    // system.velocity = system.forces.mechanicalForceVec + beta * system.velocity;
 
+    descentDirection *= currentNormSquared / pastNormSquared;
+    descentDirection += system.forces.mechanicalForceVec;
     // system.velocity *= currentNormSquared / pastNormSquared;
-    // system.velocity += system.forces.mechanicalForceVec;
+    system.velocity = descentDirection;
     system.proteinRateOfChange *= currentNormSquared / pastNormSquared;
     system.proteinRateOfChange +=
         system.parameters.proteinMobility * system.forces.chemicalPotential;
@@ -236,10 +240,18 @@ void ConjugateGradient::march() {
   if (initialArea == 0) {
     initialArea = system.geometry.surfaceArea;
   }
+
+  for (gcs::Vertex v : system.geometry.mesh->vertices()){
+    if (system.geometry.notableVertex[v]){
+      system.velocity[v].x = 0;
+      system.velocity[v].y = 0;
+    }
+  }
   system.geometry.vpg->inputVertexPositions += system.velocity * timeStep;
-  system.geometry.vpg->inputVertexPositions *= sqrt(initialArea/system.geometry.surfaceArea);
+  // system.geometry.vpg->inputVertexPositions *= sqrt(initialArea/system.geometry.surfaceArea);
   system.proteinDensity += system.proteinRateOfChange * timeStep;
   system.time += timeStep;
+  pastMechanicalForceVec = system.forces.mechanicalForceVec;
 
   // recompute cached values
   system.updateConfigurations();

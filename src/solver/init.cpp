@@ -136,15 +136,15 @@ void System::updateConfigurations() {
     std::tie(forces.osmoticPressure, energy.pressureEnergy) =
         parameters.osmotic.form(geometry.volume);
 
-  // // area and surface tension
-  // if (parameters.tension.form != NULL)
-  //   std::tie(forces.surfaceTension, energy.surfaceEnergy) =
-  //       parameters.tension.form(geometry.surfaceArea);
-
-    // area and surface tension
+  // area and surface tension
   if (parameters.tension.form != NULL)
     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
-        parameters.tension.form(geometry.projectArea);
+        parameters.tension.form(geometry.surfaceArea);
+
+//     // area and surface tension
+//   if (parameters.tension.form != NULL)
+//     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
+//         parameters.tension.form(geometry.projectArea);
 }
 
 bool System::updatePrescription(std::map<std::string, double> &lastUpdateTime,

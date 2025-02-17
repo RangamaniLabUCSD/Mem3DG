@@ -46,10 +46,12 @@ private:
   std::size_t countCG = 0;
 
 public:
-  std::size_t restartPeriod = 3;//5;
+  std::size_t restartPeriod = 14;//system.geometry.mesh->nVertices();//5;
   double constraintTolerance = 0.01;
   bool isAugmentedLagrangian = false;
   double initialArea = 0;
+  gcs::VertexData<gc::Vector3> descentDirection;
+  gcs::VertexData<gc::Vector3> pastMechanicalForceVec;
 
   // std::size_t countPM = 0;
 

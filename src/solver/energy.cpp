@@ -78,19 +78,6 @@ void System::computeAreaDifferenceEnergy() {
           2);
 }
 
-// void System::computeSurfaceEnergy() {
-//   // cotan laplacian normal is exact for area variation
-//   // double A_difference = surfaceArea - parameters.tension.At;
-//   // energy.surfaceEnergy =
-//   //     parameters.tension.isConstantSurfaceTension
-//   //         ? forces.surfaceTension * surfaceArea
-//   //         : forces.surfaceTension * A_difference / 2 +
-//   //               parameters.tension.lambdaSG * A_difference / 2;
-//   if (parameters.tension.form != NULL)
-//     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
-//         parameters.tension.form(geometry.surfaceArea);
-// }
-
 void System::computeSurfaceEnergy() {
   // cotan laplacian normal is exact for area variation
   // double A_difference = surfaceArea - parameters.tension.At;
@@ -101,8 +88,21 @@ void System::computeSurfaceEnergy() {
   //               parameters.tension.lambdaSG * A_difference / 2;
   if (parameters.tension.form != NULL)
     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
-        parameters.tension.form(geometry.projectArea);
+        parameters.tension.form(geometry.surfaceArea);
 }
+
+// void System::computeSurfaceEnergy() {
+//   // cotan laplacian normal is exact for area variation
+//   // double A_difference = surfaceArea - parameters.tension.At;
+//   // energy.surfaceEnergy =
+//   //     parameters.tension.isConstantSurfaceTension
+//   //         ? forces.surfaceTension * surfaceArea
+//   //         : forces.surfaceTension * A_difference / 2 +
+//   //               parameters.tension.lambdaSG * A_difference / 2;
+//   if (parameters.tension.form != NULL)
+//     std::tie(forces.surfaceTension, energy.surfaceEnergy) =
+//         parameters.tension.form(geometry.projectArea);
+// }
 
 void System::computeEdgeSpringEnergy() {
   energy.edgeSpringEnergy =
