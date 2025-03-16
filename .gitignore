@@ -158,3 +158,7 @@ imgui.ini
 *.ply
 *.nc
 Testing
+
+# pixi environments
+.pixi
+*.egg-info

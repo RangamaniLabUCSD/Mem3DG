@@ -11,3 +11,5 @@ CMakeLists.txt  filter=copyright
 libraries/pcg/*     !filter
 libraries/pcg/**    !filter
 libraries/pcg/**/*  !filter
+# SCM syntax highlighting
+pixi.lock linguist-language=YAML linguist-generated=true
